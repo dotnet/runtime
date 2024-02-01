@@ -151,6 +151,13 @@ namespace System.Numerics.Tests
             Assert.True(BigInteger.TryParse("F", NumberStyles.HexNumber, null, out result));
             Assert.Equal(-1, result);
 
+            for (int i = 0; i < 40; i++)
+            {
+                string test = "F" + new string('0', i);
+                Assert.True(BigInteger.TryParse(test, NumberStyles.HexNumber, null, out result));
+                Assert.Equal(BigInteger.MinusOne << (4 * i), result);
+            }
+
             Assert.Throws<FormatException>(() =>
             {
                 BigInteger.Parse("zzz", NumberStyles.HexNumber);
@@ -481,6 +488,12 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + GetRandomInvalidChar(random) + GetBinaryDigitSequence(1, 10, random), ns, false);
+            }
+
+            // Power of 2
+            for (int i = 0; i < 70; i++)
+            {
+                VerifyParseToString("1" + new string('0', i), ns, true);
             }
         }
 

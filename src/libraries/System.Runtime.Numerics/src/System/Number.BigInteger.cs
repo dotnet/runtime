@@ -471,17 +471,28 @@ namespace System
             if (value.IsEmpty)
             {
                 // There's nothing beyond significant leading block. Return it as the result.
-                if ((int)(leading ^ signBits) < 0 || (int)leading == int.MinValue)
+                if ((int)(leading ^ signBits) < 0)
                 {
-                    // The sign of result differs with leading digit, or it's int.MinValue.
+                    // The sign of result differs with leading digit.
                     // Require to store in _bits.
-                    result = new BigInteger((int)signBits | 1, [leading]);
+                    if ((int)signBits < 0)
+                    {
+                        // Negative value
+                        result = leading == 0
+                            ? new BigInteger(-1, [leading, 1u])
+                            : new BigInteger(-1, [unchecked((uint)-(int)leading)]);
+                    }
+                    else
+                    {
+                        // Positive value
+                        result = new BigInteger(1, [leading]);
+                    }
                     return ParsingStatus.OK;
                 }
                 else
                 {
-                    // Small value that fits in _sign.
-                    result = new BigInteger((int)leading, null);
+                    // Small value that fits in Int32.
+                    result = new BigInteger((int)leading);
                     return ParsingStatus.OK;
                 }
             }
@@ -510,13 +521,24 @@ namespace System
             if (signBits != 0)
             {
                 // For negative values, negate the whole array
-                NumericsHelpers.DangerousMakeTwosComplement(bits);
+                Span<uint> trimmed = new Span<uint>(bits).TrimStart(0u);
+                if (trimmed.Length == 0)
+                {
+                    bits = new uint[bits.Length + 1];
+                    bits[^1] = 1;
+                }
+                else
+                {
+                    NumericsHelpers.DangerousMakeTwosComplement(trimmed);
+                }
 
                 result = new BigInteger(-1, bits);
                 return ParsingStatus.OK;
             }
             else
             {
+                Debug.Assert(leading != 0);
+
                 // For positive values, it's done
                 result = new BigInteger(1, bits);
                 return ParsingStatus.OK;
