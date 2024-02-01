@@ -10,6 +10,7 @@ import gitHash from "consts:gitHash";
 
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
+import { mono_log_error } from "./logging";
 
 // these are our public API (except internal)
 export let Module: DotnetModuleInternal;
@@ -104,5 +105,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const error = new Error(message);
-    runtimeHelpers.abort(error);
+    mono_log_error(message, error);
+    runtimeHelpers.nativeAbort(error);
 }

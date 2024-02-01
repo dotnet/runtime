@@ -662,13 +662,17 @@ namespace System
         // algorithm with a running time of O(N^2). And if it is greater than the threshold, use
         // a divide-and-conquer algorithm with a running time of O(NlogN).
         //
+        // `1233`, which is approx the upper bound of most RSA key lengths, covers the majority
+        // of most common inputs and allows for the less naive algorithm to be used for
+        // large/uncommon inputs.
+        //
 #if DEBUG
         // Mutable for unit testing...
         internal static
 #else
         internal const
 #endif
-        int s_naiveThreshold = 20000;
+        int s_naiveThreshold = 1233;
         private static ParsingStatus NumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
             int currentBufferSize = 0;

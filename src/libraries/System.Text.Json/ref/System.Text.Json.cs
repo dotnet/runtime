@@ -190,10 +190,10 @@ namespace System.Text.Json
         public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
     }
-    public partial struct JsonReaderState
+    public readonly partial struct JsonReaderState
     {
-        private object _dummy;
-        private int _dummyPrimitive;
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public JsonReaderState(System.Text.Json.JsonReaderOptions options = default(System.Text.Json.JsonReaderOptions)) { throw null; }
         public System.Text.Json.JsonReaderOptions Options { get { throw null; } }
     }

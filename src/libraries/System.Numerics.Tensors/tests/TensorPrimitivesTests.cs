@@ -115,9 +115,7 @@ namespace System.Numerics.Tensors.Tests
 
         protected abstract T NextRandom();
 
-        protected abstract void AssertEqualTolerance(T expected, T actual);
-
-        protected abstract void AssertEqualTolerance(T expected, T actual, T tolerance);
+        protected abstract void AssertEqualTolerance(T expected, T actual, T? tolerance = null);
 
         protected abstract IEnumerable<(int Length, T Element)> VectorLengthAndIteratedRange(T min, T max, T increment);
 

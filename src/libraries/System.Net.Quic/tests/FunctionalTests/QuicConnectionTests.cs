@@ -125,6 +125,47 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task DisposeAfterCloseCanceled()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+                    await Assert.ThrowsAsync<OperationCanceledException>(async () => await clientConnection.CloseAsync(ExpectedErrorCode, cts.Token));
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseTaskStored()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    var task = clientConnection.CloseAsync(0).AsTask();
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
+                });
+        }
+
+        [Fact]
         public async Task ConnectionClosedByPeer_WithPendingAcceptAndConnect_PendingAndSubsequentThrowConnectionAbortedException()
         {
             using var sync = new SemaphoreSlim(0);

@@ -151,7 +151,9 @@ export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipMana
         }
     }
     if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle) && !skipManaged) {
-        runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle(gc_handle);
+        if (loaderHelpers.is_runtime_running()) {
+            runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle(gc_handle);
+        }
     }
     if (is_gcv_handle(gc_handle)) {
         free_gcv_handle(gc_handle);
@@ -165,7 +167,7 @@ export function assert_not_disposed(result: any): GCHandle {
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
-    if (loaderHelpers.is_exited()) {
+    if (!loaderHelpers.is_runtime_running()) {
         // We're shutting down, so don't bother doing anything else.
         return;
     }

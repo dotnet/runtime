@@ -189,10 +189,6 @@ size_t printClassName(
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;
 
-CorInfoInlineTypeCheck canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source) override;
-
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -341,6 +337,9 @@ TypeCompareState compareTypesForEquality(
 bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
+
+bool isExactType(
+          CORINFO_CLASS_HANDLE cls) override;
 
 TypeCompareState isEnum(
           CORINFO_CLASS_HANDLE cls,
