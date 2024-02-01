@@ -1580,9 +1580,10 @@ enum class ProfileChecks : unsigned int
 {
     CHECK_NONE          = 0,
     CHECK_CLASSIC       = 1 << 0, // check "classic" jit weights
-    CHECK_LIKELY        = 1 << 1, // check likelihood based weights
-    RAISE_ASSERT        = 1 << 2, // assert on check failure
-    CHECK_ALL_BLOCKS    = 1 << 3, // check blocks even if bbHasProfileWeight is false
+    CHECK_HASLIKELIHOOD = 1 << 1, // check all FlowEdges for hasLikelihood
+    CHECK_LIKELY        = 1 << 2, // fully check likelihood based weights
+    RAISE_ASSERT        = 1 << 3, // assert on check failure
+    CHECK_ALL_BLOCKS    = 1 << 4, // check blocks even if bbHasProfileWeight is false
 };
 
 inline constexpr ProfileChecks operator ~(ProfileChecks a)
