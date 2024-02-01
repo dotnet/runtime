@@ -227,7 +227,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isIntegerRegister(id->idReg1()) || // ZR
                    isVectorRegister(id->idReg1()));
             assert(isIntegerRegister(id->idReg2())); // SP
-            assert(emitGetInsSC(id) == 0);
+            assert((emitGetInsSC(id) == 0) || (id->idIsTlsGD()));
             assert(insOptsNone(id->idInsOpt()));
             break;
 
@@ -8359,7 +8359,7 @@ void emitter::emitIns_R_R_I(
         reg2 = encodingSPtoZR(reg2);
 
         ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-        if (imm == 0)
+        if (imm == 0 || EA_IS_CNS_TLSGD_RELOC(attr))
         {
             assert(insOptsNone(opt)); // PRE/POST Index doesn't make sense with an immediate of zero
 
@@ -8468,7 +8468,7 @@ void emitter::emitIns_R_R_I(
     id->idReg2(reg2);
     if (EA_IS_CNS_TLSGD_RELOC(attr))
     {
-        id->idSetTlsGD();
+        id->idSetTlsGD(); //TODO: This is getting called more than needed. Investigate.
     }
     dispIns(id);
     appendToCurIG(id);
@@ -16124,6 +16124,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
             dst += emitOutputCall(ig, dst, id, code);
+            if (id->idIsTlsGD())
+            {
+
+            }
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
@@ -16152,6 +16156,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             code |= insEncodeReg_Rn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
+            if (id->idIsTlsGD() && id->idIsLargeCns())
+            {
+                emitRecordRelocation(odst, (void*)emitGetInsSC(id), IMAGE_REL_AARCH64_TLSDESC_LD64_LO12);
+            }
             break;
 
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
@@ -19213,7 +19221,7 @@ void emitter::emitDispInsHelp(
 
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
             assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
+            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD());
             emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
             emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
             break;
