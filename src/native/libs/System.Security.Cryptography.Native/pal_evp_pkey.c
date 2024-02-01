@@ -196,10 +196,12 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
         goto done;
     }
 
-    ctx = BN_CTX_new();
-
-    // Setup the scratch integers
-    if ((x = BN_new()) == NULL || (y = BN_new()) == NULL || (p1 = BN_new()) == NULL || (q1 = BN_new()) == NULL)
+    // Set up the scratch integers
+    if ((ctx = BN_CTX_new()) == NULL ||
+        (x = BN_new()) == NULL ||
+        (y = BN_new()) == NULL ||
+        (p1 = BN_new()) == NULL ||
+        (q1 = BN_new()) == NULL)
     {
         goto done;
     }

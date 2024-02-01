@@ -919,7 +919,7 @@ int local_BN_is_zero(const BIGNUM* a)
 
 int local_BN_is_one(const BIGNUM* a)
 {
-     return BN_abs_is_word(a, 1) && !a->neg;
+    return BN_abs_is_word(a, 1) && !a->neg;
 }
 
 int local_BN_abs_is_word(const BIGNUM *a, const BN_ULONG w)
