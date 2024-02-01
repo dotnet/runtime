@@ -756,7 +756,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static IEnumerable<string> VerifyLocals (MethodDefinition src, MethodDefinition linked)
 		{
-			let errs = VerifyBodyProperties (
+			var errs = VerifyBodyProperties (
 				src,
 				linked,
 				nameof (ExpectedLocalsSequenceAttribute),
@@ -935,8 +935,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			TypeDefinition srcImplementationDetails;
 			TypeDefinition linkedImplementationDetails;
-			foreach (var err in VerifyPrivateImplementationDetailsType (original.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails))
-				yield return err;
+			if (VerifyPrivateImplementationDetailsType (original.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails, out var errors))
+			{
+				foreach (var err in errors)
+					yield return err;
+			}
 			foreach (var methodName in expectedImplementationDetailsMethods) {
 				var originalMethod = srcImplementationDetails.Methods.FirstOrDefault (m => m.Name == methodName);
 				if (originalMethod == null)
@@ -950,16 +953,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			verifiedGeneratedTypes.Add (srcImplementationDetails.FullName);
 		}
 
-		static IEnumerable<string> VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails)
+		static bool VerifyPrivateImplementationDetailsType (ModuleDefinition src, ModuleDefinition linked, out TypeDefinition srcImplementationDetails, out TypeDefinition linkedImplementationDetails, out IEnumerable<string> errs)
 		{
+			errs = [];
 			srcImplementationDetails = src.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
 			if (srcImplementationDetails == null)
-				yield return "Could not locate <PrivateImplementationDetails> in the original assembly. Does your test use initializers?";
+				errs.Append("Could not locate <PrivateImplementationDetails> in the original assembly. Does your test use initializers?");
 
 			linkedImplementationDetails = linked.Types.FirstOrDefault (t => IsPrivateImplementationDetailsType (t));
 			if (linkedImplementationDetails == null)
-				yield return  "Could not locate <PrivateImplementationDetails> in the linked assembly";
+				errs.Append("Could not locate <PrivateImplementationDetails> in the linked assembly");
 
+			return !errs.Any();
 		}
 
 		protected virtual IEnumerable<string> VerifyArrayInitializers (MethodDefinition src, MethodDefinition linked)
@@ -977,8 +982,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				yield return $"`{nameof (KeptInitializerData)}` cannot be used on methods that don't have bodies";
 			TypeDefinition srcImplementationDetails;
 			TypeDefinition linkedImplementationDetails;
-			foreach (var err in VerifyPrivateImplementationDetailsType (src.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails))
-				yield return err;
+			if (VerifyPrivateImplementationDetailsType (src.Module, linked.Module, out srcImplementationDetails, out linkedImplementationDetails, out var errs))
+			{
+				foreach(var err in errs)
+					yield return err;
+			}
 
 			var possibleInitializerFields = src.Body.Instructions
 				.Where (ins => IsLdtokenOnPrivateImplementationDetails (srcImplementationDetails, ins))
