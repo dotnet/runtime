@@ -30,7 +30,13 @@ internal static class MsQuicConfiguration
 
         // Find the first certificate with private key, either from selection callback or from a provided collection.
         X509Certificate? certificate = null;
-        if (authenticationOptions.LocalCertificateSelectionCallback != null)
+        ReadOnlyCollection<X509Certificate2>? intermediates = null;
+        if (authenticationOptions.ClientCertificateContext is not null)
+        {
+            certificate = authenticationOptions.ClientCertificateContext.TargetCertificate;
+            intermediates = authenticationOptions.ClientCertificateContext.IntermediateCertificates;
+        }
+        else if (authenticationOptions.LocalCertificateSelectionCallback != null)
         {
             X509Certificate selectedCertificate = authenticationOptions.LocalCertificateSelectionCallback(
                 options,
@@ -69,7 +75,7 @@ internal static class MsQuicConfiguration
             }
         }
 
-        return Create(options, flags, certificate, null, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
+        return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
     public static MsQuicSafeHandle Create(QuicServerConnectionOptions options, string? targetHost)
