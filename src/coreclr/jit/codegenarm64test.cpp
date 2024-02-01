@@ -4914,12 +4914,28 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                                   SVE_PATTERN_ALL); // PTRUES  <Pd>.<T>{, <pattern>}
     theEmitter->emitIns_R_PATTERN(INS_sve_ptrues, EA_SCALABLE, REG_P15,
                                   INS_OPTS_SCALABLE_D); // PTRUES  <Pd>.<T>{, <pattern>}
+    // IF_SVE_DF_2A
+    theEmitter->emitIns_R_R(INS_sve_pnext, EA_SCALABLE, REG_P0, REG_P15,
+                            INS_OPTS_SCALABLE_B); // PNEXT   <Pdn>.<T>, <Pv>, <Pdn>.<T>
 
     // IF_SVE_DG_2A
     theEmitter->emitIns_R_R(INS_sve_rdffr, EA_SCALABLE, REG_P10, REG_P15,
                             INS_OPTS_SCALABLE_B); // RDFFR   <Pd>.B, <Pg>/Z
     theEmitter->emitIns_R_R(INS_sve_rdffrs, EA_SCALABLE, REG_P7, REG_P14,
                             INS_OPTS_SCALABLE_B); // RDFFRS  <Pd>.B, <Pg>/Z
+
+    // IF_SVE_DH_1A
+    theEmitter->emitIns_R(INS_sve_rdffr, EA_SCALABLE, REG_P8); // RDFFR   <Pd>.B
+
+    // IF_SVE_DJ_1A
+    theEmitter->emitIns_R(INS_sve_pfalse, EA_SCALABLE, REG_P13); // PFALSE  <Pd>.B
+
+    // IF_SVE_DI_2A
+    theEmitter->emitIns_R_R(INS_sve_ptest, EA_SCALABLE, REG_P2, REG_P14, INS_OPTS_SCALABLE_B); // PTEST   <Pg>, <Pn>.B
+
+    // IF_SVE_DK_3A
+    theEmitter->emitIns_R_R_R(INS_sve_cntp, EA_8BYTE, REG_R29, REG_P0, REG_P15,
+                              INS_OPTS_SCALABLE_D); // CNTP    <Xd>, <Pg>, <Pn>.<T>
 
     // IF_SVE_EP_3A
     theEmitter->emitIns_R_R_R(INS_sve_shadd, EA_SCALABLE, REG_V15, REG_P0, REG_V10,

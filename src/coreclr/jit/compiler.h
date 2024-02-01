@@ -1958,7 +1958,7 @@ struct NaturalLoopIterInfo
     unsigned IterVar = BAD_VAR_NUM;
 
 #ifdef DEBUG
-    // Tree that initializes induction varaible outside the loop.
+    // Tree that initializes induction variable outside the loop.
     // Only valid if HasConstInit is true.
     GenTree* InitTree = nullptr;
 #endif
@@ -2096,6 +2096,8 @@ class FlowGraphNaturalLoop
     void MatchInit(NaturalLoopIterInfo* info, BasicBlock* initBlock, GenTree* init);
     bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
     bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);
+    bool IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info);
+    bool InitBlockEntersLoopOnTrue(BasicBlock* initBlock);
     template<typename T>
     static bool EvaluateRelop(T op1, T op2, genTreeOps oper);
 public:
@@ -5861,15 +5863,13 @@ public:
 
     void fgChangeSwitchBlock(BasicBlock* oldSwitchBlock, BasicBlock* newSwitchBlock);
 
-    void fgReplaceSwitchJumpTarget(BasicBlock* blockSwitch, BasicBlock* newTarget, BasicBlock* oldTarget);
-
     void fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock);
 
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
     void fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ);
 
-    void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* newTarget, BasicBlock* oldTarget);
+    void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
 

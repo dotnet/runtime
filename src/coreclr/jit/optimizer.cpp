@@ -1727,7 +1727,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", entering->bbNum,
                     loop->GetHeader()->bbNum, entering->bbNum, target->bbNum);
             assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
-            fgReplaceJumpTarget(entering, target, loop->GetHeader());
+            fgReplaceJumpTarget(entering, loop->GetHeader(), target);
         }
     }
 }
@@ -2155,11 +2155,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             GenTree* clonedCompareTree   = clonedTree->AsOp()->gtOp1;
             assert(originalCompareTree->OperIsCompare());
             assert(clonedCompareTree->OperIsCompare());
-
-            // Flag compare and cloned copy so later we know this loop
-            // has a proper zero trip test.
-            originalCompareTree->gtFlags |= GTF_RELOP_ZTT;
-            clonedCompareTree->gtFlags |= GTF_RELOP_ZTT;
 
             // The original test branches to remain in the loop.  The
             // new cloned test will branch to avoid the loop.  So the
@@ -2972,7 +2967,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         JITDUMP("Entry edge " FMT_BB " -> " FMT_BB " becomes " FMT_BB " -> " FMT_BB "\n", enterBlock->bbNum,
                 header->bbNum, enterBlock->bbNum, preheader->bbNum);
 
-        fgReplaceJumpTarget(enterBlock, preheader, header);
+        fgReplaceJumpTarget(enterBlock, header, preheader);
     }
 
     optSetPreheaderWeight(loop, preheader);

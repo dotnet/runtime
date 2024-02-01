@@ -145,11 +145,11 @@ function send(msg: string) {
 }
 
 function logWSError(event: Event) {
-    originalConsoleMethods.error(`[${threadNamePrefix}] websocket error: ${event}`, event);
+    originalConsoleMethods.error(`[${threadNamePrefix}] proxy console websocket error: ${event}`, event);
 }
 
 function logWSClose(event: Event) {
-    originalConsoleMethods.error(`[${threadNamePrefix}] websocket closed: ${event}`, event);
+    originalConsoleMethods.debug(`[${threadNamePrefix}] proxy console websocket closed: ${event}`, event);
 }
 
 function setupWS() {

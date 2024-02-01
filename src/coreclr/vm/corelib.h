@@ -724,6 +724,7 @@ DEFINE_CLASS(CALLCONV_THISCALL,              CompilerServices,       CallConvThi
 DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFastcall)
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
+DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
 
 DEFINE_CLASS_U(Interop,                SafeHandle,         SafeHandle)
 DEFINE_FIELD_U(_ctorStackTrace,            SafeHandle,            m_ctorStackTrace)

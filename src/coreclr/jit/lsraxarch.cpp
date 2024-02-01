@@ -2500,6 +2500,52 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_AVX512F_BlendVariableMask:
+            {
+                assert(numArgs == 3);
+
+                if (op2->IsEmbMaskOp())
+                {
+                    // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
+                    assert(!op2->isRMWHWIntrinsic(compiler));
+
+                    if (isRMW)
+                    {
+                        assert(!op1->isContained());
+
+                        tgtPrefUse = BuildUse(op1);
+                        srcCount += 1;
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildDelayFreeUses(operand, op1);
+                        }
+                    }
+                    else
+                    {
+                        assert(op1->isContained() && op1->IsVectorZero());
+                        srcCount += BuildOperandUses(op1);
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildOperandUses(operand);
+                        }
+                    }
+
+                    assert(!op3->isContained());
+                    srcCount += BuildOperandUses(op3);
+
+                    buildUses = false;
+                }
+                break;
+            }
+
             case NI_AVX512F_PermuteVar8x64x2:
             case NI_AVX512F_PermuteVar16x32x2:
             case NI_AVX512F_VL_PermuteVar2x64x2:

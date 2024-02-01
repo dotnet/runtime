@@ -520,7 +520,7 @@ void BlockCountInstrumentor::RelocateProbes()
 
                 // Redirect any jumps
                 //
-                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+                m_comp->fgReplaceJumpTarget(pred, block, intermediary);
             }
         }
     }
@@ -1689,7 +1689,7 @@ void EfficientEdgeCountInstrumentor::RelocateProbes()
             while (criticalPreds.Height() > 0)
             {
                 BasicBlock* const pred = criticalPreds.Pop();
-                m_comp->fgReplaceJumpTarget(pred, intermediary, block);
+                m_comp->fgReplaceJumpTarget(pred, block, intermediary);
             }
         }
     }
