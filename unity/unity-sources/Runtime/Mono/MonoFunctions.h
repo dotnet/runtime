@@ -70,16 +70,12 @@ DO_API(gboolean, mono_metadata_signature_equal, (MonoMethodSignature * sig1, Mon
 DO_API(char, mono_signature_is_instance, (MonoMethodSignature * signature))
 DO_API(MonoMethod*, mono_method_get_last_managed, ())
 
-DO_API(void, mono_set_assemblies_path_null_separated, (const char* name))
-
 DO_API(gint32, mono_class_instance_size, (MonoClass * klass))
 DO_API(guint32, mono_class_get_type_token, (MonoClass * klass))
 DO_API(MonoProperty*, mono_class_get_property_from_name, (MonoClass * klass, const char *name))
 DO_API(MonoClass*, mono_class_from_mono_type, (MonoType * image))
 
 DO_API(int, mono_array_element_size, (MonoClass * classOfArray))
-
-DO_API(void, mono_set_dirs, (const char *assembly_dir, const char *config_dir))
 
 DO_API(MonoException*, mono_unity_loader_get_last_error_and_error_prepare_exception, (void))
 
