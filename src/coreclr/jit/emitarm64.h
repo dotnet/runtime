@@ -630,7 +630,7 @@ static bool isValidImm1(ssize_t value)
     return (value == 0) || (value == 1);
 };
 
-// Returns true if 'value' is a legal unsigned immediate 1 bit encoding (such as for PEXT).
+// Returns true if 'value' is a legal unsigned immediate 2 bit encoding (such as for PEXT).
 static bool isValidUimm2(ssize_t value)
 {
     return (0 <= value) || (value <= 3);
