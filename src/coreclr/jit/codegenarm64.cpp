@@ -3996,6 +3996,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
             ins = INS_casalh;
         }
         GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, dataReg, addrReg);
+
+        if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
+        {
+            instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
+            GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
     }
     else
     {
@@ -4059,6 +4065,12 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         // The following instruction includes a acquire half barrier
         GetEmitter()->emitIns_R_R(insLd, dataSize, targetReg, addrReg);
 
+        if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
+        {
+            instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
+            GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
+
         if (comparand->isContainedIntOrIImmed())
         {
             if (comparand->IsIntegralConst(0))
@@ -4088,12 +4100,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         instGen_MemoryBarrier();
 
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
-    }
-
-    if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
-    {
-        instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
-        GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
     }
 
     genProduceReg(treeNode);
