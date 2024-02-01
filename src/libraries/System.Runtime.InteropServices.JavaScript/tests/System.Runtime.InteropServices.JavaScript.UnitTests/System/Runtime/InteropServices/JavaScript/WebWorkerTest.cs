@@ -74,6 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             ManualResetEventSlim blocker = new ManualResetEventSlim(false);
             TaskCompletionSource never = new TaskCompletionSource();
+            TaskCompletionSource canceled = new TaskCompletionSource();
             SynchronizationContext capturedSynchronizationContext = null;
             TaskCompletionSource jswReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource sendReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -95,38 +96,43 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var shouldNotHitSend = false;
             var shouldNotHitPost = false;
             var hitAfterPost = false;
+            var hitAfterSend = false;
 
-            var canceledSend = Task.Run(() =>
+            var canceledSend = Task.Run(async () =>
             {
                 // this will be blocked until blocker.Set()
                 sendReady.SetResult();
+                await canceled.Task;
                 capturedSynchronizationContext.Send(_ =>
                 {
                     // then it should get canceled and not executed
                     shouldNotHitSend = true;
                 }, null);
+                hitAfterSend = true;
                 return Task.CompletedTask;
             });
 
             var canceledPost = Task.Run(() =>
             {
-                postReady.SetResult();
                 capturedSynchronizationContext.Post(_ =>
                 {
                     // then it should get canceled and not executed
                     shouldNotHitPost = true;
                 }, null);
                 hitAfterPost = true;
+                postReady.SetResult();
                 return Task.CompletedTask;
             });
 
             // make sure that jobs got the chance to enqueue
             await sendReady.Task;
             await postReady.Task;
-            await Task.Delay(100);
 
             // this could should be delivered immediately
             cts.Cancel();
+
+            // now we release helpers to use capturedSynchronizationContext
+            canceled.SetResult();
 
             // this will unblock the current pending work item
             blocker.Set();
@@ -137,6 +143,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.False(shouldNotHitSend);
             Assert.False(shouldNotHitPost);
             Assert.True(hitAfterPost);
+            Assert.False(hitAfterSend);
         }
 
         [Fact]
