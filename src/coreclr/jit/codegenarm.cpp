@@ -703,8 +703,8 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     emitAttr dataSize = emitActualTypeSize(data);
 
     regNumber tempReg  = treeNode->ExtractTempReg(RBM_ALLINT);
-    regNumber loadReg  = (targetReg != REG_NA) ? targetReg : treeNode->ExtractTempReg(RBM_ALLINT);
-    regNumber storeReg = dataReg;
+    regNumber storeReg = (treeNode->OperGet() == GT_XCHG) ? dataReg : treeNode->ExtractTempReg(RBM_ALLINT);
+    regNumber loadReg  = (targetReg != REG_NA) ? targetReg : storeReg;
 
     // Check allocator assumptions
     //
@@ -743,9 +743,6 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     //     bne retry
     //     dmb ish
 
-    BasicBlock* labelRetry = genCreateTempLabel();
-    genDefineTempLabel(labelRetry);
-
     instruction insLd = INS_ldrex;
     instruction insSt = INS_strex;
     if (varTypeIsByte(treeNode->TypeGet()))
@@ -759,12 +756,16 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         insSt = INS_strexh;
     }
 
+    instGen_MemoryBarrier();
+
+    BasicBlock* labelRetry = genCreateTempLabel();
+    genDefineTempLabel(labelRetry);
+
     // The following instruction includes a acquire half barrier
     GetEmitter()->emitIns_R_R(insLd, dataSize, loadReg, addrReg);
 
     if (treeNode->OperGet() == GT_XADD)
     {
-        storeReg = loadReg;
         if (data->isContainedIntOrIImmed())
         {
             genInstrWithConstant(INS_add, dataSize, storeReg, loadReg, data->AsIntConCommon()->IconValue(),
@@ -864,10 +865,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     //   compareFail:
     //     dmb ish
 
-    BasicBlock* labelRetry       = genCreateTempLabel();
-    BasicBlock* labelCompareFail = genCreateTempLabel();
-    genDefineTempLabel(labelRetry);
-
     instruction insLd = INS_ldrex;
     instruction insSt = INS_strex;
     if (varTypeIsByte(treeNode->TypeGet()))
@@ -881,20 +878,34 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         insSt = INS_strexh;
     }
 
+    instGen_MemoryBarrier();
+
+    BasicBlock* labelRetry       = genCreateTempLabel();
+    BasicBlock* labelCompareFail = genCreateTempLabel();
+    genDefineTempLabel(labelRetry);
+
     // The following instruction includes a acquire half barrier
     GetEmitter()->emitIns_R_R(insLd, dataSize, targetReg, addrReg);
 
     if (comparand->isContainedIntOrIImmed())
     {
-        assert(comparand->AsIntConCommon()->IconValue() <= INT32_MAX);
-        GetEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, targetReg,
-                                  (target_ssize_t)comparand->AsIntConCommon()->IconValue());
+        if (comparand->IsIntegralConst(0))
+        {
+            GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelCompareFail, targetReg);
+        }
+        else
+        {
+            assert(comparand->AsIntConCommon()->IconValue() <= INT32_MAX);
+            GetEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, targetReg,
+                                      (target_ssize_t)comparand->AsIntConCommon()->IconValue());
+            GetEmitter()->emitIns_J(INS_bne, labelCompareFail);
+        }
     }
     else
     {
         GetEmitter()->emitIns_R_R(INS_cmp, EA_4BYTE, targetReg, comparandReg);
+        GetEmitter()->emitIns_J(INS_bne, labelCompareFail);
     }
-    GetEmitter()->emitIns_J(INS_bne, labelCompareFail);
 
     // The following instruction includes a release half barrier
     GetEmitter()->emitIns_R_R_R(insSt, dataSize, exResultReg, dataReg, addrReg);

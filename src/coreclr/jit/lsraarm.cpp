@@ -609,6 +609,10 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
 
             buildInternalIntRegisterDefForNode(tree);
+            if (tree->OperGet() != GT_XCHG)
+            {
+                buildInternalIntRegisterDefForNode(tree);
+            }
 
             assert(!tree->gtGetOp1()->isContained());
             RefPosition* op1Use = BuildUse(tree->gtGetOp1());

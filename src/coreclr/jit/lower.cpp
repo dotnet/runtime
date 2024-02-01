@@ -629,13 +629,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerStoreLocCommon(node->AsLclVarCommon());
             break;
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_CMPXCHG:
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->Comparand());
             break;
 
+#ifndef TARGET_ARM
         case GT_XORR:
         case GT_XAND:
+#endif // TARGET_ARM
         case GT_XADD:
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;

@@ -439,7 +439,7 @@ INST1(strd,    "strd",   0,ST, IF_T2_G0,  0xE8400000)
                                            //  Rt,RT,[Rn],+-i8{!}T2_G0     1110100PU1W0nnnn ttttTTTTiiiiiiii   E840 0000
 INST1(strex,   "strex",  0,ST, IF_T2_O3,  0xE8400000)
                                            //  Rd,Rt,[Rn+i8]     T2_H1     111010000100nnnn ttttddddiiiiiiii   E840 0F00           imm(0-255)
-INST1(strexb,  "strexb", 0,ST, IF_T2_O2,  0xE8C00F50)
+INST1(strexb,  "strexb", 0,ST, IF_T2_O2,  0xE8C00F40)
                                            //  Rd,Rt,[Rn]        T2_E1     111010001100nnnn tttt11110100dddd   E8C0 0F4F
 INST1(strexd,  "strexd", 0,ST, IF_T2_O1,  0xE8C00070)
                                            //  Rd,Rt,RT,[Rn]     T2_G1     111010001100nnnn ttttTTTT0111dddd   E8C0 007F
