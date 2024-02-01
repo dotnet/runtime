@@ -561,7 +561,7 @@ emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, Mono
 		ret->inst_c0 = SIMD_EXTR_ARE_ALL_SET;
 		ret->inst_c1 = mono_class_value_size (klass, NULL);
 		return ret;
-	} else if (simd_size == 16 || simd_size == 12) {
+	} else if (simd_size == 12 || simd_size == 16) {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL_ARM64_V128_FAST, arg1->dreg, arg2->dreg);
 	} else {
 		return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
@@ -654,7 +654,7 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	guint32 nelems;
  	mini_get_simd_type_info (vector_class, &nelems);
 
-	// Override nelems for Vector3, with actual number of elements
+	// Override nelems for Vector3, with actual number of elements, instead of treating it as a 4-element vector (three elements + zero).
 	const char *klass_name = m_class_get_name (vector_class); 
 	if (!strcmp (klass_name, "Vector3"))
 		nelems = 3;
