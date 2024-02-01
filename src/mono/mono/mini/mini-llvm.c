@@ -6213,10 +6213,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					retval = LLVMConstNull(ret_type);
 
 					if (lhs) {
-						int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
-
-						if (mono_class_value_size (klass, NULL) == 12) 
-							len--;
+						// Vector3: ret_type is Vector3, lhs is Vector3 represented as a Vector4 (three elements + zero). We need to extract only the first 3 elements from lhs.
+						int len = mono_class_value_size (klass, NULL) == 12 ? 3 : LLVMGetVectorSize (LLVMTypeOf (lhs));  
 						
 						for (int i = 0; i < len; i++) {
 							elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
