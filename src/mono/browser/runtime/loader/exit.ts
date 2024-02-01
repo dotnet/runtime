@@ -26,7 +26,23 @@ export function assert_runtime_running() {
     }
 }
 
-export function register_exit_handlers() {
+
+export function installUnhandledErrorHandler() {
+    // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
+    if (ENVIRONMENT_IS_WEB) {
+        globalThis.addEventListener("unhandledrejection", unhandledrejection_handler);
+        globalThis.addEventListener("error", error_handler);
+    }
+}
+
+export function uninstallUnhandledErrorHandler() {
+    if (ENVIRONMENT_IS_WEB) {
+        globalThis.removeEventListener("unhandledrejection", unhandledrejection_handler);
+        globalThis.removeEventListener("error", error_handler);
+    }
+}
+
+export function registerEmscriptenExitHandlers() {
     if (!emscriptenModule.onAbort) {
         emscriptenModule.onAbort = onAbort;
     }
@@ -35,7 +51,7 @@ export function register_exit_handlers() {
     }
 }
 
-export function unregister_exit_handlers() {
+function unregisterEmscriptenExitHandlers() {
     if (emscriptenModule.onAbort == onAbort) {
         emscriptenModule.onAbort = undefined;
     }
@@ -43,7 +59,6 @@ export function unregister_exit_handlers() {
         emscriptenModule.onExit = undefined;
     }
 }
-
 function onExit(code: number) {
     mono_exit(code, loaderHelpers.exitReason);
 }
@@ -54,7 +69,8 @@ function onAbort(reason: any) {
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
-    unregister_exit_handlers();
+    unregisterEmscriptenExitHandlers();
+    uninstallUnhandledErrorHandler();
 
     // unify shape of the reason object
     const is_object = reason && typeof reason === "object";
@@ -135,8 +151,9 @@ export function mono_exit(exit_code: number, reason?: any): void {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (MonoWasmThreads && ENVIRONMENT_IS_WORKER && runtimeHelpers.nativeAbort) {
+    if (MonoWasmThreads && ENVIRONMENT_IS_WORKER && runtimeHelpers.runtimeReady && runtimeHelpers.nativeAbort) {
         // note that the reason is not passed to UI thread
+        runtimeHelpers.runtimeReady = false;
         runtimeHelpers.nativeAbort(reason);
         throw reason;
     }
@@ -256,34 +273,29 @@ function logOnExit(exit_code: number, reason: any) {
         }
     }
 }
+function unhandledrejection_handler(event: any) {
+    fatal_handler(event, event.reason);
+}
 
-export function installUnhandledErrorHandler() {
-    const handler = function fatal_handler(event: Event, reason: any) {
-        event.preventDefault();
-        try {
-            if (!reason) {
-                reason = new Error("Unhandled");
-            }
-            if (reason.stack === undefined) {
-                reason.stack = new Error().stack;
-            }
-            reason.stack = reason.stack + "";// string conversion (it could be getter)
-            if (!reason.silent) {
-                mono_log_error("Unhandled error:", reason);
-                mono_exit(1, reason);
-            }
-        } catch (err) {
-            // no not re-throw from the fatal handler
-        }
-    };
+function error_handler(event: any) {
+    fatal_handler(event, event.error);
+}
+
+function fatal_handler(event: any, reason: any) {
+    event.preventDefault();
     try {
-        // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
-        if (ENVIRONMENT_IS_WEB) {
-            globalThis.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
-            globalThis.addEventListener("error", (event) => handler(event, event.error));
+        if (!reason) {
+            reason = new Error("Unhandled");
+        }
+        if (reason.stack === undefined) {
+            reason.stack = new Error().stack;
+        }
+        reason.stack = reason.stack + "";// string conversion (it could be getter)
+        if (!reason.silent) {
+            mono_log_error("Unhandled error:", reason);
+            mono_exit(1, reason);
         }
     } catch (err) {
-        mono_exit(1, err);
-        throw err;
+        // no not re-throw from the fatal handler
     }
 }
