@@ -1130,6 +1130,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm7(emitGetInsSC(id)));       // iiiii
             break;
 
+        case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmm
+            assert((REG_V0 <= id->idReg3()) && (id->idReg3() <= REG_V7));
+            // assert(isValidUimm2(emitGetInsSC(id))); // ii
+            break;
+
         case IF_SVE_CZ_4A: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             assert(isPredicateRegister(id->idReg1())); // DDDD
@@ -10274,6 +10283,17 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_CY_3B;
             break;
 
+        case INS_sve_sdot:
+        case INS_sve_udot:
+            assert(insOptsNone(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmm
+            assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+            // assert(isValidUimm2(imm)); // ii
+            fmt = IF_SVE_EG_3A;
+            break;
+
         case INS_fmul: // by element, imm[0..3] selects the element of reg3
         case INS_fmla:
         case INS_fmls:
@@ -18034,6 +18054,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_18_to_16(id->idReg3()); // mmm
+            // code |= insEncodeUimm2_20_to_19(emitGetInsSC(id)); // ii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_CZ_4A: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
         case IF_SVE_DA_4A: // ............MMMM ..gggg.NNNN.DDDD -- SVE propagate break from previous partition
         {
@@ -21126,6 +21155,14 @@ void emitter::emitDispInsHelp(
             emitDispImm(emitGetInsSC(id), false, (fmt == IF_SVE_CY_3B));                           // iiiii
             break;
 
+        // <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+        case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true);  // ddddd
+            emitDispSveReg(id->idReg2(), INS_OPTS_SCALABLE_H, true);  // nnnnn
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_H, false); // mmm
+            // emitDispElementIndex(emitGetInsSC(id)); // ii
+            break;
+
         // <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
         case IF_SVE_CZ_4A: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
         {
@@ -23970,6 +24007,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_CY_3A: // ........xx.iiiii ...gggnnnnn.DDDD -- SVE integer compare with signed immediate
         case IF_SVE_CY_3B: // ........xx.iiiii ii.gggnnnnn.DDDD -- SVE integer compare with unsigned immediate
+        case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
