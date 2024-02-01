@@ -14,13 +14,11 @@ namespace System.Net
     internal sealed class HttpClientContentStream : Stream
     {
         private readonly StreamBuffer _buffer;
-        private readonly StrongBox<int> _refCount;
         private bool _disposed;
 
-        internal HttpClientContentStream(StreamBuffer buffer, StrongBox<int> refCount)
+        internal HttpClientContentStream(StreamBuffer buffer)
         {
             _buffer = buffer;
-            _refCount = refCount;
         }
 
         protected override void Dispose(bool disposing)
@@ -30,11 +28,7 @@ namespace System.Net
                 _disposed = true;
 
                 _buffer.AbortRead();
-
-                if (Interlocked.Decrement(ref _refCount.Value) == 0)
-                {
-                    _buffer.Dispose();
-                }
+                _buffer.Dispose();
             }
 
             base.Dispose(disposing);

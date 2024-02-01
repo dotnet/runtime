@@ -18,13 +18,11 @@ namespace System.Net
     {
         private readonly MemoryStream? _buffer;
         private readonly StreamBuffer _streamBuffer;
-        private readonly StrongBox<int> _refCount;
         private readonly bool _isBuffered;
         private bool _disposed;
 
-        public RequestStream(StrongBox<int> refCount, StreamBuffer streamBuffer, bool isBuffered)
+        public RequestStream(StreamBuffer streamBuffer, bool isBuffered)
         {
-            _refCount = refCount;
             if (isBuffered)
             {
                 _buffer = new MemoryStream();
@@ -186,11 +184,6 @@ namespace System.Net
             {
                 _disposed = true;
                 _streamBuffer.EndWrite();
-
-                if (Interlocked.Decrement(ref _refCount.Value) == 0)
-                {
-                    _streamBuffer.Dispose();
-                }
             }
 
             base.Dispose(disposing);
