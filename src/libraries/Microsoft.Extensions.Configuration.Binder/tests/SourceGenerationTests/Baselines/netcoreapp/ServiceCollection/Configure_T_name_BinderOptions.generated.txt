@@ -107,6 +107,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
+                if (!string.IsNullOrEmpty(section.Value) && !section.GetChildren().GetEnumerator().MoveNext())
+                {
+                    continue;
+                }
                 var value = new global::Program.MyClass2();
                 BindCore(section, ref value, defaultValueIfNotFound: false, binderOptions);
                 instance.Add(value);
