@@ -216,7 +216,7 @@
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-x86",
         "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-x86",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x86",
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x86"
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-x86"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-x64": {
@@ -228,7 +228,7 @@
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-x64",
         "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-x64",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x64",
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x64"
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-x64"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-arm": {
@@ -240,7 +240,7 @@
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-arm",
         "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-arm",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm",
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm"
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-arm"
       }
     },
     "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-arm64": {
@@ -252,7 +252,7 @@
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-arm64",
         "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-arm64",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm64",
-        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm64"
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.net8.maccatalyst-arm64": {
