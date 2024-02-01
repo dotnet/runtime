@@ -19900,21 +19900,6 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
     switch (fmt)
     {
-        case IF_SVE_CJ_2A: // ........xx...... .......nnnn.dddd -- SVE reverse predicate elements
-            code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
-            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
-            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
-            dst += emitOutput_Instr(dst, code);
-            break;
-
-        case IF_SVE_CK_2A: // ................ .......NNNN.DDDD -- SVE unpack predicate elements
-            code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
-            code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
-            dst += emitOutput_Instr(dst, code);
-            break;
-
         // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
@@ -20051,6 +20036,21 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
             code |= insEncodeReg_P_19_to_16(id->idReg3());                // MMMM
             code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CJ_2A: // ........xx...... .......nnnn.dddd -- SVE reverse predicate elements
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CK_2A: // ................ .......NNNN.DDDD -- SVE unpack predicate elements
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
+            code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
             dst += emitOutput_Instr(dst, code);
             break;
 
