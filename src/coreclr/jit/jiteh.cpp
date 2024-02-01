@@ -1986,7 +1986,8 @@ bool Compiler::fgNormalizeEHCase1()
             // handler.
             BasicBlock* newHndStart = BasicBlock::New(this, BBJ_ALWAYS, handlerStart);
             fgInsertBBbefore(handlerStart, newHndStart);
-            fgAddRefPred(handlerStart, newHndStart);
+            FlowEdge* newEdge = fgAddRefPred(handlerStart, newHndStart);
+            newEdge->setLikelihood(1.0);
 
             // Handler begins have an extra implicit ref count.
             // BasicBlock::New has already handled this for newHndStart.
@@ -2156,7 +2157,8 @@ bool Compiler::fgNormalizeEHCase2()
                         BasicBlock* newTryStart = BasicBlock::New(this, BBJ_ALWAYS, insertBeforeBlk);
                         newTryStart->bbRefs     = 0;
                         fgInsertBBbefore(insertBeforeBlk, newTryStart);
-                        fgAddRefPred(insertBeforeBlk, newTryStart);
+                        FlowEdge* const newEdge = fgAddRefPred(insertBeforeBlk, newTryStart);
+                        newEdge->setLikelihood(1.0);
 
                         // It's possible for a try to start at the beginning of a method. If so, we need
                         // to adjust the implicit ref counts as we've just created a new first bb
@@ -2372,7 +2374,8 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
 
             // Insert it right before the handler (and make it a pred of the handler)
             fgInsertBBbefore(handlerBb, filterBb);
-            fgAddRefPred(handlerBb, filterBb);
+            FlowEdge* const newEdge = fgAddRefPred(handlerBb, filterBb);
+            newEdge->setLikelihood(1.0);
             fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
 
             filterBb->bbCatchTyp = BBCT_FILTER;
@@ -2678,7 +2681,8 @@ bool Compiler::fgNormalizeEHCase3()
                     newLast->bbCodeOffsEnd = newLast->bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
                     newLast->inheritWeight(insertAfterBlk);
                     newLast->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
-                    fgAddRefPred(newLast, insertAfterBlk);
+                    FlowEdge* const newEdge = fgAddRefPred(newLast, insertAfterBlk);
+                    newEdge->setLikelihood(1.0);
 
                     // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
                     insertAfterBlk = newLast;
@@ -4340,7 +4344,8 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
                 // Change the bbTarget for bFilterLast from the old first 'block' to the new first 'bPrev'
                 fgRemoveRefPred(bFilterLast->GetTarget(), bFilterLast);
                 bFilterLast->SetTarget(bPrev);
-                fgAddRefPred(bPrev, bFilterLast);
+                FlowEdge* const newEdge = fgAddRefPred(bPrev, bFilterLast);
+                newEdge->setLikelihood(1.0);
             }
         }
 

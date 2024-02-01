@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
 import { ENVIRONMENT_IS_WORKER, Module, loaderHelpers } from "./globals";
@@ -61,7 +61,7 @@ export function schedule_background_exec(): void {
         }
     }
 
-    if (MonoWasmThreads && !ENVIRONMENT_IS_WORKER) {
+    if (WasmEnableThreads && !ENVIRONMENT_IS_WORKER) {
         // give threads chance to load before we run more synchronous code on UI thread
         postpone_schedule_background();
     }
@@ -78,7 +78,7 @@ export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
         // NOTE: Multi-threaded Module.safeSetTimeout() does the runtimeKeepalivePush() 
         // and non-Multi-threaded Module.safeSetTimeout does not runtimeKeepalivePush() 
         // but clearTimeout does not runtimeKeepalivePop() so we need to do it here in MT only.
-        if (MonoWasmThreads) Module.runtimeKeepalivePop();
+        if (WasmEnableThreads) Module.runtimeKeepalivePop();
     }
     lastScheduledTimeoutId = Module.safeSetTimeout(mono_wasm_schedule_timer_tick, shortestDueTimeMs);
 }
