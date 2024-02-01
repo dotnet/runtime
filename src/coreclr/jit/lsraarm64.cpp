@@ -700,7 +700,7 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 1);
             regMaskTP mask = RBM_NONE;
             if (tree->gtTreeID == 21)
-            //if (tree->IsIconHandle(GTF_ICON_TLS_HDL) && (tree->AsIntCon()->gtIconVal != 0) && (tree->gtFlags & GTF_ICON_SECREL_OFFSET))
+            if (((tree->gtFlags & GTF_ICON_SECREL_OFFSET) == GTF_ICON_SECREL_OFFSET))
             {
                 mask = genRegMask(REG_R0, TYP_I_IMPL);
             }
