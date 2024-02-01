@@ -91,8 +91,6 @@ thread_local MonoDomain *gCurrentDomain = NULL;
 MonoDomain *gRootDomain = NULL;
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
-static SString* s_AssemblyPaths;
-
 #define ASSERT_NOT_IMPLEMENTED printf("Function not implemented: %s\n", __func__);
 
 #define FIELD_ATTRIBUTE_PRIVATE               0x0001
@@ -799,23 +797,6 @@ MonoObject* EXPORT_CC mono_runtime_invoke_with_nested_object(MonoMethod *method,
             break;
     }
     return nullptr;
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_set_assemblies_path(const char* name)
-{
-    s_AssemblyPaths = new SString(SString::Utf8, name);
-}
-
-extern "C" EXPORT_API void EXPORT_CC mono_set_assemblies_path_null_separated (const char* name)
-{
-    s_AssemblyPaths = new SString();
-    while (*name != NULL)
-    {
-        size_t l = strlen(name);
-        s_AssemblyPaths->AppendUTF8(name);
-        s_AssemblyPaths->AppendUTF8(PATH_SEPARATOR);
-        name += l+1;
-    }
 }
 
 extern "C" EXPORT_API guint32 EXPORT_CC mono_signature_get_param_count(MonoMethodSignature *sig)

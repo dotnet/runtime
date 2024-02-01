@@ -63,8 +63,6 @@ EXPORTS
         mono_method_get_name
         mono_method_signature
         mono_runtime_invoke
-        mono_set_assemblies_path
-        mono_set_assemblies_path_null_separated
         mono_signature_get_param_count
         mono_signature_get_params
         mono_signature_get_return_type
