@@ -2099,7 +2099,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     unsigned             likelyLikelihoods[MAX_CAST_GUESSES] = {};
     int                  likelyClassCount                    = 0;
     comp->pickGDV(castHelper, castHelper->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
-                  likelihoods);
+                  likelyLikelihoods);
 
     if (likelyClassCount > 0)
     {
