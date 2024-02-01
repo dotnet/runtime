@@ -38,7 +38,7 @@ namespace System.Diagnostics
     }
 }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 namespace System.Threading
 {
     public partial class Monitor
