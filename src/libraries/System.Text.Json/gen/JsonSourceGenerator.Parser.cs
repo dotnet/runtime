@@ -593,7 +593,7 @@ namespace System.Text.Json.SourceGeneration
 
                     ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
                     propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, options, out hasExtensionDataProperty, out fastPathPropertyIndices);
-                    propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, options, constructorSetsRequiredMembers, ref constructionStrategy);
+                    propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
                 }
 
                 var typeRef = new TypeRef(type);
@@ -891,7 +891,9 @@ namespace System.Text.Json.SourceGeneration
                             // property is static or an indexer
                             propertyInfo.IsStatic || propertyInfo.Parameters.Length > 0 ||
                             // It is overridden by a derived property
-                            PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredMembers))
+                            PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredMembers) ||
+                            // It is shadowed by a derived property
+                            PropertyIsShadowed(propertyInfo, state.AddedProperties))
                         {
                             continue;
                         }
@@ -979,6 +981,13 @@ namespace System.Text.Json.SourceGeneration
                         ignoredMembers?.TryGetValue(property.Name, out ISymbol? ignoredMember) == true &&
                         ignoredMember.IsVirtual() &&
                         SymbolEqualityComparer.Default.Equals(property.Type, ignoredMember.GetMemberType());
+                }
+
+                bool PropertyIsShadowed(IPropertySymbol propertyInfo, Dictionary<string, (PropertyGenerationSpec, ISymbol, int index)> addedProperties)
+                {
+                    return addedProperties.TryGetValue(propertyInfo.Name, out (PropertyGenerationSpec propertySpec, ISymbol symbol, int index) propertyItem) &&
+                        propertyInfo.IsOverriddenOrShadowedBy(propertyItem.symbol) &&
+                        propertyItem.propertySpec.DefaultIgnoreCondition != JsonIgnoreCondition.Always;
                 }
             }
 
@@ -1423,7 +1432,6 @@ namespace System.Text.Json.SourceGeneration
             private List<PropertyInitializerGenerationSpec>? ParsePropertyInitializers(
                 ParameterGenerationSpec[]? constructorParameters,
                 List<PropertyGenerationSpec>? properties,
-                SourceGenerationOptionsSpec? options,
                 bool constructorSetsRequiredMembers,
                 ref ObjectConstructionStrategy constructionStrategy)
             {
@@ -1459,10 +1467,7 @@ namespace System.Text.Json.SourceGeneration
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,
                             };
 
-                            if (propertyInitializers?.Any(p => propertyInitializer.Name.Equals(p.Name, GetStringComparison(options))) is not true)
-                            {
-                                (propertyInitializers ??= new()).Add(propertyInitializer);
-                            }
+                            (propertyInitializers ??= new()).Add(propertyInitializer);
                         }
 
                         static ParameterGenerationSpec? GetMatchingConstructorParameter(PropertyGenerationSpec propSpec, ParameterGenerationSpec[]? paramGenSpecs)
@@ -1472,9 +1477,6 @@ namespace System.Text.Json.SourceGeneration
                             bool MatchesConstructorParameter(ParameterGenerationSpec paramSpec)
                                 => propSpec.MemberName.Equals(paramSpec.Name, StringComparison.OrdinalIgnoreCase);
                         }
-
-                        static StringComparison GetStringComparison(SourceGenerationOptionsSpec? options)
-                            => options?.PropertyNameCaseInsensitive == true ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
                     }
                 }
 
