@@ -1239,7 +1239,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     FieldDesc* pFieldDesc = refField->GetField();
-    return pFieldDesc->IsEnCNew() ? FALSE : TRUE;
+    return pFieldDesc->IsThreadStatic() || pFieldDesc->IsEnCNew() ? FALSE : TRUE;
 }
 FCIMPLEND
 
@@ -1281,19 +1281,15 @@ FCIMPL2(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
 
     // IsFastPathSupported needs to checked before calling this method.
     _ASSERTE(!pFieldDesc->IsEnCNew());
+    _ASSERTE(!refField->GetField()->IsThreadStatic());
 
     GCPROTECT_BEGIN(refField);
 
-    if (refField->GetField()->IsThreadStatic()) {
-        ret = Thread::GetStaticFieldAddress(pFieldDesc);
-    }
-    else {
-        PTR_BYTE base = 0;
-        if (!pFieldDesc->IsRVA()) // For RVA the base is ignored.
-            base = pFieldDesc->GetBase();
+    PTR_BYTE base = 0;
+    if (!pFieldDesc->IsRVA()) // For RVA the base is ignored.
+        base = pFieldDesc->GetBase();
 
-        ret = pFieldDesc->GetStaticAddressHandle(base);
-    }
+    ret = pFieldDesc->GetStaticAddressHandle(base);
 
     *isBoxed = ((pFieldDesc->GetFieldType() == ELEMENT_TYPE_VALUETYPE && !pFieldDesc->IsRVA())) ? TRUE : FALSE;
 

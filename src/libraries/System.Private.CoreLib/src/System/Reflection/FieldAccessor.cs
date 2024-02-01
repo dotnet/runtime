@@ -45,7 +45,7 @@ namespace System.Reflection
             }
             else if (!RuntimeFieldHandle.IsFastPathSupported(_fieldInfo))
             {
-                // Currently this is only true for newly added fields from EnC.
+                // Currently this is true for [ThreadStatic] cases and for fields added from EnC.
                 _addressOrOffset = default;
                 _fieldAccessType = FieldAccessorType.SlowPath;
             }

@@ -74,7 +74,6 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_constIntField), null, 102 };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_stringField), null, "static" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_objectField), null, MyStruct.s_objectField };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_fcnPtr), null, (IntPtr)45 };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intPtr), null, MyStruct.s_intPtrForComparison };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), new MyStruct(), MyStruct.s_rvaIntField };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.threadStatic_intField), null, 100 };
@@ -82,14 +81,28 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.stringField), new MyStruct(), "non static" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.intField), new MyStruct(), 101 };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.intPtr), new MyStruct(), MyStruct.intPtrForComparison };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.fcnPtr), new MyStruct(), (IntPtr)44 };
-
             yield return new object[] { typeof(MyStruct_OnlyPrimitiveTypes), nameof(MyStruct_OnlyPrimitiveTypes.intField), new MyStruct_OnlyPrimitiveTypes(), 101 };
         }
 
         [Theory]
         [MemberData(nameof(GetValue_TestData))]
         public void GetValue(Type type, string name, object obj, object expected)
+        {
+            FieldInfo fieldInfo = GetField(type, name);
+            Assert.Equal(expected, fieldInfo.GetValue(obj));
+        }
+
+        public static IEnumerable<object[]> GetValue_TestData_WithFunctionPointers()
+        {
+            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.s_fcnPtr), null, (IntPtr)45 };
+            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.fcnPtr), new MyStructWithFunctionPointers(), (IntPtr)44 };
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97830", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97833", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [MemberData(nameof(GetValue_TestData_WithFunctionPointers))]
+        public void GetValueWithFunctionPointers(Type type, string name, object obj, object expected)
         {
             FieldInfo fieldInfo = GetField(type, name);
             Assert.Equal(expected, fieldInfo.GetValue(obj));
@@ -148,7 +161,6 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_stringField_Set), null, "new", "new" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_objectField_Set), null, MyStruct.s_objectField, MyStruct.s_objectField };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intPtr_Set), null, MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_fcnPtr_Set), null, (IntPtr)201, (IntPtr)201 };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.threadStatic_intField_Set), null, 100, 100 };
 
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.boolField), new MyStruct(), true, true };
@@ -157,12 +169,36 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.stringField), new MyStruct(), "new", "new" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.objectField), new MyStruct(), MyStruct.s_objectField, MyStruct.s_objectField };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.intPtr), new MyStruct(), MyStruct.s_intPtrForComparison, MyStruct.s_intPtrForComparison };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.fcnPtr), new MyStruct(), (IntPtr)200, (IntPtr)200 };
         }
 
         [Theory]
         [MemberData(nameof(SetValue_TestData))]
         public void SetValue(Type type, string name, object obj, object value, object expected)
+        {
+            FieldInfo fieldInfo = GetField(type, name);
+            object original = fieldInfo.GetValue(obj);
+            try
+            {
+                fieldInfo.SetValue(obj, value);
+                Assert.Equal(expected, fieldInfo.GetValue(obj));
+            }
+            finally
+            {
+                fieldInfo.SetValue(obj, original);
+            }
+        }
+
+        public static IEnumerable<object[]> SetValue_TestData_FunctionPointers()
+        {
+            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.s_fcnPtr_Set), null, (IntPtr)201, (IntPtr)201 };
+            yield return new object[] { typeof(MyStructWithFunctionPointers), nameof(MyStructWithFunctionPointers.fcnPtr), new MyStructWithFunctionPointers(), (IntPtr)200, (IntPtr)200 };
+        }
+
+        [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97830", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97833", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [MemberData(nameof(SetValue_TestData_FunctionPointers))]
+        public void SetValueWithFunctionPointers(Type type, string name, object obj, object value, object expected)
         {
             FieldInfo fieldInfo = GetField(type, name);
             object original = fieldInfo.GetValue(obj);
@@ -187,6 +223,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/97829", TestRuntimes.Mono)]
         [MemberData(nameof(SetValue_Invalid_TestData))]
         public void SetValue_Invalid(Type type, string name, object obj, object value, Type exceptionType)
         {
@@ -546,9 +583,9 @@ namespace System.Reflection.Tests
         public static MyStruct s_myStruct_Set = new MyStruct();
         public static MyStruct s_myStruct_GetAndSet = new MyStruct();
 
-        public enum ShortEnum : short {}
-        public enum IntEnum {}
-        public enum LongEnum : long {}
+        public enum ShortEnum : short { }
+        public enum IntEnum { }
+        public enum LongEnum : long { }
         public ShortEnum shortEnumField;
         public IntEnum intEnumField;
         public LongEnum longEnumField;
@@ -692,17 +729,23 @@ namespace System.Reflection.Tests
             public unsafe static int* s_intPtr = (int*)43;
             public unsafe static int* s_intPtr_Set = (int*)0;
             public unsafe static object s_intPtrForComparison = Pointer.Box((void*)43, typeof(int*));
-            public unsafe static delegate*<void> s_fcnPtr = (delegate*<void>)45;
-            public unsafe static delegate*<void> s_fcnPtr_Set = (delegate*<void>)0;
             public bool boolField = true;
             public int intField = 101;
             public object objectField = null;
             public string stringField = "non static";
             public const int s_constIntField = 102;
             public unsafe int* intPtr = (int*)42;
-            public unsafe delegate*<void> fcnPtr = (delegate*<void>)44;
 
             public MyStruct() { }
+        }
+
+        public struct MyStructWithFunctionPointers
+        {
+            public unsafe static delegate*<void> s_fcnPtr = (delegate*<void>)45;
+            public unsafe static delegate*<void> s_fcnPtr_Set = (delegate*<void>)0;
+            public unsafe delegate*<void> fcnPtr = (delegate*<void>)44;
+
+            public MyStructWithFunctionPointers() { }
         }
     }
 }
