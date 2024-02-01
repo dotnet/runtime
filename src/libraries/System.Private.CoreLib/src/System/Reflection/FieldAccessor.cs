@@ -16,6 +16,7 @@ namespace System.Reflection
         private readonly unsafe MethodTable* _methodTable;
         private readonly FieldAccessorType _fieldAccessType;
         private readonly PrimitiveFieldSize _primitiveFieldSize;
+
         internal FieldAccessor(FieldInfo fieldInfo)
         {
             _fieldInfo = (RtFieldInfo)fieldInfo;
@@ -29,6 +30,7 @@ namespace System.Reflection
             else if (!declaringType.DomainInitialized)
             {
                 InvokeClassConstructor();
+                declaringType.DomainInitialized = true;
             }
 
             // Cached the method table for performance.
@@ -38,7 +40,7 @@ namespace System.Reflection
             }
 
             // Initialize for the type of field.
-            if (declaringType is null || declaringType.ContainsGenericParameters)
+            if (declaringType is not null && declaringType.ContainsGenericParameters)
             {
                 _addressOrOffset = default;
                 _fieldAccessType = FieldAccessorType.NoInvoke;
@@ -341,19 +343,24 @@ namespace System.Reflection
                 }
                 else
                 {
-                    ThrowHelperArgumentException(target);
+                    ThrowHelperArgumentException(target, _fieldInfo);
                 }
             }
         }
 
         private static void ThrowHelperTargetException() => throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
-        private void ThrowHelperArgumentException(object target) => throw new ArgumentException(
-            SR.Format(SR.Arg_FieldDeclTarget, _fieldInfo.Name, _fieldInfo.DeclaringType, target.GetType()));
-        private static void ThrowHelperFieldAccessException(string fieldName, string? declaringTypeName) => throw new FieldAccessException(SR.Format(SR.RFLCT_CannotSetInitonlyStaticField, fieldName, declaringTypeName));
+
+        private static void ThrowHelperArgumentException(object target, FieldInfo fieldInfo) =>
+            throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, fieldInfo.Name, fieldInfo.DeclaringType, target.GetType()));
+
+        private static void ThrowHelperFieldAccessException(string fieldName, string? declaringTypeName) =>
+            throw new FieldAccessException(SR.Format(SR.RFLCT_CannotSetInitonlyStaticField, fieldName, declaringTypeName));
 
         internal void VerifyInitOnly()
         {
             Debug.Assert(IsStatic());
+            Debug.Assert(((RuntimeType)_fieldInfo.DeclaringType!).DomainInitialized);
+
             if ((_fieldInfo.Attributes & FieldAttributes.InitOnly) == FieldAttributes.InitOnly)
             {
                 ThrowHelperFieldAccessException(_fieldInfo.Name, _fieldInfo.DeclaringType!.FullName);
