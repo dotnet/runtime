@@ -24,15 +24,15 @@ namespace Internal.IL
         /// </summary>
         public static int ComputeMaxStack(this MethodIL methodIL)
         {
-            const short StackHeightNotSet = short.MinValue;
-            const int StackallocThreshold = 256 / sizeof(short);
+            const int StackHeightNotSet = int.MinValue;
+            const int StackAllocThreshold = 256 / sizeof(int);
 
             var ilReader = new ILReader(methodIL.GetILBytes());
-            short stackHeight = 0;
-            short maxStack = 0;
+            int stackHeight = 0;
+            int maxStack = 0;
 
-            Span<short> stackHeights = ilReader.Size <= StackallocThreshold ?
-                stackalloc short[StackallocThreshold].Slice(0, ilReader.Size) : new short[ilReader.Size];
+            Span<int> stackHeights = ilReader.Size <= StackAllocThreshold ?
+                stackalloc int[StackAllocThreshold].Slice(0, ilReader.Size) : new int[ilReader.Size];
 
             stackHeights.Fill(StackHeightNotSet);
 
@@ -209,7 +209,7 @@ namespace Internal.IL
                             int target = ilReader.ReadBranchDestination(opcode);
                             hasReadOperand = true;
 
-                            short adjustment;
+                            int adjustment;
                             bool isConditional;
                             if (opcode is ILOpcode.br or ILOpcode.br_s or ILOpcode.leave or ILOpcode.leave_s)
                             {
@@ -253,7 +253,7 @@ namespace Internal.IL
 
                             MethodSignature sig = obj is MethodSignature methodSignature ?
                                 methodSignature : ((MethodDesc)obj).Signature;
-                            short adjustment = (short)sig.Length;
+                            int adjustment = sig.Length;
                             if (opcode == ILOpcode.newobj)
                             {
                                 adjustment--;
