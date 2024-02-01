@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
@@ -187,7 +188,7 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
-    if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
+    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolSize)) {
         // ActiveIssue https://github.com/dotnet/runtime/issues/75602
         config.pthreadPoolSize = 7;
     }
