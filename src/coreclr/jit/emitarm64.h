@@ -1069,6 +1069,12 @@ inline static bool insOptsScalableWordsOrQuadwords(insOpts opt)
     return (insOptsScalableWords(opt) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
+inline static bool insOptsScalableDoubleWordsOrQuadword(insOpts opt)
+{
+    // `opt` is a double-word or quad-word.
+    return ((opt == INS_OPTS_SCALABLE_D) || (opt == INS_OPTS_SCALABLE_Q));
+}
+
 inline static bool insOptsScalableAtLeastHalf(insOpts opt)
 {
     // `opt` is any of the half and above scalable types.
