@@ -711,6 +711,52 @@ namespace System.Net.Quic.Tests
             await serverConnection.DisposeAsync();
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task Server_CertificateWithEphemeralKey_Throws()
+        {
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(Server_CertificateWithEphemeralKey_Throws), ephemeralKey: true);
+            Configuration.Certificates.CleanupCertificates(nameof(Server_CertificateWithEphemeralKey_Throws));
+
+            try
+            {
+                QuicListenerOptions listenerOptions = new QuicListenerOptions()
+                {
+                    ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                    ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                    ConnectionOptionsCallback = (_, _, _) =>
+                    {
+                        var serverOptions = CreateQuicServerOptions();
+                        serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
+                        serverOptions.ServerAuthenticationOptions.ServerCertificateContext = SslStreamCertificateContext.Create(serverCertificate, chain);
+                        return ValueTask.FromResult(serverOptions);
+                    }
+                };
+                await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+                QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+                // Use different target host on purpose to get RemoteCertificateNameMismatch ssl error.
+                clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+                // client connection attempt will fail
+                await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateQuicConnection(clientOptions));
+
+                // server-side failure will be reported from AcceptConnectionAsync
+                AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
+                Assert.Contains("ephemeral", e.Message);
+            }
+            finally
+            {
+                Configuration.Certificates.CleanupCertificates(nameof(Server_CertificateWithEphemeralKey_Throws));
+                serverCertificate.Dispose();
+                foreach (X509Certificate c in chain)
+                {
+                    c.Dispose();
+                }
+            }
+
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
