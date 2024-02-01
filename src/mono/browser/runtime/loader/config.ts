@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
