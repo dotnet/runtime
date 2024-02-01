@@ -71,8 +71,7 @@
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(WasmEnableThreads)"
-                      Descriptor="$(_Descriptor)"
-                      Condition="'$(WasmEnableThreads)' == 'true'"/>
+                      Descriptor="$(_Descriptor)"/>
     </ItemGroup>
 
     <Message
