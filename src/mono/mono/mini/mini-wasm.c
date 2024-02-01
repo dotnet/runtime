@@ -775,6 +775,7 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		// inlinearray and fixed both work by having a single field that is bigger than its element type.
 		// we also don't want to scalarize a struct that has padding in its metadata, even if it would fit.
 		if (field_size != size) {
+			/*
 			g_printf (
 				"%s (size == %d): %s %s field_size == %d\n",
 				m_class_get_name (klass),
@@ -783,6 +784,7 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 				field->name,
 				field_size
 			);
+			*/
 			return FALSE;
 		} else if (MONO_TYPE_ISSTRUCT (t)) {
 			if (!mini_wasm_is_scalar_vtype (t, etype))

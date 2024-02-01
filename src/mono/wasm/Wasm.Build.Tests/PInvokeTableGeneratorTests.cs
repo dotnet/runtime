@@ -779,11 +779,13 @@ namespace Wasm.Build.Tests
                         var paires = accept_and_return_pair(pair);
                         Console.WriteLine(""paires.B="" + paires.B);
 
-                        MyInlineArray ia = new ();
-                        for (int i = 0; i < 2; i++)
-                            ia[i] = i;
-                        var iares = accept_and_return_inlinearray(ia);
-                        Console.WriteLine(""iares[1]="" + iares[1]);
+                        // Interpreter and AOT implementations of this are broken.
+                        if (true) {
+                            var ia = InlineArrayTest1();
+                            var iares = InlineArrayTest2(ia);
+                            Console.WriteLine($""ia[1]={ia[1]} &ia={RefAsAddress(ref ia)} &ia[0]={RefAsAddress(ref ia[0])} &ia[1]={RefAsAddress(ref ia[1])} *&ia[1]=={ReadThroughAddress(ref ia[1])}"");
+                            Console.WriteLine($""iares[1]={iares[1]} &iares={RefAsAddress(ref iares)} &iares[0]={RefAsAddress(ref iares[0])} &iares[1]={RefAsAddress(ref iares[1])}"");
+                        }
 
                         MyFixedArray fa = new ();
                         for (int i = 0; i < 2; i++)
@@ -792,6 +794,27 @@ namespace Wasm.Build.Tests
                         Console.WriteLine(""fares.elements[1]="" + fares.elements[1]);
 
                         return (int)res.Value;
+                    }
+
+                    public static unsafe T ReadThroughAddress<T> (ref T r) {
+                        var ptr = RefAsAddress(ref r);
+                        ref T rr = ref Unsafe.AsRef<T>((void *)ptr);
+                        return rr;
+                    }
+
+                    public static unsafe IntPtr RefAsAddress<T> (ref T r) {
+                        return new IntPtr(Unsafe.AsPointer(ref r));
+                    }
+
+                    public static unsafe MyInlineArray InlineArrayTest1 () {
+                        MyInlineArray ia = new ();
+                        for (int i = 0; i < 2; i++)
+                            ia[i] = i;
+                        return ia;
+                    }
+
+                    public static unsafe MyInlineArray InlineArrayTest2 (MyInlineArray ia) {
+                        return accept_and_return_inlinearray(ia);
                     }
 
                     [DllImport(""wasm-abi"", EntryPoint=""accept_double_struct_and_return_float_struct"")]
@@ -819,7 +842,7 @@ namespace Wasm.Build.Tests
                     public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
                 }";
 
-            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>";
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
             var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
 
             buildArgs = ExpandBuildArgs(buildArgs,

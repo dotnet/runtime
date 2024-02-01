@@ -1597,10 +1597,11 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 	case PINVOKE_ARG_WASM_VALUETYPE_RESULT:
 		// We pass the return value address in arg0 so fill it in, we already
 		//  reserved space for it earlier.
-		g_printf ("wasm valuetype result address == %d\n", frame->retval);
+		g_assert (frame->retval);
 		margs->iargs[0] = (gpointer*)frame->retval;
 		// The return type is void so retval should be NULL
 		margs->retval = NULL;
+		margs->is_float_ret = 0;
 		break;
 	case PINVOKE_ARG_INT:
 		margs->retval = (gpointer*)frame->retval;
