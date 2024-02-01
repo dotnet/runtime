@@ -2344,7 +2344,7 @@ namespace Microsoft.Extensions
                         ""Elements"":
                         {
                             ""Typdde"": ""UserCredentials"",
-                            ""poop"": ""00"",
+                            ""foo"": ""00"",
                             ""111"": """",
                             ""BaseUrl"": ""cccccc"",
                             ""Valid"": {
