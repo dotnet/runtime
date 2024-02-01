@@ -4725,6 +4725,16 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_P0, REG_V0, INS_OPTS_SCALABLE_S,
                               INS_SCALABLE_OPTS_WIDE); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
 
+    // IF_SVE_CJ_2A
+    theEmitter->emitIns_R_R(INS_sve_rev, EA_SCALABLE, REG_P1, REG_P2,
+                            INS_OPTS_SCALABLE_B); // REV     <Pd>.<T>, <Pn>.<T>
+    theEmitter->emitIns_R_R(INS_sve_rev, EA_SCALABLE, REG_P4, REG_P5,
+                            INS_OPTS_SCALABLE_H); // REV     <Pd>.<T>, <Pn>.<T>
+    theEmitter->emitIns_R_R(INS_sve_rev, EA_SCALABLE, REG_P3, REG_P7,
+                            INS_OPTS_SCALABLE_S); // REV     <Pd>.<T>, <Pn>.<T>
+    theEmitter->emitIns_R_R(INS_sve_rev, EA_SCALABLE, REG_P0, REG_P6,
+                            INS_OPTS_SCALABLE_D); // REV     <Pd>.<T>, <Pn>.<T>
+
     // IF_SVE_CM_3A
     theEmitter->emitIns_R_R_R(INS_sve_clasta, EA_SCALABLE, REG_V31, REG_P7, REG_V31,
                               INS_OPTS_SCALABLE_B); // CLASTA  <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
