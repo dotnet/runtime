@@ -54,11 +54,9 @@
     <!-- Compatibility with VS 17.0/.NET SDK 6.0.1xx  -->
     <MicrosoftCodeAnalysisVersion_4_0>4.0.1</MicrosoftCodeAnalysisVersion_4_0>
     <!-- Compatibility with VS 17.4/.NET SDK 7.0.1xx -->
-    <!--
-      The exact version is a moving target until we ship.
-      It should never go ahead of the Roslyn version included in the SDK version in dotnet/arcade's global.json to avoid causing breaks in product construction.
-    -->
     <MicrosoftCodeAnalysisVersion_4_4>4.4.0</MicrosoftCodeAnalysisVersion_4_4>
+    <!-- Compatibility with VS 17.8/.NET SDK 8.0.1xx -->
+    <MicrosoftCodeAnalysisVersion_4_8>4.8.0</MicrosoftCodeAnalysisVersion_4_8>
     <!-- Compatibility with the latest Visual Studio Preview release -->
     <!--
       The exact version is always a moving target. This version should never go ahead of the version of Roslyn that is included in the most recent
@@ -68,7 +66,7 @@
       Source-build builds the product with the most recent previously source-built release. Thankfully, these two requirements line up nicely
       such that any version that satisfies the VS version requirement will also satisfy the .NET SDK version requirement because of how we ship.
     -->
-    <MicrosoftCodeAnalysisVersion_LatestVS>4.7.0</MicrosoftCodeAnalysisVersion_LatestVS>
+    <MicrosoftCodeAnalysisVersion_LatestVS>4.8.0</MicrosoftCodeAnalysisVersion_LatestVS>
     <!-- Some of the analyzer dependencies used by ILLink project -->
     <MicrosoftCodeAnalysisBannedApiAnalyzersVersion>3.3.5-beta1.23270.2</MicrosoftCodeAnalysisBannedApiAnalyzersVersion>
   </PropertyGroup>
