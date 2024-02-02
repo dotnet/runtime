@@ -243,7 +243,7 @@
         ;; x1: ExInfo*
         bl          RhThrowHwEx
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
+ALTERNATE_ENTRY RhpThrowHwEx2
 
         ;; no return
         EMIT_BREAKPOINT
@@ -333,7 +333,7 @@ NotHijacked
         ;; x1: ExInfo*
         bl          RhThrowEx
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
+ALTERNATE_ENTRY RhpThrowEx2
 
         ;; no return
         EMIT_BREAKPOINT
@@ -379,7 +379,7 @@ NotHijacked
         ;; x1 contains the address of the new ExInfo
         bl          RhRethrow
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
+ALTERNATE_ENTRY RhpRethrow2
 
         ;; no return
         EMIT_BREAKPOINT
@@ -446,7 +446,7 @@ ClearSuccess_Catch
         ;; x0 still contains the exception object
         blr         x1
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+ALTERNATE_ENTRY RhpCallCatchFunclet2
 
         ;; x0 contains resume IP
 
@@ -551,7 +551,7 @@ ClearSuccess
         ;;
         blr         x0
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
+ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
         ldr         x1, [sp, #rsp_offset_x1]        ;; reload REGDISPLAY pointer
 
@@ -612,7 +612,7 @@ SetSuccess
         ;; x0 still contains the exception object
         blr         x1
 
-    EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
+ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ldp         d8, d9,   [sp, #0x00]
         ldp         d10, d11, [sp, #0x10]

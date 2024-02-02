@@ -71,7 +71,7 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         // r1 contains the address of the ExInfo
         bl          C_FUNC(RhThrowHwEx)
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
+GLOBAL_LABEL RhpThrowHwEx2
 
         // no return
         EMIT_BREAKPOINT
@@ -176,7 +176,7 @@ LOCAL_LABEL(NotHiJacked):
         // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
+GLOBAL_LABEL RhpThrowEx2
 
         // no return
         EMIT_BREAKPOINT
@@ -237,7 +237,7 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         // r1 contains the address of the new ExInfo
         blx    C_FUNC(RhRethrow)
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
+ALTERNATE_ENTRY RhpRethrow2
 
         // no return
         EMIT_BREAKPOINT
@@ -320,7 +320,7 @@ LOCAL_LABEL(ClearSuccess_Catch):
         // r0 <- exception object
         blx         r3                                 // call handler funclet
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+GLOBAL_LABEL RhpCallCatchFunclet2
 
         str         r0, [sp, #rsp_offset_r0]             // Save the result
 
@@ -421,7 +421,7 @@ LOCAL_LABEL(ClearSuccess):
 
         blx         r2                                  // handler funclet address
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
+GLOBAL_LABEL RhpCallFinallyFunclet2
 
         ldr         r1, [sp, #rsp_offset_r1]        // reload REGDISPLAY pointer
 
@@ -497,7 +497,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         //    r1 = establisher frame
         blx         r12
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
+GLOBAL_LABEL RhpCallFilterFunclet2
 
         // R0 contains the result of the filter execution
 
