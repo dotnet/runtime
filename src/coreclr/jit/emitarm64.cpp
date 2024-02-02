@@ -943,6 +943,11 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(datasize == EA_8BYTE);
             break;
 
+        case IF_SVE_CK_2A: // ................ .......NNNN.DDDD -- SVE unpack predicate elements
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isPredicateRegister(id->idReg2())); // NNNN
+            break;
+
         // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
@@ -7577,6 +7582,13 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(isPredicateRegister(reg2));                     // VVVV
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             fmt = IF_SVE_DF_2A;
+            break;
+
+        case INS_sve_punpkhi:
+        case INS_sve_punpklo:
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isPredicateRegister(reg2)); // NNNN
+            fmt = IF_SVE_CK_2A;
             break;
 
         case INS_sve_rdffr:
@@ -17848,6 +17860,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_CK_2A: // ................ .......NNNN.DDDD -- SVE unpack predicate elements
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
+            code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
@@ -21017,6 +21036,11 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_D, false); // mmmmm
             break;
 
+        case IF_SVE_CK_2A: // ................ .......NNNN.DDDD -- SVE unpack predicate elements
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_H, true);  // DDDD
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_B, false); // NNNN
+            break;
+
         // <Zdn>.<T>, <Pg>, <Zdn>.<T>, <Zm>.<T>
         case IF_SVE_CM_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally broadcast element to vector
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                    // ddddd
@@ -23932,6 +23956,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_CK_2A: // ................ .......NNNN.DDDD -- SVE unpack predicate elements
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
