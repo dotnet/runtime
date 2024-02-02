@@ -2928,9 +2928,6 @@ void ProcessInputs(string groupName, (string templateFileName, Dictionary<string
 
     Directory.CreateDirectory(outputDirectory);
 
-    Console.WriteLine($"{outputDirectory}");
-    Console.WriteLine($"{testListFileName}");
-
     using (var testListFile = new StreamWriter(testListFileName, append: false))
     {
         foreach (var input in inputs)
@@ -2972,7 +2969,4 @@ void ProcessInput(StreamWriter testListFile, string groupName, (string templateF
 
     testListFile.WriteLine(fileName);
     File.WriteAllText(fileName, template);
-
-        Console.WriteLine($"{fileName}");
-
 }
