@@ -582,11 +582,12 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
                                                                                   : (int64_t)(int32_t)cns->Value);
             }
 
-            // Folding these requires some proof that it is ok.
-            // if (op1->OperIs(ScevOper::AddRec))
-            //{
-            //    return op1;
-            //}
+            if (op1->OperIs(ScevOper::AddRec))
+            {
+                // TODO: This requires some proof that it is ok, but currently
+                // we do not rely on this.
+                return op1;
+            }
 
             return (op1 == unop->Op1) ? unop : NewExtension(unop->Oper, unop->Type, op1);
         }
@@ -953,8 +954,6 @@ PhaseStatus Compiler::optInductionVariables()
                     if (scev != nullptr)
                     {
                         JITDUMP("[%06u] => ", dspTreeID(node));
-                        DBEXEC(verbose, DumpScev(scev));
-                        JITDUMP("\n  => ", dspTreeID(node));
                         Scev* folded = scevContext.Fold(scev);
                         DBEXEC(verbose, DumpScev(folded));
                         JITDUMP("\n");
