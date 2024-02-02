@@ -3555,6 +3555,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
+    if (call->gtFlags & GTF_TLS_GET_ADDR)
+    {
+        retSize = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);     
+    }
+
     DebugInfo di;
     // We need to propagate the debug information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
@@ -3622,6 +3627,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // We just need to emit "call reg" in this case.
         //
         assert(genIsValidIntReg(target->GetRegNum()));
+
+        if (call->gtFlags & GTF_TLS_GET_ADDR)
+        {
+            GenTree* mthdHandle = (GenTree*)call->gtCallMethHnd;
+            assert(mthdHandle != nullptr && mthdHandle->IsIconHandle(GTF_ICON_TLS_HDL));
+            methHnd = (CORINFO_METHOD_HANDLE) mthdHandle->AsIntCon()->gtIconVal;
+        }
 
         // clang-format off
         genEmitCall(emitter::EC_INDIR_R,

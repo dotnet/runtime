@@ -478,6 +478,7 @@ namespace ILCompiler.DependencyAnalysis
                     *(int*)location = (int)value;
                     break;
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
                     *(long*)location = value;

@@ -13193,6 +13193,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         id->idReg3(ireg);
         assert(xreg == REG_NA);
+        if (EA_IS_CNS_TLSGD_RELOC(retSize))
+        {
+            id->idSetTlsGD();
+        }
     }
     else
     {
@@ -16126,7 +16130,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputCall(ig, dst, id, code);
             if (id->idIsTlsGD())
             {
-
+                emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie,
+                                     IMAGE_REL_AARCH64_TLSDESC_CALL);
             }
             break;
 
