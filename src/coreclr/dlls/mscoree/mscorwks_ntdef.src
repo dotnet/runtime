@@ -55,24 +55,18 @@ EXPORTS
         mono_field_get_parent
         mono_image_get_table_rows
         coreclr_initialize_domain
-        mono_metadata_signature_equal
         mono_metadata_type_equal
-        mono_method_full_name
         mono_method_get_class
         mono_method_get_last_managed
-        mono_method_get_name
         mono_method_signature
         mono_runtime_invoke
         mono_signature_get_param_count
         mono_signature_get_params
         mono_signature_get_return_type
-        mono_signature_is_instance
         mono_thread_attach
         mono_thread_current
         mono_thread_detach
         mono_thread_has_sufficient_execution_stack
-        mono_type_get_name
-        mono_type_get_name_full
         mono_type_get_type
         mono_unity_allocation_granularity
         mono_unity_class_has_failure
