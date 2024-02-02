@@ -3464,8 +3464,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 3);
 
-                // comparand
-                GenTree* op3 = impPopStack().val;
+                GenTree* op3 = impPopStack().val; // comparand
                 if (varTypeIsSmall(callType))
                 {
                     // small types need the comparand to have its upper bits zeroed
