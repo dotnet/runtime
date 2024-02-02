@@ -2181,6 +2181,9 @@ public:
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
 
+    template<typename TFunc>
+    BasicBlockVisit VisitAllExitBlocks(TFunc func);
+
     BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
@@ -7378,6 +7381,9 @@ public:
 #endif
 
     PhaseStatus optInductionVariables();
+    bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
+    void optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statement* stmt);
+    bool optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
     // Redundant branch opts
     //

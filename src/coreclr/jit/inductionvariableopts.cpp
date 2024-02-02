@@ -171,9 +171,8 @@ class ScalarEvolutionContext
 
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree);
     Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore, Scev* start, BasicBlock* stepDefBlock, GenTree* stepDefData);
-    Scev* MakeAddRecFromRecursiveScev(Scev* start, Scev* scev, Scev* recursiveScev);
-    GenTreeLclVarCommon* GetSsaDef(GenTreeLclVarCommon* lcl, BasicBlock** defBlock);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
+    Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
     bool TrackedLocalVariesInLoop(unsigned lclNum);
 
 public:
@@ -229,26 +228,6 @@ public:
     Scev* Fold(Scev* scev);
 };
 
-GenTreeLclVarCommon* ScalarEvolutionContext::GetSsaDef(GenTreeLclVarCommon* lcl, BasicBlock** defBlock)
-{
-    assert(lcl->OperIs(GT_LCL_VAR, GT_PHI_ARG));
-    if (!lcl->HasSsaName())
-        return nullptr;
-
-    LclVarDsc*           dsc    = m_comp->lvaGetDesc(lcl);
-    LclSsaVarDsc*        ssaDsc = dsc->GetPerSsaData(lcl->GetSsaNum());
-    GenTreeLclVarCommon* ssaDef = ssaDsc->GetDefNode();
-    if (ssaDef == nullptr)
-    {
-        assert(lcl->GetSsaNum() == SsaConfig::FIRST_SSA_NUM);
-        // TODO: We should handle zero-inited locals and parameters in some proper way...
-        return nullptr;
-    }
-    assert(ssaDef->OperIsLocalStore());
-    *defBlock = ssaDsc->GetBlock();
-    return ssaDef;
-}
-
 Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
 {
     if (tree->OperIsConst())
@@ -288,6 +267,16 @@ bool ScalarEvolutionContext::TrackedLocalVariesInLoop(unsigned lclNum)
     return false;
 }
 
+Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
+{
+    if (tree->IsIconHandle() || !tree->TypeIs(TYP_INT, TYP_LONG))
+    {
+        return nullptr;
+    }
+
+    return NewConstant(tree->TypeGet(), tree->AsIntConCommon()->IntegralValue());
+}
+
 Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
 {
     switch (tree->OperGet())
@@ -295,9 +284,10 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_LNG:
         {
-            return NewConstant(tree->TypeGet(), tree->AsIntConCommon()->IntegralValue());
+            return CreateScevForConstant(tree->AsIntConCommon());
         }
         case GT_LCL_VAR:
+        case GT_PHI_ARG:
         {
             if (!tree->AsLclVarCommon()->HasSsaName())
             {
@@ -311,8 +301,29 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
             if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
             {
                 // Invariant local
-                assert(!TrackedLocalVariesInLoop(tree->AsLclVarCommon()->GetLclNum()));
+                GenTreeLclVarCommon* def = ssaDsc->GetDefNode();
+                if ((def != nullptr) && def->Data()->OperIs(GT_CNS_INT, GT_CNS_LNG))
+                {
+                    // For constant definitions from outside the loop we prefer to inline the constant.
+                    // TODO: Maybe we shouldn't but should just do it when we dump the scev?
+
+                    return CreateScevForConstant(def->Data()->AsIntConCommon());
+                }
+
                 return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum());
+            }
+
+            if (ssaDsc->GetDefNode() == nullptr)
+            {
+                // GT_CALL retbuf def?
+                return nullptr;
+            }
+
+            if (ssaDsc->GetDefNode()->GetLclNum() != tree->AsLclVarCommon()->GetLclNum())
+            {
+                // Should be a def of the parent
+                assert(dsc->lvIsStructField && (ssaDsc->GetDefNode()->GetLclNum() == dsc->lvParentLcl));
+                return nullptr;
             }
 
             return Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode());
@@ -356,36 +367,33 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
                 return nullptr;
             }
 
-            LclVarDsc* dsc = m_comp->lvaGetDesc(store);
-
-            assert(enterSsa->GetLclNum() == store->GetLclNum());
-            LclSsaVarDsc* enterSsaDsc = dsc->GetPerSsaData(enterSsa->GetSsaNum());
-
-            assert((enterSsaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(enterSsaDsc->GetBlock()));
-
-            // TODO: Represent initial value? E.g. "for (; arg < 10; arg++)" => <L, InitVal(arg), 1>?
-            // Also zeroed locals.
-            if (enterSsaDsc->GetDefNode() == nullptr)
-            {
-                return nullptr;
-            }
-
-            Scev* enterScev = Analyze(enterSsaDsc->GetBlock(), enterSsaDsc->GetDefNode());
+            Scev* enterScev = Analyze(block, enterSsa);
 
             if (enterScev == nullptr)
             {
                 return nullptr;
             }
 
-            BasicBlock*          stepDefBlock;
-            GenTreeLclVarCommon* stepDef = GetSsaDef(backedgeSsa, &stepDefBlock);
-            assert(stepDef != nullptr); // This should always exist since it comes from a backedge.
+            LclVarDsc*           dsc    = m_comp->lvaGetDesc(store);
+            LclSsaVarDsc*        ssaDsc = dsc->GetPerSsaData(backedgeSsa->GetSsaNum());
 
-            GenTree* stepDefData = stepDef->Data();
+            if (ssaDsc->GetDefNode() == nullptr)
+            {
+                // GT_CALL retbuf def
+                return nullptr;
+            }
+
+            if (ssaDsc->GetDefNode()->GetLclNum() != store->GetLclNum())
+            {
+                assert(dsc->lvIsStructField && ssaDsc->GetDefNode()->GetLclNum() == dsc->lvParentLcl);
+                return nullptr;
+            }
+
+            assert(ssaDsc->GetBlock() != nullptr);
 
             // We currently do not handle complicated addrecs. We can do this
-            // by inserting a symbolic node in the cache and analyzing with it
-            // cached it. It would allow us to model things like
+            // by inserting a symbolic node in the cache and analyzing while it
+            // is part of the cache. It would allow us to model
             //
             //   int i = 0;
             //   while (i < n)
@@ -410,7 +418,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
             // The main issue is that it requires cache invalidation afterwards
             // and turning the recursive result into an addrec.
             //
-            return CreateSimpleAddRec(store, enterScev, stepDefBlock, stepDefData);
+            return CreateSimpleAddRec(store, enterScev, ssaDsc->GetBlock(), ssaDsc->GetDefNode()->Data());
         }
         case GT_CAST:
         {
@@ -498,41 +506,6 @@ Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStor
     return NewAddRec(m_loop, enterScev, stepScev);
 }
 
-//------------------------------------------------------------------------
-// MakeAddRecFromRecursiveScev: Given a SCEV and a recursive SCEV that the first one may contain,
-// create a non-recursive add-rec from it.
-//
-// Parameters:
-//   scev - The scev
-//   recursiveScev - A symbolic node whose appearence represents an appearence of "scev"
-//
-// Returns:
-//   A non-recursive addrec
-//
-// Remarks:
-//   Currently only handles simple binary addition
-//
-Scev* ScalarEvolutionContext::MakeAddRecFromRecursiveScev(Scev* startScev, Scev* scev, Scev* recursiveScev)
-{
-    if (!scev->OperIs(ScevOper::Add))
-    {
-        return nullptr;
-    }
-
-    ScevBinop* add = (ScevBinop*)scev;
-    if ((add->Op1 == recursiveScev) && (add->Op2 != recursiveScev) && add->Op2->OperIs(ScevOper::Constant, ScevOper::AddRec))
-    {
-        return NewAddRec(m_loop, startScev, add->Op2);
-    }
-
-    if ((add->Op2 == recursiveScev) && add->Op1->OperIs(ScevOper::Constant, ScevOper::AddRec))
-    {
-        return NewAddRec(m_loop, startScev, add->Op1);
-    }
-
-    return nullptr;
-}
-
 Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
 {
     Scev* result;
@@ -587,9 +560,9 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
                 return NewConstant(unop->Type, unop->OperIs(ScevOper::ZeroExtend) ? (uint64_t)(int32_t)cns->Value : (int64_t)(int32_t)cns->Value);
             }
 
+            // Folding these requires some proof that it is ok.
             //if (op1->OperIs(ScevOper::AddRec))
             //{
-            //    // TODO: We need to prove the extension can be removed safely...
             //    return op1;
             //}
 
@@ -659,6 +632,139 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
     }
 }
 
+bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
+{
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+
+    BasicBlockVisit result = loop->VisitAllExitBlocks([=](BasicBlock* exit) {
+        if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        {
+            JITDUMP("  Exit " FMT_BB " does not need a sink; V%02u is not live-in\n", exit->bbNum, lclNum);
+            return BasicBlockVisit::Continue;
+        }
+
+        for (FlowEdge* predEdge = BlockPredsWithEH(exit); predEdge != nullptr; predEdge = predEdge->getNextPredEdge())
+        {
+            if (!loop->ContainsBlock(predEdge->getSourceBlock()))
+            {
+                JITDUMP("  Cannot safely sink widened version of V%02u into exit " FMT_BB " of " FMT_LP "; it has a non-loop pred " FMT_BB "\n", lclNum, exit->bbNum, loop->GetIndex(), predEdge->getSourceBlock()->bbNum);
+                return BasicBlockVisit::Abort;
+            }
+        }
+
+        JITDUMP("  V%02u is live into exit " FMT_BB "; will sink the widened value\n", lclNum, exit->bbNum);
+        return BasicBlockVisit::Continue;
+        });
+
+    return result == BasicBlockVisit::Continue;
+}
+
+bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
+{
+    bool anySunk = false;
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    loop->VisitAllExitBlocks([=, &anySunk](BasicBlock* exit) {
+        if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        {
+            return BasicBlockVisit::Continue;
+        }
+
+        GenTree* narrowing = gtNewCastNode(TYP_INT, gtNewLclvNode(newLclNum, TYP_LONG), false, TYP_INT);
+        GenTree* store = gtNewStoreLclVarNode(lclNum, narrowing);
+        Statement* newStmt = fgNewStmtFromTree(store);
+        JITDUMP("Narrow IV local V%02u live into exit block " FMT_BB "; sinking a narrowing\n", lclNum, exit->bbNum);
+        DISPSTMT(newStmt);
+        fgInsertStmtAtBeg(exit, newStmt);
+        anySunk = true;
+
+        return BasicBlockVisit::Continue;
+        });
+
+    return anySunk;
+}
+
+void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statement* stmt)
+{
+    struct ReplaceVisitor : GenTreeVisitor<ReplaceVisitor>
+    {
+    private:
+        unsigned m_lclNum;
+        unsigned m_newLclNum;
+
+    public:
+        bool MadeChanges = false;
+
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ReplaceVisitor(Compiler* comp, unsigned lclNum, unsigned newLclNum) : GenTreeVisitor(comp), m_lclNum(lclNum), m_newLclNum(newLclNum)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (node->OperIs(GT_CAST))
+            {
+                GenTreeCast* cast = node->AsCast();
+                if ((cast->gtCastType == TYP_LONG) && cast->IsUnsigned())
+                {
+                    GenTree* op = cast->CastOp();
+                    if (op->OperIs(GT_LCL_VAR) && (op->AsLclVarCommon()->GetLclNum() == m_lclNum))
+                    {
+                        *use = m_compiler->gtNewLclvNode(m_newLclNum, TYP_LONG);
+                        MadeChanges = true;
+                        return fgWalkResult::WALK_SKIP_SUBTREES;
+                    }
+                }
+            }
+            else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD) && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            {
+                switch (node->OperGet())
+                {
+                case GT_LCL_VAR:
+                    node->AsLclVarCommon()->SetLclNum(m_newLclNum);
+                    // No cast needed -- the backend allows TYP_INT uses of TYP_LONG locals.
+                    break;
+                case GT_LCL_FLD:
+                case GT_STORE_LCL_FLD: // TODO: Do we need to skip widening if we have one of these?
+                    node->AsLclFld()->SetLclNum(m_newLclNum);
+                    m_compiler->lvaSetVarDoNotEnregister(m_newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                    break;
+                case GT_STORE_LCL_VAR:
+                    node->AsLclVarCommon()->SetLclNum(m_newLclNum);
+                    node->AsLclVarCommon()->gtType = TYP_LONG;
+                    node->AsLclVarCommon()->Data() = m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
+                    break;
+                }
+
+                MadeChanges = true;
+            }
+
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    ReplaceVisitor visitor(this, lclNum, newLclNum);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+    if (visitor.MadeChanges)
+    {
+        compCurStmt = stmt;
+        //stmt->SetRootNode(fgMorphTree(stmt->GetRootNode()));
+        gtSetStmtInfo(stmt);
+        fgSetStmtSeq(stmt);
+        JITDUMP("New tree:\n", dspTreeID(stmt->GetRootNode()));
+        DISPTREE(stmt->GetRootNode());
+        JITDUMP("\n");
+    }
+    else
+    {
+        JITDUMP("No replacements made\n");
+    }
+}
+
 //------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
 //
@@ -669,24 +775,23 @@ PhaseStatus Compiler::optInductionVariables()
 {
     JITDUMP("*************** In optInductionVariables()\n");
 
-    fgDispBasicBlocks(true);
-
     m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
     ScalarEvolutionContext scevContext(this);
 
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         JITDUMP("Analyzing scalar evolution in ");
-        FlowGraphNaturalLoop::Dump(loop);
+        DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
         scevContext.ResetForLoop(loop);
 
         loop->VisitLoopBlocksReversePostOrder([=, &scevContext](BasicBlock* block) {
             DBEXEC(verbose, block->dspBlockHeader(this));
+            JITDUMP("\n");
 
             for (Statement* stmt : block->Statements())
             {
-                JITDUMP("\n");
                 DISPSTMT(stmt);
+                JITDUMP("\n");
 
                 for (GenTree* node : stmt->TreeList())
                 {
@@ -694,18 +799,122 @@ PhaseStatus Compiler::optInductionVariables()
                     if (scev != nullptr)
                     {
                         JITDUMP("[%06u] => ", dspTreeID(node));
-                        DumpScev(scev);
+                        DBEXEC(verbose, DumpScev(scev));
+                        JITDUMP("\n  => ", dspTreeID(node));
                         Scev* folded = scevContext.Fold(scev);
-                        JITDUMP(" => ");
-                        DumpScev(folded);
+                        DBEXEC(verbose, DumpScev(folded));
                         JITDUMP("\n");
                     }
                 }
+
+                JITDUMP("\n");
             }
 
             return BasicBlockVisit::Continue;
         });
     }
 
-    return PhaseStatus::MODIFIED_NOTHING;
+    bool changed = false;
+
+#ifdef TARGET_64BIT
+    JITDUMP("Widening primary induction variables:\n");
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        JITDUMP("Processing ");
+        DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
+        scevContext.ResetForLoop(loop);
+
+        for (Statement* stmt : loop->GetHeader()->Statements())
+        {
+            if (!stmt->IsPhiDefnStmt())
+            {
+                break;
+            }
+
+            JITDUMP("\n");
+
+            DISPSTMT(stmt);
+
+            GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
+            if (genActualType(lcl) != TYP_INT)
+            {
+                JITDUMP("  Type is %s, no widening to be done\n", varTypeName(genActualType(lcl)));
+                continue;
+            }
+
+            Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
+            if (scev == nullptr)
+            {
+                JITDUMP("  Could not analyze header PHI\n");
+                continue;
+            }
+
+            scev = scevContext.Fold(scev);
+            JITDUMP("  => ");
+            DBEXEC(verbose, DumpScev(scev));
+            JITDUMP("\n");
+            if (!scev->OperIs(ScevOper::AddRec))
+            {
+                JITDUMP("  Not an addrec\n");
+                continue;
+            }
+
+            ScevAddRec* addRec = (ScevAddRec*)scev;
+
+            JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lcl->GetLclNum(), loop->GetIndex());
+
+            if (!optCanSinkWidenedIV(lcl->GetLclNum(), loop))
+            {
+                continue;
+            }
+
+            changed = true;
+            unsigned newLclNum = lvaGrabTemp(false DEBUGARG("Widened primary induction variable"));
+            JITDUMP("  Replacing V%02u with a widened version V%02u\n", lcl->GetLclNum(), newLclNum);
+
+            GenTree* initVal;
+            if (addRec->Start->OperIs(ScevOper::Constant))
+            {
+                ScevConstant* cns = (ScevConstant*)addRec->Start;
+                initVal = gtNewIconNode((int64_t)(uint32_t)(((ScevConstant*)addRec->Start)->Value), TYP_LONG);
+            }
+            else
+            {
+                LclVarDsc* lclDsc = lvaGetDesc(lcl);
+                initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), lclDsc->lvNormalizeOnLoad() ? lclDsc->TypeGet() : TYP_INT), true, TYP_LONG);
+            }
+
+            JITDUMP("Adding initialization of new widened local to preheader:\n");
+            GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
+            BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
+            Statement* initStmt = fgNewStmtFromTree(widenStore);
+            fgInsertStmtAtEnd(preheader, initStmt);
+            DISPSTMT(initStmt);
+            JITDUMP("\n");
+
+            loop->VisitLoopBlocks([=](BasicBlock* block) {
+
+                compCurBB = block;
+                for (Statement* stmt : block->NonPhiStatements())
+                {
+                    JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lcl->GetLclNum(), newLclNum, dspTreeID(stmt->GetRootNode()));
+                    DISPSTMT(stmt);
+                    JITDUMP("\n");
+                    optReplaceWidenedIV(lcl->GetLclNum(), newLclNum, stmt);
+                }
+
+                return BasicBlockVisit::Continue;
+                });
+
+            changed |= optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
+        }
+    }
+#endif
+
+    if (changed)
+    {
+        fgSsaBuild();
+    }
+
+    return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
