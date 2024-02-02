@@ -758,31 +758,31 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
             //tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRefCallUse, gtCloneExpr(tlsCallParam2));
 
-            if (verbose)
-            {
-                printf("tlsRootOffset:\n");
-                DISPTREE(tlsRootOffset);
-                printf("tlsCallParam1:\n");
-                DISPTREE(tlsCallParam1);
-                printf("tlsCallParam2:\n");
-                DISPTREE(tlsCallParam2);
-                printf("tlsCallIndir:\n");
-                DISPTREE(tlsCallIndir);
-                printf("tlsRefCall:\n");
-                DISPTREE(tlsRefCall);
-                //printf("tlsRefCallDef:\n");
-                //DISPTREE(tlsRefCallDef);
-                printf("tlsRootAddr:\n");
-                DISPTREE(tlsRootAddr);
+            //if (verbose)
+            //{
+            //    printf("tlsRootOffset:\n");
+            //    DISPTREE(tlsRootOffset);
+            //    printf("tlsCallParam1:\n");
+            //    DISPTREE(tlsCallParam1);
+            //    printf("tlsCallParam2:\n");
+            //    DISPTREE(tlsCallParam2);
+            //    printf("tlsCallIndir:\n");
+            //    DISPTREE(tlsCallIndir);
+            //    printf("tlsRefCall:\n");
+            //    DISPTREE(tlsRefCall);
+            //    //printf("tlsRefCallDef:\n");
+            //    //DISPTREE(tlsRefCallDef);
+            //    printf("tlsRootAddr:\n");
+            //    DISPTREE(tlsRootAddr);
 
-                //DISPTREE(tlsRefCallDef);
-                //printf("tlsRefCallUse:\n");
-                //DISPTREE(tlsRefCallUse);
-                //printf("tebResultDef:\n");
-                //DISPTREE(tebResultDef);
-                //printf("tebResultUse:\n");
-                //DISPTREE(tebResultUse);
-            }
+            //    //DISPTREE(tlsRefCallDef);
+            //    //printf("tlsRefCallUse:\n");
+            //    //DISPTREE(tlsRefCallUse);
+            //    //printf("tebResultDef:\n");
+            //    //DISPTREE(tebResultDef);
+            //    //printf("tebResultUse:\n");
+            //    //DISPTREE(tebResultUse);
+            //}
 
             tlsRootAddr = tlsRefCall;
         }

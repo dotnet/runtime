@@ -3628,7 +3628,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //
         assert(genIsValidIntReg(target->GetRegNum()));
 
-        bool specialCase = call->gtFlags & GTF_TLS_GET_ADDR;
+        bool specialCase = false;
+#ifdef TARGET_ARM64
+        specialCase      = call->gtFlags & GTF_TLS_GET_ADDR;
+#endif
         if (specialCase)
         {
             GenTree* mthdHandle = (GenTree*)call->gtCallMethHnd;
