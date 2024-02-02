@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>Debug;Release;Checked</Configurations>
-    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <SupportProject Include="$(TestLibraryProjectPath)" />

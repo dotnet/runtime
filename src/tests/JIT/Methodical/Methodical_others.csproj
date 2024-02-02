@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'minifullaot'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
