@@ -895,7 +895,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
 
     if (comparand->isContainedIntOrIImmed())
     {
-        if (comparand->IsIntegralConst(0))
+        if (comparand->IsIntegralConst(0) && emitter::isLowRegister(targetReg))
         {
             GetEmitter()->emitIns_J_R(INS_cbnz, EA_4BYTE, labelCompareFail, targetReg);
         }
