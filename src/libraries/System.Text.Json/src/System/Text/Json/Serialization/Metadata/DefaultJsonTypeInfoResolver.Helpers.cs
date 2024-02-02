@@ -136,9 +136,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags))
             {
-                // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
+                // Ignore:
+                // - indexers
+                // - virtual properties that have overrides that were [JsonIgnore]d
+                // - shadowed properties
                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                    PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredProperties))
+                    PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredProperties) ||
+                    PropertyIsShadowed(propertyInfo, state.AddedProperties))
                 {
                     continue;
                 }
@@ -258,6 +262,13 @@ namespace System.Text.Json.Serialization.Metadata
                 ignoredMembers?.TryGetValue(propertyInfo.Name, out JsonPropertyInfo? ignoredMember) == true &&
                 ignoredMember.IsVirtual &&
                 propertyInfo.PropertyType == ignoredMember.PropertyType;
+        }
+
+        private static bool PropertyIsShadowed(PropertyInfo propertyInfo, Dictionary<string, (JsonPropertyInfo, int)> addedProperties)
+        {
+            return addedProperties.TryGetValue(propertyInfo.Name, out (JsonPropertyInfo propertyInfo, int index) other) &&
+                propertyInfo.Name == other.propertyInfo.MemberName && propertyInfo.DeclaringType?.IsAssignableFrom(other.propertyInfo.DeclaringType) is true &&
+                !other.propertyInfo.IsIgnored;
         }
 
         private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo)
