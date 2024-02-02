@@ -66,52 +66,68 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws[wasm_ws_receive_status_ptr] = receive_status_ptr;
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
-        if (ws[wasm_ws_is_aborted]) return;
-        if (!loaderHelpers.is_runtime_running()) return;
-        open_promise_control.resolve(ws);
-        prevent_timer_throttling();
+        try {
+            if (ws[wasm_ws_is_aborted]) return;
+            if (!loaderHelpers.is_runtime_running()) return;
+            open_promise_control.resolve(ws);
+            prevent_timer_throttling();
+        } catch (error: any) {
+            mono_log_warn("failed to propagate WebSocket open event: " + error.toString());
+        }
     };
     const local_on_message = (ev: MessageEvent) => {
-        if (ws[wasm_ws_is_aborted]) return;
-        if (!loaderHelpers.is_runtime_running()) return;
-        _mono_wasm_web_socket_on_message(ws, ev);
-        prevent_timer_throttling();
+        try {
+            if (ws[wasm_ws_is_aborted]) return;
+            if (!loaderHelpers.is_runtime_running()) return;
+            _mono_wasm_web_socket_on_message(ws, ev);
+            prevent_timer_throttling();
+        } catch (error: any) {
+            mono_log_warn("failed to propagate WebSocket message event: " + error.toString());
+        }
     };
     const local_on_close = (ev: CloseEvent) => {
-        ws.removeEventListener("message", local_on_message);
-        if (ws[wasm_ws_is_aborted]) return;
-        if (!loaderHelpers.is_runtime_running()) return;
+        try {
+            ws.removeEventListener("message", local_on_message);
+            if (ws[wasm_ws_is_aborted]) return;
+            if (!loaderHelpers.is_runtime_running()) return;
 
-        ws[wasm_ws_close_received] = true;
-        ws["close_status"] = ev.code;
-        ws["close_status_description"] = ev.reason;
+            ws[wasm_ws_close_received] = true;
+            ws["close_status"] = ev.code;
+            ws["close_status_description"] = ev.reason;
 
-        // this reject would not do anything if there was already "open" before it.
-        open_promise_control.reject(new Error(ev.reason));
+            // this reject would not do anything if there was already "open" before it.
+            open_promise_control.reject(new Error(ev.reason));
 
-        for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
-            close_promise_control.resolve();
+            for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
+                close_promise_control.resolve();
+            }
+
+            // send close to any pending receivers, to wake them
+            const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
+            receive_promise_queue.drain((receive_promise_control) => {
+                setI32(receive_status_ptr, 0); // count
+                setI32(<any>receive_status_ptr + 4, 2); // type:close
+                setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
+                receive_promise_control.resolve();
+            });
+        } catch (error: any) {
+            mono_log_warn("failed to propagate WebSocket close event: " + error.toString());
         }
-
-        // send close to any pending receivers, to wake them
-        const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
-        receive_promise_queue.drain((receive_promise_control) => {
-            setI32(receive_status_ptr, 0); // count
-            setI32(<any>receive_status_ptr + 4, 2); // type:close
-            setI32(<any>receive_status_ptr + 8, 1);// end_of_message: true
-            receive_promise_control.resolve();
-        });
     };
     const local_on_error = (ev: any) => {
-        if (ws[wasm_ws_is_aborted]) return;
-        if (!loaderHelpers.is_runtime_running()) return;
-        ws.removeEventListener("message", local_on_message);
-        const message = ev.message
-            ? "WebSocket error: " + ev.message
-            : "WebSocket error";
-        mono_log_warn(message);
-        ws[wasm_ws_pending_error] = message;
-        reject_promises(ws, new Error(message));
+        try {
+            if (ws[wasm_ws_is_aborted]) return;
+            if (!loaderHelpers.is_runtime_running()) return;
+            ws.removeEventListener("message", local_on_message);
+            const message = ev.message
+                ? "WebSocket error: " + ev.message
+                : "WebSocket error";
+            mono_log_warn(message);
+            ws[wasm_ws_pending_error] = message;
+            reject_promises(ws, new Error(message));
+        } catch (error: any) {
+            mono_log_warn("failed to propagate WebSocket error event: " + error.toString());
+        }
     };
     ws.addEventListener("message", local_on_message);
     ws.addEventListener("open", local_on_open, { once: true });
