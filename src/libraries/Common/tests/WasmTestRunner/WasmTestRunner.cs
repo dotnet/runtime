@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XHarness.TestRunners.Common;
 using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 
 public class WasmTestRunner : WasmApplicationEntryPoint
@@ -16,7 +17,10 @@ public class WasmTestRunner : WasmApplicationEntryPoint
             return -1;
         }
 
-        var testAssembly = args[0];
+        var runner = new WasmTestRunner();
+
+        runner.TestAssembly = args[0];
+
         var excludedTraits = new List<string>();
         var includedTraits = new List<string>();
         var includedNamespaces = new List<string>();
@@ -24,7 +28,6 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         var includedMethods = new List<string>();
         var backgroundExec = false;
         var untilFailed = false;
-        var isThreadless = true;
 
         for (int i = 1; i < args.Length; i++)
         {
@@ -58,23 +61,22 @@ public class WasmTestRunner : WasmApplicationEntryPoint
                     untilFailed = true;
                     break;
                 case "-threads":
-                    isThreadless = false;
+                    runner.IsThreadless = false;
+                    break;
+                case "-verbosity":
+                    runner.MinimumLogLevel = Enum.Parse<MinimumLogLevel>(args[i + 1]);
+                    i++;
                     break;
                 default:
                     throw new ArgumentException($"Invalid argument '{option}'.");
             }
         }
 
-        var runner = new WasmTestRunner()
-        {
-            TestAssembly = testAssembly,
-            ExcludedTraits = excludedTraits,
-            IncludedTraits = includedTraits,
-            IncludedNamespaces = includedNamespaces,
-            IncludedClasses = includedClasses,
-            IncludedMethods = includedMethods,
-            IsThreadless = isThreadless
-        };
+        runner.ExcludedTraits = excludedTraits;
+        runner.IncludedTraits = includedTraits;
+        runner.IncludedNamespaces = includedNamespaces;
+        runner.IncludedClasses = includedClasses;
+        runner.IncludedMethods = includedMethods;
 
         if (OperatingSystem.IsBrowser())
         {
