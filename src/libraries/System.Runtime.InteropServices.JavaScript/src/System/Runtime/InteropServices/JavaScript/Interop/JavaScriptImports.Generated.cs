@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static partial JSObject GetDotnetInstance();
         [JSImport("INTERNAL.dynamic_import")]
         public static partial Task<JSObject> DynamicImport(string moduleName, string moduleUrl);
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
         [JSImport("INTERNAL.thread_available")]
         public static partial Task ThreadAvailable();
 #endif

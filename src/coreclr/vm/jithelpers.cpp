@@ -2445,7 +2445,6 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2472,7 +2471,6 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable* pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -3494,7 +3492,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3514,7 +3511,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3536,7 +3532,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
