@@ -667,15 +667,20 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DerivedClassWithRequiredProperty()
         {
-            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42, MyBool = true, MyString = "42", MyLong = 4242 };
-            string json = await Serializer.SerializeWrapper(value);
-            Assert.Equal("""{"MyInt":42,"MyBool":true,"MyString":"42","MyLong":4242}""", json);
+            var options = Serializer.CreateOptions(includeFields: true);
+            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42, MyBool = true, MyString = "42", MyProp = 42.0M, MyLong = 4242, MyMember1 = 1, MyMember2 = 2, MyField = "42" };
+            string json = await Serializer.SerializeWrapper(value, options);
+            Assert.Equal("""{"MyInt":42,"MyBool":true,"MyString":"42","MyProp":42.0,"MyLong":4242,"MyMember1":1,"MyMember2":2,"MyField":"42"}""", json);
 
-            value = await Serializer.DeserializeWrapper<DerivedClassWithRequiredInitOnlyProperty>(json);
+            value = await Serializer.DeserializeWrapper<DerivedClassWithRequiredInitOnlyProperty>(json, options);
             Assert.Equal(42, value.MyInt);
             Assert.True(value.MyBool);
             Assert.Equal("42", value.MyString);
+            Assert.Equal(42.0M, value.MyProp);
             Assert.Equal(4242, value.MyLong);
+            Assert.Equal(1, value.MyMember1);
+            Assert.Equal(2, value.MyMember2);
+            Assert.Equal("42", value.MyField);
         }
 
         public class BaseClassWithInitOnlyProperty
@@ -683,6 +688,12 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; init; }
             public bool MyBool { get; init; }
             public string MyString { get; set; }
+            public string MyProp { get; init; }
+
+            public string MyMember1;
+            public string MyMember2 { get; init; }
+
+            public string MyField;
         }
 
         public class DerivedClassWithRequiredInitOnlyProperty : BaseClassWithInitOnlyProperty
@@ -690,7 +701,14 @@ namespace System.Text.Json.Serialization.Tests
             public new required int MyInt { get; init; }
             public new required bool MyBool { get; set; }
             public new string MyString { get; init; }
+            public new required decimal MyProp { get; init; }
             public required long MyLong { get; init; }
+
+            public new required int MyMember1 { get; init; }
+            public new required int MyMember2;
+
+            public new required string MyField;
+
         }
 
         public static IEnumerable<object[]> InheritedPersonWithRequiredMembersSetsRequiredMembersWorksAsExpectedSources()
