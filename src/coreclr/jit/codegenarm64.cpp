@@ -3976,6 +3976,8 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     genConsumeRegs(comparand);
 
     emitAttr dataSize = emitActualTypeSize(data);
+    instruction signExtension = (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet())) ?
+            (varTypeIsByte(treeNode->TypeGet()) ? INS_sxtb : INS_sxth) : INS_invalid;
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
     {
@@ -3996,12 +3998,6 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
             ins = INS_casalh;
         }
         GetEmitter()->emitIns_R_R_R(ins, dataSize, targetReg, dataReg, addrReg);
-
-        if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
-        {
-            instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
-            GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
-        }
     }
     else
     {
@@ -4065,10 +4061,10 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         // The following instruction includes a acquire half barrier
         GetEmitter()->emitIns_R_R(insLd, dataSize, targetReg, addrReg);
 
-        if (varTypeIsSmall(treeNode->TypeGet()) && varTypeIsSigned(treeNode->TypeGet()))
+        if ((signExtension != INS_invalid) && (!comparand->isContainedIntOrIImmed() || comparand->AsIntConCommon()->IconValue() < 0))
         {
-            instruction mov = varTypeIsShort(treeNode->TypeGet()) ? INS_sxth : INS_sxtb;
-            GetEmitter()->emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+            GetEmitter()->emitIns_Mov(signExtension, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+            signExtension = INS_invalid;
         }
 
         if (comparand->isContainedIntOrIImmed())
@@ -4102,6 +4098,10 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
         gcInfo.gcMarkRegSetNpt(addr->gtGetRegMask());
     }
 
+    if (signExtension != INS_invalid)
+    {
+        GetEmitter()->emitIns_Mov(signExtension, EA_4BYTE, targetReg, targetReg, /* canSkip */ false);
+    }
     genProduceReg(treeNode);
 }
 
