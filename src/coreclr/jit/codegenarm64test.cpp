@@ -5273,6 +5273,20 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cnth, EA_8BYTE, REG_R5, SVE_PATTERN_ALL,
                                     13); // CNTH    <Xd>{, <pattern>{, MUL #<imm>}}
 
+    // IF_SVE_CI_3A
+    theEmitter->emitIns_R_R_R(INS_sve_trn1, EA_SCALABLE, REG_P1, REG_P3, REG_P4,
+                              INS_OPTS_SCALABLE_B); // TRN1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_trn2, EA_SCALABLE, REG_P5, REG_P2, REG_P7,
+                              INS_OPTS_SCALABLE_H); // TRN2    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_uzp1, EA_SCALABLE, REG_P0, REG_P0, REG_P0,
+                              INS_OPTS_SCALABLE_S); // UZP1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_uzp2, EA_SCALABLE, REG_P0, REG_P0, REG_P0,
+                              INS_OPTS_SCALABLE_D); // UZP2    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_zip1, EA_SCALABLE, REG_P0, REG_P0, REG_P0,
+                              INS_OPTS_SCALABLE_B); // ZIP1    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_zip2, EA_SCALABLE, REG_P0, REG_P0, REG_P0,
+                              INS_OPTS_SCALABLE_H); // ZIP2    <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
+
     // IF_SVE_CL_3A
     theEmitter->emitIns_R_R_R(INS_sve_compact, EA_SCALABLE, REG_V16, REG_P7, REG_V13,
                               INS_OPTS_SCALABLE_S); // COMPACT <Zd>.<T>, <Pg>, <Zn>.<T>
