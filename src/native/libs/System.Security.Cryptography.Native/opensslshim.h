@@ -212,11 +212,11 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(BN_dup) \
     REQUIRED_FUNCTION(BN_free) \
     REQUIRED_FUNCTION(BN_gcd) \
-    REQUIRED_FUNCTION(BN_mod_inverse) \
-    REQUIRED_FUNCTION(BN_mod_mul) \
     FALLBACK_FUNCTION(BN_is_odd) \
     FALLBACK_FUNCTION(BN_is_one) \
     FALLBACK_FUNCTION(BN_is_zero) \
+    REQUIRED_FUNCTION(BN_mod_inverse) \
+    REQUIRED_FUNCTION(BN_mod_mul) \
     REQUIRED_FUNCTION(BN_mul) \
     REQUIRED_FUNCTION(BN_new) \
     REQUIRED_FUNCTION(BN_num_bits) \
@@ -725,10 +725,10 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BN_div BN_div_ptr
 #define BN_dup BN_dup_ptr
 #define BN_free BN_free_ptr
+#define BN_gcd BN_gcd_ptr
 #define BN_is_odd BN_is_odd_ptr
 #define BN_is_one BN_is_one_ptr
 #define BN_is_zero BN_is_zero_ptr
-#define BN_gcd BN_gcd_ptr
 #define BN_mod_inverse BN_mod_inverse_ptr
 #define BN_mod_mul BN_mod_mul_ptr
 #define BN_mul BN_mul_ptr
