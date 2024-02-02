@@ -4951,18 +4951,19 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitAllExitBlocks(TFunc func)
     Compiler* comp = m_dfsTree->GetCompiler();
 
     BitVecTraits traits = m_dfsTree->PostOrderTraits();
-    BitVec visited(BitVecOps::MakeEmpty(&traits));
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
 
     BasicBlockVisit result = VisitLoopBlocksReversePostOrder([&, comp](BasicBlock* block) {
         return block->VisitAllSuccs(comp, [&](BasicBlock* succ) {
-            if (!ContainsBlock(succ) && BitVecOps::TryAddElemD(&traits, visited, succ->bbPostorderNum) && (func(succ) == BasicBlockVisit::Abort))
+            if (!ContainsBlock(succ) && BitVecOps::TryAddElemD(&traits, visited, succ->bbPostorderNum) &&
+                (func(succ) == BasicBlockVisit::Abort))
             {
                 return BasicBlockVisit::Abort;
             }
 
             return BasicBlockVisit::Continue;
-            });
         });
+    });
 
     return result;
 }

@@ -137,10 +137,17 @@ static void DumpScev(Scev* scev)
             const char* op;
             switch (binop->Oper)
             {
-            case ScevOper::Add: op = "+"; break;
-            case ScevOper::Mul: op = "*"; break;
-            case ScevOper::Lsh: op = "<<"; break;
-            default: unreached();
+                case ScevOper::Add:
+                    op = "+";
+                    break;
+                case ScevOper::Mul:
+                    op = "*";
+                    break;
+                case ScevOper::Lsh:
+                    op = "<<";
+                    break;
+                default:
+                    unreached();
             }
             printf(" %s ", op);
             DumpScev(binop->Op2);
@@ -165,20 +172,21 @@ static void DumpScev(Scev* scev)
 
 class ScalarEvolutionContext
 {
-    Compiler*          m_comp;
+    Compiler*             m_comp;
     FlowGraphNaturalLoop* m_loop = nullptr;
-    ScalarEvolutionMap m_cache;
+    ScalarEvolutionMap    m_cache;
 
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree);
-    Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore, Scev* start, BasicBlock* stepDefBlock, GenTree* stepDefData);
+    Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
+                             Scev*                start,
+                             BasicBlock*          stepDefBlock,
+                             GenTree*             stepDefData);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
     bool TrackedLocalVariesInLoop(unsigned lclNum);
 
 public:
-    ScalarEvolutionContext(Compiler* comp) :
-        m_comp(comp),
-        m_cache(comp->getAllocator(CMK_LoopScalarEvolution))
+    ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopScalarEvolution))
     {
     }
 
@@ -196,9 +204,8 @@ public:
 
     ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum)
     {
-        var_types           type = genActualType(m_comp->lvaGetDesc(lclNum));
-        ScevLocal* invariantLocal =
-            new (m_comp, CMK_LoopScalarEvolution) ScevLocal(type, lclNum, ssaNum);
+        var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
+        ScevLocal* invariantLocal = new (m_comp, CMK_LoopScalarEvolution) ScevLocal(type, lclNum, ssaNum);
         return invariantLocal;
     }
 
@@ -237,7 +244,7 @@ Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
 
     if (tree->OperIs(GT_LCL_VAR) && tree->AsLclVarCommon()->HasSsaName())
     {
-        LclVarDsc* dsc = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+        LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
         LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
 
         if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
@@ -295,7 +302,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
             }
 
             assert(m_comp->lvaInSsa(tree->AsLclVarCommon()->GetLclNum()));
-            LclVarDsc* dsc = m_comp->lvaGetDesc(tree->AsLclVarCommon());
+            LclVarDsc*    dsc    = m_comp->lvaGetDesc(tree->AsLclVarCommon());
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(tree->AsLclVarCommon()->GetSsaNum());
 
             if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
@@ -374,8 +381,8 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
                 return nullptr;
             }
 
-            LclVarDsc*           dsc    = m_comp->lvaGetDesc(store);
-            LclSsaVarDsc*        ssaDsc = dsc->GetPerSsaData(backedgeSsa->GetSsaNum());
+            LclVarDsc*    dsc    = m_comp->lvaGetDesc(store);
+            LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(backedgeSsa->GetSsaNum());
 
             if (ssaDsc->GetDefNode() == nullptr)
             {
@@ -451,10 +458,17 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
             ScevOper oper;
             switch (tree->OperGet())
             {
-            case GT_ADD: oper = ScevOper::Add; break;
-            case GT_MUL: oper = ScevOper::Mul; break;
-            case GT_LSH: oper = ScevOper::Lsh; break;
-            default: unreached();
+                case GT_ADD:
+                    oper = ScevOper::Add;
+                    break;
+                case GT_MUL:
+                    oper = ScevOper::Mul;
+                    break;
+                case GT_LSH:
+                    oper = ScevOper::Lsh;
+                    break;
+                default:
+                    unreached();
             }
 
             return NewBinop(oper, op1, op2);
@@ -472,7 +486,10 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
     }
 }
 
-Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStore, Scev* enterScev, BasicBlock* stepDefBlock, GenTree* stepDefData)
+Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
+                                                 Scev*                enterScev,
+                                                 BasicBlock*          stepDefBlock,
+                                                 GenTree*             stepDefData)
 {
     if (!stepDefData->OperIs(GT_ADD))
     {
@@ -488,7 +505,7 @@ Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStor
         stepTree = op2;
     }
     else if (op2->OperIs(GT_LCL_VAR) && (op2->AsLclVar()->GetLclNum() == headerStore->GetLclNum()) &&
-        (op2->AsLclVar()->GetSsaNum() == headerStore->GetSsaNum()))
+             (op2->AsLclVar()->GetSsaNum() == headerStore->GetSsaNum()))
     {
         stepTree = op1;
     }
@@ -518,15 +535,19 @@ Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
     return result;
 }
 
-template<typename T>
+template <typename T>
 static T FoldArith(ScevOper oper, T op1, T op2)
 {
     switch (oper)
     {
-        case ScevOper::Add: return op1 + op2;
-        case ScevOper::Mul: return op1 * op2;
-        case ScevOper::Lsh: return op1 << op2;
-        default: unreached();
+        case ScevOper::Add:
+            return op1 + op2;
+        case ScevOper::Mul:
+            return op1 * op2;
+        case ScevOper::Lsh:
+            return op1 << op2;
+        default:
+            unreached();
     }
 }
 
@@ -557,11 +578,12 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
             if (op1->OperIs(ScevOper::Constant))
             {
                 ScevConstant* cns = (ScevConstant*)op1;
-                return NewConstant(unop->Type, unop->OperIs(ScevOper::ZeroExtend) ? (uint64_t)(int32_t)cns->Value : (int64_t)(int32_t)cns->Value);
+                return NewConstant(unop->Type, unop->OperIs(ScevOper::ZeroExtend) ? (uint64_t)(int32_t)cns->Value
+                                                                                  : (int64_t)(int32_t)cns->Value);
             }
 
             // Folding these requires some proof that it is ok.
-            //if (op1->OperIs(ScevOper::AddRec))
+            // if (op1->OperIs(ScevOper::AddRec))
             //{
             //    return op1;
             //}
@@ -573,8 +595,8 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
         case ScevOper::Lsh:
         {
             ScevBinop* binop = (ScevBinop*)scev;
-            Scev* op1 = Fold(binop->Op1);
-            Scev* op2 = Fold(binop->Op2);
+            Scev*      op1   = Fold(binop->Op1);
+            Scev*      op2   = Fold(binop->Op2);
 
             if (binop->OperIs(ScevOper::Add, ScevOper::Mul))
             {
@@ -594,9 +616,11 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
             {
                 // <L, start, step> + x => <L, start + x, step>
                 // <L, start, step> * x => <L, start * x, step * x>
-                ScevAddRec* addRec = (ScevAddRec*)op1;
-                Scev* newStart = Fold(NewBinop(binop->Oper, addRec->Start, op2));
-                Scev* newStep = scev->OperIs(ScevOper::Mul, ScevOper::Lsh) ? Fold(NewBinop(binop->Oper, addRec->Step, op2)) : addRec->Step;
+                ScevAddRec* addRec   = (ScevAddRec*)op1;
+                Scev*       newStart = Fold(NewBinop(binop->Oper, addRec->Start, op2));
+                Scev*       newStep  = scev->OperIs(ScevOper::Mul, ScevOper::Lsh)
+                                    ? Fold(NewBinop(binop->Oper, addRec->Step, op2))
+                                    : addRec->Step;
                 return NewAddRec(addRec->Loop, newStart, newStep);
             }
 
@@ -607,7 +631,8 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
                 int64_t       newValue;
                 if (binop->TypeIs(TYP_INT))
                 {
-                    newValue = FoldArith<int32_t>(binop->Oper, static_cast<int32_t>(cns1->Value), static_cast<int32_t>(cns2->Value));
+                    newValue = FoldArith<int32_t>(binop->Oper, static_cast<int32_t>(cns1->Value),
+                                                  static_cast<int32_t>(cns2->Value));
                 }
                 else
                 {
@@ -623,8 +648,8 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
         case ScevOper::AddRec:
         {
             ScevAddRec* addRec = (ScevAddRec*)scev;
-            Scev* start = Fold(addRec->Start);
-            Scev* step = Fold(addRec->Step);
+            Scev*       start  = Fold(addRec->Start);
+            Scev*       step   = Fold(addRec->Step);
             return (start == addRec->Start) && (step == addRec->Step) ? addRec : NewAddRec(addRec->Loop, start, step);
         }
         default:
@@ -647,14 +672,16 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
         {
             if (!loop->ContainsBlock(predEdge->getSourceBlock()))
             {
-                JITDUMP("  Cannot safely sink widened version of V%02u into exit " FMT_BB " of " FMT_LP "; it has a non-loop pred " FMT_BB "\n", lclNum, exit->bbNum, loop->GetIndex(), predEdge->getSourceBlock()->bbNum);
+                JITDUMP("  Cannot safely sink widened version of V%02u into exit " FMT_BB " of " FMT_LP
+                        "; it has a non-loop pred " FMT_BB "\n",
+                        lclNum, exit->bbNum, loop->GetIndex(), predEdge->getSourceBlock()->bbNum);
                 return BasicBlockVisit::Abort;
             }
         }
 
         JITDUMP("  V%02u is live into exit " FMT_BB "; will sink the widened value\n", lclNum, exit->bbNum);
         return BasicBlockVisit::Continue;
-        });
+    });
 
     return result == BasicBlockVisit::Continue;
 }
@@ -665,6 +692,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
     {
     private:
         unsigned m_lclNum;
+
     public:
         enum
         {
@@ -699,11 +727,11 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
     };
 
     const weight_t ExtensionCost = 2;
-    const int ExtensionSize = 3;
+    const int      ExtensionSize = 3;
 
     CountZeroExtensionsVisitor visitor(this, lclNum);
-    weight_t savedCost = 0;
-    int savedSize = 0;
+    weight_t                   savedCost = 0;
+    int                        savedSize = 0;
 
     loop->VisitLoopBlocks([&](BasicBlock* block) {
         visitor.NumExtensions = 0;
@@ -716,7 +744,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
         savedSize += (int)visitor.NumExtensions * ExtensionSize;
         savedCost += visitor.NumExtensions * block->getBBWeight(this) * ExtensionCost;
         return BasicBlockVisit::Continue;
-        });
+    });
 
     if (!addRec->Start->OperIs(ScevOper::Constant))
     {
@@ -740,10 +768,10 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
             savedCost -= exit->getBBWeight(this) * ExtensionCost;
         }
         return BasicBlockVisit::Continue;
-        });
+    });
 
     const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
-    weight_t cycleImprovementPerInvoc = savedCost / fgFirstBB->getBBWeight(this);
+    weight_t       cycleImprovementPerInvoc                      = savedCost / fgFirstBB->getBBWeight(this);
 
     JITDUMP("  Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovementPerInvoc);
     JITDUMP("  Estimated size improvement: %d bytes\n", savedSize);
@@ -769,24 +797,24 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
 
 bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
 {
-    bool anySunk = false;
-    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    bool       anySunk = false;
+    LclVarDsc* dsc     = lvaGetDesc(lclNum);
     loop->VisitAllExitBlocks([=, &anySunk](BasicBlock* exit) {
         if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
             return BasicBlockVisit::Continue;
         }
 
-        GenTree* narrowing = gtNewCastNode(TYP_INT, gtNewLclvNode(newLclNum, TYP_LONG), false, TYP_INT);
-        GenTree* store = gtNewStoreLclVarNode(lclNum, narrowing);
-        Statement* newStmt = fgNewStmtFromTree(store);
+        GenTree*   narrowing = gtNewCastNode(TYP_INT, gtNewLclvNode(newLclNum, TYP_LONG), false, TYP_INT);
+        GenTree*   store     = gtNewStoreLclVarNode(lclNum, narrowing);
+        Statement* newStmt   = fgNewStmtFromTree(store);
         JITDUMP("Narrow IV local V%02u live into exit block " FMT_BB "; sinking a narrowing\n", lclNum, exit->bbNum);
         DISPSTMT(newStmt);
         fgInsertStmtAtBeg(exit, newStmt);
         anySunk = true;
 
         return BasicBlockVisit::Continue;
-        });
+    });
 
     return anySunk;
 }
@@ -807,7 +835,8 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
             DoPreOrder = true,
         };
 
-        ReplaceVisitor(Compiler* comp, unsigned lclNum, unsigned newLclNum) : GenTreeVisitor(comp), m_lclNum(lclNum), m_newLclNum(newLclNum)
+        ReplaceVisitor(Compiler* comp, unsigned lclNum, unsigned newLclNum)
+            : GenTreeVisitor(comp), m_lclNum(lclNum), m_newLclNum(newLclNum)
         {
         }
 
@@ -822,30 +851,32 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
                     GenTree* op = cast->CastOp();
                     if (op->OperIs(GT_LCL_VAR) && (op->AsLclVarCommon()->GetLclNum() == m_lclNum))
                     {
-                        *use = m_compiler->gtNewLclvNode(m_newLclNum, TYP_LONG);
+                        *use        = m_compiler->gtNewLclvNode(m_newLclNum, TYP_LONG);
                         MadeChanges = true;
                         return fgWalkResult::WALK_SKIP_SUBTREES;
                     }
                 }
             }
-            else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD) && (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
+            else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD) &&
+                     (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
             {
                 switch (node->OperGet())
                 {
-                case GT_LCL_VAR:
-                    node->AsLclVarCommon()->SetLclNum(m_newLclNum);
-                    // No cast needed -- the backend allows TYP_INT uses of TYP_LONG locals.
-                    break;
-                case GT_LCL_FLD:
-                case GT_STORE_LCL_FLD: // TODO: Do we need to skip widening if we have one of these?
-                    node->AsLclFld()->SetLclNum(m_newLclNum);
-                    m_compiler->lvaSetVarDoNotEnregister(m_newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-                    break;
-                case GT_STORE_LCL_VAR:
-                    node->AsLclVarCommon()->SetLclNum(m_newLclNum);
-                    node->AsLclVarCommon()->gtType = TYP_LONG;
-                    node->AsLclVarCommon()->Data() = m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
-                    break;
+                    case GT_LCL_VAR:
+                        node->AsLclVarCommon()->SetLclNum(m_newLclNum);
+                        // No cast needed -- the backend allows TYP_INT uses of TYP_LONG locals.
+                        break;
+                    case GT_LCL_FLD:
+                    case GT_STORE_LCL_FLD: // TODO: Do we need to skip widening if we have one of these?
+                        node->AsLclFld()->SetLclNum(m_newLclNum);
+                        m_compiler->lvaSetVarDoNotEnregister(m_newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                        break;
+                    case GT_STORE_LCL_VAR:
+                        node->AsLclVarCommon()->SetLclNum(m_newLclNum);
+                        node->AsLclVarCommon()->gtType = TYP_LONG;
+                        node->AsLclVarCommon()->Data() =
+                            m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
+                        break;
                 }
 
                 MadeChanges = true;
@@ -860,7 +891,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
     if (visitor.MadeChanges)
     {
         compCurStmt = stmt;
-        //stmt->SetRootNode(fgMorphTree(stmt->GetRootNode()));
+        // stmt->SetRootNode(fgMorphTree(stmt->GetRootNode()));
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
         JITDUMP("New tree:\n", dspTreeID(stmt->GetRootNode()));
@@ -996,7 +1027,7 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
-            changed = true;
+            changed            = true;
             unsigned newLclNum = lvaGrabTemp(false DEBUGARG("Widened primary induction variable"));
             JITDUMP("  Replacing V%02u with a widened version V%02u\n", lcl->GetLclNum(), newLclNum);
 
@@ -1004,18 +1035,21 @@ PhaseStatus Compiler::optInductionVariables()
             if (addRec->Start->OperIs(ScevOper::Constant))
             {
                 ScevConstant* cns = (ScevConstant*)addRec->Start;
-                initVal = gtNewIconNode((int64_t)(uint32_t)(((ScevConstant*)addRec->Start)->Value), TYP_LONG);
+                initVal           = gtNewIconNode((int64_t)(uint32_t)(((ScevConstant*)addRec->Start)->Value), TYP_LONG);
             }
             else
             {
                 LclVarDsc* lclDsc = lvaGetDesc(lcl);
-                initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), lclDsc->lvNormalizeOnLoad() ? lclDsc->TypeGet() : TYP_INT), true, TYP_LONG);
+                initVal =
+                    gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(),
+                                                          lclDsc->lvNormalizeOnLoad() ? lclDsc->TypeGet() : TYP_INT),
+                                  true, TYP_LONG);
             }
 
             JITDUMP("Adding initialization of new widened local to preheader:\n");
-            GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
-            BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
-            Statement* initStmt = fgNewStmtFromTree(widenStore);
+            GenTree*    widenStore = gtNewTempStore(newLclNum, initVal);
+            BasicBlock* preheader  = loop->EntryEdge(0)->getSourceBlock();
+            Statement*  initStmt   = fgNewStmtFromTree(widenStore);
             fgInsertStmtAtEnd(preheader, initStmt);
             DISPSTMT(initStmt);
             JITDUMP("\n");
@@ -1025,14 +1059,15 @@ PhaseStatus Compiler::optInductionVariables()
                 compCurBB = block;
                 for (Statement* stmt : block->NonPhiStatements())
                 {
-                    JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lcl->GetLclNum(), newLclNum, dspTreeID(stmt->GetRootNode()));
+                    JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lcl->GetLclNum(), newLclNum,
+                            dspTreeID(stmt->GetRootNode()));
                     DISPSTMT(stmt);
                     JITDUMP("\n");
                     optReplaceWidenedIV(lcl->GetLclNum(), newLclNum, stmt);
                 }
 
                 return BasicBlockVisit::Continue;
-                });
+            });
 
             changed |= optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
         }
