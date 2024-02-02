@@ -2913,14 +2913,14 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
 
     if (id->idIsReloc())
     {
-        return emitOutputInstr_OptsRcReloc(dst, ins, reg1);
+        return emitOutputInstr_OptsRcReloc(dst, ins, offset, reg1);
     }
     return emitOutputInstr_OptsRcNoReloc(dst, ins, offset, reg1);
 }
 
-BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, regNumber reg1)
+BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
-    ssize_t immediate = emitConsBlock - dst;
+    ssize_t immediate = emitConsBlock - dst + offset;
     assert(immediate > 0);
     assert((immediate & 0x03) == 0);
 
@@ -3133,11 +3133,13 @@ BYTE* emitter::emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* i
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     BYTE*             dst  = *dp;
+    BYTE*             dst2 = dst + 4;
     const BYTE* const odst = *dp;
     instruction       ins;
     size_t            sz = 0;
 
     assert(REG_NA == static_cast<int>(REG_NA));
+    assert(writeableOffset == 0);
 
     insOpts insOp = id->idInsOpt();
 
@@ -3174,8 +3176,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_C:
-            dst = emitOutputInstr_OptsC(dst, id, ig, &sz);
-            ins = INS_nop;
+            dst  = emitOutputInstr_OptsC(dst, id, ig, &sz);
+            dst2 = dst;
+            ins  = INS_nop;
             break;
         default: // case INS_OPTS_NONE:
             dst += emitOutput_Instr(dst, id->idAddr()->iiaGetInstrEncode());
@@ -3193,11 +3196,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         // We assume that "idReg1" is the primary destination register for all instructions
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst2);
         }
         else
         {
-            emitGCregDeadUpd(id->idReg1(), dst);
+            emitGCregDeadUpd(id->idReg1(), dst2);
         }
     }
 
@@ -3211,7 +3214,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         if (id->idGCref() != GCT_NONE)
         {
-            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst2 DEBUG_ARG(varNum));
         }
         else
         {
@@ -3228,7 +3231,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
-                emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
+                emitGCvarDeadUpd(adr + ofs, dst2 DEBUG_ARG(varNum));
         }
         // if (emitInsWritesToLclVarStackLocPair(id))
         //{
