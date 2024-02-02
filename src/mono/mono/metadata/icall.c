@@ -1877,6 +1877,8 @@ ves_icall_RuntimeMethodHandle_ReboxFromNullable (MonoObjectHandle obj, MonoObjec
 guint32
 ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHandle type_handle)
 {
+	g_printf ("RuntimeTypeHandle_GetAttributes: &type_handle.type == %d; type_handle.type == %d\n", &(type_handle.type), type_handle.type);
+
 	MonoType *type = type_handle.type;
 
 	if (m_type_is_byref (type) || type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)
@@ -3028,7 +3030,7 @@ ves_icall_RuntimeType_GetNamespace (MonoQCallTypeHandle type_handle, MonoObjectH
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	MonoClass *elem;
-	while (!m_class_is_enumtype (klass) && 
+	while (!m_class_is_enumtype (klass) &&
 		!mono_class_is_nullable (klass) &&
 		(klass != (elem = m_class_get_element_class (klass))))
 		klass = elem;

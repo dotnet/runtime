@@ -1344,6 +1344,7 @@ typedef enum {
 	// This isn't ifdefed so it's easier to write code that handles it without sprinkling
 	//  800 ifdefs in this file
 	PINVOKE_ARG_WASM_VALUETYPE_RESULT = 7,
+	PINVOKE_ARG_I8_RESULT = 8,
 } PInvokeArgType;
 
 typedef struct {
@@ -1476,18 +1477,37 @@ retry:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-		case MONO_TYPE_GENERICINST:
 			info->ret_pinvoke_type = PINVOKE_ARG_INT;
 			break;
-		case MONO_TYPE_VALUETYPE:
-#ifdef HOST_WASM
-			info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
-			info->ilen++;
-#else
-			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+#if SIZEOF_VOID_P == 8
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
 #endif
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_I8:
+		case MONO_TYPE_U8:
+			info->ret_pinvoke_type = PINVOKE_ARG_I8_RESULT;
+			break;
+#endif
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_GENERICINST:
+#ifdef HOST_WASM
+			// This ISSTRUCT check is important, because the type could be an enum
+			if (MONO_TYPE_ISSTRUCT (info->ret_mono_type)) {
+				g_printf ("Putting retval in arg0 for type %s\n", mono_type_get_name (info->ret_mono_type));
+				// The return type was already filtered previously, so if we get here
+				//  we're returning a struct byref instead of as a scalar
+				info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
+				info->ilen++;
+			} else {
+
+#else
+			{
+#endif
+				info->ret_pinvoke_type = PINVOKE_ARG_INT;
+			}
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
@@ -1601,6 +1621,10 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 		margs->iargs[0] = (gpointer*)frame->retval;
 		// The return type is void so retval should be NULL
 		margs->retval = NULL;
+		margs->is_float_ret = 0;
+		break;
+	case PINVOKE_ARG_I8_RESULT:
+		margs->retval = (gpointer*)frame->retval;
 		margs->is_float_ret = 0;
 		break;
 	case PINVOKE_ARG_INT:
@@ -1786,6 +1810,11 @@ ves_pinvoke_method (
 
 	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
 
+	g_printf (
+		"ves_pinvoke_method: ret_pinvoke_type=%d retval=%d iargs=%d fargs=%d ilen=%d flen=%d\n",
+		call_info->ret_pinvoke_type, margs.retval, margs.iargs, margs.fargs, margs.ilen, margs.flen
+	);
+
 	if (*gc_transitions) {
 		MONO_ENTER_GC_SAFE;
 		entry_func ((gpointer) addr, args);
@@ -1821,11 +1850,7 @@ ves_pinvoke_method (
 #else
 	// Only the vt address has been returned, we need to copy the entire content on interp stack
 	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type)) {
-#ifdef HOST_WASM
-		if (call_info->ret_pinvoke_type == PINVOKE_ARG_WASM_VALUETYPE_RESULT)
-			;
-		else
-#endif
+		if (call_info->ret_pinvoke_type != PINVOKE_ARG_WASM_VALUETYPE_RESULT)
 			stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
 	}
 
