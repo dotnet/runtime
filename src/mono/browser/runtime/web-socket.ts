@@ -21,6 +21,7 @@ const wasm_ws_pending_receive_event_queue = Symbol.for("wasm ws_pending_receive_
 const wasm_ws_pending_receive_promise_queue = Symbol.for("wasm ws_pending_receive_promise_queue");
 const wasm_ws_pending_open_promise = Symbol.for("wasm ws_pending_open_promise");
 const wasm_ws_pending_open_promise_used = Symbol.for("wasm wasm_ws_pending_open_promise_used");
+const wasm_ws_pending_error = Symbol.for("wasm wasm_ws_pending_error");
 const wasm_ws_pending_close_promises = Symbol.for("wasm ws_pending_close_promises");
 const wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises");
 const wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
@@ -109,6 +110,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
             ? "WebSocket error: " + ev.message
             : "WebSocket error";
         mono_log_warn(message);
+        ws[wasm_ws_pending_error] = message;
         reject_promises(ws, new Error(message));
     };
     ws.addEventListener("message", local_on_message);
@@ -128,6 +130,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
 
 export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
+    if (ws[wasm_ws_pending_error]) {
+        return rejectedPromise(ws[wasm_ws_pending_error]);
+    }
     const open_promise_control = ws[wasm_ws_pending_open_promise];
     ws[wasm_ws_pending_open_promise_used] = true;
     return open_promise_control.promise;
@@ -136,6 +141,9 @@ export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension
 export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number, message_type: number, end_of_message: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
 
+    if (ws[wasm_ws_pending_error]) {
+        return rejectedPromise(ws[wasm_ws_pending_error]);
+    }
     if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent]) {
         return rejectedPromise("InvalidState: The WebSocket is not connected.");
     }
@@ -157,6 +165,10 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
 
 export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number): Promise<void> | null {
     mono_assert(!!ws, "ERR18: expected ws instance");
+
+    if (ws[wasm_ws_pending_error]) {
+        return rejectedPromise(ws[wasm_ws_pending_error]);
+    }
 
     // we can't quickly return if wasm_ws_close_received==true, because there could be pending messages
     if (ws[wasm_ws_is_aborted]) {
@@ -201,6 +213,9 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
 
     if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent] || ws.readyState == WebSocket.CLOSED) {
         return resolvedPromise();
+    }
+    if (ws[wasm_ws_pending_error]) {
+        return rejectedPromise(ws[wasm_ws_pending_error]);
     }
     ws[wasm_ws_close_sent] = true;
     if (wait_for_close_received) {
@@ -440,6 +455,7 @@ type WebSocketExtension = WebSocket & {
     [wasm_ws_pending_open_promise_used]: boolean
     [wasm_ws_pending_send_promises]: PromiseController<void>[]
     [wasm_ws_pending_close_promises]: PromiseController<void>[]
+    [wasm_ws_pending_error]: string | undefined
     [wasm_ws_is_aborted]: boolean
     [wasm_ws_close_received]: boolean
     [wasm_ws_close_sent]: boolean
@@ -478,7 +494,7 @@ function resolvedPromise(): Promise<void> | null {
     }
 }
 
-function rejectedPromise(message: string): Promise<void> | null {
+function rejectedPromise(message: string): Promise<any> | null {
     const resolved = Promise.reject(new Error(message));
     return wrap_as_cancelable<void>(resolved);
 }
