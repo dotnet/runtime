@@ -11,8 +11,17 @@ internal static class EnvironmentVariables
 {
     public static readonly string? DebuggerTestPath = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
     public static readonly string? TestLogPath      = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
-    public static readonly bool    SkipCleanup      = Environment.GetEnvironmentVariable("SKIP_CLEANUP") == "1" ||
-                                                        Environment.GetEnvironmentVariable("SKIP_CLEANUP") == "true";
-    public static readonly bool WasmEnableThreads = Environment.GetEnvironmentVariable("WasmEnableThreads") == "1" ||
-                                                    Environment.GetEnvironmentVariable("WasmEnableThreads") == "true";
+    public static readonly bool    SkipCleanup      = GetEnvironmentVariableValue("SKIP_CLEANUP");
+    public static readonly bool WasmEnableThreads   = GetEnvironmentVariableValue("WasmEnableThreads");
+    private static GetEnvironmentVariableValue(string envVariable)
+    {
+        string? str = Environment.GetEnvironmentVariable(envVariable);
+        if (str is null)
+            return false;
+        
+        if (str == "1" || bool.IsTrueStringIgnoreCase(str))
+            return true;
+
+        return false;
+    }
 }
