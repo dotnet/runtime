@@ -878,6 +878,8 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
                         node->AsLclVarCommon()->Data() =
                             m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
                         break;
+                    default:
+                        break;
                 }
 
                 MadeChanges = true;
