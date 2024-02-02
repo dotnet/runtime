@@ -89,6 +89,10 @@ namespace ILCompiler
                 if (potentialType.Namespace != "System.Runtime.Intrinsics.Arm")
                     return "";
             }
+            else if (architecture == TargetArchitecture.RiscV64)
+            {
+                return "";
+            }
             else
             {
                 throw new InternalCompilerErrorException("Unknown architecture");

@@ -2070,9 +2070,8 @@ private:
     // The count of duplicate "edges" (used for switch stmts or degenerate branches)
     unsigned m_dupCount;
 
-#ifdef DEBUG
+    // True if likelihood has been set
     bool m_likelihoodSet;
-#endif
 
 public:
     FlowEdge(BasicBlock* block, FlowEdge* rest)
@@ -2081,7 +2080,8 @@ public:
         , m_edgeWeightMin(0)
         , m_edgeWeightMax(0)
         , m_likelihood(0)
-        , m_dupCount(0) DEBUGARG(m_likelihoodSet(false))
+        , m_dupCount(0)
+        , m_likelihoodSet(false)
     {
     }
 
@@ -2137,22 +2137,20 @@ public:
     {
         assert(likelihood >= 0.0);
         assert(likelihood <= 1.0);
-        INDEBUG(m_likelihoodSet = true);
-        m_likelihood = likelihood;
+        m_likelihoodSet = true;
+        m_likelihood    = likelihood;
     }
 
     void clearLikelihood()
     {
-        m_likelihood = 0.0;
-        INDEBUG(m_likelihoodSet = false);
+        m_likelihood    = 0.0;
+        m_likelihoodSet = false;
     }
 
-#ifdef DEBUG
     bool hasLikelihood() const
     {
         return m_likelihoodSet;
     }
-#endif
 
     weight_t getLikelyWeight() const
     {

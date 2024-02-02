@@ -418,9 +418,12 @@ namespace ILCompiler
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
+            private HashSet<MethodDesc> _overridenMethods = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
+                var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
+
                 foreach (var node in markedNodes)
                 {
                     TypeDesc type = node switch
@@ -528,6 +531,40 @@ namespace ILCompiler
                                 added = _unsealedTypes.Add(baseType);
                                 baseType = baseType.BaseType;
                             }
+
+                            static List<MethodDesc> BuildVTable(NodeFactory factory, TypeDesc currentType, TypeDesc implType, List<MethodDesc> vtable)
+                            {
+                                if (currentType == null)
+                                    return vtable;
+
+                                BuildVTable(factory, currentType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific), implType, vtable);
+
+                                IReadOnlyList<MethodDesc> slice = factory.VTable(currentType).Slots;
+                                foreach (MethodDesc decl in slice)
+                                {
+                                    vtable.Add(implType.GetClosestDefType()
+                                        .FindVirtualFunctionTargetMethodOnObjectType(decl));
+                                }
+
+                                return vtable;
+                            }
+
+                            baseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            if (!canonType.IsArray && baseType != null)
+                            {
+                                if (!vtables.TryGetValue(baseType, out List<MethodDesc> baseVtable))
+                                    vtables.Add(baseType, baseVtable = BuildVTable(factory, baseType, baseType, new List<MethodDesc>()));
+
+                                if (!vtables.TryGetValue(canonType, out List<MethodDesc> vtable))
+                                    vtables.Add(canonType, vtable = BuildVTable(factory, canonType, canonType, new List<MethodDesc>()));
+
+                                for (int i = 0; i < baseVtable.Count; i++)
+                                {
+                                    if (baseVtable[i] != vtable[i])
+                                        _overridenMethods.Add(baseVtable[i]);
+                                }
+                            }
+
                         }
                     }
                 }
@@ -601,6 +638,14 @@ namespace ILCompiler
 
                 // Everything else can be considered sealed.
                 return true;
+            }
+
+            public override bool IsEffectivelySealed(MethodDesc method)
+            {
+                if (method.IsFinal || IsEffectivelySealed(method.OwningType))
+                    return true;
+
+                return !_overridenMethods.Contains(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             }
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)

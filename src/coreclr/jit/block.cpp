@@ -297,7 +297,7 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
+    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
 }
 
 //------------------------------------------------------------------------
@@ -1123,11 +1123,13 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
     return stmt;
 }
 
-/*****************************************************************************
- *
- *  Can a BasicBlock be inserted after this without altering the flowgraph
- */
-
+//------------------------------------------------------------------------
+// bbFallsThrough: Check if inserting a BasicBlock after this one will alter
+// the flowgraph.
+//
+// Returns:
+//    True if so.
+//
 bool BasicBlock::bbFallsThrough() const
 {
     switch (bbKind)
