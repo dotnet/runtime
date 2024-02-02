@@ -1908,11 +1908,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, uint value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m128d _mm_cvt_roundss_sd (__m128d a, __m128 b, int sae)
-        ///   VCVTSS2SD xmm1, xmm2, xmm3 {sae}
-        /// </summary>
-        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, Vector128<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
-        /// <summary>
         /// int _mm_cvt_roundss_i32 (__m128 a, int rounding)
         ///   VCVTSS2SIK r32, xmm1 {er}
         /// </summary>
@@ -2162,11 +2157,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   VCVTPS2PD zmm1 {k1}{z}, ymm2/m256/m32bcst{sae}
         /// </summary>
         public static Vector512<double> ConvertToVector512Double(Vector256<float> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __m512d _mm512_cvt_roundps_pd (__m256 a, int sae)
-        ///   VCVTPS2PD zmm1, ymm2 {sae}
-        /// </summary>
-        public static Vector512<double> ConvertToVector512Double(Vector256<float> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m512d _mm512_cvtepu32_pd (__m256i a)
         ///   VCVTUDQ2PD zmm1 {k1}{z}, ymm2/m256/m32bcst

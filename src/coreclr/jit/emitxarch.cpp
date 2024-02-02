@@ -6587,7 +6587,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idReg1(reg1);
     id->idReg2(reg2);
 
-    if ((instOptions & INS_OPTS_b_MASK) != INS_OPTS_NONE)
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
         assert(UseEvexEncoding());
