@@ -2450,6 +2450,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
@@ -2510,6 +2511,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
