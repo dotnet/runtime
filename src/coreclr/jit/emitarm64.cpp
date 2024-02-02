@@ -1581,8 +1581,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert((REG_V0 <= id->idReg3()) && (id->idReg3() <= REG_V7));
             assert(isValidUimm4(emitGetInsSC(id))); // rr ii
             break;
-        
-        case IF_SVE_FB_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
+
+        case IF_SVE_FA_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
@@ -11330,17 +11330,18 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
         {
             if (opt == INS_OPTS_SCALABLE_B)
             {
-                // assert(isValidUimm2(imm1)); // ii
+                assert(isValidUimm2(imm1)); // ii
             }
             else
             {
                 assert(opt == INS_OPTS_SCALABLE_H);
-                // assert(isValidImm1(imm1)); // i
+                assert(isValidImm1(imm1)); // i
             }
 
-            // assert(isValidUimm2(imm2)); // rr            
+            assert(isValidUimm2(imm2)); // rr
             const ssize_t imm = (imm1 << 2) | imm2;
             emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, imm, opt);
+            break;
         }
 
         default:
@@ -16010,6 +16011,28 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 2-bits at bit locations '11-10'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm2_11_to_10(ssize_t imm)
+{
+    assert(isValidUimm2(imm));
+    return (code_t)imm << 10;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm2_20_to_19(ssize_t imm)
+{
+    assert(isValidUimm2(imm));
+    return (code_t)imm << 19;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
  */
 
@@ -18476,12 +18499,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             const ssize_t imm   = emitGetInsSC(id);
             const ssize_t rot   = (imm & 0b11);
             const ssize_t index = (imm >> 2);
-            code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
-            code |= insEncodeReg_V_19_to_17(id->idReg3()); // mmm
-            // code |= insEncodeRot(); // rr
-            // code |= insEncodeImm2(); // ii
+            code                = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_18_to_16(id->idReg3()); // mmm
+            code |= insEncodeUimm2_11_to_10(rot);          // rr
+            code |= insEncodeUimm2_20_to_19(index);        // ii
             dst += emitOutput_Instr(dst, code);
             break;
         }
@@ -18491,12 +18514,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             const ssize_t imm   = emitGetInsSC(id);
             const ssize_t rot   = (imm & 0b11);
             const ssize_t index = (imm >> 2);
-            code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
+            code                = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V_19_to_16(id->idReg3()); // mmmm
-            // code |= insEncodeRot(); // rr
-            // code |= insEncodeImm1l(); // i
+            code |= insEncodeUimm2_11_to_10(rot);          // rr
+
+            // index is encoded at bit location 20;
+            // left-shift by one bit so we can reuse insEncodeUimm2_20_to_19 without modifying bit location 19
+            code |= insEncodeUimm2_20_to_19(index << 1); // i
             dst += emitOutput_Instr(dst, code);
             break;
         }
@@ -19048,9 +19074,14 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
  *
  *  Display an immediate value as an index operation
  */
-void emitter::emitDispElementIndex(ssize_t imm)
+void emitter::emitDispElementIndex(const ssize_t imm, const bool addComma)
 {
     printf("[%d]", imm);
+
+    if (addComma)
+    {
+        emitDispComma();
+    }
 }
 
 /*****************************************************************************
@@ -21588,14 +21619,14 @@ void emitter::emitDispInsHelp(
         case IF_SVE_DW_2A: // ........xx...... ......iiNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
             emitDispPredicateReg(id->idReg1(), PREDICATE_SIZED, id->idInsOpt(), true); // DDDD
             emitDispPredicateReg(id->idReg2(), PREDICATE_N, id->idInsOpt(), false);    // NNN
-            emitDispElementIndex(emitGetInsSC(id));                                    // ii
+            emitDispElementIndex(emitGetInsSC(id), false);                             // ii
             break;
 
         // {<Pd1>.<T>, <Pd2>.<T>}, <PNn>[<imm>]
         case IF_SVE_DW_2B: // ........xx...... .......iNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
             emitDispPredicateRegPair(id->idReg1(), id->idInsOpt());                 // DDDD
             emitDispPredicateReg(id->idReg2(), PREDICATE_N, id->idInsOpt(), false); // NNN
-            emitDispElementIndex(emitGetInsSC(id));                                 // i
+            emitDispElementIndex(emitGetInsSC(id), false);                          // i
             break;
 
         // {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
@@ -21671,10 +21702,12 @@ void emitter::emitDispInsHelp(
             const ssize_t rot   = (imm & 0b11);
             const ssize_t index = (imm >> 2);
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // nnnnn
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), true); // mmm
-            // emitDispElementIndex(index, true); // ii
-            // emitDispImm(rot, false); // rr
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmm
+            emitDispElementIndex(index, true);                       // ii
+
+            // rot specifies a multiple of 90-degree rotations
+            emitDispImm(rot * 90, false); // rr
             break;
         }
 
@@ -21685,10 +21718,12 @@ void emitter::emitDispInsHelp(
             const ssize_t rot   = (imm & 0b11);
             const ssize_t index = (imm >> 2);
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_D, true); // ddddd
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // nnnnn
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), true); // mmm
-            // emitDispElementIndex(index, true); // i
-            // emitDispImm(rot, false); // rr
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmm
+            emitDispElementIndex(index, true);                       // i
+
+            // rot specifies a multiple of 90-degree rotations
+            emitDispImm(rot * 90, false); // rr
             break;
         }
 
@@ -24641,6 +24676,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
+        case IF_SVE_FA_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
+        case IF_SVE_FA_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;

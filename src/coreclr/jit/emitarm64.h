@@ -40,7 +40,7 @@ void emitDispLargeJmp(
 void emitDispComma();
 void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
-void emitDispElementIndex(ssize_t imm);
+void emitDispElementIndex(const ssize_t imm, const bool addComma);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
 void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
@@ -555,6 +555,12 @@ static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
 static code_t insEncodeUimm2_9_to_8(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '11-10'.
+static code_t insEncodeUimm2_11_to_10(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
+static code_t insEncodeUimm2_20_to_19(ssize_t imm);
 
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
