@@ -3,6 +3,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 
+#nullable enable
+
 namespace System.Reflection.Metadata
 {
 #if SYSTEM_PRIVATE_CORELIB
@@ -20,6 +22,7 @@ namespace System.Reflection.Metadata
         // Negative value is modifier encoded using constants above.
         private readonly int _rankOrModifier;
         private readonly TypeName[]? _genericArguments;
+        private string? _assemblyQualifiedName;
 
         internal TypeName(string name, AssemblyName? assemblyName, int rankOrModifier,
             TypeName? underlyingType = default,
@@ -32,7 +35,6 @@ namespace System.Reflection.Metadata
             UnderlyingType = underlyingType;
             ContainingType = containingType;
             _genericArguments = genericTypeArguments;
-            AssemblyQualifiedName = assemblyName is null ? name : $"{name}, {assemblyName.FullName}";
         }
 
         /// <summary>
@@ -41,7 +43,8 @@ namespace System.Reflection.Metadata
         /// <remarks>
         /// If <see cref="AssemblyName"/> is null, simply returns <see cref="Name"/>.
         /// </remarks>
-        public string AssemblyQualifiedName { get; }
+        public string AssemblyQualifiedName
+            => _assemblyQualifiedName ??= AssemblyName is null ? Name : $"{Name}, {AssemblyName.FullName}";
 
         /// <summary>
         /// The assembly which contains this type, or null if this <see cref="TypeName"/> was not

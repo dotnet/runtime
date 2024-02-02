@@ -33,7 +33,11 @@ namespace System.Reflection
             if (assemblyName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
-            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(assemblyName);
+            Init(AssemblyNameParser.Parse(assemblyName));
+        }
+
+        internal void Init(AssemblyNameParser.AssemblyNameParts parts)
+        {
             _name = parts._name;
             _version = parts._version;
             _flags = parts._flags;

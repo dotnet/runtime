@@ -399,8 +399,8 @@
     <Compile Include="Compiler\Dataflow\TrimAnalysisPatternStore.cs" />
     <Compile Include="Compiler\Dataflow\TrimAnalysisTokenAccessPattern.cs" />
     <Compile Include="Compiler\Dataflow\TypeNameParser.Dataflow.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.cs">
-      <Link>Compiler\Dataflow\TypeNameParser.cs</Link>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.Helpers.cs">
+      <Link>Compiler\Dataflow\TypeNameParser.Helpers.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\ValueStringBuilder.cs">
       <Link>Utilities\ValueStringBuilder.cs</Link>

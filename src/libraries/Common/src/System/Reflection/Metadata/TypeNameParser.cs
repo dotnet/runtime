@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+#nullable enable
+
 namespace System.Reflection.Metadata
 {
 #if SYSTEM_PRIVATE_CORELIB
@@ -22,6 +24,7 @@ namespace System.Reflection.Metadata
 #if NET8_0_OR_GREATER
         private static readonly SearchValues<char> _endOfTypeNameDelimitersSearchValues = SearchValues.Create(EndOfTypeNameDelimiters);
 #endif
+        private static readonly TypeNameParserOptions _defaults = new();
         private readonly bool _throwOnError;
         private readonly TypeNameParserOptions _parseOptions;
         private ReadOnlySpan<char> _inputString;
@@ -30,7 +33,7 @@ namespace System.Reflection.Metadata
         {
             _inputString = name;
             _throwOnError = throwOnError;
-            _parseOptions = options ?? new();
+            _parseOptions = options ?? _defaults;
         }
 
         public static TypeName? Parse(ReadOnlySpan<char> typeName, bool allowFullyQualifiedName = true, bool throwOnError = true, TypeNameParserOptions? options = default)
@@ -314,8 +317,13 @@ namespace System.Reflection.Metadata
                     return false;
                 }
 
+#if SYSTEM_PRIVATE_CORELIB
+                assemblyName = new();
+                assemblyName.Init(parts);
+#else
                 // TODO: fix the perf and avoid doing it twice (missing public ctors for System.Reflection.Metadata)
                 assemblyName = new(candidate.ToString());
+#endif
                 _inputString = _inputString.Slice(assemblyNameLength);
                 return true;
             }

@@ -54,6 +54,28 @@ namespace System.Reflection
             return fullName;
         }
 
+        private static (string typeNamespace, string name) SplitFullTypeName(string typeName)
+        {
+            string typeNamespace, name;
+
+            // Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+            int separator = typeName.LastIndexOf('.');
+            if (separator <= 0)
+            {
+                typeNamespace = "";
+                name = typeName;
+            }
+            else
+            {
+                if (typeName[separator - 1] == '.')
+                    separator--;
+                typeNamespace = typeName.Substring(0, separator);
+                name = typeName.Substring(separator + 1);
+            }
+
+            return (typeNamespace, name);
+        }
+
         private Type? Resolve(Metadata.TypeName typeName)
         {
             if (typeName.IsNestedType)
@@ -88,8 +110,10 @@ namespace System.Reflection
             return Make(Resolve(typeName.UnderlyingType), typeName);
         }
 
+#if !NETSTANDARD2_0 // needed for ILVerification project
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "Used to implement resolving types from strings.")]
+#endif
         private Type? Make(Type? type, Metadata.TypeName typeName)
         {
             if (type is null || typeName.IsElementalType)

@@ -8,6 +8,8 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+#nullable enable
+
 namespace System.Reflection
 {
     //

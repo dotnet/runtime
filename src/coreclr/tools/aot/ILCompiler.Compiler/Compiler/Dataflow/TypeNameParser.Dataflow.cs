@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-
 using Internal.TypeSystem;
 
 namespace System.Reflection
@@ -20,14 +16,21 @@ namespace System.Reflection
         public static TypeDesc ResolveType(string name, ModuleDesc callingModule,
             TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
         {
-            var parser = new TypeNameParser(name)
+            var parsed = Metadata.TypeNameParser.Parse(name, throwOnError: false);
+            if (parsed is null) // TODO adsitnik: verify that this is desired
+            {
+                typeWasNotFoundInAssemblyNorBaseLibrary = true;
+                return null;
+            }
+
+            var parser = new TypeNameParser()
             {
                 _context = context,
                 _callingModule = callingModule,
                 _referencedModules = referencedModules
             };
 
-            TypeDesc result = parser.Parse()?.Value;
+            TypeDesc result = parser.Resolve(parsed)?.Value;
 
             typeWasNotFoundInAssemblyNorBaseLibrary = parser._typeWasNotFoundInAssemblyNorBaseLibrary;
             return result;
@@ -52,16 +55,13 @@ namespace System.Reflection
             }
         }
 
-        private static bool CheckTopLevelAssemblyQualifiedName() => true;
-
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string assemblyNameIfAny)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName assemblyNameIfAny)
         {
             ModuleDesc module;
 
             if (assemblyNameIfAny != null)
             {
-                module = (TryParseAssemblyName(assemblyNameIfAny) is AssemblyName an) ?
-                    _context.ResolveAssembly(an, throwIfNotFound: false) : null;
+                module = _context.ResolveAssembly(assemblyNameIfAny, throwIfNotFound: false);
             }
             else
             {
@@ -94,22 +94,6 @@ namespace System.Reflection
             return null;
         }
 
-        private static AssemblyName TryParseAssemblyName(string assemblyName)
-        {
-            try
-            {
-                return new AssemblyName(assemblyName);
-            }
-            catch (FileLoadException)
-            {
-                return null;
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
-        }
-
         private static Type GetTypeCore(ModuleDesc module, string typeName, ReadOnlySpan<string> nestedTypeNames)
         {
             (string typeNamespace, string name) = SplitFullTypeName(typeName);
@@ -126,10 +110,6 @@ namespace System.Reflection
             }
 
             return new Type(type);
-        }
-
-        private static void ParseError()
-        {
         }
     }
 }

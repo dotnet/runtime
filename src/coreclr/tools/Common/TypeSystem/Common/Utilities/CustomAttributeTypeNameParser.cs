@@ -37,12 +37,18 @@ namespace System.Reflection
         public static TypeDesc ResolveType(ModuleDesc module, string name, bool throwIfNotFound,
             Func<ModuleDesc, string, MetadataType> canonResolver)
         {
-            return new TypeNameParser(name.AsSpan())
+            var parsed = Metadata.TypeNameParser.Parse(name.AsSpan(), throwOnError: false);
+            if (parsed is null)
+            {
+                ThrowHelper.ThrowTypeLoadException(name, module);
+            }
+
+            return new TypeNameParser()
             {
                 _module = module,
                 _throwIfNotFound = throwIfNotFound,
                 _canonResolver = canonResolver
-            }.Parse()?.Value;
+            }.Resolve(parsed)?.Value;
         }
 
         private sealed class Type
@@ -64,12 +70,10 @@ namespace System.Reflection
             }
         }
 
-        private static bool CheckTopLevelAssemblyQualifiedName() => true;
-
-        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string assemblyNameIfAny)
+        private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, AssemblyName assemblyNameIfAny)
         {
             ModuleDesc module = (assemblyNameIfAny == null) ? _module :
-                _module.Context.ResolveAssembly(new AssemblyName(assemblyNameIfAny), throwIfNotFound: _throwIfNotFound);
+                _module.Context.ResolveAssembly(assemblyNameIfAny, throwIfNotFound: _throwIfNotFound);
 
             if (_canonResolver != null && nestedTypeNames.IsEmpty)
             {
@@ -114,11 +118,6 @@ namespace System.Reflection
             }
 
             return new Type(type);
-        }
-
-        private void ParseError()
-        {
-            ThrowHelper.ThrowTypeLoadException(_input.ToString(), _module);
         }
     }
 }
