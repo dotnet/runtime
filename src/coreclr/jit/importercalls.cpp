@@ -3464,7 +3464,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(callType != TYP_STRUCT);
                 assert(sig->numArgs == 3);
 
-                GenTree* op3 = impPopStack().val; // comparand
+                GenTree* op3 = gtNewCastNode(genActualType(callType), impPopStack().val, /* uns */ false, varTypeToUnsigned(callType)); // comparand
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
                 retNode      = gtNewAtomicNode(GT_CMPXCHG, callType, op1, op2, op3);
