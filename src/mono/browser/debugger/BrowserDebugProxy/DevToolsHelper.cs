@@ -293,7 +293,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool silent { get; set; }
         public bool returnByValue { get; set; } = true;
 
-        public MonoCommands(string expression) => this.expression = expression;
+        public MonoCommands(string expression)
+        {
+            this.expression = $"{expression} //# sourceURL=eval-dotnet.cdp";
+        }
 
         public static MonoCommands GetDebuggerAgentBufferReceived(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_dbg_command_info()");
 
@@ -324,13 +327,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands ReleaseObject(int runtimeId, DotnetObjectId objectId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_release_object('{objectId}')");
 
         public static MonoCommands GetWasmFunctionIds(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_func_id_to_name_mappings()");
-        internal JObject ToObject(bool addUrl)
-        {
-            JObject obj = JObject.FromObject(this);
-            if (addUrl)
-                obj[nameof(expression)] = $"{expression}//# sourceURL=cdp://dotnet/mono{expression.GetHashCode()}.cdp";
-            return obj;
-        }
+
     }
 
     internal enum MonoErrorCodes
