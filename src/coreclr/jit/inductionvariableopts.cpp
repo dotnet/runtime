@@ -659,6 +659,114 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     return result == BasicBlockVisit::Continue;
 }
 
+bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, FlowGraphNaturalLoop* loop)
+{
+    struct CountZeroExtensionsVisitor : GenTreeVisitor<CountZeroExtensionsVisitor>
+    {
+    private:
+        unsigned m_lclNum;
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        unsigned NumExtensions = 0;
+
+        CountZeroExtensionsVisitor(Compiler* comp, unsigned lclNum) : GenTreeVisitor(comp), m_lclNum(lclNum)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* parent)
+        {
+            GenTree* node = *use;
+            if (node->OperIs(GT_CAST))
+            {
+                GenTreeCast* cast = node->AsCast();
+                if ((cast->gtCastType == TYP_LONG) && cast->IsUnsigned())
+                {
+                    GenTree* op = cast->CastOp();
+                    if (op->OperIs(GT_LCL_VAR) && (op->AsLclVarCommon()->GetLclNum() == m_lclNum))
+                    {
+                        NumExtensions++;
+                        return WALK_SKIP_SUBTREES;
+                    }
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    const weight_t ExtensionCost = 2;
+    const int ExtensionSize = 3;
+
+    CountZeroExtensionsVisitor visitor(this, lclNum);
+    weight_t savedCost = 0;
+    int savedSize = 0;
+
+    loop->VisitLoopBlocks([&](BasicBlock* block) {
+        visitor.NumExtensions = 0;
+
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        savedSize += (int)visitor.NumExtensions * ExtensionSize;
+        savedCost += visitor.NumExtensions * block->getBBWeight(this) * ExtensionCost;
+        return BasicBlockVisit::Continue;
+        });
+
+    if (!addRec->Start->OperIs(ScevOper::Constant))
+    {
+        // Need to insert a move from the narrow local in the preheader.
+        savedSize -= ExtensionSize;
+        savedCost -= loop->EntryEdge(0)->getSourceBlock()->getBBWeight(this) * ExtensionCost;
+    }
+    else
+    {
+        // If this is a constant then we are likely going to save the cost of
+        // initializing the narrow local which will balance out initializing
+        // the widened local.
+    }
+
+    // Now account for the cost of sinks.
+    LclVarDsc* dsc = lvaGetDesc(lclNum);
+    loop->VisitAllExitBlocks([&](BasicBlock* exit) {
+        if (VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
+        {
+            savedSize -= ExtensionSize;
+            savedCost -= exit->getBBWeight(this) * ExtensionCost;
+        }
+        return BasicBlockVisit::Continue;
+        });
+
+    const weight_t ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT = 2;
+    weight_t cycleImprovementPerInvoc = savedCost / fgFirstBB->getBBWeight(this);
+
+    JITDUMP("  Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovementPerInvoc);
+    JITDUMP("  Estimated size improvement: %d bytes\n", savedSize);
+
+    if ((cycleImprovementPerInvoc > 0) &&
+        ((cycleImprovementPerInvoc * ALLOWED_SIZE_REGRESSION_PER_CYCLE_IMPROVEMENT) >= -savedSize))
+    {
+        JITDUMP("    Widening is profitable (cycle improvement)\n");
+        return true;
+    }
+
+    const weight_t ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT = 0.01;
+
+    if ((savedSize > 0) && ((savedSize * ALLOWED_CYCLE_REGRESSION_PER_SIZE_IMPROVEMENT) >= -cycleImprovementPerInvoc))
+    {
+        JITDUMP("  Widening is profitable (size improvement)\n");
+        return true;
+    }
+
+    JITDUMP("  Widening is not profitable\n");
+    return false;
+}
+
 bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
 {
     bool anySunk = false;
@@ -879,6 +987,11 @@ PhaseStatus Compiler::optInductionVariables()
             JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lcl->GetLclNum(), loop->GetIndex());
 
             if (!optCanSinkWidenedIV(lcl->GetLclNum(), loop))
+            {
+                continue;
+            }
+
+            if (!optIsIVWideningProfitable(lcl->GetLclNum(), addRec, loop))
             {
                 continue;
             }
