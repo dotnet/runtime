@@ -454,20 +454,11 @@ namespace System.Numerics
                 quotientUpper.Slice(n).Clear();
             }
 
-            if (t > 2)
+            for (int i = t - 3; i >= 0; i--)
             {
-                a.Slice((t - 3) * n, n).CopyTo(z);
+                a.Slice(i * n, n).CopyTo(z);
                 r.Slice(0, n).CopyTo(z.Slice(n));
-
-                for (int i = t - 3; i > 0; i--)
-                {
-                    BurnikelZieglerD2n1n(z, b, quotient.Slice(i * n, n), r);
-
-                    a.Slice((i - 1) * n, n).CopyTo(z);
-                    r.Slice(0, n).CopyTo(z.Slice(n));
-                }
-
-                BurnikelZieglerD2n1n(z, b, quotient.Slice(0, n), r);
+                BurnikelZieglerD2n1n(z, b, quotient.Slice(i * n, n), r);
             }
 
             if (zFromPool != null)
