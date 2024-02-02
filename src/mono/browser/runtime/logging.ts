@@ -158,3 +158,7 @@ export function parseSymbolMapFile(text: string) {
 export function mono_wasm_get_func_id_to_name_mappings() {
     return [...wasm_func_map.values()];
 }
+
+export function mono_wasm_console_clear() {
+    console.clear();
+}

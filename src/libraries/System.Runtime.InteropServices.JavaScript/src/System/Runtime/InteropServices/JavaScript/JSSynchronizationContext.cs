@@ -49,6 +49,22 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
+
+            // FIXME: make this configurable
+            // we could have 3 different modes of this
+            // 1) throwing on UI + JSWebWorker
+            // 2) throwing only on UI - small risk, more convenient.
+            // 3) not throwing at all - quite risky
+            // deadlock scenarios are:
+            // - .Wait for more than 5000ms and deadlock the GC suspend
+            // - .Wait on the Task from HTTP client, on the same thread as the HTTP client needs to resolve the Task/Promise. This could be also chain of promises.
+            // - try to create new pthread when UI thread is blocked and we run out of posix/emscripten pool of loaded workers.
+            // Things which lead to it are
+            // - Task.Wait, Signal.Wait etc
+            // - Monitor.Enter etc, if the lock is held by another thread for long time
+            // - synchronous [JSExport] into managed code, which would block
+            // - synchronous [JSImport] to another thread, which would block
+            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
             Monitor.ThrowOnBlockingWaitOnJSInteropThread = true;
 
             var proxyContext = ctx.ProxyContext;
@@ -200,6 +216,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 d(state);
                 return;
             }
+            // TODO, refactor into single assert method
+            if (Monitor.ThrowOnBlockingWaitOnJSInteropThread)
+            {
+                throw new PlatformNotSupportedException("blocking Wait is not supported on the JS interop threads.");
+            }
 
             using (var signal = new ManualResetEventSlim(false))
             {
@@ -216,16 +237,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
 
-                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
-                try
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
-                    signal.Wait();
-                }
-                finally
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
-                }
+                signal.Wait();
 
                 if (_isCancellationRequested)
                 {

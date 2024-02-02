@@ -303,6 +303,8 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
 }
 
 export class PromiseHolder extends ManagedObject {
+    public isResolved = false;
+    public isCanceled = false;
     public constructor(public promise: Promise<any>) {
         super();
     }
@@ -346,6 +348,9 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
+            mono_assert(!holder.isResolved, "This promise already resolved.");
+            mono_assert(!holder.isCanceled, "This promise already canceled.");
+            holder.isResolved = true;
             if (WasmEnableThreads) {
                 settleUnsettledPromise();
             }
@@ -353,7 +358,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
             // so that managed user code running in the continuation could allocate the same GCHandle number and the local registry would be already ok with that
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, false, null, data, res_converter || _marshal_cs_object_to_cs);
         }
         catch (ex) {
             runtimeHelpers.nativeAbort(ex);
@@ -367,13 +372,15 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         }
         try {
             mono_assert(!holder.isDisposed, "This promise can't be propagated to managed code, because the Task was already freed.");
+            mono_assert(!holder.isResolved, "This promise already resolved.");
+            holder.isResolved = true;
             if (WasmEnableThreads) {
                 settleUnsettledPromise();
             }
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, holder.isCanceled, reason, null, undefined);
         }
         catch (ex) {
             runtimeHelpers.nativeAbort(ex);
