@@ -22643,11 +22643,8 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
 // Returns:
 //    The created CreateSequence node
 //
-GenTree* Compiler::gtNewSimdCreateSequenceNode(var_types   type,
-                                               GenTree*    op1,
-                                               GenTree*    op2,
-                                               CorInfoType simdBaseJitType,
-                                               unsigned    simdSize)
+GenTree* Compiler::gtNewSimdCreateSequenceNode(
+    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     // This effectively doees: (Indices * op2) + Create(op1)
     //
@@ -22812,13 +22809,13 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(var_types   type,
     else
     {
         GenTree* indices = gtNewSimdGetIndicesNode(type, simdBaseJitType, simdSize);
-        result = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseJitType, simdSize);
+        result           = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseJitType, simdSize);
     }
 
     if (isPartial)
     {
         GenTree* start = gtNewSimdCreateBroadcastNode(type, op1, simdBaseJitType, simdSize);
-        result = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseJitType, simdSize);
+        result         = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseJitType, simdSize);
     }
 
     return result;

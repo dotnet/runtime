@@ -4156,7 +4156,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Theory]
         [InlineData(0, 2)]
         [InlineData(3, 3)]
-        [InlineData(7, unchecked((byte)(-1))]
+        [InlineData(7, unchecked((byte)(-1)))]
         public void CreateSequenceByteTest(byte start, byte step) => TestCreateSequence<byte>(start, step);
 
         [Fact]
