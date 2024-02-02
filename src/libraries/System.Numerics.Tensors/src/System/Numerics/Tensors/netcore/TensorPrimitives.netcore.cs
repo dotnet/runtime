@@ -14722,7 +14722,7 @@ namespace System.Numerics.Tensors
         /// <summary>1 / (1 + T.Exp(-x))</summary>
         internal readonly struct SigmoidOperator<T> : IUnaryOperator<T, T> where T : IExponentialFunctions<T>
         {
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            public static bool Vectorizable => ExpOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.One / (T.One + T.Exp(-x));
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.Create(T.One) / (Vector128.Create(T.One) + ExpOperator<T>.Invoke(-x));
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.Create(T.One) / (Vector256.Create(T.One) + ExpOperator<T>.Invoke(-x));
