@@ -5346,13 +5346,13 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_CV_3A
     theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V0, REG_P0, REG_V30, INS_OPTS_SCALABLE_B,
                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // SPLICE  <Zd>.<T>, <Pv>, {<Zn1>.<T>, <Zn2>.<T>}
-    theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V0, REG_P0, REG_V30, INS_OPTS_SCALABLE_D,
+    theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V3, REG_P7, REG_V27, INS_OPTS_SCALABLE_D,
                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // SPLICE  <Zd>.<T>, <Pv>, {<Zn1>.<T>, <Zn2>.<T>}
 
     // IF_SVE_CV_3B
-    theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V1, REG_P0, REG_V29,
+    theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V1, REG_P1, REG_V29,
                               INS_OPTS_SCALABLE_H); // SPLICE  <Zdn>.<T>, <Pv>, <Zdn>.<T>, <Zm>.<T>
-    theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V1, REG_P0, REG_V29,
+    theEmitter->emitIns_R_R_R(INS_sve_splice, EA_SCALABLE, REG_V2, REG_P6, REG_V28,
                               INS_OPTS_SCALABLE_S); // SPLICE  <Zdn>.<T>, <Pv>, <Zdn>.<T>, <Zm>.<T>
 
     // IF_SVE_EQ_3A
