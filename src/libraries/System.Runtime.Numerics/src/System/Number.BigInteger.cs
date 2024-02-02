@@ -471,7 +471,7 @@ namespace System
             if (value.IsEmpty)
             {
                 // There's nothing beyond significant leading block. Return it as the result.
-                if ((int)(leading ^ signBits) > 0)
+                if ((int)(leading ^ signBits) >= 0)
                 {
                     // Small value that fits in Int32.
                     // Delegate to the constructor for int.MinValue handling.
