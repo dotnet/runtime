@@ -3517,7 +3517,7 @@ void EfficientEdgeCountReconstructor::Solve()
     //
     if (m_comp->fgPgoSource == ICorJitInfo::PgoSource::Dynamic)
     {
-        // assert(!m_mismatch);
+        assert(!m_mismatch);
     }
 
     // If issues arose earlier, then don't try solving.
