@@ -79,7 +79,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         try {
             if (ws[wasm_ws_is_aborted]) return;
             if (!loaderHelpers.is_runtime_running()) return;
-            _mono_wasm_web_socket_on_message(ws, ev);
+            web_socket_on_message(ws, ev);
             prevent_timer_throttling();
         } catch (error: any) {
             mono_log_warn("failed to propagate WebSocket message event: " + error.toString());
@@ -95,8 +95,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
             ws["close_status"] = ev.code;
             ws["close_status_description"] = ev.reason;
 
-            // this reject would not do anything if there was already "open" before it.
-            open_promise_control.reject(new Error(ev.reason));
+            if (ws[wasm_ws_pending_open_promise_used]) {
+                open_promise_control.reject(new Error(ev.reason));
+            }
 
             for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
                 close_promise_control.resolve();
@@ -170,13 +171,13 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
     }
 
     const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
-    const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
+    const whole_buffer = web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
         return resolvedPromise();
     }
 
-    return _mono_wasm_web_socket_send_and_wait(ws, whole_buffer);
+    return web_socket_send_and_wait(ws, whole_buffer);
 }
 
 export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number): Promise<void> | null {
@@ -201,7 +202,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
     if (receive_event_queue.getLength()) {
         mono_assert(receive_promise_queue.getLength() == 0, "ERR20: Invalid WS state");
 
-        _mono_wasm_web_socket_receive_buffering(ws, receive_event_queue, buffer_ptr, buffer_length);
+        web_socket_receive_buffering(ws, receive_event_queue, buffer_ptr, buffer_length);
 
         return resolvedPromise();
     }
@@ -296,7 +297,7 @@ function reject_promises(ws: WebSocketExtension, error: Error) {
 }
 
 // send and return promise
-function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view: Uint8Array | string): Promise<void> | null {
+function web_socket_send_and_wait(ws: WebSocketExtension, buffer_view: Uint8Array | string): Promise<void> | null {
     ws.send(buffer_view);
     ws[wasm_ws_pending_send_buffer] = null;
 
@@ -314,28 +315,34 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
 
     let nextDelay = 1;
     const polling_check = () => {
-        // was it all sent yet ?
-        if (ws.bufferedAmount === 0) {
-            promise_control.resolve();
-        }
-        else {
-            const readyState = ws.readyState;
-            if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
-                // only reject if the data were not sent
-                // bufferedAmount does not reset to zero once the connection closes
-                promise_control.reject(new Error(`InvalidState: ${readyState} The WebSocket is not connected.`));
+        try {
+            // was it all sent yet ?
+            if (ws.bufferedAmount === 0) {
+                promise_control.resolve();
             }
-            else if (!promise_control.isDone) {
-                globalThis.setTimeout(polling_check, nextDelay);
-                // exponentially longer delays, up to 1000ms
-                nextDelay = Math.min(nextDelay * 1.5, 1000);
-                return;
+            else {
+                const readyState = ws.readyState;
+                if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
+                    // only reject if the data were not sent
+                    // bufferedAmount does not reset to zero once the connection closes
+                    promise_control.reject(new Error(`InvalidState: ${readyState} The WebSocket is not connected.`));
+                }
+                else if (!promise_control.isDone) {
+                    globalThis.setTimeout(polling_check, nextDelay);
+                    // exponentially longer delays, up to 1000ms
+                    nextDelay = Math.min(nextDelay * 1.5, 1000);
+                    return;
+                }
+            }
+            // remove from pending
+            const index = pending.indexOf(promise_control);
+            if (index > -1) {
+                pending.splice(index, 1);
             }
         }
-        // remove from pending
-        const index = pending.indexOf(promise_control);
-        if (index > -1) {
-            pending.splice(index, 1);
+        catch (error: any) {
+            mono_log_warn("WebSocket error in web_socket_send_and_wait: " + error.toString());
+            promise_control.reject(error);
         }
     };
 
@@ -344,7 +351,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
     return promise;
 }
 
-function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: MessageEvent) {
+function web_socket_on_message(ws: WebSocketExtension, event: MessageEvent) {
     const event_queue = ws[wasm_ws_pending_receive_event_queue];
     const promise_queue = ws[wasm_ws_pending_receive_promise_queue];
 
@@ -373,14 +380,14 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
     }
     while (promise_queue.getLength() && event_queue.getLength()) {
         const promise_control = promise_queue.dequeue()!;
-        _mono_wasm_web_socket_receive_buffering(ws, event_queue,
+        web_socket_receive_buffering(ws, event_queue,
             promise_control.buffer_ptr, promise_control.buffer_length);
         promise_control.resolve();
     }
     prevent_timer_throttling();
 }
 
-function _mono_wasm_web_socket_receive_buffering(ws: WebSocketExtension, event_queue: Queue<any>, buffer_ptr: VoidPtr, buffer_length: number) {
+function web_socket_receive_buffering(ws: WebSocketExtension, event_queue: Queue<any>, buffer_ptr: VoidPtr, buffer_length: number) {
     const event = event_queue.peek();
 
     const count = Math.min(buffer_length, event.data.length - event.offset);
@@ -400,7 +407,7 @@ function _mono_wasm_web_socket_receive_buffering(ws: WebSocketExtension, event_q
     setI32(<any>response_ptr + 8, end_of_message);
 }
 
-function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_view: Uint8Array, message_type: number, end_of_message: boolean): Uint8Array | string | null {
+function web_socket_send_buffering(ws: WebSocketExtension, buffer_view: Uint8Array, message_type: number, end_of_message: boolean): Uint8Array | string | null {
     let buffer = ws[wasm_ws_pending_send_buffer];
     let offset = 0;
     const length = buffer_view.byteLength;
