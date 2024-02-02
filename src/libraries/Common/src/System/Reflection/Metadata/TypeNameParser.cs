@@ -13,6 +13,7 @@ using System.Text;
 
 namespace System.Reflection.Metadata
 {
+    // TODO: add proper debugger display stuff
 #if SYSTEM_PRIVATE_CORELIB
     internal
 #else
@@ -82,8 +83,6 @@ namespace System.Reflection.Metadata
 #endif
             }
         }
-
-        public override string ToString() => _inputString.ToString(); // TODO: add proper debugger display stuff
 
         // this method should return null instead of throwing, so the caller can get errorIndex and include it in error msg
         private TypeName? ParseNextTypeName(bool allowFullyQualifiedName, ref int recursiveDepth)

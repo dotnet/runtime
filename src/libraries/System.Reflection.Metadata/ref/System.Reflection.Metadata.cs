@@ -2408,11 +2408,12 @@ namespace System.Reflection.Metadata
         public int PackingSize { get { throw null; } }
         public int Size { get { throw null; } }
     }
-    public sealed class TypeName
+    public sealed partial class TypeName
     {
-        public string AssemblyQualifiedName { get { throw null; } }
+        internal TypeName() { }
         public System.Reflection.AssemblyName? AssemblyName { get { throw null; } }
-        public TypeName? ContainingType { get { throw null; } }
+        public string AssemblyQualifiedName { get { throw null; } }
+        public System.Reflection.Metadata.TypeName? ContainingType { get { throw null; } }
         public bool IsArray { get { throw null; } }
         public bool IsConstructedGenericType { get { throw null; } }
         public bool IsElementalType { get { throw null; } }
@@ -2422,13 +2423,14 @@ namespace System.Reflection.Metadata
         public bool IsUnmanagedPointerType { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
-        public TypeName? UnderlyingType { get { throw null; } }
+        public System.Reflection.Metadata.TypeName? UnderlyingType { get { throw null; } }
         public int GetArrayRank() { throw null; }
         public System.Reflection.Metadata.TypeName[] GetGenericArguments() { throw null; }
-        public System.Type? GetType(bool throwOnError = true, bool ignoreCase = false) { throw null; }
     }
     public ref partial struct TypeNameParser
     {
+        private object _dummy;
+        private int _dummyPrimitive;
         public static System.Reflection.Metadata.TypeName? Parse(System.ReadOnlySpan<char> typeName, bool allowFullyQualifiedName = true, bool throwOnError = true, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
     }
     public partial class TypeNameParserOptions

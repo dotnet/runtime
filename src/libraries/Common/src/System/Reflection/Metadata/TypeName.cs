@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
-
 #nullable enable
 
 namespace System.Reflection.Metadata
@@ -155,77 +153,5 @@ namespace System.Reflection.Metadata
             => _genericArguments is not null
                 ? (TypeName[])_genericArguments.Clone() // we return a copy on purpose, to not allow for mutations. TODO: consider returning a ROS
                 : Array.Empty<TypeName>(); // TODO: should we throw (Levi's parser throws InvalidOperationException in such case), Type.GetGenericArguments just returns an empty array
-
-#if !SYSTEM_PRIVATE_CORELIB
-#if NET8_0_OR_GREATER
-        [RequiresUnreferencedCode("The type might be removed")]
-        [RequiresDynamicCode("Required by MakeArrayType")]
-#else
-#pragma warning disable IL2055, IL2057, IL2075, IL2096
-#endif
-        public Type? GetType(bool throwOnError = true, bool ignoreCase = false)
-        {
-            if (ContainingType is not null) // nested type
-            {
-                BindingFlags flagsCopiedFromClr = BindingFlags.NonPublic | BindingFlags.Public;
-                if (ignoreCase)
-                {
-                    flagsCopiedFromClr |= BindingFlags.IgnoreCase;
-                }
-                return Make(ContainingType.GetType(throwOnError, ignoreCase)?.GetNestedType(Name, flagsCopiedFromClr));
-            }
-            else if (UnderlyingType is null)
-            {
-                Type? type = AssemblyName is null
-                    ? Type.GetType(Name, throwOnError, ignoreCase)
-                    : Assembly.Load(AssemblyName).GetType(Name, throwOnError, ignoreCase);
-
-                return Make(type);
-            }
-
-            return Make(UnderlyingType.GetType(throwOnError, ignoreCase));
-
-            Type? Make(Type? type)
-            {
-                if (type is null || IsElementalType)
-                {
-                    return type;
-                }
-                else if (IsConstructedGenericType)
-                {
-                    TypeName[] genericArgs = GetGenericArguments();
-                    Type[] genericTypes = new Type[genericArgs.Length];
-                    for (int i = 0; i < genericArgs.Length; i++)
-                    {
-                        Type? genericArg = genericArgs[i].GetType(throwOnError, ignoreCase);
-                        if (genericArg is null)
-                        {
-                            return null;
-                        }
-                        genericTypes[i] = genericArg;
-                    }
-
-                    return type.MakeGenericType(genericTypes);
-                }
-                else if (IsManagedPointerType)
-                {
-                    return type.MakeByRefType();
-                }
-                else if (IsUnmanagedPointerType)
-                {
-                    return type.MakePointerType();
-                }
-                else if (IsSzArrayType)
-                {
-                    return type.MakeArrayType();
-                }
-                else
-                {
-                    return type.MakeArrayType(rank: GetArrayRank());
-                }
-            }
-        }
-#pragma warning restore IL2055, IL2057, IL2075, IL2096
-#endif
     }
 }

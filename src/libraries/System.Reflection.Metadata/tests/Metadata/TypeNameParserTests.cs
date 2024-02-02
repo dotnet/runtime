@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Xunit;
@@ -222,7 +223,7 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>))]
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>))]
         [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
-        public void GetType_Roundtrip(Type type)
+        public void CanImplementGetTypeUsingPublicAPIs_Roundtrip(Type type)
         {
             Test(type);
             Test(type.MakePointerType());
@@ -249,12 +250,82 @@ namespace System.Reflection.Metadata.Tests
 
                 static void Verify(Type type, TypeName typeName, bool ignoreCase)
                 {
-                    Type afterRoundtrip = typeName.GetType(throwOnError: true, ignoreCase: ignoreCase);
+                    Type afterRoundtrip = GetType(typeName, throwOnError: true, ignoreCase: ignoreCase);
 
                     Assert.NotNull(afterRoundtrip);
                     Assert.Equal(type, afterRoundtrip);
                 }
             }
+
+#if NET8_0_OR_GREATER
+            [RequiresUnreferencedCode("The type might be removed")]
+            [RequiresDynamicCode("Required by MakeArrayType")]
+#else
+#pragma warning disable IL2055, IL2057, IL2075, IL2096
+#endif
+            static Type? GetType(TypeName typeName, bool throwOnError = true, bool ignoreCase = false)
+            {
+                if (typeName.ContainingType is not null) // nested type
+                {
+                    BindingFlags flagsCopiedFromClr = BindingFlags.NonPublic | BindingFlags.Public;
+                    if (ignoreCase)
+                    {
+                        flagsCopiedFromClr |= BindingFlags.IgnoreCase;
+                    }
+                    return Make(GetType(typeName.ContainingType, throwOnError, ignoreCase)?.GetNestedType(typeName.Name, flagsCopiedFromClr));
+                }
+                else if (typeName.UnderlyingType is null)
+                {
+                    Type? type = typeName.AssemblyName is null
+                        ? Type.GetType(typeName.Name, throwOnError, ignoreCase)
+                        : Assembly.Load(typeName.AssemblyName).GetType(typeName.Name, throwOnError, ignoreCase);
+
+                    return Make(type);
+                }
+
+                return Make(GetType(typeName.UnderlyingType, throwOnError, ignoreCase));
+
+                Type? Make(Type? type)
+                {
+                    if (type is null || typeName.IsElementalType)
+                    {
+                        return type;
+                    }
+                    else if (typeName.IsConstructedGenericType)
+                    {
+                        TypeName[] genericArgs = typeName.GetGenericArguments();
+                        Type[] genericTypes = new Type[genericArgs.Length];
+                        for (int i = 0; i < genericArgs.Length; i++)
+                        {
+                            Type? genericArg = GetType(genericArgs[i], throwOnError, ignoreCase);
+                            if (genericArg is null)
+                            {
+                                return null;
+                            }
+                            genericTypes[i] = genericArg;
+                        }
+
+                        return type.MakeGenericType(genericTypes);
+                    }
+                    else if (typeName.IsManagedPointerType)
+                    {
+                        return type.MakeByRefType();
+                    }
+                    else if (typeName.IsUnmanagedPointerType)
+                    {
+                        return type.MakePointerType();
+                    }
+                    else if (typeName.IsSzArrayType)
+                    {
+                        return type.MakeArrayType();
+                    }
+                    else
+                    {
+                        return type.MakeArrayType(rank: typeName.GetArrayRank());
+                    }
+                }
+            }
+#pragma warning restore IL2055, IL2057, IL2075, IL2096
         }
 
         public class NestedNonGeneric_0
