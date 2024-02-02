@@ -283,7 +283,7 @@ namespace Internal.Runtime.Augments
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
             IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
 
-            if (fieldType.ToMethodTable()->IsFunctionPointer)
+            if (fieldTypeHandle.ToMethodTable()->IsFunctionPointer)
                 return ptrValue;
             
             return ReflectionPointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
