@@ -144,8 +144,9 @@ CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLe
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
-CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), 0) // Bitflag: 0x1 check classic, 0x2 check likely, 0x4 enable
-                                                           // asserts
+// -1: just do internal checks
+// Else bitflag: 0x1 check classic, 0x2 check likely, 0x4 enable asserts
+CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
 CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
@@ -380,8 +381,8 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 // Allow fine-grained controls of CSEs done in a particular method
 //
 // Specify method that will respond to the CSEMask.
-// 0 means feature disabled and all methods run CSE normally.
-CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), 0)
+// -1 means feature disabled and all methods run CSE normally.
+CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), -1)
 
 // Bitmask of allowed CSEs in methods specified by JitCSEHash.
 // These bits control the "cse attempts" made by normal jitting,
@@ -401,9 +402,39 @@ CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
 // Enable metric output in jit disasm & elsewhere
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
 
-// When nonzero, choose CSE candidates randomly, with probability
+// When nonzero, choose CSE candidates randomly, with hash salt
 // specified by the (decimal) value of the config
 CONFIG_INTEGER(JitRandomCSE, W("JitRandomCSE"), 0)
+
+// When set, specifies the exact CSEs to perform
+// as a sequence of CSE candidate numbers
+CONFIG_STRING(JitReplayCSE, W("JitReplayCSE"))
+
+// When set, specify the sequence of rewards from the CSE replay.
+// There should be one reward per step in the sequence.
+CONFIG_STRING(JitReplayCSEReward, W("JitReplayCSEReward"))
+
+// When set, specifies the initial parameter string for
+// a reinforcement-learning based CSE heuristic.
+//
+// Note you can also set JitReplayCSE and JitReplayCSEPerfScore
+// along with this, in which case we are asking for a policy
+// evaluation/update based on the provided sequence.
+CONFIG_STRING(JitRLCSE, W("JitRLCSE"))
+
+// When set, specify the alpha value (step size) to
+// use in learning.
+CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
+
+// If nonzero, dump out details of policy evaluation and
+// gradient updates
+CONFIG_INTEGER(JitRLCSEVerbose, W("JitRLCSEVerbose"), 0)
+
+// If nonzero, dump candidate feature values
+CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
+
+// If nonzero, use the greedy policy with current parameters.
+CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
 
 #endif
 

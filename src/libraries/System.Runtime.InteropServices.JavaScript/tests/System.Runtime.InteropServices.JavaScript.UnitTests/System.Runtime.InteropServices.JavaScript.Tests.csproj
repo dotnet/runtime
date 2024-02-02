@@ -8,24 +8,20 @@
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
-    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <!-- to see timing and which test aborted the runtime -->
-    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
   </PropertyGroup>
   <!-- Make debugging easier -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeStrip>false</WasmNativeStrip>
-    <WasmXHarnessMonoArgs>$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportExportTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Utils.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
@@ -33,13 +29,29 @@
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\timers.mjs" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\src\System.Threading.Thread.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureWasmThreads)' == 'true'" >
+  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' != 'true'">
+    <Compile Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureWasmManagedThreads)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
+    <None Include="System\Runtime\InteropServices\JavaScript\test.json" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
+    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\test.json" />
   </ItemGroup>
 </Project>

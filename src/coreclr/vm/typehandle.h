@@ -385,7 +385,7 @@ public:
 #ifdef _DEBUG
     // Check that this type matches the key given
     // i.e. that all aspects (element type, module/token, rank for arrays, instantiation for generic types) match up
-    CHECK CheckMatchesKey(TypeKey *pKey) const;
+    CHECK CheckMatchesKey(const TypeKey *pKey) const;
 
     // Check that this type is loaded up to the level indicated
     // Also check that it is non-null
@@ -493,13 +493,6 @@ public:
 
     // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
-
-    BOOL IsRestored() const;
-
-    // Does this type have zap-encoded components (generic arguments, etc)?
-    BOOL HasUnrestoredTypeKey() const;
-
-    void DoRestoreTypeKey();
 
     void CheckRestore() const;
     BOOL IsExternallyVisible() const;

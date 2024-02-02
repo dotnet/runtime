@@ -248,7 +248,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.LdTokenResultLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.Metadata.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MetadataSignatureParsing.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.MethodAddress.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.SignatureParsing.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderEnvironment.StaticsLookup.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\TypeLoaderLogger.cs" />

@@ -62,6 +62,8 @@
 /src/mono/dlls @thaystg @lambdageek
 
 /src/native/public/mono @marek-safar @lambdageek
+/src/native/external/libunwind @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
+/src/native/external/libunwind_extras @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 
 /src/libraries/sendtohelix-browser.targets @akoeplinger
 /src/libraries/sendtohelix-wasm.targets @akoeplinger

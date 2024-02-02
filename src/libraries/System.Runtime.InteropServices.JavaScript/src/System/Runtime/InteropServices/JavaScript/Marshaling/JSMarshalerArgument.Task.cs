@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 };
                 holder.Callback = callback;
                 value = tcs.Task;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // if the other thread created it, signal that it's ready
                 holder.CallbackReady?.Set();
 #endif
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 };
                 holder.Callback = callback;
                 value = tcs.Task;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 // if the other thread created it, signal that it's ready
                 holder.CallbackReady?.Set();
 #endif
@@ -188,7 +188,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
@@ -268,7 +268,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
@@ -340,7 +340,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
 #else
             task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
@@ -373,7 +373,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             exc.InitializeWithContext(holder.ProxyContext);
             res.InitializeWithContext(holder.ProxyContext);
             arg_value.InitializeWithContext(holder.ProxyContext);
@@ -394,7 +394,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
@@ -413,7 +413,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             exc.InitializeWithContext(holder.ProxyContext);
             res.InitializeWithContext(holder.ProxyContext);
             arg_value.InitializeWithContext(holder.ProxyContext);
@@ -433,7 +433,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else
@@ -452,7 +452,7 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             exc.InitializeWithContext(holder.ProxyContext);
             res.InitializeWithContext(holder.ProxyContext);
             arg_value.InitializeWithContext(holder.ProxyContext);
@@ -473,7 +473,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(args);
 #else

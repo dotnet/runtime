@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
 using System;
 using System.IO;
+
+using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.TestUtils;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -118,8 +120,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public class SharedTestState : IDisposable
         {
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
             public TestArtifact BaseDirectory { get; }
 
             public SharedTestState()
@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Create an empty global.json file
                 Directory.CreateDirectory(BaseDirectory.Location);
-                File.WriteAllText(Path.Combine(BaseDirectory.Location, "global.json"), "{}");
+                GlobalJson.CreateEmpty(BaseDirectory.Location);
             }
 
             public void Dispose()

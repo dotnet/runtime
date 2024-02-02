@@ -25,11 +25,6 @@ namespace System
     {
         private MethodTable* _value;
 
-        public EETypePtr(IntPtr value)
-        {
-            _value = (MethodTable*)value;
-        }
-
         internal EETypePtr(MethodTable* value)
         {
             _value = value;

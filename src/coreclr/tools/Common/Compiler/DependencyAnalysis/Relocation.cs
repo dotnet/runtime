@@ -53,6 +53,10 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12    = 0x10B,
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC = 0x10C,
 
+        // Linux arm32
+        IMAGE_REL_ARM_PREL31                 = 0x10D,
+        IMAGE_REL_ARM_JUMP24                 = 0x10E,
+
         //
         // Relocations for R2R image production
         //
@@ -420,9 +424,11 @@ namespace ILCompiler.DependencyAnalysis
             // first get the high 20 bits,
             int imm = (int)((auipcInstr & 0xfffff000));
             // then get the low 12 bits,
-            uint addiInstr = *(pCode + 1);
-            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
-            imm += ((int)(addiInstr)) >> 20;
+            uint nextInstr = *(pCode + 1);
+            Debug.Assert((nextInstr & 0x707f) == 0x00000013 ||
+                         (nextInstr & 0x707f) == 0x00000067 ||
+                         (nextInstr & 0x707f) == 0x00003003);
+            imm += ((int)(nextInstr)) >> 20;
 
             return imm;
         }
@@ -434,6 +440,10 @@ namespace ILCompiler.DependencyAnalysis
         //  case:EA_PTR_DSP_RELOC
         //   auipc  reg, off-hi-20bits
         //   ld     reg, reg, off-lo-12bits
+        //  case:
+        // INS_OPTS_C
+        //   auipc  reg, off-hi-20bits
+        //   jalr   reg, reg, off-lo-12bits
         private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
@@ -446,10 +456,12 @@ namespace ILCompiler.DependencyAnalysis
             auipcInstr |= (uint)((imm32 + 0x800) & 0xfffff000);
             *pCode = auipcInstr;
 
-            uint addiInstr = *(pCode + 1);
-            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
-            addiInstr |= (uint)((doff & 0xfff) << 20);
-            *(pCode + 1) = addiInstr;
+            uint nextInstr = *(pCode + 1);
+            Debug.Assert((nextInstr & 0x707f) == 0x00000013 ||
+                         (nextInstr & 0x707f) == 0x00000067 ||
+                         (nextInstr & 0x707f) == 0x00003003);
+            nextInstr |= (uint)((doff & 0xfff) << 20);
+            *(pCode + 1) = nextInstr;
 
             Debug.Assert(GetRiscV64PC(pCode) == imm32);
         }

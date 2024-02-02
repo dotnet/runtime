@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
             if (holder.IsDisposed)
             {
                 return;
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
             if (holder.IsDisposed)
             {
                 return;
