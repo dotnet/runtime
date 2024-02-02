@@ -667,14 +667,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DerivedClassWithRequiredProperty()
         {
-            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42, MyBool = true, MyLong = 4242 };
+            var value = new DerivedClassWithRequiredInitOnlyProperty { MyInt = 42, MyBool = true, MyString = "42", MyLong = 4242 };
             string json = await Serializer.SerializeWrapper(value);
-            Assert.Equal("""{"MyInt":42,"MyBool":true,"MyString":null,"MyLong":4242}""", json);
+            Assert.Equal("""{"MyInt":42,"MyBool":true,"MyString":"42","MyLong":4242}""", json);
 
             value = await Serializer.DeserializeWrapper<DerivedClassWithRequiredInitOnlyProperty>(json);
             Assert.Equal(42, value.MyInt);
             Assert.True(value.MyBool);
-            Assert.Null(value.MyString);
+            Assert.Equal("42", value.MyString);
             Assert.Equal(4242, value.MyLong);
         }
 
