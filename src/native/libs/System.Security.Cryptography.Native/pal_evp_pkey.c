@@ -189,10 +189,18 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     // Get the private components now that we've moved on to checking the private parameters.
     RSA_get0_factors(rsa, &p, &q);
 
-    // Need all the private parameters now.
+    // Need all the private parameters now. If we cannot get them, fall back to the OpenSSL key check so the provider
+    // or engine routine can be used.
     if (!d || !p || !q)
     {
-        ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        ret = -1;
+        goto done;
+    }
+
+    // Check that d is less than n.
+    if (BN_cmp(d, n) >= 0)
+    {
+        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
         goto done;
     }
 
@@ -226,6 +234,9 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     // pM1 = p-1
     // qM1 = q-1
     // x = lcm(pM1, qM1)
+    // Note that we are checking that these values have a valid relationship, not that the parameters
+    // are canonically correct. The d parameter (and subsequent derived parameters) may have more than
+    // one working value, but we do not check the the value is the "best" possible value.
     if (!BN_sub(pM1, p, BN_value_one()) || !BN_sub(qM1, q, BN_value_one()) || !Lcm(pM1, qM1, ctx, x))
     {
         goto done;
