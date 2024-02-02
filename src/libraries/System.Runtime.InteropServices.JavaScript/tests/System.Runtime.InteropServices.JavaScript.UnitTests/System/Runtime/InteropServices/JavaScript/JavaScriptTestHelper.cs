@@ -1003,7 +1003,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Setup();
             }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // are we in the UI thread ?
             if (Environment.CurrentManagedThreadId == 1)
 #endif

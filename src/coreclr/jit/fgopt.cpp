@@ -647,7 +647,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         }
                         else
                         {
-                            fgAddRefPred(newTryEntry->Next(), newTryEntry);
+                            FlowEdge* const newEdge = fgAddRefPred(newTryEntry->Next(), newTryEntry);
+                            newEdge->setLikelihood(1.0);
                         }
 
                         JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to new " FMT_BB "\n",
@@ -773,6 +774,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fromBlock->SetFlags(BBF_INTERNAL);
                     newBlock->RemoveFlags(BBF_DONT_REMOVE);
                     addedBlocks++;
+                    FlowEdge* const normalTryEntryEdge = fgGetPredForBlock(newBlock, fromBlock);
 
                     GenTree* const entryStateLcl = gtNewLclvNode(entryStateVar, TYP_INT);
                     GenTree* const compareEntryStateToZero =
@@ -781,8 +783,16 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                     fgNewStmtAtBeg(fromBlock, jumpIfEntryStateZero);
 
                     fromBlock->SetCond(toBlock, newBlock);
-                    fgAddRefPred(toBlock, fromBlock);
+                    FlowEdge* const osrTryEntryEdge = fgAddRefPred(toBlock, fromBlock);
                     newBlock->inheritWeight(fromBlock);
+
+                    // Not sure what the correct edge likelihoods are just yet;
+                    // for now we'll say the OSR path is the likely one.
+                    //
+                    // Todo: can we leverage profile data here to get a better answer?
+                    //
+                    osrTryEntryEdge->setLikelihood(0.9);
+                    normalTryEntryEdge->setLikelihood(0.1);
 
                     entryJumpTarget = fromBlock;
                 };
@@ -824,8 +834,8 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 if (entryJumpTarget != osrEntry)
                 {
                     fgFirstBB->SetTarget(entryJumpTarget);
-                    fgRemoveRefPred(osrEntry, fgFirstBB);
-                    fgAddRefPred(entryJumpTarget, fgFirstBB);
+                    FlowEdge* const oldEdge = fgRemoveRefPred(osrEntry, fgFirstBB);
+                    fgAddRefPred(entryJumpTarget, fgFirstBB, oldEdge);
 
                     JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
                             " via step blocks.\n",
@@ -1014,7 +1024,7 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         while (preds.Height() > 0)
         {
             BasicBlock* const predBlock = preds.Pop();
-            fgReplaceJumpTarget(predBlock, block, bNext);
+            fgReplaceJumpTarget(predBlock, bNext, block);
         }
     }
 

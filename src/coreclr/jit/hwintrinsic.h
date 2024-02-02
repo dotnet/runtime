@@ -210,6 +210,8 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is an embedded masking incompatible intrinsic
     HW_Flag_EmbMaskingIncompatible = 0x20000000,
 #endif // TARGET_XARCH
+
+    HW_Flag_CanBenefitFromConstantProp = 0x80000000,
 };
 
 #if defined(TARGET_XARCH)
@@ -621,6 +623,12 @@ struct HWIntrinsicInfo
         }
     }
 #endif // TARGET_XARCH
+
+    static bool CanBenefitFromConstantProp(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_CanBenefitFromConstantProp) != 0;
+    }
 
     static bool IsMaybeCommutative(NamedIntrinsic id)
     {

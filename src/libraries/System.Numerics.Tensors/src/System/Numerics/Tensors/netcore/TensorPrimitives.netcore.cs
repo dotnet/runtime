@@ -12073,13 +12073,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector128<T> negated = -x;
-                    if (Vector128.Equals(x, negated) != Vector128<T>.Zero)
+                    Vector128<T> abs = Vector128.ConditionalSelect(Vector128.LessThan(x, Vector128<T>.Zero), -x, x);
+                    if (Vector128.LessThan(abs, Vector128<T>.Zero) != Vector128<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector128.ConditionalSelect(Vector128.LessThan(x, Vector128<T>.Zero), negated, x);
                 }
 
                 return Vector128.Abs(x);
@@ -12097,13 +12095,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector256<T> negated = -x;
-                    if (Vector256.Equals(x, negated) != Vector256<T>.Zero)
+                    Vector256<T> abs = Vector256.ConditionalSelect(Vector256.LessThan(x, Vector256<T>.Zero), -x, x);
+                    if (Vector256.LessThan(abs, Vector256<T>.Zero) != Vector256<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector256.ConditionalSelect(Vector256.LessThan(x, Vector256<T>.Zero), negated, x);
                 }
 
                 return Vector256.Abs(x);
@@ -12121,13 +12117,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector512<T> negated = -x;
-                    if (Vector512.Equals(x, negated) != Vector512<T>.Zero)
+                    Vector512<T> abs = Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero), -x, x);
+                    if (Vector512.LessThan(abs, Vector512<T>.Zero) != Vector512<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero), negated, x);
                 }
 
                 return Vector512.Abs(x);

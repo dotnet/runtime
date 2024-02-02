@@ -328,7 +328,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 IEnumerable<PropertySpec> initOnlyProps = type.Properties.Where(prop => prop is { SetOnInit: true });
                 List<string> ctorArgList = new();
 
-                EmitStartBlock($"public static {type.TypeRef.FullyQualifiedName} {GetInitalizeMethodDisplayString(type)}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
+                EmitStartBlock($"public static {type.TypeRef.FullyQualifiedName} {GetInitializeMethodDisplayString(type)}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
                 _emitBlankLineBeforeNextStatement = false;
 
                 foreach (ParameterSpec parameter in type.ConstructorParameters)
@@ -709,12 +709,31 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     case ComplexTypeSpec complexType when _typeIndex.CanInstantiate(complexType):
                         {
+                            // If a section possesses a null or empty string value and lacks any children, we bind to the default value of the type.
+                            // In the case of a non-null or non-empty string value without any section children, binding cannot be performed at that moment,
+                            // and this section should be skipped.
+                            EmitBindCheckForSectionValue();
+
                             EmitBindingLogic(complexType, Identifier.value, Identifier.section, InitializationKind.Declaration, ValueDefaulting.None);
                             _writer.WriteLine($"{addExpr}({Identifier.value});");
                         }
                         break;
                 }
 
+                EmitEndBlock();
+            }
+
+            // EmitBindCheckForSectionValue produce the following code:
+            // if (!string.IsNullOrEmpty(section.Value) && !section.GetChildren().GetEnumerator().MoveNext()) { continue; }
+            //
+            // If a section possesses a null or empty string value and lacks any children, we bind to the default value of the type.
+            // In the case of a non-null or non-empty string value without any section children, binding cannot be performed at that moment,
+            // and this section should be skipped.
+            private void EmitBindCheckForSectionValue()
+            {
+                // We utilize GetEnumerator().MoveNext() instead of employing Linq's Any() since there is no assurance that the System.Linq reference is included.
+                EmitStartBlock($"if (!string.IsNullOrEmpty({Expression.sectionValue}) && !{Identifier.section}.{Identifier.GetChildren}().{Identifier.GetEnumerator}().{Identifier.MoveNext}())");
+                _writer.WriteLine($@"continue;");
                 EmitEndBlock();
             }
 
@@ -1132,7 +1151,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     else
                     {
                         Debug.Assert(strategy is ObjectInstantiationStrategy.ParameterizedConstructor);
-                        string initMethodIdentifier = GetInitalizeMethodDisplayString(((ObjectSpec)type));
+                        string initMethodIdentifier = GetInitializeMethodDisplayString(((ObjectSpec)type));
                         initExpr = $"{initMethodIdentifier}({configArgExpr}, {Identifier.binderOptions})";
                     }
                 }
@@ -1175,7 +1194,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     default:
                         {
-                            Debug.Fail($"Invaild initialization kind: {initKind}");
+                            Debug.Fail($"Invalid initialization kind: {initKind}");
                         }
                         break;
                 }

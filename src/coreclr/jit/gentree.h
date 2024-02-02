@@ -503,7 +503,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
-    GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
@@ -888,7 +887,7 @@ public:
 
     bool isContainedVecImmed() const
     {
-        return isContained() && OperIs(GT_CNS_VEC);
+        return isContained() && IsCnsVec();
     }
 
     bool isLclField() const
@@ -9095,7 +9094,7 @@ inline bool GenTree::IsVectorCreate() const
 inline bool GenTree::IsVectorAllBitsSet() const
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return AsVecCon()->IsAllBitsSet();
     }
@@ -9113,7 +9112,7 @@ inline bool GenTree::IsVectorAllBitsSet() const
 inline bool GenTree::IsVectorConst()
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return true;
     }

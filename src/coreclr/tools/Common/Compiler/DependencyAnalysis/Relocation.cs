@@ -55,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
 
         // Linux arm32
         IMAGE_REL_ARM_PREL31                 = 0x10D,
+        IMAGE_REL_ARM_JUMP24                 = 0x10E,
 
         //
         // Relocations for R2R image production
