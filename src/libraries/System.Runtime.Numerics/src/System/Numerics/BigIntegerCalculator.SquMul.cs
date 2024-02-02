@@ -160,10 +160,8 @@ namespace System.Numerics
         public static void Multiply(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(bits.Length >= left.Length + right.Length);
+            Debug.Assert(bits.Length == left.Length + right.Length);
             Debug.Assert(!bits.ContainsAnyExcept(0u));
-
-            bits = bits.Slice(0, left.Length + right.Length);
 
             if (left.Length - right.Length < 3)
             {
