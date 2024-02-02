@@ -63,7 +63,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'" >
     <!-- https://github.com/dotnet/runtime/issues/91676 -->
-    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-minimal-config\Wasm.Browser.Config.Sample.csproj" />
   </ItemGroup>
 
