@@ -52,11 +52,11 @@ PhaseStatus Compiler::optRedundantBranches()
 
                 madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
 
-                // If we modified some flow out of block but it's still
+                // If we modified some flow out of block but it's still referenced and
                 // a BBJ_COND, retry; perhaps one of the later optimizations
                 // we can do has enabled one of the earlier optimizations.
                 //
-                if (madeChangesThisBlock && block->KindIs(BBJ_COND))
+                if (madeChangesThisBlock && block->KindIs(BBJ_COND) && (block->countOfInEdges() > 0))
                 {
                     JITDUMP("Will retry RBO in " FMT_BB " after partial optimization\n", block->bbNum);
                     madeChangesThisBlock |= m_compiler->optRedundantBranch(block);
