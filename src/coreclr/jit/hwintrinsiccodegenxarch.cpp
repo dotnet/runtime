@@ -308,39 +308,47 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     genConsumeMultiOpOperands(node);
                     genConsumeRegs(lastOp);
 
-                    switch (numArgs)
+                    if(isTableDriven)
                     {
-                        case 1:
+                        switch (numArgs)
                         {
-                            regNumber targetReg = node->GetRegNum();
-                            GenTree* rmOp = node->Op(1);
-                            auto emitSwCase = [&](int8_t i) {
-                                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                                genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
-                            };
-                            regNumber baseReg = node->ExtractTempReg();
-                            regNumber offsReg = node->GetSingleTempReg();
-                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
-                                                            emitSwCase);
-                            break;
-                        }
-                        case 2:
-                        {
-                            auto emitSwCase = [&](int8_t i) {
-                                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                                genHWIntrinsic_R_R_RM(node, ins, simdSize, newInstOptions);
-                            };
-                            regNumber baseReg = node->ExtractTempReg();
-                            regNumber offsReg = node->GetSingleTempReg();
-                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
-                                                            emitSwCase);
-                            break;
-                        }
+                            case 1:
+                            {
+                                regNumber targetReg = node->GetRegNum();
+                                GenTree* rmOp = node->Op(1);
+                                auto emitSwCase = [&](int8_t i) {
+                                    insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                                    genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
+                                };
+                                regNumber baseReg = node->ExtractTempReg();
+                                regNumber offsReg = node->GetSingleTempReg();
+                                genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                                emitSwCase);
+                                break;
+                            }
+                            case 2:
+                            {
+                                auto emitSwCase = [&](int8_t i) {
+                                    insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                                    genHWIntrinsic_R_R_RM(node, ins, simdSize, newInstOptions);
+                                };
+                                regNumber baseReg = node->ExtractTempReg();
+                                regNumber offsReg = node->GetSingleTempReg();
+                                genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                                emitSwCase);
+                                break;
+                            }
 
-                        default:
-                        {
-                            unreached();
+                            default:
+                            {
+                                unreached();
+                            }
                         }
+                    }
+                    else
+                    {
+                        // There are a few embedded rounding intrinsics that need to be emitted with special handling.
+                        genNonTableDrivenHWIntrinsicsJumpTableFallback(node, lastOp);
                     }
 
                     genProduceReg(node);
@@ -1335,6 +1343,82 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     }
 
     genDefineTempLabel(switchTableEnd);
+}
+
+void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* lastOp)
+{
+    NamedIntrinsic         intrinsicId = node->GetHWIntrinsicId();
+    HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+    
+    assert(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId));
+    assert(!lastOp->isContained());
+    assert(!genIsTableDrivenHWIntrinsic(intrinsicId, category));
+
+    var_types   baseType   = node->GetSimdBaseType();
+    emitAttr    attr       = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+    var_types   targetType = node->TypeGet();
+    instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+    regNumber   targetReg  = node->GetRegNum();
+
+    insOpts instOptions   = INS_OPTS_NONE;
+    switch (intrinsicId)
+    {
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        {
+            // This intrinsic has several overloads, only the ones with floating number inputs should reach this part.
+            assert(varTypeIsFloating(baseType));
+            auto emitSwCase = [&](int8_t i) {
+                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, lastOp, newInstOptions);
+                };
+            regNumber baseReg = node->ExtractTempReg();
+            regNumber offsReg = node->GetSingleTempReg();
+            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                            emitSwCase);
+            break;
+        }
+        
+        case NI_AVX512F_ConvertToInt32:
+        case NI_AVX512F_ConvertToUInt32:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertToInt64:
+        case NI_AVX512F_X64_ConvertToUInt64:
+#endif // TARGET_AMD64
+        {
+            assert(varTypeIsFloating(baseType));
+            emitAttr attr = emitTypeSize(targetType);
+
+            auto emitSwCase = [&](int8_t i) {
+                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, lastOp, newInstOptions);
+                };
+            regNumber baseReg = node->ExtractTempReg();
+            regNumber offsReg = node->GetSingleTempReg();
+            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                            emitSwCase);
+            break;
+        }
+
+        case NI_AVX512F_X64_ConvertScalarToVector128Single:
+        case NI_AVX512F_X64_ConvertScalarToVector128Double:
+        {
+            assert(varTypeIsLong(baseType));
+            auto emitSwCase = [&](int8_t i) {
+                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, newInstOptions);
+                };
+            regNumber baseReg = node->ExtractTempReg();
+            regNumber offsReg = node->GetSingleTempReg();
+            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                            emitSwCase);
+            break;
+        }
+
+        default:
+            unreached();
+            break;
+    }
 }
 
 //------------------------------------------------------------------------

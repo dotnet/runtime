@@ -1009,6 +1009,8 @@ protected:
                                          regNumber                 baseReg,
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
+
+    void genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* lastOp);
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64

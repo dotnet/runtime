@@ -210,7 +210,7 @@ namespace IntelHardwareIntrinsicTest._Avx512F
             Assert.Equal(1, testResult);
         }
 
-                [Fact]
+        [Fact]
         public static unsafe void ConvertToUInt64EmbeddedRounding_Single()
         {
             int testResult = 1;
@@ -259,7 +259,7 @@ namespace IntelHardwareIntrinsicTest._Avx512F
             int testResult = 1;
             uint[] answerTable_ToNegativeInfinity = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000,};
             uint[] answerTable_ToPositiveInfinity  = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000};
-            uint[] answerTable_ToZero = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000};     
+            uint[] answerTable_ToZero = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000};
             if (Avx512F.X64.IsSupported)
             {
                 using (TestTable<float> floatTable = new TestTable<float>(new float[4] { -1.0f, -1.0f, -1.0f, -1.0f }, new float[4]))
@@ -374,6 +374,398 @@ namespace IntelHardwareIntrinsicTest._Avx512F
                     for (int i = 0; i < floatTable.outArray.Length; i++)
                     {
                         if (BitConverter.SingleToUInt32Bits(floatTable.outArray[i]) != answerTable_ToNegativeInfinity[i])
+                        {
+                            Console.WriteLine("Avx512 ConvertScalarToVector128Single Embedded rounding failed on UInt64 input with ToZero:");
+                            foreach (var item in floatTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            Assert.Fail("");
+                        }
+                    }
+                }
+            }
+            Assert.Equal(1, testResult);
+        }
+        
+        [Fact]
+        public static unsafe void ConvertToInt32EmbeddedRoundingReflection_Single()
+        {
+            int testResult = 1;
+            int answerTable_ToNegativeInfinity = -1;
+            int answerTable_ToPositiveInfinity  = 0;
+            int answerTable_ToZero = 0;
+            if (Avx512F.IsSupported)
+            {
+                Vector128<float> inputVec = Vector128.Create(-0.45f, -0.45f, -0.45f, -0.45f);
+                var res = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToInt32), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                        .Invoke(null, new object[] {
+                        inputVec,
+                        FloatRoundingMode.ToNegativeInfinity
+                        });
+
+                if ((int)res != answerTable_ToNegativeInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToInt32 Embedded rounding failed on float with ToNegativeInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToInt32), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToPositiveInfinity
+                    });
+
+                if ((int)res != answerTable_ToPositiveInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToInt32 Embedded rounding failed on float with ToPositiveInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToInt32), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToZero
+                    });
+
+                if ((int)res != answerTable_ToZero)
+                {
+                    Console.WriteLine("Avx512 ConvertToInt32 Embedded rounding failed on float with ToZero:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+            }
+            Assert.Equal(1, testResult);
+        }
+
+        [Fact]
+        public static unsafe void ConvertToUInt32EmbeddedRoundingReflection_Single()
+        {
+            int testResult = 1;
+            uint answerTable_ToNegativeInfinity = 4294967295;
+            uint answerTable_ToPositiveInfinity  = 0;
+            uint answerTable_ToZero = 0;
+            if (Avx512F.IsSupported)
+            {
+                Vector128<float> inputVec = Vector128.Create(-0.45f, -0.45f, -0.45f, -0.45f);
+                var res = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToUInt32), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                        .Invoke(null, new object[] {
+                        inputVec,
+                        FloatRoundingMode.ToNegativeInfinity
+                        });
+
+                if ((uint)res != answerTable_ToNegativeInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToUInt32 Embedded rounding failed on float with ToNegativeInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToUInt32), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToPositiveInfinity
+                    });
+
+                if ((uint)res != answerTable_ToPositiveInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToUInt32 Embedded rounding failed on float with ToPositiveInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F).GetMethod(nameof(Avx512F.ConvertToUInt32), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToZero
+                    });
+
+                if ((uint)res != answerTable_ToZero)
+                {
+                    Console.WriteLine("Avx512 ConvertToUInt32 Embedded rounding failed on float with ToZero:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+            }
+            Assert.Equal(1, testResult);
+        }
+
+        [Fact]
+        public static unsafe void ConvertToInt64EmbeddedRoundingReflection_Single()
+        {
+            int testResult = 1;
+            long answerTable_ToNegativeInfinity = -1;
+            long answerTable_ToPositiveInfinity  = 0;
+            long answerTable_ToZero = 0;
+            if (Avx512F.X64.IsSupported)
+            {
+                Vector128<float> inputVec = Vector128.Create(-0.45f, -0.45f, -0.45f, -0.45f);
+                
+                var res = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertToInt64), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                                     .Invoke(null, new object[] {
+                                        inputVec,
+                                        FloatRoundingMode.ToNegativeInfinity
+                                     });
+
+                if ((long)res != answerTable_ToNegativeInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToInt64 Embedded rounding failed on float with ToNegativeInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertToInt64), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToPositiveInfinity
+                    });
+
+                if ((long)res != answerTable_ToPositiveInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToInt64 Embedded rounding failed on float with ToPositiveInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertToInt64), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToZero
+                    });
+
+                if ((long)res != answerTable_ToZero)
+                {
+                    Console.WriteLine("Avx512 ConvertToInt64 Embedded rounding failed on float with ToZero:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+            }
+            Assert.Equal(1, testResult);
+        }
+
+        [Fact]
+        public static unsafe void ConvertToUInt64EmbeddedRoundingReflection_Single()
+        {
+            int testResult = 1;
+            ulong answerTable_ToNegativeInfinity = 18446744073709551615;
+            ulong answerTable_ToPositiveInfinity  = 0;
+            ulong answerTable_ToZero = 0;
+            if (Avx512F.X64.IsSupported)
+            {
+                Vector128<float> inputVec = Vector128.Create(-0.45f, -0.45f, -0.45f, -0.45f);
+                
+                var res = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertToUInt64), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                                     .Invoke(null, new object[] {
+                                        inputVec,
+                                        FloatRoundingMode.ToNegativeInfinity
+                                     });
+
+                if ((ulong)res != answerTable_ToNegativeInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToUInt64 Embedded rounding failed on float with ToNegativeInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertToUInt64), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToPositiveInfinity
+                    });
+
+                if ((ulong)res != answerTable_ToPositiveInfinity)
+                {
+                    Console.WriteLine("Avx512 ConvertToUInt64 Embedded rounding failed on float with ToPositiveInfinity:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+
+                res = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertToUInt64), new Type[] { typeof(Vector128<Single>) , typeof(FloatRoundingMode)})
+                    .Invoke(null, new object[] {
+                    inputVec,
+                    FloatRoundingMode.ToZero
+                    });
+
+                if ((ulong)res != answerTable_ToZero)
+                {
+                    Console.WriteLine("Avx512 ConvertToUInt64 Embedded rounding failed on float with ToZero:");
+                    Console.Write(res);
+                    Console.WriteLine();
+                    Assert.Fail("");
+                }
+            }
+            Assert.Equal(1, testResult);
+        }
+
+        [Fact]
+        public static unsafe void ConvertScalarToVector128SingleInt64EmbeddedRoundingReflection_Single()
+        {
+            int testResult = 1;
+            uint[] answerTable_ToNegativeInfinity = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000,};
+            uint[] answerTable_ToPositiveInfinity  = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000};
+            uint[] answerTable_ToZero = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000};    
+            if (Avx512F.X64.IsSupported)
+            {
+                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { -1.0f, -1.0f, -1.0f, -1.0f}, new float[4]))
+                {
+                    long value = 15;
+                    var vd3 = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(long), typeof(FloatRoundingMode)})
+                            .Invoke(null, new object[] {
+                            Unsafe.Read<Vector128<Single>>(floatTable.inArrayPtr),
+                            value,
+                            FloatRoundingMode.ToNegativeInfinity
+                            });
+
+                    Unsafe.Write(floatTable.outArrayPtr, (Vector128<float>)(vd3));
+
+                    for (int i = 0; i < floatTable.outArray.Length; i++)
+                    {
+                        if (BitConverter.SingleToUInt32Bits(floatTable.outArray[i]) != answerTable_ToNegativeInfinity[i])
+                        {
+                            Console.WriteLine("Avx512 ConvertScalarToVector128Single Embedded rounding failed on Int64 input with ToNegativeInfinity:");
+                            foreach (var item in floatTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            Assert.Fail("");
+                        }
+                    }
+
+                    vd3 = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(long), typeof(FloatRoundingMode)})
+                        .Invoke(null, new object[] {
+                        Unsafe.Read<Vector128<Single>>(floatTable.inArrayPtr),
+                        value,
+                        FloatRoundingMode.ToPositiveInfinity
+                        });
+
+                    Unsafe.Write(floatTable.outArrayPtr, (Vector128<float>)(vd3));
+
+                    for (int i = 0; i < floatTable.outArray.Length; i++)
+                    {
+                        if (BitConverter.SingleToUInt32Bits(floatTable.outArray[i]) != answerTable_ToPositiveInfinity[i])
+                        {
+                            Console.WriteLine("Avx512 ConvertScalarToVector128Single Embedded rounding failed on Int64 input with ToPositiveInfinity:");
+                            foreach (var item in floatTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            Assert.Fail("");
+                        }
+                    }
+
+                    vd3 = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(long), typeof(FloatRoundingMode)})
+                        .Invoke(null, new object[] {
+                        Unsafe.Read<Vector128<Single>>(floatTable.inArrayPtr),
+                        value,
+                        FloatRoundingMode.ToZero
+                        });
+
+                    Unsafe.Write(floatTable.outArrayPtr, (Vector128<float>)(vd3));
+
+                    for (int i = 0; i < floatTable.outArray.Length; i++)
+                    {
+                        if (BitConverter.SingleToUInt32Bits(floatTable.outArray[i]) != answerTable_ToZero[i])
+                        {
+                            Console.WriteLine("Avx512 ConvertScalarToVector128Single Embedded rounding failed on Int64 input with ToZero:");
+                            foreach (var item in floatTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            Assert.Fail("");
+                        }
+                    }
+                }
+            }
+            Assert.Equal(1, testResult);
+        }
+
+        [Fact]
+        public static unsafe void ConvertScalarToVector128SingleUInt64EmbeddedRoundingReflection_Single()
+        {
+            int testResult = 1;
+            uint[] answerTable_ToNegativeInfinity = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000,};
+            uint[] answerTable_ToPositiveInfinity  = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000};
+            uint[] answerTable_ToZero = new uint[4] {0x41700000, 0xbf800000, 0xbf800000, 0xbf800000};   
+            if (Avx512F.X64.IsSupported)
+            {
+                using (TestTable<float> floatTable = new TestTable<float>(new float[4] { -1.0f, -1.0f, -1.0f, -1.0f}, new float[4]))
+                {
+                    ulong value = 15;
+                    var vd3 = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(ulong), typeof(FloatRoundingMode)})
+                            .Invoke(null, new object[] {
+                            Unsafe.Read<Vector128<Single>>(floatTable.inArrayPtr),
+                            value,
+                            FloatRoundingMode.ToNegativeInfinity
+                            });
+                    
+                    Unsafe.Write(floatTable.outArrayPtr, (Vector128<float>)(vd3));
+
+                    for (int i = 0; i < floatTable.outArray.Length; i++)
+                    {
+                        if (BitConverter.SingleToUInt32Bits(floatTable.outArray[i]) != answerTable_ToNegativeInfinity[i])
+                        {
+                            Console.WriteLine("Avx512 ConvertScalarToVector128Single Embedded rounding failed on UInt64 input with ToNegativeInfinity:");
+                            foreach (var item in floatTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            Assert.Fail("");
+                        }
+                    }
+
+                    vd3 = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(ulong), typeof(FloatRoundingMode)})
+                        .Invoke(null, new object[] {
+                        Unsafe.Read<Vector128<Single>>(floatTable.inArrayPtr),
+                        value,
+                        FloatRoundingMode.ToPositiveInfinity
+                        });
+
+                    Unsafe.Write(floatTable.outArrayPtr, (Vector128<float>)(vd3));
+
+                    for (int i = 0; i < floatTable.outArray.Length; i++)
+                    {
+                        if (BitConverter.SingleToUInt32Bits(floatTable.outArray[i]) != answerTable_ToPositiveInfinity[i])
+                        {
+                            Console.WriteLine("Avx512 ConvertScalarToVector128Single Embedded rounding failed on UInt64 input with ToPositiveInfinity:");
+                            foreach (var item in floatTable.outArray)
+                            {
+                                Console.Write(item + ", ");
+                            }
+                            Console.WriteLine();
+                            Assert.Fail("");
+                        }
+                    }
+
+                    vd3 = typeof(Avx512F.X64).GetMethod(nameof(Avx512F.X64.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(ulong), typeof(FloatRoundingMode)})
+                        .Invoke(null, new object[] {
+                        Unsafe.Read<Vector128<Single>>(floatTable.inArrayPtr),
+                        value,
+                        FloatRoundingMode.ToZero
+                        });
+
+                    Unsafe.Write(floatTable.outArrayPtr, (Vector128<float>)(vd3));
+
+                    for (int i = 0; i < floatTable.outArray.Length; i++)
+                    {
+                        if (BitConverter.SingleToUInt32Bits(floatTable.outArray[i]) != answerTable_ToZero[i])
                         {
                             Console.WriteLine("Avx512 ConvertScalarToVector128Single Embedded rounding failed on UInt64 input with ToZero:");
                             foreach (var item in floatTable.outArray)
