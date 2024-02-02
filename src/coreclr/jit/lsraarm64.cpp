@@ -707,9 +707,10 @@ int LinearScan::BuildNode(GenTree* tree)
             //{
             //    mask = genRegMask(REG_R1, TYP_I_IMPL);
             //}
-            if (tree->IsIconHandle(GTF_ICON_TLS_HDL) && tree->AsIntCon()->IconValue() != 0)
+            if ((tree->gtFlags & (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL)) ==
+                (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL))
             {
-                mask = genRegMask(REG_R2, TYP_I_IMPL); //TODO: This also gets called for things unneeded // [000033]
+                mask = genRegMask(REG_R2, TYP_I_IMPL); //TODO: This also gets called for things unneeded // [000029]
             }
             RefPosition* def               = BuildDef(tree, mask);
             def->getInterval()->isConstant = true;

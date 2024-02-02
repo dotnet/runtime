@@ -666,6 +666,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             /*unsigned tlsLclNum              = lvaGrabTemp(true DEBUGARG("TLS access"));
             lvaTable[tlsLclNum].lvType      = TYP_I_IMPL;*/
             GenTree* tlsRootOffset = gtNewIconHandleNode((size_t)tlsRootObject, GTF_ICON_TLS_HDL); // [000016]
+            tlsRootOffset->gtFlags |= GTF_ICON_TLSGD_OFFSET;
             //GenTree* tlsValueDef            = gtNewStoreLclVarNode(tlsLclNum, tlsRootOffset); // [000017]
             //tlsValueDef->gtFlags
             //GenTree* tlsValueUse         = gtNewLclVarNode(tlsLclNum); // [000018]

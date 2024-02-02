@@ -3632,7 +3632,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (specialCase)
         {
             GenTree* mthdHandle = (GenTree*)call->gtCallMethHnd;
-            assert(mthdHandle != nullptr && mthdHandle->IsIconHandle(GTF_ICON_TLS_HDL));
+            GenTreeFlags tlsFlags   = (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL);
+            assert(mthdHandle != nullptr && ((mthdHandle->gtFlags & tlsFlags) == tlsFlags));
             GenTreeIntCon* iconNode = mthdHandle->AsIntCon();
             methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
             emitter* emit = GetEmitter();
