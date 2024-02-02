@@ -369,8 +369,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
     if (ctrlExpr != nullptr)
     {
 #ifdef TARGET_ARM64
-        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix &&
-            (call->gtArgs.CountArgs() == 0) && ctrlExpr->IsTlsIconHandle())
+        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && (call->gtArgs.CountArgs() == 0) &&
+            ctrlExpr->IsTlsIconHandle())
         {
             // For NativeAOT linux/arm64, we generate the needed code as part of
             // call node because the generated code has to be in specific format

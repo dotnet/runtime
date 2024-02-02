@@ -3631,11 +3631,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         if (isTlsHandleTarget)
         {
             assert(call->gtFlags & GTF_TLS_GET_ADDR);
-            emitter* emitter = GetEmitter();
-            emitAttr attr    = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
+            emitter*       emitter  = GetEmitter();
+            emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
             GenTreeIntCon* iconNode = target->AsIntCon();
             methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
-            retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC); 
+            retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
 
             // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
             // it as part of the call. Generating individual instructions is tricky to get it
@@ -3657,7 +3657,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
 
             // ldr
-            emitter->emitIns_R_R_I(INS_ldr, attr, target->GetRegNum(), REG_R0, (ssize_t)methHnd);            
+            emitter->emitIns_R_R_I(INS_ldr, attr, target->GetRegNum(), REG_R0, (ssize_t)methHnd);
         }
 #endif
 

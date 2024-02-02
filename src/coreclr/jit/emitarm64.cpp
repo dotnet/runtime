@@ -13192,7 +13192,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idIns(ins);
         id->idInsFmt(fmt);
 
-        
         assert(xreg == REG_NA);
         if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
         {
@@ -16134,8 +16133,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
             assert((ins == INS_br_tail) || (ins == INS_blr));
-            code = emitInsCode(ins, fmt);            
-            
+            code = emitInsCode(ins, fmt);
+
             if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
             {
                 emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
@@ -16445,9 +16444,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins, fmt);
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
-                                     id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
-                                                     : IMAGE_REL_ARM64_PAGEBASE_REL21);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
+                                                                                  : IMAGE_REL_ARM64_PAGEBASE_REL21);
             }
             else
             {
@@ -16490,9 +16488,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
-                                        id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
-                                                        : IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
+                                                                                  : IMAGE_REL_ARM64_PAGEOFFSET_12A);
             }
             break;
 

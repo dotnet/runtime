@@ -666,7 +666,6 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
             GenTree* tlsRootOffset = gtNewIconHandleNode((size_t)tlsRootObject, GTF_ICON_TLS_HDL);
             tlsRootOffset->gtFlags |= GTF_ICON_TLSGD_OFFSET;
 
-
             GenTree*     tlsCallIndir = gtCloneExpr(tlsRootOffset);
             GenTreeCall* tlsRefCall   = gtNewIndCallNode(tlsCallIndir, TYP_I_IMPL);
             tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
