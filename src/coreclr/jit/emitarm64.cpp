@@ -13194,8 +13194,12 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         
         assert(xreg == REG_NA);
-        if (EA_IS_CNS_TLSGD_RELOC(retSize))
+        if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
         {
+            // For NativeAOT linux/arm64, we need to also record the relocation of methHnd
+            // Since we do not have space to embed it in instrDesc, we store the register in
+            // reg1 and instead use the `iiaAdd` to store the method handle. Likewise, during
+            // emitOutputInstr, we retrieve the register from reg1 for this specific case.
             id->idSetTlsGD();
             id->idReg1(ireg);
             id->idAddr()->iiaAddr = (BYTE*)methHnd;
@@ -16132,7 +16136,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert((ins == INS_br_tail) || (ins == INS_blr));
             code = emitInsCode(ins, fmt);            
             
-            if (id->idIsTlsGD())
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
             {
                 emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
                                      IMAGE_REL_AARCH64_TLSDESC_CALL);
@@ -16172,7 +16176,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             code |= insEncodeReg_Rn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
-            if (id->idIsTlsGD() && id->idIsLargeCns())
+            if (id->idIsTlsGD())
             {
                 emitRecordRelocation(odst, (void*)emitGetInsSC(id), IMAGE_REL_AARCH64_TLSDESC_LD64_LO12);
             }
@@ -16441,14 +16445,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins, fmt);
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
-                if (id->idIsTlsGD())
-                {
-                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21);
-                }
-                else
-                {
-                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEBASE_REL21);
-                }
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
+                                     id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
+                                                     : IMAGE_REL_ARM64_PAGEBASE_REL21);
             }
             else
             {
@@ -16491,14 +16490,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                if (id->idIsTlsGD())
-                {
-                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADD_LO12);
-                }
-                else
-                {
-                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
-                }
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
+                                        id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
+                                                        : IMAGE_REL_ARM64_PAGEOFFSET_12A);
             }
             break;
 

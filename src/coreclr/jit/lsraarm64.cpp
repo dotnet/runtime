@@ -698,12 +698,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             srcCount = 0;
             assert(dstCount == 1);
-            regMaskTP mask = RBM_NONE;
-            if (tree->IsTlsIconHandle())
-            {
-                mask = genRegMask(REG_R2, TYP_I_IMPL);
-            }
-            RefPosition* def               = BuildDef(tree, mask);
+            RefPosition* def               = BuildDef(tree);
             def->getInterval()->isConstant = true;
         }
         break;

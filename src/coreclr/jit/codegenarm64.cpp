@@ -2335,7 +2335,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
                 if (tree->IsTlsIconHandle())
                 {
-                    // no need to generate because we already generated it as part of GT_CALL
+                    // no need to generate because we generate it as part of GT_CALL
                     break;
                 }
             }

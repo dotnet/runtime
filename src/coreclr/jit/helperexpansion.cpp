@@ -746,10 +746,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     // fallback will just execute first time
     fallbackBb->bbSetRunRarely();
 
-    //if (!(TargetOS::IsUnix && TargetArchitecture::IsArm64))
-    {
-        fgRemoveRefPred(block, prevBb);
-    }
+    fgRemoveRefPred(block, prevBb);
     fgAddRefPred(tlsRootNullCondBB, prevBb);
     prevBb->SetTarget(tlsRootNullCondBB);
 
