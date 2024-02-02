@@ -230,9 +230,9 @@ public:
 
 Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
 {
-    if (tree->OperIsConst())
+    if (tree->OperIs(GT_CNS_INT, GT_CNS_LNG))
     {
-        return NewConstant(tree->TypeGet(), tree->AsIntConCommon()->IntegralValue());
+        return CreateScevForConstant(tree->AsIntConCommon());
     }
 
     if (tree->OperIs(GT_LCL_VAR) && tree->AsLclVarCommon()->HasSsaName())
@@ -774,6 +774,21 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
 PhaseStatus Compiler::optInductionVariables()
 {
     JITDUMP("*************** In optInductionVariables()\n");
+
+    if (JitConfig.JitEnableInductionVariableOpts() == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+#ifdef DEBUG
+    static ConfigMethodRange s_range;
+    s_range.EnsureInit(JitConfig.JitEnableInductionVariableOptsRange());
+
+    if (!s_range.Contains(info.compMethodHash()))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
 
     m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
     ScalarEvolutionContext scevContext(this);
