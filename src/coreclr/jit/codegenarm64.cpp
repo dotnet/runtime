@@ -2333,9 +2333,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (con->ImmedValNeedsReloc(compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+                GenTreeFlags tlsFlags = (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL);
+
                 if (tree->IsIconHandle(GTF_ICON_TLS_HDL))
                 {
-                    attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+                    //attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
                     //if (tree->AsIntCon()->gtIconVal == 0)
                     //{
                     //    GetEmitter()->emitIns_R(INS_mrs_tpid0, attr, targetReg);
@@ -2353,9 +2355,10 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 //    GetEmitter()->emitIns_R_R(INS_lea, attr, tree->GetReg(), REG_R0);
                 //    break;
                 //}
-                else if (tree->IsIconHandle(GTF_ICON_TLSGD_OFFSET))
+                else if ((tree->gtFlags & tlsFlags) == tlsFlags)
                 {
-                    attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+                    /*attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);*/
+                    break;
                 }
             }
 
