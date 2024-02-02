@@ -51,9 +51,9 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     try {
         ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
     }
-    catch (e) {
-        mono_log_warn("WebSocket error", e);
-        throw e;
+    catch (error: any) {
+        mono_log_warn("WebSocket error in ws_wasm_create: " + error.toString());
+        throw error;
     }
     const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
 
@@ -105,9 +105,11 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         if (ws[wasm_ws_is_aborted]) return;
         if (!loaderHelpers.is_runtime_running()) return;
         ws.removeEventListener("message", local_on_message);
-        const error = new Error(ev.message || "WebSocket error");
-        mono_log_warn("WebSocket error", error);
-        reject_promises(ws, error);
+        const message = ev.message
+            ? "WebSocket error :" + ev.message
+            : "WebSocket error";
+        mono_log_warn(message);
+        reject_promises(ws, new Error(message));
     };
     ws.addEventListener("message", local_on_message);
     ws.addEventListener("open", local_on_open, { once: true });
@@ -235,8 +237,8 @@ export function ws_wasm_abort(ws: WebSocketExtension): void {
     try {
         // this is different from Managed implementation
         ws.close(1000, "Connection was aborted.");
-    } catch (error) {
-        mono_log_warn("WebSocket error while aborting", error);
+    } catch (error: any) {
+        mono_log_warn("WebSocket error in ws_wasm_abort: " + error.toString());
     }
 }
 
