@@ -5382,9 +5382,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             int lowerBound;
             int upperBound;
             if (optAssertionProp_GetInt32Range(assertions, tree->gtGetOp1(), &lowerBound, &upperBound) &&
-                (lowerBound >= 0) && (upperBound <= stackallocThreshold))
+                (lowerBound >= 0) && (upperBound <= stackallocThreshold) && (upperBound > 0))
             {
-                tree->AsOp()->gtOp1 = gtNewIconNode(stackallocThreshold, TYP_I_IMPL);
+                tree->AsOp()->gtOp1 = gtNewIconNode(upperBound, TYP_I_IMPL);
                 fgUpdateConstTreeValueNumber(tree->gtGetOp1());
                 return optAssertionProp_Update(tree, tree, stmt);
             }
