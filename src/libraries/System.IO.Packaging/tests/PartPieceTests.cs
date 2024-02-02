@@ -3,15 +3,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO.Compression;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using NuGet.Frameworks;
 using Xunit;
 
 namespace System.IO.Packaging.Tests
