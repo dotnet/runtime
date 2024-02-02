@@ -2398,6 +2398,7 @@ public:
     void emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);
+    BYTE* emitInstrSve(instrDesc* id, BYTE* dst);
 
     bool emitHasFramePtr;
 

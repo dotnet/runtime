@@ -19156,6 +19156,209 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        default:
+            dst = emitInstrSve(id, dst);
+            break;
+    }
+
+    // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
+    // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
+    // GC ref to register "id->idReg1()".  (It may, apparently, also not be GC_NONE in other cases, such as
+    // for stores, but we ignore those cases here.)
+    if (emitInsMayWriteToGCReg(id)) // True if "id->idIns()" writes to a register than can hold GC ref.
+    {
+        // We assume that "idReg1" is the primary destination register for all instructions
+        assert(!emitInsDestIsOp2(ins));
+        if (id->idGCref() != GCT_NONE)
+        {
+            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
+        }
+        else
+        {
+            emitGCregDeadUpd(id->idReg1(), dst);
+        }
+
+        if (emitInsMayWriteMultipleRegs(id))
+        {
+            // INS_ldp etc...
+            // "idReg2" is the secondary destination register
+            if (id->idGCrefReg2() != GCT_NONE)
+            {
+                emitGCregLiveUpd(id->idGCrefReg2(), id->idReg2(), dst);
+            }
+            else
+            {
+                emitGCregDeadUpd(id->idReg2(), dst);
+            }
+        }
+    }
+
+SKIP_GC_UPDATE:
+    // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
+    // ref or overwritten one.
+    if (emitInsWritesToLclVarStackLoc(id) || emitInsWritesToLclVarStackLocPair(id))
+    {
+        int      varNum = id->idAddr()->iiaLclVar.lvaVarNum();
+        unsigned ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), TARGET_POINTER_SIZE);
+        bool     FPbased;
+        int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
+        if (id->idGCref() != GCT_NONE)
+        {
+            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
+        }
+        else
+        {
+            // If the type of the local is a gc ref type, update the liveness.
+            var_types vt;
+            if (varNum >= 0)
+            {
+                // "Regular" (non-spill-temp) local.
+                vt = var_types(emitComp->lvaTable[varNum].lvType);
+            }
+            else
+            {
+                TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
+                vt              = tmpDsc->tdTempType();
+            }
+            if (vt == TYP_REF || vt == TYP_BYREF)
+            {
+                emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
+            }
+        }
+        if (emitInsWritesToLclVarStackLocPair(id))
+        {
+            int      varNum2 = varNum;
+            int      adr2    = adr;
+            unsigned ofs2    = ofs;
+            unsigned ofs2Dist;
+
+            if (id->idIsLclVarPair())
+            {
+                bool FPbased2;
+
+                emitLclVarAddr* lclVarAddr2 = emitGetLclVarPairLclVar2(id);
+                varNum2                     = lclVarAddr2->lvaVarNum();
+                ofs2                        = lclVarAddr2->lvaOffset();
+
+                // If there are 2 GC vars in this instrDesc, get the 2nd variable
+                // that should be tracked.
+                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2);
+                ofs2Dist = EA_SIZE_IN_BYTES(size);
+#ifdef DEBUG
+                assert(FPbased == FPbased2);
+                if (FPbased)
+                {
+                    assert(id->idReg3() == REG_FP);
+                }
+                else
+                {
+                    assert(id->idReg3() == REG_SP);
+                }
+                assert(varNum2 != -1);
+#endif // DEBUG
+            }
+            else
+            {
+                ofs2Dist = TARGET_POINTER_SIZE;
+                ofs2 += ofs2Dist;
+            }
+
+            ofs2 = AlignDown(ofs2, ofs2Dist);
+
+            if (id->idGCrefReg2() != GCT_NONE)
+            {
+#ifdef DEBUG
+                if (id->idGCref() != GCT_NONE)
+                {
+                    // If 1st register was a gc-var, then make sure the offset
+                    // are correctly set for the 2nd register that is holding
+                    // another gc-var.
+                    assert((adr + ofs + ofs2Dist) == (adr2 + ofs2));
+                }
+#endif
+                emitGCvarLiveUpd(adr2 + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
+            }
+            else
+            {
+                // If the type of the local is a gc ref type, update the liveness.
+                var_types vt;
+                if (varNum2 >= 0)
+                {
+                    // "Regular" (non-spill-temp) local.
+                    vt = var_types(emitComp->lvaTable[varNum2].lvType);
+                }
+                else
+                {
+                    TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum2);
+                    vt              = tmpDsc->tdTempType();
+                }
+                if (vt == TYP_REF || vt == TYP_BYREF)
+                {
+                    emitGCvarDeadUpd(adr2 + ofs2, dst DEBUG_ARG(varNum2));
+                }
+            }
+        }
+    }
+
+#ifdef DEBUG
+    /* Make sure we set the instruction descriptor size correctly */
+
+    size_t expected = emitSizeOfInsDsc(id);
+    assert(sz == expected);
+
+    if (emitComp->opts.disAsm || emitComp->verbose)
+    {
+        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
+    }
+
+    if (emitComp->compDebugBreak)
+    {
+        // For example, set JitBreakEmitOutputInstr=a6 will break when this method is called for
+        // emitting instruction a6, (i.e. IN00a6 in jitdump).
+        if ((unsigned)JitConfig.JitBreakEmitOutputInstr() == id->idDebugOnlyInfo()->idNum)
+        {
+            assert(!"JitBreakEmitOutputInstr reached");
+        }
+    }
+
+    // Output any delta in GC info.
+    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
+    {
+        emitDispGCInfoDelta();
+    }
+#else
+    if (emitComp->opts.disAsm)
+    {
+        size_t expected = emitSizeOfInsDsc(id);
+        assert(sz == expected);
+        emitDispIns(id, false, 0, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
+    }
+#endif
+
+    /* All instructions are expected to generate code */
+
+    assert(*dp != dst || id->idIsEmptyAlign());
+
+    *dp = dst;
+
+    return sz;
+}
+
+/*****************************************************************************
+ *
+ *  Append the machine code corresponding to the given SVE instruction descriptor.
+ */
+BYTE* emitter::emitInstrSve(instrDesc* id, BYTE* dst)
+{
+    code_t      code = 0;
+    instruction ins  = id->idIns();
+    insFormat   fmt  = id->idInsFmt();
+    emitAttr    size = id->idOpSize();
+
+    ssize_t imm;
+
+    switch (fmt)
+    {
         // Scalable.
         case IF_SVE_AA_3A: // ........xx...... ...gggmmmmmddddd -- SVE bitwise logical operations (predicated)
         case IF_SVE_AB_3A: // ........xx...... ...gggmmmmmddddd -- SVE integer add/subtract vectors (predicated)
@@ -19857,7 +20060,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SVE_IG_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous first-fault load (scalar plus scalar)
-        case IF_SVE_II_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        case IF_SVE_II_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         case IF_SVE_II_4A_B: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         case IF_SVE_IK_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
@@ -19865,10 +20068,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_IR_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (quadwords, scalar plus
                            // scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_JB_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
-                             // scalar)
-        case IF_SVE_JC_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (scalar plus scalar)
-        case IF_SVE_JD_4C:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        case IF_SVE_JB_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
+                           // scalar)
+        case IF_SVE_JC_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (scalar plus scalar)
+        case IF_SVE_JD_4C: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
         case IF_SVE_JD_4C_A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
         case IF_SVE_JF_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (quadwords, scalar plus
                            // scalar)
@@ -19907,187 +20110,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
     }
 
-    // Determine if any registers now hold GC refs, or whether a register that was overwritten held a GC ref.
-    // We assume here that "id->idGCref()" is not GC_NONE only if the instruction described by "id" writes a
-    // GC ref to register "id->idReg1()".  (It may, apparently, also not be GC_NONE in other cases, such as
-    // for stores, but we ignore those cases here.)
-    if (emitInsMayWriteToGCReg(id)) // True if "id->idIns()" writes to a register than can hold GC ref.
-    {
-        // We assume that "idReg1" is the primary destination register for all instructions
-        assert(!emitInsDestIsOp2(ins));
-        if (id->idGCref() != GCT_NONE)
-        {
-            emitGCregLiveUpd(id->idGCref(), id->idReg1(), dst);
-        }
-        else
-        {
-            emitGCregDeadUpd(id->idReg1(), dst);
-        }
-
-        if (emitInsMayWriteMultipleRegs(id))
-        {
-            // INS_ldp etc...
-            // "idReg2" is the secondary destination register
-            if (id->idGCrefReg2() != GCT_NONE)
-            {
-                emitGCregLiveUpd(id->idGCrefReg2(), id->idReg2(), dst);
-            }
-            else
-            {
-                emitGCregDeadUpd(id->idReg2(), dst);
-            }
-        }
-    }
-
-SKIP_GC_UPDATE:
-    // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
-    // ref or overwritten one.
-    if (emitInsWritesToLclVarStackLoc(id) || emitInsWritesToLclVarStackLocPair(id))
-    {
-        int      varNum = id->idAddr()->iiaLclVar.lvaVarNum();
-        unsigned ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), TARGET_POINTER_SIZE);
-        bool     FPbased;
-        int      adr = emitComp->lvaFrameAddress(varNum, &FPbased);
-        if (id->idGCref() != GCT_NONE)
-        {
-            emitGCvarLiveUpd(adr + ofs, varNum, id->idGCref(), dst DEBUG_ARG(varNum));
-        }
-        else
-        {
-            // If the type of the local is a gc ref type, update the liveness.
-            var_types vt;
-            if (varNum >= 0)
-            {
-                // "Regular" (non-spill-temp) local.
-                vt = var_types(emitComp->lvaTable[varNum].lvType);
-            }
-            else
-            {
-                TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-                vt              = tmpDsc->tdTempType();
-            }
-            if (vt == TYP_REF || vt == TYP_BYREF)
-            {
-                emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
-            }
-        }
-        if (emitInsWritesToLclVarStackLocPair(id))
-        {
-            int      varNum2 = varNum;
-            int      adr2    = adr;
-            unsigned ofs2    = ofs;
-            unsigned ofs2Dist;
-
-            if (id->idIsLclVarPair())
-            {
-                bool FPbased2;
-
-                emitLclVarAddr* lclVarAddr2 = emitGetLclVarPairLclVar2(id);
-                varNum2                     = lclVarAddr2->lvaVarNum();
-                ofs2                        = lclVarAddr2->lvaOffset();
-
-                // If there are 2 GC vars in this instrDesc, get the 2nd variable
-                // that should be tracked.
-                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2);
-                ofs2Dist = EA_SIZE_IN_BYTES(size);
-#ifdef DEBUG
-                assert(FPbased == FPbased2);
-                if (FPbased)
-                {
-                    assert(id->idReg3() == REG_FP);
-                }
-                else
-                {
-                    assert(id->idReg3() == REG_SP);
-                }
-                assert(varNum2 != -1);
-#endif // DEBUG
-            }
-            else
-            {
-                ofs2Dist = TARGET_POINTER_SIZE;
-                ofs2 += ofs2Dist;
-            }
-
-            ofs2 = AlignDown(ofs2, ofs2Dist);
-
-            if (id->idGCrefReg2() != GCT_NONE)
-            {
-#ifdef DEBUG
-                if (id->idGCref() != GCT_NONE)
-                {
-                    // If 1st register was a gc-var, then make sure the offset
-                    // are correctly set for the 2nd register that is holding
-                    // another gc-var.
-                    assert((adr + ofs + ofs2Dist) == (adr2 + ofs2));
-                }
-#endif
-                emitGCvarLiveUpd(adr2 + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
-            }
-            else
-            {
-                // If the type of the local is a gc ref type, update the liveness.
-                var_types vt;
-                if (varNum2 >= 0)
-                {
-                    // "Regular" (non-spill-temp) local.
-                    vt = var_types(emitComp->lvaTable[varNum2].lvType);
-                }
-                else
-                {
-                    TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum2);
-                    vt              = tmpDsc->tdTempType();
-                }
-                if (vt == TYP_REF || vt == TYP_BYREF)
-                {
-                    emitGCvarDeadUpd(adr2 + ofs2, dst DEBUG_ARG(varNum2));
-                }
-            }
-        }
-    }
-
-#ifdef DEBUG
-    /* Make sure we set the instruction descriptor size correctly */
-
-    size_t expected = emitSizeOfInsDsc(id);
-    assert(sz == expected);
-
-    if (emitComp->opts.disAsm || emitComp->verbose)
-    {
-        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
-    }
-
-    if (emitComp->compDebugBreak)
-    {
-        // For example, set JitBreakEmitOutputInstr=a6 will break when this method is called for
-        // emitting instruction a6, (i.e. IN00a6 in jitdump).
-        if ((unsigned)JitConfig.JitBreakEmitOutputInstr() == id->idDebugOnlyInfo()->idNum)
-        {
-            assert(!"JitBreakEmitOutputInstr reached");
-        }
-    }
-
-    // Output any delta in GC info.
-    if (EMIT_GC_VERBOSE || emitComp->opts.disasmWithGC)
-    {
-        emitDispGCInfoDelta();
-    }
-#else
-    if (emitComp->opts.disAsm)
-    {
-        size_t expected = emitSizeOfInsDsc(id);
-        assert(sz == expected);
-        emitDispIns(id, false, 0, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
-    }
-#endif
-
-    /* All instructions are expected to generate code */
-
-    assert(*dp != dst || id->idIsEmptyAlign());
-
-    *dp = dst;
-
-    return sz;
+    return dst;
 }
 
 /*****************************************************************************/
