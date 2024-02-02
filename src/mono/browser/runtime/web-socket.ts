@@ -106,7 +106,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
         if (!loaderHelpers.is_runtime_running()) return;
         ws.removeEventListener("message", local_on_message);
         const message = ev.message
-            ? "WebSocket error :" + ev.message
+            ? "WebSocket error: " + ev.message
             : "WebSocket error";
         mono_log_warn(message);
         reject_promises(ws, new Error(message));
