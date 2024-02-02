@@ -69,7 +69,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe void Initialize()
         {
             slot.Type = MarshalerType.None;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // we know that this is at the start of some JSImport call, but we don't know yet what would be the target thread
             // also this is called multiple times
             JSProxyContext.JSImportWithUnknownContext();
@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe void InitializeWithContext(JSProxyContext knownProxyContext)
         {
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
                 return JSProxyContext.MainThreadContext;
 #else
                 // ContextHandle always has to be set
@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
                 return JSProxyContext.MainThreadContext;
 #else
                 if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal JSProxyContext AssertCurrentThreadContext()
 #pragma warning restore CA1822 // Mark members as static
         {
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
             return JSProxyContext.MainThreadContext;
 #else
             var currentThreadContext = JSProxyContext.CurrentThreadContext;

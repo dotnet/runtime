@@ -45,7 +45,7 @@ namespace DebuggerTests
 #else
             => false;
 #endif
-        public static bool WasmMultiThreaded => EnvironmentVariables.WasmTestsUsingVariant == "multithreaded";
+        public static bool WasmMultiThreaded => EnvironmentVariables.WasmEnableThreads;
 
         public static bool WasmSingleThreaded => !WasmMultiThreaded;
 

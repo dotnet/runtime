@@ -3751,9 +3751,13 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     emitter*  emit      = GetEmitter();
     regNumber targetReg = tree->GetRegNum();
 
+    assert(targetReg != REG_NA);
+    assert(tree->TypeGet() != TYP_VOID);
+    assert(!op1->isContainedIntOrIImmed());
+    assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
+
     if (varTypeIsFloating(op1Type))
     {
-        assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
         bool      isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
         regNumber regOp1      = op1->GetRegNum();
         regNumber regOp2      = op2->GetRegNum();
@@ -3841,12 +3845,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
     else
     {
-        assert(targetReg != REG_NA);
-        assert(tree->TypeGet() != TYP_VOID);
-
-        assert(!op1->isContainedIntOrIImmed());
-        assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-
         bool      isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
         regNumber regOp1     = op1->GetRegNum();
 
@@ -4042,6 +4040,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
         }
     }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
