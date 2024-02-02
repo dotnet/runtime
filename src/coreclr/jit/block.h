@@ -429,7 +429,6 @@ enum BasicBlockFlags : unsigned __int64
                                                           // (TODO: Remove this quirk after refactoring Compiler::fgFindInsertPoint)
     BBF_OLD_LOOP_HEADER_QUIRK          = MAKE_BBFLAG(42), // Block was the header ('entry') of a loop recognized by old loop finding
     BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(43), // Block has a node that needs a value probing
-    BBF_JMP_TO_NESTED_LOOP             = MAKE_BBFLAG(44),
 
     // The following are sets of flags.
 

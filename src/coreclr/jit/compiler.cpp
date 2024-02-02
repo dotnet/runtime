@@ -5431,13 +5431,6 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
                 bbHavingAlign = prev;
                 JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", prev->bbNum,
                         block->bbNum);
-
-                // bbHavingAlign is in a loop, and precedes a nested loop
-                if (blockToLoop->GetLoop(bbHavingAlign) != nullptr)
-                {
-                    // If bbHavingAlign is a removable jump, it will be removed despite it having alignment
-                    bbHavingAlign->SetFlags(BBF_JMP_TO_NESTED_LOOP);
-                }
             }
             else
             {

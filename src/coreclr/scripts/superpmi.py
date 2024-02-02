@@ -1971,7 +1971,7 @@ class SuperPMIReplayAsmDiffs:
 
         # These vars are force overridden in the SPMI runs for both the base and diff, always.
         replay_vars = {
-            "DOTNET_JitAlignLoops": "1", # disable loop alignment to filter noise
+            "DOTNET_JitAlignLoops": "0", # disable loop alignment to filter noise
             "DOTNET_JitEnableNoWayAssert": "1",
             "DOTNET_JitNoForceFallback": "1",
         }
