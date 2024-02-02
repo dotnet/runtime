@@ -419,6 +419,7 @@ namespace ILCompiler
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
             private HashSet<MethodDesc> _overridenMethods = new();
+            private HashSet<MethodDesc> _generatedVirtualMethods = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
@@ -426,6 +427,12 @@ namespace ILCompiler
 
                 foreach (var node in markedNodes)
                 {
+                    // Collect all non-generic virtual method bodies we compiled
+                    if (node is IMethodBodyNode { Method.IsVirtual: true, Method.HasInstantiation: false } virtualMethodBody)
+                    {
+                        _generatedVirtualMethods.Add(virtualMethodBody.Method);
+                    }
+
                     TypeDesc type = node switch
                     {
                         ConstructedEETypeNode eetypeNode => eetypeNode.Type,
@@ -564,7 +571,6 @@ namespace ILCompiler
                                         _overridenMethods.Add(baseVtable[i]);
                                 }
                             }
-
                         }
                     }
                 }
@@ -642,10 +648,25 @@ namespace ILCompiler
 
             public override bool IsEffectivelySealed(MethodDesc method)
             {
-                if (method.IsFinal || IsEffectivelySealed(method.OwningType))
+                // First try to answer using metadata
+                if (method.IsFinal || method.OwningType.IsSealed())
                     return true;
 
-                return !_overridenMethods.Contains(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+                // Now let's see if we can seal through whole program view
+
+                // Sealing abstract methods or methods on interface can't lead to anything good
+                if (method.IsAbstract || method.OwningType.IsInterface)
+                    return false;
+
+                // If we want to make something final, we better have a method body for it.
+                // Sometimes we might have optimized it away so don't let codegen make direct calls.
+                // NOTE: this check naturally also rejects generic virtual methods since we don't track them.
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (!_generatedVirtualMethods.Contains(canonMethod))
+                    return false;
+
+                // If we haven't seen any other method override this, this method is sealed
+                return !_overridenMethods.Contains(canonMethod);
             }
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
