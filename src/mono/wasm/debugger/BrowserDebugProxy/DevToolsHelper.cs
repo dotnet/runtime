@@ -328,9 +328,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal JObject ToObject(bool addUrl)
         {
             JObject obj = JObject.FromObject(this);
-            if (!addUrl)
-                return obj;
-            obj[nameof(expression)] = expression + $"//# sourceURL=cdp://dotnet/mono{expression.GetHashCode()}.cdp";
+            if (addUrl)
+                obj[nameof(expression)] = $"{expression}//# sourceURL=cdp://dotnet/mono{expression.GetHashCode()}.cdp";
             return obj;
         }
     }
