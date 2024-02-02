@@ -1146,7 +1146,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmm
             assert((REG_V0 <= id->idReg3()) && (id->idReg3() <= REG_V7));
-            // assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(isValidUimm2(emitGetInsSC(id))); // ii
             break;
 
         case IF_SVE_CZ_4A: // ............MMMM ..gggg.NNNN.DDDD -- SVE predicate logical operations
@@ -10369,7 +10369,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            // assert(isValidUimm2(imm)); // ii
+            assert(isValidUimm2(imm)); // ii
 
             if (opt == INS_OPTS_SCALABLE_B)
             {
@@ -10389,7 +10389,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(isVectorRegister(reg2)); // nnnnn
             assert(isVectorRegister(reg3)); // mmm
             assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            // assert(isValidUimm2(imm)); // ii
+            assert(isValidUimm2(imm)); // ii
             fmt = IF_SVE_EZ_3A;
             break;
 
@@ -15975,6 +15975,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm2_20_to_19(ssize_t imm)
+{
+    assert(isValidUimm2(imm));
+    return (code_t)imm << 19;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
  */
 
@@ -18180,7 +18191,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
             code |= insEncodeReg_V_18_to_16(id->idReg3()); // mmm
-            // code |= insEncodeUimm2_20_to_19(emitGetInsSC(id)); // ii
+            code |= insEncodeUimm2_20_to_19(emitGetInsSC(id)); // ii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -21329,7 +21340,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmm
-            // emitDispElementIndex(emitGetInsSC(id)); // ii
+            emitDispElementIndex(emitGetInsSC(id)); // ii
             break;
 
         // <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
