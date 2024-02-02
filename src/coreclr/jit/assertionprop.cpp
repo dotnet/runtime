@@ -5162,6 +5162,161 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
 }
 
 //------------------------------------------------------------------------
+// optAssertionProp_GetInt32Range: Get lower and upper bounds for a tree using assertions.
+//   Examples:
+//     "x >= 10 && x < 100" => [10..99]
+//     "(uint)x < 10"       => [0..9]
+//
+// Arguments:
+//   assertions  - set of live assertions
+//   tree        - tree to possibly optimize
+//   fromIncl    - [out] lower bound (inclusive)
+//   toIncl      - [out] upper bound (inclusive)
+//
+// Returns:
+//   True if bound were found and stored in "fromIncl" and "toIncl".
+//
+bool Compiler::optAssertionProp_GetInt32Range(ASSERT_VALARG_TP assertions, GenTree* tree, int* fromIncl, int* toIncl)
+{
+    GenTree* node           = tree;
+    bool     castToUnsigned = false;
+
+    // We can be smarter around casts here, but for now let's just handle only widening
+    if (node->OperIs(GT_CAST) && varTypeIsLong(node->AsCast()->CastToType()))
+    {
+        castToUnsigned = node->AsCast()->CastToType() == TYP_ULONG;
+        node           = node->gtGetOp1();
+    }
+
+    if (!node->OperIs(GT_LCL_VAR))
+    {
+        return false;
+    }
+
+    // Assertions only work with Int32.
+    *fromIncl = INT_MIN;
+    *toIncl   = INT_MAX;
+
+    bool lowerBoundFound = false;
+    bool upperBoundFound = false;
+
+    ValueNum        nodeVN = vnStore->VNConservativeNormalValue(node->gtVNPair);
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+        // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
+        // representing "(X relop CNS) ==/!= 0" assertion.
+        if (!curAssertion->IsConstantBound() && !curAssertion->IsConstantBoundUnsigned())
+        {
+            continue;
+        }
+
+        ValueNumStore::ConstantBoundInfo info;
+        vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
+
+        // Make sure VN is the same as op1's VN.
+        if (info.cmpOpVN != nodeVN)
+        {
+            continue;
+        }
+
+        // Always expect (x relop CNS) ==/!= false
+        if ((curAssertion->op2.kind != O2K_CONST_INT) || (curAssertion->op2.u1.iconVal != 0))
+        {
+            continue;
+        }
+
+        genTreeOps cmpOper = static_cast<genTreeOps>(info.cmpOper);
+
+        // Normalize "(X relop CNS) == false" to "(X reversed_relop CNS) == true"
+        if (curAssertion->assertionKind == OAK_EQUAL)
+        {
+            cmpOper = GenTree::ReverseRelop(cmpOper);
+        }
+
+        if (info.isUnsigned)
+        {
+            // Unsigned comparisons are complicated, allow only these:
+            //
+            //   (uint)x >= positiveCns
+            //   (uint)x >  positiveCns
+            //
+            // Give up on the rest.
+            if ((info.constVal < 0) || ((cmpOper != GT_LE) && (cmpOper != GT_LT)))
+            {
+                continue;
+            }
+        }
+
+        if (cmpOper == GT_GE)
+        {
+            // X >= CNS, lower bound is now CNS
+            //
+            // NOTE: here and below use min()/max() just in case if we have multiple assertions and some of them more
+            // narrow
+            *fromIncl       = max(*fromIncl, info.constVal);
+            lowerBoundFound = true;
+        }
+        else if (cmpOper == GT_GT)
+        {
+            // X > CNS, lower bound is now CNS + 1
+            //
+            if (info.constVal == INT_MAX)
+            {
+                // Give up on potential overflow
+                continue;
+            }
+            *fromIncl       = max(*fromIncl, info.constVal + 1);
+            lowerBoundFound = true;
+        }
+        else if (cmpOper == GT_LE)
+        {
+            // X <= CNS, upper bound is now CNS
+            //
+            if (info.isUnsigned)
+            {
+                // unsigned comparison gives us a hint that the lower bound is 0
+                *fromIncl       = max(*fromIncl, 0);
+                lowerBoundFound = true;
+            }
+            *toIncl         = min(*toIncl, info.constVal);
+            upperBoundFound = true;
+        }
+        else if (cmpOper == GT_LT)
+        {
+            // X < CNS, upper bound is now CNS - 1
+            //
+            if (info.constVal == INT_MIN)
+            {
+                // Give up on potential overflow
+                continue;
+            }
+            if (info.isUnsigned)
+            {
+                // unsigned comparison gives us a hint that the lower bound is 0
+                *fromIncl       = max(*fromIncl, 0);
+                lowerBoundFound = true;
+            }
+            *toIncl         = min(*toIncl, info.constVal - 1);
+            upperBoundFound = true;
+        }
+    }
+
+    if (lowerBoundFound && upperBoundFound)
+    {
+        if ((*fromIncl < 0) && castToUnsigned)
+        {
+            // We have a negative lower bound and the cast is to unsigned type - give up.
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp: try and optimize a tree via assertion propagation
 //
 // Arguments:
@@ -5218,6 +5373,23 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
+
+        case GT_LCLHEAP:
+        {
+            // Convert stackalloc[n] to stackalloc[64] if n is known to be non-negative and <= 64
+            const int stackallocThreshold = 64;
+
+            int lowerBound;
+            int upperBound;
+            if (optAssertionProp_GetInt32Range(assertions, tree->gtGetOp1(), &lowerBound, &upperBound) &&
+                (lowerBound >= 0) && (upperBound <= stackallocThreshold))
+            {
+                tree->AsOp()->gtOp1 = gtNewIconNode(stackallocThreshold, TYP_I_IMPL);
+                fgUpdateConstTreeValueNumber(tree->gtGetOp1());
+                return optAssertionProp_Update(tree, tree, stmt);
+            }
+            return nullptr;
+        }
 
         case GT_EQ:
         case GT_NE:

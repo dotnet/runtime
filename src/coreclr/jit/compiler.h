@@ -7808,6 +7808,8 @@ public:
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
 
+    bool optAssertionProp_GetInt32Range(ASSERT_VALARG_TP assertions, GenTree* tree, int* fromIncl, int* toIncl);
+
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
     void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
