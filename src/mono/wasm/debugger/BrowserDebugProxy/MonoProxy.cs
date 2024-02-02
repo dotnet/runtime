@@ -308,7 +308,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
-            
+
             switch (method)
             {
                 case "Target.attachToTarget":
