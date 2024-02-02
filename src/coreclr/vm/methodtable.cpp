@@ -1350,7 +1350,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         if (CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
             return TRUE;
 
-        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting() && !pTargetMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
+        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
             return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
         InterfaceMapIterator it = IterateInterfaceMap();
@@ -1387,7 +1387,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // Shortcut for generic approx type scenario
     if (pMTInterfaceMapOwner != NULL &&
-        !pMTInterfaceMapOwner->ContainsGenericVariables() &&
+        !pMTInterfaceMapOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
