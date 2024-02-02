@@ -450,6 +450,12 @@ namespace System.IO.Packaging
             if (!string.Equals(partUri.OriginalString, wellFormedPartName, StringComparison.OrdinalIgnoreCase))
                 return new ArgumentException(SR.InvalidPartUri);
 
+            // We now check to ensure that it isn't possible to create a part with the same URI as a part piece.
+            // This check isn't part of the OPC specification; it prevents callers from treating a part piece
+            // as a part.
+            if (ZipPackagePartPiece.TryParseName(partName, out _, out _, out _, out _))
+                return new ArgumentException(SR.UnexpectedPartPieceUri);
+
             //if we get here, the partUri is valid and so we return null, as there is no exception.
             partUriString = partName;
             return null;
