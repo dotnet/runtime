@@ -134,10 +134,10 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     BIGNUM* x = NULL;
     BIGNUM* y = NULL;
 
-    // p1 and q1 are to hold p-1 and q-1, respectively. We need these values a couple of times, so don't waste time
+    // pM1 and qM1 are to hold p-1 and q-1, respectively. We need these values a couple of times, so don't waste time
     // recomputing them in scratch integers.
-    BIGNUM* p1 = NULL;
-    BIGNUM* q1 = NULL;
+    BIGNUM* pM1 = NULL;
+    BIGNUM* qM1 = NULL;
     int ret = 0;
 
     RSA_get0_key(rsa, &n, &e, &d);
@@ -178,11 +178,11 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
         goto done;
     }
 
-    // We do not support validating multi-prime RSA. If there are extra primes (more than two) then treat it as a
-    // decoding failure.
+    // We do not support validating multi-prime RSA. Multi-prime RSA is not common. For these, we fall back to the
+    // OpenSSL key check.
     if (RSA_get_multi_prime_extra_count(rsa) != 0)
     {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DECODE_ERROR, __FILE__, __LINE__);
+        ret = -1;
         goto done;
     }
 
@@ -200,8 +200,8 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     if ((ctx = BN_CTX_new()) == NULL ||
         (x = BN_new()) == NULL ||
         (y = BN_new()) == NULL ||
-        (p1 = BN_new()) == NULL ||
-        (q1 = BN_new()) == NULL)
+        (pM1 = BN_new()) == NULL ||
+        (qM1 = BN_new()) == NULL)
     {
         goto done;
     }
@@ -223,10 +223,10 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     // de = 1 % lambda(n)
     // lambda(n) = lcm(p-1, q-1)
     // lambda(n) is known to be lambda(pq) already.
-    // p1 = p-1
-    // q1 = q-1
-    // x = lcm(x, y)
-    if (!BN_sub(p1, p, BN_value_one()) || !BN_sub(q1, q, BN_value_one()) || !Lcm(p1, q1, ctx, x))
+    // pM1 = p-1
+    // qM1 = q-1
+    // x = lcm(pM1, qM1)
+    if (!BN_sub(pM1, p, BN_value_one()) || !BN_sub(qM1, q, BN_value_one()) || !Lcm(pM1, qM1, ctx, x))
     {
         goto done;
     }
@@ -253,7 +253,7 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     {
         // Check dp = d % (p-1)
         // compute d % (p-1) and put in x
-        if (!BN_div(NULL, x, d, p1, ctx))
+        if (!BN_div(NULL, x, d, pM1, ctx))
         {
             goto done;
         }
@@ -266,7 +266,7 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 
         // Check dq = d % (q-1)
         // compute d % (q-1) and put in x
-        if (!BN_div(NULL, x, d, q1, ctx))
+        if (!BN_div(NULL, x, d, qM1, ctx))
         {
             goto done;
         }
@@ -296,8 +296,8 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 done:
     if (x) BN_clear_free(x);
     if (y) BN_clear_free(y);
-    if (p1) BN_clear_free(p1);
-    if (q1) BN_clear_free(q1);
+    if (pM1) BN_clear_free(pM1);
+    if (qM1) BN_clear_free(qM1);
     if (ctx) BN_CTX_free(ctx);
     return ret;
 }
@@ -320,7 +320,24 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*chec
         // If we can get the RSA object, use that for a faster path to validating the key that skips primality tests.
         if (rsa != NULL)
         {
-            return QuickRsaCheck(rsa, isPublic) == 1;
+            //  0 = key check failed
+            //  1 = key check passed
+            // -1 = could not assess private key.
+            int32_t result = QuickRsaCheck(rsa, isPublic);
+
+            if (result == 0)
+            {
+                return false;
+            }
+            if (result == 1)
+            {
+                return true;
+            }
+
+            // -1 falls though.
+            // If the fast check was indeterminate, fall though and use the OpenSSL routine.
+            // Clear out any errors we may have accumulated in our check.
+            ERR_clear_error();
         }
     }
 
