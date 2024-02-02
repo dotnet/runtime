@@ -1089,6 +1089,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm4From1(emitGetInsSC(id)));
             break;
 
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+            elemsize = id->idOpSize();
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isPredicateRegister(id->idReg2())); // NNNN
+            assert(isPredicateRegister(id->idReg3())); // MMMM
+            break;
+
         // Scalable, 4 regs, to predicate register.
         case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             elemsize = id->idOpSize();
@@ -9477,6 +9485,19 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(insOptsScalableStandard(opt));
                 fmt = IF_SVE_AN_3A;
             }
+            break;
+
+        case INS_sve_uzp1:
+        case INS_sve_trn1:
+        case INS_sve_zip1:
+        case INS_sve_uzp2:
+        case INS_sve_trn2:
+        case INS_sve_zip2:
+            assert(insOptsScalableStandard(opt));
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isPredicateRegister(reg2)); // NNNN
+            assert(isPredicateRegister(reg3)); // MMMM
+            fmt = IF_SVE_CI_3A;
             break;
 
         case INS_sve_clz:
@@ -17978,6 +17999,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
+            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
+            code |= insEncodeReg_P_19_to_16(id->idReg3());                // MMMM
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         // Scalable to general register.
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
@@ -21077,6 +21107,13 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                // mmmmm
             break;
 
+        // <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt, 1), id->idInsOpt(), true);  // DDDD
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt, 2), id->idInsOpt(), true);  // NNNN
+            emitDispPredicateReg(id->idReg3(), insGetPredicateType(fmt, 3), id->idInsOpt(), false); // MMMM
+            break;
+
         // <Zd>.<T>, <Pg>, <Zn>.<T>
         case IF_SVE_CL_3A: // ........xx...... ...gggnnnnnddddd -- SVE compress active elements
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
@@ -23932,6 +23969,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
