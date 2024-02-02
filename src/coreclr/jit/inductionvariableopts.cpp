@@ -183,7 +183,6 @@ class ScalarEvolutionContext
                              GenTree*             stepDefData);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
     Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
-    bool TrackedLocalVariesInLoop(unsigned lclNum);
 
 public:
     ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopScalarEvolution))
@@ -231,7 +230,6 @@ public:
     }
 
     Scev* Analyze(BasicBlock* block, GenTree* tree);
-
     Scev* Fold(Scev* scev);
 };
 
@@ -254,24 +252,6 @@ Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
     }
 
     return nullptr;
-}
-
-bool ScalarEvolutionContext::TrackedLocalVariesInLoop(unsigned lclNum)
-{
-    for (Statement* stmt : m_loop->GetHeader()->Statements())
-    {
-        if (!stmt->IsPhiDefnStmt())
-        {
-            break;
-        }
-
-        if (stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() == lclNum)
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
@@ -893,8 +873,6 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
     visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     if (visitor.MadeChanges)
     {
-        compCurStmt = stmt;
-        // stmt->SetRootNode(fgMorphTree(stmt->GetRootNode()));
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
         JITDUMP("New tree:\n", dspTreeID(stmt->GetRootNode()));
@@ -932,46 +910,10 @@ PhaseStatus Compiler::optInductionVariables()
     }
 #endif
 
-    m_blockToLoop = BlockToNaturalLoopMap::Build(m_loops);
-    ScalarEvolutionContext scevContext(this);
-
-    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
-    {
-        JITDUMP("Analyzing scalar evolution in ");
-        DBEXEC(verbose, FlowGraphNaturalLoop::Dump(loop));
-        scevContext.ResetForLoop(loop);
-
-        loop->VisitLoopBlocksReversePostOrder([=, &scevContext](BasicBlock* block) {
-            DBEXEC(verbose, block->dspBlockHeader(this));
-            JITDUMP("\n");
-
-            for (Statement* stmt : block->Statements())
-            {
-                DISPSTMT(stmt);
-                JITDUMP("\n");
-
-                for (GenTree* node : stmt->TreeList())
-                {
-                    Scev* scev = scevContext.Analyze(block, node);
-                    if (scev != nullptr)
-                    {
-                        JITDUMP("[%06u] => ", dspTreeID(node));
-                        Scev* folded = scevContext.Fold(scev);
-                        DBEXEC(verbose, DumpScev(folded));
-                        JITDUMP("\n");
-                    }
-                }
-
-                JITDUMP("\n");
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-    }
-
     bool changed = false;
 
 #ifdef TARGET_64BIT
+    ScalarEvolutionContext scevContext(this);
     JITDUMP("Widening primary induction variables:\n");
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
@@ -1057,7 +999,6 @@ PhaseStatus Compiler::optInductionVariables()
 
             loop->VisitLoopBlocks([=](BasicBlock* block) {
 
-                compCurBB = block;
                 for (Statement* stmt : block->NonPhiStatements())
                 {
                     JITDUMP("Replacing V%02u -> V%02u in [%06u]\n", lcl->GetLclNum(), newLclNum,
