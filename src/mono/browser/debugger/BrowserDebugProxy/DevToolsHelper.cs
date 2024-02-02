@@ -472,6 +472,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal bool FirstBreakpoint { get; set; }
 
         internal bool Destroyed { get; set; }
+
         public DebugStore Store
         {
             get
