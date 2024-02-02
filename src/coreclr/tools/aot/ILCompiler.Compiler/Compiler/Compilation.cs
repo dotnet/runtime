@@ -113,7 +113,7 @@ namespace ILCompiler
             // If we're creating a delegate to a virtual method that cannot be overridden, devirtualize.
             // This is not just an optimization - it's required for correctness in the presence of sealed
             // vtable slots.
-            if (followVirtualDispatch && NodeFactory.DevirtualizationManager.IsEffectivelySealed(target))
+            if (followVirtualDispatch && (target.IsFinal || target.OwningType.IsSealed()))
                 followVirtualDispatch = false;
 
             if (followVirtualDispatch)
