@@ -17,7 +17,7 @@ namespace System.Linq.Tests
         /// </summary>
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50712", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50712", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50712", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
         public static void QueryableMethodsContainCorrectDynamicDependency()
         {
             IEnumerable<MethodInfo> dependentMethods =
