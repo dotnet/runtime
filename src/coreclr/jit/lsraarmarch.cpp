@@ -368,6 +368,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     if (ctrlExpr != nullptr)
     {
+        if (ctrlExpr->IsIconHandle(GTF_ICON_TLS_HDL) && call->gtArgs.CountArgs() == 0)
+        {
+            /*BuildUse(ctrlExpr, genRegMask(REG_R0));
+            BuildUse(ctrlExpr, genRegMask(REG_R1));*/
+            //addRefsForPhysRegMask(genRegMask(REG_R0) | genRegMask(REG_R1), currentLoc + 1, RefTypeFixedReg, true);
+            newRefPosition(REG_R0, currentLoc, RefTypeFixedReg, nullptr, genRegMask(REG_R0));
+            newRefPosition(REG_R1, currentLoc, RefTypeFixedReg, nullptr, genRegMask(REG_R1));
+            ctrlExprCandidates = genRegMask(REG_R2);
+        }
         BuildUse(ctrlExpr, ctrlExprCandidates);
         srcCount++;
     }

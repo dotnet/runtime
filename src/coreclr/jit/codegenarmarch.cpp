@@ -3628,11 +3628,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //
         assert(genIsValidIntReg(target->GetRegNum()));
 
-        if (call->gtFlags & GTF_TLS_GET_ADDR)
+        bool specialCase = call->gtFlags & GTF_TLS_GET_ADDR;
+        if (specialCase)
         {
             GenTree* mthdHandle = (GenTree*)call->gtCallMethHnd;
             assert(mthdHandle != nullptr && mthdHandle->IsIconHandle(GTF_ICON_TLS_HDL));
-            methHnd = (CORINFO_METHOD_HANDLE) mthdHandle->AsIntCon()->gtIconVal;
+            GenTreeIntCon* iconNode = mthdHandle->AsIntCon();
+            methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            emitter* emit = GetEmitter();
+            emitAttr attr = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG  | EA_8BYTE);
+            instGen_Set_Reg_To_Imm(attr, REG_R0, (ssize_t)methHnd,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(iconNode->gtTargetHandle) DEBUGARG(iconNode->gtFlags));
+            emit->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
+            emit->emitIns_R_R_I(INS_ldr, attr, target->GetRegNum(), REG_R0, (ssize_t)methHnd);
         }
 
         // clang-format off
@@ -3645,6 +3653,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
+
+        if (specialCase)
+        {
+            GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
+        }
         // clang-format on
     }
     else

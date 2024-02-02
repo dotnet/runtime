@@ -2335,16 +2335,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
                 if (tree->IsIconHandle(GTF_ICON_TLS_HDL))
                 {
-                    if (tree->AsIntCon()->gtIconVal == 0)
-                    {
-                        GetEmitter()->emitIns_R(INS_mrs_tpid0, attr, targetReg);
-                    }
-                    else
-                    {
-                        attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
-                        GetEmitter()->emitIns_R_R_I(INS_ldr, attr, tree->GetRegNum(), REG_R0, tree->AsIntCon()->gtIconVal);
-                        //GetEmitter()->emitInsLoadStoreOp(INS_lea, attr, targetReg, tree);
-                    }
+                    //if (tree->AsIntCon()->gtIconVal == 0)
+                    //{
+                    //    GetEmitter()->emitIns_R(INS_mrs_tpid0, attr, targetReg);
+                    //}
+                    //else
+                    //{
+                    //    attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+                    //    GetEmitter()->emitIns_R_R_I(INS_ldr, attr, tree->GetRegNum(), REG_R0, tree->AsIntCon()->gtIconVal);
+                    //    //GetEmitter()->emitInsLoadStoreOp(INS_lea, attr, targetReg, tree);
+                    //}
                     break;
                 }
                 //else if (tree->IsIconHandle(GTF_ICON_FTN_ADDR) && ((tree->gtFlags & GTF_TLS_GET_ADDR) == GTF_TLS_GET_ADDR))
