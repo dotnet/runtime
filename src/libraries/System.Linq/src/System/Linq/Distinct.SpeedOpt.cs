@@ -9,11 +9,50 @@ namespace System.Linq
     {
         private sealed partial class DistinctIterator<TSource> : IIListProvider<TSource>
         {
-            public TSource[] ToArray() => Enumerable.HashSetToArray(new HashSet<TSource>(_source, _comparer));
+            public TSource[] ToArray()
+            {
+                if (TryGetNonEnumeratedCount(_source, out int count) && count < 2)
+                {
+                    if (count == 1)
+                    {
+                        return [_source.First()];
+                    }
 
-            public List<TSource> ToList() => new List<TSource>(new HashSet<TSource>(_source, _comparer));
+                    return [];
+                }
 
-            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : new HashSet<TSource>(_source, _comparer).Count;
+                return HashSetToArray(new HashSet<TSource>(_source, _comparer));
+            }
+
+            public List<TSource> ToList()
+            {
+                if (TryGetNonEnumeratedCount(_source, out int count) && count < 2)
+                {
+                    if (count == 1)
+                    {
+                        return new List<TSource>(1) { _source.First() };
+                    }
+
+                    return [];
+                }
+
+                return new List<TSource>(new HashSet<TSource>(_source, _comparer));
+            }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                if (TryGetNonEnumeratedCount(_source, out int count) && count < 2)
+                {
+                    return count;
+                }
+
+                if (onlyIfCheap)
+                {
+                    return -1;
+                }
+
+                return new HashSet<TSource>(_source, _comparer).Count;
+            }
         }
     }
 }
