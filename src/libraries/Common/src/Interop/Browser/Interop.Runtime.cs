@@ -27,7 +27,7 @@ internal static partial class Interop
         public static extern void DeregisterGCRoot(nint handle);
 #endif
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]

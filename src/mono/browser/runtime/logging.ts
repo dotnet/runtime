@@ -89,14 +89,19 @@ export function mono_wasm_symbolicate_string(message: string): string {
     }
 }
 
-export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
-    let errObj: any = err;
-    if (!errObj || !errObj.stack) {
-        errObj = new Error(errObj ? ("" + errObj) : "Unknown error");
+export function mono_wasm_stringify_as_error_with_stack(reason: any): string {
+    let stack: string;
+    if (typeof reason === "string") {
+        stack = reason;
+    }
+    else if (reason === undefined || reason === null || reason.stack === undefined) {
+        stack = new Error().stack + "";
+    } else {
+        stack = reason.stack + "";
     }
 
     // Error
-    return mono_wasm_symbolicate_string(errObj.stack);
+    return mono_wasm_symbolicate_string(stack);
 }
 
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
