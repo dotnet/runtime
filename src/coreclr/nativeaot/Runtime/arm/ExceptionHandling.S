@@ -237,7 +237,7 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
         // r1 contains the address of the new ExInfo
         blx    C_FUNC(RhRethrow)
 
-ALTERNATE_ENTRY RhpRethrow2
+GLOBAL_LABEL RhpRethrow2
 
         // no return
         EMIT_BREAKPOINT
