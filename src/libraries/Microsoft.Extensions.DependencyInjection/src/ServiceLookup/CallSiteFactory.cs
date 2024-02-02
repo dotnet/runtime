@@ -368,6 +368,32 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 callSiteChain.Remove(serviceIdentifier);
             }
+
+            static bool KeysMatch(object? lookupKey, object? descriptorKey)
+            {
+                if (lookupKey == null && descriptorKey == null)
+                {
+                    // Both are non keyed services
+                    return true;
+                }
+
+                if (lookupKey != null && descriptorKey != null)
+                {
+                    // Both are keyed services
+
+                    // We don't want to return AnyKey registration, so ignore it
+                    if (descriptorKey.Equals(KeyedService.AnyKey))
+                        return false;
+
+                    // Check if both keys are equal, or if the lookup key
+                    // should matches all keys (except AnyKey)
+                    return lookupKey.Equals(descriptorKey)
+                        || lookupKey.Equals(KeyedService.AnyKey);
+                }
+
+                // One is a keyed service, one is not
+                return false;
+            }
         }
 
         private static CallSiteResultCacheLocation GetCommonCacheLocation(CallSiteResultCacheLocation locationA, CallSiteResultCacheLocation locationB)
@@ -694,24 +720,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                    serviceType == typeof(IServiceScopeFactory) ||
                    serviceType == typeof(IServiceProviderIsService) ||
                    serviceType == typeof(IServiceProviderIsKeyedService);
-        }
-
-        /// <summary>
-        /// Returns true if both keys are null or equals, or if key1 is KeyedService.AnyKey and key2 is not null
-        /// </summary>
-        private static bool KeysMatch(object? key1, object? key2)
-        {
-            if (key1 == null && key2 == null)
-                return true;
-
-            if (key1 != null && key2 != null)
-            {
-                return key1.Equals(key2)
-                    || key1.Equals(KeyedService.AnyKey)
-                    || key2.Equals(KeyedService.AnyKey);
-            }
-
-            return false;
         }
 
         private struct ServiceDescriptorCacheItem

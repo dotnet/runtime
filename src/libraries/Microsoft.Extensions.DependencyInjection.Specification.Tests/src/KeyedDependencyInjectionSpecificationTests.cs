@@ -153,10 +153,11 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             _ = provider.GetKeyedService<IService>("something-else");
             _ = provider.GetKeyedService<IService>("something-else-again");
 
-            // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey
+            // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey,
+            // nor the KeyedService.AnyKey registration
             var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
-            Assert.Equal(5, allServices.Count);
-            Assert.Equal(new[] { service1, service2, service3, service4 }, allServices.Skip(1));
+            Assert.Equal(4, allServices.Count);
+            Assert.Equal(new[] { service1, service2, service3, service4 }, allServices);
         }
 
         [Fact]
@@ -168,10 +169,12 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             var provider1 = CreateServiceProvider(serviceCollection);
             Assert.Null(provider1.GetKeyedService<IService>(KeyedService.AnyKey));
+            // We don't return KeyedService.AnyKey registration when listing services
             Assert.Equal(new[] { service }, provider1.GetKeyedServices<IService>(KeyedService.AnyKey));
 
             var provider2 = CreateServiceProvider(serviceCollection);
             Assert.Equal(new[] { service }, provider2.GetKeyedServices<IService>(KeyedService.AnyKey));
+            // But we should be able to directly do a lookup on it
             Assert.Null(provider2.GetKeyedService<IService>(KeyedService.AnyKey));
         }
 
@@ -186,10 +189,11 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             var provider1 = CreateServiceProvider(serviceCollection);
             Assert.Same(any, provider1.GetKeyedService<IService>(KeyedService.AnyKey));
-            Assert.Equal(new[] { service, any }, provider1.GetKeyedServices<IService>(KeyedService.AnyKey));
+            Assert.Equal(new[] { service }, provider1.GetKeyedServices<IService>(KeyedService.AnyKey));
 
+            // Check twice in different order to check caching
             var provider2 = CreateServiceProvider(serviceCollection);
-            Assert.Equal(new[] { service, any }, provider2.GetKeyedServices<IService>(KeyedService.AnyKey));
+            Assert.Equal(new[] { service }, provider2.GetKeyedServices<IService>(KeyedService.AnyKey));
             Assert.Same(any, provider2.GetKeyedService<IService>(KeyedService.AnyKey));
         }
 
@@ -278,7 +282,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var provider = CreateServiceProvider(serviceCollection);
 
             var services = provider.GetKeyedServices<IFakeOpenGenericService<PocoClass>>("some-key").ToList();
-            Assert.Equal(new[] { service1, service2 }, services);
+            Assert.Equal(new[] { service2 }, services);
         }
 
         [Fact]
