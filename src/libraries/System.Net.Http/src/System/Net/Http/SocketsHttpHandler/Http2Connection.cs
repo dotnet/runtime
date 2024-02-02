@@ -1776,22 +1776,17 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(amount)}={amount}");
             Debug.Assert(amount > 0);
+            Debug.Assert(_pendingWindowUpdate < ConnectionWindowThreshold);
 
-            int windowUpdateSize;
-            lock (SyncObject)
+            _pendingWindowUpdate += amount;
+            if (_pendingWindowUpdate < ConnectionWindowThreshold)
             {
-                Debug.Assert(_pendingWindowUpdate < ConnectionWindowThreshold);
-
-                _pendingWindowUpdate += amount;
-                if (_pendingWindowUpdate < ConnectionWindowThreshold)
-                {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)} {_pendingWindowUpdate} < {ConnectionWindowThreshold}.");
-                    return;
-                }
-
-                windowUpdateSize = _pendingWindowUpdate;
-                _pendingWindowUpdate = 0;
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)} {_pendingWindowUpdate} < {ConnectionWindowThreshold}.");
+                return;
             }
+
+            int windowUpdateSize = _pendingWindowUpdate;
+            _pendingWindowUpdate = 0;
 
             LogExceptions(SendWindowUpdateAsync(0, windowUpdateSize));
         }
