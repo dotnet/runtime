@@ -24,6 +24,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 
+#include <dn-u16.h> // for u16_strtod
+
 /*****************************************************************************/
 
 #define DECLARE_DATA
@@ -914,6 +916,181 @@ void ConfigMethodRange::Dump()
         {
             printf("%i [0x%08x-0x%08x]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
         }
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigIntArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are separated decimal with no whitespace.
+//    Separators are any digit not '-' or '0-9'
+//
+void ConfigIntArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                p++;
+            }
+
+            numValues++;
+        }
+        else
+        {
+            p++;
+        }
+    }
+
+    m_length = numValues;
+    m_values = (int*)g_jitHost->allocateMemory(numValues * sizeof(int));
+
+    numValues         = 0;
+    p                 = str;
+    int  currentValue = 0;
+    bool isNegative   = false;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                isNegative = true;
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                currentValue = currentValue * 10 + (*p++) - L'0';
+            }
+
+            if (isNegative)
+            {
+                currentValue = -currentValue;
+            }
+
+            m_values[numValues++] = currentValue;
+            currentValue          = 0;
+        }
+        else
+        {
+            p++;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigIntArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config int array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config int array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%i", i == 0 ? "" : ", ", m_values[i]);
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigDoubleArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are comma, tab or space separated.
+//    Consecutive separators are ignored
+//
+void ConfigDoubleArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+        WCHAR* pNext = nullptr;
+        u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            numValues++;
+        }
+        p = pNext;
+    }
+
+    m_length  = numValues;
+    m_values  = (double*)g_jitHost->allocateMemory(numValues * sizeof(double));
+    p         = str;
+    numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+
+        WCHAR* pNext = nullptr;
+        double val   = u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            m_values[numValues++] = val;
+        }
+        p = pNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigDoubleArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config double array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config double array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%f ", i == 0 ? "" : ",", m_values[i]);
     }
 }
 

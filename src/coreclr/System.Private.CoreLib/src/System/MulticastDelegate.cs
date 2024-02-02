@@ -433,6 +433,21 @@ namespace System
             return del;
         }
 
+        internal new bool HasSingleTarget => !(_invocationList is object[]);
+
+        // Used by delegate invocation list enumerator
+        internal object? /* Delegate? */ TryGetAt(int index)
+        {
+            if (!(_invocationList is object[] invocationList))
+            {
+                return (index == 0) ? this : null;
+            }
+            else
+            {
+                return ((uint)index < (uint)_invocationCount) ? invocationList[index] : null;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {

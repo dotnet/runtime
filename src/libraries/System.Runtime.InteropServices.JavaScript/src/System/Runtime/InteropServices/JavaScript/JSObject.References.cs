@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 return ProxyContext.SynchronizationContext;
 #else
                 throw new PlatformNotSupportedException();
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (!_isDisposed)
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 if (ProxyContext.SynchronizationContext._isDisposed)
                 {
                     return;

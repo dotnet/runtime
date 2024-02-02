@@ -43,7 +43,7 @@ namespace System.Numerics.Tensors
     {
         private static void InvokeSpanIntoSpan<TSingleUnaryOperator>(
             ReadOnlySpan<float> x, Span<float> destination)
-            where TSingleUnaryOperator : struct, IUnaryOperator<float> =>
+            where TSingleUnaryOperator : struct, IUnaryOperator<float, float> =>
             InvokeSpanIntoSpan<float, TSingleUnaryOperator>(x, destination);
 
         private static void InvokeSpanSpanIntoSpan<TSingleBinaryOperator>(
@@ -58,7 +58,7 @@ namespace System.Numerics.Tensors
 
         private static unsafe void InvokeSpanScalarIntoSpan<TSingleTransformOperator, TSingleBinaryOperator>(
             ReadOnlySpan<float> x, float y, Span<float> destination)
-            where TSingleTransformOperator : struct, IUnaryOperator<float>
+            where TSingleTransformOperator : struct, IUnaryOperator<float, float>
             where TSingleBinaryOperator : struct, IBinaryOperator<float> =>
             InvokeSpanScalarIntoSpan<float, TSingleTransformOperator, TSingleBinaryOperator>(x, y, destination);
 
@@ -79,7 +79,7 @@ namespace System.Numerics.Tensors
 
         private static unsafe float Aggregate<TSingleTransformOperator, TSingleAggregationOperator>(
             ReadOnlySpan<float> x)
-            where TSingleTransformOperator : struct, IUnaryOperator<float>
+            where TSingleTransformOperator : struct, IUnaryOperator<float, float>
             where TSingleAggregationOperator : struct, IAggregationOperator<float> =>
             Aggregate<float, TSingleTransformOperator, TSingleAggregationOperator>(x);
 

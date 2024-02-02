@@ -32,8 +32,8 @@
   <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoWasmBuildVariant)' != ''">
-    <RuntimeSpecificFrameworkSuffix>Mono.$(MonoWasmBuildVariant)</RuntimeSpecificFrameworkSuffix>
+  <PropertyGroup Condition="'$(WasmEnableThreads)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.multithread</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>

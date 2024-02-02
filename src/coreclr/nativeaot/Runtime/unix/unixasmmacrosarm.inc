@@ -56,6 +56,11 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro GLOBAL_LABEL Name
+        .global C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_ENTRY Name, Section
         .thumb_func
         .global C_FUNC(\Name)
@@ -213,7 +218,7 @@ C_FUNC(\Name):
         .data
         .align      4
 C_FUNC(\Name):
-        .word       1b + 1            // Add 1 to indicate thumb code
+        .word       1b
         .global     C_FUNC(\Name)
         .text
 

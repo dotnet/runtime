@@ -210,61 +210,6 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                 genericArgHandles);
         }
 
-        //
-        // Returns the ParameterInfo objects for the method parameters and return parameter.
-        //
-        // The ParameterInfo objects will report "contextMethod" as their Member property and use it to get type variable information from
-        // the contextMethod's declaring type. The actual metadata, however, comes from "this."
-        //
-        // The methodTypeArguments provides the fill-ins for any method type variable elements in the parameter type signatures.
-        //
-        // Does not array-copy.
-        //
-        public RuntimeParameterInfo[] GetRuntimeParameters(MethodBase contextMethod, RuntimeTypeInfo[] methodTypeArguments, out RuntimeParameterInfo returnParameter)
-        {
-            MetadataReader reader = _reader;
-            TypeContext typeContext = contextMethod.DeclaringType.ToRuntimeTypeInfo().TypeContext;
-            typeContext = new TypeContext(typeContext.GenericTypeArguments, methodTypeArguments);
-            MethodSignature methodSignature = this.MethodSignature;
-            Handle[] typeSignatures = new Handle[methodSignature.Parameters.Count + 1];
-            typeSignatures[0] = methodSignature.ReturnType;
-            int paramIndex = 1;
-            foreach (Handle parameterTypeSignatureHandle in methodSignature.Parameters)
-            {
-                typeSignatures[paramIndex++] = parameterTypeSignatureHandle;
-            }
-            int count = typeSignatures.Length;
-
-            VirtualRuntimeParameterInfoArray result = new VirtualRuntimeParameterInfoArray(count);
-            foreach (ParameterHandle parameterHandle in _method.Parameters)
-            {
-                Parameter parameterRecord = parameterHandle.GetParameter(_reader);
-                int index = parameterRecord.Sequence;
-                result[index] =
-                    NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
-                        contextMethod,
-                        index - 1,
-                        parameterHandle,
-                        new QSignatureTypeHandle(reader, typeSignatures[index]),
-                        typeContext);
-            }
-            for (int i = 0; i < count; i++)
-            {
-                if (result[i] == null)
-                {
-                    result[i] =
-                        RuntimeThinMethodParameterInfo.GetRuntimeThinMethodParameterInfo(
-                            contextMethod,
-                            i - 1,
-                            new QSignatureTypeHandle(reader, typeSignatures[i]),
-                            typeContext);
-                }
-            }
-
-            returnParameter = result.First;
-            return result.Remainder;
-        }
-
         public string Name
         {
             get
