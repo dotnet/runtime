@@ -361,7 +361,12 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, false, null, data, res_converter || _marshal_cs_object_to_cs);
         }
         catch (ex) {
-            runtimeHelpers.nativeAbort(ex);
+            try {
+                loaderHelpers.mono_exit(1, ex);
+            }
+            catch (ex2) {
+                // there is no point to propagate the exception into the unhandled promise rejection
+            }
         }
     }
 
@@ -383,7 +388,12 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             runtimeHelpers.javaScriptExports.complete_task(gc_handle, holder.isCanceled, reason, null, undefined);
         }
         catch (ex) {
-            runtimeHelpers.nativeAbort(ex);
+            try {
+                loaderHelpers.mono_exit(1, ex);
+            }
+            catch (ex2) {
+                // there is no point to propagate the exception into the unhandled promise rejection
+            }
         }
     }
 
