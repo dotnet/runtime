@@ -153,8 +153,8 @@ private:
 
         FlowEdge* const falseEdge = compiler->fgAddRefPred(helperBlock, block);
         FlowEdge* const trueEdge  = compiler->fgGetPredForBlock(remainderBlock, block);
-        trueEdge->setLikelihood(HIGH_PROBABILITY / 100);
-        falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100);
+        trueEdge->setLikelihood(HIGH_PROBABILITY / 100.0);
+        falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
 
         FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
         newEdge->setLikelihood(1.0);
