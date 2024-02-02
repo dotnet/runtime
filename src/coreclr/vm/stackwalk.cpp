@@ -1407,12 +1407,6 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
                 }
 
                 m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
-// #ifdef FEATURE_EH_FUNCLETS
-//                 if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
-//                 {
-//                     m_crawl.hasFaulted = false;
-//                 }
-// #endif // FEATURE_EH_FUNCLETS
                 _ASSERTE(curPc == GetControlPC(m_crawl.pRD));
             }
 
@@ -2733,12 +2727,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             if (m_crawl.isFrameless)
             {
                 m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
-// #ifdef FEATURE_EH_FUNCLETS
-//                 if ((m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) == 0)
-//                 {
-//                     m_crawl.hasFaulted = false;
-//                 }
-// #endif // FEATURE_EH_FUNCLETS
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
                 CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
