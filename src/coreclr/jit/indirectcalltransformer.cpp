@@ -273,21 +273,32 @@ private:
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
                 currBlock->SetTarget(checkBlock);
-                compiler->fgAddRefPred(checkBlock, currBlock);
+                FlowEdge* const newEdge = compiler->fgAddRefPred(checkBlock, currBlock);
+                newEdge->setLikelihood(1.0);
             }
 
             // checkBlock
+            // Todo: get likelihoods right
+            //
             assert(checkBlock->KindIs(BBJ_ALWAYS));
             checkBlock->SetCond(elseBlock, thenBlock);
-            compiler->fgAddRefPred(elseBlock, checkBlock);
-            compiler->fgAddRefPred(thenBlock, checkBlock);
+            FlowEdge* const thenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
+            thenEdge->setLikelihood(0.5);
+            FlowEdge* const elseEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
+            elseEdge->setLikelihood(0.5);
 
             // thenBlock
             assert(thenBlock->TargetIs(remainderBlock));
-            compiler->fgAddRefPred(remainderBlock, thenBlock);
+            {
+                FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
+                newEdge->setLikelihood(1.0);
+            }
 
             // elseBlock
-            compiler->fgAddRefPred(remainderBlock, elseBlock);
+            {
+                FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
+                newEdge->setLikelihood(1.0);
+            }
         }
 
         Compiler*    compiler;
@@ -590,10 +601,6 @@ private:
                 checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock);
                 checkFallsThrough          = false;
 
-                // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
-                prevCheckBlock->SetCond(checkBlock, prevCheckBlock->Next());
-                compiler->fgAddRefPred(checkBlock, prevCheckBlock);
-
                 // Calculate the total likelihood for this check as a sum of likelihoods
                 // of all previous candidates (thenBlocks)
                 unsigned checkLikelihood = 100;
@@ -604,7 +611,12 @@ private:
 
                 // Make sure we didn't overflow
                 assert(checkLikelihood <= 100);
+                weight_t checkLikelihoodWt = ((weight_t)checkLikelihood) / 100.0;
 
+                // prevCheckBlock is expected to jump to this new check (if its type check doesn't succeed)
+                prevCheckBlock->SetCond(checkBlock, prevCheckBlock->Next());
+                FlowEdge* const checkEdge = compiler->fgAddRefPred(checkBlock, prevCheckBlock);
+                checkEdge->setLikelihood(checkLikelihoodWt);
                 checkBlock->inheritWeightPercentage(currBlock, checkLikelihood);
             }
 
@@ -1002,18 +1014,26 @@ private:
         //
         virtual void CreateThen(uint8_t checkIdx)
         {
+            // Compute likelihoods
+            //
+            unsigned const thenLikelihood   = origCall->GetGDVCandidateInfo(checkIdx)->likelihood;
+            weight_t       thenLikelihoodWt = min(((weight_t)thenLikelihood) / 100.0, 100.0);
+            weight_t       elseLikelihoodWt = max(1.0 - thenLikelihoodWt, 0.0);
+
             // thenBlock always jumps to remainderBlock
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock, remainderBlock);
             thenBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
-            thenBlock->inheritWeightPercentage(currBlock, origCall->GetGDVCandidateInfo(checkIdx)->likelihood);
+            thenBlock->inheritWeightPercentage(currBlock, thenLikelihood);
 
             // Also, thenBlock has a single pred - last checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
             checkBlock->SetTarget(thenBlock);
             checkBlock->SetFlags(BBF_NONE_QUIRK);
             assert(checkBlock->JumpsToNext());
-            compiler->fgAddRefPred(thenBlock, checkBlock);
-            compiler->fgAddRefPred(remainderBlock, thenBlock);
+            FlowEdge* const thenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
+            thenEdge->setLikelihood(thenLikelihoodWt);
+            FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
+            elseEdge->setLikelihood(elseLikelihoodWt);
 
             DevirtualizeCall(thenBlock, checkIdx);
         }
@@ -1023,6 +1043,17 @@ private:
         //
         virtual void CreateElse()
         {
+            // Calculate the likelihood of the else block as a remainder of the sum
+            // of all the other likelihoods.
+            unsigned elseLikelihood = 100;
+            for (uint8_t i = 0; i < origCall->GetInlineCandidatesCount(); i++)
+            {
+                elseLikelihood -= origCall->GetGDVCandidateInfo(i)->likelihood;
+            }
+            // Make sure it didn't overflow
+            assert(elseLikelihood <= 100);
+            weight_t elseLikelihoodDbl = ((weight_t)elseLikelihood) / 100.0;
+
             elseBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, thenBlock, thenBlock->Next());
             elseBlock->CopyFlags(currBlock, BBF_SPLIT_GAINED);
             elseBlock->SetFlags(BBF_NONE_QUIRK);
@@ -1032,7 +1063,8 @@ private:
             if (!checkFallsThrough)
             {
                 checkBlock->SetCond(elseBlock, checkBlock->Next());
-                compiler->fgAddRefPred(elseBlock, checkBlock);
+                FlowEdge* const checkEdge = compiler->fgAddRefPred(elseBlock, checkBlock);
+                checkEdge->setLikelihood(elseLikelihoodDbl);
             }
             else
             {
@@ -1043,17 +1075,8 @@ private:
             }
 
             // elseBlock always flows into remainderBlock
-            compiler->fgAddRefPred(remainderBlock, elseBlock);
-
-            // Calculate the likelihood of the else block as a remainder of the sum
-            // of all the other likelihoods.
-            unsigned elseLikelihood = 100;
-            for (uint8_t i = 0; i < origCall->GetInlineCandidatesCount(); i++)
-            {
-                elseLikelihood -= origCall->GetGDVCandidateInfo(i)->likelihood;
-            }
-            // Make sure it didn't overflow
-            assert(elseLikelihood <= 100);
+            FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, elseBlock);
+            elseEdge->setLikelihood(1.0);
 
             // Remove everything related to inlining from the original call
             origCall->ClearInlineInfo();
@@ -1153,9 +1176,9 @@ private:
             // Finally, rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
-            compiler->fgRemoveRefPred(checkBlock, coldBlock);
+            FlowEdge* const oldEdge = compiler->fgRemoveRefPred(checkBlock, coldBlock);
             coldBlock->SetKindAndTarget(BBJ_ALWAYS, elseBlock);
-            compiler->fgAddRefPred(elseBlock, coldBlock);
+            compiler->fgAddRefPred(elseBlock, coldBlock, oldEdge);
         }
 
         // When the current candidate hads sufficiently high likelihood, scan

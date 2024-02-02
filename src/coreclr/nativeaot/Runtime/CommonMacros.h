@@ -170,6 +170,9 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define THUMB_CODE 1
 #endif
 
+// Type for external code location references inside the assembly code.
+typedef uint8_t CODE_LOCATION;
+
 //
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).

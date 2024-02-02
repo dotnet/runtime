@@ -1701,7 +1701,9 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
 
 #ifdef DEBUG
-    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries())
+    // For R2R/NAOT not all these helpers are implemented. So don't ask for them.
+    //
+    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->opts.IsReadyToRun())
     {
         void* ignored;
         for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_ASSIGN_STRUCT; i++)
@@ -2036,7 +2038,7 @@ void CodeGen::genEmitMachineCode()
             printf("\n");
         }
 
-        printf("Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
+        printf("; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
                "code %d",
                codeSize, prologSize, compiler->info.compPerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
