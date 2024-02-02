@@ -9,10 +9,11 @@ namespace DebuggerTests;
 
 internal static class EnvironmentVariables
 {
-    public static readonly string? DebuggerTestPath = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
-    public static readonly string? TestLogPath      = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
-    public static readonly bool    SkipCleanup      = GetEnvironmentVariableValue("SKIP_CLEANUP");
-    public static readonly bool WasmEnableThreads   = GetEnvironmentVariableValue("WasmEnableThreads");
+    public static readonly string? DebuggerTestPath  = Environment.GetEnvironmentVariable("DEBUGGER_TEST_PATH");
+    public static readonly string? TestLogPath       = Environment.GetEnvironmentVariable("TEST_LOG_PATH");
+    public static readonly bool    SkipCleanup       = GetEnvironmentVariableValue("SKIP_CLEANUP");
+    public static readonly bool    WasmEnableThreads = GetEnvironmentVariableValue("WasmEnableThreads");
+
     private static GetEnvironmentVariableValue(string envVariable)
     {
         string? str = Environment.GetEnvironmentVariable(envVariable);
