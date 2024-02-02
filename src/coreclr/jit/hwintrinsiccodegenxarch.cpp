@@ -312,9 +312,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         case 1:
                         {
+                            regNumber targetReg = node->GetRegNum();
+                            GenTree* rmOp = node->Op(1);
                             auto emitSwCase = [&](int8_t i) {
                                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                                genHWIntrinsic_R_RM(node, ins, simdSize, newInstOptions);
+                                genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
                             };
                             regNumber baseReg = node->ExtractTempReg();
                             regNumber offsReg = node->GetSingleTempReg();
@@ -414,7 +416,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        genHWIntrinsic_R_RM(node, ins, simdSize, instOptions);
+                        genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, op1, instOptions);
                     }
                 }
                 break;
@@ -765,28 +767,28 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
 //    attr - The emit attribute for the instruction being generated
-//    ival - a "fake" immediate to indicate the rounding mode
-//
-void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, insOpts instOptions)
+//    reg  - The register
+//    rmOp - The register/memory operand node
+//    instOptions - the existing intOpts
+void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp, insOpts instOptions)
 {
-    regNumber targetReg = node->GetRegNum();
-    GenTree*  op1       = node->Op(1);
+    emitter*    emit     = GetEmitter();
+    OperandDesc rmOpDesc = genOperandDesc(rmOp);
 
-    assert(targetReg != REG_NA);
+    assert(reg != REG_NA);
 
     if ((instOptions & INS_OPTS_EVEX_b_MASK) != 0)
     {
         // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
-        OperandDesc rmOpDesc = genOperandDesc(op1);
         assert(rmOpDesc.GetKind() == OperandKind::Reg);
-        regNumber op1Reg = op1->GetRegNum();
+        regNumber op1Reg = rmOp->GetRegNum();
         assert(op1Reg != REG_NA);
 
-        GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, instOptions);
+        emit->emitIns_R_R(ins, attr, reg, op1Reg, instOptions);
         return;
     }
 
-    genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+    genHWIntrinsic_R_RM(node, ins, attr, reg, rmOp);
 }
 
 //------------------------------------------------------------------------
@@ -2611,7 +2613,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             emitAttr attr = emitTypeSize(targetType);
 
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_RM(node, ins, attr, instOptions);
+            genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
             break;
         }
 
@@ -2623,7 +2625,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             if (varTypeIsFloating(baseType))
             {
                 instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                genHWIntrinsic_R_RM(node, ins, attr, instOptions);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
                 break;
             }
             FALLTHROUGH;
