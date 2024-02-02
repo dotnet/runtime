@@ -326,7 +326,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands GetWasmFunctionIds(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_func_id_to_name_mappings()");
         internal JObject ToObject(bool addUrl)
         {
-            System.Diagnostics.Debugger.Launch();
             if (!addUrl)
                 return JObject.FromObject(this);
             JObject obj = JObject.FromObject(this);
