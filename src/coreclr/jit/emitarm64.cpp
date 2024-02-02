@@ -18188,9 +18188,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
         case IF_SVE_EZ_3A: // ...........iimmm ......nnnnnddddd -- SVE mixed sign dot product (indexed)
             code = emitInsCodeSve(ins, fmt);
-            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
-            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
-            code |= insEncodeReg_V_18_to_16(id->idReg3()); // mmm
+            code |= insEncodeReg_V_4_to_0(id->idReg1());       // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());       // nnnnn
+            code |= insEncodeReg_V_18_to_16(id->idReg3());     // mmm
             code |= insEncodeUimm2_20_to_19(emitGetInsSC(id)); // ii
             dst += emitOutput_Instr(dst, code);
             break;
@@ -21340,7 +21340,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmm
-            emitDispElementIndex(emitGetInsSC(id)); // ii
+            emitDispElementIndex(emitGetInsSC(id));                  // ii
             break;
 
         // <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
