@@ -3631,7 +3631,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         bool specialCase = false;
 #ifdef TARGET_ARM64
         specialCase      = call->gtFlags & GTF_TLS_GET_ADDR;
-#endif
         if (specialCase)
         {
             GenTree* mthdHandle = (GenTree*)call->gtCallMethHnd;
@@ -3646,6 +3645,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             emit->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
             emit->emitIns_R_R_I(INS_ldr, attr, target->GetRegNum(), REG_R0, (ssize_t)methHnd);
         }
+#endif
 
         // clang-format off
         genEmitCall(emitter::EC_INDIR_R,
