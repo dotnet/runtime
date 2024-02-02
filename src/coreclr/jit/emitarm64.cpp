@@ -8468,7 +8468,8 @@ void emitter::emitIns_R_R_I(
     id->idReg2(reg2);
     if (EA_IS_CNS_TLSGD_RELOC(attr))
     {
-        id->idSetTlsGD(); //TODO: This is getting called more than needed. Investigate.
+        assert(imm != 0);
+        id->idSetTlsGD();
     }
     dispIns(id);
     appendToCurIG(id);
@@ -21059,10 +21060,6 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         }
 #endif // DEBUG
 
-        if (addr->gtFlags & GTF_ICON_TLSGD_OFFSET)
-        {
-            attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
-        }
         // Then load/store dataReg from/to [addrReg]
         emitIns_R_R(ins, attr, dataReg, addr->GetRegNum());
     }

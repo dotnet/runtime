@@ -3555,11 +3555,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-    if (call->gtFlags & GTF_TLS_GET_ADDR)
-    {
-        retSize = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);     
-    }
-
     DebugInfo di;
     // We need to propagate the debug information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
@@ -3644,6 +3639,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                                    INS_FLAGS_DONT_CARE DEBUGARG(iconNode->gtTargetHandle) DEBUGARG(iconNode->gtFlags));
             emit->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
             emit->emitIns_R_R_I(INS_ldr, attr, target->GetRegNum(), REG_R0, (ssize_t)methHnd);
+            retSize = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC); 
         }
 #endif
 

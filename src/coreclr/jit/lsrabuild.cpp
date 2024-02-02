@@ -4129,14 +4129,6 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     int      srcCount        = 1;
     GenTree* op1             = node->gtGetOp1();
 
-    //if (compiler->opts.disAsm)
-    //{
-    //    if ((op1->gtFlags & GTF_ICON_TLSGD_OFFSET))
-    //    {
-    //        return 0;
-    //    }
-    //}
-
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
     regMaskTP    argMask = genRegMask(argReg);

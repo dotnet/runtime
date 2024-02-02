@@ -1695,7 +1695,6 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     this->codePtr          = codePtr;
     this->nativeSizeOfCode = nativeSizeOfCode;
 
-    //compiler->opts.dspCode = compiler->opts.disAsm;
     DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
     DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);

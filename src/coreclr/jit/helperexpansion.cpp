@@ -663,127 +663,16 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
             */
 
-            /*unsigned tlsLclNum              = lvaGrabTemp(true DEBUGARG("TLS access"));
-            lvaTable[tlsLclNum].lvType      = TYP_I_IMPL;*/
             GenTree* tlsRootOffset = gtNewIconHandleNode((size_t)tlsRootObject, GTF_ICON_TLS_HDL); // [000016]
             tlsRootOffset->gtFlags |= GTF_ICON_TLSGD_OFFSET;
-            //GenTree* tlsValueDef            = gtNewStoreLclVarNode(tlsLclNum, tlsRootOffset); // [000017]
-            //tlsValueDef->gtFlags
-            //GenTree* tlsValueUse         = gtNewLclVarNode(tlsLclNum); // [000018]
-            //GenTree* tlsDefUse   = gtNewOperNode(GT_COMMA, TYP_I_IMPL, tlsValueDef, tlsValueUse);
-
-            //fgInsertStmtAtBeg(block, fgNewStmtFromTree(tlsValueDef));
-
-            /*BasicBlock* oldBb = block;
-            BasicBlock* newBlock             = fgNewBBFromTreeAfter(BBJ_ALWAYS, prevBb, tlsValueDef, debugInfo);
-            newBlock->SetTarget(block);
-            fgAddRefPred(block, newBlock);*/
-            
-            //tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET; 
-
-            // param1
-            //
-            GenTree* tlsCallParam1 = gtCloneExpr(tlsRootOffset); // TODO: IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
-            tlsCallParam1->gtFlags &= ~GTF_ICON_TLS_HDL;         // [000017]
-            tlsCallParam1->gtFlags |= GTF_ICON_TLSGD_OFFSET; // [000017]
-
-            GenTree* tlsCallParam2 = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
-
-            //tlsCallParam2->SetContained();
-
-            //unsigned tlsRootAddrLclNum         = lvaGrabTemp(true DEBUGARG("TlsRootAddr access"));
-            //lvaTable[tlsRootAddrLclNum].lvType = TYP_I_IMPL;
-            //GenTree* tlsRootAddrDef            = gtNewStoreLclVarNode(tlsRootAddrLclNum, tlsRootOffset);
-            //GenTree* tlsRootAddrUse            = gtNewLclVarNode(tlsRootAddrLclNum);
-
-            //GenTree* cnsOffset     = gtNewIconNode(0, TYP_INT);
-            //cnsOffset->gtFlags |= GTF_ICON_TLSGD_OFFSET;
-
-            //GenTree* tlsCallOffset =
-            //    gtNewOperNode(GT_ADD, TYP_I_IMPL, gtClone(tlsCallParam1), cnsOffset);
 
 
-            // [000020]
-            //GenTree* tlsCall1 = gtCloneExpr(tlsCallParam1);
-            //tlsCall1->gtFlags &= ~GTF_ICON_TLSGD_OFFSET;
-            //tlsCall1->gtFlags |= GTF_ICON_SECREL_OFFSET;
-                //gtNewOperNode(GT_COMMA, TYP_I_IMPL, tlsValueDef,
-                //              gtCloneExpr(
-                //                  tlsCallParam1)); // TODO:
-                //                                   // IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21gtCloneExpr(tlsValueUse);
-            ////tlsCall1->SetContained();
-            //GenTree* tlsCallAddr =
-            //    gtNewIndir(TYP_I_IMPL, tlsCall1,
-            //               GTF_IND_NONFAULTING | GTF_IND_INVARIANT); // IMAGE_REL_AARCH64_TLSDESC_LD64_LO12
-
-            /*GenTree* tls_get_addr_val =
-                gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_TLS_HDL);*/
-            //tls_get_addr_val->gtFlags |= GTF_TLS_GET_ADDR
-            //tls_get_addr_val->SetContained();
-
-            //// param1
-            ////
-            //GenTree* tlsCallParam1 = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtClone(tlsRootAddrUse),
-            //                                       gtNewIconNode(0, TYP_INT)); // IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
-
-
-            //GenTree* newCallIndir = gtNewIconHandleNode((size_t)tlsRootObject, GTF_ICON_TLS_HDL);
-            //GenTree* newParam1    = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
-
-            // [000021]
             GenTree*     tlsCallIndir = gtCloneExpr(tlsRootOffset);
             GenTreeCall* tlsRefCall   = gtNewIndCallNode(tlsCallIndir, TYP_I_IMPL);
             tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
-            //tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsCallParam1));
-            //tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsCallParam2));
-
             fgMorphArgs(tlsRefCall);
 
             tlsRefCall->gtFlags |= GTF_EXCEPT | (tlsCallIndir->gtFlags & GTF_GLOB_EFFECT);
-
-            ////// For x0 = x1 + x0
-            //unsigned tlsRefResultNum         = lvaGrabTemp(true DEBUGARG("TLS call addr result"));
-            //lvaTable[tlsRefResultNum].lvType = TYP_I_IMPL;
-            //GenTree* tlsRefCallDef        = gtNewStoreLclVarNode(tlsRefResultNum, tlsRefCall);
-            //GenTree* tlsRefCallUse           = gtNewLclVarNode(tlsRefResultNum);
-
-            ////unsigned tebNum         = lvaGrabTemp(true DEBUGARG("MRS result"));
-            ////lvaTable[tebNum].lvType   = TYP_I_IMPL;
-            ////GenTree* tebResultDef         = gtNewStoreLclVarNode(tebNum, tlsCallParam2);
-            ////GenTree* tebResultUse     = gtNewLclVarNode(tebNum);
-
-            ////fgInsertStmtAtBeg(block, fgNewStmtFromTree(tlsRefCallDef));
-
-
-
-            //tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRefCallUse, gtCloneExpr(tlsCallParam2));
-
-            //if (verbose)
-            //{
-            //    printf("tlsRootOffset:\n");
-            //    DISPTREE(tlsRootOffset);
-            //    printf("tlsCallParam1:\n");
-            //    DISPTREE(tlsCallParam1);
-            //    printf("tlsCallParam2:\n");
-            //    DISPTREE(tlsCallParam2);
-            //    printf("tlsCallIndir:\n");
-            //    DISPTREE(tlsCallIndir);
-            //    printf("tlsRefCall:\n");
-            //    DISPTREE(tlsRefCall);
-            //    //printf("tlsRefCallDef:\n");
-            //    //DISPTREE(tlsRefCallDef);
-            //    printf("tlsRootAddr:\n");
-            //    DISPTREE(tlsRootAddr);
-
-            //    //DISPTREE(tlsRefCallDef);
-            //    //printf("tlsRefCallUse:\n");
-            //    //DISPTREE(tlsRefCallUse);
-            //    //printf("tebResultDef:\n");
-            //    //DISPTREE(tebResultDef);
-            //    //printf("tebResultUse:\n");
-            //    //DISPTREE(tebResultUse);
-            //}
-
             tlsRootAddr = tlsRefCall;
         }
         else
