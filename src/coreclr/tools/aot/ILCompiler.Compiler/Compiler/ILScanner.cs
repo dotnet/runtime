@@ -36,7 +36,7 @@ namespace ILCompiler
             DebugInformationProvider debugInformationProvider,
             Logger logger,
             int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, nodeFactory.CompilationModuleGroup, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, nodeFactory.CompilationModuleGroup, logger)
         {
             _helperCache = new HelperCache(this);
             _parallelism = parallelism;
