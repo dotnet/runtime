@@ -324,6 +324,15 @@ namespace Microsoft.WebAssembly.Diagnostics
         public static MonoCommands ReleaseObject(int runtimeId, DotnetObjectId objectId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_release_object('{objectId}')");
 
         public static MonoCommands GetWasmFunctionIds(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_func_id_to_name_mappings()");
+
+        internal JObject ToObject(bool addUrl)
+        {
+            JObject obj = JObject.FromObject(this);
+            if (!addUrl)
+                return obj;
+            obj[nameof(expression)] = expression + $"//# sourceURL=cdp://dotnet/mono{expression.GetHashCode()}.cdp";
+            return obj;
+        }
     }
 
     internal enum MonoErrorCodes

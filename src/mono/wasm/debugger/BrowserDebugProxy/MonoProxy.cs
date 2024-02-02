@@ -32,6 +32,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
+        public bool DebuggingFromVS { get; private set; }
         private PauseOnExceptionsKind _defaultPauseOnExceptions { get; set; }
 
         public MonoProxy(ILogger logger, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(options, logger, loggerId)
@@ -42,7 +43,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             JustMyCode = options?.JustMyCode ?? false;
         }
 
-        internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
+        internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", cmd.ToObject(DebuggingFromVS), token);
 
         internal void SendLog(SessionId sessionId, string message, CancellationToken token, string type = "warning")
         {
@@ -308,7 +309,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
             }
-
+            
+            if (!DebuggingFromVS && method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase))
+                DebuggingFromVS = true;
             switch (method)
             {
                 case "Target.attachToTarget":
