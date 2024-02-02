@@ -13241,7 +13241,7 @@ namespace System.Numerics.Tensors
                 Vector128<float> x = t.AsSingle();
 
                 Vector128<float> y = Vector128.Abs(x);
-                Vector128<float> z = ExpOperator<float>.Invoke(Vector128.Create(-2f) * y) - Vector128.Create(1f);
+                Vector128<float> z = ExpM1Operator<float>.Invoke(Vector128.Create(-2f) * y);
                 Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
             }
@@ -13252,7 +13252,7 @@ namespace System.Numerics.Tensors
                 Vector256<float> x = t.AsSingle();
 
                 Vector256<float> y = Vector256.Abs(x);
-                Vector256<float> z = ExpOperator<float>.Invoke(Vector256.Create(-2f) * y) - Vector256.Create(1f);
+                Vector256<float> z = ExpM1Operator<float>.Invoke(Vector256.Create(-2f) * y);
                 Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
             }
@@ -13263,7 +13263,7 @@ namespace System.Numerics.Tensors
                 Vector512<float> x = t.AsSingle();
 
                 Vector512<float> y = Vector512.Abs(x);
-                Vector512<float> z = ExpOperator<float>.Invoke(Vector512.Create(-2f) * y) - Vector512.Create(1f);
+                Vector512<float> z = ExpM1Operator<float>.Invoke(Vector512.Create(-2f) * y);
                 Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
             }
