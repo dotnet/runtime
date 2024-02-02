@@ -13192,11 +13192,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idIns(ins);
         id->idInsFmt(fmt);
 
-        id->idReg3(ireg);
+        
         assert(xreg == REG_NA);
         if (EA_IS_CNS_TLSGD_RELOC(retSize))
         {
             id->idSetTlsGD();
+            id->idReg1(ireg);
+            id->idAddr()->iiaAddr = (BYTE*)methHnd;
+        }
+        else
+        {
+            id->idReg3(ireg);
         }
     }
     else
@@ -16124,16 +16130,20 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
             assert(insOptsNone(id->idInsOpt()));
             assert((ins == INS_br_tail) || (ins == INS_blr));
-            code = emitInsCode(ins, fmt);
-            code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
-
-            sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
-            dst += emitOutputCall(ig, dst, id, code);
+            code = emitInsCode(ins, fmt);            
+            
             if (id->idIsTlsGD())
             {
-                emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie,
+                emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
                                      IMAGE_REL_AARCH64_TLSDESC_CALL);
+                code |= insEncodeReg_Rn(id->idReg1()); // nnnnn
             }
+            else
+            {
+                code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
+            }
+            dst += emitOutputCall(ig, dst, id, code);
+            sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)

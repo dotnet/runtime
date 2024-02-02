@@ -368,8 +368,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     if (ctrlExpr != nullptr)
     {
-        if (ctrlExpr->IsIconHandle(GTF_ICON_TLS_HDL) && call->gtArgs.CountArgs() == 0)
+        if ((call->gtArgs.CountArgs() == 0) && ctrlExpr->IsTlsIconHandle())
         {
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
             newRefPosition(REG_R0, currentLoc, RefTypeFixedReg, nullptr, genRegMask(REG_R0));
             newRefPosition(REG_R1, currentLoc, RefTypeFixedReg, nullptr, genRegMask(REG_R1));
             ctrlExprCandidates = genRegMask(REG_R2);

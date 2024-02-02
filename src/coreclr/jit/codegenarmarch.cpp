@@ -3625,16 +3625,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         bool specialCase = false;
 #ifdef TARGET_ARM64
-        specialCase      = call->gtFlags & GTF_TLS_GET_ADDR;
+        specialCase      = target->IsTlsIconHandle();
         if (specialCase)
         {
-            GenTree* mthdHandle = (GenTree*)call->gtCallMethHnd;
-            GenTreeFlags tlsFlags   = (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL);
-            assert(mthdHandle != nullptr && ((mthdHandle->gtFlags & tlsFlags) == tlsFlags));
-            GenTreeIntCon* iconNode = mthdHandle->AsIntCon();
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
+            GenTreeIntCon* iconNode = target->AsIntCon();
             methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
             emitter* emit = GetEmitter();
-            emitAttr attr = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG  | EA_8BYTE);
+            emitAttr attr           = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
             instGen_Set_Reg_To_Imm(attr, REG_R0, (ssize_t)methHnd,
                                    INS_FLAGS_DONT_CARE DEBUGARG(iconNode->gtTargetHandle) DEBUGARG(iconNode->gtFlags));
             emit->emitIns_R(INS_mrs_tpid0, attr, REG_R1);

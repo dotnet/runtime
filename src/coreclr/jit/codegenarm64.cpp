@@ -2333,8 +2333,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (con->ImmedValNeedsReloc(compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
-                GenTreeFlags tlsFlags = (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL);
-                if ((tree->gtFlags & tlsFlags) == tlsFlags)
+                if (tree->IsTlsIconHandle())
                 {
                     // no need to generate because we already generated it as part of GT_CALL
                     break;
