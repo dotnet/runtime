@@ -460,30 +460,19 @@ unsigned optCSEKeyToHashIndex(size_t key, size_t optCSEhashSize)
 }
 
 //---------------------------------------------------------------------------
-// optValnumCSE_Index:
-//               - Returns the CSE index to use for this tree,
-//                 or zero if this expression is not currently a CSE.
+// optKeyForCSE: return a CSE key value for this tree
 //
 // Arguments:
-//    tree       - The current candidate CSE expression
-//    stmt       - The current statement that contains tree
+//   tree - tree to consider
+//   isSharedConst - [out, optional] true if this represents a shared constant
 //
+// Returns:
+//   VN or shared constant indicator to use for CSE equivalence.
 //
-// Notes:   We build a hash table that contains all of the expressions that
-//          are presented to this method.  Whenever we see a duplicate expression
-//          we have a CSE candidate.  If it is the first time seeing the duplicate
-//          we allocate a new CSE index. If we have already allocated a CSE index
-//          we return that index.  There currently is a limit on the number of CSEs
-//          that we can have of MAX_CSE_CNT (64)
-//
-unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
+size_t Compiler::optKeyForCSE(GenTree* tree, bool* isSharedConst)
 {
-    size_t   key;
-    unsigned hval;
-    CSEdsc*  hashDsc;
-    bool     enableSharedConstCSE = false;
-    bool     isSharedConst        = false;
-    int      configValue          = JitConfig.JitConstCSE();
+    bool enableSharedConstCSE = false;
+    int  configValue          = JitConfig.JitConstCSE();
 
 #if defined(TARGET_ARMARCH)
     // ARMARCH - allow to combine with nearby offsets, when config is not 2 or 4
@@ -498,6 +487,10 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     {
         enableSharedConstCSE = true;
     }
+
+    // Return value ends up here.
+    //
+    size_t result = ValueNumStore::NoVN;
 
     // We use the liberal Value numbers when building the set of CSE
     ValueNum vnLib     = tree->GetVN(VNK_Liberal);
@@ -539,11 +532,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         if (vnOp2Lib != vnLib)
         {
-            key = vnLib; // include the exc set in the hash key
+            result = vnLib; // include the exc set in the hash key
         }
         else
         {
-            key = vnLibNorm;
+            result = vnLibNorm;
         }
 
         // If we didn't do the above we would have op1 as the CSE def
@@ -569,19 +562,50 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             // This is the only case where the hash key is not a ValueNumber
             //
             size_t constVal = vnStore->CoercedConstantValue<size_t>(vnLibNorm);
-            key             = Encode_Shared_Const_CSE_Value(constVal);
-            isSharedConst   = true;
+            result          = Encode_Shared_Const_CSE_Value(constVal);
+
+            if (isSharedConst != nullptr)
+            {
+                *isSharedConst = true;
+            }
         }
         else
         {
             // Use the vnLibNorm value as the key
-            key = vnLibNorm;
+            result = vnLibNorm;
         }
     }
     else // Not a GT_COMMA or a GT_CNS_INT
     {
-        key = vnLibNorm;
+        result = vnLibNorm;
     }
+
+    return result;
+}
+
+//---------------------------------------------------------------------------
+// optValnumCSE_Index:
+//               - Returns the CSE index to use for this tree,
+//                 or zero if this expression is not currently a CSE.
+//
+// Arguments:
+//    tree       - The current candidate CSE expression
+//    stmt       - The current statement that contains tree
+//
+//
+// Notes:   We build a hash table that contains all of the expressions that
+//          are presented to this method.  Whenever we see a duplicate expression
+//          we have a CSE candidate.  If it is the first time seeing the duplicate
+//          we allocate a new CSE index. If we have already allocated a CSE index
+//          we return that index.  There currently is a limit on the number of CSEs
+//          that we can have of MAX_CSE_CNT (64)
+//
+unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
+{
+    unsigned hval;
+    CSEdsc*  hashDsc;
+    bool     isSharedConst = false;
+    size_t   key           = optKeyForCSE(tree, &isSharedConst);
 
     // Make sure that the result of Is_Shared_Const_CSE(key) matches isSharedConst.
     // Note that when isSharedConst is true then we require that the TARGET_SIGN_BIT is set in the key
@@ -5293,3 +5317,99 @@ void Compiler::optPrintCSEDataFlowSet(EXPSET_VALARG_TP cseDataFlowSet, bool incl
 }
 
 #endif // DEBUG
+
+//------------------------------------------------------------------------
+// CseCandidateState: Initialize CseCandidateState
+//
+// Arguments:
+//    compiler - the compiler instance
+//
+CseCandidateState::CseCandidateState(Compiler* compiler)
+    : m_compiler(compiler), m_alloc(compiler->getAllocator(CMK_CSE)), m_stackMap(nullptr), m_candidates(nullptr)
+{
+    m_stackMap = new (m_alloc) KeyToStackNodeMap(m_alloc);
+}
+
+//------------------------------------------------------------------------
+// Push: push a new tree into the CSE candidate data
+//
+// Arguments:
+//    tree - the tree to add
+//    block - The block where the tree appears
+//
+void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
+{
+    size_t     key = m_compiler->optKeyForCSE(tree);
+    StackNode* top = nullptr;
+    m_stackMap->Lookup(key, &top);
+
+    // If no tree with this key is available, this is a potential CSE def
+    //
+    if (top == nullptr)
+    {
+        top->m_def   = tree;
+        top->m_block = block;
+
+        StackNode* newNode = new (m_alloc) StackNode(block, tree, top);
+        m_stackMap->Set(key, newNode, KeyToStackNodeMap::Overwrite);
+        return;
+    }
+
+    // Else a tree with the right key is available (a CSE def).
+    // This new tree may be a CSE use if the exceptional behavior is covered by the def.
+    //
+    ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(top->m_def->gtVNPair.GetLiberal());
+    ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
+
+    if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
+    {
+        // Exceptions covered; this tree is a use.
+        //
+        if (top->m_uses == nullptr)
+        {
+            // This is the first use, so we now have a bona-fide CSE candidate.
+            //
+            m_candidates->push_back(top);
+
+            // Prepare to keep track of the uses.
+            //
+            top->m_uses = new (m_alloc) jitstd::vector<GenTree*>(m_alloc);
+        }
+
+        // We could search up the stack, but why would we have made a new def
+        // if the current one was compatible with anything up stack?
+        //
+        top->m_uses->push_back(tree);
+        return;
+    }
+
+    // Exceptions were not covered, this is a new (potential) def
+    // We may never see this case; if so we don't really need a stack...
+    //
+    StackNode* newNode = new (m_alloc) StackNode(block, tree, top);
+    m_stackMap->Set(key, newNode, KeyToStackNodeMap::Overwrite);
+}
+
+//------------------------------------------------------------------------
+// PopStacks: Remove any CSE candidates whose defining tree is from the indicated block
+//
+// Arguments:
+//   block - blolck in question
+//
+void CseCandidateState::PopBlockStacks(BasicBlock* block)
+{
+    for (size_t key : KeyToStackNodeMap::KeyIteration(m_stackMap))
+    {
+        StackNode* origNode = nullptr;
+        m_stackMap->Lookup(key, &origNode);
+        StackNode* node = origNode;
+        while ((node != nullptr) && (node->m_block == block))
+        {
+            node = node->m_prev;
+        }
+        if (node != origNode)
+        {
+            m_stackMap->Set(key, node, KeyToStackNodeMap::SetKind::Overwrite);
+        }
+    }
+}

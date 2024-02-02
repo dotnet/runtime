@@ -2491,6 +2491,7 @@ class Compiler
     friend class CSE_HeuristicReplay;
     friend class CSE_HeuristicRL;
     friend class CSE_Heuristic;
+    friend class CseCandidateState;
     friend class CodeGenInterface;
     friend class CodeGen;
     friend class LclVarDsc;
@@ -7049,6 +7050,7 @@ public:
 
 protected:
     void     optValnumCSE_Init();
+    size_t optKeyForCSE(GenTree* tree, bool* isSharedConst = nullptr);
     unsigned optValnumCSE_Index(GenTree* tree, Statement* stmt);
     bool optValnumCSE_Locate(CSE_HeuristicCommon* heuristic);
     void optValnumCSE_InitDataFlow();

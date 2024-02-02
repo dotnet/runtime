@@ -502,4 +502,57 @@ public:
     }
 };
 
+class CseCandidateState
+{
+public:
+    struct StackNode
+    {
+        // Link to the previous stack top node
+        StackNode* m_prev;
+        // The basic block (used when popping blocks)
+        BasicBlock* m_block;
+        // The Def tree
+        GenTree* m_def;
+        // And the use trees
+        jitstd::vector<GenTree*>* m_uses;
+
+        StackNode(BasicBlock* block, GenTree* tree, StackNode* prev)
+            : m_prev(prev), m_block(block), m_def(tree), m_uses(nullptr)
+        {
+        }
+    };
+
+private:
+    // Compiler
+    Compiler* m_compiler;
+    // Memory allocator
+    CompAllocator m_alloc;
+    // Map of current CSEs (or potential CSEs)
+    typedef JitHashTable<size_t, JitSmallPrimitiveKeyFuncs<size_t>, StackNode*> KeyToStackNodeMap;
+    KeyToStackNodeMap* m_stackMap;
+    // CSEs found so far
+    jitstd::vector<StackNode*>* m_candidates;
+
+public:
+    CseCandidateState(Compiler* comp);
+
+    // Find an available CSE tree, if any (or nullptr)
+    StackNode* Top(GenTree* tree);
+
+    // Push a new tree onto the stack
+    void Push(BasicBlock* block, GenTree* tree);
+
+    // Pop all stacks that have an entry for "block" on top.
+    void PopBlockStacks(BasicBlock* block);
+
+    // Push a tree onto a stack
+    void Push(GenTree* tree, BasicBlock* block);
+
+    // Get the candidates found so far.
+    jitstd::vector<StackNode*>* GetCandidates()
+    {
+        return m_candidates;
+    }
+};
+
 #endif // _OPTCSE_H
