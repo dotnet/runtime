@@ -281,9 +281,11 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
-            Debug.Assert(fieldTypeHandle.ToMethodTable()->IsPointer);
-
             IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+
+            if (fieldType.ToMethodTable()->IsFunctionPointer)
+                return ptrValue;
+            
             return ReflectionPointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
         }
 
