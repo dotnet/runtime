@@ -154,15 +154,12 @@ private:
         FlowEdge* const falseEdge = compiler->fgAddRefPred(helperBlock, block);
         FlowEdge* const trueEdge  = compiler->fgGetPredForBlock(remainderBlock, block);
 
-        if (trueEdge->hasLikelihood())
-        {
-            falseEdge->setLikelihood(1.0 - trueEdge->getLikelihood());
-        }
-        else
-        {
-            trueEdge->setLikelihood(0.5);
-            falseEdge->setLikelihood(0.5);
-        }
+        // Likelihood should have been set in fgSplitBlockAtBeginning
+        assert(trueEdge->hasLikelihood());
+
+        // Check should rarely pass
+        trueEdge->setLikelihood(0.1);
+        falseEdge->setLikelihood(0.9);
 
         FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
         newEdge->setLikelihood(1.0);
