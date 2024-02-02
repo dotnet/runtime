@@ -5134,6 +5134,126 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             Assert.False((bool)methodInfo.Invoke(null, null));
         }
 
+        [Fact]
+        public void GetIndicesByteTest() => TestGetIndices<byte>();
+
+        [Fact]
+        public void GetIndicesDoubleTest() => TestGetIndices<double>();
+
+        [Fact]
+        public void GetIndicesInt16Test() => TestGetIndices<short>();
+
+        [Fact]
+        public void GetIndicesInt32Test() => TestGetIndices<int>();
+
+        [Fact]
+        public void GetIndicesInt64Test() => TestGetIndices<long>();
+
+        [Fact]
+        public void GetIndicesNIntTest() => TestGetIndices<nint>();
+
+        [Fact]
+        public void GetIndicesNUIntTest() => TestGetIndices<nuint>();
+
+        [Fact]
+        public void GetIndicesSByteTest() => TestGetIndices<sbyte>();
+
+        [Fact]
+        public void GetIndicesSingleTest() => TestGetIndices<float>();
+
+        [Fact]
+        public void GetIndicesUInt16Test() => TestGetIndices<ushort>();
+
+        [Fact]
+        public void GetIndicesUInt32Test() => TestGetIndices<uint>();
+
+        [Fact]
+        public void GetIndicesUInt64Test() => TestGetIndices<ulong>();
+
+        private static void TestGetIndices<T>()
+            where T : INumber<T>
+        {
+            Vector512<T> indices = Vector512<T>.Indices;
+
+            for (int index = 0; index < Vector512<T>.Count; index++)
+            {
+                Assert.Equal(T.CreateTruncating(i), indices.GetElement(index));
+            }
+
+            AssertEqual(Vector512.CreateSequence(0, 1), Vector512<T>.Indices);
+        }
+
+        [Theory]
+        [InlineData(0, 2)]
+        [InlineData(3, 3)]
+        [InlineData(63, unchecked((byte)(-1))]
+        public void CreateSequenceByteTest(byte start, byte step) => TestCreateSequence<byte>(start, step);
+
+        [Fact]
+        [InlineData(0.0, +2.0)]
+        [InlineData(3.0, +3.0)]
+        [InlineData(7.0, -1.0)]
+        public void CreateSequenceDoubleTest(double start, double step) => TestCreateSequence<double>(start, step);
+
+        [Fact]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(31, -1)]
+        public void CreateSequenceInt16Test(short start, short step) => TestCreateSequence<short>(start, step);
+
+        [Fact]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(15, -1)]
+        public void CreateSequenceInt32Test(int start, int step) => TestCreateSequence<int>(start, step);
+
+        [Fact]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(31, -1)]
+        public void CreateSequenceInt64Test(long start, long step) => TestCreateSequence<long>(start, step);
+
+        [Fact]
+        [InlineData(0, +2)]
+        [InlineData(3, +3)]
+        [InlineData(63, -1)]
+        public void CreateSequenceSByteTest(sbyte start, sbyte step) => TestCreateSequence<sbyte>(start, step);
+
+        [Fact]
+        [InlineData(0.0f, +2.0f)]
+        [InlineData(3.0f, +3.0f)]
+        [InlineData(15.0f, -1.0f)]
+        public void CreateSequenceSingleTest(float start, float step) => TestCreateSequence<float>(start, step);
+
+        [Fact]
+        [InlineData(0, 2)]
+        [InlineData(3, 3)]
+        [InlineData(31, unchecked((ushort)(-1)))]
+        public void CreateSequenceUInt16Test(ushort start, ushort step) => TestCreateSequence<ushort>(start, step);
+
+        [Fact]
+        [InlineData(0, 2)]
+        [InlineData(3, 3)]
+        [InlineData(15, unchecked((uint)(-1)))]
+        public void CreateSequenceUInt32Test(uint start, uint step) => TestCreateSequence<uint>(start, step);
+
+        [Fact]
+        [InlineData(7, unchecked((ulong)(-1)))]
+        public void CreateSequenceUInt64Test(ulong start, ulong step) => TestCreateSequence<ulong>(start, step);
+
+        private static void TestCreateSequence<T>(T start, T step)
+            where T : INumber<T>
+        {
+            Vector512<T> sequence = Vector512.CreateSequence(start, step);
+            T expected = start;
+
+            for (int index = 0; index < Vector512<T>.Count; index++)
+            {
+                expected += step;
+                Assert.Equal(expected, indices.GetElement(index));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(VectorTestMemberData.ExpDouble), MemberType = typeof(VectorTestMemberData))]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/97176")]
