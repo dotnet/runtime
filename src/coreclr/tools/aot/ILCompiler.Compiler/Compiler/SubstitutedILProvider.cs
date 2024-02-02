@@ -3,11 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using System.Resources;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -20,54 +17,20 @@ using MethodDebugInformation = Internal.IL.MethodDebugInformation;
 
 namespace ILCompiler
 {
-    public class FeatureSwitchManager : ILProvider
+    public class SubstitutedILProvider : ILProvider
     {
-        private readonly FeatureSwitchHashtable _hashtable;
         private readonly ILProvider _nestedILProvider;
+        private readonly SubstitutionProvider _substitutionProvider;
 
-        public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
+        public SubstitutedILProvider(ILProvider nestedILProvider, SubstitutionProvider substitutionProvider)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(logger, switchValues, globalSubstitutions);
-        }
-
-        private BodySubstitution GetSubstitution(MethodDesc method)
-        {
-            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
-            {
-                AssemblyFeatureInfo info = _hashtable.GetOrCreateValue(ecmaMethod.Module);
-                if (info.BodySubstitutions != null && info.BodySubstitutions.TryGetValue(ecmaMethod, out BodySubstitution result))
-                    return result;
-            }
-
-            return null;
-        }
-
-        private object GetSubstitution(FieldDesc field)
-        {
-            if (field.GetTypicalFieldDefinition() is EcmaField ecmaField)
-            {
-                AssemblyFeatureInfo info = _hashtable.GetOrCreateValue(ecmaField.Module);
-                if (info.BodySubstitutions != null && info.FieldSubstitutions.TryGetValue(ecmaField, out object result))
-                    return result;
-            }
-
-            return null;
-        }
-
-        public bool HasSubstitutedBody(MethodDesc method)
-        {
-            return GetSubstitution(method) != null;
-        }
-
-        public bool HasSubstitutedValue(FieldDesc field)
-        {
-            return GetSubstitution(field) != null;
+            _substitutionProvider = substitutionProvider;
         }
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            BodySubstitution substitution = GetSubstitution(method);
+            BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
             if (substitution != null)
             {
                 return substitution.EmitIL(method);
@@ -152,8 +115,7 @@ namespace ILCompiler
 
             // Do not attempt to inline resource strings if we only want to use resource keys.
             // The optimizations are not compatible.
-            bool shouldInlineResourceStrings =
-                !_hashtable._switchValues.TryGetValue("System.Resources.UseSystemResourceKeys", out bool useResourceKeys) || !useResourceKeys;
+            bool shouldInlineResourceStrings = _substitutionProvider.ShouldInlineResourceStrings;
 
             ILExceptionRegion[] ehRegions = method.GetExceptionRegions();
             byte[] methodBytes = method.GetILBytes();
@@ -533,7 +495,7 @@ namespace ILCompiler
                     var getter = (EcmaMethod)method.GetObject(new ILReader(newBody, offset + 1).ReadILToken());
 
                     // If we can't get the string, this might be something else.
-                    string resourceString = GetResourceStringForAccessor(getter);
+                    string resourceString = _substitutionProvider.GetResourceStringForAccessor(getter);
                     if (resourceString == null)
                         continue;
 
@@ -577,7 +539,7 @@ namespace ILCompiler
                     MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
-                        BodySubstitution substitution = GetSubstitution(method);
+                        BodySubstitution substitution = _substitutionProvider.GetSubstitution(method);
                         if (substitution != null && substitution.Value is int
                             && (opcode != ILOpcode.callvirt || !method.IsVirtual))
                         {
@@ -618,7 +580,7 @@ namespace ILCompiler
                     FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
                     if (argIndex == 0)
                     {
-                        object substitution = GetSubstitution(field);
+                        object substitution = _substitutionProvider.GetSubstitution(field);
                         if (substitution is int)
                         {
                             constant = (int)substitution;
@@ -735,21 +697,6 @@ namespace ILCompiler
 
             constant = 0;
             return false;
-        }
-
-        private string GetResourceStringForAccessor(EcmaMethod method)
-        {
-            Debug.Assert(method.Name.StartsWith("get_", StringComparison.Ordinal));
-            string resourceStringName = method.Name.Substring(4);
-
-            Dictionary<string, string> dict = _hashtable.GetOrCreateValue(method.Module).InlineableResourceStrings;
-            if (dict != null
-                && dict.TryGetValue(resourceStringName, out string result))
-            {
-                return result;
-            }
-
-            return null;
         }
 
         private static bool TryExpandTypeIsValueType(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, out int constant)
@@ -927,100 +874,5 @@ namespace ILCompiler
         }
 
         private const int TokenTypeString = 0x70; // CorTokenType for strings
-
-        private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
-        {
-            internal readonly IReadOnlyDictionary<string, bool> _switchValues;
-            private readonly Logger _logger;
-            private readonly BodyAndFieldSubstitutions _globalSubstitutions;
-
-            public FeatureSwitchHashtable(Logger logger, IReadOnlyDictionary<string, bool> switchValues, BodyAndFieldSubstitutions globalSubstitutions)
-            {
-                _logger = logger;
-                _switchValues = switchValues;
-                _globalSubstitutions = globalSubstitutions;
-            }
-
-            protected override bool CompareKeyToValue(EcmaModule key, AssemblyFeatureInfo value) => key == value.Module;
-            protected override bool CompareValueToValue(AssemblyFeatureInfo value1, AssemblyFeatureInfo value2) => value1.Module == value2.Module;
-            protected override int GetKeyHashCode(EcmaModule key) => key.GetHashCode();
-            protected override int GetValueHashCode(AssemblyFeatureInfo value) => value.Module.GetHashCode();
-
-            protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
-            {
-                return new AssemblyFeatureInfo(key, _logger, _switchValues, _globalSubstitutions);
-            }
-        }
-
-        private sealed class AssemblyFeatureInfo
-        {
-            public EcmaModule Module { get; }
-
-            public IReadOnlyDictionary<MethodDesc, BodySubstitution> BodySubstitutions { get; }
-            public IReadOnlyDictionary<FieldDesc, object> FieldSubstitutions { get; }
-            public Dictionary<string, string> InlineableResourceStrings { get; }
-
-            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues, BodyAndFieldSubstitutions globalSubstitutions)
-            {
-                Module = module;
-
-                PEMemoryBlock resourceDirectory = module.PEReader.GetSectionData(module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
-
-                BodyAndFieldSubstitutions substitutions = default;
-
-                foreach (var resourceHandle in module.MetadataReader.ManifestResources)
-                {
-                    ManifestResource resource = module.MetadataReader.GetManifestResource(resourceHandle);
-
-                    // Don't try to process linked resources or resources in other assemblies
-                    if (!resource.Implementation.IsNil)
-                    {
-                        continue;
-                    }
-
-                    string resourceName = module.MetadataReader.GetString(resource.Name);
-                    if (resourceName == "ILLink.Substitutions.xml")
-                    {
-                        BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
-                        int length = (int)reader.ReadUInt32();
-
-                        UnmanagedMemoryStream ms;
-                        unsafe
-                        {
-                            ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
-                        }
-
-                        substitutions = BodySubstitutionsParser.GetSubstitutions(logger, module.Context, ms, resource, module, "name", featureSwitchValues);
-                    }
-                    else if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName))
-                    {
-                        BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
-                        int length = (int)reader.ReadUInt32();
-
-                        UnmanagedMemoryStream ms;
-                        unsafe
-                        {
-                            ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
-                        }
-
-                        InlineableResourceStrings = new Dictionary<string, string>();
-
-                        using var resReader = new ResourceReader(ms);
-                        var enumerator = resReader.GetEnumerator();
-                        while (enumerator.MoveNext())
-                        {
-                            if (enumerator.Key is string key && enumerator.Value is string value)
-                                InlineableResourceStrings[key] = value;
-                        }
-                    }
-                }
-
-                // Also apply any global substitutions
-                // Note we allow these to overwrite substitutions in the assembly
-                substitutions.AppendFrom(globalSubstitutions);
-
-                (BodySubstitutions, FieldSubstitutions) = (substitutions.BodySubstitutions, substitutions.FieldSubstitutions);
-            }
-        }
     }
 }

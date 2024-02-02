@@ -4,17 +4,12 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace TestWindowsOsShimsApp
+namespace WindowsSpecific
 {
-    public static class Program
+    public static partial class Program
     {
-        public static void Main(string[] args)
+        private static void CompatShims()
         {
-            Console.WriteLine("Hello World!");
-            Console.WriteLine(string.Join(Environment.NewLine, args));
-            Console.WriteLine(RuntimeInformation.FrameworkDescription);
-
-#if WINDOWS
             Version osVersion = RtlGetVersion();
             if (osVersion == null)
             {
@@ -32,10 +27,8 @@ namespace TestWindowsOsShimsApp
                     Console.WriteLine($"Reported OS version is lower than the true OS version - shims in use.");
                 }
             }
-#endif
         }
 
-#if WINDOWS
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct OSVERSIONINFOEX
         {
@@ -108,7 +101,7 @@ namespace TestWindowsOsShimsApp
         }
 
         internal static Version RtlGetVersion()
-        {            
+        {
             if (RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi) == 0)
             {
                 return new Version((int)osvi.dwMajorVersion, (int)osvi.dwMinorVersion);
@@ -121,7 +114,7 @@ namespace TestWindowsOsShimsApp
 
         internal static bool OsVersionIsNewerThan(Version osVersion)
         {
-            // check if newer than 
+            // check if newer than
             OSVERSIONINFOEX osv = new OSVERSIONINFOEX()
             {
                 dwOSVersionInfoSize = (uint)Marshal.SizeOf<OSVERSIONINFOEX>(),
@@ -142,6 +135,5 @@ namespace TestWindowsOsShimsApp
                 return false;
             }
         }
-#endif
     }
 }

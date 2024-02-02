@@ -164,9 +164,9 @@ ALTERNATE_ENTRY RhpAssignRef
 
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
-ALTERNATE_ENTRY "RhpAssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
+GLOBAL_LABEL "RhpAssignRefAvLocation"\EXPORT_REG_NAME  // WriteBarrierFunctionAvLocation
 .ifc \REFREG, r1
-ALTERNATE_ENTRY RhpAssignRefAVLocation
+GLOBAL_LABEL RhpAssignRefAVLocation
 .endif
           str          \REFREG, [r0]
 
@@ -234,9 +234,9 @@ ALTERNATE_ENTRY RhpCheckedAssignRef
           dmb
           // Write the reference into the location. Note that we rely on the fact that no GC can occur between here
           // and the card table update we may perform below.
-ALTERNATE_ENTRY "RhpCheckedAssignRefAvLocation"\EXPORT_REG_NAME // WriteBarrierFunctionAvLocation
+GLOBAL_LABEL "RhpCheckedAssignRefAvLocation"\EXPORT_REG_NAME // WriteBarrierFunctionAvLocation
 .ifc \REFREG, r1
-ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+GLOBAL_LABEL RhpCheckedAssignRefAVLocation
 .endif
           str          \REFREG, [r0]
 
@@ -261,7 +261,7 @@ LEAF_ENTRY RhpCheckedLockCmpXchg, _TEXT
           // barrier must occur before the object reference update, so we have to do it unconditionally even
           // though the update may fail below.
           dmb
-ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
+GLOBAL_LABEL RhpCheckedLockCmpXchgAVLocation
 LOCAL_LABEL(RhpCheckedLockCmpXchgRetry):
           ldrex        r3, [r0]
           cmp          r2, r3
@@ -286,7 +286,7 @@ LEAF_ENTRY RhpCheckedXchg, _TEXT
           // To implement our chosen memory model for ARM we insert a memory barrier at GC write barriers. This
           // barrier must occur before the object reference update.
           dmb
-ALTERNATE_ENTRY RhpCheckedXchgAVLocation
+GLOBAL_LABEL RhpCheckedXchgAVLocation
 LOCAL_LABEL(RhpCheckedXchgRetry):
           ldrex        r2, [r0]
           strex        r3, r1, [r0]
@@ -320,9 +320,9 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
           // See comment in RhpAssignRef
           dmb
 
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
+GLOBAL_LABEL RhpByRefAssignRefAVLocation1
           ldr          r2, [r1]
-ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
+GLOBAL_LABEL RhpByRefAssignRefAVLocation2
           str          r2, [r0]
 
           // Check whether the writes were even into the heap. If not there's no card update required.

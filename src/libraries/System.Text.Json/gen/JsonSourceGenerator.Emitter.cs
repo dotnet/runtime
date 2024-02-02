@@ -1105,6 +1105,9 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('{');
                 writer.Indentation++;
 
+                if (optionsSpec.AllowOutOfOrderMetadataProperties is bool allowOutOfOrderMetadataProperties)
+                    writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBool(allowOutOfOrderMetadataProperties)},");
+
                 if (optionsSpec.AllowTrailingCommas is bool allowTrailingCommas)
                     writer.WriteLine($"AllowTrailingCommas = {FormatBool(allowTrailingCommas)},");
 

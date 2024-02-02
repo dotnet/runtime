@@ -49,305 +49,8 @@ namespace System.Numerics.Tensors
         /// <paramref name="source"/> and <paramref name="destination"/> must not overlap. If they do, behavior is undefined.
         /// </para>
         /// </remarks>
-        public static void ConvertToHalf(ReadOnlySpan<float> source, Span<Half> destination)
-        {
-            if (source.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ref float sourceRef = ref MemoryMarshal.GetReference(source);
-            ref ushort destinationRef = ref Unsafe.As<Half, ushort>(ref MemoryMarshal.GetReference(destination));
-            int i = 0, twoVectorsFromEnd;
-
-            if (Vector512.IsHardwareAccelerated)
-            {
-                twoVectorsFromEnd = source.Length - (Vector512<float>.Count * 2);
-                if (i <= twoVectorsFromEnd)
-                {
-                    // Loop handling two input vectors / one output vector at a time.
-                    do
-                    {
-                        Vector512<uint> lower = SingleToHalfAsWidenedUInt32_Vector512(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
-                        Vector512<uint> upper = SingleToHalfAsWidenedUInt32_Vector512(Vector512.LoadUnsafe(ref sourceRef, (uint)(i + Vector512<float>.Count)));
-                        Vector512.Narrow(lower, upper).StoreUnsafe(ref destinationRef, (uint)i);
-
-                        i += Vector512<float>.Count * 2;
-                    }
-                    while (i <= twoVectorsFromEnd);
-
-                    // Handle any remaining elements with final vectors.
-                    if (i != source.Length)
-                    {
-                        i = source.Length - (Vector512<float>.Count * 2);
-
-                        Vector512<uint> lower = SingleToHalfAsWidenedUInt32_Vector512(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
-                        Vector512<uint> upper = SingleToHalfAsWidenedUInt32_Vector512(Vector512.LoadUnsafe(ref sourceRef, (uint)(i + Vector512<float>.Count)));
-                        Vector512.Narrow(lower, upper).StoreUnsafe(ref destinationRef, (uint)i);
-                    }
-
-                    return;
-                }
-            }
-
-            if (Vector256.IsHardwareAccelerated)
-            {
-                twoVectorsFromEnd = source.Length - (Vector256<float>.Count * 2);
-                if (i <= twoVectorsFromEnd)
-                {
-                    // Loop handling two input vectors / one output vector at a time.
-                    do
-                    {
-                        Vector256<uint> lower = SingleToHalfAsWidenedUInt32_Vector256(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
-                        Vector256<uint> upper = SingleToHalfAsWidenedUInt32_Vector256(Vector256.LoadUnsafe(ref sourceRef, (uint)(i + Vector256<float>.Count)));
-                        Vector256<ushort> halfs = Vector256.Narrow(lower, upper);
-                        halfs.StoreUnsafe(ref destinationRef, (uint)i);
-
-                        i += Vector256<float>.Count * 2;
-                    }
-                    while (i <= twoVectorsFromEnd);
-
-                    // Handle any remaining elements with final vectors.
-                    if (i != source.Length)
-                    {
-                        i = source.Length - (Vector256<float>.Count * 2);
-
-                        Vector256<uint> lower = SingleToHalfAsWidenedUInt32_Vector256(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
-                        Vector256<uint> upper = SingleToHalfAsWidenedUInt32_Vector256(Vector256.LoadUnsafe(ref sourceRef, (uint)(i + Vector256<float>.Count)));
-                        Vector256.Narrow(lower, upper).StoreUnsafe(ref destinationRef, (uint)i);
-                    }
-
-                    return;
-                }
-            }
-
-            if (Vector128.IsHardwareAccelerated)
-            {
-                twoVectorsFromEnd = source.Length - (Vector128<float>.Count * 2);
-                if (i <= twoVectorsFromEnd)
-                {
-                    // Loop handling two input vectors / one output vector at a time.
-                    do
-                    {
-                        Vector128<uint> lower = SingleToHalfAsWidenedUInt32_Vector128(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
-                        Vector128<uint> upper = SingleToHalfAsWidenedUInt32_Vector128(Vector128.LoadUnsafe(ref sourceRef, (uint)(i + Vector128<float>.Count)));
-                        Vector128.Narrow(lower, upper).StoreUnsafe(ref destinationRef, (uint)i);
-
-                        i += Vector128<float>.Count * 2;
-                    }
-                    while (i <= twoVectorsFromEnd);
-
-                    // Handle any remaining elements with final vectors.
-                    if (i != source.Length)
-                    {
-                        i = source.Length - (Vector128<float>.Count * 2);
-
-                        Vector128<uint> lower = SingleToHalfAsWidenedUInt32_Vector128(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
-                        Vector128<uint> upper = SingleToHalfAsWidenedUInt32_Vector128(Vector128.LoadUnsafe(ref sourceRef, (uint)(i + Vector128<float>.Count)));
-                        Vector128.Narrow(lower, upper).StoreUnsafe(ref destinationRef, (uint)i);
-                    }
-
-                    return;
-                }
-            }
-
-            while (i < source.Length)
-            {
-                Unsafe.Add(ref destinationRef, i) = BitConverter.HalfToUInt16Bits((Half)Unsafe.Add(ref sourceRef, i));
-                i++;
-            }
-
-            // This implements a vectorized version of the `explicit operator Half(float value) operator`.
-            // See detailed description of the algorithm used here:
-            //     https://github.com/dotnet/runtime/blob/ca8d6f0420096831766ec11c7d400e4f7ccc7a34/src/libraries/System.Private.CoreLib/src/System/Half.cs#L606-L714
-            // The cast operator converts a float to a Half represented as a UInt32, then narrows to a UInt16, and reinterpret casts to Half.
-            // This does the same, with an input VectorXx<float> and an output VectorXx<uint>.
-            // Loop handling two input vectors at a time; each input float is double the size of each output Half,
-            // so we need two vectors of floats to produce one vector of Halfs. Half isn't supported in VectorXx<T>,
-            // so we convert the VectorXx<float> to a VectorXx<uint>, and the caller then uses this twice, narrows the combination
-            // into a VectorXx<ushort>, and then saves that out to the destination `ref Half` reinterpreted as `ref ushort`.
-
-#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
-            const uint MinExp = 0x3880_0000u; // Minimum exponent for rounding
-            const uint Exponent126 = 0x3f00_0000u; // Exponent displacement #1
-            const uint SingleBiasedExponentMask = 0x7F80_0000; // float.BiasedExponentMask; // Exponent mask
-            const uint Exponent13 = 0x0680_0000u; // Exponent displacement #2
-            const float MaxHalfValueBelowInfinity = 65520.0f; // Maximum value that is not Infinity in Half
-            const uint ExponentMask = 0x7C00; // Mask for exponent bits in Half
-            const uint SingleSignMask = 0x8000_0000u; // float.SignMask; // Mask for sign bit in float
-#pragma warning restore IDE0059
-
-            static Vector128<uint> SingleToHalfAsWidenedUInt32_Vector128(Vector128<float> value)
-            {
-                Vector128<uint> bitValue = value.AsUInt32();
-
-                // Extract sign bit
-                Vector128<uint> sign = Vector128.ShiftRightLogical(bitValue & Vector128.Create(SingleSignMask), 16);
-
-                // Detecting NaN (0u if value is NaN; otherwise, ~0u)
-                Vector128<uint> realMask = Vector128.Equals(value, value).AsUInt32();
-
-                // Clear sign bit
-                value = Vector128.Abs(value);
-
-                // Rectify values that are Infinity in Half.
-                value = Vector128.Min(Vector128.Create(MaxHalfValueBelowInfinity), value);
-
-                // Rectify lower exponent
-                Vector128<uint> exponentOffset0 = Vector128.Max(value, Vector128.Create(MinExp).AsSingle()).AsUInt32();
-
-                // Extract exponent
-                exponentOffset0 &= Vector128.Create(SingleBiasedExponentMask);
-
-                // Add exponent by 13
-                exponentOffset0 += Vector128.Create(Exponent13);
-
-                // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
-                value += exponentOffset0.AsSingle();
-                bitValue = value.AsUInt32();
-
-                // Only exponent bits will be modified if NaN
-                Vector128<uint> maskedHalfExponentForNaN = ~realMask & Vector128.Create(ExponentMask);
-
-                // Subtract exponent by 126
-                bitValue -= Vector128.Create(Exponent126);
-
-                // Shift bitValue right by 13 bits to match the boundary of exponent part and fraction part.
-                Vector128<uint> newExponent = Vector128.ShiftRightLogical(bitValue, 13);
-
-                // Clear the fraction parts if the value was NaN.
-                bitValue &= realMask;
-
-                // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
-                bitValue += newExponent;
-
-                // Clear exponents if value is NaN
-                bitValue &= ~maskedHalfExponentForNaN;
-
-                // Merge sign bit with possible NaN exponent
-                Vector128<uint> signAndMaskedExponent = maskedHalfExponentForNaN | sign;
-
-                // Merge sign bit and possible NaN exponent
-                bitValue |= signAndMaskedExponent;
-
-                // The final result
-                return bitValue;
-            }
-
-            static Vector256<uint> SingleToHalfAsWidenedUInt32_Vector256(Vector256<float> value)
-            {
-                Vector256<uint> bitValue = value.AsUInt32();
-
-                // Extract sign bit
-                Vector256<uint> sign = Vector256.ShiftRightLogical(bitValue & Vector256.Create(SingleSignMask), 16);
-
-                // Detecting NaN (0u if value is NaN; otherwise, ~0u)
-                Vector256<uint> realMask = Vector256.Equals(value, value).AsUInt32();
-
-                // Clear sign bit
-                value = Vector256.Abs(value);
-
-                // Rectify values that are Infinity in Half.
-                value = Vector256.Min(Vector256.Create(MaxHalfValueBelowInfinity), value);
-
-                // Rectify lower exponent
-                Vector256<uint> exponentOffset0 = Vector256.Max(value, Vector256.Create(MinExp).AsSingle()).AsUInt32();
-
-                // Extract exponent
-                exponentOffset0 &= Vector256.Create(SingleBiasedExponentMask);
-
-                // Add exponent by 13
-                exponentOffset0 += Vector256.Create(Exponent13);
-
-                // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
-                value += exponentOffset0.AsSingle();
-                bitValue = value.AsUInt32();
-
-                // Only exponent bits will be modified if NaN
-                Vector256<uint> maskedHalfExponentForNaN = ~realMask & Vector256.Create(ExponentMask);
-
-                // Subtract exponent by 126
-                bitValue -= Vector256.Create(Exponent126);
-
-                // Shift bitValue right by 13 bits to match the boundary of exponent part and fraction part.
-                Vector256<uint> newExponent = Vector256.ShiftRightLogical(bitValue, 13);
-
-                // Clear the fraction parts if the value was NaN.
-                bitValue &= realMask;
-
-                // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
-                bitValue += newExponent;
-
-                // Clear exponents if value is NaN
-                bitValue &= ~maskedHalfExponentForNaN;
-
-                // Merge sign bit with possible NaN exponent
-                Vector256<uint> signAndMaskedExponent = maskedHalfExponentForNaN | sign;
-
-                // Merge sign bit and possible NaN exponent
-                bitValue |= signAndMaskedExponent;
-
-                // The final result
-                return bitValue;
-            }
-
-            static Vector512<uint> SingleToHalfAsWidenedUInt32_Vector512(Vector512<float> value)
-            {
-                Vector512<uint> bitValue = value.AsUInt32();
-
-                // Extract sign bit
-                Vector512<uint> sign = Vector512.ShiftRightLogical(bitValue & Vector512.Create(SingleSignMask), 16);
-
-                // Detecting NaN (0u if value is NaN; otherwise, ~0u)
-                Vector512<uint> realMask = Vector512.Equals(value, value).AsUInt32();
-
-                // Clear sign bit
-                value = Vector512.Abs(value);
-
-                // Rectify values that are Infinity in Half.
-                value = Vector512.Min(Vector512.Create(MaxHalfValueBelowInfinity), value);
-
-                // Rectify lower exponent
-                Vector512<uint> exponentOffset0 = Vector512.Max(value, Vector512.Create(MinExp).AsSingle()).AsUInt32();
-
-                // Extract exponent
-                exponentOffset0 &= Vector512.Create(SingleBiasedExponentMask);
-
-                // Add exponent by 13
-                exponentOffset0 += Vector512.Create(Exponent13);
-
-                // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
-                value += exponentOffset0.AsSingle();
-                bitValue = value.AsUInt32();
-
-                // Only exponent bits will be modified if NaN
-                Vector512<uint> maskedHalfExponentForNaN = ~realMask & Vector512.Create(ExponentMask);
-
-                // Subtract exponent by 126
-                bitValue -= Vector512.Create(Exponent126);
-
-                // Shift bitValue right by 13 bits to match the boundary of exponent part and fraction part.
-                Vector512<uint> newExponent = Vector512.ShiftRightLogical(bitValue, 13);
-
-                // Clear the fraction parts if the value was NaN.
-                bitValue &= realMask;
-
-                // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
-                bitValue += newExponent;
-
-                // Clear exponents if value is NaN
-                bitValue &= ~maskedHalfExponentForNaN;
-
-                // Merge sign bit with possible NaN exponent
-                Vector512<uint> signAndMaskedExponent = maskedHalfExponentForNaN | sign;
-
-                // Merge sign bit and possible NaN exponent
-                bitValue |= signAndMaskedExponent;
-
-                // The final result
-                return bitValue;
-            }
-        }
+        public static void ConvertToHalf(ReadOnlySpan<float> source, Span<Half> destination) =>
+            ConvertTruncating(source, destination);
 
         /// <summary>
         /// Copies <paramref name="source"/> to <paramref name="destination"/>, converting each half-precision
@@ -364,260 +67,8 @@ namespace System.Numerics.Tensors
         /// <paramref name="source"/> and <paramref name="destination"/> must not overlap. If they do, behavior is undefined.
         /// </para>
         /// </remarks>
-        public static void ConvertToSingle(ReadOnlySpan<Half> source, Span<float> destination)
-        {
-            if (source.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ref short sourceRef = ref Unsafe.As<Half, short>(ref MemoryMarshal.GetReference(source));
-            ref float destinationRef = ref MemoryMarshal.GetReference(destination);
-            int i = 0, oneVectorFromEnd;
-
-            if (Vector512.IsHardwareAccelerated)
-            {
-                oneVectorFromEnd = source.Length - Vector512<short>.Count;
-                if (i <= oneVectorFromEnd)
-                {
-                    // Loop handling one input vector / two output vectors at a time.
-                    do
-                    {
-                        (Vector512<int> lower, Vector512<int> upper) = Vector512.Widen(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
-                        HalfAsWidenedUInt32ToSingle_Vector512(lower.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)i);
-                        HalfAsWidenedUInt32ToSingle_Vector512(upper.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)(i + Vector512<float>.Count));
-
-                        i += Vector512<short>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // Handle any remaining elements with a final input vector.
-                    if (i != source.Length)
-                    {
-                        i = source.Length - Vector512<short>.Count;
-
-                        (Vector512<int> lower, Vector512<int> upper) = Vector512.Widen(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
-                        HalfAsWidenedUInt32ToSingle_Vector512(lower.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)i);
-                        HalfAsWidenedUInt32ToSingle_Vector512(upper.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)(i + Vector512<float>.Count));
-                    }
-
-                    return;
-                }
-            }
-
-            if (Vector256.IsHardwareAccelerated)
-            {
-                oneVectorFromEnd = source.Length - Vector256<short>.Count;
-                if (i <= oneVectorFromEnd)
-                {
-                    // Loop handling one input vector / two output vectors at a time.
-                    do
-                    {
-                        (Vector256<int> lower, Vector256<int> upper) = Vector256.Widen(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
-                        HalfAsWidenedUInt32ToSingle_Vector256(lower.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)i);
-                        HalfAsWidenedUInt32ToSingle_Vector256(upper.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)(i + Vector256<float>.Count));
-
-                        i += Vector256<short>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // Handle any remaining elements with a final input vector.
-                    if (i != source.Length)
-                    {
-                        i = source.Length - Vector256<short>.Count;
-
-                        (Vector256<int> lower, Vector256<int> upper) = Vector256.Widen(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
-                        HalfAsWidenedUInt32ToSingle_Vector256(lower.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)i);
-                        HalfAsWidenedUInt32ToSingle_Vector256(upper.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)(i + Vector256<float>.Count));
-                    }
-
-                    return;
-                }
-            }
-
-            if (Vector128.IsHardwareAccelerated)
-            {
-                oneVectorFromEnd = source.Length - Vector128<short>.Count;
-                if (i <= oneVectorFromEnd)
-                {
-                    // Loop handling one input vector / two output vectors at a time.
-                    do
-                    {
-                        (Vector128<int> lower, Vector128<int> upper) = Vector128.Widen(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
-                        HalfAsWidenedUInt32ToSingle_Vector128(lower.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)i);
-                        HalfAsWidenedUInt32ToSingle_Vector128(upper.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)(i + Vector128<float>.Count));
-
-                        i += Vector128<short>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // Handle any remaining elements with a final input vector.
-                    if (i != source.Length)
-                    {
-                        i = source.Length - Vector128<short>.Count;
-
-                        (Vector128<int> lower, Vector128<int> upper) = Vector128.Widen(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
-                        HalfAsWidenedUInt32ToSingle_Vector128(lower.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)i);
-                        HalfAsWidenedUInt32ToSingle_Vector128(upper.AsUInt32()).StoreUnsafe(ref destinationRef, (uint)(i + Vector128<float>.Count));
-                    }
-
-                    return;
-                }
-            }
-
-            while (i < source.Length)
-            {
-                Unsafe.Add(ref destinationRef, i) = (float)Unsafe.As<short, Half>(ref Unsafe.Add(ref sourceRef, i));
-                i++;
-            }
-
-            // This implements a vectorized version of the `explicit operator float(Half value) operator`.
-            // See detailed description of the algorithm used here:
-            //     https://github.com/dotnet/runtime/blob/3bf40a378f00cb5bf18ff62796bc7097719b974c/src/libraries/System.Private.CoreLib/src/System/Half.cs#L1010-L1040
-            // The cast operator converts a Half represented as uint to a float. This does the same, with an input VectorXx<uint> and an output VectorXx<float>.
-            // The VectorXx<uint> is created by reading a vector of Halfs as a VectorXx<short> then widened to two VectorXx<int>s and cast to VectorXx<uint>s.
-            // We loop handling one input vector at a time, producing two output float vectors.
-
-#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/44948
-            const uint ExponentLowerBound = 0x3880_0000u; // The smallest positive normal number in Half, converted to Single
-            const uint ExponentOffset = 0x3800_0000u; // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
-            const uint SingleSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
-            const uint HalfExponentMask = 0x7C00; // Mask for exponent bits in Half
-            const uint HalfToSingleBitsMask = 0x0FFF_E000; // Mask for bits in Single converted from Half
-#pragma warning restore IDE0059
-
-            static Vector128<float> HalfAsWidenedUInt32ToSingle_Vector128(Vector128<uint> value)
-            {
-                // Extract sign bit of value
-                Vector128<uint> sign = value & Vector128.Create(SingleSignMask);
-
-                // Copy sign bit to upper bits
-                Vector128<uint> bitValueInProcess = value;
-
-                // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
-                Vector128<uint> offsetExponent = bitValueInProcess & Vector128.Create(HalfExponentMask);
-
-                // ~0u when value is subnormal, 0 otherwise
-                Vector128<uint> subnormalMask = Vector128.Equals(offsetExponent, Vector128<uint>.Zero);
-
-                // ~0u when value is either Infinity or NaN, 0 otherwise
-                Vector128<uint> infinityOrNaNMask = Vector128.Equals(offsetExponent, Vector128.Create(HalfExponentMask));
-
-                // 0x3880_0000u if value is subnormal, 0 otherwise
-                Vector128<uint> maskedExponentLowerBound = subnormalMask & Vector128.Create(ExponentLowerBound);
-
-                // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
-                Vector128<uint> offsetMaskedExponentLowerBound = Vector128.Create(ExponentOffset) | maskedExponentLowerBound;
-
-                // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
-                bitValueInProcess = Vector128.ShiftLeft(bitValueInProcess, 13);
-
-                // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
-                offsetMaskedExponentLowerBound = Vector128.ConditionalSelect(Vector128.Equals(infinityOrNaNMask, Vector128<uint>.Zero),
-                    offsetMaskedExponentLowerBound,
-                    Vector128.ShiftLeft(offsetMaskedExponentLowerBound, 1));
-
-                // Extract exponent bits and fraction bits of value
-                bitValueInProcess &= Vector128.Create(HalfToSingleBitsMask);
-
-                // Adjust exponent to match the range of exponent
-                bitValueInProcess += offsetMaskedExponentLowerBound;
-
-                // If value is subnormal, remove unnecessary 1 on top of fraction bits.
-                Vector128<uint> absoluteValue = (bitValueInProcess.AsSingle() - maskedExponentLowerBound.AsSingle()).AsUInt32();
-
-                // Merge sign bit with rest
-                return (absoluteValue | sign).AsSingle();
-            }
-
-            static Vector256<float> HalfAsWidenedUInt32ToSingle_Vector256(Vector256<uint> value)
-            {
-                // Extract sign bit of value
-                Vector256<uint> sign = value & Vector256.Create(SingleSignMask);
-
-                // Copy sign bit to upper bits
-                Vector256<uint> bitValueInProcess = value;
-
-                // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
-                Vector256<uint> offsetExponent = bitValueInProcess & Vector256.Create(HalfExponentMask);
-
-                // ~0u when value is subnormal, 0 otherwise
-                Vector256<uint> subnormalMask = Vector256.Equals(offsetExponent, Vector256<uint>.Zero);
-
-                // ~0u when value is either Infinity or NaN, 0 otherwise
-                Vector256<uint> infinityOrNaNMask = Vector256.Equals(offsetExponent, Vector256.Create(HalfExponentMask));
-
-                // 0x3880_0000u if value is subnormal, 0 otherwise
-                Vector256<uint> maskedExponentLowerBound = subnormalMask & Vector256.Create(ExponentLowerBound);
-
-                // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
-                Vector256<uint> offsetMaskedExponentLowerBound = Vector256.Create(ExponentOffset) | maskedExponentLowerBound;
-
-                // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
-                bitValueInProcess = Vector256.ShiftLeft(bitValueInProcess, 13);
-
-                // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
-                offsetMaskedExponentLowerBound = Vector256.ConditionalSelect(Vector256.Equals(infinityOrNaNMask, Vector256<uint>.Zero),
-                    offsetMaskedExponentLowerBound,
-                    Vector256.ShiftLeft(offsetMaskedExponentLowerBound, 1));
-
-                // Extract exponent bits and fraction bits of value
-                bitValueInProcess &= Vector256.Create(HalfToSingleBitsMask);
-
-                // Adjust exponent to match the range of exponent
-                bitValueInProcess += offsetMaskedExponentLowerBound;
-
-                // If value is subnormal, remove unnecessary 1 on top of fraction bits.
-                Vector256<uint> absoluteValue = (bitValueInProcess.AsSingle() - maskedExponentLowerBound.AsSingle()).AsUInt32();
-
-                // Merge sign bit with rest
-                return (absoluteValue | sign).AsSingle();
-            }
-
-            static Vector512<float> HalfAsWidenedUInt32ToSingle_Vector512(Vector512<uint> value)
-            {
-                // Extract sign bit of value
-                Vector512<uint> sign = value & Vector512.Create(SingleSignMask);
-
-                // Copy sign bit to upper bits
-                Vector512<uint> bitValueInProcess = value;
-
-                // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
-                Vector512<uint> offsetExponent = bitValueInProcess & Vector512.Create(HalfExponentMask);
-
-                // ~0u when value is subnormal, 0 otherwise
-                Vector512<uint> subnormalMask = Vector512.Equals(offsetExponent, Vector512<uint>.Zero);
-
-                // ~0u when value is either Infinity or NaN, 0 otherwise
-                Vector512<uint> infinityOrNaNMask = Vector512.Equals(offsetExponent, Vector512.Create(HalfExponentMask));
-
-                // 0x3880_0000u if value is subnormal, 0 otherwise
-                Vector512<uint> maskedExponentLowerBound = subnormalMask & Vector512.Create(ExponentLowerBound);
-
-                // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
-                Vector512<uint> offsetMaskedExponentLowerBound = Vector512.Create(ExponentOffset) | maskedExponentLowerBound;
-
-                // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
-                bitValueInProcess = Vector512.ShiftLeft(bitValueInProcess, 13);
-
-                // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
-                offsetMaskedExponentLowerBound = Vector512.ConditionalSelect(Vector512.Equals(infinityOrNaNMask, Vector512<uint>.Zero),
-                    offsetMaskedExponentLowerBound,
-                    Vector512.ShiftLeft(offsetMaskedExponentLowerBound, 1));
-
-                // Extract exponent bits and fraction bits of value
-                bitValueInProcess &= Vector512.Create(HalfToSingleBitsMask);
-
-                // Adjust exponent to match the range of exponent
-                bitValueInProcess += offsetMaskedExponentLowerBound;
-
-                // If value is subnormal, remove unnecessary 1 on top of fraction bits.
-                Vector512<uint> absoluteValue = (bitValueInProcess.AsSingle() - maskedExponentLowerBound.AsSingle()).AsUInt32();
-
-                // Merge sign bit with rest
-                return (absoluteValue | sign).AsSingle();
-            }
-        }
+        public static void ConvertToSingle(ReadOnlySpan<Half> source, Span<float> destination) =>
+            ConvertTruncating(source, destination);
 
         /// <summary>Computes the cosine similarity between the two specified non-empty, equal-length tensors of single-precision floating-point numbers.</summary>
         /// <remarks>Assumes arguments have already been validated to be non-empty and equal length.</remarks>
@@ -4058,6 +3509,904 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <typeparam name="TStatefulUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
+        private static void InvokeSpanIntoSpan<T, TStatefulUnaryOperator>(
+            ReadOnlySpan<T> x, TStatefulUnaryOperator op, Span<T> destination)
+            where TStatefulUnaryOperator : struct, IStatefulUnaryOperator<T>
+        {
+            // NOTE: This implementation is an exact copy of InvokeSpanIntoSpan<T, TUnaryOperator>,
+            // except it accepts an operator that carries state with it, using instance rather than
+            // static invocation methods.
+
+            if (x.Length > destination.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort();
+            }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination);
+
+            // Since every branch has a cost and since that cost is
+            // essentially lost for larger inputs, we do branches
+            // in a way that allows us to have the minimum possible
+            // for small sizes
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            ref T dRef = ref MemoryMarshal.GetReference(destination);
+
+            nuint remainder = (uint)x.Length;
+
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            {
+                if (remainder >= (uint)Vector512<T>.Count)
+                {
+                    Vectorized512(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
+
+                    VectorizedSmall(ref xRef, ref dRef, remainder, op);
+                }
+
+                return;
+            }
+
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            {
+                if (remainder >= (uint)Vector256<T>.Count)
+                {
+                    Vectorized256(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
+
+                    VectorizedSmall(ref xRef, ref dRef, remainder, op);
+                }
+
+                return;
+            }
+
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            {
+                if (remainder >= (uint)Vector128<T>.Count)
+                {
+                    Vectorized128(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    // We have less than a vector and so we can only handle this as scalar. To do this
+                    // efficiently, we simply have a small jump table and fallthrough. So we get a simple
+                    // length check, single jump, and then linear execution.
+
+                    VectorizedSmall(ref xRef, ref dRef, remainder, op);
+                }
+
+                return;
+            }
+
+            // This is the software fallback when no acceleration is available
+            // It requires no branches to hit
+
+            SoftwareFallback(ref xRef, ref dRef, remainder, op);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void SoftwareFallback(ref T xRef, ref T dRef, nuint length, TStatefulUnaryOperator op)
+            {
+                for (nuint i = 0; i < length; i++)
+                {
+                    Unsafe.Add(ref dRef, i) = op.Invoke(Unsafe.Add(ref xRef, i));
+                }
+            }
+
+            static void Vectorized128(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                ref T dRefBeg = ref dRef;
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                if (remainder > (uint)(Vector128<T>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (T* px = &xRef)
+                    fixed (T* pd = &dRef)
+                    {
+                        T* xPtr = px;
+                        T* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)dPtr % (nuint)sizeof(T)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)sizeof(Vector128<T>) - ((nuint)dPtr % (uint)sizeof(Vector128<T>))) / (uint)sizeof(T);
+
+                            xPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)dPtr % (uint)sizeof(Vector128<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector128<T> vector1;
+                        Vector128<T> vector2;
+                        Vector128<T> vector3;
+                        Vector128<T> vector4;
+
+                        if ((remainder > (NonTemporalByteThreshold / (nuint)sizeof(T))) && canAlign)
+                        {
+                            // This loop stores the data non-temporally, which benefits us when there
+                            // is a large amount of data involved as it avoids polluting the cache.
+
+                            while (remainder >= (uint)(Vector128<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 3)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 0));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 1));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 2));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 7)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 4));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 5));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 6));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector128<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector128<T>.Count * 8);
+                                dPtr += (uint)(Vector128<T>.Count * 8);
+
+                                remainder -= (uint)(Vector128<T>.Count * 8);
+                            }
+                        }
+                        else
+                        {
+                            while (remainder >= (uint)(Vector128<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 3)));
+
+                                vector1.Store(dPtr + (uint)(Vector128<T>.Count * 0));
+                                vector2.Store(dPtr + (uint)(Vector128<T>.Count * 1));
+                                vector3.Store(dPtr + (uint)(Vector128<T>.Count * 2));
+                                vector4.Store(dPtr + (uint)(Vector128<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 7)));
+
+                                vector1.Store(dPtr + (uint)(Vector128<T>.Count * 4));
+                                vector2.Store(dPtr + (uint)(Vector128<T>.Count * 5));
+                                vector3.Store(dPtr + (uint)(Vector128<T>.Count * 6));
+                                vector4.Store(dPtr + (uint)(Vector128<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector128<T>.Count * 8);
+                                dPtr += (uint)(Vector128<T>.Count * 8);
+
+                                remainder -= (uint)(Vector128<T>.Count * 8);
+                            }
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector128<T>.Count - 1)) & (nuint)(-Vector128<T>.Count);
+
+                switch (remainder / (uint)Vector128<T>.Count)
+                {
+                    case 8:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 8)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 8));
+                            goto case 7;
+                        }
+
+                    case 7:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 7)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 7));
+                            goto case 6;
+                        }
+
+                    case 6:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 6)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 6));
+                            goto case 5;
+                        }
+
+                    case 5:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 5)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 5));
+                            goto case 4;
+                        }
+
+                    case 4:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 4)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 4));
+                            goto case 3;
+                        }
+
+                    case 3:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 3)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 3));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Vector128<T> vector = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)(Vector128<T>.Count * 2)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector128<T>.Count * 2));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            // Store the last block, which includes any elements that wouldn't fill a full vector
+                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector128<T>.Count);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            // Store the first block, which includes any elements preceding the first aligned block
+                            beg.StoreUnsafe(ref dRefBeg);
+                            break;
+                        }
+                }
+            }
+
+            static void Vectorized256(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                ref T dRefBeg = ref dRef;
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                if (remainder > (uint)(Vector256<T>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (T* px = &xRef)
+                    fixed (T* pd = &dRef)
+                    {
+                        T* xPtr = px;
+                        T* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)dPtr % (nuint)sizeof(T)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)sizeof(Vector256<T>) - ((nuint)dPtr % (uint)sizeof(Vector256<T>))) / (uint)sizeof(T);
+
+                            xPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)dPtr % (uint)sizeof(Vector256<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector256<T> vector1;
+                        Vector256<T> vector2;
+                        Vector256<T> vector3;
+                        Vector256<T> vector4;
+
+                        if ((remainder > (NonTemporalByteThreshold / (nuint)sizeof(T))) && canAlign)
+                        {
+                            // This loop stores the data non-temporally, which benefits us when there
+                            // is a large amount of data involved as it avoids polluting the cache.
+
+                            while (remainder >= (uint)(Vector256<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 3)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 0));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 1));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 2));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 7)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 4));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 5));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 6));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector256<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector256<T>.Count * 8);
+                                dPtr += (uint)(Vector256<T>.Count * 8);
+
+                                remainder -= (uint)(Vector256<T>.Count * 8);
+                            }
+                        }
+                        else
+                        {
+                            while (remainder >= (uint)(Vector256<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 3)));
+
+                                vector1.Store(dPtr + (uint)(Vector256<T>.Count * 0));
+                                vector2.Store(dPtr + (uint)(Vector256<T>.Count * 1));
+                                vector3.Store(dPtr + (uint)(Vector256<T>.Count * 2));
+                                vector4.Store(dPtr + (uint)(Vector256<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 7)));
+
+                                vector1.Store(dPtr + (uint)(Vector256<T>.Count * 4));
+                                vector2.Store(dPtr + (uint)(Vector256<T>.Count * 5));
+                                vector3.Store(dPtr + (uint)(Vector256<T>.Count * 6));
+                                vector4.Store(dPtr + (uint)(Vector256<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector256<T>.Count * 8);
+                                dPtr += (uint)(Vector256<T>.Count * 8);
+
+                                remainder -= (uint)(Vector256<T>.Count * 8);
+                            }
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector256<T>.Count - 1)) & (nuint)(-Vector256<T>.Count);
+
+                switch (remainder / (uint)Vector256<T>.Count)
+                {
+                    case 8:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 8)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 8));
+                            goto case 7;
+                        }
+
+                    case 7:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 7)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 7));
+                            goto case 6;
+                        }
+
+                    case 6:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 6)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 6));
+                            goto case 5;
+                        }
+
+                    case 5:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 5)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 5));
+                            goto case 4;
+                        }
+
+                    case 4:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 4)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 4));
+                            goto case 3;
+                        }
+
+                    case 3:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 3)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 3));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Vector256<T> vector = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)(Vector256<T>.Count * 2)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector256<T>.Count * 2));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            // Store the last block, which includes any elements that wouldn't fill a full vector
+                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector256<T>.Count);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            // Store the first block, which includes any elements preceding the first aligned block
+                            beg.StoreUnsafe(ref dRefBeg);
+                            break;
+                        }
+                }
+            }
+
+            static void Vectorized512(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                ref T dRefBeg = ref dRef;
+
+                // Preload the beginning and end so that overlapping accesses don't negatively impact the data
+
+                Vector512<T> beg = op.Invoke(Vector512.LoadUnsafe(ref xRef));
+                Vector512<T> end = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)Vector512<T>.Count));
+
+                if (remainder > (uint)(Vector512<T>.Count * 8))
+                {
+                    // Pinning is cheap and will be short lived for small inputs and unlikely to be impactful
+                    // for large inputs (> 85KB) which are on the LOH and unlikely to be compacted.
+
+                    fixed (T* px = &xRef)
+                    fixed (T* pd = &dRef)
+                    {
+                        T* xPtr = px;
+                        T* dPtr = pd;
+
+                        // We need to the ensure the underlying data can be aligned and only align
+                        // it if it can. It is possible we have an unaligned ref, in which case we
+                        // can never achieve the required SIMD alignment.
+
+                        bool canAlign = ((nuint)dPtr % (nuint)sizeof(T)) == 0;
+
+                        if (canAlign)
+                        {
+                            // Compute by how many elements we're misaligned and adjust the pointers accordingly
+                            //
+                            // Noting that we are only actually aligning dPtr. This is because unaligned stores
+                            // are more expensive than unaligned loads and aligning both is significantly more
+                            // complex.
+
+                            nuint misalignment = ((uint)sizeof(Vector512<T>) - ((nuint)dPtr % (uint)sizeof(Vector512<T>))) / (uint)sizeof(T);
+
+                            xPtr += misalignment;
+                            dPtr += misalignment;
+
+                            Debug.Assert(((nuint)dPtr % (uint)sizeof(Vector512<T>)) == 0);
+
+                            remainder -= misalignment;
+                        }
+
+                        Vector512<T> vector1;
+                        Vector512<T> vector2;
+                        Vector512<T> vector3;
+                        Vector512<T> vector4;
+
+                        if ((remainder > (NonTemporalByteThreshold / (nuint)sizeof(T))) && canAlign)
+                        {
+                            // This loop stores the data non-temporally, which benefits us when there
+                            // is a large amount of data involved as it avoids polluting the cache.
+
+                            while (remainder >= (uint)(Vector512<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 3)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 0));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 1));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 2));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 7)));
+
+                                vector1.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 4));
+                                vector2.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 5));
+                                vector3.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 6));
+                                vector4.StoreAlignedNonTemporal(dPtr + (uint)(Vector512<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector512<T>.Count * 8);
+                                dPtr += (uint)(Vector512<T>.Count * 8);
+
+                                remainder -= (uint)(Vector512<T>.Count * 8);
+                            }
+                        }
+                        else
+                        {
+                            while (remainder >= (uint)(Vector512<T>.Count * 8))
+                            {
+                                // We load, process, and store the first four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 0)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 1)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 2)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 3)));
+
+                                vector1.Store(dPtr + (uint)(Vector512<T>.Count * 0));
+                                vector2.Store(dPtr + (uint)(Vector512<T>.Count * 1));
+                                vector3.Store(dPtr + (uint)(Vector512<T>.Count * 2));
+                                vector4.Store(dPtr + (uint)(Vector512<T>.Count * 3));
+
+                                // We load, process, and store the next four vectors
+
+                                vector1 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 4)));
+                                vector2 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 5)));
+                                vector3 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 6)));
+                                vector4 = op.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 7)));
+
+                                vector1.Store(dPtr + (uint)(Vector512<T>.Count * 4));
+                                vector2.Store(dPtr + (uint)(Vector512<T>.Count * 5));
+                                vector3.Store(dPtr + (uint)(Vector512<T>.Count * 6));
+                                vector4.Store(dPtr + (uint)(Vector512<T>.Count * 7));
+
+                                // We adjust the source and destination references, then update
+                                // the count of remaining elements to process.
+
+                                xPtr += (uint)(Vector512<T>.Count * 8);
+                                dPtr += (uint)(Vector512<T>.Count * 8);
+
+                                remainder -= (uint)(Vector512<T>.Count * 8);
+                            }
+                        }
+
+                        // Adjusting the refs here allows us to avoid pinning for very small inputs
+
+                        xRef = ref *xPtr;
+                        dRef = ref *dPtr;
+                    }
+                }
+
+                // Process the remaining [Count, Count * 8] elements via a jump table
+                //
+                // Unless the original length was an exact multiple of Count, then we'll
+                // end up reprocessing a couple elements in case 1 for end. We'll also
+                // potentially reprocess a few elements in case 0 for beg, to handle any
+                // data before the first aligned address.
+
+                nuint endIndex = remainder;
+                remainder = (remainder + (uint)(Vector512<T>.Count - 1)) & (nuint)(-Vector512<T>.Count);
+
+                switch (remainder / (uint)Vector512<T>.Count)
+                {
+                    case 8:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 8)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 8));
+                            goto case 7;
+                        }
+
+                    case 7:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 7)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 7));
+                            goto case 6;
+                        }
+
+                    case 6:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 6)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 6));
+                            goto case 5;
+                        }
+
+                    case 5:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 5)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 5));
+                            goto case 4;
+                        }
+
+                    case 4:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 4)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 4));
+                            goto case 3;
+                        }
+
+                    case 3:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 3)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 3));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Vector512<T> vector = op.Invoke(Vector512.LoadUnsafe(ref xRef, remainder - (uint)(Vector512<T>.Count * 2)));
+                            vector.StoreUnsafe(ref dRef, remainder - (uint)(Vector512<T>.Count * 2));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            // Store the last block, which includes any elements that wouldn't fill a full vector
+                            end.StoreUnsafe(ref dRef, endIndex - (uint)Vector512<T>.Count);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            // Store the first block, which includes any elements preceding the first aligned block
+                            beg.StoreUnsafe(ref dRefBeg);
+                            break;
+                        }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                if (sizeof(T) == 4)
+                {
+                    VectorizedSmall4(ref xRef, ref dRef, remainder, op);
+                }
+                else
+                {
+                    Debug.Assert(sizeof(T) == 8);
+                    VectorizedSmall8(ref xRef, ref dRef, remainder, op);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall4(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                Debug.Assert(sizeof(T) == 4);
+
+                switch (remainder)
+                {
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                            break;
+                        }
+
+                    case 8:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 7:
+                    case 6:
+                    case 5:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                            break;
+                        }
+
+                    case 4:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            Unsafe.Add(ref dRef, 2) = op.Invoke(Unsafe.Add(ref xRef, 2));
+                            goto case 2;
+                        }
+
+                    case 2:
+                        {
+                            Unsafe.Add(ref dRef, 1) = op.Invoke(Unsafe.Add(ref xRef, 1));
+                            goto case 1;
+                        }
+
+                    case 1:
+                        {
+                            dRef = op.Invoke(xRef);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            break;
+                        }
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall8(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                Debug.Assert(sizeof(T) == 8);
+
+                switch (remainder)
+                {
+                    case 7:
+                    case 6:
+                    case 5:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                            break;
+                        }
+
+                    case 4:
+                        {
+                            Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                            Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 3:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                            beg.StoreUnsafe(ref dRef);
+                            end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                            break;
+                        }
+
+                    case 2:
+                        {
+                            Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                            Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                            beg.StoreUnsafe(ref dRef);
+
+                            break;
+                        }
+
+                    case 1:
+                        {
+                            dRef = op.Invoke(xRef);
+                            goto case 0;
+                        }
+
+                    case 0:
+                        {
+                            break;
+                        }
+                }
+            }
+        }
+
+        /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="TInput">The element input type.</typeparam>
         /// <typeparam name="TOutput">The element output type. Must be the same size as TInput if TInput and TOutput both support vectorization.</typeparam>
         /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
@@ -4179,6 +4528,130 @@ namespace System.Numerics.Tensors
             while (i < x.Length)
             {
                 Unsafe.Add(ref destinationRef, i) = TUnaryOperator.Invoke(Unsafe.Add(ref sourceRef, i));
+                i++;
+            }
+        }
+
+        /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination1"/> and <paramref name="destination2"/>.</summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <typeparam name="TUnaryOperator">Specifies the operation to perform on each element loaded from <paramref name="x"/>.</typeparam>
+        private static void InvokeSpanIntoSpan_TwoOutputs<T, TUnaryOperator>(
+            ReadOnlySpan<T> x, Span<T> destination1, Span<T> destination2)
+            where TUnaryOperator : struct, IUnaryInputBinaryOutput<T>
+        {
+            if (x.Length > destination1.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(destination1));
+            }
+
+            if (x.Length > destination2.Length)
+            {
+                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(destination2));
+            }
+
+            ValidateInputOutputSpanNonOverlapping(x, destination1);
+            ValidateInputOutputSpanNonOverlapping(x, destination2);
+
+            ref T sourceRef = ref MemoryMarshal.GetReference(x);
+            ref T destination1Ref = ref MemoryMarshal.GetReference(destination1);
+            ref T destination2Ref = ref MemoryMarshal.GetReference(destination2);
+            int i = 0, oneVectorFromEnd;
+
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TUnaryOperator.Vectorizable)
+            {
+                oneVectorFromEnd = x.Length - Vector512<T>.Count;
+                if (i <= oneVectorFromEnd)
+                {
+                    // Loop handling one input vector / two destination vectors at a time.
+                    do
+                    {
+                        (Vector512<T> first, Vector512<T> second) = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
+                        first.StoreUnsafe(ref destination1Ref, (uint)i);
+                        second.StoreUnsafe(ref destination2Ref, (uint)i);
+
+                        i += Vector512<T>.Count;
+                    }
+                    while (i <= oneVectorFromEnd);
+
+                    // Handle any remaining elements with a final input vector.
+                    if (i != x.Length)
+                    {
+                        i = x.Length - Vector512<T>.Count;
+
+                        (Vector512<T> first, Vector512<T> second) = TUnaryOperator.Invoke(Vector512.LoadUnsafe(ref sourceRef, (uint)i));
+                        first.StoreUnsafe(ref destination1Ref, (uint)i);
+                        second.StoreUnsafe(ref destination2Ref, (uint)i);
+                    }
+
+                    return;
+                }
+            }
+
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TUnaryOperator.Vectorizable)
+            {
+                oneVectorFromEnd = x.Length - Vector256<T>.Count;
+                if (i <= oneVectorFromEnd)
+                {
+                    // Loop handling one input vector / two destination vectors at a time.
+                    do
+                    {
+                        (Vector256<T> first, Vector256<T> second) = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
+                        first.StoreUnsafe(ref destination1Ref, (uint)i);
+                        second.StoreUnsafe(ref destination2Ref, (uint)i);
+
+                        i += Vector256<T>.Count;
+                    }
+                    while (i <= oneVectorFromEnd);
+
+                    // Handle any remaining elements with a final input vector.
+                    if (i != x.Length)
+                    {
+                        i = x.Length - Vector256<T>.Count;
+
+                        (Vector256<T> first, Vector256<T> second) = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref sourceRef, (uint)i));
+                        first.StoreUnsafe(ref destination1Ref, (uint)i);
+                        second.StoreUnsafe(ref destination2Ref, (uint)i);
+                    }
+
+                    return;
+                }
+            }
+
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TUnaryOperator.Vectorizable)
+            {
+                oneVectorFromEnd = x.Length - Vector128<T>.Count;
+                if (i <= oneVectorFromEnd)
+                {
+                    // Loop handling one input vector / two destination vectors at a time.
+                    do
+                    {
+                        (Vector128<T> first, Vector128<T> second) = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
+                        first.StoreUnsafe(ref destination1Ref, (uint)i);
+                        second.StoreUnsafe(ref destination2Ref, (uint)i);
+
+                        i += Vector128<T>.Count;
+                    }
+                    while (i <= oneVectorFromEnd);
+
+                    // Handle any remaining elements with a final input vector.
+                    if (i != x.Length)
+                    {
+                        i = x.Length - Vector128<T>.Count;
+
+                        (Vector128<T> first, Vector128<T> second) = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref sourceRef, (uint)i));
+                        first.StoreUnsafe(ref destination1Ref, (uint)i);
+                        second.StoreUnsafe(ref destination2Ref, (uint)i);
+                    }
+
+                    return;
+                }
+            }
+
+            while (i < x.Length)
+            {
+                (T first, T second) = TUnaryOperator.Invoke(Unsafe.Add(ref sourceRef, i));
+                Unsafe.Add(ref destination1Ref, i) = first;
+                Unsafe.Add(ref destination2Ref, i) = second;
                 i++;
             }
         }
@@ -11600,13 +12073,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector128<T> negated = -x;
-                    if (Vector128.Equals(x, negated) != Vector128<T>.Zero)
+                    Vector128<T> abs = Vector128.ConditionalSelect(Vector128.LessThan(x, Vector128<T>.Zero), -x, x);
+                    if (Vector128.LessThan(abs, Vector128<T>.Zero) != Vector128<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector128.ConditionalSelect(Vector128.LessThan(x, Vector128<T>.Zero), negated, x);
                 }
 
                 return Vector128.Abs(x);
@@ -11624,13 +12095,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector256<T> negated = -x;
-                    if (Vector256.Equals(x, negated) != Vector256<T>.Zero)
+                    Vector256<T> abs = Vector256.ConditionalSelect(Vector256.LessThan(x, Vector256<T>.Zero), -x, x);
+                    if (Vector256.LessThan(abs, Vector256<T>.Zero) != Vector256<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector256.ConditionalSelect(Vector256.LessThan(x, Vector256<T>.Zero), negated, x);
                 }
 
                 return Vector256.Abs(x);
@@ -11648,13 +12117,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector512<T> negated = -x;
-                    if (Vector512.Equals(x, negated) != Vector512<T>.Zero)
+                    Vector512<T> abs = Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero), -x, x);
+                    if (Vector512.LessThan(abs, Vector512<T>.Zero) != Vector512<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero), negated, x);
                 }
 
                 return Vector512.Abs(x);
@@ -12263,12 +12730,14 @@ namespace System.Numerics.Tensors
         internal readonly struct Exp2Operator<T> : IUnaryOperator<T, T>
             where T : IExponentialFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            private const double NaturalLog2 = 0.6931471805599453;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Exp2(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.Invoke(x * Vector128.Create(T.CreateTruncating(NaturalLog2)));
+            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.Invoke(x * Vector256.Create(T.CreateTruncating(NaturalLog2)));
+            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.Invoke(x * Vector512.Create(T.CreateTruncating(NaturalLog2)));
         }
 
         /// <summary>T.Exp2M1(x)</summary>
@@ -12287,12 +12756,14 @@ namespace System.Numerics.Tensors
         internal readonly struct Exp10Operator<T> : IUnaryOperator<T, T>
             where T : IExponentialFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            private const double NaturalLog10 = 2.302585092994046;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Exp10(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.Invoke(x * Vector128.Create(T.CreateTruncating(NaturalLog10)));
+            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.Invoke(x * Vector256.Create(T.CreateTruncating(NaturalLog10)));
+            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.Invoke(x * Vector512.Create(T.CreateTruncating(NaturalLog10)));
         }
 
         /// <summary>T.Exp10M1(x)</summary>
@@ -12311,11 +12782,48 @@ namespace System.Numerics.Tensors
         internal readonly struct PowOperator<T> : IBinaryOperator<T>
             where T : IPowerFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
             public static T Invoke(T x, T y) => T.Pow(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(y.AsSingle() * LogOperator<float>.Invoke(x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(y.AsDouble() * LogOperator<double>.Invoke(x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(y.AsSingle() * LogOperator<float>.Invoke(x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(y.AsDouble() * LogOperator<double>.Invoke(x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(y.AsSingle() * LogOperator<float>.Invoke(x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(y.AsDouble() * LogOperator<double>.Invoke(x.AsDouble())).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.Sqrt(x)</summary>
@@ -12333,22 +12841,59 @@ namespace System.Numerics.Tensors
         internal readonly struct CbrtOperator<T> : IUnaryOperator<T, T>
             where T : IRootFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
             public static T Invoke(T x) => T.Cbrt(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector128.Create(3f)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector128.Create(3d)).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector256.Create(3f)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector256.Create(3d)).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector512.Create(3f)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector512.Create(3d)).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.Hypot(x, y)</summary>
         internal readonly struct HypotOperator<T> : IBinaryOperator<T>
             where T : IRootFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => true;
             public static T Invoke(T x, T y) => T.Hypot(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Vector128.Sqrt((x * x) + (y * y));
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Vector256.Sqrt((x * x) + (y * y));
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Vector512.Sqrt((x * x) + (y * y));
         }
 
         /// <summary>T.Acos(x)</summary>
@@ -12690,7 +13235,7 @@ namespace System.Numerics.Tensors
                 Vector128<float> x = t.AsSingle();
 
                 Vector128<float> y = Vector128.Abs(x);
-                Vector128<float> z = ExpOperator<float>.Invoke(Vector128.Create(-2f) * y) - Vector128.Create(1f);
+                Vector128<float> z = ExpM1Operator<float>.Invoke(Vector128.Create(-2f) * y);
                 Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
             }
@@ -12701,7 +13246,7 @@ namespace System.Numerics.Tensors
                 Vector256<float> x = t.AsSingle();
 
                 Vector256<float> y = Vector256.Abs(x);
-                Vector256<float> z = ExpOperator<float>.Invoke(Vector256.Create(-2f) * y) - Vector256.Create(1f);
+                Vector256<float> z = ExpM1Operator<float>.Invoke(Vector256.Create(-2f) * y);
                 Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
             }
@@ -12712,7 +13257,7 @@ namespace System.Numerics.Tensors
                 Vector512<float> x = t.AsSingle();
 
                 Vector512<float> y = Vector512.Abs(x);
-                Vector512<float> z = ExpOperator<float>.Invoke(Vector512.Create(-2f) * y) - Vector512.Create(1f);
+                Vector512<float> z = ExpM1Operator<float>.Invoke(Vector512.Create(-2f) * y);
                 Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
                 return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
             }
@@ -14073,11 +14618,12 @@ namespace System.Numerics.Tensors
         internal readonly struct Log10Operator<T> : IUnaryOperator<T, T>
             where T : ILogarithmicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            private const double NaturalLog10 = 2.302585092994046;
+            public static bool Vectorizable => LogOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.Log10(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x) => LogOperator<T>.Invoke(x) / Vector128.Create(T.CreateTruncating(NaturalLog10));
+            public static Vector256<T> Invoke(Vector256<T> x) => LogOperator<T>.Invoke(x) / Vector256.Create(T.CreateTruncating(NaturalLog10));
+            public static Vector512<T> Invoke(Vector512<T> x) => LogOperator<T>.Invoke(x) / Vector512.Create(T.CreateTruncating(NaturalLog10));
         }
 
         /// <summary>T.LogP1(x)</summary>
@@ -14117,11 +14663,11 @@ namespace System.Numerics.Tensors
         internal readonly struct LogBaseOperator<T> : IBinaryOperator<T>
             where T : ILogarithmicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => LogOperator<T>.Vectorizable;
             public static T Invoke(T x, T y) => T.Log(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -14506,6 +15052,149 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> x) => (x * T.CreateChecked(180)) / T.Pi;
         }
 
+        /// <summary>T &lt;&lt; amount</summary>
+        internal readonly struct ShiftLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => x << _amount;
+            public Vector128<T> Invoke(Vector128<T> x) => x << _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x << _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x << _amount;
+        }
+
+        /// <summary>T &gt;&gt; amount</summary>
+        internal readonly struct ShiftRightArithmeticOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => x >> _amount;
+            public Vector128<T> Invoke(Vector128<T> x) => x >> _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x >> _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x >> _amount;
+        }
+
+        /// <summary>T &gt;&gt;&gt; amount</summary>
+        internal readonly struct ShiftRightLogicalOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => x >>> _amount;
+            public Vector128<T> Invoke(Vector128<T> x) => x >>> _amount;
+            public Vector256<T> Invoke(Vector256<T> x) => x >>> _amount;
+            public Vector512<T> Invoke(Vector512<T> x) => x >>> _amount;
+        }
+
+        /// <summary>T.RotateLeft(amount)</summary>
+        internal readonly struct RotateLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => T.RotateLeft(x, _amount);
+            public Vector128<T> Invoke(Vector128<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
+            public Vector256<T> Invoke(Vector256<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
+            public Vector512<T> Invoke(Vector512<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
+        }
+
+        /// <summary>T.RotateRight(amount)</summary>
+        internal readonly struct RotateRightOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
+        {
+            private readonly int _amount = amount;
+
+            public static bool Vectorizable => true;
+
+            public T Invoke(T x) => T.RotateRight(x, _amount);
+            public Vector128<T> Invoke(Vector128<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+            public Vector256<T> Invoke(Vector256<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+            public Vector512<T> Invoke(Vector512<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
+        }
+
+        /// <summary>T.ScaleB(x, n)</summary>
+        internal readonly struct ScaleBOperator<T>(int n) : IStatefulUnaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            private readonly int _n = n;
+            private readonly T _pow2n = typeof(T) == typeof(float) || typeof(T) == typeof(double) ? T.Pow(T.CreateTruncating(2), T.CreateTruncating(n)) : default!;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public T Invoke(T x) => T.ScaleB(x, _n);
+            public Vector128<T> Invoke(Vector128<T> x) => x * Vector128.Create(_pow2n);
+            public Vector256<T> Invoke(Vector256<T> x) => x * Vector256.Create(_pow2n);
+            public Vector512<T> Invoke(Vector512<T> x) => x * Vector512.Create(_pow2n);
+        }
+
+        /// <summary>T.RootN(x, n)</summary>
+        internal readonly struct RootNOperator<T>(int n) : IStatefulUnaryOperator<T> where T : IRootFunctions<T>
+        {
+            private readonly int _n = n;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public T Invoke(T x) => T.RootN(x, _n);
+
+            public Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector128.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector128.Create((double)_n)).As<double, T>();
+                }
+            }
+
+            public Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector256.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector256.Create((double)_n)).As<double, T>();
+                }
+            }
+
+            public Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector512.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector512.Create((double)_n)).As<double, T>();
+                }
+            }
+        }
+
+        /// <summary>T.Round</summary>
+        internal readonly struct RoundOperator<T>(int digits, MidpointRounding mode) : IStatefulUnaryOperator<T> where T : IFloatingPoint<T>
+        {
+            private readonly int _digits = digits;
+            private readonly MidpointRounding _mode = mode;
+
+            public static bool Vectorizable => false; // TODO: Vectorize
+
+            public T Invoke(T x) => T.Round(x, _digits, _mode);
+
+            public Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
         /// <summary>T.ILogB(x)</summary>
         internal readonly struct ILogBOperator<T> : IUnaryOperator<T, int> where T : IFloatingPointIeee754<T>
         {
@@ -14803,6 +15492,421 @@ namespace System.Numerics.Tensors
             public static Vector512<int> Invoke(Vector512<long> lower, Vector512<long> upper) => Vector512.Narrow(lower, upper);
         }
 
+        internal readonly struct WidenHalfAsInt16ToSingleOperator : IUnaryOneToTwoOperator<short, float>
+        {
+            // This implements a vectorized version of the `explicit operator float(Half value) operator`.
+            // See detailed description of the algorithm used here:
+            //     https://github.com/dotnet/runtime/blob/3bf40a378f00cb5bf18ff62796bc7097719b974c/src/libraries/System.Private.CoreLib/src/System/Half.cs#L1010-L1040
+            // The cast operator converts a Half represented as uint to a float. This does the same, with an input VectorXx<uint> and an output VectorXx<float>.
+            // The VectorXx<uint> is created by reading a vector of Halfs as a VectorXx<short> then widened to two VectorXx<int>s and cast to VectorXx<uint>s.
+            // We loop handling one input vector at a time, producing two output float vectors.
+
+            private const uint ExponentLowerBound = 0x3880_0000u; // The smallest positive normal number in Half, converted to Single
+            private const uint ExponentOffset = 0x3800_0000u; // BitConverter.SingleToUInt32Bits(1.0f) - ((uint)BitConverter.HalfToUInt16Bits((Half)1.0f) << 13)
+            private const uint SingleSignMask = 0x8000_0000; // float.SignMask; // Mask for sign bit in Single
+            private const uint HalfExponentMask = 0x7C00; // Mask for exponent bits in Half
+            private const uint HalfToSingleBitsMask = 0x0FFF_E000; // Mask for bits in Single converted from Half
+
+            public static bool Vectorizable => true;
+
+            public static float Invoke(short x) => (float)Unsafe.BitCast<short, Half>(x);
+
+            public static (Vector128<float> Lower, Vector128<float> Upper) Invoke(Vector128<short> x)
+            {
+                (Vector128<int> lowerInt32, Vector128<int> upperInt32) = Vector128.Widen(x);
+                return
+                    (HalfAsWidenedUInt32ToSingle(lowerInt32.AsUInt32()),
+                     HalfAsWidenedUInt32ToSingle(upperInt32.AsUInt32()));
+
+                static Vector128<float> HalfAsWidenedUInt32ToSingle(Vector128<uint> value)
+                {
+                    // Extract sign bit of value
+                    Vector128<uint> sign = value & Vector128.Create(SingleSignMask);
+
+                    // Copy sign bit to upper bits
+                    Vector128<uint> bitValueInProcess = value;
+
+                    // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
+                    Vector128<uint> offsetExponent = bitValueInProcess & Vector128.Create(HalfExponentMask);
+
+                    // ~0u when value is subnormal, 0 otherwise
+                    Vector128<uint> subnormalMask = Vector128.Equals(offsetExponent, Vector128<uint>.Zero);
+
+                    // ~0u when value is either Infinity or NaN, 0 otherwise
+                    Vector128<uint> infinityOrNaNMask = Vector128.Equals(offsetExponent, Vector128.Create(HalfExponentMask));
+
+                    // 0x3880_0000u if value is subnormal, 0 otherwise
+                    Vector128<uint> maskedExponentLowerBound = subnormalMask & Vector128.Create(ExponentLowerBound);
+
+                    // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
+                    Vector128<uint> offsetMaskedExponentLowerBound = Vector128.Create(ExponentOffset) | maskedExponentLowerBound;
+
+                    // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
+                    bitValueInProcess = Vector128.ShiftLeft(bitValueInProcess, 13);
+
+                    // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
+                    offsetMaskedExponentLowerBound = Vector128.ConditionalSelect(Vector128.Equals(infinityOrNaNMask, Vector128<uint>.Zero),
+                        offsetMaskedExponentLowerBound,
+                        Vector128.ShiftLeft(offsetMaskedExponentLowerBound, 1));
+
+                    // Extract exponent bits and fraction bits of value
+                    bitValueInProcess &= Vector128.Create(HalfToSingleBitsMask);
+
+                    // Adjust exponent to match the range of exponent
+                    bitValueInProcess += offsetMaskedExponentLowerBound;
+
+                    // If value is subnormal, remove unnecessary 1 on top of fraction bits.
+                    Vector128<uint> absoluteValue = (bitValueInProcess.AsSingle() - maskedExponentLowerBound.AsSingle()).AsUInt32();
+
+                    // Merge sign bit with rest
+                    return (absoluteValue | sign).AsSingle();
+                }
+            }
+
+            public static (Vector256<float> Lower, Vector256<float> Upper) Invoke(Vector256<short> x)
+            {
+                (Vector256<int> lowerInt32, Vector256<int> upperInt32) = Vector256.Widen(x);
+                return
+                    (HalfAsWidenedUInt32ToSingle(lowerInt32.AsUInt32()),
+                     HalfAsWidenedUInt32ToSingle(upperInt32.AsUInt32()));
+
+                static Vector256<float> HalfAsWidenedUInt32ToSingle(Vector256<uint> value)
+                {
+                    // Extract sign bit of value
+                    Vector256<uint> sign = value & Vector256.Create(SingleSignMask);
+
+                    // Copy sign bit to upper bits
+                    Vector256<uint> bitValueInProcess = value;
+
+                    // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
+                    Vector256<uint> offsetExponent = bitValueInProcess & Vector256.Create(HalfExponentMask);
+
+                    // ~0u when value is subnormal, 0 otherwise
+                    Vector256<uint> subnormalMask = Vector256.Equals(offsetExponent, Vector256<uint>.Zero);
+
+                    // ~0u when value is either Infinity or NaN, 0 otherwise
+                    Vector256<uint> infinityOrNaNMask = Vector256.Equals(offsetExponent, Vector256.Create(HalfExponentMask));
+
+                    // 0x3880_0000u if value is subnormal, 0 otherwise
+                    Vector256<uint> maskedExponentLowerBound = subnormalMask & Vector256.Create(ExponentLowerBound);
+
+                    // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
+                    Vector256<uint> offsetMaskedExponentLowerBound = Vector256.Create(ExponentOffset) | maskedExponentLowerBound;
+
+                    // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
+                    bitValueInProcess = Vector256.ShiftLeft(bitValueInProcess, 13);
+
+                    // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
+                    offsetMaskedExponentLowerBound = Vector256.ConditionalSelect(Vector256.Equals(infinityOrNaNMask, Vector256<uint>.Zero),
+                        offsetMaskedExponentLowerBound,
+                        Vector256.ShiftLeft(offsetMaskedExponentLowerBound, 1));
+
+                    // Extract exponent bits and fraction bits of value
+                    bitValueInProcess &= Vector256.Create(HalfToSingleBitsMask);
+
+                    // Adjust exponent to match the range of exponent
+                    bitValueInProcess += offsetMaskedExponentLowerBound;
+
+                    // If value is subnormal, remove unnecessary 1 on top of fraction bits.
+                    Vector256<uint> absoluteValue = (bitValueInProcess.AsSingle() - maskedExponentLowerBound.AsSingle()).AsUInt32();
+
+                    // Merge sign bit with rest
+                    return (absoluteValue | sign).AsSingle();
+                }
+            }
+
+            public static (Vector512<float> Lower, Vector512<float> Upper) Invoke(Vector512<short> x)
+            {
+                (Vector512<int> lowerInt32, Vector512<int> upperInt32) = Vector512.Widen(x);
+                return
+                    (HalfAsWidenedUInt32ToSingle(lowerInt32.AsUInt32()),
+                     HalfAsWidenedUInt32ToSingle(upperInt32.AsUInt32()));
+
+                static Vector512<float> HalfAsWidenedUInt32ToSingle(Vector512<uint> value)
+                {
+                    // Extract sign bit of value
+                    Vector512<uint> sign = value & Vector512.Create(SingleSignMask);
+
+                    // Copy sign bit to upper bits
+                    Vector512<uint> bitValueInProcess = value;
+
+                    // Extract exponent bits of value (BiasedExponent is not for here as it performs unnecessary shift)
+                    Vector512<uint> offsetExponent = bitValueInProcess & Vector512.Create(HalfExponentMask);
+
+                    // ~0u when value is subnormal, 0 otherwise
+                    Vector512<uint> subnormalMask = Vector512.Equals(offsetExponent, Vector512<uint>.Zero);
+
+                    // ~0u when value is either Infinity or NaN, 0 otherwise
+                    Vector512<uint> infinityOrNaNMask = Vector512.Equals(offsetExponent, Vector512.Create(HalfExponentMask));
+
+                    // 0x3880_0000u if value is subnormal, 0 otherwise
+                    Vector512<uint> maskedExponentLowerBound = subnormalMask & Vector512.Create(ExponentLowerBound);
+
+                    // 0x3880_0000u if value is subnormal, 0x3800_0000u otherwise
+                    Vector512<uint> offsetMaskedExponentLowerBound = Vector512.Create(ExponentOffset) | maskedExponentLowerBound;
+
+                    // Match the position of the boundary of exponent bits and fraction bits with IEEE 754 Binary32(Single)
+                    bitValueInProcess = Vector512.ShiftLeft(bitValueInProcess, 13);
+
+                    // Double the offsetMaskedExponentLowerBound if value is either Infinity or NaN
+                    offsetMaskedExponentLowerBound = Vector512.ConditionalSelect(Vector512.Equals(infinityOrNaNMask, Vector512<uint>.Zero),
+                        offsetMaskedExponentLowerBound,
+                        Vector512.ShiftLeft(offsetMaskedExponentLowerBound, 1));
+
+                    // Extract exponent bits and fraction bits of value
+                    bitValueInProcess &= Vector512.Create(HalfToSingleBitsMask);
+
+                    // Adjust exponent to match the range of exponent
+                    bitValueInProcess += offsetMaskedExponentLowerBound;
+
+                    // If value is subnormal, remove unnecessary 1 on top of fraction bits.
+                    Vector512<uint> absoluteValue = (bitValueInProcess.AsSingle() - maskedExponentLowerBound.AsSingle()).AsUInt32();
+
+                    // Merge sign bit with rest
+                    return (absoluteValue | sign).AsSingle();
+                }
+            }
+        }
+
+        internal readonly struct NarrowSingleToHalfAsUInt16Operator : IUnaryTwoToOneOperator<float, ushort>
+        {
+            // This implements a vectorized version of the `explicit operator Half(float value) operator`.
+            // See detailed description of the algorithm used here:
+            //     https://github.com/dotnet/runtime/blob/ca8d6f0420096831766ec11c7d400e4f7ccc7a34/src/libraries/System.Private.CoreLib/src/System/Half.cs#L606-L714
+            // The cast operator converts a float to a Half represented as a UInt32, then narrows to a UInt16, and reinterpret casts to Half.
+            // This does the same, with an input VectorXx<float> and an output VectorXx<uint>.
+            // Loop handling two input vectors at a time; each input float is double the size of each output Half,
+            // so we need two vectors of floats to produce one vector of Halfs. Half isn't supported in VectorXx<T>,
+            // so we convert the VectorXx<float> to a VectorXx<uint>, and the caller then uses this twice, narrows the combination
+            // into a VectorXx<ushort>, and then saves that out to the destination `ref Half` reinterpreted as `ref ushort`.
+
+            private const uint MinExp = 0x3880_0000u; // Minimum exponent for rounding
+            private const uint Exponent126 = 0x3f00_0000u; // Exponent displacement #1
+            private const uint SingleBiasedExponentMask = 0x7F80_0000; // float.BiasedExponentMask; // Exponent mask
+            private const uint Exponent13 = 0x0680_0000u; // Exponent displacement #2
+            private const float MaxHalfValueBelowInfinity = 65520.0f; // Maximum value that is not Infinity in Half
+            private const uint ExponentMask = 0x7C00; // Mask for exponent bits in Half
+            private const uint SingleSignMask = 0x8000_0000u; // float.SignMask; // Mask for sign bit in float
+
+            public static bool Vectorizable => true;
+
+            public static ushort Invoke(float x) => Unsafe.BitCast<Half, ushort>((Half)x);
+
+            public static Vector128<ushort> Invoke(Vector128<float> lower, Vector128<float> upper)
+            {
+                return Vector128.Narrow(
+                    SingleToHalfAsWidenedUInt32(lower),
+                    SingleToHalfAsWidenedUInt32(upper));
+
+                static Vector128<uint> SingleToHalfAsWidenedUInt32(Vector128<float> value)
+                {
+                    Vector128<uint> bitValue = value.AsUInt32();
+
+                    // Extract sign bit
+                    Vector128<uint> sign = Vector128.ShiftRightLogical(bitValue & Vector128.Create(SingleSignMask), 16);
+
+                    // Detecting NaN (0u if value is NaN; otherwise, ~0u)
+                    Vector128<uint> realMask = Vector128.Equals(value, value).AsUInt32();
+
+                    // Clear sign bit
+                    value = Vector128.Abs(value);
+
+                    // Rectify values that are Infinity in Half.
+                    value = Vector128.Min(Vector128.Create(MaxHalfValueBelowInfinity), value);
+
+                    // Rectify lower exponent
+                    Vector128<uint> exponentOffset0 = Vector128.Max(value, Vector128.Create(MinExp).AsSingle()).AsUInt32();
+
+                    // Extract exponent
+                    exponentOffset0 &= Vector128.Create(SingleBiasedExponentMask);
+
+                    // Add exponent by 13
+                    exponentOffset0 += Vector128.Create(Exponent13);
+
+                    // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
+                    value += exponentOffset0.AsSingle();
+                    bitValue = value.AsUInt32();
+
+                    // Only exponent bits will be modified if NaN
+                    Vector128<uint> maskedHalfExponentForNaN = ~realMask & Vector128.Create(ExponentMask);
+
+                    // Subtract exponent by 126
+                    bitValue -= Vector128.Create(Exponent126);
+
+                    // Shift bitValue right by 13 bits to match the boundary of exponent part and fraction part.
+                    Vector128<uint> newExponent = Vector128.ShiftRightLogical(bitValue, 13);
+
+                    // Clear the fraction parts if the value was NaN.
+                    bitValue &= realMask;
+
+                    // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
+                    bitValue += newExponent;
+
+                    // Clear exponents if value is NaN
+                    bitValue &= ~maskedHalfExponentForNaN;
+
+                    // Merge sign bit with possible NaN exponent
+                    Vector128<uint> signAndMaskedExponent = maskedHalfExponentForNaN | sign;
+
+                    // Merge sign bit and possible NaN exponent
+                    bitValue |= signAndMaskedExponent;
+
+                    // The final result
+                    return bitValue;
+                }
+            }
+
+            public static Vector256<ushort> Invoke(Vector256<float> lower, Vector256<float> upper)
+            {
+                return Vector256.Narrow(
+                    SingleToHalfAsWidenedUInt32(lower),
+                    SingleToHalfAsWidenedUInt32(upper));
+
+                static Vector256<uint> SingleToHalfAsWidenedUInt32(Vector256<float> value)
+                {
+                    Vector256<uint> bitValue = value.AsUInt32();
+
+                    // Extract sign bit
+                    Vector256<uint> sign = Vector256.ShiftRightLogical(bitValue & Vector256.Create(SingleSignMask), 16);
+
+                    // Detecting NaN (0u if value is NaN; otherwise, ~0u)
+                    Vector256<uint> realMask = Vector256.Equals(value, value).AsUInt32();
+
+                    // Clear sign bit
+                    value = Vector256.Abs(value);
+
+                    // Rectify values that are Infinity in Half.
+                    value = Vector256.Min(Vector256.Create(MaxHalfValueBelowInfinity), value);
+
+                    // Rectify lower exponent
+                    Vector256<uint> exponentOffset0 = Vector256.Max(value, Vector256.Create(MinExp).AsSingle()).AsUInt32();
+
+                    // Extract exponent
+                    exponentOffset0 &= Vector256.Create(SingleBiasedExponentMask);
+
+                    // Add exponent by 13
+                    exponentOffset0 += Vector256.Create(Exponent13);
+
+                    // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
+                    value += exponentOffset0.AsSingle();
+                    bitValue = value.AsUInt32();
+
+                    // Only exponent bits will be modified if NaN
+                    Vector256<uint> maskedHalfExponentForNaN = ~realMask & Vector256.Create(ExponentMask);
+
+                    // Subtract exponent by 126
+                    bitValue -= Vector256.Create(Exponent126);
+
+                    // Shift bitValue right by 13 bits to match the boundary of exponent part and fraction part.
+                    Vector256<uint> newExponent = Vector256.ShiftRightLogical(bitValue, 13);
+
+                    // Clear the fraction parts if the value was NaN.
+                    bitValue &= realMask;
+
+                    // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
+                    bitValue += newExponent;
+
+                    // Clear exponents if value is NaN
+                    bitValue &= ~maskedHalfExponentForNaN;
+
+                    // Merge sign bit with possible NaN exponent
+                    Vector256<uint> signAndMaskedExponent = maskedHalfExponentForNaN | sign;
+
+                    // Merge sign bit and possible NaN exponent
+                    bitValue |= signAndMaskedExponent;
+
+                    // The final result
+                    return bitValue;
+                }
+            }
+
+            public static Vector512<ushort> Invoke(Vector512<float> lower, Vector512<float> upper)
+            {
+                return Vector512.Narrow(
+                    SingleToHalfAsWidenedUInt32(lower),
+                    SingleToHalfAsWidenedUInt32(upper));
+
+                static Vector512<uint> SingleToHalfAsWidenedUInt32(Vector512<float> value)
+                {
+                    Vector512<uint> bitValue = value.AsUInt32();
+
+                    // Extract sign bit
+                    Vector512<uint> sign = Vector512.ShiftRightLogical(bitValue & Vector512.Create(SingleSignMask), 16);
+
+                    // Detecting NaN (0u if value is NaN; otherwise, ~0u)
+                    Vector512<uint> realMask = Vector512.Equals(value, value).AsUInt32();
+
+                    // Clear sign bit
+                    value = Vector512.Abs(value);
+
+                    // Rectify values that are Infinity in Half.
+                    value = Vector512.Min(Vector512.Create(MaxHalfValueBelowInfinity), value);
+
+                    // Rectify lower exponent
+                    Vector512<uint> exponentOffset0 = Vector512.Max(value, Vector512.Create(MinExp).AsSingle()).AsUInt32();
+
+                    // Extract exponent
+                    exponentOffset0 &= Vector512.Create(SingleBiasedExponentMask);
+
+                    // Add exponent by 13
+                    exponentOffset0 += Vector512.Create(Exponent13);
+
+                    // Round Single into Half's precision (NaN also gets modified here, just setting the MSB of fraction)
+                    value += exponentOffset0.AsSingle();
+                    bitValue = value.AsUInt32();
+
+                    // Only exponent bits will be modified if NaN
+                    Vector512<uint> maskedHalfExponentForNaN = ~realMask & Vector512.Create(ExponentMask);
+
+                    // Subtract exponent by 126
+                    bitValue -= Vector512.Create(Exponent126);
+
+                    // Shift bitValue right by 13 bits to match the boundary of exponent part and fraction part.
+                    Vector512<uint> newExponent = Vector512.ShiftRightLogical(bitValue, 13);
+
+                    // Clear the fraction parts if the value was NaN.
+                    bitValue &= realMask;
+
+                    // Merge the exponent part with fraction part, and add the exponent part and fraction part's overflow.
+                    bitValue += newExponent;
+
+                    // Clear exponents if value is NaN
+                    bitValue &= ~maskedHalfExponentForNaN;
+
+                    // Merge sign bit with possible NaN exponent
+                    Vector512<uint> signAndMaskedExponent = maskedHalfExponentForNaN | sign;
+
+                    // Merge sign bit and possible NaN exponent
+                    bitValue |= signAndMaskedExponent;
+
+                    // The final result
+                    return bitValue;
+                }
+            }
+        }
+
+        /// <summary>T.SinCos(x)</summary>
+        internal readonly struct SinCosOperator<T> : IUnaryInputBinaryOutput<T> where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: vectorize
+
+            public static (T, T) Invoke(T x) => T.SinCos(x);
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+        }
+
+        /// <summary>T.SinCosPi(x)</summary>
+        internal readonly struct SinCosPiOperator<T> : IUnaryInputBinaryOutput<T> where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: vectorize
+
+            public static (T, T) Invoke(T x) => T.SinCosPi(x);
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+        }
+
         /// <summary>Operator that takes one input value and returns a single value.</summary>
         /// <remarks>The input and output type must be of the same size if vectorization is desired.</remarks>
         private interface IUnaryOperator<TInput, TOutput>
@@ -14834,6 +15938,26 @@ namespace System.Numerics.Tensors
             static abstract Vector128<TOutput> Invoke(Vector128<TInput> lower, Vector128<TInput> upper);
             static abstract Vector256<TOutput> Invoke(Vector256<TInput> lower, Vector256<TInput> upper);
             static abstract Vector512<TOutput> Invoke(Vector512<TInput> lower, Vector512<TInput> upper);
+        }
+
+        /// <summary>Operator that takes one input value and returns two output values.</summary>
+        private interface IUnaryInputBinaryOutput<T>
+        {
+            static abstract bool Vectorizable { get; }
+            static abstract (T, T) Invoke(T x);
+            static abstract (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x);
+            static abstract (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x);
+            static abstract (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x);
+        }
+
+        /// <summary>Operator that takes one input value and returns a single value.</summary>
+        private interface IStatefulUnaryOperator<T>
+        {
+            static abstract bool Vectorizable { get; }
+            T Invoke(T x);
+            Vector128<T> Invoke(Vector128<T> x);
+            Vector256<T> Invoke(Vector256<T> x);
+            Vector512<T> Invoke(Vector512<T> x);
         }
 
         /// <summary>Operator that takes two input values and returns a single value.</summary>

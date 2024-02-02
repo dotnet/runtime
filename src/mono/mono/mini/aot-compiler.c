@@ -5529,7 +5529,7 @@ MONO_RESTORE_WARNING
 
 	if (acfg->aot_opts.export_symbols_outfile) {
 		char *export_symbols_out = g_string_free (export_symbols, FALSE);
-		FILE* export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
+		FILE* export_symbols_outfile = g_fopen (acfg->aot_opts.export_symbols_outfile, "w");
 		if (!export_symbols_outfile) {
 			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
 			g_free (export_symbols_out);
@@ -13446,11 +13446,11 @@ compile_asm (MonoAotCompile *acfg)
 	}
 #endif
 
-	if (0 != rename (tmp_outfile_name, outfile_name)) {
+	if (0 != g_rename (tmp_outfile_name, outfile_name)) {
 		if (G_FILE_ERROR_EXIST == g_file_error_from_errno (errno)) {
 			/* Since we are rebuilding the module we need to be able to replace any old copies. Remove old file and retry rename operation. */
-			unlink (outfile_name);
-			rename (tmp_outfile_name, outfile_name);
+			g_unlink (outfile_name);
+			g_rename (tmp_outfile_name, outfile_name);
 		}
 	}
 
@@ -13463,7 +13463,7 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 	if (!acfg->aot_opts.save_temps)
-		unlink (objfile);
+		g_unlink (objfile);
 
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
@@ -13472,7 +13472,7 @@ compile_asm (MonoAotCompile *acfg)
 	if (acfg->aot_opts.save_temps)
 		aot_printf (acfg, "Retained input file.\n");
 	else
-		unlink (acfg->tmpfname);
+		g_unlink (acfg->tmpfname);
 
 	return 0;
 }
@@ -13520,7 +13520,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 	int version;
 	char magic [32];
 
-	infile = fopen (filename, "rb");
+	infile = g_fopen (filename, "rb");
 	if (!infile) {
 		fprintf (stderr, "Unable to open file '%s': %s.\n", filename, strerror (errno));
 		exit (1);
@@ -14538,7 +14538,7 @@ static void aot_dump (MonoAotCompile *acfg)
 	mono_json_writer_object_end (&writer);
 
 	dumpname = g_strdup_printf ("%s.json", g_path_get_basename (acfg->image->name));
-	dumpfile = fopen (dumpname, "w+");
+	dumpfile = g_fopen (dumpname, "w+");
 	g_free (dumpname);
 
 	fprintf (dumpfile, "%s", writer.text->str);
@@ -14947,7 +14947,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.logfile) {
-		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
+		acfg->logfile = g_fopen (acfg->aot_opts.logfile, "a+");
 	}
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
@@ -14961,7 +14961,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.data_outfile) {
-		acfg->data_outfile = fopen (acfg->aot_opts.data_outfile, "w+");
+		acfg->data_outfile = g_fopen (acfg->aot_opts.data_outfile, "w+");
 		if (!acfg->data_outfile) {
 			aot_printerrf (acfg, "Unable to create file '%s': %s\n", acfg->aot_opts.data_outfile, strerror (errno));
 			return 1;
@@ -15124,7 +15124,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_EAGER_LOAD);
 
 	if (acfg->aot_opts.instances_logfile_path) {
-		acfg->instances_logfile = fopen (acfg->aot_opts.instances_logfile_path, "w");
+		acfg->instances_logfile = g_fopen (acfg->aot_opts.instances_logfile_path, "w");
 		if (!acfg->instances_logfile) {
 			aot_printerrf (acfg, "Unable to create logfile: '%s'.\n", acfg->aot_opts.instances_logfile_path);
 			return 1;
@@ -15387,7 +15387,7 @@ create_depfile (MonoAotCompile *acfg)
 	// FIXME: Support other configurations
 	g_assert (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only && acfg->aot_opts.llvm_outfile);
 
-	depfile = fopen (acfg->aot_opts.depfile, "w");
+	depfile = g_fopen (acfg->aot_opts.depfile, "w");
 	g_assert (depfile);
 
 	int ntargets = 1;
@@ -15459,14 +15459,14 @@ emit_aot_image (MonoAotCompile *acfg)
 			acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 		else
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
-		acfg->fp = fopen (acfg->tmpfname, "w+");
+		acfg->fp = g_fopen (acfg->tmpfname, "w+");
 	} else {
 		if (strcmp (acfg->aot_opts.temp_path, "") == 0) {
 			acfg->fp = fdopen (g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL), "w+");
 		} else {
 			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", (const char*)NULL);
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
-			acfg->fp = fopen (acfg->tmpfname, "w+");
+			acfg->fp = g_fopen (acfg->tmpfname, "w+");
 		}
 	}
 	if (acfg->fp == 0 && !acfg->aot_opts.llvm_only) {
