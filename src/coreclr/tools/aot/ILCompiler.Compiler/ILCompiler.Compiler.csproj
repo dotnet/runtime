@@ -587,13 +587,13 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMJumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunGenericHelperNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMDebug.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfAbbrev.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCie.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" />
     <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" />
@@ -609,6 +609,9 @@
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewNative.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" />
     <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
     <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
     <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />

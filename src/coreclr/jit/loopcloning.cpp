@@ -1841,17 +1841,6 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
             return false;
         }
 
-        // TODO-Quirk: Can be removed, loop invariant is validated by
-        // `FlowGraphNaturalLoop::AnalyzeIteration`.
-        if (!iterInfo->TestTree->OperIsCompare() || ((iterInfo->TestTree->gtFlags & GTF_RELOP_ZTT) == 0))
-        {
-            JITDUMP("Loop cloning: rejecting loop " FMT_LP
-                    ". Loop inversion NOT present, loop test [%06u] may not protect "
-                    "entry from head.\n",
-                    loop->GetIndex(), iterInfo->TestTree->gtTreeID);
-            return false;
-        }
-
 #ifdef DEBUG
         const unsigned ivLclNum = iterInfo->IterVar;
         GenTree* const op1      = iterInfo->Iterator();

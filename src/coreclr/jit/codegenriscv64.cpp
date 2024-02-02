@@ -3751,9 +3751,13 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     emitter*  emit      = GetEmitter();
     regNumber targetReg = tree->GetRegNum();
 
+    assert(targetReg != REG_NA);
+    assert(tree->TypeGet() != TYP_VOID);
+    assert(!op1->isContainedIntOrIImmed());
+    assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
+
     if (varTypeIsFloating(op1Type))
     {
-        assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
         bool      isUnordered = (tree->gtFlags & GTF_RELOP_NAN_UN) != 0;
         regNumber regOp1      = op1->GetRegNum();
         regNumber regOp2      = op2->GetRegNum();
@@ -3841,12 +3845,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
     else
     {
-        assert(targetReg != REG_NA);
-        assert(tree->TypeGet() != TYP_VOID);
-
-        assert(!op1->isContainedIntOrIImmed());
-        assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
-
         bool      isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
         regNumber regOp1     = op1->GetRegNum();
 
@@ -4042,6 +4040,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
         }
     }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -5172,7 +5172,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     {
         if (compiler->opts.compReloc)
         {
-            emit->emitIns_R_AI(INS_jalr, EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+            emit->emitIns_R_AI(INS_jal, EA_PTR_DSP_RELOC, initReg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         }
         else
         {
@@ -5335,6 +5335,14 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         var_types   slotType  = genActualType(source);
         instruction storeIns  = ins_Store(slotType);
         emitAttr    storeAttr = emitTypeSize(slotType);
+
+        // When passed in registers or on the stack, integer scalars narrower than XLEN bits
+        // are widened according to the sign of their type up to 32 bits, then sign-extended to XLEN bits.
+        if (EA_SIZE(storeAttr) < EA_PTRSIZE && varTypeUsesIntReg(slotType))
+        {
+            storeAttr = EA_PTRSIZE;
+            storeIns  = INS_sd;
+        }
 
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
