@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         private JSProxyContext()
         {
         }
@@ -62,7 +62,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         #region Current operation context
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         public static readonly JSProxyContext MainThreadContext = new();
         public static JSProxyContext CurrentThreadContext => MainThreadContext;
         public static JSProxyContext CurrentOperationContext => MainThreadContext;
@@ -229,7 +229,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JSProxyContext AssertIsInteropThread()
         {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             var ctx = CurrentThreadContext;
             if (ctx == null)
             {
@@ -436,7 +436,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             var ctx = proxy.ProxyContext;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             if (!ctx.IsCurrentThread())
             {
                 throw new InvalidOperationException($"ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy. ManagedThreadId: {Environment.CurrentManagedThreadId} JSHandle: {proxy.JSHandle}");
@@ -477,7 +477,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!_isDisposed)
                 {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                     if (!IsCurrentThread())
                     {
                         Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
@@ -494,7 +494,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                     }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                     Interop.Runtime.UninstallWebWorkerInterop();
 #endif
 
@@ -518,7 +518,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                     if (disposing)
                     {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                         SynchronizationContext.Dispose();
 #endif
                     }

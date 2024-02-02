@@ -1618,7 +1618,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     " implies predicate true; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_trueTarget->bbNum);
 
-            fgReplaceJumpTarget(predBlock, jti.m_trueTarget, jti.m_block);
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_trueTarget);
         }
         else
         {
@@ -1626,7 +1626,7 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     " implies predicate false; we can safely redirect flow to be " FMT_BB " -> " FMT_BB "\n",
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
 
-            fgReplaceJumpTarget(predBlock, jti.m_falseTarget, jti.m_block);
+            fgReplaceJumpTarget(predBlock, jti.m_block, jti.m_falseTarget);
         }
     }
 

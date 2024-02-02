@@ -646,12 +646,20 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        public enum ClientCertSource
+        {
+            ClientCertificate,
+            SelectionCallback,
+            CertificateContext
+        }
+
         [ConditionalTheory]
-        [InlineData(true, true)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        public async Task ConnectWithClientCertificate(bool sendCertificate, bool useClientSelectionCallback)
+        [InlineData(true, ClientCertSource.ClientCertificate)]
+        [InlineData(false, ClientCertSource.ClientCertificate)]
+        [InlineData(true, ClientCertSource.SelectionCallback)]
+        [InlineData(false, ClientCertSource.SelectionCallback)]
+        [InlineData(true, ClientCertSource.CertificateContext)]
+        public async Task ConnectWithClientCertificate(bool sendCertificate, ClientCertSource clientCertSource)
         {
             if (PlatformDetection.IsWindows10Version20348OrLower)
             {
@@ -686,16 +694,26 @@ namespace System.Net.Quic.Tests
 
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
             QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
-            if (useClientSelectionCallback)
+            switch (clientCertSource)
             {
-                clientOptions.ClientAuthenticationOptions.LocalCertificateSelectionCallback = delegate
-                {
-                    return sendCertificate ? ClientCertificate : null;
-                };
-            }
-            else if (sendCertificate)
-            {
-                clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection() { ClientCertificate };
+                case ClientCertSource.ClientCertificate:
+                    clientOptions.ClientAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
+                    if (sendCertificate)
+                    {
+                        clientOptions.ClientAuthenticationOptions.ClientCertificates.Add(ClientCertificate);
+                    }
+                    break;
+
+                case ClientCertSource.SelectionCallback:
+                    clientOptions.ClientAuthenticationOptions.LocalCertificateSelectionCallback = delegate
+                    {
+                        return sendCertificate ? ClientCertificate : null;
+                    };
+                    break;
+
+                case ClientCertSource.CertificateContext:
+                    clientOptions.ClientAuthenticationOptions.ClientCertificateContext = SslStreamCertificateContext.Create(ClientCertificate, null);
+                    break;
             }
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listener);
 

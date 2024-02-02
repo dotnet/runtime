@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_NODE, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
@@ -15,7 +15,7 @@ import { cancelThreads } from "./pthreads/browser";
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
-export async function mono_run_main_and_exit(main_assembly_name: string, args?: string[]): Promise<number> {
+export async function mono_run_main_and_exit(main_assembly_name?: string, args?: string[]): Promise<number> {
     try {
         const result = await mono_run_main(main_assembly_name, args);
         loaderHelpers.mono_exit(result);
@@ -37,7 +37,11 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args?: 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
-export async function mono_run_main(main_assembly_name: string, args?: string[]): Promise<number> {
+export async function mono_run_main(main_assembly_name?: string, args?: string[]): Promise<number> {
+    if (main_assembly_name === undefined || main_assembly_name === null || main_assembly_name === "") {
+        main_assembly_name = loaderHelpers.config.mainAssemblyName;
+        mono_assert(main_assembly_name, "Null or empty config.mainAssemblyName");
+    }
     if (args === undefined || args === null) {
         args = runtimeHelpers.config.applicationArguments;
     }
@@ -85,7 +89,7 @@ export function find_entry_point(assembly: string) {
 }
 
 export function nativeExit(code: number) {
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         cancelThreads();
     }
     cwraps.mono_wasm_exit(code);

@@ -12073,13 +12073,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector128<T> negated = -x;
-                    if (Vector128.Equals(x, negated) != Vector128<T>.Zero)
+                    Vector128<T> abs = Vector128.ConditionalSelect(Vector128.LessThan(x, Vector128<T>.Zero), -x, x);
+                    if (Vector128.LessThan(abs, Vector128<T>.Zero) != Vector128<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector128.ConditionalSelect(Vector128.LessThan(x, Vector128<T>.Zero), negated, x);
                 }
 
                 return Vector128.Abs(x);
@@ -12097,13 +12095,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector256<T> negated = -x;
-                    if (Vector256.Equals(x, negated) != Vector256<T>.Zero)
+                    Vector256<T> abs = Vector256.ConditionalSelect(Vector256.LessThan(x, Vector256<T>.Zero), -x, x);
+                    if (Vector256.LessThan(abs, Vector256<T>.Zero) != Vector256<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector256.ConditionalSelect(Vector256.LessThan(x, Vector256<T>.Zero), negated, x);
                 }
 
                 return Vector256.Abs(x);
@@ -12121,13 +12117,11 @@ namespace System.Numerics.Tensors
                     // Handle signed integers specially, in order to throw if any attempt is made to
                     // take the absolute value of the minimum value of the type, which doesn't have
                     // a positive absolute value representation.
-                    Vector512<T> negated = -x;
-                    if (Vector512.Equals(x, negated) != Vector512<T>.Zero)
+                    Vector512<T> abs = Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero), -x, x);
+                    if (Vector512.LessThan(abs, Vector512<T>.Zero) != Vector512<T>.Zero)
                     {
                         ThrowNegateTwosCompOverflow();
                     }
-
-                    return Vector512.ConditionalSelect(Vector512.LessThan(x, Vector512<T>.Zero), negated, x);
                 }
 
                 return Vector512.Abs(x);
@@ -12736,12 +12730,14 @@ namespace System.Numerics.Tensors
         internal readonly struct Exp2Operator<T> : IUnaryOperator<T, T>
             where T : IExponentialFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            private const double NaturalLog2 = 0.6931471805599453;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Exp2(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.Invoke(x * Vector128.Create(T.CreateTruncating(NaturalLog2)));
+            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.Invoke(x * Vector256.Create(T.CreateTruncating(NaturalLog2)));
+            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.Invoke(x * Vector512.Create(T.CreateTruncating(NaturalLog2)));
         }
 
         /// <summary>T.Exp2M1(x)</summary>
@@ -12760,12 +12756,14 @@ namespace System.Numerics.Tensors
         internal readonly struct Exp10Operator<T> : IUnaryOperator<T, T>
             where T : IExponentialFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            private const double NaturalLog10 = 2.302585092994046;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Exp10(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.Invoke(x * Vector128.Create(T.CreateTruncating(NaturalLog10)));
+            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.Invoke(x * Vector256.Create(T.CreateTruncating(NaturalLog10)));
+            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.Invoke(x * Vector512.Create(T.CreateTruncating(NaturalLog10)));
         }
 
         /// <summary>T.Exp10M1(x)</summary>
@@ -12784,11 +12782,48 @@ namespace System.Numerics.Tensors
         internal readonly struct PowOperator<T> : IBinaryOperator<T>
             where T : IPowerFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
             public static T Invoke(T x, T y) => T.Pow(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(y.AsSingle() * LogOperator<float>.Invoke(x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(y.AsDouble() * LogOperator<double>.Invoke(x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(y.AsSingle() * LogOperator<float>.Invoke(x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(y.AsDouble() * LogOperator<double>.Invoke(x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(y.AsSingle() * LogOperator<float>.Invoke(x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(y.AsDouble() * LogOperator<double>.Invoke(x.AsDouble())).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.Sqrt(x)</summary>
@@ -12806,22 +12841,59 @@ namespace System.Numerics.Tensors
         internal readonly struct CbrtOperator<T> : IUnaryOperator<T, T>
             where T : IRootFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
             public static T Invoke(T x) => T.Cbrt(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector128.Create(3f)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector128.Create(3d)).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector256.Create(3f)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector256.Create(3d)).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector512.Create(3f)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector512.Create(3d)).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.Hypot(x, y)</summary>
         internal readonly struct HypotOperator<T> : IBinaryOperator<T>
             where T : IRootFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => true;
             public static T Invoke(T x, T y) => T.Hypot(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Vector128.Sqrt((x * x) + (y * y));
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Vector256.Sqrt((x * x) + (y * y));
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Vector512.Sqrt((x * x) + (y * y));
         }
 
         /// <summary>T.Acos(x)</summary>
@@ -14546,11 +14618,12 @@ namespace System.Numerics.Tensors
         internal readonly struct Log10Operator<T> : IUnaryOperator<T, T>
             where T : ILogarithmicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            private const double NaturalLog10 = 2.302585092994046;
+            public static bool Vectorizable => LogOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.Log10(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x) => LogOperator<T>.Invoke(x) / Vector128.Create(T.CreateTruncating(NaturalLog10));
+            public static Vector256<T> Invoke(Vector256<T> x) => LogOperator<T>.Invoke(x) / Vector256.Create(T.CreateTruncating(NaturalLog10));
+            public static Vector512<T> Invoke(Vector512<T> x) => LogOperator<T>.Invoke(x) / Vector512.Create(T.CreateTruncating(NaturalLog10));
         }
 
         /// <summary>T.LogP1(x)</summary>
@@ -14590,11 +14663,11 @@ namespace System.Numerics.Tensors
         internal readonly struct LogBaseOperator<T> : IBinaryOperator<T>
             where T : ILogarithmicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => LogOperator<T>.Vectorizable;
             public static T Invoke(T x, T y) => T.Log(x, y);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => LogOperator<T>.Invoke(x) / LogOperator<T>.Invoke(y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -15063,13 +15136,48 @@ namespace System.Numerics.Tensors
         {
             private readonly int _n = n;
 
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public T Invoke(T x) => T.RootN(x, _n);
 
-            public Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+            public Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector128.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector128.Create((double)_n)).As<double, T>();
+                }
+            }
+
+            public Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector256.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector256.Create((double)_n)).As<double, T>();
+                }
+            }
+
+            public Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return ExpOperator<float>.Invoke(LogOperator<float>.Invoke(x.AsSingle()) / Vector512.Create((float)_n)).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return ExpOperator<double>.Invoke(LogOperator<double>.Invoke(x.AsDouble()) / Vector512.Create((double)_n)).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.Round</summary>

@@ -162,54 +162,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public virtual byte[] EncodeX509SubjectKeyIdentifierExtension(ReadOnlySpan<byte> subjectKeyIdentifier)
-        {
-            // https://tools.ietf.org/html/rfc5280#section-4.2.1.2
-            //
-            // subjectKeyIdentifier EXTENSION ::= {
-            //     SYNTAX SubjectKeyIdentifier
-            //     IDENTIFIED BY id - ce - subjectKeyIdentifier
-            // }
-            //
-            // SubjectKeyIdentifier::= KeyIdentifier
-            //
-            // KeyIdentifier ::= OCTET STRING
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.WriteOctetString(subjectKeyIdentifier);
-            return writer.Encode();
-        }
-
-        public virtual void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
-        {
-            subjectKeyIdentifier = DecodeX509SubjectKeyIdentifierExtension(encoded);
-        }
-
-        internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
-        {
-            ReadOnlySpan<byte> contents;
-
-            try
-            {
-                bool gotContents = AsnDecoder.TryReadPrimitiveOctetString(
-                    encoded,
-                    AsnEncodingRules.BER,
-                    out contents,
-                    out int consumed);
-
-                if (!gotContents || consumed != encoded.Length)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                }
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-
-            return contents.ToArray();
-        }
-
         private static byte ReverseBitOrder(byte b)
         {
             return (byte)(unchecked(b * 0x0202020202ul & 0x010884422010ul) % 1023);
