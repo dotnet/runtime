@@ -1037,6 +1037,7 @@ INST0(l_jle,            "jle",              IUM_RD, 0x008E0F,                   
 INST0(l_jg,             "jg",               IUM_RD, 0x008F0F,                                                            INS_TT_NONE,    Reads_OF       | Reads_SF      | Reads_ZF)
 
 INST0(align,            "align",            IUM_RD, BAD_CODE,                                                            INS_TT_NONE,    INS_FLAGS_None)
+INST0(data16,           "data16",           IUM_RD, 0x000066,                                                            INS_TT_NONE,    INS_FLAGS_None)
 
 /*****************************************************************************/
 #undef  INST0

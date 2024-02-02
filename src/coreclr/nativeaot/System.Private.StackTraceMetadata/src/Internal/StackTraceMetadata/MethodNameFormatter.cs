@@ -420,17 +420,6 @@ namespace Internal.StackTraceMetadata
         }
 
         /// <summary>
-        /// Emit angle-bracketed list of type / method generic arguments.
-        /// </summary>
-        /// <param name="genericArguments">Collection of generic argument type handles</param>
-        private void EmitGenericArguments(HandleCollection genericArguments)
-        {
-            _outputBuilder.Append('[');
-            EmitTypeVector(genericArguments);
-            _outputBuilder.Append(']');
-        }
-
-        /// <summary>
         /// Emit a string (represented by a serialized ConstantStringValue) to the output string builder.
         /// </summary>
         /// <param name="stringHandle">Constant string value token (offset within stack trace native metadata)</param>

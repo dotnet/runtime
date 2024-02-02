@@ -18,12 +18,15 @@ namespace System.Reflection.Emit
         private MethodInfo? _getMethod;
         private MethodInfo? _setMethod;
         internal HashSet<MethodInfo>? _otherMethods;
-
+        internal readonly Type[]? _returnTypeRequiredCustomModifiers;
+        internal readonly Type[]? _returnTypeOptionalCustomModifiers;
+        internal readonly Type[][]? _parameterTypeRequiredCustomModifiers;
+        internal readonly Type[][]? _parameterTypeOptionalCustomModifiers;
         internal PropertyDefinitionHandle _handle;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal object? _defaultValue = DBNull.Value;
 
-        internal PropertyBuilderImpl(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? parameterTypes, TypeBuilderImpl containingType)
+        internal PropertyBuilderImpl(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers, TypeBuilderImpl containingType)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
@@ -33,6 +36,10 @@ namespace System.Reflection.Emit
             _propertyType = returnType;
             _parameterTypes = parameterTypes;
             _containingType = containingType;
+            _returnTypeRequiredCustomModifiers = returnTypeRequiredCustomModifiers;
+            _returnTypeOptionalCustomModifiers = returnTypeOptionalCustomModifiers;
+            _parameterTypeRequiredCustomModifiers = parameterTypeRequiredCustomModifiers;
+            _parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
         }
 
         internal Type[]? ParameterTypes => _parameterTypes;

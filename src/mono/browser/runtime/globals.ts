@@ -10,12 +10,13 @@ import gitHash from "consts:gitHash";
 
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
+import { mono_log_error } from "./logging";
 
 // these are our public API (except internal)
 export let Module: DotnetModuleInternal;
 export let INTERNAL: any;
 
-// keep in sync with src\mono\wasm\runtime\loader\globals.ts and src\mono\wasm\test-main.js
+// keep in sync with src\mono\browser\runtime\loader\globals.ts and src\mono\browser\test-main.js
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB_WORKER = typeof importScripts == "function";
 export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnetSidecar !== "undefined"; // sidecar is emscripten main running in a web worker
@@ -28,8 +29,7 @@ export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
-// this is when we link with workload tools. The consts:wasmEnableLegacyJsInterop is when we compile with rollup.
-export let linkerDisableLegacyJsInterop = false;
+
 export let linkerWasmEnableSIMD = true;
 export let linkerWasmEnableEH = true;
 export let linkerEnableAotProfiler = false;
@@ -39,7 +39,6 @@ export let _runtimeModuleLoaded = false; // please keep it in place also as roll
 
 export function passEmscriptenInternals(internals: EmscriptenInternals): void {
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
-    linkerDisableLegacyJsInterop = internals.linkerDisableLegacyJsInterop;
     linkerWasmEnableSIMD = internals.linkerWasmEnableSIMD;
     linkerWasmEnableEH = internals.linkerWasmEnableEH;
     linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
@@ -98,7 +97,7 @@ export function createPromiseController<T>(afterResolve?: () => void, afterRejec
 }
 
 // this will abort the program if the condition is false
-// see src\mono\wasm\runtime\rollup.config.js
+// see src\mono\browser\runtime\rollup.config.js
 // we inline the condition, because the lambda could allocate closure on hot path otherwise
 export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (condition) return;
@@ -106,5 +105,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const error = new Error(message);
-    runtimeHelpers.abort(error);
+    mono_log_error(message, error);
+    runtimeHelpers.nativeAbort(error);
 }

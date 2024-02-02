@@ -315,7 +315,7 @@ emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMetho
 {
 	td->sp -= csignature->param_count;
 	for (int i = 0; i < csignature->param_count; i++)
-		td->last_ins->sregs [i] = td->sp [i].local;
+		td->last_ins->sregs [i] = td->sp [i].var;
 
 	int ret_mt = mono_mint_type (csignature->ret);
 	if (csignature->ret->type == MONO_TYPE_VOID) {
@@ -324,10 +324,10 @@ emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMetho
 	} else if (ret_mt == MINT_TYPE_VT) {
 		// For these intrinsics, if we return a VT then it is a V128
 		push_type_vt (td, vector_klass, vector_size);
-		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 	} else {
 		push_simple_type (td, stack_type [ret_mt]);
-		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 	}
 	td->ip += 5;
 }
@@ -347,14 +347,14 @@ emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClas
 	int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
 	td->sp -= csignature->param_count;
 	for (int i = 0; i < num_args; i++)
-		call_args [i] = td->sp [i].local;
+		call_args [i] = td->sp [i].var;
 	call_args [num_args] = -1;
 	init_last_ins_call (td);
 	td->last_ins->info.call_info->call_args = call_args;
 	if (!td->optimized)
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	push_type_vt (td, vector_klass, vector_size);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 }
 
 static gboolean

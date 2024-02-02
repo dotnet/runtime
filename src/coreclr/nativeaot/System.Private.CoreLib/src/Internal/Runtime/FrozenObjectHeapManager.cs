@@ -16,7 +16,7 @@ namespace Internal.Runtime
     {
         public static readonly FrozenObjectHeapManager Instance = new FrozenObjectHeapManager();
 
-        private readonly LowLevelLock m_Crst = new LowLevelLock();
+        private readonly Lock m_Crst = new Lock(useTrivialWaits: true);
         private FrozenObjectSegment m_CurrentSegment;
 
         // Default size to reserve for a frozen segment
@@ -34,9 +34,7 @@ namespace Internal.Runtime
         {
             HalfBakedObject* obj = null;
 
-            m_Crst.Acquire();
-
-            try
+            using (m_Crst.EnterScope())
             {
                 Debug.Assert(type != null);
                 // _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
@@ -84,10 +82,6 @@ namespace Internal.Runtime
                     Debug.Assert(obj != null);
                 }
             } // end of m_Crst lock
-            finally
-            {
-                m_Crst.Release();
-            }
 
             IntPtr result = (IntPtr)obj;
 

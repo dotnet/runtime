@@ -7,7 +7,7 @@ namespace System.Collections.Specialized.Tests
 {
     public class NameValueCollectionGetValuesIntTests
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Theory]
         [InlineData(0)]
         [InlineData(5)]
         public void GetValues_InvalidIndex_ThrowsArgumentOutOfRangeException(int count)

@@ -33,7 +33,6 @@
                                     >true</InstallV8ForTests>
 
     <_BundleAOTTestWasmAppForHelixDependsOn>$(_BundleAOTTestWasmAppForHelixDependsOn);PrepareForWasmBuildApp;_PrepareForAOTOnHelix</_BundleAOTTestWasmAppForHelixDependsOn>
-    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
@@ -46,21 +45,6 @@
   <PropertyGroup Condition="'$(TestTrimming)' == 'true'">
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
-    <!--
-      When building for BuildAOTTestsOnHelix=true, the BrowserWasmApp.targets are *not* imported, because
-      they get instead used by the AOT proxy project on helix.
-
-      On the build machine only the regular part of the build is run, which includes trimming. But if
-      BrowserWasmApp.targets modify any trimming arguments, then those will not get picked up by this build.
-      For example - linker substitution files used with simd builds.
-
-      So, set those parameters explicitly here.
-      -->
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(BrowserProjectRoot)build\ILLink.Substitutions.LegacyJsInterop.xml"</_ExtraTrimmerArgs>
-  </PropertyGroup>
-
 
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
@@ -103,15 +87,15 @@
     <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainAssemblyFileName)' != ''">--run $(WasmMainAssemblyFileName)</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll</_AppArgs>
 
-    <_XUnitBackgroundExec Condition="'$(_XUnitBackgroundExec)' == '' and '$(MonoWasmBuildVariant)' == 'multithread'">true</_XUnitBackgroundExec>
+    <_XUnitBackgroundExec Condition="'$(_XUnitBackgroundExec)' == '' and '$(WasmEnableThreads)' == 'true'">true</_XUnitBackgroundExec>
     <WasmTestAppArgs Condition="'$(_XUnitBackgroundExec)' == 'true'">$(WasmTestAppArgs) -backgroundExec</WasmTestAppArgs>
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=1</WasmXHarnessMonoArgs>
     <!-- snapshots are not yet supported with threads -->
-    <WasmXHarnessMonoArgs Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(WasmXHarnessMonoArgs) --no-memory-snapshot</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --no-memory-snapshot</WasmXHarnessMonoArgs>
     <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
-    <WasmXHarnessMonoArgs Condition="'$(MonoWasmBuildVariant)' == 'multithread'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
+    <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
@@ -120,7 +104,7 @@
 
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
-    <_XHarnessArgs Condition="'$(MonoWasmBuildVariant)' == 'multithread' and '$(_XHarnessArs.Contains(&quot;--web-server-use-cop&quot;)' != 'true'">$(_XHarnessArgs) --web-server-use-cop</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmEnableThreads)' == 'true' and '$(_XHarnessArs.Contains(&quot;--web-server-use-cop&quot;)' != 'true'">$(_XHarnessArgs) --web-server-use-cop</_XHarnessArgs>
     <_XHarnessArgs                                                 >$(_XHarnessArgs) -s dotnet.native.js.symbols</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbol-patterns wasm-symbol-patterns.txt</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
@@ -169,7 +153,7 @@
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.js</WasmMainJSPath>
       <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
       <WasmMainHtmlPath>$(PublishDir)index.html</WasmMainHtmlPath>
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>

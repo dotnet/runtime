@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class CollectionTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public async Task Write_SpecializedCollection()
         {
             Assert.Equal(@"{""Data"":4}", await Serializer.SerializeWrapper(new BitVector32(4)));

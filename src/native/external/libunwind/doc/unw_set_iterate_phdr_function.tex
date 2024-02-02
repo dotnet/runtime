@@ -1,0 +1,57 @@
+\documentclass{article}
+\usepackage[fancyhdr,pdf]{latex2man}
+
+\input{common.tex}
+
+\begin{document}
+
+\begin{Name}{3libunwind}{unw\_set\_iterate\_phdr\_function}{Bert Wesarg}{Programming Library}{unw\_set\_iterate\_phdr\_function}unw\_set\_iterate\_phdr\_function -- set \Func{dl\_iterate\_phdr} implementation
+\end{Name}
+
+\section{Synopsis}
+
+
+\File{\#include $<$libunwind.h$>$}\\
+
+\noindent
+\Type{typedef~int}
+\Func{(*unw\_iterate\_phdr\_callback\_t)}(\Type{struct~dl\_phdr\_info~*},
+        \Type{size\_t}, \Type{void~*});\\
+\noindent
+\Type{typedef~int} \Func{(*unw\_iterate\_phdr\_func\_t)}(\Type{unw\_iterate\_phdr\_callback\_t},
+        \Type{void~*});\\
+
+\noindent
+\Type{void} \Func{unw\_set\_iterate\_phdr\_function}(\Type{unw\_addr\_space\_t}
+        \Var{as}, \Type{unw\_iterate\_phdr\_func\_t} \Var{function});\\
+
+\section{Description}
+
+The \Func{unw\_set\_iterate\_phdr\_function}() routine sets the \Func{dl\_iterate\_phdr} implementation of address space \Var{as} to the function by argument \Var{function}.
+The \Var{function} will be called whenever \Prog{libunwind} needs to iterate over the program headers of the application.
+This is normally done by calling \Func{dl\_iterate\_phdr}, but this function is not signal safe.
+With the help of a custom implementation caching and iterating over the program headers is also possible in an signal-safe manner.
+Though the burden lies on the user of \Prog{libunwind}.
+
+\section{Thread and Signal Safety}
+
+\Func{unw\_set\_iterate\_phdr\_function}() is thread safe.  If the local address space
+is passed in argument \Var{as}, this routine is also safe to use from
+a signal handler.
+
+
+\section{See Also}
+
+\SeeAlso{libunwind}(3libunwind),
+\SeeAlso{unw\_create\_addr\_space}(3libunwind),
+\SeeAlso{dl\_iterate\_phdr}(3libunwind),
+
+\section{Author}
+
+\noindent
+Bert Wesarg\\
+Email: \Email{bert.wesarg@googlemail.com}\\
+WWW: \URL{http://www.nongnu.org/libunwind/}.
+\LatexManEnd
+
+\end{document}

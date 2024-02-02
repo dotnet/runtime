@@ -447,6 +447,7 @@ namespace System.Threading.Tests
                 Monitor.Pulse(obj);
             }
             Monitor.Exit(obj);
+            t.Join(500);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

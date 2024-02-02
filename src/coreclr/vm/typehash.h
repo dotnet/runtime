@@ -26,7 +26,7 @@
 //
 //========================================================================================
 
-DWORD HashTypeKey(TypeKey* pKey);
+DWORD HashTypeKey(const TypeKey* pKey);
 
 // One of these is present for each element in the table
 // It simply chains together (hash,data) pairs
@@ -100,7 +100,7 @@ public:
 
     // Look up a value in the hash table, key explicit in pKey
     // Return a null type handle if not found
-    TypeHandle GetValue(TypeKey* pKey);
+    TypeHandle GetValue(const TypeKey* pKey);
 
     BOOL ContainsValue(TypeHandle th);
 
@@ -134,7 +134,7 @@ public:
 #endif
 
 private:
-    EETypeHashEntry_t * FindItem(TypeKey* pKey);
+    EETypeHashEntry_t * FindItem(const TypeKey* pKey);
     BOOL CompareInstantiatedType(TypeHandle t, Module *pModule, mdTypeDef token, Instantiation inst);
     BOOL CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArgs, TypeHandle *retAndArgTypes);
     BOOL GrowHashTable();

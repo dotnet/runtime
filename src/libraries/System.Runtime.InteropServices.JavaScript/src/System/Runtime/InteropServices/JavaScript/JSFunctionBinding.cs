@@ -170,8 +170,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <exception cref="PlatformNotSupportedException">The method is executed on an architecture other than WebAssembly.</exception>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which IL linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
-        // Same for legacy, but the type could be explicitly trimmed by setting WasmEnableLegacyJsInterop=false which would use ILLink.Descriptors.LegacyJsInterop.xml
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.LegacyExportsTrimmingRoot", "System.Runtime.InteropServices.JavaScript")]
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
@@ -204,7 +202,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             jsFunction.AssertNotDisposed();
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // if we are on correct thread already, just call it
             if (jsFunction.ProxyContext.IsCurrentThread())
             {
@@ -238,7 +236,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
@@ -266,7 +264,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             var targetContext = JSProxyContext.SealJSImportCapturing();
             arguments[0].slot.ContextHandle = targetContext.ContextHandle;
             arguments[1].slot.ContextHandle = targetContext.ContextHandle;
@@ -282,7 +280,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // if we are on correct thread already or this is synchronous call, just call it
             if (targetContext.IsCurrentThread())
             {
@@ -326,7 +324,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             fixed (JSMarshalerArgument* args = arguments)
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 Interop.Runtime.InvokeJSImportSync((nint)args, (nint)signature.Header);
 #else
                 Interop.Runtime.InvokeJSImport(signature.ImportHandle, (nint)args);
@@ -340,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -389,7 +387,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
 
             Interop.Runtime.BindJSImport(signature.Header, out int isException, out object exceptionMessage);
             if (isException != 0)
@@ -417,7 +415,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return signature;
         }
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
         {

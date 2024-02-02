@@ -49,23 +49,6 @@ bool emitter::IsKInstruction(instruction ins)
     return (flags & KInstruction) != 0;
 }
 
-//------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
-// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
-// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
-//
-// Arguments:
-//    ins - The instruction to check.
-//
-// Returns:
-//    `true` if it is a sse or avx or avx512 instruction.
-//
-bool emitter::IsAvx512OrPriorInstruction(instruction ins)
-{
-    // TODO-XArch-AVX512: Fix check once AVX512 instructions are added.
-    return ((ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION));
-}
-
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
@@ -1140,6 +1123,30 @@ static bool isLowSimdReg(regNumber reg)
 }
 
 //------------------------------------------------------------------------
+// GetEmbRoundingMode: Get the rounding mode for embedded rounding
+//
+// Arguments:
+//     mode -- the flag from the corresponding GenTree node indicating the mode.
+//
+// Return Value:
+//   the instruction option carrying the rounding mode information.
+//
+insOpts emitter::GetEmbRoundingMode(uint8_t mode) const
+{
+    switch (mode)
+    {
+        case 1:
+            return INS_OPTS_EVEX_eb_er_rd;
+        case 2:
+            return INS_OPTS_EVEX_er_ru;
+        case 3:
+            return INS_OPTS_EVEX_er_rz;
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // encodeRegAsIval: Encodes a register as an ival for use by a SIMD instruction
 //
 // Arguments
@@ -1280,9 +1287,10 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #define DEFAULT_BYTE_EVEX_PREFIX 0x62F07C0800000000ULL
 
 #define DEFAULT_BYTE_EVEX_PREFIX_MASK 0xFFFFFFFF00000000ULL
+#define BBIT_IN_BYTE_EVEX_PREFIX 0x0000001000000000ULL
 #define LBIT_IN_BYTE_EVEX_PREFIX 0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
-#define EVEX_B_BIT 0x0000001000000000ULL
+#define ZBIT_IN_BYTE_EVEX_PREFIX 0x0000008000000000ULL
 
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
@@ -1309,18 +1317,50 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (attr == EA_32BYTE)
     {
-        // Set L bit to 1 in case of instructions that operate on 256-bits.
+        // Set EVEX.L'L bits to 01 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_BYTE_EVEX_PREFIX;
     }
     else if (attr == EA_64BYTE)
     {
-        // Set L' bits to 11 in case of instructions that operate on 512-bits.
+        // Set EVEX.L'L bits to 10 in case of instructions that operate on 512-bits.
         code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
     }
 
-    if (id->idIsEvexbContext())
+    if (id->idIsEvexbContextSet())
     {
-        code |= EVEX_B_BIT;
+        code |= BBIT_IN_BYTE_EVEX_PREFIX;
+
+        if (!id->idHasMem())
+        {
+            // embedded rounding case.
+            unsigned roundingMode = id->idGetEvexbContext();
+            if (roundingMode == 1)
+            {
+                // {rd-sae}
+                code &= ~(LPRIMEBIT_IN_BYTE_EVEX_PREFIX);
+                code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            }
+            else if (roundingMode == 2)
+            {
+                // {ru-sae}
+                code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+                code &= ~(LBIT_IN_BYTE_EVEX_PREFIX);
+            }
+            else if (roundingMode == 3)
+            {
+                // {rz-sae}
+                code |= LPRIMEBIT_IN_BYTE_EVEX_PREFIX;
+                code |= LBIT_IN_BYTE_EVEX_PREFIX;
+            }
+            else
+            {
+                unreached();
+            }
+        }
+        else
+        {
+            assert(id->idGetEvexbContext() == 1);
+        }
     }
 
     regNumber maskReg = REG_NA;
@@ -1329,6 +1369,8 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         case IF_RWR_RRD_ARD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
+
             CnsVal cnsVal;
             emitGetInsAmdCns(id, &cnsVal);
 
@@ -1338,6 +1380,8 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_MRD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
+
             CnsVal cnsVal;
             emitGetInsDcmCns(id, &cnsVal);
 
@@ -1347,6 +1391,8 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_SRD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
+
             CnsVal cnsVal;
             emitGetInsCns(id, &cnsVal);
 
@@ -1356,12 +1402,24 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_RRD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
             maskReg = id->idReg4();
             break;
         }
 
         default:
         {
+            unsigned aaaContext = id->idGetEvexAaaContext();
+
+            if (aaaContext != 0)
+            {
+                maskReg = static_cast<regNumber>(aaaContext + KBASE);
+
+                if (id->idIsEvexZContextSet())
+                {
+                    code |= ZBIT_IN_BYTE_EVEX_PREFIX;
+                }
+            }
             break;
         }
     }
@@ -4050,10 +4108,11 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)                               // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx)
+               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_cmpxchg)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
-        size = 3;
+
+        size = (attrSize == EA_2BYTE) && (ins == INS_cmpxchg) ? 4 : 3;
     }
     else
     {
@@ -4113,9 +4172,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
 
         // If this is just "call reg", we're done.
-        if (id->idIsCallRegPtr())
+        if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
         {
-            assert(ins == INS_call || ins == INS_tail_i_jmp);
             assert(dsp == 0);
             return size;
         }
@@ -4428,6 +4486,22 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
             return id;
         }
     }
+}
+
+/*****************************************************************************
+*
+*  Add a data16 instruction of the 1 byte.
+*/
+
+void emitter::emitIns_Data16()
+{
+    instrDesc* id = emitNewInstrSmall(emitAttr::EA_1BYTE);
+    id->idIns(INS_data16);
+    id->idInsFmt(IF_NONE);
+    id->idCodeSize(1);
+
+    dispIns(id);
+    emitCurIGsize += 1;
 }
 
 /*****************************************************************************
@@ -5702,10 +5776,17 @@ void emitter::emitIns_R_I(instruction ins,
             break;
     }
 
-    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(attr))
+    if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-        id                      = emitNewInstrCns(attr, val);
-        id->idAddr()->iiaSecRel = true;
+        if (EA_IS_CNS_SEC_RELOC(attr))
+        {
+            id                      = emitNewInstrCns(attr, val);
+            id->idAddr()->iiaSecRel = true;
+        }
+        else
+        {
+            id = emitNewInstrSC(attr, val);
+        }
     }
     else
     {
@@ -6742,11 +6823,9 @@ void emitter::emitIns_R_R_A(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    if (instOptions == INS_OPTS_EVEX_b)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext();
-    }
+
+    SetEvexBroadcastIfNeeded(id, instOptions);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
@@ -6871,11 +6950,9 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
-    if (instOptions == INS_OPTS_EVEX_b)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext();
-    }
+
+    SetEvexBroadcastIfNeeded(id, instOptions);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6889,7 +6966,8 @@ void emitter::emitIns_R_R_C(instruction          ins,
 *  Add an instruction with three register operands.
 */
 
-void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2)
+void emitter::emitIns_R_R_R(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
@@ -6900,6 +6978,14 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
     id->idReg1(targetReg);
     id->idReg2(reg1);
     id->idReg3(reg2);
+
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) != 0)
+    {
+        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
+    }
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6922,11 +7008,9 @@ void emitter::emitIns_R_R_S(
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
-    if (instOptions == INS_OPTS_EVEX_b)
-    {
-        assert(UseEvexEncoding());
-        id->idSetEvexbContext();
-    }
+    SetEvexBroadcastIfNeeded(id, instOptions);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
+
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
@@ -7326,7 +7410,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
     noway_assert(emitVerifyEncodable(ins, size, reg));
 
     instrDesc* id  = emitNewInstrDsp(attr, offs);
-    insFormat  fmt = emitInsModeFormat(ins, IF_MRD_RRD);
+    insFormat  fmt = (ins == INS_xchg) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -7672,6 +7756,10 @@ void emitter::emitIns_R_AI(instruction ins,
 
     id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
+    if (EA_IS_CNS_TLSGD_RELOC(attr))
+    {
+        id->idSetTlsGD();
+    }
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
@@ -7985,7 +8073,7 @@ void emitter::emitIns_ARX_R(
     }
     else
     {
-        fmt = emitInsModeFormat(ins, IF_ARD_RRD);
+        fmt = (ins == INS_xchg) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
 
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
         assert(!CodeGen::instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE));
@@ -8098,7 +8186,7 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
     }
     else
     {
-        fmt = emitInsModeFormat(ins, IF_ARD_RRD);
+        fmt = (ins == INS_xchg) ? IF_ARW_RRW : emitInsModeFormat(ins, IF_ARD_RRD);
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
         assert((CodeGen::instIsFP(ins) == false) && (EA_SIZE(attr) <= EA_8BYTE));
 
@@ -8224,11 +8312,11 @@ void emitter::emitIns_SIMD_R_R_C(instruction          ins,
 //    op2Reg    -- The register of the second operand
 //
 void emitter::emitIns_SIMD_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, insOpts instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg);
+        emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
     }
     else
     {
@@ -8968,7 +9056,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
-    insFormat fmt = emitInsModeFormat(ins, IF_SRD_RRD);
+    insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
     {
         return;
@@ -9394,8 +9482,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
     /* Sanity check the arguments depending on callType */
 
     assert(callType < EC_COUNT);
-    assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_TOKEN_INDIR) ||
-           (addr != nullptr && ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
+    if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_TOKEN_INDIR) ||
+               (addr != nullptr && ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
+    }
     assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
     assert(callType != EC_INDIR_ARD || (addr == nullptr));
 
@@ -9573,7 +9664,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         assert(callType == EC_FUNC_TOKEN);
 
-        assert(addr != nullptr);
+        assert(addr != nullptr || emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         id->idInsFmt(IF_METHOD);
         sz = 5;
@@ -9584,6 +9675,12 @@ void emitter::emitIns_Call(EmitCallType          callType,
         if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
         {
             id->idSetIsDspReloc();
+
+            if ((size_t)methHnd == 1)
+            {
+                id->idSetTlsGD();
+                sz += 1; // For REX.W prefix
+            }
         }
     }
 
@@ -10656,13 +10753,66 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 //
 void emitter::emitDispEmbBroadcastCount(instrDesc* id)
 {
-    if (!id->idIsEvexbContext())
+    if (!id->idIsEvexbContextSet())
     {
         return;
     }
     ssize_t baseSize   = GetInputSizeInBytes(id);
     ssize_t vectorSize = (ssize_t)emitGetBaseMemOpSize(id);
     printf(" {1to%d}", vectorSize / baseSize);
+}
+
+// emitDispEmbRounding: Display the tag where embedded rounding is activated
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbRounding(instrDesc* id)
+{
+    if (!id->idIsEvexbContextSet())
+    {
+        return;
+    }
+    assert(!id->idHasMem());
+    unsigned roundingMode = id->idGetEvexbContext();
+    if (roundingMode == 1)
+    {
+        printf(" {rd-sae}");
+    }
+    else if (roundingMode == 2)
+    {
+        printf(" {ru-sae}");
+    }
+    else if (roundingMode == 3)
+    {
+        printf(" {rz-sae}");
+    }
+    else
+    {
+        unreached();
+    }
+}
+
+// emitDispEmbMasking: Display the tag where embedded masking is activated
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbMasking(instrDesc* id)
+{
+    regNumber maskReg = static_cast<regNumber>(id->idGetEvexAaaContext() + KBASE);
+
+    if (maskReg == REG_K0)
+    {
+        return;
+    }
+
+    printf(" {%s}", emitRegName(maskReg));
+
+    if (id->idIsEvexZContextSet())
+    {
+        printf(" {z}");
+    }
 }
 
 //--------------------------------------------------------------------
@@ -10913,7 +11063,7 @@ void emitter::emitDispIns(
         case IF_AWR:
         case IF_ARW:
         {
-            if (id->idIsCallRegPtr())
+            if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
             {
                 printf("%s", emitRegName(id->idAddr()->iiaAddrMode.amBaseReg));
             }
@@ -11064,7 +11214,9 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_ARD:
         case IF_RWR_RWR_ARD:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
             emitDispEmbBroadcastCount(id);
             break;
@@ -11132,6 +11284,7 @@ void emitter::emitDispIns(
         case IF_ARD_RRD:
         case IF_AWR_RRD:
         case IF_ARW_RRD:
+        case IF_ARW_RRW:
         {
             printf("%s", sstr);
             emitDispAddrMode(id);
@@ -11206,6 +11359,7 @@ void emitter::emitDispIns(
         case IF_SRD_RRD:
         case IF_SWR_RRD:
         case IF_SRW_RRD:
+        case IF_SRW_RRW:
         {
             printf("%s", sstr);
 
@@ -11336,7 +11490,9 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_SRD:
         case IF_RWR_RWR_SRD:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
             emitDispEmbBroadcastCount(id);
@@ -11530,9 +11686,11 @@ void emitter::emitDispIns(
                 reg2          = reg3;
                 reg3          = tmp;
             }
-            printf("%s, ", emitRegName(id->idReg1(), attr));
-            printf("%s, ", emitRegName(reg2, attr));
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, ", emitRegName(reg2, attr));
             printf("%s", emitRegName(reg3, attr));
+            emitDispEmbRounding(id);
             break;
         }
 
@@ -11841,7 +11999,9 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_MRD:
         case IF_RWR_RWR_MRD:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbBroadcastCount(id);
@@ -11904,6 +12064,7 @@ void emitter::emitDispIns(
         case IF_MRD_RRD:
         case IF_MWR_RRD:
         case IF_MRW_RRD:
+        case IF_MRW_RRW:
         {
             printf("%s", sstr);
             offs = emitGetInsDsp(id);
@@ -12076,6 +12237,22 @@ void emitter::emitDispIns(
 #endif
 
     printf("\n");
+}
+
+/*****************************************************************************
+ *
+ *  Output 0x66 byte of `data16` instructions
+ */
+
+BYTE* emitter::emitOutputData16(BYTE* dst)
+{
+#ifdef TARGET_AMD64
+    BYTE* dstRW = dst + writeableOffset;
+    *dstRW++    = 0x66;
+    return dstRW - writeableOffset;
+#else
+    return dst;
+#endif
 }
 
 /*****************************************************************************
@@ -12596,6 +12773,11 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
+        if ((size == EA_2BYTE) && (ins == INS_cmpxchg))
+        {
+            dst += emitOutputByte(dst, 0x66);
+        }
+
         // BT supports 16 bit operands and this code doesn't handle the necessary 66 prefix.
         assert(ins != INS_bt);
 
@@ -12773,8 +12955,17 @@ GOT_DSP:
 #else
                     dst += emitOutputLong(dst, dsp);
 #endif
-                    emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_DISP32,
-                                                      addlDelta);
+                    if (!IsAvx512OrPriorInstruction(ins) && id->idIsTlsGD())
+                    {
+                        addlDelta = -4;
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
+                                                          addlDelta);
+                    }
+                    else
+                    {
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp,
+                                                          IMAGE_REL_BASED_DISP32, addlDelta);
+                    }
                 }
                 else
                 {
@@ -13224,6 +13415,7 @@ DONE:
                 break;
 
             case IF_ARW_RRD:
+            case IF_ARW_RRW:
             case IF_ARW_CNS:
             case IF_ARW_SHF:
                 if (id->idGCref() == GCT_BYREF)
@@ -13416,6 +13608,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
+        if ((size == EA_2BYTE) && (ins == INS_cmpxchg))
+        {
+            dst += emitOutputByte(dst, 0x66);
+        }
+
         // BT supports 16 bit operands and this code doesn't add the necessary 66 prefix.
         assert(ins != INS_bt);
 
@@ -13707,6 +13904,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
             case IF_SRW_CNS:
             case IF_SRW_RRD:
+            case IF_SRW_RRW:
             // += -= of a byref, no change
 
             case IF_SRW:
@@ -13930,6 +14128,11 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
     else if (code & 0x00FF0000)
     {
+        if ((size == EA_2BYTE) && (ins == INS_cmpxchg))
+        {
+            dst += emitOutputByte(dst, 0x66);
+        }
+
         // Output the REX prefix
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
@@ -14177,6 +14380,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             case IF_MRD_RRD:
             case IF_MWR_RRD:
             case IF_MRW_RRD:
+            case IF_MRW_RRW:
                 break;
 
             case IF_MRD_CNS:
@@ -15106,10 +15310,13 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
-                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
-                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
+                if (id->idAddr()->iiaSecRel)
+                {
+                    // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
+                    emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
+                }
             }
             else
             {
@@ -16157,6 +16364,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 break;
             }
 
+            if (ins == INS_data16)
+            {
+                dst = emitOutputData16(dst);
+                sz  = emitSizeOfInsDsc_NONE(id);
+                break;
+            }
+
             // the cdq instruction kills the EDX register implicitly
             if (ins == INS_cdq)
             {
@@ -16348,7 +16562,24 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(id->idInsFmt() == IF_METHOD);
 
             // Output the call opcode followed by the target distance
-            dst += (ins == INS_l_jmp) ? emitOutputByte(dst, insCode(ins)) : emitOutputByte(dst, insCodeMI(ins));
+            if (ins == INS_l_jmp)
+            {
+                dst += emitOutputByte(dst, insCode(ins));
+            }
+            else
+            {
+                assert(ins == INS_call);
+                code_t callCode = insCodeMI(ins);
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+                {
+                    callCode = (callCode << 8) | 0x48; // REX.W prefix
+                    dst += emitOutputWord(dst, callCode);
+                }
+                else
+                {
+                    dst += emitOutputByte(dst, callCode);
+                }
+            }
 
             ssize_t offset;
 #ifdef TARGET_AMD64
@@ -16454,7 +16685,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
 #ifdef DEBUG
-            if (ins == INS_call)
+            if ((ins == INS_call) && !id->idIsTlsGD())
             {
                 emitRecordCallSite(emitCurCodeOffs(*dp), id->idDebugOnlyInfo()->idCallSig,
                                    (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
@@ -16895,6 +17126,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_ARD_RRD:
         case IF_AWR_RRD:
         case IF_ARW_RRD:
+        case IF_ARW_RRW:
         {
             code = insCodeMR(ins);
 
@@ -17159,6 +17391,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SRD_RRD:
         case IF_SWR_RRD:
         case IF_SRW_RRD:
+        case IF_SRW_RRW:
         {
             code = insCodeMR(ins);
 
@@ -17442,6 +17675,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MRD_RRD:
         case IF_MWR_RRD:
         case IF_MRW_RRD:
+        case IF_MRW_RRW:
         {
             code = insCodeMR(ins);
 
@@ -17883,6 +18117,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 #endif
             FALLTHROUGH;
 
+        case INS_data16:
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);

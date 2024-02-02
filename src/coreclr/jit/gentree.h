@@ -453,7 +453,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_LIVENESS_MASK     = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_ITERATOR      = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
     GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
@@ -471,6 +470,7 @@ enum GenTreeFlags : unsigned int
     GTF_CALL_NULLCHECK          = 0x08000000, // GT_CALL -- must check instance pointer for null
     GTF_CALL_POP_ARGS           = 0x04000000, // GT_CALL -- caller pop arguments?
     GTF_CALL_HOISTABLE          = 0x02000000, // GT_CALL -- call is hoistable
+    GTF_TLS_GET_ADDR            = 0x01000000, // GT_CALL -- call is tls_get_addr
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
@@ -503,7 +503,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
-    GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
@@ -537,6 +536,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
     GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
+    GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
@@ -556,6 +556,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -884,7 +887,7 @@ public:
 
     bool isContainedVecImmed() const
     {
-        return isContained() && OperIs(GT_CNS_VEC);
+        return isContained() && IsCnsVec();
     }
 
     bool isLclField() const
@@ -1486,7 +1489,8 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
-    bool isEvexCompatibleHWIntrinsic();
+    bool isEvexCompatibleHWIntrinsic() const;
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1503,7 +1507,12 @@ public:
         return false;
     }
 
-    bool isEvexCompatibleHWIntrinsic()
+    bool isEvexCompatibleHWIntrinsic() const
+    {
+        return false;
+    }
+
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
     {
         return false;
     }
@@ -2231,6 +2240,22 @@ public:
         assert(gtOper == GT_CNS_INT);
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    bool IsEmbMaskOp()
+    {
+        bool result = (gtFlags & GTF_HW_EM_OP) != 0;
+        assert(!result || (gtOper == GT_HWINTRINSIC));
+        return result;
+    }
+
+    void MakeEmbMaskOp()
+    {
+        assert(!IsEmbMaskOp());
+        gtFlags |= GTF_HW_EM_OP;
+    }
+
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
     bool IsCall() const
     {
@@ -4080,6 +4105,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x01000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x02000000, // ldvirtftn on an interface type
+    GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x04000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4538,6 +4564,15 @@ public:
 #else
         return isValidFloatArgReg(GetRegNum());
 #endif
+    }
+
+    bool IsMismatchedArgType() const
+    {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+#else
+        return false;
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
     void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
@@ -5527,7 +5562,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -5588,8 +5623,9 @@ struct GenTreeCall final : public GenTree
 
     CORINFO_CLASS_HANDLE gtRetClsHnd; // The return type handle of the call if it is a struct; always available
     union {
-        void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
-        CORINFO_CLASS_HANDLE gtInitClsHnd;       // Used by static init helpers, represents a class they init
+        void*                gtStubCallStubAddr;   // GTF_CALL_VIRT_STUB - these are never inlined
+        CORINFO_CLASS_HANDLE gtInitClsHnd;         // Used by static init helpers, represents a class they init
+        IL_OFFSET            gtCastHelperILOffset; // Used by cast helpers to save corresponding IL offset
     };
 
     union {
@@ -6310,6 +6346,7 @@ public:
 };
 
 #ifdef FEATURE_HW_INTRINSICS
+
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
     GenTreeHWIntrinsic(var_types              type,
@@ -7436,10 +7473,7 @@ public:
     GenTreeStoreDynBlk(GenTree* dstAddr, GenTree* data, GenTree* dynamicSize)
         : GenTreeBlk(GT_STORE_DYN_BLK, TYP_VOID, dstAddr, data, nullptr), gtDynamicSize(dynamicSize)
     {
-        // Conservatively the 'dstAddr' could be null or point into the global heap.
-        // Likewise, this is a store and so must be marked with the GTF_ASG flag.
-        gtFlags |= (GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
-        gtFlags |= (dynamicSize->gtFlags & GTF_ALL_EFFECT);
+        gtFlags |= dynamicSize->gtFlags & GTF_ALL_EFFECT;
     }
 
 #if DEBUGGABLE_GENTREE
@@ -8910,7 +8944,6 @@ inline bool GenTree::OperIsCopyBlkOp()
 //    long constants in a target-independent way.
 
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const
-
 {
     if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
     {
@@ -9061,7 +9094,7 @@ inline bool GenTree::IsVectorCreate() const
 inline bool GenTree::IsVectorAllBitsSet() const
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return AsVecCon()->IsAllBitsSet();
     }
@@ -9079,7 +9112,7 @@ inline bool GenTree::IsVectorAllBitsSet() const
 inline bool GenTree::IsVectorConst()
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return true;
     }
@@ -9328,9 +9361,9 @@ inline GenTree* GenTree::gtCommaStoreVal()
 inline GenTree* GenTree::gtSkipReloadOrCopy()
 {
     // There can be only one reload or copy (we can't have a reload/copy of a reload/copy)
-    if (gtOper == GT_RELOAD || gtOper == GT_COPY)
+    if (OperIs(GT_RELOAD, GT_COPY))
     {
-        assert(gtGetOp1()->OperGet() != GT_RELOAD && gtGetOp1()->OperGet() != GT_COPY);
+        assert(!gtGetOp1()->OperIs(GT_RELOAD, GT_COPY));
         return gtGetOp1();
     }
     return this;

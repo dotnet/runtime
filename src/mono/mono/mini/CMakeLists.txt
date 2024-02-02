@@ -314,6 +314,7 @@ set(interp_sources
     interp/mintops.h
     interp/mintops.c
     interp/transform.c
+    interp/transform-opt.c
     interp/tiering.h
     interp/tiering.c
     interp/jiterpreter.c

@@ -62,6 +62,10 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
         str         r3, [r1, #OFFSETOF__ExInfo__m_pPrevExInfo]      // pExInfo->m_pPrevExInfo = m_pExInfoStackHead
         str         r1, [r0, #OFFSETOF__Thread__m_pExInfoStackHead] // m_pExInfoStackHead = pExInfo
 
+        // set the exception context field on the ExInfo
+        add         r2, sp, #rsp_offsetof_Context                   // r2 <- PAL_LIMITED_CONTEXT*
+        str         r2, [r1, #OFFSETOF__ExInfo__m_pExContext]       // pExInfo->m_pExContext = pContext
+
         mov         r0, r4 	        // restore the exception code
         // r0 contains the exception code
         // r1 contains the address of the ExInfo
@@ -262,6 +266,7 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
 	                                   // REGDISPLAY and ExInfo later
         PROLOG_VPUSH {d8-d15}
 
+#define rsp_offset_r0 (8 * 8)
 #define rsp_offset_r2 (8 * 8) + 4
 #define rsp_offset_r3 (8 * 8) + 8
 
@@ -317,7 +322,7 @@ LOCAL_LABEL(ClearSuccess_Catch):
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
 
-        mov         r4, r0    // Save the result
+        str         r0, [sp, #rsp_offset_r0]             // Save the result
 
         INLINE_GETTHREAD                                 // r0 <- Thread*
         // We must unhijack the thread at this point because the section of stack where the
@@ -337,9 +342,11 @@ LOCAL_LABEL(DonePopping):
 
         str         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]   // store the new head on the Thread
 
+        ldr         r0, [sp, #rsp_offset_r0]             // Load the result
+
         // reset RSP and jump to the continuation address
         mov         sp, r2
-        bx          r4
+        bx          r0
 
 NESTED_END RhpCallCatchFunclet, _TEXT
 

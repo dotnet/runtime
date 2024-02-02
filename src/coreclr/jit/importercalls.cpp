@@ -2788,7 +2788,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_EETypePtr_EETypePtrOf:
                 betterToExpand = true;
                 break;
 
@@ -2981,7 +2980,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_Internal_Runtime_MethodTable_Of:
             case NI_System_Activator_AllocatorOf:
             case NI_System_Activator_DefaultConstructorOf:
-            case NI_System_EETypePtr_EETypePtrOf:
             {
                 assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI)); // Only NativeAOT supports it.
                 CORINFO_RESOLVED_TOKEN resolvedToken;
@@ -3440,15 +3438,22 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
+
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+                else if (genTypeSize(retType) < 4)
+                {
+                    break;
+                }
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
-                    // Intrinsify "object" overload in case of null assignment
+                    // Intrinsify "object" overload in case of null or NonGC assignment
                     // since we don't need the write barrier.
                 }
                 else if (!varTypeIsIntegral(retType))
@@ -3473,15 +3478,23 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 2);
 
                 var_types retType = JITtype2varType(sig->retType);
+                assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
+
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+                else if (genTypeSize(retType) < 4)
+                {
+                    break;
+                }
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
-                    // Intrinsify "object" overload in case of null assignment
+                    // Intrinsify "object" overload in case of null or NonGC assignment
                     // since we don't need the write barrier.
                     assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
@@ -3544,7 +3557,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree* res =
                         gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
 
-                    retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callJitType, 16);
+                    retNode = gtNewSimdToScalarNode(callType, res, callJitType, 16);
                     break;
                 }
 #elif defined(TARGET_ARM64)
@@ -3568,7 +3581,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
                                                        callJitType, 8);
 
-                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callJitType, 8);
+                    retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 8);
                     break;
                 }
 #endif
@@ -5592,7 +5605,8 @@ void Compiler::impCheckForPInvokeCall(
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
         unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
-        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
+        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction ||
+        unmanagedCallConv == CorInfoCallConvExtension::Swift)
     {
         return;
     }
@@ -8480,7 +8494,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                     retNode->AsHWIntrinsic()->Op(2) = op1;
                 }
 
-                return gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector128_ToScalar, callJitType, 16);
+                return gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
             }
         }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
@@ -8645,7 +8659,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                                            callJitType, 16);
         }
 
-        return gtNewSimdHWIntrinsicNode(callType, tmp, NI_Vector128_ToScalar, callJitType, 16);
+        return gtNewSimdToScalarNode(callType, tmp, callJitType, 16);
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
@@ -8828,13 +8842,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "HasFlag") == 0)
                         {
                             result = NI_System_Enum_HasFlag;
-                        }
-                    }
-                    else if (strcmp(className, "EETypePtr") == 0)
-                    {
-                        if (strcmp(methodName, "EETypePtrOf") == 0)
-                        {
-                            result = NI_System_EETypePtr_EETypePtrOf;
                         }
                     }
                     break;

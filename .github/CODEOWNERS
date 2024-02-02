@@ -62,30 +62,39 @@
 /src/mono/dlls @thaystg @lambdageek
 
 /src/native/public/mono @marek-safar @lambdageek
+/src/native/external/libunwind @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
+/src/native/external/libunwind_extras @janvorli @AaronRobinsonMSFT @dotnet/dotnet-diag
 
-/src/libraries/sendtohelix-browser.targets @radical
-/src/libraries/sendtohelix-wasm.targets @radical
-/src/libraries/sendtohelix-wasi.targets @radical
-/src/mono/wasm @lewing @pavelsavara @kg
-/src/mono/wasm/debugger @thaystg @radical
-/src/mono/wasm/build @radical
+/src/libraries/sendtohelix-browser.targets @akoeplinger
+/src/libraries/sendtohelix-wasm.targets @akoeplinger
+/src/libraries/sendtohelix-wasi.targets @akoeplinger
+/src/mono/browser @lewing @pavelsavara
+/src/mono/wasi @lewing @pavelsavara
+/src/mono/wasm @lewing @pavelsavara
+/src/mono/wasm/debugger @thaystg @ilonatommy
+/src/mono/browser/debugger @thaystg @ilonatommy
+/src/mono/wasm/build @maraf @akoeplinger
+/src/mono/wasi/build @maraf @akoeplinger
+/src/mono/browser/build @maraf @akoeplinger
 /src/mono/sample/wasm @lewing @pavelsavara
+/src/mono/sample/wasi @lewing @pavelsavara
 /src/libraries/System.Runtime.InteropServices.JavaScript @lewing @pavelsavara
 
-/src/mono/nuget/*WebAssembly*/ @lewing @radical
-/src/mono/nuget/*MonoTargets*/ @lewing @radical
-/src/mono/nuget/*BrowserDebugHost*/ @lewing @radical
-/src/mono/nuget/*Workload.Mono.Toolchain*/ @lewing @radical
-/src/mono/nuget/*MonoAOTCompiler*/ @lewing @radical
+/src/mono/nuget/*WebAssembly*/ @lewing @akoeplinger
+/src/mono/nuget/*MonoTargets*/ @lewing @akoeplinger
+/src/mono/nuget/*BrowserDebugHost*/ @lewing @akoeplinger
+/src/mono/nuget/*Workload.Mono.Toolchain*/ @lewing @akoeplinger
+/src/mono/nuget/*MonoAOTCompiler*/ @lewing @akoeplinger
 
-/src/mono/wasm/Wasm* @radical
-/src/mono/wasm/testassets @radical
-/src/tasks/WasmAppBuilder/ @radical
-/src/tasks/WorkloadBuildTasks/ @radical
-/src/tasks/AotCompilerTask/ @radical
-/src/tasks/WasmBuildTasks/ @radical
+/src/mono/wasm/Wasm* @maraf @ilonatommy
+/src/mono/wasm/testassets @maraf @ilonatommy
+/src/mono/wasi/testassets @maraf @ilonatommy
+/src/tasks/WasmAppBuilder/ @maraf @akoeplinger
+/src/tasks/WorkloadBuildTasks/ @akoeplinger
+/src/tasks/AotCompilerTask/ @akoeplinger
+/src/tasks/WasmBuildTasks/ @maraf @akoeplinger
 
-/eng/pipelines/**/*wasm* @radical
+/eng/pipelines/**/*wasm* @akoeplinger
 
 # ILLink codeowners
 /src/tools/illink/ @marek-safar

@@ -1712,6 +1712,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (!COMPILE_LLVM (cfg))
 				return NULL;
 #endif
+			if (COMPILE_LLVM (cfg)) {
+				/*
+				 * The sregs are half size, and the dreg is full size
+				 * which can cause problems if mono_handle_global_vregs () is trying to
+				 * spill them since it uses ins->klass to create the variable.
+				 * So create variables for them here.
+				 * This is not a problem for the JIT since that only has 1 simd type right now.
+				 */
+				mono_compile_create_var_for_vreg (cfg, fsig->params [0], OP_LOCAL, args [0]->dreg);
+				mono_compile_create_var_for_vreg (cfg, fsig->params [1], OP_LOCAL, args [1]->dreg);
+			}
+
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		}
 		else if (is_elementwise_create_overload (fsig, etype))

@@ -5192,6 +5192,7 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<uint> Abs(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> Abs(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Add(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> Add(System.Runtime.Intrinsics.Vector512<double> left, System.Runtime.Intrinsics.Vector512<double> right, [System.Diagnostics.CodeAnalysis.ConstantExpected(Max = System.Runtime.Intrinsics.X86.FloatRoundingMode.ToZero)] System.Runtime.Intrinsics.X86.FloatRoundingMode mode) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> Add(System.Runtime.Intrinsics.Vector512<int> left, System.Runtime.Intrinsics.Vector512<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> Add(System.Runtime.Intrinsics.Vector512<long> left, System.Runtime.Intrinsics.Vector512<long> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> Add(System.Runtime.Intrinsics.Vector512<float> left, System.Runtime.Intrinsics.Vector512<float> right) { throw null; }
@@ -6025,6 +6026,13 @@ namespace System.Runtime.Intrinsics.X86
         OrderedGreaterThanOrEqualNonSignaling = (byte)29,
         OrderedGreaterThanNonSignaling = (byte)30,
         UnorderedTrueSignaling = (byte)31,
+    }
+    public enum FloatRoundingMode : byte
+    {
+        ToEven = 0x08,
+        ToNegativeInfinity = 0x09,
+        ToPositiveInfinity = 0x0A,
+        ToZero = 0x0B,
     }
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Fma : System.Runtime.Intrinsics.X86.Avx

@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         private JSProxyContext()
         {
         }
@@ -62,7 +62,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         #region Current operation context
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         public static readonly JSProxyContext MainThreadContext = new();
         public static JSProxyContext CurrentThreadContext => MainThreadContext;
         public static JSProxyContext CurrentOperationContext => MainThreadContext;
@@ -229,7 +229,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JSProxyContext AssertIsInteropThread()
         {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             var ctx = CurrentThreadContext;
             if (ctx == null)
             {
@@ -436,7 +436,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
             var ctx = proxy.ProxyContext;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             if (!ctx.IsCurrentThread())
             {
                 throw new InvalidOperationException($"ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy. ManagedThreadId: {Environment.CurrentManagedThreadId} JSHandle: {proxy.JSHandle}");
@@ -469,69 +469,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
         #endregion
 
-        #region Legacy
-
-        // legacy
-        public void RegisterCSOwnedObject(JSObject proxy)
-        {
-            lock (this)
-            {
-                ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-            }
-        }
-
-        // legacy
-        public JSObject? GetCSOwnedObjectByJSHandle(nint jsHandle, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                if (ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? jsObject);
-                    if (shouldAddInflight != 0)
-                    {
-                        jsObject?.AddInFlight();
-                    }
-                    return jsObject;
-                }
-            }
-            return null;
-        }
-
-        // legacy
-        public JSObject CreateCSOwnedProxy(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                JSObject? res = null;
-                if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
-                !reference.TryGetTarget(out res) ||
-                res.IsDisposed)
-                {
-#pragma warning disable CS0612 // Type or member is obsolete
-                    res = mappedType switch
-                    {
-                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle, JSProxyContext.MainThreadContext),
-                        LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
-                        LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
-                        LegacyHostImplementation.MappedType.Function => new Function(jsHandle),
-                        LegacyHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
-                        _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
-                    };
-#pragma warning restore CS0612 // Type or member is obsolete
-                    ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
-                if (shouldAddInflight != 0)
-                {
-                    res.AddInFlight();
-                }
-                return res;
-            }
-        }
-
-        #endregion
-
         #region Dispose
 
         private void Dispose(bool disposing)
@@ -540,7 +477,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!_isDisposed)
                 {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                     if (!IsCurrentThread())
                     {
                         Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
@@ -557,7 +494,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                     }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                     Interop.Runtime.UninstallWebWorkerInterop();
 #endif
 
@@ -581,7 +518,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                     if (disposing)
                     {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                         SynchronizationContext.Dispose();
 #endif
                     }

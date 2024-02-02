@@ -298,6 +298,9 @@
   #define B_DIST_SMALL_MAX_NEG  (-4096)
   #define B_DIST_SMALL_MAX_POS  (+4095)
 
+  // The number of bytes from the end the last probed page that must also be probed, to allow for some
+  // small SP adjustments without probes. If zero, then the stack pointer can point to the last byte/word
+  // on the stack guard page, and must be touched before any further "SUB SP".
   #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
 // clang-format on

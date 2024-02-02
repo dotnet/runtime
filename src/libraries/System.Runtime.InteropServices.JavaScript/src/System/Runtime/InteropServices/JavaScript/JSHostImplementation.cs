@@ -147,7 +147,7 @@ namespace System.Runtime.InteropServices.JavaScript
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             signature.ImportHandle = (int)Interlocked.Increment(ref JSFunctionBinding.nextImportHandle);
 #else
             signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
@@ -208,7 +208,7 @@ namespace System.Runtime.InteropServices.JavaScript
             AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
         }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
         private static extern ref bool GetThreadExternalEventloop(Thread @this);
 

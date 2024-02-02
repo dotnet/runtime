@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 using System.Threading;
 using System.Threading.Channels;
@@ -49,6 +49,7 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
+            Monitor.ThrowOnBlockingWaitOnJSInteropThread = true;
 
             var proxyContext = ctx.ProxyContext;
             JSProxyContext.CurrentThreadContext = proxyContext;
@@ -89,12 +90,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // this will runtimeKeepalivePop()
             // and later maybeExit() -> __emscripten_thread_exit()
+            // this will also call JSSynchronizationContext.Dispose() on this instance
             jsProxyContext.Dispose();
 
             JSProxyContext.CurrentThreadContext = null;
             JSProxyContext.ExecutionContext = null;
             _isRunning = false;
-            Dispose();
         }
 
         public JSSynchronizationContext(bool isMainThread, CancellationToken cancellationToken)
@@ -215,7 +216,16 @@ namespace System.Runtime.InteropServices.JavaScript
                     Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 }
 
-                signal.Wait();
+                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
+                try
+                {
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
+                    signal.Wait();
+                }
+                finally
+                {
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
+                }
 
                 if (_isCancellationRequested)
                 {
@@ -276,24 +286,22 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private void Dispose(bool disposing)
+
+        internal void Dispose()
         {
             if (!_isDisposed)
             {
-                if (disposing)
+                _isCancellationRequested = true;
+                Queue.Writer.TryComplete();
+                while (Queue.Reader.TryRead(out var item))
                 {
-                    Queue.Writer.TryComplete();
+                    // the Post is checking _isCancellationRequested after .Wait()
+                    item.Signal?.Set();
                 }
                 _isDisposed = true;
                 _cancellationTokenRegistration.Dispose();
                 previousSynchronizationContext = null;
             }
-        }
-
-        internal void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

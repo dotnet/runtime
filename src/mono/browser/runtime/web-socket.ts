@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
@@ -47,8 +47,14 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     verifyEnvironment();
     assert_js_interop();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
-
-    const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    let ws: WebSocketExtension;
+    try {
+        ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
+    }
+    catch (e) {
+        mono_log_warn("WebSocket error", e);
+        throw e;
+    }
     const { promise_control: open_promise_control } = createPromiseController<WebSocketExtension>();
 
     ws[wasm_ws_pending_receive_event_queue] = new Queue();
@@ -60,20 +66,20 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     ws.binaryType = "arraybuffer";
     const local_on_open = () => {
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
         open_promise_control.resolve(ws);
         prevent_timer_throttling();
     };
     const local_on_message = (ev: MessageEvent) => {
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
         _mono_wasm_web_socket_on_message(ws, ev);
         prevent_timer_throttling();
     };
     const local_on_close = (ev: CloseEvent) => {
         ws.removeEventListener("message", local_on_message);
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
 
         ws[wasm_ws_close_received] = true;
         ws["close_status"] = ev.code;
@@ -97,7 +103,7 @@ export function ws_wasm_create(uri: string, sub_protocols: string[] | null, rece
     };
     const local_on_error = (ev: any) => {
         if (ws[wasm_ws_is_aborted]) return;
-        if (loaderHelpers.is_exited()) return;
+        if (!loaderHelpers.is_runtime_running()) return;
         ws.removeEventListener("message", local_on_message);
         const error = new Error(ev.message || "WebSocket error");
         mono_log_warn("WebSocket error", error);
@@ -130,6 +136,11 @@ export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer
 
     if (ws[wasm_ws_is_aborted] || ws[wasm_ws_close_sent]) {
         return rejectedPromise("InvalidState: The WebSocket is not connected.");
+    }
+    if (ws.readyState == WebSocket.CLOSED) {
+        // this is server initiated close but not partial close
+        // because CloseOutputAsync_ServerInitiated_CanSend expectations, we don't fail here
+        return resolvedPromise();
     }
 
     const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
@@ -393,7 +404,7 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_vie
     else {
         if (length !== 0) {
             // we could use the un-pinned view, because it will be immediately used in ws.send()
-            if (MonoWasmThreads) {
+            if (WasmEnableThreads) {
                 buffer = buffer_view.slice(); // copy, because the provided ArrayBufferView value must not be shared.
             } else {
                 buffer = buffer_view;
@@ -451,7 +462,7 @@ type Message = {
 }
 
 function resolvedPromise(): Promise<void> | null {
-    if (!MonoWasmThreads) {
+    if (!WasmEnableThreads) {
         // signal that we are finished synchronously
         // this is optimization, which doesn't allocate and doesn't require to marshal resolve() call to C# side.
         return null;

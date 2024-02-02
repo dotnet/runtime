@@ -310,7 +310,8 @@ namespace System.Security.Cryptography.X509Certificates
                     byte[] parameters = Pal.KeyAlgorithmParameters;
                     byte[] keyValue = Pal.PublicKeyValue;
                     Oid oid = new Oid(keyAlgorithmOid);
-                    publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue));
+                    // PublicKey can use skipCopy because AsnEncodedData creates a defensive copy of the values.
+                    publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue), skipCopy: true);
                 }
 
                 return publicKey;
