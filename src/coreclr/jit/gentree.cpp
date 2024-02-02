@@ -26449,6 +26449,77 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
     return Oper == GT_AND || Oper == GT_OR || Oper == GT_XOR || Oper == GT_AND_NOT;
 }
 
+//------------------------------------------------------------------------
+// OperIsEmbRoundingEnabled: Is this HWIntrinsic a node with embedded rounding feature.
+//
+// Return Value:
+//    Whether "this" is a node with embedded rounding feature.
+//
+bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic         intrinsicId = GetHWIntrinsicId();
+
+    if (!HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+    {
+        return false;
+    }
+
+    size_t numArgs = GetOperandCount();
+    switch (intrinsicId)
+    {
+        // these intrinsics only have the embedded rounding enabled implementation.
+        case NI_AVX512F_AddScalar:
+        case NI_AVX512F_DivideScalar:
+        case NI_AVX512F_MultiplyScalar:
+        case NI_AVX512F_SubtractScalar:
+        case NI_AVX512F_SqrtScalar:
+        {   
+            return true;
+        }
+
+        case NI_AVX512F_Add:
+        case NI_AVX512F_Divide:
+        case NI_AVX512F_Multiply:
+        case NI_AVX512F_Subtract:
+
+        case NI_AVX512F_Scale:
+
+        case NI_AVX512F_ConvertScalarToVector128Double:
+        case NI_AVX512F_ConvertScalarToVector128Single:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertScalarToVector128Double:
+        case NI_AVX512F_X64_ConvertScalarToVector128Single:
+#endif // TARGET_AMD64
+        {
+            return numArgs == 3;
+        }
+        
+        case NI_AVX512F_Sqrt:
+        case NI_AVX512F_ConvertToInt32:
+        case NI_AVX512F_ConvertToUInt32:
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256Single:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_ConvertToVector512Single:
+        case NI_AVX512F_ConvertToVector512UInt32:
+        case NI_AVX512F_ConvertToVector512Int32:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertToInt64:
+        case NI_AVX512F_X64_ConvertToUInt64:
+#endif // TARGET_AMD64
+        {
+            return numArgs == 2;
+        }
+        default:
+            unreached();
+    }
+#else  // !TARGET_XARCH
+    return false;
+#endif // TARGET_XARCH
+}
+
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.

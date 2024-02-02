@@ -253,107 +253,102 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
         }
 
-        if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+        if (node->OperIsEmbRoundingEnabled())
         {
-            size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+            GenTree* lastOp = node->Op(numArgs);
 
-            if (numArgs == expectedArgNum)
+            // Now that we've extracted the rounding mode, we'll remove the
+            // last operand, adjust the arg count, and continue. This allows
+            // us to reuse all the existing logic without having to add new
+            // specialized handling everywhere.
+
+            switch (numArgs)
             {
-                GenTree* lastOp = node->Op(numArgs);
-
-                // Now that we've extracted the rounding mode, we'll remove the
-                // last operand, adjust the arg count, and continue. This allows
-                // us to reuse all the existing logic without having to add new
-                // specialized handling everywhere.
-
-                switch (numArgs)
+                case 2:
                 {
-                    case 2:
-                    {
-                        numArgs = 1;
-                        node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1));
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        numArgs = 2;
-                        node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2));
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
+                    numArgs = 1;
+                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1));
+                    break;
                 }
 
-                if (lastOp->isContained())
+                case 3:
                 {
-                    assert(lastOp->IsCnsIntOrI());
+                    numArgs = 2;
+                    node->ResetHWIntrinsicId(intrinsicId, compiler, node->Op(1), node->Op(2));
+                    break;
+                }
 
-                    int8_t mode = static_cast<int8_t>(lastOp->AsIntCon()->IconValue());
-                    instOptions = AddEmbRoundingMode(instOptions, mode);
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            if (lastOp->isContained())
+            {
+                assert(lastOp->IsCnsIntOrI());
+
+                int8_t mode = static_cast<int8_t>(lastOp->AsIntCon()->IconValue());
+                instOptions = AddEmbRoundingMode(instOptions, mode);
+            }
+            else
+            {
+                var_types baseType = node->GetSimdBaseType();
+
+                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                assert(ins != INS_invalid);
+
+                emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
+                assert(simdSize != 0);
+
+                genConsumeMultiOpOperands(node);
+                genConsumeRegs(lastOp);
+
+                if(isTableDriven)
+                {
+                    switch (numArgs)
+                    {
+                        case 1:
+                        {
+                            regNumber targetReg = node->GetRegNum();
+                            GenTree* rmOp = node->Op(1);
+                            auto emitSwCase = [&](int8_t i) {
+                                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                                genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
+                            };
+                            regNumber baseReg = node->ExtractTempReg();
+                            regNumber offsReg = node->GetSingleTempReg();
+                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                            emitSwCase);
+                            break;
+                        }
+                        case 2:
+                        {
+                            auto emitSwCase = [&](int8_t i) {
+                                insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
+                                genHWIntrinsic_R_R_RM(node, ins, simdSize, newInstOptions);
+                            };
+                            regNumber baseReg = node->ExtractTempReg();
+                            regNumber offsReg = node->GetSingleTempReg();
+                            genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
+                                                            emitSwCase);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
                 }
                 else
                 {
-                    var_types baseType = node->GetSimdBaseType();
-
-                    instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-                    assert(ins != INS_invalid);
-
-                    emitAttr simdSize = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-                    assert(simdSize != 0);
-
-                    genConsumeMultiOpOperands(node);
-                    genConsumeRegs(lastOp);
-
-                    if(isTableDriven)
-                    {
-                        switch (numArgs)
-                        {
-                            case 1:
-                            {
-                                regNumber targetReg = node->GetRegNum();
-                                GenTree* rmOp = node->Op(1);
-                                auto emitSwCase = [&](int8_t i) {
-                                    insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                                    genHWIntrinsic_R_RM(node, ins, simdSize, targetReg, rmOp, newInstOptions);
-                                };
-                                regNumber baseReg = node->ExtractTempReg();
-                                regNumber offsReg = node->GetSingleTempReg();
-                                genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
-                                                                emitSwCase);
-                                break;
-                            }
-                            case 2:
-                            {
-                                auto emitSwCase = [&](int8_t i) {
-                                    insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                                    genHWIntrinsic_R_R_RM(node, ins, simdSize, newInstOptions);
-                                };
-                                regNumber baseReg = node->ExtractTempReg();
-                                regNumber offsReg = node->GetSingleTempReg();
-                                genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg,
-                                                                emitSwCase);
-                                break;
-                            }
-
-                            default:
-                            {
-                                unreached();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // There are a few embedded rounding intrinsics that need to be emitted with special handling.
-                        genNonTableDrivenHWIntrinsicsJumpTableFallback(node, lastOp);
-                    }
-
-                    genProduceReg(node);
-                    return;
+                    // There are a few embedded rounding intrinsics that need to be emitted with special handling.
+                    genNonTableDrivenHWIntrinsicsJumpTableFallback(node, lastOp);
                 }
+
+                genProduceReg(node);
+                return;
             }
         }
     }
