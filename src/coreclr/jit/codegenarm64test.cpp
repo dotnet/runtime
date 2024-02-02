@@ -5679,6 +5679,26 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_whilewr, EA_8BYTE, REG_P7, REG_R14, REG_R15,
                               INS_OPTS_SCALABLE_D); // WHILEWR <Pd>.<T>, <Xn>, <Xm>
 
+    // IF_SVE_DW_2A
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P0, REG_P8, 0,
+                              INS_OPTS_SCALABLE_B); // PEXT <Pd>.<T>, <PNn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P1, REG_P9, 1,
+                              INS_OPTS_SCALABLE_H); // PEXT <Pd>.<T>, <PNn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P2, REG_P10, 2,
+                              INS_OPTS_SCALABLE_S); // PEXT <Pd>.<T>, <PNn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P3, REG_P11, 3,
+                              INS_OPTS_SCALABLE_D); // PEXT <Pd>.<T>, <PNn>[<imm>]
+
+    // IF_SVE_DW_2B
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P8, REG_P12, 0, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // PEXT {<Pd1>.<T>, <Pd2>.<T>}, <PNn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P9, REG_P13, 1, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // PEXT {<Pd1>.<T>, <Pd2>.<T>}, <PNn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P10, REG_P14, 0, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // PEXT {<Pd1>.<T>, <Pd2>.<T>}, <PNn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pext, EA_SCALABLE, REG_P11, REG_P15, 1, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // PEXT {<Pd1>.<T>, <Pd2>.<T>}, <PNn>[<imm>]
+
     // IF_SVE_DX_3A
     theEmitter->emitIns_R_R_R(INS_sve_whilege, EA_8BYTE, REG_P0, REG_R0, REG_R1, INS_OPTS_SCALABLE_B,
                               INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR); // WHILEGE {<Pd1>.<T>, <Pd2>.<T>}, <Xn>, <Xm>
@@ -5763,6 +5783,12 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                             INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
     theEmitter->emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_V7, 127, INS_OPTS_SCALABLE_D,
                             INS_SCALABLE_OPTS_SHIFT); // MOV <Zd>.<T>, #<imm>{, <shift>}
+
+    // IF_SVE_EB_1B
+    theEmitter->emitIns_R(INS_sve_fmov, EA_SCALABLE, REG_V0, INS_OPTS_SCALABLE_B); // FMOV <Zd>.<T>, #0.0
+    theEmitter->emitIns_R(INS_sve_fmov, EA_SCALABLE, REG_V1, INS_OPTS_SCALABLE_H); // FMOV <Zd>.<T>, #0.0
+    theEmitter->emitIns_R(INS_sve_fmov, EA_SCALABLE, REG_V2, INS_OPTS_SCALABLE_S); // FMOV <Zd>.<T>, #0.0
+    theEmitter->emitIns_R(INS_sve_fmov, EA_SCALABLE, REG_V3, INS_OPTS_SCALABLE_D); // FMOV <Zd>.<T>, #0.0
 
     // IF_SVE_EC_1A
     theEmitter->emitIns_R_I(INS_sve_add, EA_SCALABLE, REG_V0, 0,
