@@ -163,6 +163,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(_targetOS)' == 'freebsd'" />
       <LinkerArg Include="@(ExtraLinkerArg->'-Wl,%(Identity)')" />
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(_IsApplePlatform)' == 'true'" />
+      <LinkerArg Include="-ld_classic" Condition="'$(_IsApplePlatform)' == 'true'" />
       <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />
     </ItemGroup>
 

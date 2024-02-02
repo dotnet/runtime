@@ -79,6 +79,7 @@
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
     <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows' and '$(_IsApplePlatform)' != 'true'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    <CustomLinkerArg Condition="'$(_IsApplePlatform)' == 'true'" Include="-ld_classic" />
   </ItemGroup>
 
   <Target Name="PublishCompiler"
