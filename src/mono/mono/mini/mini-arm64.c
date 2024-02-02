@@ -1864,9 +1864,15 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [pindex]);
 			if (klass == swift_self && sig->pinvoke) {
-				cinfo->gr--;
-				add_param (cinfo, ainfo, sig->params [pindex], FALSE);
+				guint32 align;
+				MonoType *ptype = mini_get_underlying_type (sig->params [pindex]);
+				int size = mini_type_stack_size_full (ptype, &align, cinfo->pinvoke);
+				g_assert (size == 8);
+
+				ainfo->storage = ArgVtypeInIRegs;
 				ainfo->reg = ARMREG_R20;
+				ainfo->nregs = 1;
+				ainfo->size = size;
 				continue;
 			} else if (klass == swift_error || klass == swift_error_ptr) {
 				if (sig->pinvoke)
@@ -1923,7 +1929,10 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
         switch (ainfo->storage) {
 		case ArgVtypeInIRegs:
 		case ArgInIReg:
-			return &ccontext->gregs [ainfo->reg];
+			if (ainfo->reg == ARMREG_R20)
+				return &ccontext->gregs [PARAM_REGS + 1];
+			else
+				return &ccontext->gregs [ainfo->reg];
 		case ArgInFReg:
 		case ArgInFRegR4:
 		case ArgHFA:
@@ -2034,20 +2043,10 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		else
 			storage = arg_get_storage (ccontext, ainfo);
 
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
-			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
-			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-			if (klass == swift_self) {
-				storage = &ccontext->gregs [PARAM_REGS + 1];
-			} else if (klass == swift_error || klass == swift_error_ptr) {
-				*(gpointer*)storage = 0;
-				continue;
-			}
+		if (ainfo->storage == ArgSwiftError) {
+			*(gpointer*)storage = 0;
+			continue;
 		}
-#endif
 
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
 		if (temp_size)

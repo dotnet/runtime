@@ -1017,13 +1017,15 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (klass == swift_self && sig->pinvoke) {
-				guint32 old_gr = gr;
-				if (gr >= PARAM_REGS)
-					gr--;
-				add_valuetype (sig, ainfo, ptype, FALSE, &gr, &fr, &stack_size);
+				guint32 size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
+				g_assert (size == 8);
+
+				ainfo->storage = ArgValuetypeInReg;
+				ainfo->pair_storage [0] = ArgInIReg;
+				ainfo->pair_storage [1] = ArgNone;
+				ainfo->nregs = 1;
 				ainfo->pair_regs [0] = GINT32_TO_UINT8 (AMD64_R13);
-				if (old_gr < PARAM_REGS)
-					gr--;
+				ainfo->pair_size [0] = size;
 				continue;
 			} else if (klass == swift_error || klass == swift_error_ptr) {
 				if (sig->pinvoke)
@@ -1280,20 +1282,10 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		else
 			storage = arg_get_storage (ccontext, ainfo);
 
-#ifdef MONO_ARCH_HAVE_SWIFTCALL
-		if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
-			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
-			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
-			if (klass == swift_self) {
-				storage = &ccontext->gregs [AMD64_R13];
-			} else if (klass == swift_error || klass == swift_error_ptr) {
-				*(gpointer*)storage = 0;
-				continue;
-			}
+		if (ainfo->storage == ArgSwiftError) {
+			*(gpointer*)storage = 0;
+			continue;
 		}
-#endif
 
 		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
 		if (temp_size)
