@@ -1332,9 +1332,9 @@ AGAIN:
             if (jitIsScaleIndexMul(mulCandidate, naturalMul))
             {
                 mul = mulCandidate;
-                rv2 = op2->AsOp()->gtOp1;
                 // 'op2' is a scaled value...is it's argument also scaled?
                 int argScale;
+                rv2 = op2->AsOp()->gtOp1;
                 while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
                     if (jitIsScaleIndexMul(argScale * mul, naturalMul))
