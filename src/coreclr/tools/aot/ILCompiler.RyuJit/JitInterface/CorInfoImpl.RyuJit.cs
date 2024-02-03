@@ -2019,7 +2019,10 @@ namespace Internal.JitInterface
                 int size = 5 * this.PointerSize;
 
                 if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                {
                     size += this.PointerSize; // m_ChainPointer
+                    size += this.PointerSize; // R9 (REG_SAVED_LOCALLOC_SP)
+                }
 
                 return size;
             }
