@@ -1038,7 +1038,7 @@ namespace System.Net
         {
             try
             {
-                return HandleResponse(false).GetAwaiter().GetResult();
+                return HandleResponse(async: false).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -1048,7 +1048,7 @@ namespace System.Net
 
         public override Stream GetRequestStream()
         {
-            return InternalGetRequestStream(false).Result;
+            return InternalGetRequestStream(async: false).Result;
         }
 
         private Task<Stream> InternalGetRequestStream(bool async)
@@ -1102,7 +1102,7 @@ namespace System.Net
             }
 
             _requestStreamCallback = callback;
-            _requestStreamOperation = InternalGetRequestStream(true).ToApm(callback, state);
+            _requestStreamOperation = InternalGetRequestStream(async: true).ToApm(callback, state);
 
             return _requestStreamOperation.Task;
         }
@@ -1375,7 +1375,7 @@ namespace System.Net
             }
 
             _responseCallback = callback;
-            _responseOperation = HandleResponse(true).ToApm(callback, state);
+            _responseOperation = HandleResponse(async: true).ToApm(callback, state);
 
             return _responseOperation.Task;
         }

@@ -121,12 +121,7 @@ namespace System.Net
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
-                ThrowDisposedException();
-
-            [StackTraceHidden]
-            [DoesNotReturn]
-            static void ThrowDisposedException() => throw new ObjectDisposedException(nameof(HttpClientContentStream));
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

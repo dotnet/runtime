@@ -2235,7 +2235,6 @@ namespace System.Net.Tests
         [InlineData(false)]
         public async Task SendHttpPostRequest_When100ContinueSet_ReceivedByServer(bool expect100Continue)
         {
-            TaskCompletionSource tcs = new TaskCompletionSource();
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
@@ -2243,7 +2242,6 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = expect100Continue;
                     await request.GetResponseAsync();
-                    tcs.SetResult();
                 },
                 async (server) =>
                 {
@@ -2260,7 +2258,6 @@ namespace System.Net.Tests
                                 Assert.DoesNotContain("Expect: 100-continue", headers);
                             }
                             await client.SendResponseAsync();
-                            await tcs.Task;
                         }
                     );
                 }
