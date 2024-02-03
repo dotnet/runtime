@@ -827,6 +827,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
             if (node->OperIs(GT_CAST))
             {
                 GenTreeCast* cast = node->AsCast();
+                // TODO: Overflows
                 if ((cast->gtCastType == TYP_LONG) && cast->IsUnsigned())
                 {
                     GenTree* op = cast->CastOp();
@@ -938,6 +939,8 @@ PhaseStatus Compiler::optInductionVariables()
                 JITDUMP("  Type is %s, no widening to be done\n", varTypeName(genActualType(lcl)));
                 continue;
             }
+
+            // TODO: Skip DNERs?
 
             Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
             if (scev == nullptr)
