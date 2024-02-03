@@ -15671,6 +15671,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     break;
 
                 case GT_ADD:
+                {
                     itemp = i1 + i2;
                     if (tree->gtOverflow() && CheckedOps::AddOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
@@ -15688,6 +15689,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     }
                     fieldSeq = GetFieldSeqStore()->Append(op1FieldSeq, op2FieldSeq);
                     break;
+                }
                 case GT_SUB:
                     itemp = i1 - i2;
                     if (tree->gtOverflow() && CheckedOps::SubOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
@@ -15883,6 +15885,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     goto FOLD_COND;
 
                 case GT_ADD:
+                {
                     ltemp = lval1 + lval2;
                     if (tree->gtOverflow() && CheckedOps::AddOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
@@ -15902,6 +15905,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     fieldSeq = GetFieldSeqStore()->Append(op1FieldSeq, op2FieldSeq);
 #endif // TARGET_64BIT
                     break;
+                }
 
                 case GT_SUB:
                     ltemp = lval1 - lval2;
