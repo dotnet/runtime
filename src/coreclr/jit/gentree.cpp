@@ -15671,25 +15671,14 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     break;
 
                 case GT_ADD:
-                {
                     itemp = i1 + i2;
                     if (tree->gtOverflow() && CheckedOps::AddOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
-                    i1 = itemp;
-
-                    FieldSeq* op1FieldSeq = op1->AsIntCon()->gtFieldSeq;
-                    FieldSeq* op2FieldSeq = op2->AsIntCon()->gtFieldSeq;
-
-                    if ((op1FieldSeq != nullptr) && (op2FieldSeq != nullptr))
-                    {
-                        // We cannot combine two field sequences
-                        return nullptr;
-                    }
-                    fieldSeq = GetFieldSeqStore()->Append(op1FieldSeq, op2FieldSeq);
+                    i1       = itemp;
+                    fieldSeq = GetFieldSeqStore()->Append(op1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
                     break;
-                }
                 case GT_SUB:
                     itemp = i1 - i2;
                     if (tree->gtOverflow() && CheckedOps::SubOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
@@ -15885,27 +15874,16 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     goto FOLD_COND;
 
                 case GT_ADD:
-                {
                     ltemp = lval1 + lval2;
                     if (tree->gtOverflow() && CheckedOps::AddOverflows(lval1, lval2, tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
                     }
                     lval1 = ltemp;
-
 #ifdef TARGET_64BIT
-                    FieldSeq* op1FieldSeq = op1->AsIntCon()->gtFieldSeq;
-                    FieldSeq* op2FieldSeq = op2->AsIntCon()->gtFieldSeq;
-
-                    if ((op1FieldSeq != nullptr) && (op2FieldSeq != nullptr))
-                    {
-                        // We cannot combine two field sequences
-                        return nullptr;
-                    }
-                    fieldSeq = GetFieldSeqStore()->Append(op1FieldSeq, op2FieldSeq);
-#endif // TARGET_64BIT
+                    fieldSeq = GetFieldSeqStore()->Append(op1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
+#endif
                     break;
-                }
 
                 case GT_SUB:
                     ltemp = lval1 - lval2;
@@ -19348,7 +19326,16 @@ FieldSeq* FieldSeqStore::Append(FieldSeq* a, FieldSeq* b)
         return a;
     }
 
-    assert(!"Duplicate field sequences!");
+    // In UB-like code (such as manual IL) we can see an addition of two static field addresses.
+    // Treat that as cancelling out the sequence, since the result will point nowhere.
+    //
+    // It may be possible for the JIT to encounter other types of UB additions, such as due to
+    // complex optimizations, inlining, etc. In release we'll still do the right thing by returning
+    // nullptr here, but the more conservative assert can help avoid JIT bugs
+
+    assert(a->GetKind() == FieldKind::SimpleStaticKnownAddress);
+    assert(b->GetKind() == FieldKind::SimpleStaticKnownAddress);
+
     return nullptr;
 }
 
