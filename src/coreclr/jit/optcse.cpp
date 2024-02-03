@@ -5382,9 +5382,11 @@ void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
                     JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(top->m_def));
                 }
 
-                // We could search up the stack, perhaps...
+                // We could search up the stack, perhaps we'd find a compatible def
+                // higher up...?
                 //
                 top->m_uses->push_back(tree);
+                top->m_useWeight += block->getBBWeight(m_compiler);
                 return;
             }
         }
@@ -5544,53 +5546,32 @@ void Compiler::optFindCseCandidatesNew()
     m_dfsTree = nullptr;
     m_domTree = nullptr;
 
-    // Now that we have the candidate sets, we can feed them into optValnumCSE_Index,
-    // but as is, it will collapse distinct candidates with the same key into one
-    // (or drop the the whole thing). The only benefit we'd see from this is that
-    // we would never have any useless CSE defs.
+    // Now build the classic candidate sets from what we've found.
     //
-    // Instead we can just create the CSEdscs here directly.
+    i = 1;
+    for (CseCandidateState::StackNode* cse : *cseState.GetCandidates())
+    {
+        CSEdsc* const dsc = new (this, CMK_CSE) CSEdsc;
 
-    // Todo...
+        dsc->csdHashKey        = optKeyForCSE(cse->m_def, &dsc->csdIsSharedConst);
+        dsc->csdConstDefValue  = 0;
+        dsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
+        dsc->csdIndex          = 0;
+        dsc->csdLiveAcrossCall = false;
+        dsc->csdDefCount       = 1;
+        dsc->csdUseCount       = (unsigned short)cse->m_uses->size();
+        dsc->csdDefWtCnt       = cse->m_block->getBBWeight(this);
+        dsc->csdUseWtCnt       = cse->m_useWeight;
+        dsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
+        dsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
+        dsc->defConservNormVN  = vnStore->VNForNull(); // uninit value
 
-    // Finally we need to find a way to compute csdLiveAcrossCall.
-    //
-    // The rough idea here is to precompute this at the block level during
-    // a prior phase, and then in the visitor above compute the fragmented
-    // part from (def... ] and [...use) (if in different blocks) or (def...use)
-    // if in one block, an then (perhaps) do dataflow. Somewhat like what we
-    // do now to determine if a method is fully interruptible. This
-    // just feeds a heuristic so it might be ok to be approximate.
-    //
-    // Note there are some nuances here, say a CSE is live across a call but
-    // the call is unlikely, we might want a different strategy then if the
-    // call is guaranteed. Or we could (for cheap candidates, or high pressure
-    // situations) split the candidate into the before and after sets).
-    // We could also offer splitting as a choice to the heuristic, as if its
-    // life was already not complicated enough.
-    //
-    // We might be able to compute this and the BB_NO_CSE_IN stuff on demand,
-    // walking backwards up the flow from all uses to the def. If we had preorder
-    // numbers we could organize this efficiently perhaps, seeding the walk
-    // with uses that do not dominate other uses.
-    //
-    // We still need to watch for cases where the flow between a CSE def and
-    // use is split by BB_NO_CSE_IN... and/or run before RBO to avoid this problem,
-    // or have RBO flag when it runs into it... dataflow can do this too perhaps,
-    // maybe splitting the candidate up across the boundary ...?
-    //
-    // So a rough sketch would be: figure out which candidates live across
-    // status is unknown (no fragmented observation fired). Find the set of
-    // all uses that are not dominated by other uses. These are places where
-    // we need to start a reverse walk.
-    //
-    // Then reverse walk until we reach all defs, if we find a call we can drop
-    // all the corresponding uses. If we hit a BBF_NO_CSE_IN we can remove those
-    // uses and (hmmm) reset the live across state (guess not, we perhaps should
-    // track live across for each use, and if we split off uses then we can figure
-    // out if the split off part is live across or not).
-    //
-    // Also during locate if a dominating block has BBF_NO_CSE_IN we can split
-    // directly there and perhaps save some cycles. This thing is super rare
-    // though.
+        dsc->csdTree     = cse->m_def;
+        dsc->csdStmt     = nullptr; // ahem
+        dsc->csdBlock    = cse->m_block;
+        dsc->csdTreeList = nullptr;
+
+        // need to know block and stmt for all appearances.
+        // Can just build the tree list during finding?
+    }
 }

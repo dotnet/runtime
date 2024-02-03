@@ -515,9 +515,11 @@ public:
         GenTree* m_def;
         // And the use trees
         jitstd::vector<GenTree*>* m_uses;
+        // Sum of normalized use tree block weights
+        weight_t m_useWeight;
 
         StackNode(BasicBlock* block, GenTree* tree, StackNode* prev)
-            : m_prev(prev), m_block(block), m_def(tree), m_uses(nullptr)
+            : m_prev(prev), m_block(block), m_def(tree), m_uses(nullptr), m_useWeight(0)
         {
         }
     };
