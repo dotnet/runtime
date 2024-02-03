@@ -764,10 +764,7 @@ namespace System
                             }
 
                             groupSizeCount += groupDigits[groupSizeIndex];
-                            if ((groupSizeCount | bufferSize) < 0)
-                            {
-                                ThrowHelper.ThrowArgumentOutOfRangeException(); // If we overflow
-                            }
+                            ArgumentOutOfRangeException.ThrowIfNegative(groupSizeCount | bufferSize, string.Empty); // If we overflow
                         }
 
                         groupSize = groupSizeCount == 0 ? 0 : groupDigits[0]; // If you passed in an array with one entry as 0, groupSizeCount == 0

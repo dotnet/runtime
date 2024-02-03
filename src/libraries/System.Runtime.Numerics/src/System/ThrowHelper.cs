@@ -32,11 +32,5 @@ namespace System
         {
             throw new FormatException(SR.Argument_BadFormatSpecifier);
         }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRangeException()
-        {
-            throw new ArgumentOutOfRangeException();
-        }
     }
 }
