@@ -697,7 +697,9 @@ void Compiler::optAssertionInit(bool isLocalProp)
         static const AssertionIndex countFunc[] = {64, 128, 256, 64};
         static const unsigned       upperBound  = ArrLen(countFunc) - 1;
         const unsigned              codeSize    = info.compILCodeSize / 512;
-        optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
+
+        // CI test
+        optMaxAssertionCount = 256; // countFunc[min(upperBound, codeSize)];
 
         optValueNumToAsserts =
             new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
@@ -3910,7 +3912,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
-        if (!curAssertion->IsConstantBound())
+        if (!curAssertion->IsConstantBound() && !curAssertion->IsConstantBoundUnsigned())
         {
             continue;
         }
@@ -3939,12 +3941,26 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
 
-        // "X >= CNS" or "X > CNS" where CNS is >= 0
-        if ((info.constVal >= 0) && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+        if ((info.constVal >= 0))
         {
-            JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-            tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-            return optAssertionProp_Update(tree, tree, stmt);
+            bool isNotNegative = false;
+            if (info.isUnsigned && ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
+            {
+                // (uint)X <= CNS means X is [0..CNS]
+                isNotNegative = true;
+            }
+            else if (!info.isUnsigned && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+            {
+                // X >= CNS means X is [CNS..unknown]
+                isNotNegative = true;
+            }
+
+            if (isNotNegative)
+            {
+                JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+                tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+                return optAssertionProp_Update(tree, tree, stmt);
+            }
         }
     }
     return nullptr;
@@ -4863,7 +4879,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 {
     assert(indir->OperIsIndir());
 
-    if (!(indir->gtFlags & GTF_EXCEPT))
+    if ((indir->gtFlags & GTF_EXCEPT) == 0)
     {
         return false;
     }

@@ -6347,14 +6347,17 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 {
     VNFuncApp funcApp;
-    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
+    if (GetVNFunc(vn, &funcApp))
     {
-        if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
-            (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
+        switch ((genTreeOps)funcApp.m_func)
         {
-            const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
-            const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
-            return op1IsConst != op2IsConst;
+            case GT_LE:
+            case GT_LT:
+            case GT_GE:
+            case GT_GT:
+                return IsVNInt32Constant(funcApp.m_args[0]) || IsVNInt32Constant(funcApp.m_args[1]);
+            default:
+                break;
         }
     }
     return false;
@@ -6363,21 +6366,17 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
 {
     VNFuncApp funcApp;
-    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
+    if (GetVNFunc(vn, &funcApp))
     {
-        const bool op1IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[0]);
-        const bool op2IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[1]);
-        if (!op1IsPositiveConst && op2IsPositiveConst)
+        switch (funcApp.m_func)
         {
-            // (uint)index < CNS
-            // (uint)index >= CNS
-            return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
-        }
-        else if (op1IsPositiveConst && !op2IsPositiveConst)
-        {
-            // CNS > (uint)index
-            // CNS <= (uint)index
-            return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
+            case VNF_LT_UN:
+            case VNF_LE_UN:
+            case VNF_GE_UN:
+            case VNF_GT_UN:
+                return IsVNPositiveInt32Constant(funcApp.m_args[0]) != IsVNPositiveInt32Constant(funcApp.m_args[1]);
+            default:
+                break;
         }
     }
     return false;
