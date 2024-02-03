@@ -285,7 +285,7 @@ namespace Internal.Runtime.Augments
 
             if (fieldTypeHandle.ToMethodTable()->IsFunctionPointer)
                 return ptrValue;
-            
+
             return ReflectionPointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
         }
 
