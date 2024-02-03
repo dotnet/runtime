@@ -19333,8 +19333,8 @@ FieldSeq* FieldSeqStore::Append(FieldSeq* a, FieldSeq* b)
     // complex optimizations, inlining, etc. In release we'll still do the right thing by returning
     // nullptr here, but the more conservative assert can help avoid JIT bugs
 
-    assert(a->GetKind() == FieldKind::SimpleStaticKnownAddress);
-    assert(b->GetKind() == FieldKind::SimpleStaticKnownAddress);
+    assert(a->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+    assert(b->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
 
     return nullptr;
 }
