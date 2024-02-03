@@ -13060,9 +13060,13 @@ namespace System.Numerics.Tensors
             //
             // coshf = v/2 * exp(x - log(v)) where v = 0x1.0000e8p-1
 
-            private const double LOGV = 0.6931471805599453;
-            private const double HALFV = 1.0;
-            private const double INVV2 = 0.25;
+            private const float SINGLE_LOGV = 0.693161f;
+            private const float SINGLE_HALFV = 1.0000138f;
+            private const float SINGLE_INVV2 = 0.24999309f;
+
+            private const double DOUBLE_LOGV = 0.6931471805599453;
+            private const double DOUBLE_HALFV = 1.0;
+            private const double DOUBLE_INVV2 = 0.25;
 
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
@@ -13075,8 +13079,8 @@ namespace System.Numerics.Tensors
                     Vector128<float> x = t.AsSingle();
 
                     Vector128<float> y = Vector128.Abs(x);
-                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)LOGV));
-                    return (Vector128.Create((float)HALFV) * (z + (Vector128.Create((float)INVV2) / z))).As<float, T>();
+                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)SINGLE_LOGV));
+                    return (Vector128.Create((float)SINGLE_HALFV) * (z + (Vector128.Create((float)SINGLE_INVV2) / z))).As<float, T>();
                 }
                 else
                 {
@@ -13084,8 +13088,8 @@ namespace System.Numerics.Tensors
                     Vector128<double> x = t.AsDouble();
 
                     Vector128<double> y = Vector128.Abs(x);
-                    Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(LOGV));
-                    return (Vector128.Create(HALFV) * (z + (Vector128.Create(INVV2) / z))).As<double, T>();
+                    Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(DOUBLE_LOGV));
+                    return (Vector128.Create(DOUBLE_HALFV) * (z + (Vector128.Create(DOUBLE_INVV2) / z))).As<double, T>();
                 }
             }
 
@@ -13096,8 +13100,8 @@ namespace System.Numerics.Tensors
                     Vector256<float> x = t.AsSingle();
 
                     Vector256<float> y = Vector256.Abs(x);
-                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)LOGV));
-                    return (Vector256.Create((float)HALFV) * (z + (Vector256.Create((float)INVV2) / z))).As<float, T>();
+                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)SINGLE_LOGV));
+                    return (Vector256.Create((float)SINGLE_HALFV) * (z + (Vector256.Create((float)SINGLE_INVV2) / z))).As<float, T>();
                 }
                 else
                 {
@@ -13105,8 +13109,8 @@ namespace System.Numerics.Tensors
                     Vector256<double> x = t.AsDouble();
 
                     Vector256<double> y = Vector256.Abs(x);
-                    Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(LOGV));
-                    return (Vector256.Create(HALFV) * (z + (Vector256.Create(INVV2) / z))).As<double, T>();
+                    Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(DOUBLE_LOGV));
+                    return (Vector256.Create(DOUBLE_HALFV) * (z + (Vector256.Create(DOUBLE_INVV2) / z))).As<double, T>();
                 }
             }
 
@@ -13117,8 +13121,8 @@ namespace System.Numerics.Tensors
                     Vector512<float> x = t.AsSingle();
 
                     Vector512<float> y = Vector512.Abs(x);
-                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)LOGV));
-                    return (Vector512.Create((float)HALFV) * (z + (Vector512.Create((float)INVV2) / z))).As<float, T>();
+                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)SINGLE_LOGV));
+                    return (Vector512.Create((float)SINGLE_HALFV) * (z + (Vector512.Create((float)SINGLE_INVV2) / z))).As<float, T>();
                 }
                 else
                 {
@@ -13126,8 +13130,8 @@ namespace System.Numerics.Tensors
                     Vector512<double> x = t.AsDouble();
 
                     Vector512<double> y = Vector512.Abs(x);
-                    Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(LOGV));
-                    return (Vector512.Create(HALFV) * (z + (Vector512.Create(INVV2) / z))).As<double, T>();
+                    Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(DOUBLE_LOGV));
+                    return (Vector512.Create(DOUBLE_HALFV) * (z + (Vector512.Create(DOUBLE_INVV2) / z))).As<double, T>();
                 }
             }
         }
@@ -13161,9 +13165,13 @@ namespace System.Numerics.Tensors
             // Same as cosh, but with `z -` rather than `z +`, and with the sign
             // flipped on the result based on the sign of the input.
 
-            private const double LOGV = 0.6931471805599453;
-            private const double HALFV = 1.0;
-            private const double INVV2 = 0.25;
+            private const float SINGLE_LOGV = 0.693161f;
+            private const float SINGLE_HALFV = 1.0000138f;
+            private const float SINGLE_INVV2 = 0.24999309f;
+
+            private const double DOUBLE_LOGV = 0.6931471805599453;
+            private const double DOUBLE_HALFV = 1.0;
+            private const double DOUBLE_INVV2 = 0.25;
 
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
@@ -13176,8 +13184,8 @@ namespace System.Numerics.Tensors
                     Vector128<float> x = t.AsSingle();
 
                     Vector128<float> y = Vector128.Abs(x);
-                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)LOGV));
-                    Vector128<float> result = Vector128.Create((float)HALFV) * (z - (Vector128.Create((float)INVV2) / z));
+                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)SINGLE_LOGV));
+                    Vector128<float> result = Vector128.Create((float)SINGLE_HALFV) * (z - (Vector128.Create((float)SINGLE_INVV2) / z));
                     Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~(uint)int.MaxValue);
                     return (sign ^ result.AsUInt32()).As<uint, T>();
                 }
@@ -13187,8 +13195,8 @@ namespace System.Numerics.Tensors
                     Vector128<double> x = t.AsDouble();
 
                     Vector128<double> y = Vector128.Abs(x);
-                    Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(LOGV));
-                    Vector128<double> result = Vector128.Create(HALFV) * (z - (Vector128.Create(INVV2) / z));
+                    Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(DOUBLE_LOGV));
+                    Vector128<double> result = Vector128.Create(DOUBLE_HALFV) * (z - (Vector128.Create(DOUBLE_INVV2) / z));
                     Vector128<ulong> sign = x.AsUInt64() & Vector128.Create(~(ulong)long.MaxValue);
                     return (sign ^ result.AsUInt64()).As<ulong, T>();
                 }
@@ -13201,8 +13209,8 @@ namespace System.Numerics.Tensors
                     Vector256<float> x = t.AsSingle();
 
                     Vector256<float> y = Vector256.Abs(x);
-                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)LOGV));
-                    Vector256<float> result = Vector256.Create((float)HALFV) * (z - (Vector256.Create((float)INVV2) / z));
+                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)SINGLE_LOGV));
+                    Vector256<float> result = Vector256.Create((float)SINGLE_HALFV) * (z - (Vector256.Create((float)SINGLE_INVV2) / z));
                     Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~(uint)int.MaxValue);
                     return (sign ^ result.AsUInt32()).As<uint, T>();
                 }
@@ -13212,8 +13220,8 @@ namespace System.Numerics.Tensors
                     Vector256<double> x = t.AsDouble();
 
                     Vector256<double> y = Vector256.Abs(x);
-                    Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(LOGV));
-                    Vector256<double> result = Vector256.Create(HALFV) * (z - (Vector256.Create(INVV2) / z));
+                    Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(DOUBLE_LOGV));
+                    Vector256<double> result = Vector256.Create(DOUBLE_HALFV) * (z - (Vector256.Create(DOUBLE_INVV2) / z));
                     Vector256<ulong> sign = x.AsUInt64() & Vector256.Create(~(ulong)long.MaxValue);
                     return (sign ^ result.AsUInt64()).As<ulong, T>();
                 }
@@ -13226,8 +13234,8 @@ namespace System.Numerics.Tensors
                     Vector512<float> x = t.AsSingle();
 
                     Vector512<float> y = Vector512.Abs(x);
-                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)LOGV));
-                    Vector512<float> result = Vector512.Create((float)HALFV) * (z - (Vector512.Create((float)INVV2) / z));
+                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)SINGLE_LOGV));
+                    Vector512<float> result = Vector512.Create((float)SINGLE_HALFV) * (z - (Vector512.Create((float)SINGLE_INVV2) / z));
                     Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~(uint)int.MaxValue);
                     return (sign ^ result.AsUInt32()).As<uint, T>();
                 }
@@ -13237,8 +13245,8 @@ namespace System.Numerics.Tensors
                     Vector512<double> x = t.AsDouble();
 
                     Vector512<double> y = Vector512.Abs(x);
-                    Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(LOGV));
-                    Vector512<double> result = Vector512.Create(HALFV) * (z - (Vector512.Create(INVV2) / z));
+                    Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(DOUBLE_LOGV));
+                    Vector512<double> result = Vector512.Create(DOUBLE_HALFV) * (z - (Vector512.Create(DOUBLE_INVV2) / z));
                     Vector512<ulong> sign = x.AsUInt64() & Vector512.Create(~(ulong)long.MaxValue);
                     return (sign ^ result.AsUInt64()).As<ulong, T>();
                 }
