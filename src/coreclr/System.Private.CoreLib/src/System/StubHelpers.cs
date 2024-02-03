@@ -815,7 +815,14 @@ namespace System.StubHelpers
 #pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
         internal static void ClearNative(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
         {
-            marshaler.CleanUpNativeData(*pNativeHome);
+            try
+            {
+                marshaler.CleanUpNativeData(*pNativeHome);
+            }
+            catch
+            {
+                // COMPAT: We need to swallow all exceptions thrown by CleanUpNativeData.
+            }
         }
 
         internal static void ClearManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
