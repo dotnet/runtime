@@ -2724,10 +2724,10 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //                          managing side-effects.
 //
 // Arguments:
-//    block -  The block containing the tree.
-//    stmt  -  The statement in the block containing the tree.
-//    tree  -  The tree node whose value is known at compile time.
-//             The tree should have a constant value number.
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The tree node whose value is known at compile time.
+//              The tree should have a constant value number.
 //
 // Return Value:
 //    Returns a potentially new or a transformed tree node.
@@ -2747,7 +2747,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //    the relop will evaluate to "true" or "false" statically, then the side-effects
 //    will be put into new statements, presuming the JTrue will be folded away.
 //
-GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
+GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
     if (tree->OperGet() == GT_JTRUE)
     {
@@ -2995,7 +2995,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
-        if (!optIsProfitableToSubstitute(tree, block, conValTree))
+        if (!optIsProfitableToSubstitute(tree, block, parent, conValTree))
         {
             // Not profitable to substitute
             return nullptr;
@@ -3027,14 +3027,15 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 // optIsProfitableToSubstitute: Checks if value worth substituting to dest
 //
 // Arguments:
-//    dest      - destination to substitute value to
-//    destBlock - Basic block of destination
-//    value     - value we plan to substitute
+//    dest       - destination to substitute value to
+//    destBlock  - Basic block of destination
+//    destParent - Parent of destination
+//    value      - value we plan to substitute
 //
 // Returns:
 //    False if it's likely not profitable to do substitution, True otherwise
 //
-bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* value)
+bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* destParent, GenTree* value)
 {
     // Giving up on these kinds of handles demonstrated size improvements
     if (value->IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_CLASS_HDL))
@@ -3044,14 +3045,161 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 
     // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
     // and is used inside it - don't propagate.
-
+    //
     // TODO: Extend on more kinds of trees
-    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL) || !dest->OperIs(GT_LCL_VAR))
+
+    if (!dest->OperIs(GT_LCL_VAR))
     {
         return true;
     }
 
     const GenTreeLclVar* lcl = dest->AsLclVar();
+
+    if (value->IsCnsVec())
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+        // Many hwintrinsics can't benefit from constant prop because they don't support
+        // constant folding nor do they support any specialized encodings. So, we want to
+        // skip constant prop and preserve any user-defined locals in that scenario.
+        //
+        // However, if the local is only referenced once then we want to allow propagation
+        // regardless since we can then contain the only actual usage and save a needless
+        // instruction.
+        //
+        // To determine number of uses, we prefer checking SSA first since it is more exact
+        // and can account for patterns where a local is reassigned later. However, if we
+        // can't find an SSA then we fallback to the naive ref count of the local, noting
+        // that we need to check for greater than 2 since it includes both the def and use.
+
+        bool inspectIntrinsic = false;
+
+        if ((destParent != nullptr) && destParent->OperIsHWIntrinsic())
+        {
+            LclVarDsc* varDsc = lvaGetDesc(lcl);
+
+            if (lcl->HasSsaName())
+            {
+                inspectIntrinsic = varDsc->GetPerSsaData(lcl->GetSsaNum())->GetNumUses() > 1;
+            }
+            else
+            {
+                inspectIntrinsic = varDsc->lvRefCnt() > 2;
+            }
+        }
+
+        if (inspectIntrinsic)
+        {
+            GenTreeHWIntrinsic* parent = destParent->AsHWIntrinsic();
+            GenTreeVecCon*      vecCon = value->AsVecCon();
+
+            NamedIntrinsic intrinsicId  = parent->GetHWIntrinsicId();
+            var_types      simdBaseType = parent->GetSimdBaseType();
+
+            if (!HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
+            {
+                return false;
+            }
+
+            switch (intrinsicId)
+            {
+#if defined(TARGET_ARM64)
+                case NI_Vector64_op_Equality:
+                case NI_Vector64_op_Inequality:
+#endif // TARGET_ARM64
+                case NI_Vector128_op_Equality:
+                case NI_Vector128_op_Inequality:
+#if defined(TARGET_XARCH)
+                case NI_Vector256_op_Equality:
+                case NI_Vector256_op_Inequality:
+                case NI_Vector512_op_Equality:
+                case NI_Vector512_op_Inequality:
+#endif // TARGET_XARCH
+                {
+                    // We can optimize when the constant is zero, but only
+                    // for non floating-point since +0.0 == -0.0
+
+                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+
+#if defined(TARGET_ARM64)
+                case NI_AdvSimd_CompareEqual:
+                case NI_AdvSimd_Arm64_CompareEqual:
+                case NI_AdvSimd_Arm64_CompareEqualScalar:
+                {
+                    // We can optimize when the constant is zero due to a
+                    // specialized encoding for the instruction
+
+                    if (!vecCon->IsZero())
+                    {
+                        return false;
+                    }
+                    break;
+                }
+
+                case NI_AdvSimd_CompareGreaterThan:
+                case NI_AdvSimd_CompareGreaterThanOrEqual:
+                case NI_AdvSimd_Arm64_CompareGreaterThan:
+                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+                case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+                {
+                    // We can optimize when the constant is zero, but only
+                    // for signed types, due to a specialized encoding for
+                    // the instruction
+
+                    if (!vecCon->IsZero() || varTypeIsUnsigned(simdBaseType))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+                case NI_SSE2_Insert:
+                case NI_SSE41_Insert:
+                case NI_SSE41_X64_Insert:
+                {
+                    // We can optimize for float when the constant is zero
+                    // due to a specialized encoding for the instruction
+
+                    if ((simdBaseType != TYP_FLOAT) || !vecCon->IsZero())
+                    {
+                        return false;
+                    }
+                    break;
+                }
+
+                case NI_AVX512F_CompareEqualMask:
+                case NI_AVX512F_CompareNotEqualMask:
+                {
+                    // We can optimize when the constant is zero, but only
+                    // for non floating-point since +0.0 == -0.0
+
+                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+#endif // TARGET_XARCH
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
+    }
+    else if (!value->IsCnsFltOrDbl())
+    {
+        return true;
+    }
 
     gtPrepareCost(value);
 
@@ -5975,9 +6123,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    This function is called as part of a post-order tree walk.
 //
 // Arguments:
-//    tree  - The currently visited tree node.
-//    stmt  - The statement node in which the "tree" is present.
-//    block - The block that contains the statement that contains the tree.
+//    tree   - The currently visited tree node.
+//    stmt   - The statement node in which the "tree" is present.
+//    parent - The parent node of the tree.
+//    block  - The block that contains the statement that contains the tree.
 //
 // Return Value:
 //    Returns the standard visitor walk result.
@@ -5987,7 +6136,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    evaluates to constant, then the tree is replaced by its side effects and
 //    the constant node.
 //
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
+Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
+                                                          Statement*  stmt,
+                                                          GenTree*    parent,
+                                                          GenTree*    tree)
 {
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
@@ -6030,7 +6182,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_INTRINSIC:
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-#endif
+#endif // FEATURE_HW_INTRINSICS
         case GT_ARR_LENGTH:
             break;
 
@@ -6078,7 +6230,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
     }
 
     // Perform the constant propagation
-    GenTree* newTree = optVNConstantPropOnTree(block, tree);
+    GenTree* newTree = optVNConstantPropOnTree(block, parent, tree);
+
     if (newTree == nullptr)
     {
         // Not propagated, keep going.
@@ -6158,7 +6311,7 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, *ppTree);
+    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
 }
 
 /*****************************************************************************
