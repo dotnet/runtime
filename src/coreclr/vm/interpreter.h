@@ -537,6 +537,14 @@ struct CachedItem
     }
 };
 
+// Also see namedintrinsiclist.h
+enum InterpreterNamedIntrinsics : unsigned short
+{
+    NI_Illegal = 0,
+    NI_System_StubHelpers_GetStubContext,
+};
+
+InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
 
 const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName = NULL);

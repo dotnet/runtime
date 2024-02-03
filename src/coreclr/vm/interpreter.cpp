@@ -9226,19 +9226,16 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // Point A in our cycle count.
 
 
-    // TODO: enable when NamedIntrinsic is available to interpreter
-
-    /*
     // Is the method an intrinsic?  If so, and if it's one we've written special-case code for
     // handle intrinsically.
-    NamedIntrinsic intrinsicName;
+    InterpreterNamedIntrinsics intrinsicId;
     {
         GCX_PREEMP();
-        intrinsicName = getIntrinsicName(CORINFO_METHOD_HANDLE(methToCall), nullptr);
+        intrinsicId = getNamedIntrinsicID(&m_interpCeeInfo, CORINFO_METHOD_HANDLE(methToCall));
     }
 
 #if INTERP_TRACING
-    if (intrinsicName == NI_Illegal)
+    if (intrinsicId == NI_Illegal)
         InterlockedIncrement(&s_totalInterpCallsToIntrinsics);
 #endif // INTERP_TRACING
     bool didIntrinsic = false;
@@ -9339,7 +9336,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // Now we can return.
         return;
     }
-    */
 
     // Handle other simple special cases:
 
@@ -11671,6 +11667,36 @@ static const char* CorInfoTypeNames[] = {
     "refany",
     "var"
 };
+
+// Also see Compiler::lookupNamedIntrinsic
+InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd)
+{
+    InterpreterNamedIntrinsics result = NI_Illegal;
+
+    const char* namespaceName = NULL;
+    const char* className = NULL;
+    const char* methodName = getMethodName(info, (CORINFO_METHOD_HANDLE)methodHnd, &className, &namespaceName, NULL);
+
+    if (strncmp(namespaceName, "System", 6) == 0)
+    {
+        namespaceName += 6;
+        if (namespaceName[0] == '.')
+        {
+            namespaceName += 1;
+            if (strcmp(namespaceName, "StubHelpers") == 0)
+            {
+                if (strcmp(className, "StubHelpers") == 0)
+                {
+                    if (strcmp(methodName, "GetStubContext") == 0)
+                    {
+                        result = NI_System_StubHelpers_GetStubContext;
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
 
 // Simple version of getMethodName which supports IL Stubs such as IL_STUB_PInvoke additionally.
 // Also see getMethodNameFromMetadata and printMethodName in corinfo.h
