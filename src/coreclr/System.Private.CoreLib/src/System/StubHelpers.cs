@@ -795,35 +795,31 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomMarshaler_GetMarshalerObject")]
         private static partial void GetMarshaler(IntPtr pCMHelper, ObjectHandleOnStack retMarshaler);
 
-        private static ICustomMarshaler GetMarshaler(IntPtr pCMHelper)
+        internal static ICustomMarshaler GetMarshaler(IntPtr pCMHelper)
         {
             ICustomMarshaler? marshaler = null;
             GetMarshaler(pCMHelper, ObjectHandleOnStack.Create(ref marshaler));
             return marshaler!;
         }
 
-        internal static unsafe void ConvertContentsToNative(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
         {
-            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
         }
 
-        internal static void ConvertContentsToManaged(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
         {
-            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
             pManagedHome = marshaler.MarshalNativeToManaged(*pNativeHome);
         }
 
 #pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
-        internal static void ClearNative(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static void ClearNative(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
         {
-            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
             marshaler.CleanUpNativeData(*pNativeHome);
         }
 
-        internal static void ClearManaged(IntPtr pCMHelper, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static void ClearManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
         {
-            ICustomMarshaler marshaler = GetMarshaler(pCMHelper);
             marshaler.CleanUpManagedData(pManagedHome);
         }
 #pragma warning restore IDE0060

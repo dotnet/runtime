@@ -4948,7 +4948,7 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
     // allocate space for marshaler state
     //
 
-    m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
+    m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
 
     //
     // call CreateCustomMarshalerHelper
@@ -4964,5 +4964,8 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 
     pslILEmit->EmitCALL(METHOD__STUBHELPERS__CREATE_CUSTOM_MARSHALER_HELPER, 3, 1);  // Create the CustomMarshalerHelper
 
-    pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum); // Store the CustomMarshalerHelper as our marshaler state
+    // Get the managed ICustomMarshaler object from the helper
+    pslILEmit->EmitCALL(METHOD__MNGD_REF_CUSTOM_MARSHALER__GET_MARSHALER, 1, 1);
+
+    pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum); // Store the ICustomMarshaler as our marshaler state
 }
