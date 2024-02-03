@@ -2006,21 +2006,20 @@ namespace Internal.JitInterface
             get
             {
                 // struct PInvokeTransitionFrame:
-                // #ifdef _TARGET_ARM_
-                //  m_ChainPointer
-                // #endif
-                //  m_RIP
-                //  m_FramePointer
+                //  m_RIP (1)
+                //  m_FramePointer (1)
                 //  m_pThread
                 //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
-                //  m_PreserverRegs - RSP
+                //  m_PreservedRegs - RSP / R9 (2)
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
+                //
+                // (1) On ARM32/ARM64 the order of m_RIP and m_FramePointer is reverse
+                // (2) R9 is saved for ARM32 because it needs to be preserved for methods with stackalloc
                 int size = 5 * this.PointerSize;
 
                 if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
                 {
-                    size += this.PointerSize; // m_ChainPointer
                     size += this.PointerSize; // R9 (REG_SAVED_LOCALLOC_SP)
                 }
 
