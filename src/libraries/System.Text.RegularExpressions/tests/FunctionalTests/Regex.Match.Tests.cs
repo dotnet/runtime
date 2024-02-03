@@ -2381,6 +2381,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "^(?:aaa|aa){4}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
                 yield return new object[] { engine, "^(?:aaa|aa){4}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
                 yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x*)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x+)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(x(x?),x(x?))|xx?,(x(x?)>x(x?)),(x((x))?))-?(x+?)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
                 yield return new object[] { engine, "^(?:x|(x)??){2}$", RegexOptions.None, "x>", null };
 
                 // Mostly empty matches using unusual regexes consisting mostly of anchors only
