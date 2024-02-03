@@ -15676,8 +15676,17 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     {
                         goto INTEGRAL_OVF;
                     }
-                    i1       = itemp;
-                    fieldSeq = GetFieldSeqStore()->Append(op1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
+                    i1 = itemp;
+
+                    FieldSeq* op1FieldSeq = op1->AsIntCon()->gtFieldSeq;
+                    FieldSeq* op2FieldSeq = op2->AsIntCon()->gtFieldSeq;
+
+                    if ((op1FieldSeq != nullptr) && (op2FieldSeq != nullptr))
+                    {
+                        // We cannot combine two field sequences
+                        return nullptr;
+                    }
+                    fieldSeq = GetFieldSeqStore()->Append(op1FieldSeq, op2FieldSeq);
                     break;
                 case GT_SUB:
                     itemp = i1 - i2;
@@ -15880,9 +15889,18 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                         goto INTEGRAL_OVF;
                     }
                     lval1 = ltemp;
+
 #ifdef TARGET_64BIT
-                    fieldSeq = GetFieldSeqStore()->Append(op1->AsIntCon()->gtFieldSeq, op2->AsIntCon()->gtFieldSeq);
-#endif
+                    FieldSeq* op1FieldSeq = op1->AsIntCon()->gtFieldSeq;
+                    FieldSeq* op2FieldSeq = op2->AsIntCon()->gtFieldSeq;
+
+                    if ((op1FieldSeq != nullptr) && (op2FieldSeq != nullptr))
+                    {
+                        // We cannot combine two field sequences
+                        return nullptr;
+                    }
+                    fieldSeq = GetFieldSeqStore()->Append(op1FieldSeq, op2FieldSeq);
+#endif // TARGET_64BIT
                     break;
 
                 case GT_SUB:
