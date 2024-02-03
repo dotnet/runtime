@@ -70,7 +70,7 @@
       <_DotnetCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</_DotnetCommand>
 
       <RunScriptCommand>$(_DotnetCommand) test DebuggerTestSuite/DebuggerTestSuite.dll</RunScriptCommand>
-      <RunScriptCommand Condition="'$(WasmEnableThreads)' == 'true'">$(RunScriptCommand) /e:WASM_TESTS_USING_VARIANT=multithreaded</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) /e:WasmEnableThreads=$(WasmEnableThreads)</RunScriptCommand>
       <RunScriptCommand>$(RunScriptCommand) &quot;-l:trx%3BLogFileName=testResults.trx&quot;</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) &quot;-l:console%3BVerbosity=normal&quot;</RunScriptCommand>
 

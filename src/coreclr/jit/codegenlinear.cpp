@@ -677,6 +677,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Do we need to generate a jump or return? */
 
+        bool removedJmp = false;
         switch (block->GetKind())
         {
             case BBJ_RETURN:
@@ -765,6 +766,7 @@ void CodeGen::genCodeForBBlist()
                     }
 #endif // TARGET_AMD64
 
+                    removedJmp = true;
                     break;
                 }
 #ifdef TARGET_XARCH
@@ -814,7 +816,7 @@ void CodeGen::genCodeForBBlist()
             assert(!block->KindIs(BBJ_CALLFINALLY));
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
-            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS)));
+            GetEmitter()->emitLoopAlignment(DEBUG_ARG1(block->KindIs(BBJ_ALWAYS) && !removedJmp));
         }
 
         if (!block->IsLast() && block->Next()->isLoopAlign())
