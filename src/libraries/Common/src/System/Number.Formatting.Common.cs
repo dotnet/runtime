@@ -17,7 +17,6 @@ namespace System
         private const int DefaultPrecisionExponentialFormat = 6;
 
         private const int MaxUInt32DecDigits = 10;
-        private const int CharStackBufferSize = 32;
         private const string PosNumberFormat = "#";
 
         private static readonly string[] s_posCurrencyFormats =
