@@ -6139,7 +6139,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 
     unsigned naturalMul = 0;
 #ifdef TARGET_ARM64
-    // If an Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
     //
     //   *(ulong*)(data + index * 8); - can be optimized
     //   *(ulong*)(data + index * 7); - can not be optimized
