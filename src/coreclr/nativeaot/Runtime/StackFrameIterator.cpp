@@ -76,7 +76,7 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 #ifdef DACCESS_COMPILE
 #define EQUALS_RETURN_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
 #else
-#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PTR_VOID)PCODEToPINSTR((PCODE)PointerTo ## func_name))
+#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PointerTo ## func_name))
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -186,7 +186,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #ifdef TARGET_ARM
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
-    m_RegDisplay.pR11 = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_ChainPointer);
 
     if (pFrame->m_Flags & PTFF_SAVE_R4)  { m_RegDisplay.pR4 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R5)  { m_RegDisplay.pR5 = pPreservedRegsCursor++; }
@@ -632,6 +631,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR9 = (PTR_UIntNative)PTR_TO_REG(pCtx, R9);
     m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_REG(pCtx, R10);
     m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_REG(pCtx, R11);
+    m_RegDisplay.pR12 = (PTR_UIntNative)PTR_TO_REG(pCtx, R12);
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_TO_REG(pCtx, Lr);
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");

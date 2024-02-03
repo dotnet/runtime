@@ -5,7 +5,7 @@ import ProductVersion from "consts:productVersion";
 import BuildConfiguration from "consts:configuration";
 import type { RuntimeAPI } from "./types";
 
-import { Module, exportedRuntimeAPI, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
+import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
 import { GlobalObjects } from "./types/internal";
 import { configureEmscriptenStartup, configureRuntimeStartup, configureWorkerStartup } from "./startup";
 
@@ -18,6 +18,8 @@ import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset, instantiate_segmentation_rules_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
+
+export let runtimeList: RuntimeList;
 
 function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
@@ -47,15 +49,13 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     });
 
     // this code makes it possible to find dotnet runtime on a page via global namespace, even when there are multiple runtimes at the same time
-    let list: RuntimeList;
     if (!globalThisAny.getDotnetRuntime) {
         globalThisAny.getDotnetRuntime = (runtimeId: string) => globalThisAny.getDotnetRuntime.__list.getRuntime(runtimeId);
-        globalThisAny.getDotnetRuntime.__list = list = new RuntimeList();
+        globalThisAny.getDotnetRuntime.__list = runtimeList = new RuntimeList();
     }
     else {
-        list = globalThisAny.getDotnetRuntime.__list;
+        runtimeList = globalThisAny.getDotnetRuntime.__list;
     }
-    list.registerRuntime(exportedRuntimeAPI);
 
     return exportedRuntimeAPI;
 }
@@ -64,8 +64,11 @@ class RuntimeList {
     private list: { [runtimeId: number]: WeakRef<RuntimeAPI> } = {};
 
     public registerRuntime(api: RuntimeAPI): number {
-        api.runtimeId = Object.keys(this.list).length;
+        if (api.runtimeId === undefined) {
+            api.runtimeId = Object.keys(this.list).length;
+        }
         this.list[api.runtimeId] = create_weak_ref(api);
+        loaderHelpers.config.runtimeId = api.runtimeId;
         return api.runtimeId;
     }
 

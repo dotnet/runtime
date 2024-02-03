@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
@@ -12,7 +12,7 @@ import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry 
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
-import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_detached } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered, mono_wasm_pthread_on_pthread_registered } from "./pthreads/worker";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
@@ -31,10 +31,11 @@ import { mono_wasm_browser_entropy } from "./crypto";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
-export const mono_wasm_threads_imports = !MonoWasmThreads ? [] : [
+export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     // mono-threads-wasm.c
+    mono_wasm_pthread_on_pthread_registered,
     mono_wasm_pthread_on_pthread_attached,
-    mono_wasm_pthread_on_pthread_detached,
+    mono_wasm_pthread_on_pthread_unregistered,
     // threads.c
     mono_wasm_eventloop_has_unsettled_interop_promises,
     // diagnostics_server.c

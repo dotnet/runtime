@@ -448,27 +448,6 @@ struct PInvokeTransitionFrame
 typedef DPTR(MethodTable) PTR_EEType;
 typedef DPTR(PTR_EEType) PTR_PTR_EEType;
 
-struct EETypeRef
-{
-    union
-    {
-        MethodTable *    pEEType;
-        MethodTable **   ppEEType;
-        uint8_t *     rawPtr;
-        UIntTarget  rawTargetPtr; // x86_amd64: keeps union big enough for target-platform pointer
-    };
-
-    static const size_t DOUBLE_INDIR_FLAG = 1;
-
-    PTR_EEType GetValue()
-    {
-        if (dac_cast<TADDR>(rawTargetPtr) & DOUBLE_INDIR_FLAG)
-            return *dac_cast<PTR_PTR_EEType>(rawTargetPtr - DOUBLE_INDIR_FLAG);
-        else
-            return dac_cast<PTR_EEType>(rawTargetPtr);
-    }
-};
-
 // Blobs are opaque data passed from the compiler, through the binder and into the native image. At runtime we
 // provide a simple API to retrieve these blobs (they're keyed by a simple integer ID). Blobs are passed to
 // the binder from the compiler and stored in native images by the binder in a sequential stream, each blob
@@ -481,15 +460,6 @@ struct BlobHeader
     uint32_t m_size;   // Size of the individual blob excluding this header (DWORD aligned)
 };
 
-#ifdef FEATURE_CUSTOM_IMPORTS
-struct CustomImportDescriptor
-{
-    uint32_t  RvaEATAddr;  // RVA of the indirection cell of the address of the EAT for that module
-    uint32_t  RvaIAT;      // RVA of IAT array for that module
-    uint32_t  CountIAT;    // Count of entries in the above array
-};
-#endif // FEATURE_CUSTOM_IMPORTS
-
 enum RhEHClauseKind
 {
     RH_EH_CLAUSE_TYPED              = 0,
@@ -499,35 +469,4 @@ enum RhEHClauseKind
 };
 
 #define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED
-
-// mapping of cold code blocks to the corresponding hot entry point RVA
-// format is a as follows:
-// -------------------
-// | subSectionCount |     # of subsections, where each subsection has a run of hot bodies
-// -------------------     followed by a run of cold bodies
-// | hotMethodCount  |     # of hot bodies in subsection
-// | coldMethodCount |     # of cold bodies in subsection
-// -------------------
-// ... possibly repeated on ARM
-// -------------------
-// | hotRVA #1       |     RVA of the hot entry point corresponding to the 1st cold body
-// | hotRVA #2       |     RVA of the hot entry point corresponding to the 2nd cold body
-// ... one entry for each cold body containing the corresponding hot entry point
-
-// number of hot and cold bodies in a subsection of code
-// in x86 and x64 there's only one subsection, on ARM there may be several
-// for large modules with > 16 MB of code
-struct SubSectionDesc
-{
-    uint32_t          hotMethodCount;
-    uint32_t          coldMethodCount;
-};
-
-// this is the structure describing the cold to hot mapping info
-struct ColdToHotMapping
-{
-    uint32_t          subSectionCount;
-    SubSectionDesc  subSection[/*subSectionCount*/1];
-    //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
-};
 

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
@@ -24,8 +24,8 @@ export function init_managed_exports(): void {
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
-    const install_main_synchronization_context = MonoWasmThreads ? get_method("InstallMainSynchronizationContext") : undefined;
-    mono_assert(!MonoWasmThreads || install_main_synchronization_context, "Can't find InstallMainSynchronizationContext method");
+    const install_main_synchronization_context = WasmEnableThreads ? get_method("InstallMainSynchronizationContext") : undefined;
+    mono_assert(!WasmEnableThreads || install_main_synchronization_context, "Can't find InstallMainSynchronizationContext method");
     const call_entry_point = get_method("CallEntrypoint");
     mono_assert(call_entry_point, "Can't find CallEntrypoint method");
     const release_js_owned_object_by_gc_handle_method = get_method("ReleaseJSOwnedObjectByGCHandle");
@@ -189,7 +189,7 @@ export function init_managed_exports(): void {
             Module.stackRestore(sp);
         }
     };
-    if (MonoWasmThreads && install_main_synchronization_context) {
+    if (WasmEnableThreads && install_main_synchronization_context) {
         runtimeHelpers.javaScriptExports.install_main_synchronization_context = () => invoke_method_raw(install_main_synchronization_context);
     }
 }

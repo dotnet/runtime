@@ -503,7 +503,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
-    GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
@@ -557,12 +556,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-    GTF_HW_ER_MASK                = 0x30000000, // Bits used by handle types below 
-    GTF_HW_ER_TO_EVEN             = 0x00000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToEven (Default) "{rn-sae}"
-    GTF_HW_ER_TO_NEGATIVEINFINITY = 0x10000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToNegativeInfinity "{rd-sae}"
-    GTF_HW_ER_TO_POSITIVEINFINITY = 0x20000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToPositiveInfinity "{ru-sae}"
-    GTF_HW_ER_TO_ZERO             = 0x30000000, // GT_HWINTRINSIC -- embedded rounding mode: FloatRoundingMode = ToZero "{rz-sae}"
-
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -891,7 +887,7 @@ public:
 
     bool isContainedVecImmed() const
     {
-        return isContained() && OperIs(GT_CNS_VEC);
+        return isContained() && IsCnsVec();
     }
 
     bool isLclField() const
@@ -1493,7 +1489,8 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
-    bool isEvexCompatibleHWIntrinsic();
+    bool isEvexCompatibleHWIntrinsic() const;
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1510,7 +1507,12 @@ public:
         return false;
     }
 
-    bool isEvexCompatibleHWIntrinsic()
+    bool isEvexCompatibleHWIntrinsic() const
+    {
+        return false;
+    }
+
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
     {
         return false;
     }
@@ -2242,49 +2244,28 @@ public:
         return false;
     }
 
-#ifdef FEATURE_HW_INTRINSICS
-
-    void ClearEmbRoundingMode()
-    {
-        assert(gtOper == GT_HWINTRINSIC);
-        gtFlags &= ~GTF_HW_ER_MASK;
-    }
-    // Set GenTreeFlags on HardwareIntrinsic node to specify the FloatRoundingMode.
-    // mode can be one of the values from System.Runtime.Intrinsics.X86.FloatRoundingMode.
-    void SetEmbRoundingMode(uint8_t mode)
-    {
-        assert(gtOper == GT_HWINTRINSIC);
-        ClearEmbRoundingMode();
-        switch (mode)
-        {
-            case 0x09:
-                gtFlags |= GTF_HW_ER_TO_NEGATIVEINFINITY;
-                break;
-            case 0x0A:
-                gtFlags |= GTF_HW_ER_TO_POSITIVEINFINITY;
-                break;
-            case 0x0B:
-                gtFlags |= GTF_HW_ER_TO_ZERO;
-                break;
-            default:
-                break;
-        }
-    }
-
-    uint8_t GetEmbRoundingMode()
-    {
-        assert(gtOper == GT_HWINTRINSIC);
-        return (uint8_t)((gtFlags & GTF_HW_ER_MASK) >> 28);
-    }
-
-#endif // FEATURE_HW_INTRINSICS
-
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {
         assert(gtOper == GT_CNS_INT);
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    bool IsEmbMaskOp()
+    {
+        bool result = (gtFlags & GTF_HW_EM_OP) != 0;
+        assert(!result || (gtOper == GT_HWINTRINSIC));
+        return result;
+    }
+
+    void MakeEmbMaskOp()
+    {
+        assert(!IsEmbMaskOp());
+        gtFlags |= GTF_HW_EM_OP;
+    }
+
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
     bool IsCall() const
     {
@@ -4595,6 +4576,15 @@ public:
 #endif
     }
 
+    bool IsMismatchedArgType() const
+    {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+#else
+        return false;
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+    }
+
     void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
 
     // Get the number of bytes that this argument is occupying on the stack,
@@ -5582,7 +5572,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -9114,7 +9104,7 @@ inline bool GenTree::IsVectorCreate() const
 inline bool GenTree::IsVectorAllBitsSet() const
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return AsVecCon()->IsAllBitsSet();
     }
@@ -9132,7 +9122,7 @@ inline bool GenTree::IsVectorAllBitsSet() const
 inline bool GenTree::IsVectorConst()
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return true;
     }
