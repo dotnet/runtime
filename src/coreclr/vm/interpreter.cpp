@@ -73,7 +73,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
 #if defined(_DEBUG)
         m_methName = ::eeGetMethodFullName(comp, methInfo->ftn, &clsName);
 #else
-        m_methName = comp->getMethodNameFromMetadata(methInfo->ftn, &clsName, NULL, NULL);
+        m_methName = getMethodName(comp, methInfo->ftn, &clsName);
 #endif
         char* myClsName = new char[strlen(clsName) + 1];
         strcpy(myClsName, clsName);
@@ -752,7 +752,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     if (!jmpCall)
     {
         const char* clsName;
-        const char* methName = comp->getMethodNameFromMetadata(info->ftn, &clsName, NULL, NULL);
+        const char* methName = getMethodName(comp, info->ftn, &clsName);
         if (   !s_InterpretMeths.contains(methName, clsName, info->args.pSig)
             || s_InterpretMethsExclude.contains(methName, clsName, info->args.pSig))
         {
@@ -9283,7 +9283,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // Hardware intrinsics are recognized by name.
             const char* namespaceName = NULL;
             const char* className = NULL;
-            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
             if (
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
                 strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0 &&
@@ -9310,7 +9310,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // SIMD intrinsics are recognized by name.
             const char* namespaceName = NULL;
             const char* className = NULL;
-            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
             if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
             {
                 GCX_COOP();
@@ -9658,7 +9658,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     const char* methToCallName = NULL;
     {
         GCX_PREEMP();
-        methToCallName = m_interpCeeInfo.getMethodNameFromMetadata(CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName, NULL, NULL);
+        methToCallName = getMethodName(&m_interpCeeInfo, CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName);
     }
 #if INTERP_TRACING
     if (strncmp(methToCallName, "get_", 4) == 0)
@@ -11672,6 +11672,23 @@ static const char* CorInfoTypeNames[] = {
     "var"
 };
 
+// Simple version of getMethodName which supports IL Stubs such as IL_STUB_PInvoke additionally.
+// Also see getMethodNameFromMetadata and printMethodName in corinfo.h
+const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName, const char **enclosingClassName)
+{
+    MethodDesc *pMD = GetMethod(hnd);
+    if (pMD->IsILStub())
+    {
+        if (className != NULL)
+        {
+            *className = ILStubResolver::GetStubClassName(pMD);
+        }
+        return pMD->GetName();
+    }
+
+    return info->getMethodNameFromMetadata(hnd, className, namespaceName, enclosingClassName);
+}
+
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName)
 {
     CONTRACTL {
@@ -11685,7 +11702,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     const char* returnType = NULL;
 
     const char* className;
-    const char* methodName = info->getMethodNameFromMetadata(hnd, &className, NULL, NULL);
+    const char* methodName = getMethodName(info, hnd, &className);
     if (clsName != NULL)
     {
         *clsName = className;

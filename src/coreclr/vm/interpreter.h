@@ -538,6 +538,7 @@ struct CachedItem
 };
 
 
+const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName = NULL);
 
 // The per-InterpMethodInfo cache may map generic instantiation information to the
