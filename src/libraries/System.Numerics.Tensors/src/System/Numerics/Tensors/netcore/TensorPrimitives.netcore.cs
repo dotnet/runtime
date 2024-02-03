@@ -13060,9 +13060,9 @@ namespace System.Numerics.Tensors
             //
             // coshf = v/2 * exp(x - log(v)) where v = 0x1.0000e8p-1
 
-            private const double LOGV = 0.6931610107421875;
-            private const double HALFV = 1.000013828277588;
-            private const double INVV2 = 0.24999308586120605;
+            private const double LOGV = 0.6931471805599453;
+            private const double HALFV = 1.0;
+            private const double INVV2 = 0.25;
 
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
@@ -13161,9 +13161,9 @@ namespace System.Numerics.Tensors
             // Same as cosh, but with `z -` rather than `z +`, and with the sign
             // flipped on the result based on the sign of the input.
 
-            private const double LOGV = 0.6931610107421875;
-            private const double HALFV = 1.000013828277588;
-            private const double INVV2 = 0.24999308586120605;
+            private const double LOGV = 0.6931471805599453;
+            private const double HALFV = 1.0;
+            private const double INVV2 = 0.25;
 
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
