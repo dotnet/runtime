@@ -5330,7 +5330,7 @@ CseCandidateState::CseCandidateState(Compiler* compiler)
     : m_compiler(compiler), m_alloc(compiler->getAllocator(CMK_CSE)), m_stackMap(nullptr), m_candidates(nullptr)
 {
     m_candidates = new (m_alloc) jitstd::vector<StackNode*>(m_alloc);
-    m_stackMap = new (m_alloc) KeyToStackNodeMap(m_alloc);
+    m_stackMap   = new (m_alloc) KeyToStackNodeMap(m_alloc);
 }
 
 //------------------------------------------------------------------------
@@ -5354,7 +5354,7 @@ void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
         //
         ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(top->m_def->gtVNPair.GetLiberal());
         ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
-        
+
         if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
         {
             // Exceptions are covered; this tree is a use.
@@ -5364,14 +5364,14 @@ void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
                 // This is the first use, so we now have a bona-fide CSE candidate.
                 //
                 m_candidates->push_back(top);
-                
+
                 // Prepare to keep track of the uses.
                 //
                 top->m_uses = new (m_alloc) jitstd::vector<GenTree*>(m_alloc);
-                
+
                 JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(top->m_def));
             }
-            
+
             // We could search up the stack, but why would we have made a new def
             // if the current one was compatible with anything up stack?
             //
@@ -5380,7 +5380,7 @@ void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
         }
     }
 
-    // No available def, or exceptions were not covered, this is a new 
+    // No available def, or exceptions were not covered, this is a new
     // (potential) def, shadowing the old one.
     //
     StackNode* newNode = new (m_alloc) StackNode(block, tree, top);
@@ -5476,12 +5476,12 @@ void Compiler::optFindCseCandidatesNew()
     visitor.WalkTree(m_domTree);
 
     JITDUMP("NEWCSE: found %d candidates\n", cseState.GetCandidates()->size());
-    
+
     int i = 1;
     for (CseCandidateState::StackNode* cse : *cseState.GetCandidates())
     {
         JITDUMP("Candidate %02i: def [%06u] uses", i, dspTreeID(cse->m_def));
-        
+
         for (GenTree* use : *cse->m_uses)
         {
             JITDUMP(" [%06u]", dspTreeID(use));
