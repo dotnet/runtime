@@ -582,7 +582,7 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
             if (binop->OperIs(ScevOper::Add, ScevOper::Mul))
             {
                 // Normalize addrecs to the left
-                if (op2->OperIs(ScevOper::AddRec))
+                if (op2->OperIs(ScevOper::AddRec) && !op1->OperIs(ScevOper::AddRec))
                 {
                     std::swap(op1, op2);
                 }
