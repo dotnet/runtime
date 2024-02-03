@@ -7731,10 +7731,10 @@ public:
     AssertionIndex optAssertionGenPhiDefn(GenTree* tree);
     AssertionInfo optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo optAssertionGenJtrue(GenTree* tree);
-    AssertionIndex optCreateJtrueAssertions(GenTree*                   op1,
-                                            GenTree*                   op2,
-                                            Compiler::optAssertionKind assertionKind,
-                                            bool                       helperCallArgs = false);
+    AssertionIndex optCreateJtrueAssertions(GenTree*         op1,
+                                            GenTree*         op2,
+                                            optAssertionKind assertionKind,
+                                            bool             helperCallArgs = false);
     AssertionIndex optFindComplementary(AssertionIndex assertionIndex);
     void optMapComplementary(AssertionIndex assertionIndex, AssertionIndex index);
 
