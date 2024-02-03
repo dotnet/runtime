@@ -5077,6 +5077,8 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
     optCSEweight       = -1.0f;
     bool madeChanges   = false;
 
+    optFindCseCandidatesNew();
+
     optValnumCSE_Init();
 
     if (optValnumCSE_Locate(heuristic))
@@ -5327,6 +5329,7 @@ void Compiler::optPrintCSEDataFlowSet(EXPSET_VALARG_TP cseDataFlowSet, bool incl
 CseCandidateState::CseCandidateState(Compiler* compiler)
     : m_compiler(compiler), m_alloc(compiler->getAllocator(CMK_CSE)), m_stackMap(nullptr), m_candidates(nullptr)
 {
+    m_candidates = new (m_alloc) jitstd::vector<StackNode*>(m_alloc);
     m_stackMap = new (m_alloc) KeyToStackNodeMap(m_alloc);
 }
 
@@ -5343,48 +5346,42 @@ void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
     StackNode* top = nullptr;
     m_stackMap->Lookup(key, &top);
 
-    // If no tree with this key is available, this is a potential CSE def
+    // If a tree with this key is available, this is a potential CSE use
     //
-    if (top == nullptr)
+    if (top != nullptr)
     {
-        top->m_def   = tree;
-        top->m_block = block;
-
-        StackNode* newNode = new (m_alloc) StackNode(block, tree, top);
-        m_stackMap->Set(key, newNode, KeyToStackNodeMap::Overwrite);
-        return;
-    }
-
-    // Else a tree with the right key is available (a CSE def).
-    // This new tree may be a CSE use if the exceptional behavior is covered by the def.
-    //
-    ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(top->m_def->gtVNPair.GetLiberal());
-    ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
-
-    if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
-    {
-        // Exceptions covered; this tree is a use.
+        // See if the exceptional behavior of tree is covered by the def.
         //
-        if (top->m_uses == nullptr)
+        ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(top->m_def->gtVNPair.GetLiberal());
+        ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
+        
+        if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
         {
-            // This is the first use, so we now have a bona-fide CSE candidate.
+            // Exceptions are covered; this tree is a use.
             //
-            m_candidates->push_back(top);
-
-            // Prepare to keep track of the uses.
+            if (top->m_uses == nullptr)
+            {
+                // This is the first use, so we now have a bona-fide CSE candidate.
+                //
+                m_candidates->push_back(top);
+                
+                // Prepare to keep track of the uses.
+                //
+                top->m_uses = new (m_alloc) jitstd::vector<GenTree*>(m_alloc);
+                
+                JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(top->m_def));
+            }
+            
+            // We could search up the stack, but why would we have made a new def
+            // if the current one was compatible with anything up stack?
             //
-            top->m_uses = new (m_alloc) jitstd::vector<GenTree*>(m_alloc);
+            top->m_uses->push_back(tree);
+            return;
         }
-
-        // We could search up the stack, but why would we have made a new def
-        // if the current one was compatible with anything up stack?
-        //
-        top->m_uses->push_back(tree);
-        return;
     }
 
-    // Exceptions were not covered, this is a new (potential) def
-    // We may never see this case; if so we don't really need a stack...
+    // No available def, or exceptions were not covered, this is a new 
+    // (potential) def, shadowing the old one.
     //
     StackNode* newNode = new (m_alloc) StackNode(block, tree, top);
     m_stackMap->Set(key, newNode, KeyToStackNodeMap::Overwrite);
@@ -5412,4 +5409,87 @@ void CseCandidateState::PopBlockStacks(BasicBlock* block)
             m_stackMap->Set(key, node, KeyToStackNodeMap::SetKind::Overwrite);
         }
     }
+}
+
+//------------------------------------------------------------------------
+//
+void Compiler::optFindCseCandidatesNew()
+{
+    struct CseFindingTreeVisitor : GenTreeVisitor<CseFindingTreeVisitor>
+    {
+        BasicBlock*          m_block;
+        CseCandidateState&   m_state;
+        CSE_HeuristicCommon* m_heuristic;
+
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        CseFindingTreeVisitor(Compiler* comp, BasicBlock* block, CseCandidateState& state)
+            : GenTreeVisitor(comp), m_block(block), m_state(state), m_heuristic(comp->optGetCSEheuristic())
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+            if (m_heuristic->CanConsiderTree(tree, m_block->KindIs(BBJ_RETURN)))
+            {
+                m_state.Push(tree, m_block);
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    class CseFindingDomTreeVisitor : public DomTreeVisitor<CseFindingDomTreeVisitor>
+    {
+        CseCandidateState& m_candidateState;
+
+    public:
+        CseFindingDomTreeVisitor(Compiler* compiler, CseCandidateState& candidateState)
+            : DomTreeVisitor(compiler), m_candidateState(candidateState)
+        {
+        }
+
+        void PreOrderVisit(BasicBlock* block)
+        {
+            CseFindingTreeVisitor visitor(m_compiler, block, m_candidateState);
+            for (Statement* statement : block->Statements())
+            {
+                visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+            }
+        }
+
+        void PostOrderVisit(BasicBlock* block)
+        {
+            m_candidateState.PopBlockStacks(block);
+        }
+    };
+
+    m_dfsTree = fgComputeDfs();
+    m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+
+    CseCandidateState        cseState(this);
+    CseFindingDomTreeVisitor visitor(this, cseState);
+    visitor.WalkTree(m_domTree);
+
+    JITDUMP("NEWCSE: found %d candidates\n", cseState.GetCandidates()->size());
+    
+    int i = 1;
+    for (CseCandidateState::StackNode* cse : *cseState.GetCandidates())
+    {
+        JITDUMP("Candidate %02i: def [%06u] uses", i, dspTreeID(cse->m_def));
+        
+        for (GenTree* use : *cse->m_uses)
+        {
+            JITDUMP(" [%06u]", dspTreeID(use));
+        }
+        JITDUMP("\n");
+        i++;
+    }
+
+    m_dfsTree = nullptr;
+    m_domTree = nullptr;
 }
