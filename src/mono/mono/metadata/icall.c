@@ -1877,8 +1877,6 @@ ves_icall_RuntimeMethodHandle_ReboxFromNullable (MonoObjectHandle obj, MonoObjec
 guint32
 ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHandle type_handle)
 {
-	g_printf ("RuntimeTypeHandle_GetAttributes: &type_handle.type == %d; type_handle.type == %d\n", &(type_handle.type), type_handle.type);
-
 	MonoType *type = type_handle.type;
 
 	if (m_type_is_byref (type) || type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR)

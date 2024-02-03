@@ -782,9 +782,11 @@ namespace Wasm.Build.Tests
                         // Interpreter and AOT implementations of this are broken.
                         if (true) {
                             var ia = InlineArrayTest1();
+                            // The return value from the pinvoke appears to be correct, but when ia
+                            //  is passed in to the pinvoke, it's all zeroes.
                             var iares = InlineArrayTest2(ia);
-                            Console.WriteLine($""ia[1]={ia[1]} &ia={RefAsAddress(ref ia)} &ia[0]={RefAsAddress(ref ia[0])} &ia[1]={RefAsAddress(ref ia[1])} *&ia[1]=={ReadThroughAddress(ref ia[1])}"");
-                            Console.WriteLine($""iares[1]={iares[1]} &iares={RefAsAddress(ref iares)} &iares[0]={RefAsAddress(ref iares[0])} &iares[1]={RefAsAddress(ref iares[1])}"");
+                            Console.WriteLine($""ia[1]={ia[1]} &ia={RefAsAddress(ref ia)} &ia[1]={RefAsAddress(ref ia[1])}"");
+                            Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]} &iares={RefAsAddress(ref iares)} &iares[1]={RefAsAddress(ref iares[1])} *&iares[1]=={ReadThroughAddress(ref iares[1])}"");
                         }
 
                         MyFixedArray fa = new ();
@@ -842,7 +844,7 @@ namespace Wasm.Build.Tests
                     public static extern MyInlineArray accept_and_return_inlinearray(MyInlineArray arg);
                 }";
 
-            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
+            var extraProperties = "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>false</_WasmDevel><WasmNativeStrip>false</WasmNativeStrip>";
             var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";
 
             buildArgs = ExpandBuildArgs(buildArgs,
@@ -882,6 +884,11 @@ namespace Wasm.Build.Tests
             Assert.Contains("f (d)=3.14", runOutput);
             Assert.Contains("f (s)=3.14", runOutput);
             Assert.Contains("s (s)=3.14", runOutput);
+            Assert.Contains("paires.B=4", runOutput);
+            Assert.Contains("iares[0]=32", runOutput);
+            // FIXME
+            // Assert.Contains("iares[1]=2", runOutput);
+            Assert.Contains("fares.elements[1]=2", runOutput);
         }
 
         [Theory]
