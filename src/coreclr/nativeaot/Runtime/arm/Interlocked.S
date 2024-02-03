@@ -15,7 +15,7 @@
 // r2 = comparand
 LEAF_ENTRY RhpLockCmpXchg8, _TEXT
           dmb
-ALTERNATE_ENTRY RhpLockCmpXchg8AVLocation
+GLOBAL_LABEL RhpLockCmpXchg8AVLocation
 LOCAL_LABEL(CmpXchg8Retry):
           ldrexb       r3, [r0]
           cmp          r2, r3
@@ -38,7 +38,7 @@ LEAF_END RhpLockCmpXchg8, _TEXT
 LEAF_ENTRY RhpLockCmpXchg16, _TEXT
           uxth         r2, r2
           dmb
-ALTERNATE_ENTRY RhpLockCmpXchg16AVLocation
+GLOBAL_LABEL RhpLockCmpXchg16AVLocation
 LOCAL_LABEL(CmpXchg16Retry):
           ldrexh       r3, [r0]
           cmp          r2, r3
@@ -60,7 +60,7 @@ LEAF_END RhpLockCmpXchg16, _TEXT
 // r2 = comparand
 LEAF_ENTRY RhpLockCmpXchg32, _TEXT
           dmb
-ALTERNATE_ENTRY RhpLockCmpXchg32AVLocation
+GLOBAL_LABEL RhpLockCmpXchg32AVLocation
 LOCAL_LABEL(CmpXchg32Retry):
           ldrex        r3, [r0]
           cmp          r2, r3
@@ -81,7 +81,7 @@ LEAF_END RhpLockCmpXchg32, _TEXT
 // {r2,r3} = value
 // sp[0+8] = comparand
 LEAF_ENTRY RhpLockCmpXchg64, _TEXT
-ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
+GLOBAL_LABEL RhpLockCmpXchg64AVLocation
           ldr          r12, [r0]        // dummy read for null check
           PROLOG_PUSH  "{r4-r6,lr}"
           dmb
