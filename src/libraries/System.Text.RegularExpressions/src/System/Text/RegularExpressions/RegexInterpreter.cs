@@ -74,8 +74,15 @@ namespace System.Text.RegularExpressions
             int[] localruntrack = runtrack!;
             int localruntrackpos = runtrackpos;
 
-            localruntrack[--localruntrackpos] = i1;
-            localruntrack[--localruntrackpos] = _codepos;
+            if (localruntrackpos > 1)
+            {
+                localruntrack[--localruntrackpos] = i1;
+                localruntrack[--localruntrackpos] = _codepos;
+            }
+            else
+            {
+                localruntrackpos = 0;
+            }
 
             runtrackpos = localruntrackpos;
         }
@@ -121,9 +128,16 @@ namespace System.Text.RegularExpressions
             int[] localruntrack = runtrack!;
             int localruntrackpos = runtrackpos;
 
-            localruntrack[--localruntrackpos] = i1;
-            localruntrack[--localruntrackpos] = i2;
-            localruntrack[--localruntrackpos] = -_codepos;
+            if (localruntrackpos > 2)
+            {
+                localruntrack[--localruntrackpos] = i1;
+                localruntrack[--localruntrackpos] = i2;
+                localruntrack[--localruntrackpos] = -_codepos;
+            }
+            else
+            {
+                localruntrackpos = 0;
+            }
 
             runtrackpos = localruntrackpos;
         }
