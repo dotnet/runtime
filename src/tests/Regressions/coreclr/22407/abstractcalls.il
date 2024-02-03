@@ -60,7 +60,7 @@
   }
 }
 
-.method private hidebysig static void CallClass() cil managed
+.method public hidebysig static void CallClass() cil managed
 {
   newobj instance void C2::.ctor()
   ldc.i4.0
@@ -69,7 +69,7 @@
   ret
 }
 
-.method private hidebysig static void CallInterface() cil managed
+.method public hidebysig static void CallInterface() cil managed
 {
   newobj instance void C2::.ctor()
   ldc.i4.0

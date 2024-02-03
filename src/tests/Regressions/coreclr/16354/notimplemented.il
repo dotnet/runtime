@@ -40,7 +40,7 @@
   }
 }
 
-.method private hidebysig static void LoadFooer() cil managed noinlining
+.method public hidebysig static void LoadFooer() cil managed noinlining
 {
   newobj instance void Fooer::.ctor()
   pop
