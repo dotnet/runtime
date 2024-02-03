@@ -5340,6 +5340,12 @@ CseCandidateState::CseCandidateState(Compiler* compiler)
 //    tree - the tree to add
 //    block - The block where the tree appears
 //
+// Notes:
+//    trees should be pre-screened by the heuristic, via
+//    CanConsiderTree. But... we might want to push that
+//    check here and allow for things like LCL_VARs for uses
+//    (basically enabling aggressive copy prop of the CSE var)
+//
 void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
 {
     size_t     key = m_compiler->optKeyForCSE(tree);
@@ -5350,38 +5356,42 @@ void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
     //
     if (top != nullptr)
     {
-        // See if the exceptional behavior of tree is covered by the def.
+        // Watch for retyping of constant nodes
         //
-        ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(top->m_def->gtVNPair.GetLiberal());
-        ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
-
-        if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
+        if (!tree->OperIs(GT_CNS_INT) || (tree->TypeGet() == top->m_def->TypeGet()))
         {
-            // Exceptions are covered; this tree is a use.
+            // See if the exceptional behavior of tree is covered by the def.
             //
-            if (top->m_uses == nullptr)
+            ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(top->m_def->gtVNPair.GetLiberal());
+            ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
+
+            if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
             {
-                // This is the first use, so we now have a bona-fide CSE candidate.
+                // Exceptions are covered; this tree is a use.
                 //
-                m_candidates->push_back(top);
+                if (top->m_uses == nullptr)
+                {
+                    // This is the first use, so we now have a bona-fide CSE candidate.
+                    //
+                    m_candidates->push_back(top);
 
-                // Prepare to keep track of the uses.
+                    // Prepare to keep track of the uses.
+                    //
+                    top->m_uses = new (m_alloc) jitstd::vector<GenTree*>(m_alloc);
+
+                    JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(top->m_def));
+                }
+
+                // We could search up the stack, perhaps...
                 //
-                top->m_uses = new (m_alloc) jitstd::vector<GenTree*>(m_alloc);
-
-                JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(top->m_def));
+                top->m_uses->push_back(tree);
+                return;
             }
-
-            // We could search up the stack, but why would we have made a new def
-            // if the current one was compatible with anything up stack?
-            //
-            top->m_uses->push_back(tree);
-            return;
         }
     }
 
-    // No available def, or exceptions were not covered, this is a new
-    // (potential) def, shadowing the old one.
+    // No available def, or mistyped constant, or exceptions were not covered.
+    // This is a new (potential) def, shadowing the old one.
     //
     StackNode* newNode = new (m_alloc) StackNode(block, tree, top);
     m_stackMap->Set(key, newNode, KeyToStackNodeMap::Overwrite);
@@ -5391,7 +5401,7 @@ void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
 // PopStacks: Remove any CSE candidates whose defining tree is from the indicated block
 //
 // Arguments:
-//   block - blolck in question
+//   block - block in question
 //
 void CseCandidateState::PopBlockStacks(BasicBlock* block)
 {
@@ -5412,6 +5422,25 @@ void CseCandidateState::PopBlockStacks(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// optFindCseCandidatesNew: use dominance checks to locate sets of trees
+//    for CSEs
+//
+// Notes:
+//    This is mainly intended to avoid two pitfalls of the current CSE
+//    finding technique, and is inspired by the observation that there
+//    seem to be very few CSEs where a use can be reached by multiple defs:
+//    * there may be multi-def CSEs where some defs have no uses, leading
+//      to unnecessarily long live ranges (though using fewer locals)
+//    * there may be exception set collisions among defs, causing CSES to
+//      be dropped with no recourse.
+//
+//    There is a decent parallel here with building SSA form. We currently
+//    don't handle joins.
+//
+//    We could detect the true multi-def cases by noting the set of "live out"
+//    expressions from a block and then on the other side of the dominance
+//    frontier check if each pred brings in an available expression with the
+//    right key. However we're not set up to do that and the value is likely low.
 //
 void Compiler::optFindCseCandidatesNew()
 {
@@ -5420,23 +5449,45 @@ void Compiler::optFindCseCandidatesNew()
         BasicBlock*          m_block;
         CseCandidateState&   m_state;
         CSE_HeuristicCommon* m_heuristic;
+        bool                 m_hasArrLenCandidate;
 
         enum
         {
-            DoPreOrder = true,
+            DoPostOrder       = true,
+            UseExecutionOrder = true
         };
 
         CseFindingTreeVisitor(Compiler* comp, BasicBlock* block, CseCandidateState& state)
-            : GenTreeVisitor(comp), m_block(block), m_state(state), m_heuristic(comp->optGetCSEheuristic())
+            : GenTreeVisitor(comp)
+            , m_block(block)
+            , m_state(state)
+            , m_heuristic(comp->optGetCSEheuristic())
+            , m_hasArrLenCandidate(false)
         {
         }
 
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* const tree = *use;
+
+            // see optValnumCSE_Locate
+            //
+            if (tree->OperIsCompare() && m_hasArrLenCandidate)
+            {
+                // Check if this compare is a function of (one of) the checked
+                // bound candidate(s); we may want to update its value number.
+                // if the array length gets CSEd
+                m_compiler->optCseUpdateCheckedBoundMap(tree);
+            }
+
             if (m_heuristic->CanConsiderTree(tree, m_block->KindIs(BBJ_RETURN)))
             {
                 m_state.Push(tree, m_block);
+
+                if (tree->OperIsArrLength())
+                {
+                    m_hasArrLenCandidate = true;
+                }
             }
 
             return WALK_CONTINUE;
@@ -5492,4 +5543,54 @@ void Compiler::optFindCseCandidatesNew()
 
     m_dfsTree = nullptr;
     m_domTree = nullptr;
+
+    // Now that we have the candidate sets, we can feed them into optValnumCSE_Index,
+    // but as is, it will collapse distinct candidates with the same key into one
+    // (or drop the the whole thing). The only benefit we'd see from this is that
+    // we would never have any useless CSE defs.
+    //
+    // Instead we can just create the CSEdscs here directly.
+
+    // Todo...
+
+    // Finally we need to find a way to compute csdLiveAcrossCall.
+    //
+    // The rough idea here is to precompute this at the block level during
+    // a prior phase, and then in the visitor above compute the fragmented
+    // part from (def... ] and [...use) (if in different blocks) or (def...use)
+    // if in one block, an then (perhaps) do dataflow. Somewhat like what we
+    // do now to determine if a method is fully interruptible. This
+    // just feeds a heuristic so it might be ok to be approximate.
+    //
+    // Note there are some nuances here, say a CSE is live across a call but
+    // the call is unlikely, we might want a different strategy then if the
+    // call is guaranteed. Or we could (for cheap candidates, or high pressure
+    // situations) split the candidate into the before and after sets).
+    // We could also offer splitting as a choice to the heuristic, as if its
+    // life was already not complicated enough.
+    //
+    // We might be able to compute this and the BB_NO_CSE_IN stuff on demand,
+    // walking backwards up the flow from all uses to the def. If we had preorder
+    // numbers we could organize this efficiently perhaps, seeding the walk
+    // with uses that do not dominate other uses.
+    //
+    // We still need to watch for cases where the flow between a CSE def and
+    // use is split by BB_NO_CSE_IN... and/or run before RBO to avoid this problem,
+    // or have RBO flag when it runs into it... dataflow can do this too perhaps,
+    // maybe splitting the candidate up across the boundary ...?
+    //
+    // So a rough sketch would be: figure out which candidates live across
+    // status is unknown (no fragmented observation fired). Find the set of
+    // all uses that are not dominated by other uses. These are places where
+    // we need to start a reverse walk.
+    //
+    // Then reverse walk until we reach all defs, if we find a call we can drop
+    // all the corresponding uses. If we hit a BBF_NO_CSE_IN we can remove those
+    // uses and (hmmm) reset the live across state (guess not, we perhaps should
+    // track live across for each use, and if we split off uses then we can figure
+    // out if the split off part is live across or not).
+    //
+    // Also during locate if a dominating block has BBF_NO_CSE_IN we can split
+    // directly there and perhaps save some cycles. This thing is super rare
+    // though.
 }
