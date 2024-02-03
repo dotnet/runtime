@@ -616,7 +616,7 @@ namespace System.Reflection.Emit
             {
                 stackChange -= builder.ParameterCount;
             }
-            else if (methodInfo is SymbolMethod sm)
+            else if (methodInfo is ArrayMethod sm)
             {
                 stackChange -= sm.ParameterTypes.Length;
             }

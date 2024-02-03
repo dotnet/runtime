@@ -296,39 +296,50 @@ namespace System.Reflection.Emit.Tests
             {
                 AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("MyAssembly"));
 
-                ModuleBuilder moduleBuilder = ab.DefineDynamicModule("MyModule");
-                TypeBuilder typeBuilder = moduleBuilder.DefineType("TempClass", TypeAttributes.Public);
-                Type[] paramArray = { typeof(Array) };
-                // Add 'SortArray' method to the class, with the given signature.
-                MethodBuilder myMethod = typeBuilder.DefineMethod("SortArray", MethodAttributes.Public, typeof(Array), paramArray);
+                ModuleBuilder mb = ab.DefineDynamicModule("MyModule");
+                TypeBuilder tb = mb.DefineType("TestClass", TypeAttributes.Public);
+                Type tbArray = tb.MakeArrayType(2);
+                Type[] paramArray = { tbArray, typeof(int), typeof(int) };
+                MethodBuilder getMethod = tb.DefineMethod("GetArray", MethodAttributes.Public | MethodAttributes.Static, tb, paramArray);
 
-                Type[] myArrayClass = new Type[1];
-                Type[] parameterTypes = { typeof(Array) };
-                // Get the 'MethodInfo' object corresponding to 'Sort' method of 'Array' class.
-                MethodInfo myMethodInfo = moduleBuilder.GetArrayMethod(myArrayClass.GetType(), "Sort", CallingConventions.Standard, null, parameterTypes);
-                Assert.Equal(typeof(Type[]), myMethodInfo.DeclaringType);
-                Assert.Equal("Sort", myMethodInfo.Name);
-                Assert.Equal(CallingConventions.Standard, myMethodInfo.CallingConvention);
-                Assert.Equal(typeof(void), myMethodInfo.ReturnType);
+                MethodInfo arrayGetMethod = mb.GetArrayMethod(tbArray, "Get", CallingConventions.HasThis, tb, [typeof(int), typeof(int)]);
+                Assert.Equal(tbArray, arrayGetMethod.DeclaringType);
+                Assert.Equal("Get", arrayGetMethod.Name);
+                Assert.Equal(CallingConventions.HasThis, arrayGetMethod.CallingConvention);
+                Assert.Equal(tb, arrayGetMethod.ReturnType);
 
-                ILGenerator methodIL = myMethod.GetILGenerator();
-                methodIL.Emit(OpCodes.Ldarg_1);
-                methodIL.Emit(OpCodes.Call, myMethodInfo);
-                methodIL.Emit(OpCodes.Ldarg_1);
-                methodIL.Emit(OpCodes.Ret);
+                ILGenerator getIL = getMethod.GetILGenerator();
+                getIL.Emit(OpCodes.Ldarg_0);
+                getIL.Emit(OpCodes.Ldarg_1);
+                getIL.Emit(OpCodes.Ldarg_2);
+                getIL.Emit(OpCodes.Call, arrayGetMethod);
+                getIL.Emit(OpCodes.Ret);
 
-                // Complete the creation of type.
-                typeBuilder.CreateType();
+                MethodInfo arraySetMethod = mb.GetArrayMethod(tbArray, "Set", CallingConventions.HasThis, typeof(void), [typeof(int), typeof(int), tb]);
+                MethodBuilder setMethod = tb.DefineMethod("SetArray", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [tbArray, typeof(int), typeof(int), tb]);
+                ILGenerator setIL = setMethod.GetILGenerator();
+                setIL.Emit(OpCodes.Ldarg_0);
+                setIL.Emit(OpCodes.Ldarg_1);
+                setIL.Emit(OpCodes.Ldarg_2);
+                setIL.Emit(OpCodes.Ldarg_3);
+                setIL.Emit(OpCodes.Call, arraySetMethod);
+                setIL.Emit(OpCodes.Ret);
+
+                tb.CreateType();
                 ab.Save(file.Path);
 
-                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
-                {
-                    Type typeFromDisk = mlc.LoadFromAssemblyPath(file.Path).GetType("TempClass");
-                    MethodInfo method = typeFromDisk.GetMethod("SortArray");
-                    Assert.NotNull(typeFromDisk);
-                    Assert.NotNull(method);
-                    Assert.NotNull(method.GetMethodBody());
-                }
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
+                Type typeFromDisk = assemblyFromDisk.GetType("TestClass");
+                object instance = Activator.CreateInstance(typeFromDisk);
+                Array a = Array.CreateInstance(typeFromDisk, 2, 2);
+                MethodInfo setArray = typeFromDisk.GetMethod("SetArray");
+                setArray.Invoke(null, [a, 0, 0, instance]);
+                MethodInfo getArray = typeFromDisk.GetMethod("GetArray");
+                object obj = getArray.Invoke(null, [a, 0, 0]);
+                Assert.NotNull(obj);
+                Assert.Equal(instance, obj);
+                tlc.Unload();
             }
         }
 

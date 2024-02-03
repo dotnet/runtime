@@ -2419,5 +2419,38 @@ internal class Dummy
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void ReferenceNestedGenericCollectionsWithTypeBuilderParameterInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                TypeBuilder nestedType = type.DefineNestedType("NestedType", TypeAttributes.NestedPublic);
+
+                Type returnType = typeof(List<>).MakeGenericType(typeof(Dictionary<,>).MakeGenericType(nestedType, typeof(bool)));
+                MethodBuilder nestedMethod = nestedType.DefineMethod("M1", MethodAttributes.Public, returnType, null);
+                ILGenerator nestedIL = nestedMethod.GetILGenerator();
+                nestedIL.Emit(OpCodes.Ldc_I4_4);
+                nestedIL.Emit(OpCodes.Newobj, TypeBuilder.GetConstructor(returnType, typeof(List<>).GetConstructor([typeof(int)])));
+                nestedIL.Emit(OpCodes.Ret);
+
+                nestedType.CreateType();
+                type.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                Type nestedFromDisk = typeFromDisk.GetNestedType("NestedType");
+                MethodInfo methodFromDisk = nestedFromDisk.GetMethod("M1");
+                object obj = Activator.CreateInstance(nestedFromDisk);
+                object result = methodFromDisk.Invoke(obj, null);
+                Assert.NotNull(result);
+                Type listType = result.GetType();
+                Type expectedType = typeof(List<>).MakeGenericType(typeof(Dictionary<,>).MakeGenericType(nestedFromDisk, typeof(bool)));
+                Assert.Equal(expectedType, listType);
+                tlc.Unload();
+            }
+        }
     }
 }

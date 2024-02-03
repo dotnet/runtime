@@ -5,7 +5,7 @@ using System.Globalization;
 
 namespace System.Reflection.Emit
 {
-    internal sealed class SymbolMethod : MethodInfo
+    internal sealed class ArrayMethod : MethodInfo
     {
         #region Private Data Members
         private readonly ModuleBuilder _module;
@@ -18,7 +18,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
         // This is a kind of MethodInfo to represent methods for array type of unbaked type
-        internal SymbolMethod(ModuleBuilder module, Type arrayClass, string methodName,
+        internal ArrayMethod(ModuleBuilder module, Type arrayClass, string methodName,
             CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
         {
             _returnType = returnType ?? typeof(void);

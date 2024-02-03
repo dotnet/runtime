@@ -545,9 +545,9 @@ namespace System.Reflection.Emit
                         {
                             memberHandle = AddMethodSpecification(GetMemberHandle(method.GetGenericMethodDefinition()), method.GetGenericArguments());
                         }
-                        else if (method is SymbolMethod sm)
+                        else if (method is ArrayMethod sm)
                         {
-                            memberHandle = AddMemberReference(sm.Name, GetTypeHandle(sm.DeclaringType!), GetMethodSymbolSignature(sm));
+                            memberHandle = AddMemberReference(sm.Name, GetTypeHandle(sm.DeclaringType!), GetMethodArrayMethodSignature(sm));
                         }
                         else
                         {
@@ -585,8 +585,11 @@ namespace System.Reflection.Emit
             MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
 
-        private BlobBuilder GetMethodSymbolSignature(SymbolMethod method) => MetadataSignatureHelper.GetMethodSignature(
-            this, method.ParameterTypes, method.ReturnType, GetSignatureConvention(method.CallingConvention));
+        private BlobBuilder GetMethodArrayMethodSignature(ArrayMethod method) => MetadataSignatureHelper.GetMethodSignature(
+            this, method.ParameterTypes, method.ReturnType, GetSignatureConvention(method.CallingConvention), isInstance: IsInstance(method.CallingConvention));
+
+        private static bool IsInstance(CallingConventions callingConvention) =>
+            callingConvention.HasFlag(CallingConventions.HasThis) || callingConvention.HasFlag(CallingConventions.ExplicitThis) ? true : false;
 
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention)
         {
@@ -882,14 +885,19 @@ namespace System.Reflection.Emit
         }
 
         private static bool IsConstructedFromNotBakedTypeBuilder(Type type) => type.IsConstructedGenericType &&
-            (type.GetGenericTypeDefinition() is TypeBuilderImpl tb && tb._handle == default) ||
-             ContainsNotBakedTypeBuilder(type.GetGenericArguments());
+            (type.GetGenericTypeDefinition() is TypeBuilderImpl tb && tb._handle == default ||
+             ContainsNotBakedTypeBuilder(type.GetGenericArguments()));
 
         private static bool ContainsNotBakedTypeBuilder(Type[] genericArguments)
         {
             foreach (Type type in genericArguments)
             {
                 if (type is TypeBuilderImpl tb && tb._handle == default)
+                {
+                    return true;
+                }
+
+                if (type.IsConstructedGenericType && ContainsNotBakedTypeBuilder(type.GetGenericArguments()))
                 {
                     return true;
                 }
@@ -919,7 +927,8 @@ namespace System.Reflection.Emit
                 return mb._handle;
             }
 
-            if (IsConstructedMethodFromNotBakedMethodBuilder(method))
+            if (IsConstructedMethodFromNotBakedMethodBuilder(method) ||
+                IsArrayMethodFromNotBakedTypeBuilder(method))
             {
                 return default;
             }
@@ -927,8 +936,11 @@ namespace System.Reflection.Emit
             return GetHandleForMember(method);
         }
 
+        private static bool IsArrayMethodFromNotBakedTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
+            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl tb && tb._handle == default;
+
         private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) =>
-            method.IsConstructedGenericMethod && method.GetGenericMethodDefinition() is MethodBuilderImpl mb2 && mb2._handle == default;
+            method.IsConstructedGenericMethod && method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default;
 
         internal EntityHandle GetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
@@ -1070,7 +1082,7 @@ namespace System.Reflection.Emit
             // method that takes an array of the type as a parameter. In order to access the elements of the array,
             // you will need to call methods of the Array class.
 
-            return new SymbolMethod(this, arrayClass, methodName, callingConvention, returnType, parameterTypes);
+            return new ArrayMethod(this, arrayClass, methodName, callingConvention, returnType, parameterTypes);
         }
 
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
