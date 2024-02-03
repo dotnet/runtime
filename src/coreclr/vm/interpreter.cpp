@@ -9243,6 +9243,10 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
+        case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
+            DoGetArrayDataReference();
+            didIntrinsic = true;
+            break;
 #if INTERP_ILSTUBS
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -9294,7 +9298,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                 DoGetIsSupported();
                 didIntrinsic = true;
             }
-            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0 && strncmp(className, "Vector", 6) == 0 && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0 && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
             {
                 GCX_COOP();
                 DoGetIsSupported();
@@ -10864,6 +10868,39 @@ void Interpreter::DoGetIsSupported()
     m_curStackHt++;
 }
 
+void Interpreter::DoGetArrayDataReference()
+{
+    CONTRACTL {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        } CONTRACTL_END;
+
+    _ASSERTE(m_curStackHt > 0);
+    unsigned ind = m_curStackHt - 1;
+
+#ifdef _DEBUG
+    _ASSERTE(OpStackTypeGet(ind).ToCorInfoType() == CORINFO_TYPE_CLASS);
+#endif // _DEBUG
+
+    Object* obj = OpStackGet<Object*>(ind);
+
+    if (obj == NULL)
+    {
+        ThrowNullPointerException();
+    }
+
+#ifdef _DEBUG
+    _ASSERTE(obj->GetMethodTable()->IsArray());
+#endif // _DEBUG
+
+    ArrayBase* a = reinterpret_cast<ArrayBase*>(obj);
+    ThrowOnInvalidPointer(a);
+    PTR_BYTE dataPtr = a->GetDataPtr();
+    OpStackSet<void*>(ind, dataPtr);
+    OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_BYREF));
+}
+
 void Interpreter::RecordConstrainedCall()
 {
     CONTRACTL {
@@ -11707,6 +11744,20 @@ InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HAN
                     if (strcmp(methodName, "GetStubContext") == 0)
                     {
                         result = NI_System_StubHelpers_GetStubContext;
+                    }
+                }
+            }
+            else if (strncmp(namespaceName, "Runtime.", 8) == 0)
+            {
+                namespaceName += 8;
+                if (strcmp(namespaceName, "InteropServices") == 0)
+                {
+                    if (strcmp(className, "MemoryMarshal") == 0)
+                    {
+                        if (strcmp(methodName, "GetArrayDataReference") == 0)
+                        {
+                            result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
+                        }
                     }
                 }
             }

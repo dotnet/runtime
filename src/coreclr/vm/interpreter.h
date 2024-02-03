@@ -542,6 +542,7 @@ enum InterpreterNamedIntrinsics : unsigned short
 {
     NI_Illegal = 0,
     NI_System_StubHelpers_GetStubContext,
+    NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 };
 
 InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
@@ -1788,6 +1789,7 @@ private:
     void DoGetTypeFromHandle();
     void DoSIMDHwAccelerated();
     void DoGetIsSupported();
+    void DoGetArrayDataReference();
 
     // Returns the proper generics context for use in resolving tokens ("precise" in the sense of including generic instantiation
     // information).
