@@ -24,21 +24,21 @@ namespace Internal.NativeFormat
 
         public static ushort ReadUInt16(ref byte* stream)
         {
-            ushort result = Unsafe.ReadUnaligned<ushort>(ref *stream); // Assumes little endian and unaligned access
+            ushort result = Unsafe.ReadUnaligned<ushort>(stream); // Assumes little endian and unaligned access
             stream += 2;
             return result;
         }
 
         public static uint ReadUInt32(ref byte* stream)
         {
-            uint result = Unsafe.ReadUnaligned<uint>(ref *stream); // Assumes little endian and unaligned access
+            uint result = Unsafe.ReadUnaligned<uint>(stream); // Assumes little endian and unaligned access
             stream += 4;
             return result;
         }
 
         public static ulong ReadUInt64(ref byte* stream)
         {
-            ulong result = Unsafe.ReadUnaligned<ulong>(ref *stream); // Assumes little endian and unaligned access
+            ulong result = Unsafe.ReadUnaligned<ulong>(stream); // Assumes little endian and unaligned access
             stream += 8;
             return result;
         }

@@ -115,7 +115,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T ReadUnaligned<T>(ref readonly byte source)
+        public static T ReadUnaligned<T>(void* source)
         {
             throw new PlatformNotSupportedException();
         }
