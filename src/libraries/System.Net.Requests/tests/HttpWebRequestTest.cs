@@ -2112,7 +2112,7 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.AllowWriteStreamBuffering = false;
                     using var stream = await request.GetRequestStreamAsync();
-                    for (int i = 0; i < size / 16; i++)
+                    for (int i = 0; i < size / text.Length; i++)
                     {
                         await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
                     }
@@ -2122,7 +2122,10 @@ namespace System.Net.Tests
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         var data = await connection.ReadRequestDataAsync();
-                        Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
+                        for (int i = 0; i < data.Body.Length; i += text.Length)
+                        {
+                            Assert.Equal(text, Encoding.UTF8.GetString(data.Body[i..(i + text.Length)]));
+                        }
                     });
                 }
             );
@@ -2130,8 +2133,8 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData(0)]
-        [InlineData(0.1)]
-        public async Task SendHttpPost_WriteBufferingEnabled(int delaySec)
+        [InlineData(100)]
+        public async Task SendHttpPost_WriteBufferingEnabled(int delayMs)
         {
             const string text = "Hello World!!!!\n";
             await LoopbackServer.CreateClientAndServerAsync(
@@ -2143,14 +2146,14 @@ namespace System.Net.Tests
                     request.ContentType = "application/text";
                     request.ContentLength = size;
                     request.Method = "POST";
-                    request.Timeout = (size/16 * delaySec) + request.Timeout;
+                    request.Timeout = (size/16 * delayMs * 2) + request.Timeout;
                     using var stream = await request.GetRequestStreamAsync();
                     for (int i = 0; i < size/16; i++)
                     {
                         await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
-                        if (delaySec > 0)
+                        if (delayMs > 0)
                         {
-                            await Task.Delay(TimeSpan.FromSeconds(delaySec));
+                            await Task.Delay(TimeSpan.FromMilliseconds(delayMs));
                         }
                     }
                 },
