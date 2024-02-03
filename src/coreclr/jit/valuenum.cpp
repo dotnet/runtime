@@ -6347,17 +6347,14 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 {
     VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
+    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
     {
-        switch ((genTreeOps)funcApp.m_func)
+        if ((funcApp.m_func == (VNFunc)GT_LE) || (funcApp.m_func == (VNFunc)GT_GE) ||
+            (funcApp.m_func == (VNFunc)GT_LT) || (funcApp.m_func == (VNFunc)GT_GT))
         {
-            case GT_LE:
-            case GT_LT:
-            case GT_GE:
-            case GT_GT:
-                return IsVNInt32Constant(funcApp.m_args[0]) || IsVNInt32Constant(funcApp.m_args[1]);
-            default:
-                break;
+            const bool op1IsConst = IsVNInt32Constant(funcApp.m_args[0]);
+            const bool op2IsConst = IsVNInt32Constant(funcApp.m_args[1]);
+            return op1IsConst != op2IsConst;
         }
     }
     return false;
