@@ -366,7 +366,7 @@ namespace System
             {
                 NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
 
-                if (!TryStringToNumber(value, style, ref number, info))
+                if (!TryStringToNumber(MemoryMarshal.Cast<char, Utf16Char>(value), style, ref number, info))
                 {
                     result = default;
                     ret = ParsingStatus.Failed;
