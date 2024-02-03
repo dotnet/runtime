@@ -708,7 +708,7 @@ namespace Mono.Linker.Steps
 			var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
 			if (defaultImplementations != null) {
 				foreach (var defaultImplementationInfo in defaultImplementations) {
-					ProcessDefaultImplementation (defaultImplementationInfo.InstanceType, defaultImplementationInfo.ProvidingInterface);
+					ProcessDefaultImplementation (defaultImplementationInfo.ImplementingType, defaultImplementationInfo.InterfaceImpl);
 				}
 			}
 		}
@@ -2556,47 +2556,10 @@ namespace Mono.Linker.Steps
 			if (Annotations.IsMarked (method))
 				return false;
 
-			// If the override is a DIM that provides an implementation for a type that requires the interface, we may need to mark the DIM
-			var dims = Annotations.GetDefaultInterfaceImplementations (@base).Where(dim => Annotations.IsRelevantToVariantCasting (dim.InstanceType));
-			if (dims.Any (dim => dim.DefaultInterfaceMethod == method && Annotations.IsRelevantToVariantCasting (dim.InstanceType)))
-			{
-				// We need to find the most derived DIM for each type that has DIMs -- if there is a most derived DIM, we only mark that DIM
-				var dimsByInstanceType = dims.GroupBy (dim => dim.InstanceType).Where(group => group.Any(dim => dim.DefaultInterfaceMethod == method));
-				foreach (var group in dimsByInstanceType) {
-					var allDims = group.ToArray ();
-					int mostDerivedDimIndex = -1;
-					for (int i = 0; i < allDims.Length; i++) {
-						var derivesFromAllOtherDimProviders = true;
-						// Check if DIM i is the most specific DIM for the type by checking if it implements all the other DIM providers for the type
-						for (int j = 0; j < allDims.Length && derivesFromAllOtherDimProviders; j++) {
-							if (j == i)
-								continue;
-							// If the DIM provider i implements DIM provider j, then i is a more specific implementation that j. Otherwise, it is not and we check the next DIM provider
-							if (!allDims[i].DefaultInterfaceMethod.DeclaringType.Interfaces
-								.Any(iface => Context.Resolve(iface.InterfaceType) == allDims[j].DefaultInterfaceMethod.DeclaringType))
-							{
-								derivesFromAllOtherDimProviders = false;
-								break;
-							}
-						}
-						if (derivesFromAllOtherDimProviders) {
-							mostDerivedDimIndex = i;
-							break;
-						}
-					}
-					// If there is a most derived DIM, we only need to mark that DIM -- return true if the override is the most derived DIM
-					if (mostDerivedDimIndex != -1) {
-						if (allDims[mostDerivedDimIndex].DefaultInterfaceMethod == method)
-							return true;
-						else
-							continue;
-					} else {
-						// If there is no most derived DIM, all DIMs should be marked.
-						// We already checked that the override is a DIM that provides an implementation for a type that requires the interface, so we can return true
-						return true;
-					}
-				}
-			}
+			// If the override is a DIM that provides an implementation for a type that requires the interface, we may need the DIM
+			// Technically we only need it if it's the most derived DIM, but we can overmark slightly here
+			if (Annotations.GetDefaultInterfaceImplementations (@base).Any (dim => dim.DefaultInterfaceMethod == method && Annotations.IsRelevantToVariantCasting (dim.ImplementingType)))
+				return true;
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
@@ -2612,7 +2575,7 @@ namespace Mono.Linker.Steps
 
 			// If the interface method is abstract, mark the implementation method
 			// The method is needed for valid IL.
-			if (@base.IsAbstract)
+			if (@base.IsAbstract && !@method.DeclaringType.IsInterface)
 				return true;
 
 			// If the method is static and the implementing type is relevant to variant casting, mark the implementation method.
