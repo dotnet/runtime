@@ -1964,6 +1964,12 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex,
         AssertionIndex index = optCreateAssertion(op1, op2, OAK_EQUAL, helperCallArgs);
         optMapComplementary(index, assertionIndex);
     }
+
+    // Are we making a subtype or exact type assertion?
+    if ((candidateAssertion.op1.kind == O1K_SUBTYPE) || (candidateAssertion.op1.kind == O1K_EXACT_TYPE))
+    {
+        optCreateAssertion(op1, nullptr, OAK_NOT_EQUAL);
+    }
 }
 
 // optAssertionGenCast: Create a tentative subrange assertion for a cast.
