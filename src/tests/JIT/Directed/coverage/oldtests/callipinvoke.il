@@ -197,7 +197,7 @@
     // Code size       6 (0x6)
     .maxstack  1
 
-    IL_0000:  call       int32 main()
+    IL_0000:  call       int32 callipinvoke::main()
     IL_0005:  ret
   } // end of global method '_mainMSIL'
 }
