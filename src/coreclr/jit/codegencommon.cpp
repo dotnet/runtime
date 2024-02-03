@@ -1257,7 +1257,6 @@ AGAIN:
                 rv1 = op2;
                 rv2 = op1->AsOp()->gtOp1;
 
-                // If all scales are allowed continue trying to fold.
                 int argScale;
                 while ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (argScale = rv2->GetScaledIndex()) != 0)
                 {
