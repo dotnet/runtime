@@ -109,5 +109,15 @@ namespace System.Runtime.CompilerServices
         {
             throw new PlatformNotSupportedException();
         }
+
+        /// <summary>
+        /// Reads a value of type <typeparamref name="T"/> from the given location.
+        /// </summary>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(ref readonly byte source)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }
