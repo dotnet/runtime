@@ -697,9 +697,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
         static const AssertionIndex countFunc[] = {64, 128, 256, 64};
         static const unsigned       upperBound  = ArrLen(countFunc) - 1;
         const unsigned              codeSize    = info.compILCodeSize / 512;
-
-        // CI test
-        optMaxAssertionCount = 256; // countFunc[min(upperBound, codeSize)];
+        optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
 
         optValueNumToAsserts =
             new (getAllocator(CMK_AssertionProp)) ValueNumToAssertsMap(getAllocator(CMK_AssertionProp));
