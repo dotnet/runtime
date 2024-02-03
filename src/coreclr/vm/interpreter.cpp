@@ -9294,6 +9294,12 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                 DoGetIsSupported();
                 didIntrinsic = true;
             }
+            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0 && strncmp(className, "Vector", 6) == 0 && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+            {
+                GCX_COOP();
+                DoGetIsSupported();
+                didIntrinsic = true;
+            }
         }
 
 #if FEATURE_SIMD
