@@ -77,8 +77,6 @@ mono_simd_intrinsics_init (void)
 	if ((mini_get_cpu_features () & MONO_CPU_X86_AVX) != 0)
 		register_size = 32;
 #endif
-	/* Tell the class init code the size of the System.Numerics.Register type */
-	mono_simd_register_size = register_size;
 }
 
 MonoInst*
