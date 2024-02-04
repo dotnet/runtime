@@ -115,7 +115,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void ICollectionOfT_CopyTo()
         {
-            string[] expected = new[] { "This ", "is ", "a ", "sentence" };
+            string[] expected = ["This ", "is ", "a ", "sentence"];
             ICollection<Capture> collection = CreateCollection();
 
             Capture[] array = new Capture[collection.Count];
@@ -128,7 +128,7 @@ namespace System.Text.RegularExpressions.Tests
         public static void ICollectionOfT_CopyTo_Invalid()
         {
             ICollection<Capture> collection = CreateCollection();
-            AssertExtensions.Throws<ArgumentNullException>("array", () => collection.CopyTo((Capture[])null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => collection.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Capture[1], -1));
             AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Capture[1], 0));
             AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Capture[1], 1));
@@ -176,7 +176,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void DebuggerAttributeTests_Null()
         {
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(CaptureCollection), null));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(typeof(CaptureCollection)));
             Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
     }

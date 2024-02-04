@@ -207,22 +207,10 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        // A GT_NOP is either a passthrough (if it is void, or if it has
-        // a child), but must be considered to produce a dummy value if it
-        // has a type but no child
         case GT_NOP:
             srcCount = 0;
-            assert((tree->gtGetOp1() == nullptr) || tree->isContained());
-            if (tree->TypeGet() != TYP_VOID && tree->gtGetOp1() == nullptr)
-            {
-                assert(dstCount == 1);
-                BuildUse(tree->gtGetOp1());
-                BuildDef(tree);
-            }
-            else
-            {
-                assert(dstCount == 0);
-            }
+            assert(tree->TypeIs(TYP_VOID));
+            assert(dstCount == 0);
             break;
 
         case GT_KEEPALIVE:
@@ -437,17 +425,42 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 3;
             assert(dstCount == 1);
 
+            GenTree* addr      = tree->AsCmpXchg()->Addr();
+            GenTree* data      = tree->AsCmpXchg()->Data();
+            GenTree* comparand = tree->AsCmpXchg()->Comparand();
+
             // Comparand is preferenced to RAX.
             // The remaining two operands can be in any reg other than RAX.
-            BuildUse(tree->AsCmpXchg()->Addr(), availableIntRegs & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->Data(), availableIntRegs & ~RBM_RAX);
-            BuildUse(tree->AsCmpXchg()->Comparand(), RBM_RAX);
+
+            const unsigned nonRaxCandidates = availableIntRegs & ~RBM_RAX;
+            BuildUse(addr, nonRaxCandidates);
+            BuildUse(data, varTypeIsByte(tree) ? (nonRaxCandidates & RBM_BYTE_REGS) : nonRaxCandidates);
+            BuildUse(comparand, RBM_RAX);
             BuildDef(tree, RBM_RAX);
         }
         break;
 
         case GT_XORR:
         case GT_XAND:
+            if (!tree->IsUnusedValue())
+            {
+                GenTree* addr = tree->gtGetOp1();
+                GenTree* data = tree->gtGetOp2();
+
+                // These don't support byte operands.
+                assert(!varTypeIsByte(data));
+
+                // if tree's value is used, we'll emit a cmpxchg-loop idiom (requires RAX)
+                buildInternalIntRegisterDefForNode(tree, availableIntRegs & ~RBM_RAX);
+                BuildUse(addr, availableIntRegs & ~RBM_RAX);
+                BuildUse(data, availableIntRegs & ~RBM_RAX);
+                BuildDef(tree, RBM_RAX);
+                buildInternalRegisterUses();
+                srcCount = 2;
+                assert(dstCount == 1);
+                break;
+            }
+            FALLTHROUGH;
         case GT_XADD:
         case GT_XCHG:
         {
@@ -462,7 +475,7 @@ int LinearScan::BuildNode(GenTree* tree)
             setDelayFree(addrUse);
             tgtPrefUse = addrUse;
             assert(!data->isContained());
-            BuildUse(data);
+            BuildUse(data, varTypeIsByte(tree) ? RBM_BYTE_REGS : RBM_NONE);
             srcCount = 2;
             assert(dstCount == 1);
             BuildDef(tree);
@@ -1406,6 +1419,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 sizeRegMask    = RBM_RCX;
                 break;
 
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
+
 #ifdef TARGET_AMD64
             case GenTreeBlk::BlkOpKindHelper:
                 dstAddrRegMask = RBM_ARG_0;
@@ -2136,6 +2154,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
+        if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
+            numArgs == HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) && !lastOp->IsCnsIntOrI())
+        {
+            buildInternalIntRegisterDefForNode(intrinsicTree);
+            buildInternalIntRegisterDefForNode(intrinsicTree);
+        }
+
         // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
         // is not allocated the same register as the target.
         bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
@@ -2472,6 +2497,52 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
 
                 buildUses = false;
+                break;
+            }
+
+            case NI_AVX512F_BlendVariableMask:
+            {
+                assert(numArgs == 3);
+
+                if (op2->IsEmbMaskOp())
+                {
+                    // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
+                    assert(!op2->isRMWHWIntrinsic(compiler));
+
+                    if (isRMW)
+                    {
+                        assert(!op1->isContained());
+
+                        tgtPrefUse = BuildUse(op1);
+                        srcCount += 1;
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildDelayFreeUses(operand, op1);
+                        }
+                    }
+                    else
+                    {
+                        assert(op1->isContained() && op1->IsVectorZero());
+                        srcCount += BuildOperandUses(op1);
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildOperandUses(operand);
+                        }
+                    }
+
+                    assert(!op3->isContained());
+                    srcCount += BuildOperandUses(op3);
+
+                    buildUses = false;
+                }
                 break;
             }
 

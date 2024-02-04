@@ -204,11 +204,11 @@
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js;
         $(LibrariesNativeArtifactsPath)dotnet.runtime.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
-        $(LibrariesNativeArtifactsPath)dotnet-legacy.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.native.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.native.js.symbols;
-        $(LibrariesNativeArtifactsPath)*.dat;"
+        $(LibrariesNativeArtifactsPath)*.dat;
+        $(LibrariesNativeArtifactsPath)segmentation-rules.json;"
         IsNative="true" />
       <!-- for threaded wasm -->
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.native.worker.js')"
@@ -221,7 +221,7 @@
         $(LibrariesNativeArtifactsPath)src\*.js;
         $(LibrariesNativeArtifactsPath)src\emcc-default.rsp;
         $(LibrariesNativeArtifactsPath)src\emcc-link.rsp;
-        $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
+        $(LibrariesNativeArtifactsPath)src\wasm-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
@@ -244,6 +244,9 @@
         IsNative="true" />
 
       <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)src\wasi-default.rsp;
+        $(LibrariesNativeArtifactsPath)src\wasi-link.rsp;
+        $(LibrariesNativeArtifactsPath)src\wasm-props.json;
         $(LibrariesNativeArtifactsPath)src\*.c"
         NativeSubDirectory="src"
         IsNative="true" />

@@ -50,6 +50,13 @@
   #define REG_FP_LAST              REG_V31
   #define FIRST_FP_ARGREG          REG_V0
   #define LAST_FP_ARGREG           REG_V15
+  #define REG_PREDICATE_FIRST      REG_P0
+  #define REG_PREDICATE_LAST       REG_P15
+  #define REG_PREDICATE_LOW_LAST   REG_P7  // Some instructions can only use the first half of the predicate registers.
+  #define REG_PREDICATE_HIGH_FIRST REG_P8  // Similarly, some instructions can only use the second half of the predicate registers.
+  #define REG_PREDICATE_HIGH_LAST  REG_P15
+
+  static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register

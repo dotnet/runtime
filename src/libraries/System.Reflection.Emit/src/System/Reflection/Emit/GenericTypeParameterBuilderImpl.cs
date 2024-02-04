@@ -22,20 +22,19 @@ namespace System.Reflection.Emit
         private MethodBuilderImpl? _methodBuilder;
         internal EntityHandle _parentHandle;
 
-        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder, EntityHandle parentHandle)
+        internal GenericTypeParameterBuilderImpl(string name, int genParamPosition, TypeBuilderImpl typeBuilder)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _type = typeBuilder;
-            _parentHandle = parentHandle;
         }
 
-        public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder)
+        public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder, TypeBuilderImpl typeBuilder)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _methodBuilder = methodBuilder;
-            _type = methodBuilder.DeclaringType;
+            _type = typeBuilder;
         }
 
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
@@ -85,7 +84,7 @@ namespace System.Reflection.Emit
         public override bool IsGenericParameter => true;
         public override bool IsConstructedGenericType => false;
         public override bool ContainsGenericParameters => _type.ContainsGenericParameters;
-        public override MethodBase? DeclaringMethod => throw new NotImplementedException();
+        public override MethodBase? DeclaringMethod => _type.DeclaringMethod;
         public override Type? BaseType => _parent;
         public override RuntimeTypeHandle TypeHandle => throw new NotSupportedException();
         public override Guid GUID => throw new NotSupportedException();

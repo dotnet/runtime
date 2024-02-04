@@ -89,7 +89,6 @@ namespace System.Linq.Parallel.Tests
         // or WithMergeOptions
 
         [ConditionalTheory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(PartitioningData), new[] { 0, 1, 2, 16, 1024 })]
         public static void Partitioning_Default(Labeled<ParallelQuery<int>> labeled, int count, int partitions)
         {
@@ -159,7 +158,6 @@ namespace System.Linq.Parallel.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(ThrowOnCount_AllMergeOptions_MemberData), new[] { 4, 8 })]
         // FailingMergeData has enumerables that throw errors when attempting to perform the nth enumeration.
         // This test checks whether the query runs in a pipelined or buffered fashion.
@@ -169,7 +167,6 @@ namespace System.Linq.Parallel.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(MergeData), new[] { 4, 8 })]
         // This test checks whether the query runs in a pipelined or buffered fashion.
         public static void Merge_Ordered_Pipelining_Select(Labeled<ParallelQuery<int>> labeled, int count, ParallelMergeOptions options)

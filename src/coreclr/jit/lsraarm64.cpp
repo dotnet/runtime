@@ -37,7 +37,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
-    RefPosition* nextRefPosition;
+    RefPosition* nextRefPosition = nullptr;
     assert(refPosition->needsConsecutive);
     nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
     assert((nextRefPosition == nullptr) || nextRefPosition->needsConsecutive);
@@ -144,11 +144,14 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
                 nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
             }
 
-            // If regToAssign is not free, check if it is already assigned to the interval corresponding
-            // to the subsequent nextRefPosition. If yes, it would just use regToAssign for that nextRefPosition.
-            if ((nextRefPosition->getInterval() != nullptr) &&
-                (nextRefPosition->getInterval()->assignedReg != nullptr) &&
-                ((nextRefPosition->getInterval()->assignedReg->regNum == regToAssign)))
+            Interval* interval = nextRefPosition->getInterval();
+
+            // If regToAssign is not free, make sure it is not in use at current location.
+            // If not, then check if it is already assigned to the interval corresponding
+            // to the subsequent nextRefPosition.
+            // If yes, it would just use regToAssign for that nextRefPosition.
+            if ((interval != nullptr) && !isRegInUse(regToAssign, interval->registerType) &&
+                (interval->assignedReg != nullptr) && ((interval->assignedReg->regNum == regToAssign)))
             {
                 continue;
             }
@@ -753,19 +756,9 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_NOP:
-            // A GT_NOP is either a passthrough (if it is void, or if it has
-            // a child), but must be considered to produce a dummy value if it
-            // has a type but no child.
             srcCount = 0;
-            if (tree->TypeGet() != TYP_VOID && tree->gtGetOp1() == nullptr)
-            {
-                assert(dstCount == 1);
-                BuildDef(tree);
-            }
-            else
-            {
-                assert(dstCount == 0);
-            }
+            assert(tree->TypeIs(TYP_VOID));
+            assert(dstCount == 0);
             break;
 
         case GT_KEEPALIVE:
@@ -1422,6 +1415,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_AdvSimd_ExtractVector64:
                     case NI_AdvSimd_ExtractVector128:
                     case NI_AdvSimd_StoreSelectedScalar:
+                    case NI_AdvSimd_StoreSelectedScalarVector64x2:
+                    case NI_AdvSimd_StoreSelectedScalarVector64x3:
+                    case NI_AdvSimd_StoreSelectedScalarVector64x4:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+                    case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1587,6 +1587,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             case NI_AdvSimd_VectorTableLookup:
             case NI_AdvSimd_Arm64_VectorTableLookup:
+            {
                 assert(intrin.op2 != nullptr);
                 srcCount += BuildOperandUses(intrin.op2);
                 assert(dstCount == 1);
@@ -1594,9 +1595,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDef(intrinsicTree);
                 *pDstCount = 1;
                 break;
+            }
 
             case NI_AdvSimd_VectorTableLookupExtension:
             case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+            {
                 assert(intrin.op2 != nullptr);
                 assert(intrin.op3 != nullptr);
                 assert(isRMW);
@@ -1607,20 +1610,70 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 BuildDef(intrinsicTree);
                 *pDstCount = 1;
                 break;
+            }
+
+            case NI_AdvSimd_StoreSelectedScalar:
+            case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                assert(intrin.op1 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildOperandUses(intrin.op2);
+                if (!intrin.op3->isContainedIntOrIImmed())
+                {
+                    srcCount += BuildOperandUses(intrin.op3);
+                }
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+
+            case NI_AdvSimd_StoreSelectedScalarVector64x2:
+            case NI_AdvSimd_StoreSelectedScalarVector64x3:
+            case NI_AdvSimd_StoreSelectedScalarVector64x4:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x2:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x3:
+            case NI_AdvSimd_Arm64_StoreSelectedScalarVector128x4:
+            {
+                assert(intrin.op1 != nullptr);
+                assert(intrin.op3 != nullptr);
+                srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
+                if (!intrin.op3->isContainedIntOrIImmed())
+                {
+                    srcCount += BuildOperandUses(intrin.op3);
+                }
+                assert(dstCount == 0);
+                buildInternalRegisterUses();
+                *pDstCount = 0;
+                break;
+            }
+
+            case NI_AdvSimd_StoreVector64x2AndZip:
+            case NI_AdvSimd_StoreVector64x3AndZip:
+            case NI_AdvSimd_StoreVector64x4AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x2AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x3AndZip:
+            case NI_AdvSimd_Arm64_StoreVector128x4AndZip:
             case NI_AdvSimd_StoreVector64x2:
+            case NI_AdvSimd_StoreVector64x3:
+            case NI_AdvSimd_StoreVector64x4:
             case NI_AdvSimd_Arm64_StoreVector128x2:
+            case NI_AdvSimd_Arm64_StoreVector128x3:
+            case NI_AdvSimd_Arm64_StoreVector128x4:
+            {
                 assert(intrin.op1 != nullptr);
                 srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
                 assert(dstCount == 0);
                 buildInternalRegisterUses();
                 *pDstCount = 0;
                 break;
+            }
+
             case NI_AdvSimd_LoadAndInsertScalarVector64x2:
             case NI_AdvSimd_LoadAndInsertScalarVector64x3:
             case NI_AdvSimd_LoadAndInsertScalarVector64x4:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
                 assert(intrin.op2 != nullptr);
                 assert(intrin.op3 != nullptr);
                 assert(isRMW);
@@ -1632,6 +1685,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(intrinsicTree->OperIsMemoryLoadOrStore());
                 srcCount += BuildAddrUses(intrin.op3);
                 FALLTHROUGH;
+            }
+
             case NI_AdvSimd_LoadVector64x2AndUnzip:
             case NI_AdvSimd_LoadVector64x3AndUnzip:
             case NI_AdvSimd_LoadVector64x4AndUnzip:

@@ -108,7 +108,7 @@ namespace System
                 // We check reference equality to see if 'this' is the same as
                 // TimeZoneInfo.Local or TimeZoneInfo.Utc.  This check is needed to
                 // support setting the DateTime Kind property to 'Local' or
-                // 'Utc' on the ConverTime(...) return value.
+                // 'Utc' on the ConvertTime(...) return value.
                 //
                 // Using reference equality instead of value equality was a
                 // performance based design compromise.  The reference equality
@@ -1011,9 +1011,9 @@ namespace System
 
             _id = id;
             _baseUtcOffset = baseUtcOffset;
-            _displayName = displayName ?? string.Empty;
-            _standardDisplayName = standardDisplayName ?? string.Empty;
-            _daylightDisplayName = disableDaylightSavingTime ? string.Empty : daylightDisplayName ?? string.Empty;
+            _displayName = displayName;
+            _standardDisplayName = standardDisplayName;
+            _daylightDisplayName = disableDaylightSavingTime ? null : daylightDisplayName;
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 
@@ -1031,10 +1031,12 @@ namespace System
         {
             bool hasIanaId = TryConvertIanaIdToWindowsId(id, allocate: false, out _);
 
+            standardDisplayName ??= string.Empty;
+
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName,
+                displayName ?? string.Empty,
                 standardDisplayName,
                 standardDisplayName,
                 adjustmentRules: null,
@@ -1085,9 +1087,9 @@ namespace System
             return new TimeZoneInfo(
                 id,
                 baseUtcOffset,
-                displayName,
-                standardDisplayName,
-                daylightDisplayName,
+                displayName ?? string.Empty,
+                standardDisplayName ?? string.Empty,
+                daylightDisplayName ?? string.Empty,
                 adjustmentRules,
                 disableDaylightSavingTime,
                 hasIanaId);
@@ -1107,7 +1109,7 @@ namespace System
         /// <param name="windowsId">The Windows time zone ID.</param>
         /// <param name="ianaId">String object holding the IANA ID which resulted from the Windows ID conversion.</param>
         /// <returns>True if the ID conversion succeeded, false otherwise.</returns>
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) =>  TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [NotNullWhen(true)] out string? ianaId) => TryConvertWindowsIdToIanaId(windowsId, region: null, allocate: true, out ianaId);
 
         /// <summary>
         /// Tries to convert a Windows time zone ID to an IANA ID.
@@ -1609,7 +1611,7 @@ namespace System
             if (nextdaylightTime.End < nextdaylightTime.Start && !nextYearRule.IsEndDateMarkerForEndOfYear())
             {
                 // It is the Southern sphere time zone. The year is started with DST on. Use the DST end to get the when DST ends that year.
-                dstEnd =  nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                dstEnd = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
                 return true;
             }
 

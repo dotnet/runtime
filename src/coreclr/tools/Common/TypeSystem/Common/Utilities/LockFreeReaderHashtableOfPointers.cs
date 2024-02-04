@@ -213,7 +213,7 @@ namespace Internal.TypeSystem
         /// <returns>The value that replaced the sentinel, or null</returns>
         private static IntPtr WaitForSentinelInHashtableToDisappear(IntPtr[] hashtable, int tableIndex)
         {
-            var sw = new SpinWait();
+            var sw = default(SpinWait);
             while (true)
             {
                 IntPtr value = Volatile.Read(ref hashtable[tableIndex]);
@@ -535,7 +535,7 @@ namespace Internal.TypeSystem
         public TValue GetValueIfExists(TValue value)
         {
             if (value == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(value));
 
             IntPtr[] hashTableLocal = GetCurrentHashtable();
             Debug.Assert(hashTableLocal.Length > 0);
@@ -576,7 +576,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public struct Enumerator : IEnumerator<TValue>
         {
-            LockFreeReaderHashtableOfPointers<TKey, TValue> _hashtable;
+            private LockFreeReaderHashtableOfPointers<TKey, TValue> _hashtable;
             private IntPtr[] _hashtableContentsToEnumerate;
             private int _index;
             private TValue _current;

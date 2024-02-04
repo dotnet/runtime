@@ -462,7 +462,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(s_InvariantCultureInfo != null);
+                Debug.Assert(s_InvariantCultureInfo != null, "[CultureInfo.InvariantCulture] s_InvariantCultureInfo is null");
                 return s_InvariantCultureInfo;
             }
         }
@@ -490,14 +490,14 @@ namespace System.Globalization
                             //      zh-SG -> zh-Hans -> zh -> Invariant
                             //      zh-TW -> zh-Hant -> zh -> Invariant
 
-                            if ((_name[3] == 'C' && _name[4] == 'N' ) || // zh-CN
-                                (_name[3] == 'S' && _name[4] == 'G' ))   // zh-SG
+                            if ((_name[3] == 'C' && _name[4] == 'N') || // zh-CN
+                                (_name[3] == 'S' && _name[4] == 'G'))   // zh-SG
                             {
                                 parentName = "zh-Hans";
                             }
-                            else if ((_name[3] == 'H' && _name[4] == 'K' ) ||   // zh-HK
-                                    (_name[3] == 'M' && _name[4] == 'O' ) ||    // zh-MO
-                                    (_name[3] == 'T' && _name[4] == 'W' ))      // zh-TW
+                            else if ((_name[3] == 'H' && _name[4] == 'K') ||   // zh-HK
+                                    (_name[3] == 'M' && _name[4] == 'O') ||    // zh-MO
+                                    (_name[3] == 'T' && _name[4] == 'W'))      // zh-TW
                             {
                                 parentName = "zh-Hant";
                             }
@@ -1132,7 +1132,7 @@ namespace System.Globalization
 
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {
-                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name): !CultureData.IcuIsEnsurePredefinedLocaleName(name))
+                if (GlobalizationMode.UseNls ? !CultureData.NlsIsEnsurePredefinedLocaleName(name) : !CultureData.IcuIsEnsurePredefinedLocaleName(name))
                 {
                     throw new CultureNotFoundException(nameof(name), name, SR.Format(SR.Argument_InvalidPredefinedCultureName, name));
                 }

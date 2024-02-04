@@ -16,6 +16,7 @@ internal static unsafe class ObjectiveC
     public static extern int getNumReleaseCalls();
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public class AutoReleaseTest
 {
     [Fact]

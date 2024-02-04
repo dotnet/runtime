@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-class WriterGen : CsWriter
+namespace NativeFormatGen;
+
+internal sealed class WriterGen : CsWriter
 {
     public WriterGen(string fileName)
         : base(fileName)
@@ -128,7 +130,7 @@ class WriterGen : CsWriter
 
         // Compute hash seed using stable hashcode
         byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(record.Name);
-        byte[] hashBytes = System.Security.Cryptography.SHA256.Create().ComputeHash(nameBytes);
+        byte[] hashBytes = System.Security.Cryptography.SHA256.HashData(nameBytes);
         int hashSeed = System.BitConverter.ToInt32(hashBytes, 0);
         WriteLine($"int hash = {hashSeed};");
 

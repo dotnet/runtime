@@ -33,6 +33,7 @@ namespace System.IO.Pipelines.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pauseWriterThreshold", () => new PipeOptions(pauseWriterThreshold: -2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("resumeWriterThreshold", () => new PipeOptions(resumeWriterThreshold: -2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("resumeWriterThreshold", () => new PipeOptions(pauseWriterThreshold: 50, resumeWriterThreshold: 100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("resumeWriterThreshold", () => new PipeOptions(pauseWriterThreshold: 1, resumeWriterThreshold: -1));
         }
 
         [Theory]

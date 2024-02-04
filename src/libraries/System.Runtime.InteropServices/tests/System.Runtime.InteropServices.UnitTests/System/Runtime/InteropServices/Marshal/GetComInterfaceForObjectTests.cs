@@ -177,8 +177,8 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(GetComInterfaceForObject_InvalidType_TestData))]
         public void GetComInterfaceForObject_InvalidType_ThrowsArgumentException(Type type)
         {
-            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetComInterfaceForObject(new object(), type));
-            AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetComInterfaceForObject(new object(), type, CustomQueryInterfaceMode.Allow));
+            AssertExtensions.Throws<ArgumentException>("T", () => Marshal.GetComInterfaceForObject(new object(), type));
+            AssertExtensions.Throws<ArgumentException>("T", () => Marshal.GetComInterfaceForObject(new object(), type, CustomQueryInterfaceMode.Allow));
         }
 
         public static IEnumerable<object[]> GetComInterfaceForObject_InvalidObject_TestData()

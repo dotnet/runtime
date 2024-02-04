@@ -92,8 +92,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         // The fallback RID is a compile-time define for the host. On Windows, it is always win10 and on
         // other platforms, it matches the build RID (non-portable for source-builds, portable otherwise)
         private static string FallbackRid = OperatingSystem.IsWindows()
-            ? $"win10-{RepoDirectoriesProvider.Default.BuildArchitecture}"
-            : RepoDirectoriesProvider.Default.BuildRID;
+            ? $"win10-{TestContext.BuildArchitecture}"
+            : TestContext.BuildRID;
 
         protected const string UnknownRid = "unknown-rid";
 
@@ -330,15 +330,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         // The build RID from the test context should match the build RID of the host under test
-        private static string CurrentRid = RepoDirectoriesProvider.Default.BuildRID;
+        private static string CurrentRid = TestContext.BuildRID;
         private static string CurrentRidAsset = $"{CurrentRid}/{CurrentRid}Asset.dll";
 
         // Strip the -<arch> from the RID to get the OS
-        private static string CurrentOS = CurrentRid[..^(RepoDirectoriesProvider.Default.BuildArchitecture.Length + 1)];
+        private static string CurrentOS = CurrentRid[..^(TestContext.BuildArchitecture.Length + 1)];
         private static string CurrentOSAsset = $"{CurrentOS}/{CurrentOS}Asset.dll";
 
         // Append a different architecture - arm64 if current architecture is x64, otherwise x64
-        private static string DifferentArch = $"{CurrentOS}-{(RepoDirectoriesProvider.Default.BuildArchitecture == "x64" ? "arm64" : "x64")}";
+        private static string DifferentArch = $"{CurrentOS}-{(TestContext.BuildArchitecture == "x64" ? "arm64" : "x64")}";
         private static string DifferentArchAsset = $"{DifferentArch}/{DifferentArch}Asset.dll";
 
         [Theory]
@@ -601,7 +601,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         protected static void UseFallbacksFromBuiltDotNet(NetCoreAppBuilder builder)
         {
             IReadOnlyList<RuntimeFallbacks> fallbacks;
-            string depsJson = Path.Combine(new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
+            string depsJson = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
             using (FileStream fileStream = File.Open(depsJson, FileMode.Open))
             using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
             {

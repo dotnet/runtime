@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
@@ -34,26 +35,32 @@ namespace System.Linq
 
             public TSource[] ToArray()
             {
-                LargeArrayBuilder<TSource> builder = new();
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
 
+                Func<TSource, bool> predicate = _predicate;
                 foreach (TSource item in _source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
                         builder.Add(item);
                     }
                 }
 
-                return builder.ToArray();
+                TSource[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             public List<TSource> ToList()
             {
                 var list = new List<TSource>();
 
+                Func<TSource, bool> predicate = _predicate;
                 foreach (TSource item in _source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
                         list.Add(item);
                     }
@@ -65,8 +72,13 @@ namespace System.Linq
 
         internal sealed partial class WhereArrayIterator<TSource> : IIListProvider<TSource>
         {
-            public int GetCount(bool onlyIfCheap)
+            public int GetCount(bool onlyIfCheap) => GetCount(onlyIfCheap, _source, _predicate);
+
+            public static int GetCount(bool onlyIfCheap, ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
             {
+                // In case someone uses Count() to force evaluation of
+                // the selector, run it provided `onlyIfCheap` is false.
+
                 if (onlyIfCheap)
                 {
                     return -1;
@@ -74,42 +86,46 @@ namespace System.Linq
 
                 int count = 0;
 
-                foreach (TSource item in _source)
+                foreach (TSource item in source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
-                        checked
-                        {
-                            count++;
-                        }
+                        checked { count++; }
                     }
                 }
 
                 return count;
             }
 
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(_source.Length);
+            public TSource[] ToArray() => ToArray(_source, _predicate);
 
-                foreach (TSource item in _source)
+            public static TSource[] ToArray(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
+            {
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
+
+                foreach (TSource item in source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
                         builder.Add(item);
                     }
                 }
 
-                return builder.ToArray();
+                TSource[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             public List<TSource> ToList()
             {
                 var list = new List<TSource>();
 
+                Func<TSource, bool> predicate = _predicate;
                 foreach (TSource item in _source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
                         list.Add(item);
                     }
@@ -121,54 +137,18 @@ namespace System.Linq
 
         private sealed partial class WhereListIterator<TSource> : Iterator<TSource>, IIListProvider<TSource>
         {
-            public int GetCount(bool onlyIfCheap)
-            {
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
+            public int GetCount(bool onlyIfCheap) => WhereArrayIterator<TSource>.GetCount(onlyIfCheap, CollectionsMarshal.AsSpan(_source), _predicate);
 
-                int count = 0;
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
-            }
-
-            public TSource[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TSource>(_source.Count);
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        builder.Add(item);
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TSource[] ToArray() => WhereArrayIterator<TSource>.ToArray(CollectionsMarshal.AsSpan(_source), _predicate);
 
             public List<TSource> ToList()
             {
                 var list = new List<TSource>();
 
-                for (int i = 0; i < _source.Count; i++)
+                Func<TSource, bool> predicate = _predicate;
+                foreach (TSource item in CollectionsMarshal.AsSpan(_source))
                 {
-                    TSource item = _source[i];
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
                         list.Add(item);
                     }
@@ -180,7 +160,9 @@ namespace System.Linq
 
         private sealed partial class WhereSelectArrayIterator<TSource, TResult> : IIListProvider<TResult>
         {
-            public int GetCount(bool onlyIfCheap)
+            public int GetCount(bool onlyIfCheap) => GetCount(onlyIfCheap, _source, _predicate, _selector);
+
+            public static int GetCount(bool onlyIfCheap, ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
                 // In case someone uses Count() to force evaluation of
                 // the selector, run it provided `onlyIfCheap` is false.
@@ -192,11 +174,11 @@ namespace System.Linq
 
                 int count = 0;
 
-                foreach (TSource item in _source)
+                foreach (TSource item in source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
-                        _selector(item);
+                        selector(item);
                         checked
                         {
                             count++;
@@ -207,28 +189,35 @@ namespace System.Linq
                 return count;
             }
 
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(_source.Length);
+            public TResult[] ToArray() => ToArray(_source, _predicate, _selector);
 
-                foreach (TSource item in _source)
+            public static TResult[] ToArray(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
+            {
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
+
+                foreach (TSource item in source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
-                        builder.Add(_selector(item));
+                        builder.Add(selector(item));
                     }
                 }
 
-                return builder.ToArray();
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             public List<TResult> ToList()
             {
                 var list = new List<TResult>();
 
+                Func<TSource, bool> predicate = _predicate;
                 foreach (TSource item in _source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
                         list.Add(_selector(item));
                     }
@@ -240,58 +229,18 @@ namespace System.Linq
 
         private sealed partial class WhereSelectListIterator<TSource, TResult> : IIListProvider<TResult>
         {
-            public int GetCount(bool onlyIfCheap)
-            {
-                // In case someone uses Count() to force evaluation of
-                // the selector, run it provided `onlyIfCheap` is false.
+            public int GetCount(bool onlyIfCheap) => WhereSelectArrayIterator<TSource, TResult>.GetCount(onlyIfCheap, CollectionsMarshal.AsSpan(_source), _predicate, _selector);
 
-                if (onlyIfCheap)
-                {
-                    return -1;
-                }
-
-                int count = 0;
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        _selector(item);
-                        checked
-                        {
-                            count++;
-                        }
-                    }
-                }
-
-                return count;
-            }
-
-            public TResult[] ToArray()
-            {
-                var builder = new LargeArrayBuilder<TResult>(_source.Count);
-
-                for (int i = 0; i < _source.Count; i++)
-                {
-                    TSource item = _source[i];
-                    if (_predicate(item))
-                    {
-                        builder.Add(_selector(item));
-                    }
-                }
-
-                return builder.ToArray();
-            }
+            public TResult[] ToArray() => WhereSelectArrayIterator<TSource, TResult>.ToArray(CollectionsMarshal.AsSpan(_source), _predicate, _selector);
 
             public List<TResult> ToList()
             {
                 var list = new List<TResult>();
 
-                for (int i = 0; i < _source.Count; i++)
+                Func<TSource, bool> predicate = _predicate;
+                foreach (TSource item in CollectionsMarshal.AsSpan(_source))
                 {
-                    TSource item = _source[i];
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
                         list.Add(_selector(item));
                     }
@@ -332,28 +281,36 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                LargeArrayBuilder<TResult> builder = new();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
+                Func<TSource, bool> predicate = _predicate;
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
-                        builder.Add(_selector(item));
+                        builder.Add(selector(item));
                     }
                 }
 
-                return builder.ToArray();
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             public List<TResult> ToList()
             {
                 var list = new List<TResult>();
 
+                Func<TSource, bool> predicate = _predicate;
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    if (_predicate(item))
+                    if (predicate(item))
                     {
-                        list.Add(_selector(item));
+                        list.Add(selector(item));
                     }
                 }
 

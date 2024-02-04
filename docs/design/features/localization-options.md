@@ -158,7 +158,7 @@ Standard methods for native localization use the user's locale. However, managed
 
 All localizable resources need to be in the XLIFF file format (.xlf). New tooling will be required to convert from an untranslated base format to language-specific .xlf files and from the language-specific .xlf files to a format (.rc/.po/.strings, UTF-8/UTF-16) that will be compiled into resource libraries (or deployed directly) for each platform.
 
-The existing [xliff-tasks](https://github.com/dotnet/xliff-tasks) tooling supports conversion between managed resource files (.resx) and .xlf files and building satellite resource libraries. It is all MSBuild-based and has no concept of native resources or build processes. Extending it in a way that works naturally with CMake builds across platforms would be non-trivial.
+The existing [xliff-tasks](https://github.com/dotnet/arcade/blob/main/src/Microsoft.DotNet.XliffTasks/README.md) tooling supports conversion between managed resource files (.resx) and .xlf files and building satellite resource libraries. It is all MSBuild-based and has no concept of native resources or build processes. Extending it in a way that works naturally with CMake builds across platforms would be non-trivial.
 
 It is also an option to create tooling directly integrated in the dotnet/runtime repo itself. This would not be a generic and reusable component outside of the dotnet/runtime repo and its build system.
 

@@ -386,52 +386,10 @@ void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars
 {
     assert(block->HasPotentialEHSuccs(m_compiler));
 
-    if (m_compiler->ehBlockHasExnFlowDsc(block))
-    {
-        EHblkDsc* HBtab = m_compiler->ehGetBlockExnFlowDsc(block);
-
-        do
-        {
-            // Either we enter the filter first or the catch/finally
-            if (HBtab->HasFilter())
-            {
-                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdFilter->bbNum].LiveIn);
-#if defined(FEATURE_EH_FUNCLETS)
-                // The EH subsystem can trigger a stack walk after the filter
-                // has returned, but before invoking the handler, and the only
-                // IP address reported from this method will be the original
-                // faulting instruction, thus everything in the try body
-                // must report as live any variables live-out of the filter
-                // (which is the same as those live-in to the handler)
-                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
-#endif // FEATURE_EH_FUNCLETS
-            }
-            else
-            {
-                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
-            }
-
-            // If we have nested try's edbEnclosing will provide them
-            assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
-                   (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
-
-            unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
-            if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-            {
-                break;
-            }
-            HBtab = m_compiler->ehGetDsc(outerIndex);
-
-        } while (true);
-    }
-
-    if (m_compiler->bbInFilterBBRange(block))
-    {
-        block->VisitEHSecondPassSuccs(m_compiler, [this, &ehLiveVars](BasicBlock* succ) {
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[succ->bbNum].LiveIn);
-            return BasicBlockVisit::Continue;
-        });
-    }
+    block->VisitEHSuccs(m_compiler, [=, &ehLiveVars](BasicBlock* succ) {
+        BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[succ->bbNum].LiveIn);
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //------------------------------------------------------------------------

@@ -17,14 +17,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
     public class DotNetBuilder
     {
         private readonly string _path;
-        private readonly RepoDirectoriesProvider _repoDirectories;
 
         public DotNetBuilder(string basePath, string builtDotnet, string name)
         {
             _path = name == null ? basePath : Path.Combine(basePath, name);
             Directory.CreateDirectory(_path);
-
-            _repoDirectories = new RepoDirectoriesProvider(builtDotnet: _path);
 
             // Prepare the dotnet installation mock
 
@@ -121,7 +118,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
             string netCoreAppPath = AddFramework(Constants.MicrosoftNETCoreApp, version);
 
-            string currentRid = _repoDirectories.TargetRID;
+            string currentRid = TestContext.TargetRID;
 
             NetCoreAppBuilder.ForNETCoreApp(Constants.MicrosoftNETCoreApp, currentRid)
                 .WithStandardRuntimeFallbacks()

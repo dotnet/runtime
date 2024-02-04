@@ -18,7 +18,7 @@ namespace System.Linq
 
             if (count == 0)
             {
-                return Empty<int>();
+                return [];
             }
 
             return new RangeIterator(start, count);
@@ -37,7 +37,7 @@ namespace System.Linq
             {
                 Debug.Assert(count > 0);
                 _start = start;
-                _end = unchecked(start + count);
+                _end = start + count;
             }
 
             private int CountForDebugger => _end - _start;
@@ -54,7 +54,7 @@ namespace System.Linq
                         _state = 2;
                         return true;
                     case 2:
-                        if (unchecked(++_current) == _end)
+                        if (++_current == _end)
                         {
                             break;
                         }

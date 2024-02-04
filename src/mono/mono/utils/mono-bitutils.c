@@ -16,7 +16,7 @@ int mono_lzcnt32 (guint32 x)
 #ifdef _MSC_VER
 	unsigned long index = 0;
 	if ( _BitScanReverse( &index, x ) )
-		return (int)index;
+		return 31 - (int)index;
 	else
 		return 32;
 #else
@@ -29,7 +29,7 @@ int mono_lzcnt64 (guint64 x)
 #if defined(_MSC_VER) && (defined(_M_ARM64) || defined(_M_ARM64EC) || defined (_M_X64))
 	unsigned long index = 0;
 	if ( _BitScanReverse64( &index, x ) )
-		return (int)index;
+		return 63 - (int)index;
 	else
 		return 64;
 #elif defined(_MSC_VER)

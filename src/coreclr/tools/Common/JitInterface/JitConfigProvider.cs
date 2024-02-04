@@ -138,6 +138,7 @@ namespace Internal.JitInterface
                 TargetArchitecture.ARM => "arm",
                 TargetArchitecture.ARM64 => "arm64",
                 TargetArchitecture.LoongArch64 => "loongarch64",
+                TargetArchitecture.RiscV64 => "riscv64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
 

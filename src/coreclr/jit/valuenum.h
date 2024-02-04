@@ -231,6 +231,12 @@ public:
     // A second special value, used to indicate that a function evaluation would cause infinite recursion.
     static const ValueNum RecursiveVN = UINT32_MAX - 1;
 
+    // Special value used to represent something that isn't in a loop for VN functions that take loop parameters.
+    static const unsigned NoLoop = UINT32_MAX;
+    // Special value used to represent something that may or may not be in a loop, so needs to be handled
+    // conservatively.
+    static const unsigned UnknownLoop = UINT32_MAX - 1;
+
     // ==================================================================================================
     // VNMap - map from something to ValueNum, where something is typically a constant value or a VNFunc
     //         This class has two purposes - to abstract the implementation and to validate the ValueNums
@@ -875,8 +881,8 @@ public:
     // Returns TYP_UNKNOWN if the given value number has not been given a type.
     var_types TypeOfVN(ValueNum vn) const;
 
-    // Returns BasicBlock::MAX_LOOP_NUM if the given value number's loop nest is unknown or ill-defined.
-    BasicBlock::loopNumber LoopOfVN(ValueNum vn);
+    // Returns nullptr if the given value number is not dependent on memory defined in a loop.
+    class FlowGraphNaturalLoop* LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a constant.
     bool IsVNConstant(ValueNum vn);
@@ -1045,6 +1051,9 @@ public:
 
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
     static bool VNFuncIsComparison(VNFunc vnf);
+
+    // Returns "true" iff "vnf" is a signed comparison (and thus binary) operator.
+    static bool VNFuncIsSignedComparison(VNFunc vnf);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
@@ -2093,6 +2102,15 @@ inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
     }
     genTreeOps gtOp = genTreeOps(vnf);
     return GenTree::OperIsCompare(gtOp) != 0;
+}
+
+inline bool ValueNumStore::VNFuncIsSignedComparison(VNFunc vnf)
+{
+    if (vnf >= VNF_Boundary)
+    {
+        return false;
+    }
+    return GenTree::OperIsCompare(genTreeOps(vnf)) != 0;
 }
 
 template <>

@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
             int exactByteCount = Marshal.GetAnsiStringByteCount(managed); // Includes null terminator
             byte* mem = (byte*)Marshal.AllocCoTaskMem(exactByteCount);
-            Span<byte> buffer = new (mem, exactByteCount);
+            Span<byte> buffer = new(mem, exactByteCount);
 
             Marshal.GetAnsiStringBytes(managed, buffer); // Includes null terminator
             return mem;

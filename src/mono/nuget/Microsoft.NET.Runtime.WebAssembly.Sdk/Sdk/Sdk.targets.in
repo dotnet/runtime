@@ -12,6 +12,6 @@
     <WasmEmitSymbolMap Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' != 'true' and '$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">true</WasmEmitSymbolMap>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.props" />
-  <Import Project="$(MSBuildThisFileDirectory)\WasmApp.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)\BrowserWasmApp.targets" />
 </Project>

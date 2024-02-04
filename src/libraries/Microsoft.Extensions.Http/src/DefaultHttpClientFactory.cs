@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Http
             _cleanupTimerLock = new object();
             _cleanupActiveLock = new object();
 
-            // We want to prevent a circular depencency between ILoggerFactory and IHttpClientFactory, in case
+            // We want to prevent a circular dependency between ILoggerFactory and IHttpClientFactory, in case
             // any of ILoggerProvider instances use IHttpClientFactory to send logs to an external server.
             // Logger will be created during the first ExpiryTimer_Tick execution. Lazy guarantees thread safety
             // to prevent creation of unnecessary ILogger objects in case several handlers expired at the same time.

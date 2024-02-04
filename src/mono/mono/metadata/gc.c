@@ -686,21 +686,6 @@ ves_icall_System_GCHandle_InternalSet (MonoGCHandle handle, MonoObjectHandle obj
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
 
-#ifdef HOST_WASM
-
-static void
-mono_wasm_gc_finalize_notify (void)
-{
-#if 0
-	/* use this if we are going to start the finalizer thread on wasm. */
-	mono_coop_sem_post (&finalizer_sem);
-#else
-	mono_main_thread_schedule_background_job (mono_runtime_do_background_work);
-#endif
-}
-
-#endif /* HOST_WASM */
-
 /*
  * mono_gc_finalize_notify:
  *
@@ -720,8 +705,8 @@ mono_gc_finalize_notify (void)
 
 #if defined(HOST_WASI)
 	// TODO: Schedule the background job on WASI. Threads aren't yet supported in this build.
-#elif defined(HOST_WASM)
-	mono_wasm_gc_finalize_notify ();
+#elif defined(HOST_WASM) && defined(DISABLE_THREADS)
+	mono_main_thread_schedule_background_job (mono_runtime_do_background_work);
 #else
 	mono_coop_sem_post (&finalizer_sem);
 #endif

@@ -263,7 +263,7 @@ namespace System.Linq.Expressions
             Debug.Assert(expressions != null);
             if (expressions.Count == 3)
             {
-                if (_arg0 is ReadOnlyCollection<Expression>  alreadyCollection)
+                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(expressions, alreadyCollection);
                 }
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions
             Debug.Assert(expressions != null);
             if (expressions.Count == 4)
             {
-                if (_arg0 is ReadOnlyCollection<Expression>  alreadyCollection)
+                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(expressions, alreadyCollection);
                 }

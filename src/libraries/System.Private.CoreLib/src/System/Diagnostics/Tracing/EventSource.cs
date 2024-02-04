@@ -348,7 +348,7 @@ namespace System.Diagnostics.Tracing
         /// <returns>The XML data string</returns>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not " +
                             "access this member and is safe to call.")]
         public static string? GenerateManifest(
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -371,7 +371,7 @@ namespace System.Diagnostics.Tracing
         /// <returns>The XML data string or null</returns>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
+                            "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not " +
                             "access this member and is safe to call.")]
         public static string? GenerateManifest(
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -5152,7 +5152,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest don’t use this constructor.
+        /// <term>Will NOT build a manifest!</term> If the intention is to build a manifest don't use this constructor.
         ///'resources, is a resource manager.  If specified all messages are localized using that manager.
         /// </summary>
         internal ManifestBuilder(ResourceManager? resources, EventManifestOptions flags)

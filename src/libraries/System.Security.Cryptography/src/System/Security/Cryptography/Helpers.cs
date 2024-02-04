@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -336,6 +337,18 @@ namespace Internal.Cryptography
         {
             // Based on the internal implementation from MemoryMarshal.
             return ref buffer.Length != 0 ? ref MemoryMarshal.GetReference(buffer) : ref Unsafe.AsRef<byte>((void*)1);
+        }
+
+        internal static ReadOnlySpan<byte> ArrayToSpanOrThrow(
+            byte[] arg,
+            [CallerArgumentExpression(nameof(arg))] string? paramName = null)
+        {
+            if (arg is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+
+            return arg;
         }
     }
 }

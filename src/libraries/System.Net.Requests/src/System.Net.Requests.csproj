@@ -52,6 +52,11 @@
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />
     <Compile Include="System\Net\NetEventSource.Requests.cs" />
+    <Compile Include="System\Net\ServicePoint\BindIPEndPoint.cs" />
+    <Compile Include="System\Net\ServicePoint\SecurityProtocolType.cs" />
+    <Compile Include="System\Net\ServicePoint\ServicePoint.cs" />
+    <Compile Include="System\Net\ServicePoint\ServicePointManager.cs" />
+    <Compile Include="System\Net\ServicePoint\TcpKeepAlive.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
@@ -99,6 +104,7 @@
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Tracing" />
@@ -106,7 +112,6 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
-    <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Runtime" />

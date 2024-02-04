@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Text;
 using System.Runtime.Serialization;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -42,11 +42,11 @@ namespace System.DirectoryServices.Protocols
 #endif
         protected DirectoryOperationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
-        public DirectoryOperationException() : base() { }
+        public DirectoryOperationException() : base(SR.DefaultOperationsError) { }
 
-        public DirectoryOperationException(string message) : base(message) { }
+        public DirectoryOperationException(string message) : base(message ?? SR.DefaultOperationsError) { }
 
-        public DirectoryOperationException(string message, Exception inner) : base(message, inner) { }
+        public DirectoryOperationException(string message, Exception inner) : base(message ?? SR.DefaultOperationsError, inner) { }
 
         public DirectoryOperationException(DirectoryResponse response) :
             base(CreateMessage(response, message: null))
@@ -68,7 +68,7 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryResponse Response { get; internal set; }
 
-        private static string CreateMessage(DirectoryResponse response, string message)
+        private static string CreateMessage(DirectoryResponse response, string? message)
         {
             string result = message ?? SR.DefaultOperationsError;
             if (!string.IsNullOrEmpty(response?.ErrorMessage))
@@ -93,11 +93,11 @@ namespace System.DirectoryServices.Protocols
         {
         }
 
-        public BerConversionException(string message) : base(message)
+        public BerConversionException(string message) : base(message ?? SR.BerConversionError)
         {
         }
 
-        public BerConversionException(string message, Exception inner) : base(message, inner)
+        public BerConversionException(string message, Exception inner) : base(message ?? SR.BerConversionError, inner)
         {
         }
     }

@@ -2285,30 +2285,25 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
 
     if (!pCf->IsFrameless())
     {
-        // @todo - remove this once SIS is fully enabled.
-        extern bool g_EnableSIS;
-        if (g_EnableSIS)
+        // For debugger, we may want to notify 1st chance exceptions if they're coming out of a stub.
+        // We recognize stubs as Frames with a M2U transition type. The debugger's stackwalker also
+        // recognizes these frames and publishes ICorDebugInternalFrames in the stackwalk. It's
+        // important to use pFrame as the stack address so that the Exception callback matches up
+        // w/ the ICorDebugInternalFrame stack range.
+        if (CORDebuggerAttached())
         {
-            // For debugger, we may want to notify 1st chance exceptions if they're coming out of a stub.
-            // We recognize stubs as Frames with a M2U transition type. The debugger's stackwalker also
-            // recognizes these frames and publishes ICorDebugInternalFrames in the stackwalk. It's
-            // important to use pFrame as the stack address so that the Exception callback matches up
-            // w/ the ICorDebugInternlFrame stack range.
-            if (CORDebuggerAttached())
+            Frame * pFrameStub = pCf->GetFrame();
+            Frame::ETransitionType t = pFrameStub->GetTransitionType();
+            if (t == Frame::TT_M2U)
             {
-                Frame * pFrameStub = pCf->GetFrame();
-                Frame::ETransitionType t = pFrameStub->GetTransitionType();
-                if (t == Frame::TT_M2U)
+                // Use address of the frame as the stack address.
+                currentSP = (SIZE_T) ((void*) pFrameStub);
+                currentIP = 0; // no IP.
+                EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, (SIZE_T)currentIP, (SIZE_T)currentSP);
+                // Deliver the FirstChanceNotification after the debugger, if not already delivered.
+                if (!pExInfo->DeliveredFirstChanceNotification())
                 {
-                    // Use address of the frame as the stack address.
-                    currentSP = (SIZE_T) ((void*) pFrameStub);
-                    currentIP = 0; // no IP.
-                    EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, (SIZE_T)currentIP, (SIZE_T)currentSP);
-                    // Deliver the FirstChanceNotification after the debugger, if not already delivered.
-                    if (!pExInfo->DeliveredFirstChanceNotification())
-                    {
-                        ExceptionNotifications::DeliverFirstChanceNotification();
-                    }
+                    ExceptionNotifications::DeliverFirstChanceNotification();
                 }
             }
         }

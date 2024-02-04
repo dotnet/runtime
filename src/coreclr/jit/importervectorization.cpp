@@ -200,7 +200,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     // Optimization: use a single load when byteLen equals simdSize.
     // For code simplicity we always create nodes for two vectors case.
     const bool useSingleVector = simdSize == byteLen;
-    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_UBYTE, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
+    return gtNewSimdCmpOpAllNode(GT_EQ, TYP_INT, useSingleVector ? xor1 : orr, gtNewZeroConNode(simdType), baseType,
                                  simdSize);
 
     // Codegen example for byteLen=40 and OrdinalIgnoreCase mode with AVX:

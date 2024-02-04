@@ -42,6 +42,7 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string         SdkWithNoWorkloadInstalledPath { get; set; } = string.Empty;
 
+        public string?        IntermediateOutputPath { get; set; }
         public bool           OnlyUpdateManifests{ get; set; }
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
@@ -59,7 +60,7 @@ namespace Microsoft.Workload.Build.Tasks
 
         public override bool Execute()
         {
-            _tempDir = Path.Combine(Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
+            _tempDir = Path.Combine(IntermediateOutputPath ?? Path.GetTempPath(), $"workload-{Path.GetRandomFileName()}");
             if (Directory.Exists(_tempDir))
                 Directory.Delete(_tempDir, recursive: true);
             Directory.CreateDirectory(_tempDir);

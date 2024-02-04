@@ -884,6 +884,12 @@ ProcessCLRExceptionNew(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #ifndef HOST_UNIX
     if (!(pExceptionRecord->ExceptionFlags & EXCEPTION_UNWINDING))
     {
+        // Failfast if exception indicates corrupted process state
+        if (IsProcessCorruptedStateException(pExceptionRecord->ExceptionCode, /* throwable */ NULL))
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR(pExceptionRecord->ExceptionCode);
+        }
+
         Thread* pThread         = GetThread();
         ClrUnwindEx(pExceptionRecord,
                     (UINT_PTR)pThread,
@@ -1010,7 +1016,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         // Update the current establisher frame
         if (dwExceptionFlags & EXCEPTION_UNWINDING)
         {
-            ExceptionTracker *pCurrentTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+            ExceptionTracker *pCurrentTracker = (ExceptionTracker*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
             if (pCurrentTracker != NULL)
             {
                 pCurrentTracker->SetCurrentEstablisherFrame(sf);
@@ -1123,7 +1129,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         // Setup bucketing details for nested exceptions (rethrow and non-rethrow) only if we are in the first pass
         if (!(dwExceptionFlags & EXCEPTION_UNWINDING))
         {
-            ExceptionTracker *pPrevEHTracker = pTracker->GetPreviousExceptionTracker();
+            ExceptionTracker *pPrevEHTracker = (ExceptionTracker*)pTracker->GetPreviousExceptionTracker();
             if (pPrevEHTracker != NULL)
             {
                 SetStateForWatsonBucketing((STState == ExceptionTracker::STS_FirstRethrowFrame), pPrevEHTracker->GetThrowableAsHandle());
@@ -2140,8 +2146,8 @@ void ExceptionTracker::DebugLogTrackerRanges(_In_z_ const char *pszTag)
     }
     CONTRACTL_END;
 
-    Thread*             pThread     = GetThreadNULLOk();
-    ExceptionTracker*   pTracker    = pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL;
+    Thread*               pThread     = GetThreadNULLOk();
+    ExceptionTrackerBase* pTracker    = pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL;
 
     int i = 0;
 
@@ -2173,7 +2179,7 @@ bool ExceptionTracker::HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstP
 
     DebugLogTrackerRanges("  A");
 
-    ExceptionTracker* pPreviousTracker   = m_pPrevNestedInfo;
+    ExceptionTrackerBase* pPreviousTracker   = m_pPrevNestedInfo;
 
     while (pPreviousTracker && pPreviousTracker->m_ScannedStackRange.IsSupersededBy(sf))
     {
@@ -2267,7 +2273,7 @@ bool ExceptionTracker::HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstP
         // on the second pass if an exception is thrown during the 2nd pass.
 
         // Advance the current tracker pointer now, since it may be deleted below.
-        pPreviousTracker = pPreviousTracker->m_pPrevNestedInfo;
+        pPreviousTracker = (PTR_ExceptionTracker)pPreviousTracker->m_pPrevNestedInfo;
 
         if (!fIsFirstPass)
         {
@@ -2276,11 +2282,11 @@ bool ExceptionTracker::HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstP
             // exception trackers that are collapsed at each frame. Store the information of collapsed exception
             // tracker in current tracker to be able to find the parent frame when nested exception escapes.
             m_csfEHClauseOfCollapsedTracker = m_pPrevNestedInfo->m_EHClauseInfo.GetCallerStackFrameForEHClause();
-            m_EnclosingClauseInfoOfCollapsedTracker = m_pPrevNestedInfo->m_EnclosingClauseInfoForGCReporting;
+            m_EnclosingClauseInfoOfCollapsedTracker = ((PTR_ExceptionTracker)m_pPrevNestedInfo)->m_EnclosingClauseInfoForGCReporting;
 
             EH_LOG((LL_INFO100, "    - removing previous tracker\n"));
 
-            ExceptionTracker* pTrackerToFree = m_pPrevNestedInfo;
+            ExceptionTracker* pTrackerToFree = (PTR_ExceptionTracker)m_pPrevNestedInfo;
             m_pPrevNestedInfo = pTrackerToFree->m_pPrevNestedInfo;
 
 #if defined(DEBUGGING_SUPPORTED)
@@ -2299,6 +2305,38 @@ bool ExceptionTracker::HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstP
 
     return fResult;
 }
+
+#if defined(DEBUGGING_SUPPORTED)
+BOOL NotifyDebuggerOfStub(Thread* pThread, Frame* pCurrentFrame)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    BOOL fDeliveredFirstChanceNotification = FALSE;
+
+    _ASSERTE(GetThreadNULLOk() == pThread);
+
+    GCX_COOP();
+
+    // For debugger, we may want to notify 1st chance exceptions if they're coming out of a stub.
+    // We recognize stubs as Frames with a M2U transition type. The debugger's stackwalker also
+    // recognizes these frames and publishes ICorDebugInternalFrames in the stackwalk. It's
+    // important to use pFrame as the stack address so that the Exception callback matches up
+    // w/ the ICorDebugInternalFrame stack range.
+    if (CORDebuggerAttached())
+    {
+        if (pCurrentFrame->GetTransitionType() == Frame::TT_M2U)
+        {
+            // Use -1 for the backing store pointer whenever we use the address of a frame as the stack pointer.
+            EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread,
+                                                                                (SIZE_T)0,
+                                                                                (SIZE_T)pCurrentFrame);
+            fDeliveredFirstChanceNotification = TRUE;
+        }
+    }
+
+    return fDeliveredFirstChanceNotification;
+}
+#endif // DEBUGGING_SUPPORTED
 
 CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
     CrawlFrame* pcfThisFrame,
@@ -2379,7 +2417,7 @@ CLRUnwindStatus ExceptionTracker::ProcessExplicitFrame(
                 // make callback to debugger and/or profiler
                 //
 #if defined(DEBUGGING_SUPPORTED)
-                if (ExceptionTracker::NotifyDebuggerOfStub(pThread, sf, pFrame))
+                if (NotifyDebuggerOfStub(pThread, pFrame))
                 {
                     // Deliver the FirstChanceNotification after the debugger, if not already delivered.
                     if (!this->DeliveredFirstChanceNotification())
@@ -3531,7 +3569,7 @@ void ExceptionTracker::PopTrackerIfEscaping(
 
     Thread*                 pThread  = GetThread();
     ThreadExceptionState*   pExState = pThread->GetExceptionState();
-    ExceptionTracker*       pTracker = pExState->m_pCurrentTracker;
+    ExceptionTracker*       pTracker = (ExceptionTracker*)pExState->m_pCurrentTracker;
     CONSISTENCY_CHECK((NULL == pTracker) || pTracker->IsValid());
 
     // If we are resuming in managed code (albeit further up the stack) we will still need this
@@ -3578,7 +3616,7 @@ void ExceptionTracker::PopTrackers(
     CONTRACTL_END;
 
     Thread*             pThread     = GetThreadNULLOk();
-    ExceptionTracker*   pTracker    = (pThread ? pThread->GetExceptionState()->m_pCurrentTracker : NULL);
+    ExceptionTracker*   pTracker    = (pThread ? (ExceptionTracker*)pThread->GetExceptionState()->m_pCurrentTracker : NULL);
 
     // NOTE:
     //
@@ -3595,7 +3633,7 @@ void ExceptionTracker::PopTrackers(
         // skip any others with empty ranges...
         do
         {
-           pTracker = pTracker->m_pPrevNestedInfo;
+           pTracker = (ExceptionTracker*)pTracker->m_pPrevNestedInfo;
         }
         while (pTracker && pTracker->m_ScannedStackRange.IsEmpty());
 
@@ -3634,7 +3672,7 @@ void ExceptionTracker::PopTrackers(
         _ASSERTE(!pTracker->m_ScannedStackRange.IsEmpty());
 #endif // TARGET_UNIX
 
-        ExceptionTracker*   pPrev   = pTracker->m_pPrevNestedInfo;
+        ExceptionTracker*   pPrev   = (ExceptionTracker*)pTracker->m_pPrevNestedInfo;
 
         // <TODO>
         //      with new tracker collapsing code, we will only ever pop one of these at a time
@@ -3709,7 +3747,7 @@ ExceptionTracker* ExceptionTracker::GetOrCreateTracker(
 
     Thread*                 pThread  = GetThread();
     ThreadExceptionState*   pExState = pThread->GetExceptionState();
-    ExceptionTracker*       pTracker = pExState->m_pCurrentTracker;
+    ExceptionTracker*       pTracker = (ExceptionTracker*)pExState->m_pCurrentTracker;
     CONSISTENCY_CHECK((NULL == pTracker) || (pTracker->IsValid()));
 
     bool fCreateNewTracker = false;
@@ -4105,43 +4143,6 @@ BOOL ExceptionTracker::ClauseCoversPC(
 }
 
 #if defined(DEBUGGING_SUPPORTED)
-BOOL ExceptionTracker::NotifyDebuggerOfStub(Thread* pThread, StackFrame sf, Frame* pCurrentFrame)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    BOOL fDeliveredFirstChanceNotification = FALSE;
-
-    // <TODO>
-    // Remove this once SIS is fully enabled.
-    // </TODO>
-    extern bool g_EnableSIS;
-
-    if (g_EnableSIS)
-    {
-        _ASSERTE(GetThreadNULLOk() == pThread);
-
-        GCX_COOP();
-
-        // For debugger, we may want to notify 1st chance exceptions if they're coming out of a stub.
-        // We recognize stubs as Frames with a M2U transition type. The debugger's stackwalker also
-        // recognizes these frames and publishes ICorDebugInternalFrames in the stackwalk. It's
-        // important to use pFrame as the stack address so that the Exception callback matches up
-        // w/ the ICorDebugInternlFrame stack range.
-        if (CORDebuggerAttached())
-        {
-            if (pCurrentFrame->GetTransitionType() == Frame::TT_M2U)
-            {
-                // Use -1 for the backing store pointer whenever we use the address of a frame as the stack pointer.
-                EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread,
-                                                                                   (SIZE_T)0,
-                                                                                   (SIZE_T)pCurrentFrame);
-                fDeliveredFirstChanceNotification = TRUE;
-            }
-        }
-    }
-
-    return fDeliveredFirstChanceNotification;
-}
 
 bool ExceptionTracker::IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC)
 {
@@ -4169,7 +4170,7 @@ void ExceptionTracker::MakeCallbacksRelatedToHandler(
     {
         StackFrame sfToStore = sf;
         if ((this->m_pPrevNestedInfo != NULL) &&
-            (this->m_pPrevNestedInfo->m_EnclosingClauseInfo == this->m_EnclosingClauseInfo))
+            (((ExceptionTracker*)this->m_pPrevNestedInfo)->m_EnclosingClauseInfo == this->m_EnclosingClauseInfo))
         {
             // If this is a nested exception which has the same enclosing clause as the previous exception,
             // we should just propagate the clause info from the previous exception.
@@ -4266,17 +4267,35 @@ EXCEPTION_DISPOSITION ClrDebuggerDoUnwindAndIntercept(X86_FIRST_ARG(EXCEPTION_RE
                                                            (PBYTE*)&uInterceptStackFrame,
                                                            NULL, NULL);
 
-#ifdef TARGET_UNIX
-    CONTEXT *pContext = pThread->GetExceptionState()->GetContextRecord();
-    PAL_SEHException ex(pThread->GetExceptionState()->GetExceptionRecord(), pContext, /* onStack */ false);
-    ex.TargetIp = INVALID_RESUME_ADDRESS;
-    ex.TargetFrameSp = uInterceptStackFrame;
-    ex.ReturnValue = (UINT_PTR)pThread;
-    UnwindManagedExceptionPass2(ex, pContext);
-#else // TARGET_UNIX
-    ClrUnwindEx(pExceptionRecord, (UINT_PTR)pThread, INVALID_RESUME_ADDRESS, uInterceptStackFrame);
-#endif // TARGET_UNIX
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        GCX_COOP();
 
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__UNWIND_AND_INTERCEPT);
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+        args[ARGNUM_0] = PTR_TO_ARGHOLDER(pExState->GetCurrentExceptionTracker());
+        args[ARGNUM_1] = PTR_TO_ARGHOLDER(uInterceptStackFrame);
+        pThread->IncPreventAbort();
+
+        //Ex.RhUnwindAndIntercept(throwable, &exInfo)
+        CRITICAL_CALLSITE;
+        CALL_MANAGED_METHOD_NORET(args)
+
+        UNREACHABLE();
+    }
+    else
+    {
+#ifdef TARGET_UNIX
+        CONTEXT *pContext = pThread->GetExceptionState()->GetContextRecord();
+        PAL_SEHException ex(pThread->GetExceptionState()->GetExceptionRecord(), pContext, /* onStack */ false);
+        ex.TargetIp = INVALID_RESUME_ADDRESS;
+        ex.TargetFrameSp = uInterceptStackFrame;
+        ex.ReturnValue = (UINT_PTR)pThread;
+        UnwindManagedExceptionPass2(ex, pContext);
+#else // TARGET_UNIX
+        ClrUnwindEx(pExceptionRecord, (UINT_PTR)pThread, INVALID_RESUME_ADDRESS, uInterceptStackFrame);
+#endif // TARGET_UNIX
+    }
     UNREACHABLE();
 }
 #endif // DEBUGGER_EXCEPTION_INTERCEPTION_SUPPORTED
@@ -4328,7 +4347,7 @@ UINT_PTR ExceptionTracker::DebugComputeNestingLevel()
 
     if (pThread)
     {
-        ExceptionTracker* pTracker;
+        ExceptionTrackerBase* pTracker;
         pTracker = pThread->GetExceptionState()->m_pCurrentTracker;
 
         while (pTracker)
@@ -4561,7 +4580,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
             {
                 // We have reached the frame that will handle the exception.
                 ex.GetExceptionRecord()->ExceptionFlags |= EXCEPTION_TARGET_UNWIND;
-                ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+                ExceptionTracker* pTracker = (ExceptionTracker*)GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
                 pTracker->TakeExceptionPointersOwnership(&ex);
             }
 
@@ -4608,7 +4627,7 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
                 // frames, it doesn't attempt to scan the reclaimed stack range.
                 // We also need to reset the scanned stack range since the scanned frames will be
                 // obsolete after the unwind of the native frames completes.
-                ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+                ExceptionTracker* pTracker = (ExceptionTracker*)GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 
                 // The tracker will only be non-null in the case when we handle the managed exception in
                 // the runtime native code.
@@ -4798,7 +4817,7 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
         if (invalidRevPInvoke)
         {
-            ExceptionTracker* pTracker = GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
+            ExceptionTracker* pTracker = (ExceptionTracker*)GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 
             void* callbackCxt = NULL;
             Interop::ManagedToNativeExceptionCallback callback = Interop::GetPropagatingExceptionCallback(
@@ -4935,9 +4954,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
                 if (Thread::VirtualUnwindToFirstManagedCallFrame(&frameContext) == 0)
                 {
-                    // There are no managed frames on the stack, so we need to continue unwinding using C++ exception
-                    // handling
-                    break;
+                    // There are no managed frames on the stack, so the exception was not handled
+                    LONG disposition = InternalUnhandledExceptionFilter_Worker(&ex.ExceptionPointers);
+                    _ASSERTE(disposition == EXCEPTION_CONTINUE_SEARCH);
+                    CrashDumpAndTerminateProcess(1);
+                    UNREACHABLE();
                 }
 
                 UINT_PTR firstManagedFrameSP = GetSP(&frameContext);
@@ -5440,12 +5461,9 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
         if (g_isNewExceptionHandlingEnabled)
         {
-            REGDISPLAY rd;
             Thread *pThread = GetThread();
 
-            CONTEXT ctx = {};
-            ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-            ExInfo exInfo(pThread, &ctx /*ex->GetContextRecord()*/, &rd, ExKind::HardwareFault);
+            ExInfo exInfo(pThread, ex->GetExceptionRecord(), ex->GetContextRecord(), ExKind::HardwareFault);
 
             DWORD exceptionCode = ex->GetExceptionRecord()->ExceptionCode;
             if (exceptionCode == STATUS_ACCESS_VIOLATION)
@@ -5456,11 +5474,18 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 }
             }
 
+            if (!ex->RecordsOnStack)
+            {
+                exInfo.TakeExceptionPointersOwnership(ex);
+            }
+
             GCPROTECT_BEGIN(exInfo.m_exception);
             PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_THROWHW_EX);
             DECLARE_ARGHOLDER_ARRAY(args, 2);
             args[ARGNUM_0] = DWORD_TO_ARGHOLDER(exceptionCode);
             args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+            pThread->IncPreventAbort();
 
             //Ex.RhThrowHwEx(exceptionCode, &exInfo)
             CALL_MANAGED_METHOD_NORET(args)
@@ -5519,7 +5544,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
 #endif // TARGET_UNIX
 
-VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
+VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, bool preserveStackTrace)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -5529,13 +5554,26 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
 
    _ASSERTE(IsException(throwable->GetMethodTable()));
 
-    ExceptionPreserveStackTrace(throwable);
+    if (preserveStackTrace)
+    {
+        ExceptionPreserveStackTrace(throwable);
+    }
 
-    CONTEXT ctx = {};
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    REGDISPLAY rd;
     Thread *pThread = GetThread();
-    ExInfo exInfo(pThread, &ctx, &rd, ExKind::Throw);
+
+    ULONG_PTR hr = GetHRFromThrowable(throwable);
+
+    EXCEPTION_RECORD exceptionRecord;
+    exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
+    exceptionRecord.ExceptionFlags = EXCEPTION_NONCONTINUABLE | EXCEPTION_SOFTWARE_ORIGINATE;
+    exceptionRecord.ExceptionAddress = (void *)(void (*)(OBJECTREF, bool))&DispatchManagedException;
+    exceptionRecord.NumberParameters = MarkAsThrownByUs(exceptionRecord.ExceptionInformation, hr);
+    exceptionRecord.ExceptionRecord = NULL;
+
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+
+    ExInfo exInfo(pThread, &exceptionRecord, &exceptionContext, ExKind::Throw);
 
     if (pThread->IsAbortInitiated () && IsExceptionOfType(kThreadAbortException,&throwable))
     {
@@ -5554,6 +5592,8 @@ VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable)
     DECLARE_ARGHOLDER_ARRAY(args, 2);
     args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(throwable);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
 
     //Ex.RhThrowEx(throwable, &exInfo)
     CRITICAL_CALLSITE;
@@ -6281,7 +6321,7 @@ FixRedirectContextHandler(
 #endif // !TARGET_UNIX
 #endif // DACCESS_COMPILE
 
-void ExceptionTracker::StackRange::Reset()
+void ExceptionTrackerBase::StackRange::Reset()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -6289,14 +6329,14 @@ void ExceptionTracker::StackRange::Reset()
     m_sfHighBound.Clear();
 }
 
-bool ExceptionTracker::StackRange::IsEmpty()
+bool ExceptionTrackerBase::StackRange::IsEmpty()
 {
     LIMITED_METHOD_CONTRACT;
     return (m_sfLowBound.IsMaxVal() &&
             m_sfHighBound.IsNull());
 }
 
-bool ExceptionTracker::StackRange::IsSupersededBy(StackFrame sf)
+bool ExceptionTrackerBase::StackRange::IsSupersededBy(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -6304,7 +6344,7 @@ bool ExceptionTracker::StackRange::IsSupersededBy(StackFrame sf)
     return (sf >= m_sfLowBound);
 }
 
-void ExceptionTracker::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange)
+void ExceptionTrackerBase::StackRange::CombineWith(StackFrame sfCurrent, StackRange* pPreviousRange)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -6347,7 +6387,7 @@ void ExceptionTracker::StackRange::CombineWith(StackFrame sfCurrent, StackRange*
     }
 }
 
-bool ExceptionTracker::StackRange::Contains(StackFrame sf)
+bool ExceptionTrackerBase::StackRange::Contains(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -6356,25 +6396,25 @@ bool ExceptionTracker::StackRange::Contains(StackFrame sf)
                             (sf <= m_sfHighBound));
 }
 
-void ExceptionTracker::StackRange::ExtendUpperBound(StackFrame sf)
+void ExceptionTrackerBase::StackRange::ExtendUpperBound(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
-    CONSISTENCY_CHECK(sf > m_sfHighBound);
+    CONSISTENCY_CHECK(g_isNewExceptionHandlingEnabled ? (sf >= m_sfHighBound) : (sf > m_sfHighBound));
 
     m_sfHighBound = sf;
 }
 
-void ExceptionTracker::StackRange::ExtendLowerBound(StackFrame sf)
+void ExceptionTrackerBase::StackRange::ExtendLowerBound(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
-    CONSISTENCY_CHECK(sf < m_sfLowBound);
+    CONSISTENCY_CHECK(g_isNewExceptionHandlingEnabled ? (sf <= m_sfLowBound) : (sf < m_sfLowBound));
 
     m_sfLowBound = sf;
 }
 
-void ExceptionTracker::StackRange::TrimLowerBound(StackFrame sf)
+void ExceptionTrackerBase::StackRange::TrimLowerBound(StackFrame sf)
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -6383,7 +6423,7 @@ void ExceptionTracker::StackRange::TrimLowerBound(StackFrame sf)
     m_sfLowBound = sf;
 }
 
-StackFrame ExceptionTracker::StackRange::GetLowerBound()
+StackFrame ExceptionTrackerBase::StackRange::GetLowerBound()
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -6391,7 +6431,7 @@ StackFrame ExceptionTracker::StackRange::GetLowerBound()
     return m_sfLowBound;
 }
 
-StackFrame ExceptionTracker::StackRange::GetUpperBound()
+StackFrame ExceptionTrackerBase::StackRange::GetUpperBound()
 {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsConsistent());
@@ -6400,7 +6440,7 @@ StackFrame ExceptionTracker::StackRange::GetUpperBound()
 }
 
 #ifdef _DEBUG
-bool ExceptionTracker::StackRange::IsDisjointWithAndLowerThan(StackRange* pOtherRange)
+bool ExceptionTrackerBase::StackRange::IsDisjointWithAndLowerThan(StackRange* pOtherRange)
 {
     CONSISTENCY_CHECK(IsConsistent());
     CONSISTENCY_CHECK(pOtherRange->IsConsistent());
@@ -6412,7 +6452,7 @@ bool ExceptionTracker::StackRange::IsDisjointWithAndLowerThan(StackRange* pOther
 
 
 #ifdef _DEBUG
-bool ExceptionTracker::StackRange::IsConsistent()
+bool ExceptionTrackerBase::StackRange::IsConsistent()
 {
     LIMITED_METHOD_CONTRACT;
     if (m_sfLowBound.IsMaxVal() ||
@@ -6433,48 +6473,6 @@ bool ExceptionTracker::StackRange::IsConsistent()
 #endif // _DEBUG
 
 
-bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExInfo pExInfo)
-{
-     LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(pCF != NULL);
-
-    // The tracker must be in the second pass, and its stack range must not be empty.
-    if ( (pExInfo == NULL) ||
-         (pExInfo->m_passNumber == 1) ||
-         (pExInfo->m_sfLowBound.IsMaxVal() &&
-         pExInfo->m_sfHighBound.IsNull()))
-    {
-        return false;
-    }
-
-    CallerStackFrame csfToCheck;
-    if (pCF->IsFrameless())
-    {
-        csfToCheck = CallerStackFrame::FromRegDisplay(pCF->GetRegisterSet());
-    }
-    else
-    {
-        csfToCheck = CallerStackFrame((UINT_PTR)pCF->GetFrame());
-    }
-
-    StackFrame sfLowerBound = pExInfo->m_sfLowBound;
-    StackFrame sfUpperBound = pExInfo->m_sfHighBound;
-
-#ifndef STACK_RANGE_BOUNDS_ARE_CALLER_SP
-    if ((sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound))
-#else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
-    if ((sfLowerBound <= csfToCheck) && (csfToCheck < sfUpperBound))
-#endif // STACK_RANGE_BOUNDS_ARE_CALLER_SP
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
 // Determine if the given StackFrame is in the stack region unwound by the specified ExceptionTracker.
 // This is used by the stackwalker to skip funclets.  Refer to the calls to this method in StackWalkFramesEx()
 // for more information.
@@ -6483,7 +6481,7 @@ bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * p
 // containing the funclet. Details of the skipping logic are described in the method implementation.
 //
 // static
-bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExceptionTracker pExceptionTracker)
+bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * pCF, PTR_ExceptionTrackerBase pExceptionTracker)
 {
      LIMITED_METHOD_CONTRACT;
 
@@ -6589,16 +6587,8 @@ bool ExceptionTracker::IsInStackRegionUnwoundByCurrentException(CrawlFrame * pCF
 
     Thread * pThread = pCF->pThread;
 
-    if (!g_isNewExceptionHandlingEnabled)
-    {
-        PTR_ExceptionTracker pCurrentTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
-        return ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentTracker);
-    }
-    else
-    {
-        PTR_ExInfo pCurrentExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
-        return ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentExInfo);
-    }
+    PTR_ExceptionTrackerBase pCurrentTracker = pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    return ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentTracker);
 }
 
 
@@ -6643,11 +6633,11 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
                         pCF, pCF->IsFrameless() ? "Yes" : "No", pCF->IsFrameless() ? "CallerSP" : "Address", csfToCheck.SP);
         }
 
-        PTR_ExInfo pTopExInfo = pTargetThread->GetExceptionState()->GetCurrentExInfo();
-        for (PTR_ExInfo pCurrentExInfo = pTopExInfo; pCurrentExInfo != NULL; pCurrentExInfo = dac_cast<PTR_ExInfo>(pCurrentExInfo->m_pPrevExInfo))
+        PTR_ExInfo pTopExInfo = (PTR_ExInfo)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
+        for (PTR_ExInfo pCurrentExInfo = pTopExInfo; pCurrentExInfo != NULL; pCurrentExInfo = dac_cast<PTR_ExInfo>(pCurrentExInfo->m_pPrevNestedInfo))
         {
-            STRESS_LOG2(LF_EH|LF_GCROOTS, LL_INFO100, "Checking lower bound %p, upper bound %p\n", (void*)pCurrentExInfo->m_sfLowBound.SP, (void*)pCurrentExInfo->m_sfHighBound.SP);
-            if (ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, pCurrentExInfo))
+            STRESS_LOG2(LF_EH|LF_GCROOTS, LL_INFO100, "Checking lower bound %p, upper bound %p\n", (void*)pCurrentExInfo->m_ScannedStackRange.GetLowerBound().SP, (void*)pCurrentExInfo->m_ScannedStackRange.GetUpperBound().SP);
+            if (ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(pCF, (PTR_ExceptionTrackerBase)pCurrentExInfo))
             {
                 fHasFrameBeenUnwound = true;
                 break;
@@ -6660,7 +6650,7 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
         return fHasFrameBeenUnwound;
     }
 
-    PTR_ExceptionTracker pTopTracker = pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
+    PTR_ExceptionTracker pTopTracker = (PTR_ExceptionTracker)pTargetThread->GetExceptionState()->GetCurrentExceptionTracker();
     PTR_ExceptionTracker pCurrentTracker = pTopTracker;
 
     while (pCurrentTracker != NULL)
@@ -6849,7 +6839,7 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
         }
 
         // Move to the next (previous) tracker
-        pCurrentTracker = pCurrentTracker->GetPreviousExceptionTracker();
+        pCurrentTracker = (PTR_ExceptionTracker)pCurrentTracker->GetPreviousExceptionTracker();
     }
 
     if (fHasFrameBeenUnwound)
@@ -7128,12 +7118,12 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
 
     if (g_isNewExceptionHandlingEnabled)
     {
-        for (PTR_ExInfo pCurrentExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+        for (PTR_ExInfo pCurrentExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
             pCurrentExInfo != NULL;
-            pCurrentExInfo = pCurrentExInfo->m_pPrevExInfo)
+            pCurrentExInfo = (PTR_ExInfo)pCurrentExInfo->m_pPrevNestedInfo)
         {
             // Check if the ExInfo has just been created.
-            if (pCurrentExInfo->m_sfLowBound.IsMaxVal() && pCurrentExInfo->m_sfHighBound.IsNull())
+            if (pCurrentExInfo->m_ScannedStackRange.IsEmpty())
             {
                 continue;
             }
@@ -7149,9 +7139,9 @@ StackFrame ExceptionTracker::FindParentStackFrameHelper(CrawlFrame* pCF,
         goto lExit;
     }
 
-    for (pCurrentTracker = pThread->GetExceptionState()->m_pCurrentTracker;
+    for (pCurrentTracker = (PTR_ExceptionTracker)pThread->GetExceptionState()->m_pCurrentTracker;
          pCurrentTracker != NULL;
-         pCurrentTracker = pCurrentTracker->m_pPrevNestedInfo)
+         pCurrentTracker = (PTR_ExceptionTracker)pCurrentTracker->m_pPrevNestedInfo)
     {
         // Check if the tracker has just been created.
         if (pCurrentTracker->m_ScannedStackRange.IsEmpty())
@@ -7322,7 +7312,7 @@ StackFrame ExceptionTracker::RareFindParentStackFrame(CrawlFrame* pCF,
     return state.m_sfParent;
 }
 
-ExceptionTracker::StackRange::StackRange()
+ExceptionTrackerBase::StackRange::StackRange()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -7422,7 +7412,7 @@ void ExceptionTracker::SetEnclosingClauseInfo(bool     fEnclosingClauseIsFunclet
                                                       uEnclosingClauseCallerSP);
     if (this->m_pPrevNestedInfo != NULL)
     {
-        PTR_ExceptionTracker pPrevTracker = this->m_pPrevNestedInfo;
+        PTR_ExceptionTracker pPrevTracker = (PTR_ExceptionTracker)this->m_pPrevNestedInfo;
         CallerStackFrame csfPrevEHClause = pPrevTracker->m_EHClauseInfo.GetCallerStackFrameForEHClause();
 
         // Just propagate the information if this is a nested exception.
@@ -7440,7 +7430,7 @@ void ExceptionTracker::SetEnclosingClauseInfo(bool     fEnclosingClauseIsFunclet
 
 
 #ifdef DACCESS_COMPILE
-void ExceptionTracker::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+void ExceptionTrackerBase::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     // ExInfo is embedded so don't enum 'this'.
     OBJECTHANDLE_EnumMemoryRegions(m_hThrowable);
@@ -7519,10 +7509,32 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
     _ASSERTE(pMD == codeInfo.GetMethodDesc());
 #endif // _DEBUG
 
-    pExInfo->m_stackTraceInfo.AppendElement(canAllocateMemory, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
-    pExInfo->m_stackTraceInfo.SaveStackTrace(canAllocateMemory, pExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
+    pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, ip, sp, pMD, &pExInfo->m_frameIter.m_crawl);
+    pExInfo->m_StackTraceInfo.SaveStackTrace(canAllocateMemory, pExInfo->m_hThrowable, /*bReplaceStack*/FALSE, /*bSkipLastElement*/FALSE);
+    if (!pExInfo->DeliveredFirstChanceNotification())
+    {
+        ExceptionNotifications::DeliverFirstChanceNotification();
+    }
 
     END_QCALL;
+}
+
+static void PopExplicitFrames(Thread *pThread, void *targetSp)
+{
+    Frame* pFrame = pThread->GetFrame();
+    while (pFrame < targetSp)
+    {
+        pFrame->ExceptionUnwind();
+        pFrame->Pop(pThread);
+        pFrame = pThread->GetFrame();
+    }
+
+    GCFrame* pGCFrame = pThread->GetGCFrame();
+    while (pGCFrame && pGCFrame < targetSp)
+    {
+        pGCFrame->Pop();
+        pGCFrame = pThread->GetGCFrame();
+    }
 }
 
 UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
@@ -7551,6 +7563,15 @@ UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 #endif        
 }
 
+static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
+{
+#ifdef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
+    return CallerStackFrame::FromRegDisplay(pRD).SP;
+#else
+    return GetSP(pRD->pCurrentContext);
+#endif
+}
+
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     QCALL_CONTRACT;
@@ -7559,11 +7580,13 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     GCX_COOP_NO_DTOR();
 
     Thread* pThread = GET_THREAD();
+    pThread->DecPreventAbort();
+
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsFuncletCall(pFrame);
     HandlerFn* pfnHandler = (HandlerFn*)pHandlerIP;
-    exInfo->m_sfHighBound = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP;
-    DWORD_PTR dwResumePC;
+    exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
+    DWORD_PTR dwResumePC = 0;
 
     if (pHandlerIP != NULL)
     {
@@ -7578,7 +7601,8 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 
         MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
         // Profiler, debugger and ETW events
-        exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, GetSP(pvRegDisplay->pCurrentContext));
+        TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
+        exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
 
 #ifdef USE_FUNCLET_CALL_HELPER
         // Invoke the catch funclet. 
@@ -7594,59 +7618,95 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         dwResumePC = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
 #endif            
         // Profiler, debugger and ETW events
-        exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, GetSP(pvRegDisplay->pCurrentContext));
+        exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
     }
 
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
+    PopExplicitFrames(pThread, (void*)targetSp);
 
-    while (pFrame < (void*)targetSp)
-    {
-        pFrame->ExceptionUnwind();
-        pFrame->Pop(pThread);
-        pFrame = pThread->GetFrame();
-    }
-
-    GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame && pGCFrame < (void*)targetSp)
-    {
-        pGCFrame->Pop();
-        pGCFrame = pThread->GetGCFrame();
-    }
-
-    ExInfo* pExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    ExInfo* pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
 #ifdef HOST_UNIX
     Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = pExInfo->m_propagateExceptionCallback;
     void* propagateExceptionContext = pExInfo->m_propagateExceptionContext;
 #endif // HOST_UNIX
 
-    // Pop ExInfos
-    while (pExInfo && pExInfo < (void*)targetSp)
+#ifdef DEBUGGING_SUPPORTED
+    // This must be done before we pop the trackers.
+    BOOL fIntercepted = pThread->GetExceptionState()->GetFlags()->DebuggerInterceptInfo();
+    if (fIntercepted)
     {
-        if (pExInfo->m_hThrowable)
-        {
-            if (!CLRException::IsPreallocatedExceptionHandle(pExInfo->m_hThrowable))
-            {
-                DestroyHandle(pExInfo->m_hThrowable);
-            }
-            pExInfo->m_hThrowable = NULL;
-        }
-        pExInfo->m_stackTraceInfo.FreeStackTrace();
-        pExInfo = pExInfo->m_pPrevExInfo;
+        // retrieve the interception information
+        MethodDesc *pInterceptMD = NULL;
+        StackFrame sfInterceptStackFrame;
+        UINT_PTR    uResumePC = 0;
+        ULONG_PTR   ulRelOffset;
+
+        pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
+
+        PCODE pStartAddress = pInterceptMD->GetNativeCode();
+
+        EECodeInfo codeInfo(pStartAddress);
+        _ASSERTE(codeInfo.IsValid());
+
+        // Note that the value returned for ulRelOffset is actually the offset,
+        // so we need to adjust it to get the actual IP.
+        _ASSERTE(FitsIn<DWORD>(ulRelOffset));
+        uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
+
+        SetIP(pvRegDisplay->pCurrentContext, uResumePC);
+    }
+#endif // DEBUGGING_SUPPORTED
+
+    ExInfo::PopExInfos(pThread, (void*)targetSp);
+
+    if (!pThread->GetExceptionState()->IsExceptionInProgress())
+    {
+        pThread->SafeSetLastThrownObject(NULL);
     }
 
-    pThread->GetExceptionState()->SetCurrentExInfo(pExInfo);
-
-    pThread->SafeSetLastThrownObject(NULL);
+    // Sync managed exception state, for the managed thread, based upon any active exception tracker
+    pThread->SyncManagedExceptionState(false);
 
     ExceptionTracker::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
+        UINT_PTR uAbortAddr = 0;
+        if (!fIntercepted)
+        {
+            CopyOSContext(pThread->m_OSContext, pvRegDisplay->pCurrentContext);
+            SetIP(pThread->m_OSContext, (PCODE)dwResumePC);
+            uAbortAddr = (UINT_PTR)COMPlusCheckForAbort(dwResumePC);
+        }
+        if (uAbortAddr)
+        {
+#ifdef TARGET_AMD64
+#ifdef TARGET_UNIX
+            pvRegDisplay->pCurrentContext->Rdi = dwResumePC;
+            pvRegDisplay->pCurrentContext->Rsi = GetIP(pThread->GetAbortContext()); //How can this ever be different from dwResumePC?
+#else
+            pvRegDisplay->pCurrentContext->Rcx = dwResumePC;
+#endif
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+            // On ARM & ARM64, we save off the original PC in Lr. This is the same as done
+            // in HandleManagedFault for H/W generated exceptions.
+            pvRegDisplay->pCurrentContext->Lr = dwResumePC;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            pvRegDisplay->pCurrentContext->Ra = dwResumePC;
+#endif
+
+            SetIP(pvRegDisplay->pCurrentContext, uAbortAddr);
+        }
+
         ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);
     }
     else
     {
+        if (fIntercepted)
+        {
+            ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);    
+        }
 #ifdef HOST_UNIX
         if (propagateExceptionCallback)
         {
@@ -7702,6 +7762,45 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     return NULL;
 }
 
+extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
+{
+    Thread* pThread = GET_THREAD();
+    pThread->DecPreventAbort();
+
+    Frame* pFrame = pThread->GetFrame();
+    MarkInlinedCallFrameAsFuncletCall(pFrame);
+    
+    UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
+    PopExplicitFrames(pThread, (void*)targetSp);
+
+    // This must be done before we pop the ExInfos.
+    BOOL fIntercepted = pThread->GetExceptionState()->GetFlags()->DebuggerInterceptInfo();
+    _ASSERTE(fIntercepted);
+
+    ExInfo::PopExInfos(pThread, (void*)targetSp);
+
+    // retrieve the interception information
+    MethodDesc *pInterceptMD = NULL;
+    StackFrame sfInterceptStackFrame;
+    UINT_PTR    uResumePC = 0;
+    ULONG_PTR   ulRelOffset;
+
+    pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
+
+    PCODE pStartAddress = pInterceptMD->GetNativeCode();
+
+    EECodeInfo codeInfo(pStartAddress);
+    _ASSERTE(codeInfo.IsValid());
+
+    // Note that the value returned for ulRelOffset is actually the offset,
+    // so we need to adjust it to get the actual IP.
+    _ASSERTE(FitsIn<DWORD>(ulRelOffset));
+    uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
+
+    SetIP(pvRegDisplay->pCurrentContext, uResumePC);
+    ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext);    
+}
+
 extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
     QCALL_CONTRACT;
@@ -7709,17 +7808,20 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
     BEGIN_QCALL;
     GCX_COOP();
     Thread* pThread = GET_THREAD();
+    pThread->DecPreventAbort();
+
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsFuncletCall(pFrame);
     HandlerFn* pfnHandler = (HandlerFn*)pHandlerIP;
     UINT_PTR establisherFrame = GetEstablisherFrame(pvRegDisplay, exInfo);
     exInfo->m_csfEHClause = CallerStackFrame((UINT_PTR)GetCurrentSP());
     exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
-    exInfo->m_sfHighBound = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP;
+    exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
 
     MethodDesc *pMD = exInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
-    exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, GetSP(pvRegDisplay->pCurrentContext));
+    TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
+    exInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
 #ifdef USE_FUNCLET_CALL_HELPER
     // Invoke the finally funclet. 
     // Since the actual caller of the funclet is the assembly helper, pass the reference
@@ -7733,8 +7835,11 @@ extern "C" void QCALLTYPE CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvReg
 #else
     DWORD_PTR dwResumePC = pfnHandler(establisherFrame, NULL);
 #endif        
+
+    pThread->IncPreventAbort();
+
     // Profiler, debugger and ETW events
-    exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, GetSP(pvRegDisplay->pCurrentContext) );
+    exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
     END_QCALL;
 }
 
@@ -7751,7 +7856,7 @@ extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exception
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
-    ExInfo* pExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
     OBJECTREF throwable = exceptionObj.Get();
     throwable = PossiblyUnwrapThrowable(throwable, pExInfo->m_frameIter.m_crawl.GetAssembly());
 
@@ -7761,26 +7866,37 @@ extern "C" BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exception
     pExInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
     MethodDesc *pMD = pExInfo->m_frameIter.m_crawl.GetFunction();
     // Profiler, debugger and ETW events
-    pExInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, GetSP(pvRegDisplay->pCurrentContext));
+    TADDR spForDebugger = GetSpForDiagnosticReporting(pvRegDisplay);
+    pExInfo->MakeCallbacksRelatedToHandler(true, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
+    EX_TRY
+    {
 #ifdef USE_FUNCLET_CALL_HELPER
-    // Invoke the filter funclet. 
-    // Since the actual caller of the funclet is the assembly helper, pass the reference
-    // to the CallerStackFrame instance so that it can be updated.
-    CallerStackFrame* pCallerStackFrame = &pExInfo->m_csfEHClause;
-    UINT_PTR *pFuncletCallerSP = &(pCallerStackFrame->SP);
-    // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
-    // it will retrieve the framepointer for accessing the locals in the parent
-    // method.
-    dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
-                                  GetFrameRestoreBase(pvRegDisplay->pCallerContext),
-                                  CastHandlerFn(pfnHandler),
-                                  pFuncletCallerSP);
+        // Invoke the filter funclet. 
+        // Since the actual caller of the funclet is the assembly helper, pass the reference
+        // to the CallerStackFrame instance so that it can be updated.
+        CallerStackFrame* pCallerStackFrame = &pExInfo->m_csfEHClause;
+        UINT_PTR *pFuncletCallerSP = &(pCallerStackFrame->SP);
+        // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
+        // it will retrieve the framepointer for accessing the locals in the parent
+        // method.
+        dwResult = CallEHFilterFunclet(OBJECTREFToObject(throwable),
+                                       GetFrameRestoreBase(pvRegDisplay->pCallerContext),
+                                       CastHandlerFn(pfnHandler),
+                                       pFuncletCallerSP);
 #else
-    dwResult = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
-#endif        
+        dwResult = pfnHandler(establisherFrame, OBJECTREFToObject(throwable));
+#endif
+    }
+    EX_CATCH
+    {
+        // Exceptions that occur in the filter funclet are swallowed and the return value is simulated
+        // to be false.
+        dwResult = EXCEPTION_CONTINUE_SEARCH;
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 
     // Profiler, debugger and ETW events
-    pExInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, GetSP(pvRegDisplay->pCurrentContext));
+    pExInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
     END_QCALL;
 
     return dwResult == EXCEPTION_EXECUTE_HANDLER;
@@ -7837,7 +7953,7 @@ extern "C" BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* 
         memset(&EHClause, 0, sizeof(EE_ILEXCEPTION_CLAUSE));
         PTR_EXCEPTION_CLAUSE_TOKEN pEHClauseToken = pJitMan->GetNextEHClause(pEHEnum, &EHClause);
         Thread* pThread = GET_THREAD();
-        ExInfo* pExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+        ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
         pExInfo->m_CurrentClause = EHClause;
 
         pEHClause->_tryStartOffset = EHClause.TryStartPC;
@@ -7891,27 +8007,35 @@ extern uint32_t g_exceptionCount;
 
 MethodDesc * GetUserMethodForILStub(Thread * pThread, UINT_PTR uStubSP, MethodDesc * pILStubMD, Frame ** ppFrameOut);
 
-extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault)
+static BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterator, ExInfo *pExInfo)
 {
-    QCALL_CONTRACT;
+    // check if the exception is intercepted.
+    BOOL isIntercepted = FALSE;
+    if (pExInfo->m_ExceptionFlags.DebuggerInterceptInfo())
+    {
+        MethodDesc *pMD = pStackFrameIterator->m_crawl.GetFunction();
+        MethodDesc* pInterceptMD = NULL;
+        StackFrame sfInterceptStackFrame;
 
-    bool result = false;
-    BEGIN_QCALL;
+        // check if we have reached the interception point yet
+        pExInfo->m_DebuggerExState.GetDebuggerInterceptInfo(&pInterceptMD, NULL,
+            reinterpret_cast<PBYTE *>(&(sfInterceptStackFrame.SP)),
+            NULL, NULL);
 
-    Thread* pThread = GET_THREAD();
-    Frame* pFrame = pThread->GetFrame();
-    MarkInlinedCallFrameAsEHHelperCall(pFrame);
+        TADDR spForDebugger = GetSpForDiagnosticReporting(pStackFrameIterator->m_crawl.GetRegisterSet());
 
-    // we already fixed the context in HijackHandler, so let's
-    // just clear the thread state.
-    pThread->ResetThrowControlForThread();
+        if ((pExInfo->m_passNumber == 1) ||
+            ((pInterceptMD == pMD) && (sfInterceptStackFrame == spForDebugger)))
+        {
+            isIntercepted = TRUE;
+        }
+    }
 
-    // Skip the SfiInit pinvoke frame
-    pFrame = pThread->GetFrame()->PtrNextFrame();
+    return isIntercepted;
+}
 
-    ExInfo* pExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
-    REGDISPLAY* pRD = pExInfo->m_pRD;
-
+static void NotifyExceptionPassStarted(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
+{
     if (pExInfo->m_passNumber == 1)
     {
         GCX_COOP();
@@ -7921,6 +8045,8 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     }
     else // pExInfo->m_passNumber == 2
     {
+        REGDISPLAY* pRD = &pExInfo->m_regDisplay;
+
         // Clear the enclosing clause to indicate we have not processed any 2nd pass funclet yet.
         pExInfo->m_csfEnclosingClause.Clear();
         if (pExInfo->m_idxCurClause != 0xffffffff) //  the reverse pinvoke case doesn't have the m_idxCurClause set
@@ -7948,34 +8074,103 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                 //          We NULL it out because we get the interception event after this point.
                 //  * Notifify debugger and return.
                 //      In this case the normal EH proceeds and we need to reset m_sfResumeStackFrame to the sf catch handler.
-
-                // TODO-NewEH: New exception handling debugger events completion
-                /*
-                EXCEPTION_POINTERS ptrs;
-                EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter(&ptrs, pILStubFrame);
-                */
+                EEToDebuggerExceptionInterfaceWrapper::NotifyOfCHFFilter((EXCEPTION_POINTERS *)&pExInfo->m_ptrs, pILStubFrame);
             }
             else
             {
+                _ASSERTE(pExInfo->m_pMDToReportFunctionLeave != NULL);
+                EEToProfilerExceptionInterfaceWrapper::ExceptionSearchCatcherFound(pMD);
+                if (pExInfo->m_pMDToReportFunctionLeave != NULL)
+                {
+                    EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionLeave(pExInfo->m_pMDToReportFunctionLeave);
+                    pExInfo->m_pMDToReportFunctionLeave = NULL;
+                }
+
                 // We don't need to do anything special for continuable exceptions after calling
                 // this callback.  We are going to start unwinding anyway.
                 PCODE uMethodStartPC = pExInfo->m_frameIter.m_crawl.GetCodeInfo()->GetStartAddress();
-                EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedExceptionCatcherFound(pThread, pMD, (TADDR) uMethodStartPC, sp,
+                TADDR spForDebugger = GetSpForDiagnosticReporting(pRD);
+                EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedExceptionCatcherFound(pThread, pMD, (TADDR) uMethodStartPC, spForDebugger,
                                                                                                &pExInfo->m_ClauseForCatch);
-                EEToProfilerExceptionInterfaceWrapper::ExceptionSearchCatcherFound(pMD);
             }
+            pExInfo->m_ExceptionFlags.SetUnwindHasStarted();
+            EEToDebuggerExceptionInterfaceWrapper::ManagedExceptionUnwindBegin(pThread);
         }
-        pExInfo->m_ExceptionFlags.SetUnwindHasStarted();
-        EEToDebuggerExceptionInterfaceWrapper::ManagedExceptionUnwindBegin(pThread);
+    }
+}
+
+static void NotifyFunctionEnter(StackFrameIterator *pThis, Thread *pThread, ExInfo *pExInfo)
+{
+    MethodDesc *pMD = pThis->m_crawl.GetFunction();
+
+    if (pExInfo->m_passNumber == 1)
+    {
+        if (pExInfo->m_pMDToReportFunctionLeave != NULL)
+        {
+            EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionLeave(pExInfo->m_pMDToReportFunctionLeave);
+        }
+        EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionEnter(pMD);
+        // Notify the debugger that we are on the first pass for a managed exception.
+        // Note that this callback is made for every managed frame.
+        TADDR spForDebugger = GetSpForDiagnosticReporting(pThis->m_crawl.GetRegisterSet());
+        EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, GetControlPC(pThis->m_crawl.GetRegisterSet()), spForDebugger);
+    }
+    else
+    {
+        if (pExInfo->m_pMDToReportFunctionLeave != NULL)
+        {
+            EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFunctionLeave(pExInfo->m_pMDToReportFunctionLeave);
+        }
+        EEToProfilerExceptionInterfaceWrapper::ExceptionUnwindFunctionEnter(pMD);
     }
 
+    pExInfo->m_pMDToReportFunctionLeave = pMD;
+}
+
+extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, bool instructionFault, bool* pfIsExceptionIntercepted)
+{
+    QCALL_CONTRACT;
+
+    bool result = false;
+    Thread* pThread = GET_THREAD();
+    ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+    BEGIN_QCALL;
+
+    Frame* pFrame = pThread->GetFrame();
+    MarkInlinedCallFrameAsEHHelperCall(pFrame);
+
+    // we already fixed the context in HijackHandler, so let's
+    // just clear the thread state.
+    pThread->ResetThrowControlForThread();
+
+    // Skip the SfiInit pinvoke frame
+    pFrame = pThread->GetFrame()->PtrNextFrame();
+
+    NotifyExceptionPassStarted(pThis, pThread, pExInfo);
+
+    if (pFrame == FRAME_TOP)
+    {
+        // There are no managed frames on the stack, fail fast and report unhandled exception
+        LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pExInfo->m_ptrs);
+#ifdef HOST_WINDOWS
+        CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
+        RaiseFailFastException(pExInfo->m_ptrs.ExceptionRecord, pExInfo->m_ptrs.ContextRecord, 0);
+#else
+        CrashDumpAndTerminateProcess(pExInfo->m_ExceptionCode);
+#endif
+    }
+
+    REGDISPLAY* pRD = &pExInfo->m_regDisplay;
     pThread->FillRegDisplay(pRD, pStackwalkCtx);
 
     new (pThis) StackFrameIterator();
-    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE | HANDLESKIPPEDFRAMES/* | FUNCTIONSONLY*/) != FALSE;
+    result = pThis->Init(pThread, pFrame, pRD, THREAD_EXECUTING_MANAGED_CODE) != FALSE;
 
+    // Walk the stack until it finds the first managed method
     while (result && pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
     {
+        // In the first pass, add all explicit frames that have a managed function to the exception stack trace
         if (pExInfo->m_passNumber == 1)
         {
             Frame *pFrame = pThis->m_crawl.GetFrame();
@@ -7988,7 +8183,17 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
                     bool canAllocateMemory = !(pExInfo->m_exception == CLRException::GetPreallocatedOutOfMemoryException()) &&
                         !(pExInfo->m_exception == CLRException::GetPreallocatedStackOverflowException());
 
-                    pExInfo->m_stackTraceInfo.AppendElement(canAllocateMemory, NULL, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
+                    pExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, NULL, GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pExInfo->m_frameIter.m_crawl);
+
+#if defined(DEBUGGING_SUPPORTED)
+                    if (NotifyDebuggerOfStub(pThread, pFrame))
+                    {
+                        if (!pExInfo->DeliveredFirstChanceNotification())
+                        {
+                            ExceptionNotifications::DeliverFirstChanceNotification();
+                        }
+                    }
+#endif // DEBUGGING_SUPPORTED
                 }
             }
         }
@@ -7996,17 +8201,9 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         result = (retVal != SWA_FAILED);
     }
 
-    if (pExInfo->m_passNumber == 1)
-    {
-        MethodDesc *pMD = pThis->m_crawl.GetFunction();
-        EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionEnter(pMD);
+    NotifyFunctionEnter(pThis, pThread, pExInfo);
 
-        // Notify the debugger that we are on the first pass for a managed exception.
-        // Note that this callback is made for every managed frame.
-        EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, GetControlPC(pThis->m_crawl.GetRegisterSet()), GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()));
-    }
-
-    pExInfo->m_sfLowBound = GetRegdisplaySP(pThis->m_crawl.GetRegisterSet());
+    pExInfo->m_ScannedStackRange.ExtendLowerBound(GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()));
 
     pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
 
@@ -8023,22 +8220,42 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
         }
         pThis->SetAdjustedControlPC(controlPC);
         pThis->UpdateIsRuntimeWrappedExceptions();
+
+        *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pExInfo);
     }
 
     return result;
 }
 
+static StackWalkAction MoveToNextNonSkippedFrame(StackFrameIterator* pStackFrameIterator)
+{
+    StackWalkAction retVal;
+
+    do
+    {
+        retVal = pStackFrameIterator->Next();
+        if (retVal == SWA_FAILED)
+        {
+            break;
+        }
+    }
+    while (pStackFrameIterator->GetFrameState() == StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
+
+    return retVal;
+}
+
 extern "C" size_t CallDescrWorkerInternalReturnAddressOffset;
 
-extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke)
+extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* pfIsExceptionIntercepted)
 {
     QCALL_CONTRACT;
 
     StackWalkAction retVal = SWA_FAILED;
+    Thread* pThread = GET_THREAD();
+    ExInfo* pTopExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
@@ -8047,7 +8264,9 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
     pThread->ResetThrowControlForThread();
 
     ExInfo* pExInfo = pThis->GetNextExInfo();
-    ExInfo* pTopExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    bool isCollided = false;
+
+    MethodDesc *pMD = pThis->m_crawl.GetFunction();
 
     // Check for reverse pinvoke (but eliminate the case when the caller is managed) or CallDescrWorkerInternal.
     if (!ExecutionManager::IsManagedCode(GetIP(pThis->m_crawl.GetRegisterSet()->pCallerContext)))
@@ -8088,6 +8307,10 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             {
                 invalidRevPInvoke = true;
             }
+            else if (pThis->m_crawl.IsFilterFunclet())
+            {
+                invalidRevPInvoke = true;
+            }
         }
 
         if (fUnwoundReversePInvoke)
@@ -8100,6 +8323,26 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             // Unwind to the caller of the managed code
             retVal = pThis->Next();
             _ASSERTE(retVal != SWA_FAILED);
+            _ASSERTE(pThis->GetFrameState() != StackFrameIterator::SFITER_SKIPPED_FRAME_FUNCTION);
+
+            if (pThis->m_crawl.GetFrame() == FRAME_TOP)
+            {
+                if (pTopExInfo->m_passNumber == 1)
+                {
+                    LONG disposition = InternalUnhandledExceptionFilter_Worker((EXCEPTION_POINTERS *)&pTopExInfo->m_ptrs);
+#ifdef HOST_WINDOWS
+                    CreateCrashDumpIfEnabled(/* fSOException */ FALSE);
+#endif
+                }
+                else
+                {
+#ifdef HOST_WINDOWS
+                    RaiseFailFastException(pTopExInfo->m_ptrs.ExceptionRecord, pTopExInfo->m_ptrs.ContextRecord, 0);
+#else
+                    CrashDumpAndTerminateProcess(pTopExInfo->m_ExceptionCode);
+#endif
+                }
+            }
             goto Exit;
         }
     }
@@ -8136,13 +8379,14 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             if (InlinedCallFrame::FrameHasActiveCall(pFrame))
             {
                 InlinedCallFrame* pInlinedCallFrame = (InlinedCallFrame*)pFrame;
-                if (((TADDR)pInlinedCallFrame->m_Datum & 6) == 6)
+                if (((TADDR)pInlinedCallFrame->m_Datum & (TADDR)InlinedCallFrameMarker::Mask) == ((TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper | (TADDR)InlinedCallFrameMarker::SecondPassFuncletCaller))
                 {
                     // passing through CallCatchFunclet et al
                     if (doingFuncletUnwind)
                     {
                         // Unwind the CallCatchFunclet
-                        retVal = pThis->Next();
+                        retVal = MoveToNextNonSkippedFrame(pThis);
+                        
                         if (retVal == SWA_FAILED)
                         {
                             _ASSERTE_MSG(FALSE, "StackFrameIterator::Next failed");
@@ -8158,15 +8402,16 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
                         else
                         {
                             *uExCollideClauseIdx = pExInfo->m_idxCurClause;
+                            isCollided = true;
                             pExInfo->m_kind = (ExKind)((uint8_t)pExInfo->m_kind | (uint8_t)ExKind::SupersededFlag);
 
                             // Unwind until we hit the frame of the prevExInfo
                             ExInfo* pPrevExInfo = pThis->GetNextExInfo();
                             do
                             {
-                                retVal = pThis->Next();
+                                retVal = MoveToNextNonSkippedFrame(pThis);
                             }
-                            while ((retVal == SWA_CONTINUE) && pThis->m_crawl.GetRegisterSet()->SP != pPrevExInfo->m_pRD->SP);
+                            while ((retVal == SWA_CONTINUE) && pThis->m_crawl.GetRegisterSet()->SP != pPrevExInfo->m_regDisplay.SP);
                             _ASSERTE(retVal != SWA_FAILED);
 
                             pThis->ResetNextExInfoForSP(pThis->m_crawl.GetRegisterSet()->SP);
@@ -8176,14 +8421,23 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
             }
             else if (pTopExInfo->m_passNumber == 1)
             {
-                MethodDesc *pMD = pFrame->GetFunction();
+                pMD = pFrame->GetFunction();
                 if (pMD != NULL)
                 {
                     GCX_COOP();
                     bool canAllocateMemory = !(pTopExInfo->m_exception == CLRException::GetPreallocatedOutOfMemoryException()) &&
                                              !(pTopExInfo->m_exception == CLRException::GetPreallocatedStackOverflowException());
 
-                    pTopExInfo->m_stackTraceInfo.AppendElement(canAllocateMemory, NULL, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+                    pTopExInfo->m_StackTraceInfo.AppendElement(canAllocateMemory, NULL, GetRegdisplaySP(pTopExInfo->m_frameIter.m_crawl.GetRegisterSet()), pMD, &pTopExInfo->m_frameIter.m_crawl);
+#if defined(DEBUGGING_SUPPORTED)
+                    if (NotifyDebuggerOfStub(pThread, pFrame))
+                    {
+                        if (!pTopExInfo->DeliveredFirstChanceNotification())
+                        {
+                            ExceptionNotifications::DeliverFirstChanceNotification();
+                        }
+                    }
+#endif // DEBUGGING_SUPPORTED
                 }
             }
         }
@@ -8192,14 +8446,9 @@ extern "C" bool QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideCla
 
     _ASSERTE(retVal == SWA_FAILED || pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
 
-    if (pTopExInfo->m_passNumber == 1)
+    if (!isCollided)
     {
-        MethodDesc *pMD = pThis->m_crawl.GetFunction();
-        EEToProfilerExceptionInterfaceWrapper::ExceptionSearchFunctionEnter(pMD);
-
-        // Notify the debugger that we are on the first pass for a managed exception.
-        // Note that this callback is made for every managed frame.
-        EEToDebuggerExceptionInterfaceWrapper::FirstChanceManagedException(pThread, GetControlPC(pThis->m_crawl.GetRegisterSet()), GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()));
+        NotifyFunctionEnter(pThis, pThread, pTopExInfo);
     }
 
 Exit:;
@@ -8214,6 +8463,8 @@ Exit:;
         }
         pThis->SetAdjustedControlPC(controlPC);
         pThis->UpdateIsRuntimeWrappedExceptions();
+
+        *pfIsExceptionIntercepted = CheckExceptionInterception(pThis, pTopExInfo);
 
         return true;
     }

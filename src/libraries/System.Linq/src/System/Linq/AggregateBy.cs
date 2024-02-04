@@ -28,7 +28,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
             }
 
-            return AggregateByIterator(source, keySelector, _ => seed, func, keyComparer);
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
+            return AggregateByIterator(source, keySelector, seed, func, keyComparer);
         }
 
         public static IEnumerable<KeyValuePair<TKey, TAccumulate>> AggregateBy<TSource, TKey, TAccumulate>(
@@ -53,6 +58,11 @@ namespace System.Linq
             if (func is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.func);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return AggregateByIterator(source, keySelector, seedSelector, func, keyComparer);

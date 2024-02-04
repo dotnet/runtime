@@ -14,6 +14,7 @@
 // doing this in a DAC-friendly fashion involves some DAC gymnastics. The following couple of macros factor
 // those complexities out.
 #define VALUE_FROM_VOLATILE_ENTRY(_ptr) dac_cast<DPTR(VALUE)>(PTR_TO_MEMBER_TADDR(VolatileEntry, (_ptr), m_sValue))
+#define VALUE_TO_VOLATILE_ENTRY(_ptr) dac_cast<PTR_VolatileEntry>(dac_cast<TADDR>(_ptr))
 
 #ifndef DACCESS_COMPILE
 
@@ -590,4 +591,13 @@ DPTR(VALUE) DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseIterator::Next()
     _ASSERTE(GetNext(curBuckets) == NULL);
 
     return NULL;
+}
+
+template <DAC_ENUM_HASH_PARAMS>
+/*static*/ DacEnumerableHashValue DacEnumerableHashTable<DAC_ENUM_HASH_ARGS>::BaseValuePtrToHash(DPTR(VALUE) pValue)
+{
+#ifndef DACCESS_COMPILE
+    _ASSERTE(offsetof(VolatileEntry, m_sValue) == 0);
+#endif
+    return VALUE_TO_VOLATILE_ENTRY(pValue)->m_iHashValue;
 }

@@ -26,6 +26,8 @@ struct _InterpMethodArguments {
 #ifdef TARGET_WASM // FIXME HOST
 	MonoMethodSignature *sig;
 #endif
+	gpointer iargs_buf [8];
+	double fargs_buf [8];
 };
 
 enum {

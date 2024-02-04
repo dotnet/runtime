@@ -39,8 +39,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		{
 			var test = new VerifyCS.Test {
 				TestCode = source,
-				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
+				FixedCode = fixedSource
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -394,7 +393,9 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 			}
 			""";
 
-			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+			return VerifyRequiresUnreferencedCodeAnalyzer (source,
+				// (8,3): warning IL2060: Call to 'System.Reflection.MethodInfo.MakeGenericMethod(params Type[])' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.
+				VerifyCS.Diagnostic (DiagnosticId.MakeGenericMethod).WithSpan (8, 3, 8, 44).WithArguments ("System.Reflection.MethodInfo.MakeGenericMethod(params Type[])"));
 		}
 
 		[Fact]

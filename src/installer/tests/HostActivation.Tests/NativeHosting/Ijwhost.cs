@@ -116,8 +116,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(RepoDirectories.BuiltDotnet);
-                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
                 string folder = Path.Combine(BaseDirectory, "ijw");
                 IjwApp = new TestApp(folder, "ijw");
                 // Copy over ijwhost
@@ -130,7 +129,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 // Create a runtimeconfig.json for the C++/CLI test library
                 new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))
-                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion))
+                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion))
                     .Save();
 
                 ManagedHostFixture_FrameworkDependent = new TestProjectFixture("ManagedHost", RepoDirectories)

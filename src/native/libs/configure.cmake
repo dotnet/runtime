@@ -581,23 +581,22 @@ if(CLR_CMAKE_TARGET_IOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_MACCATALYST)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
-    # TODO: test to see if these all actually hold true on Mac Catalyst
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_TVOS)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
     unset(HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP)
     unset(HAVE_ALIGNED_ALLOC)   # only exists on iOS 13+
-    unset(HAVE_CLOCK_MONOTONIC) # only exists on iOS 10+
-    unset(HAVE_CLOCK_REALTIME)  # only exists on iOS 10+
+    set(HAVE_CLOCK_MONOTONIC 1)
+    set(HAVE_CLOCK_REALTIME 1)
     unset(HAVE_FORK) # exists but blocked by kernel
 elseif(CLR_CMAKE_TARGET_ANDROID)
     # Manually set results from check_c_source_runs() since it's not possible to actually run it during CMake configure checking
@@ -608,14 +607,10 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
 else()
-    if(CLR_CMAKE_TARGET_OSX)
-        unset(HAVE_ALIGNED_ALLOC) # only exists on OSX 10.15+
-    else()
-        check_symbol_exists(
-            aligned_alloc
-            stdlib.h
-            HAVE_ALIGNED_ALLOC)
-    endif()
+    check_symbol_exists(
+        aligned_alloc
+        stdlib.h
+        HAVE_ALIGNED_ALLOC)
 
     check_c_source_runs(
         "

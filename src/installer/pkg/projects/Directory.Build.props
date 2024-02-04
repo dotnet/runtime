@@ -127,5 +127,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 </Project>

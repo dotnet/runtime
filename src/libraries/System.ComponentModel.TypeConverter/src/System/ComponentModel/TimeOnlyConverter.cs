@@ -96,7 +96,7 @@ namespace System.ComponentModel
                 }
 
                 return new InstanceDescriptor(typeof(TimeOnly).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int) }),
-                                                new object[] { time.Hour, time.Minute, time.Second, time.Millisecond, time.Microsecond});
+                                                new object[] { time.Hour, time.Minute, time.Second, time.Millisecond, time.Microsecond });
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

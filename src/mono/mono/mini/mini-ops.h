@@ -67,6 +67,9 @@ MINI_OP(OP_LCALL_MEMBASE,	"lcall_membase", LREG, IREG, NONE)
 MINI_OP(OP_VCALL, 	"vcall", VREG, NONE, NONE)
 MINI_OP(OP_VCALL_REG,	"vcall_reg", VREG, IREG, NONE)
 MINI_OP(OP_VCALL_MEMBASE,	"vcall_membase", VREG, IREG, NONE)
+MINI_OP(OP_XCALL, 	"xcall", XREG, NONE, NONE)
+MINI_OP(OP_XCALL_REG,	"xcall_reg", XREG, IREG, NONE)
+MINI_OP(OP_XCALL_MEMBASE,	"xcall_membase", XREG, IREG, NONE)
 /* Represents the decomposed vcall which doesn't return a vtype no more */
 MINI_OP(OP_VCALL2, 	"vcall2", NONE, NONE, NONE)
 MINI_OP(OP_VCALL2_REG,	"vcall2_reg", NONE, IREG, NONE)
@@ -1886,6 +1889,8 @@ MINI_OP(OP_RISCV_BGE, "riscv_bge", NONE, IREG, IREG)
 MINI_OP(OP_RISCV_BGEU, "riscv_bgeu", NONE, IREG, IREG)
 MINI_OP(OP_RISCV_BLT, "riscv_blt", NONE, IREG, IREG)
 MINI_OP(OP_RISCV_BLTU, "riscv_bltu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_RBNAN, "riscv_r4_bnan", NONE, FREG, NONE)
+MINI_OP(OP_RISCV_FBNAN, "riscv_float_bnan", NONE, FREG, NONE)
 
 MINI_OP(OP_RISCV_ADDIW, "riscv_addiw", IREG, IREG, NONE)
 

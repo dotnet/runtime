@@ -15,6 +15,8 @@ using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace System
 {
     internal sealed unsafe class RuntimeType : TypeInfo, ICloneable
@@ -33,6 +35,12 @@ namespace System
             _runtimeTypeInfoHandle = RuntimeImports.RhHandleAlloc(runtimeTypeInfo, GCHandleType.Normal);
         }
 
+        internal void DangerousSetUnderlyingEEType(MethodTable* pEEType)
+        {
+            Debug.Assert(_pUnderlyingEEType == null);
+            _pUnderlyingEEType = pEEType;
+        }
+
         internal void Free()
         {
             RuntimeImports.RhHandleFree(_runtimeTypeInfoHandle);
@@ -44,7 +52,7 @@ namespace System
         private static bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
         private static bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
 
-        internal EETypePtr ToEETypePtrMayBeNull() => new EETypePtr(_pUnderlyingEEType);
+        internal MethodTable* ToMethodTableMayBeNull() => _pUnderlyingEEType;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal RuntimeTypeInfo GetRuntimeTypeInfo()
@@ -153,13 +161,13 @@ namespace System
 
                 if (value is Enum)
                 {
-                    if (value.GetEETypePtr() != this.ToEETypePtrMayBeNull())
+                    if (value.GetMethodTable() != this.ToMethodTableMayBeNull())
                         throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), this));
                 }
                 else
                 {
                     Type underlyingType = Enum.InternalGetUnderlyingType(this);
-                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.GetEETypePtr()))
+                    if (!(underlyingType.TypeHandle.ToMethodTable() == value.GetMethodTable()))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
                 }
 
@@ -196,7 +204,12 @@ namespace System
         }
 
         public override int GetHashCode()
-            => ((nuint)_pUnderlyingEEType).GetHashCode();
+        {
+            MethodTable* pEEType = _pUnderlyingEEType;
+            if (pEEType != null)
+                return ((nuint)pEEType).GetHashCode();
+            return RuntimeHelpers.GetHashCode(this);
+        }
 
         public override RuntimeTypeHandle TypeHandle
         {

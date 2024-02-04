@@ -935,13 +935,14 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     {
         GenTreePhiArg* arg  = (GenTreePhiArg*)op;
         BasicBlock*    pred = arg->gtPredBB;
-        if (pred->bbFallsThrough() && pred->NextIs(block))
+        if (pred->KindIs(BBJ_COND) && pred->FalseTargetIs(block))
         {
             assertions = pred->bbAssertionOut;
             JITDUMP("Merge assertions from pred " FMT_BB " edge: ", pred->bbNum);
             Compiler::optDumpAssertionIndices(assertions, "\n");
         }
-        else if (pred->KindIs(BBJ_COND, BBJ_ALWAYS) && pred->HasJumpTo(block))
+        else if ((pred->KindIs(BBJ_ALWAYS) && pred->TargetIs(block)) ||
+                 (pred->KindIs(BBJ_COND) && pred->TrueTargetIs(block)))
         {
             if (m_pCompiler->bbJtrueAssertionOut != nullptr)
             {
@@ -1357,9 +1358,9 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
-    // GT_AND, GT_UMOD, GT_LSH and GT_RSH don't overflow
+    // These operators don't overflow.
     // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
-    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_NEG))
     {
         overflows = false;
     }
@@ -1457,6 +1458,12 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
+    else if (expr->OperIs(GT_NEG))
+    {
+        // Compute range for negation, e.g.: [0..8] -> [-8..0]
+        Range op1Range = GetRange(block, expr->gtGetOp1(), monIncreasing DEBUGARG(indent + 1));
+        range          = RangeOps::Negate(op1Range);
+    }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperIs(GT_PHI))
     {
@@ -1481,7 +1488,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         }
     }
-    else if (varTypeIsSmallInt(expr->TypeGet()))
+    else if (varTypeIsSmall(expr))
     {
         range = GetRangeFromType(expr->TypeGet());
         JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));

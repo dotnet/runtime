@@ -25,38 +25,38 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void RunApp()
         {
-            var project = sharedState.PortableAppFixture.TestProject;
+            var app = sharedState.App;
             string[] args =
             {
                 ApplicationExecutionArg,
                 sharedState.HostFxrPath,
-                project.AppDll
+                app.AppDll
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute()
                 .Should().Pass()
-                .And.InitializeContextForApp(project.AppDll)
-                .And.ExecuteApplication(sharedState.NativeHostPath, project.AppDll);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteApplication(sharedState.NativeHostPath, app.AppDll);
         }
 
         [Fact]
         public void RunApp_UnhandledException()
         {
-            var project = sharedState.PortableAppFixture.TestProject;
+            var app = sharedState.App;
             string[] args =
             {
                 ApplicationExecutionArg,
                 sharedState.HostFxrPath,
-                project.AppDll,
+                app.AppDll,
                 "throw_exception"
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute(expectedToFail: true)
                 .Should().Fail()
-                .And.InitializeContextForApp(project.AppDll)
-                .And.ExecuteApplicationWithException(sharedState.NativeHostPath, project.AppDll);
+                .And.InitializeContextForApp(app.AppDll)
+                .And.ExecuteApplicationWithException(sharedState.NativeHostPath, app.AppDll);
         }
 
         public class SharedTestState : SharedTestStateBase
@@ -64,22 +64,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string HostFxrPath { get; }
             public string DotNetRoot { get; }
 
-            public TestProjectFixture PortableAppFixture { get; }
+            public TestApp App { get; }
 
             public SharedTestState()
             {
-                var dotNet = new Microsoft.DotNet.Cli.Build.DotNetCli(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"));
-                DotNetRoot = dotNet.BinPath;
-                HostFxrPath = dotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = TestContext.BuiltDotNet.BinPath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
-                PortableAppFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
+                App = TestApp.CreateFromBuiltAssets("HelloWorld");
             }
 
             protected override void Dispose(bool disposing)
             {
-                PortableAppFixture.Dispose();
+                App?.Dispose();
 
                 base.Dispose(disposing);
             }

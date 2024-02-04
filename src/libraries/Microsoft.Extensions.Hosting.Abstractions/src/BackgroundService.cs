@@ -75,11 +75,15 @@ namespace Microsoft.Extensions.Hosting
             }
             finally
             {
+#if NET8_0_OR_GREATER
+                await _executeTask.WaitAsync(cancellationToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+#else
                 // Wait until the task completes or the stop token triggers
                 var tcs = new TaskCompletionSource<object>();
                 using CancellationTokenRegistration registration = cancellationToken.Register(s => ((TaskCompletionSource<object>)s!).SetCanceled(), tcs);
                 // Do not await the _executeTask because cancelling it will throw an OperationCanceledException which we are explicitly ignoring
                 await Task.WhenAny(_executeTask, tcs.Task).ConfigureAwait(false);
+#endif
             }
 
         }

@@ -1138,7 +1138,7 @@ LocalDesc ILObjectMarshaler::GetNativeType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(TypeHandle(CoreLibBinder::GetClass(CLASS__NATIVEVARIANT)));
+    return LocalDesc(TypeHandle(CoreLibBinder::GetClass(CLASS__COMVARIANT)));
 }
 
 LocalDesc ILObjectMarshaler::GetManagedType()

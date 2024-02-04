@@ -12,21 +12,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class TestArtifact : IDisposable
     {
-        private static readonly Lazy<RepoDirectoriesProvider> _repoDirectoriesProvider =
-            new Lazy<RepoDirectoriesProvider>(() => new RepoDirectoriesProvider());
-
         private static readonly Lazy<bool> _preserveTestRuns = new Lazy<bool>(() =>
-            _repoDirectoriesProvider.Value.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
-
-        private static readonly string TestArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
-        private static readonly Lazy<string> _testArtifactsPath = new Lazy<string>(() =>
-        {
-            return _repoDirectoriesProvider.Value.GetTestContextVariable(TestArtifactDirectoryEnvironmentVariable)
-                   ?? Path.Combine(AppContext.BaseDirectory, TestArtifactDirectoryEnvironmentVariable);
-        }, isThreadSafe: true);
+            TestContext.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
 
         public static bool PreserveTestRuns() => _preserveTestRuns.Value;
-        public static string TestArtifactsPath => _testArtifactsPath.Value;
+        public static string TestArtifactsPath => TestContext.TestArtifactsPath;
 
         public string Location { get; }
         public string Name { get; }

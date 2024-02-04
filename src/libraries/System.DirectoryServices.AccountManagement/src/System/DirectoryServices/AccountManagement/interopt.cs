@@ -295,7 +295,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             void Set(
                 [In, MarshalAs(UnmanagedType.BStr)] string bstrADsPath,
-                [In, MarshalAs(UnmanagedType.U4)]  int lnSetType
+                [In, MarshalAs(UnmanagedType.U4)] int lnSetType
                 );
 
             void SetDisplayType(
@@ -313,7 +313,7 @@ namespace System.DirectoryServices.AccountManagement
             [return: MarshalAs(UnmanagedType.BStr)]
             string
             GetElement(
-                [In, MarshalAs(UnmanagedType.U4)]  int lnElementIndex
+                [In, MarshalAs(UnmanagedType.U4)] int lnElementIndex
                 );
 
             void AddLeafElement(

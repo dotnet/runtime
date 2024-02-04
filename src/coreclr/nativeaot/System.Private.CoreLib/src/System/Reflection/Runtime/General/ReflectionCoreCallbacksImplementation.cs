@@ -2,26 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeInfos.NativeFormat;
+using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
+using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.FieldInfos.NativeFormat;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.BindingFlagSupport;
 using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
+using System.Runtime.CompilerServices;
 
-using Internal.Runtime.Augments;
+using Internal.Metadata.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
-using Internal.Metadata.NativeFormat;
-using System.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.General
 {
@@ -324,7 +324,7 @@ namespace System.Reflection.Runtime.General
             Type? type = containingType.ToType();
             while (type != null)
             {
-                MethodInfo? methodInfo = type.GetMethod(method, 0, bindingFlags, null, parameterTypes, null);
+                MethodInfo? methodInfo = type.GetMethod(method, 0, bindingFlags, parameterTypes);
                 if (methodInfo != null && methodInfo.ReturnType.Equals(invokeMethod.ReturnType))
                     return (RuntimeMethodInfo)methodInfo; // This cast is safe since we already verified that containingType is runtime implemented.
 

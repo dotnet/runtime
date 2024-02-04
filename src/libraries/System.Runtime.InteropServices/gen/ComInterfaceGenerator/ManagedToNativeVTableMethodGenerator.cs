@@ -47,7 +47,7 @@ namespace Microsoft.Interop
             bool setLastError,
             bool implicitThis,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorResolver)
         {
             _setLastError = setLastError;
             if (implicitThis)
@@ -73,7 +73,7 @@ namespace Microsoft.Interop
             }
 
             _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingFailures);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingFailures);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 

@@ -5,7 +5,12 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
+[UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "MakeGenericType - Intentional")]
+[UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType/MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3054", Justification = "Generic expansion aborted - Intentional")]
 class Generics
 {
     internal static int Run()
@@ -54,6 +59,7 @@ class Generics
         TestRefAny.Run();
         TestNullableCasting.Run();
         TestVariantCasting.Run();
+        TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
@@ -1155,6 +1161,24 @@ class Generics
 
             var foo = (Foo<string>)s_foo;
             if (foo.Value != 42)
+                throw new Exception();
+        }
+    }
+
+    class TestVariantDispatchUnconstructedTypes
+    {
+        interface IFoo { }
+        class Foo : IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IEnumerable<IFoo> GetFoos() => new Foo[5];
+
+        public static void Run()
+        {
+            int j = 0;
+            foreach (var f in GetFoos())
+                j++;
+            if (j != 5)
                 throw new Exception();
         }
     }

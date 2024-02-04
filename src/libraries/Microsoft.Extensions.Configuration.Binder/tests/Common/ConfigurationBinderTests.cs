@@ -1399,6 +1399,24 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
+        public void CanBindClassWithPrimaryCtorWithDefaultValues()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "-1"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithPrimaryCtorDefaultValues>();
+            Assert.Equal(-1, options.Length);
+            Assert.Equal("blue", options.Color);
+            Assert.Equal(5.946238490567943927384M, options.Height);
+            Assert.Equal(EditorBrowsableState.Never, options.EB);
+        }
+
+        [Fact]
         public void CanBindRecordStructOptions()
         {
             IConfiguration config = GetConfiguration("Length", "Color");

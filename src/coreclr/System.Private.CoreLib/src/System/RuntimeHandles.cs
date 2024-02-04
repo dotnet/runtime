@@ -82,6 +82,11 @@ namespace System
             m_type = type;
         }
 
+        internal bool IsNullHandle()
+        {
+            return m_type == null;
+        }
+
         internal static bool IsTypeDefinition(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);

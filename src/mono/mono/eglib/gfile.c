@@ -104,3 +104,90 @@ g_file_error_from_errno (gint err_no)
 		return G_FILE_ERROR_FAILED;
 	}
 }
+
+#ifdef HOST_WIN32
+static gboolean
+is_ascii_string (const gchar *str)
+{
+	while (*str) {
+		if (!g_isascii (*str))
+			return FALSE;
+	}
+	return TRUE;
+}
+#endif
+
+FILE*
+g_fopen (const gchar *path, const gchar *mode)
+{
+	FILE *fp;
+
+	if (!path)
+		return NULL;
+
+#ifdef HOST_WIN32
+	if (is_ascii_string (path) && is_ascii_string (mode)) {
+		fp = fopen (path, mode);
+	} else {
+		gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
+		gunichar2 *wMode = g_utf8_to_utf16 (mode, -1, 0, 0, 0);
+
+		if (!wPath || !wMode)
+			return NULL;
+
+		fp = _wfopen ((wchar_t *) wPath, (wchar_t *) wMode);
+		g_free (wPath);
+		g_free (wMode);
+	}
+#else
+	fp = fopen (path, mode);
+#endif
+
+	return fp;
+}
+
+int
+g_rename (const gchar *src_path, const gchar *dst_path)
+{
+#ifdef HOST_WIN32
+	if (is_ascii_string (src_path) && is_ascii_string (dst_path)) {
+		return rename (src_path, dst_path);
+	} else {
+		gunichar2 *wSrcPath = g_utf8_to_utf16 (src_path, -1, 0, 0, 0);
+		gunichar2 *wDstPath = g_utf8_to_utf16 (dst_path, -1, 0, 0, 0);
+
+		if (!wSrcPath || !wDstPath)
+			return -1;
+
+		int ret = _wrename ((wchar_t *) wSrcPath, (wchar_t *) wDstPath);
+		g_free (wSrcPath);
+		g_free (wDstPath);
+
+		return ret;
+	}
+#else
+	return rename (src_path, dst_path);
+#endif
+}
+
+int
+g_unlink (const gchar *path)
+{
+#ifdef HOST_WIN32
+	if (is_ascii_string (path)) {
+		return unlink (path);
+	} else {
+		gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
+
+		if (!wPath)
+			return -1;
+
+		int ret = _wunlink ((wchar_t *) wPath);
+		g_free (wPath);
+
+		return ret;
+	}
+#else
+	return unlink (path);
+#endif
+}

@@ -2,5 +2,6 @@ P:System.Net.Quic.QuicConnection.IsSupported
 P:System.Net.Quic.QuicListener.IsSupported
 C:System.Net.Quic.QuicListenerOptions
 C:System.Net.Quic.QuicConnectionOptions
+C:System.Net.Quic.QuicReceiveWindowSizes
 C:System.Net.Quic.QuicClientConnectionOptions
 C:System.Net.Quic.QuicServerConnectionOptions

@@ -277,7 +277,7 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display)
     _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
     return GetRegdisplaySP(display);
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
     _ASSERTE(display->IsCallerContextValid);
     return GetSP(display->pCallerContext);

@@ -18,6 +18,8 @@ parameters:
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   pgoRunType: ''                  # optional -- different PGO configurations
   physicalPromotionRunType: ''    # optional -- different physical promotion configurations
+  r2rRunType: ''                  # optional -- different R2R configurations
+  experimentName: ''              # optional -- name of the experiment
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: 'microbenchmarks.proj'   # optional -- project file to build helix workitems
@@ -87,6 +89,7 @@ jobs:
         export ORIGPYPATH=$PYTHONPATH
         export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;
         echo "** Installing prerequistes **";
+        sudo apt-get -y install python3-pip &&
         python3 -m pip install --user -U pip &&
         sudo apt-get -y install python3-venv &&
         python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv &&
@@ -102,7 +105,7 @@ jobs:
         export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"
         || export PERF_PREREQS_INSTALL_FAILED=1;
         test "x$PERF_PREREQS_INSTALL_FAILED" = "x1" && echo "** Error: Failed to install prerequites **"
-    - HelixPreCommandStemMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib cargo;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install urllib3==1.26.15;pip3 install azure.storage.blob==12.7.1;pip3 install azure.storage.queue==12.1.5;export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"'
+    - HelixPreCommandStemMusl: 'ulimit -n 4096;export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib cargo;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install urllib3==1.26.15;pip3 install azure.storage.blob==12.7.1;pip3 install azure.storage.queue==12.1.5;export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"'
     - ExtraMSBuildLogsWindows: 'set MSBUILDDEBUGCOMM=1;set "MSBUILDDEBUGPATH=%HELIX_WORKITEM_UPLOAD_ROOT%"'
     - ExtraMSBuildLogsLinux: 'export MSBUILDDEBUGCOMM=1;export "MSBUILDDEBUGPATH=$HELIX_WORKITEM_UPLOAD_ROOT"'
     - HelixPreCommand: ''
@@ -164,11 +167,11 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} -ExperimentName '${{ parameters.experimentName }}' -UseLocalCommitTime ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} --uselocalcommittime ${{ parameters.extraSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} --experimentname '${{ parameters.experimentName }}' --uselocalcommittime ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
@@ -193,6 +196,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}_${{ parameters.r2rRunType }}_${{ parameters.experimentName }}'
       continueOnError: true
       condition: always()

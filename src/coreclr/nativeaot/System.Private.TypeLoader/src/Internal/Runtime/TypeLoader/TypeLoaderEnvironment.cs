@@ -3,17 +3,16 @@
 
 
 using System;
-using System.Threading;
 using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Reflection.Runtime.General;
-
-using Internal.Runtime.Augments;
-using Internal.Runtime.CompilerServices;
+using System.Threading;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -146,20 +145,12 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // To keep the synchronization simple, we execute all type loading under a global lock
-        private Lock _typeLoaderLock = new Lock();
+        private Lock _typeLoaderLock = new Lock(useTrivialWaits: true);
 
         public void VerifyTypeLoaderLockHeld()
         {
             if (!_typeLoaderLock.IsHeldByCurrentThread)
                 Environment.FailFast("TypeLoaderLock not held");
-        }
-
-        public void RunUnderTypeLoaderLock(Action action)
-        {
-            using (_typeLoaderLock.EnterScope())
-            {
-                action();
-            }
         }
 
         public IntPtr GenericLookupFromContextAndSignature(IntPtr context, IntPtr signature, out IntPtr auxResult)
@@ -219,18 +210,6 @@ namespace Internal.Runtime.TypeLoader
             return !type.RuntimeTypeHandle.IsNull();
         }
 
-        internal TypeDesc GetConstructedTypeFromParserAndNativeLayoutContext(ref NativeParser parser, NativeLayoutInfoLoadContext nativeLayoutContext)
-        {
-            TypeDesc parsedType = nativeLayoutContext.GetType(ref parser);
-            if (parsedType == null)
-                return null;
-
-            if (!EnsureTypeHandleForType(parsedType))
-                return null;
-
-            return parsedType;
-        }
-
         //
         // Parse a native layout signature pointed to by "signature" in the executable image, optionally using
         // "typeArgs" and "methodArgs" for generic type parameter substitution.  The first field in "signature"
@@ -286,14 +265,6 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the native layout info reader
         //
-        internal static unsafe NativeReader GetNativeLayoutInfoReader(NativeFormatModuleInfo module)
-        {
-            return GetNativeLayoutInfoReader(module.Handle);
-        }
-
-        //
-        // Returns the native layout info reader
-        //
         internal static unsafe NativeReader GetNativeLayoutInfoReader(RuntimeSignature signature)
         {
             Debug.Assert(signature.IsNativeLayoutSignature);
@@ -328,15 +299,6 @@ namespace Internal.Runtime.TypeLoader
             RuntimeTypeHandle[] result = new RuntimeTypeHandle[count];
             for (uint i = 0; i < count; i++)
                 result[i] = extRefs.GetRuntimeTypeHandleFromIndex(parser.GetUnsigned());
-
-            return result;
-        }
-
-        private static RuntimeTypeHandle[] TypeDescsToRuntimeHandles(Instantiation types)
-        {
-            var result = new RuntimeTypeHandle[types.Length];
-            for (int i = 0; i < types.Length; i++)
-                result[i] = types[i].RuntimeTypeHandle;
 
             return result;
         }
@@ -569,21 +531,6 @@ namespace Internal.Runtime.TypeLoader
             return match;
         }
 
-        public bool ConversionToCanonFormIsAChange(RuntimeTypeHandle[] genericArgHandles, CanonicalFormKind kind)
-        {
-            // Todo: support for universal canon type?
-
-            TypeSystemContext context = TypeSystemContextFactory.Create();
-
-            Instantiation genericArgs = context.ResolveRuntimeTypeHandles(genericArgHandles);
-            bool result;
-            context.ConvertInstantiationToCanonForm(genericArgs, kind, out result);
-
-            TypeSystemContextFactory.Recycle(context);
-
-            return result;
-        }
-
         // get the generics hash table and external references table for a module
         // TODO multi-file: consider whether we want to cache this info
         private static unsafe bool GetHashtableFromBlob(NativeFormatModuleInfo module, ReflectionMapBlob blobId, out NativeHashtable hashtable, out ExternalReferencesTable externalReferencesLookup)
@@ -603,28 +550,6 @@ namespace Internal.Runtime.TypeLoader
             hashtable = new NativeHashtable(parser);
 
             return externalReferencesLookup.InitializeNativeReferences(module);
-        }
-
-        public static unsafe void GetFieldAlignmentAndSize(RuntimeTypeHandle fieldType, out int alignment, out int size)
-        {
-            MethodTable* typePtr = fieldType.ToEETypePtr();
-            if (typePtr->IsValueType)
-            {
-                size = (int)typePtr->ValueTypeSize;
-            }
-            else
-            {
-                size = IntPtr.Size;
-            }
-
-            alignment = (int)typePtr->FieldAlignmentRequirement;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct UnboxingAndInstantiatingStubMapEntry
-        {
-            public uint StubMethodRva;
-            public uint MethodRva;
         }
 
         public static unsafe bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)

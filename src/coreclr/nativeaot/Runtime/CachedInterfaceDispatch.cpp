@@ -26,7 +26,6 @@
 #include "allocheap.h"
 #include "rhbinder.h"
 #include "ObjectLayout.h"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "TypeManager.h"
 #include "RuntimeInstance.h"

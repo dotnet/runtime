@@ -224,6 +224,34 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 
         ReportMem(g_gcDacGlobals.GetAddr(), sizeof(GcDacVars));
 
+        PTR_WSTR entryAssemblyPath = (PTR_WSTR)g_EntryAssemblyPath;
+        entryAssemblyPath.EnumMem();
+
+        // Triage dumps must not include full paths (PII data). Replace entry assembly path with file name only.
+        if (flags == CLRDATA_ENUM_MEM_TRIAGE)
+        {
+            WCHAR* path = entryAssemblyPath;
+            if (path != NULL)
+            {
+                size_t pathLen = u16_strlen(path) + 1;
+
+                // Get the file name based on the last directory separator
+                const WCHAR* name = u16_strrchr(path, DIRECTORY_SEPARATOR_CHAR_W);
+                if (name != NULL)
+                {
+                    name += 1;
+                    size_t len = u16_strlen(name) + 1;
+                    wcscpy_s(path, len, name);
+
+                    // Null out the rest of the buffer
+                    for (size_t i = len; i < pathLen; ++i)
+                        path[i] = W('\0');
+
+                    DacUpdateMemoryRegion(entryAssemblyPath.GetAddr(), pathLen, (BYTE*)path);
+                }
+            }
+        }
+
         // We need all of the dac variables referenced by the GC DAC global struct.
         // This struct contains pointers to pointers, so we first dereference the pointers
         // to obtain the location of the variable that's reported.

@@ -258,7 +258,7 @@ cleanup:
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress)
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
 {
 #ifdef XBOX_ONE
     return TRUE;

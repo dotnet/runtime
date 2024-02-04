@@ -299,10 +299,7 @@ namespace R2RTest
             new CliOption<DirectoryInfo>("--asp-net-path", "-asp") { Description = "Path to SERP's ASP.NET Core folder" }.AcceptExistingOnly();
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new R2RTestRootCommand().UseVersion())
-            {
-                EnableParseErrorReporting = true
-            }.Invoke(args);
+            new CliConfiguration(new R2RTestRootCommand().UseVersion()).Invoke(args);
     }
 
     public partial class BuildOptions

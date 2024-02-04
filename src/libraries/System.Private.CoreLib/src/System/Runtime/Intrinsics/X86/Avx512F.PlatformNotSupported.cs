@@ -1338,6 +1338,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<double> Add(Vector512<double> left, Vector512<double> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// __m512d _mm512_add_pd (__m512d a, __m512d b)
+        ///   VADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<double> Add(Vector512<double> left, Vector512<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// __m512 _mm512_add_ps (__m512 a, __m512 b)
         ///   VADDPS zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst{er}
         /// </summary>

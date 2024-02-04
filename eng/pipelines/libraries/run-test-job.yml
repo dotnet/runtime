@@ -242,6 +242,7 @@ jobs:
                 - jitosr_stress_random
                 - syntheticpgo
                 - syntheticpgo_blend
+                - jitcrossblocklocalassertionprop
 
         - ${{ if eq(parameters.SuperPmiCollect, true) }}:
           - template: /eng/pipelines/libraries/superpmi-postprocess-step.yml

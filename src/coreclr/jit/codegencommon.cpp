@@ -28,6 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "patchpointinfo.h"
+#include "optcse.h" // for cse metrics
 
 /*****************************************************************************/
 
@@ -327,11 +328,9 @@ void CodeGen::genPrepForCompiler()
 // 1. the target of jumps (fall-through flow doesn't require a label),
 // 2. referenced labels such as for "switch" codegen,
 // 3. needed to denote the range of EH regions to the VM.
-// 4. needed to denote the range of code for alignment processing.
 //
 // No labels will be in the IR before now, but future codegen might annotate additional blocks
 // with this flag, such as "switch" codegen, or codegen-created blocks from genCreateTempLabel().
-// Also, the alignment processing code marks BBJ_COND fall-through labels elsewhere.
 //
 // To report exception handling information to the VM, we need the size of the exception
 // handling regions. To compute that, we need to emit labels for the beginning block of
@@ -356,13 +355,13 @@ void CodeGen::genMarkLabelsForCodegen()
     // No label flags should be set before this.
     for (BasicBlock* const block : compiler->Blocks())
     {
-        assert((block->bbFlags & BBF_HAS_LABEL) == 0);
+        assert(!block->HasFlag(BBF_HAS_LABEL));
     }
 #endif // DEBUG
 
     // The first block is special; it always needs a label. This is to properly set up GC info.
     JITDUMP("  " FMT_BB " : first block\n", compiler->fgFirstBB->bbNum);
-    compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+    compiler->fgFirstBB->SetFlags(BBF_HAS_LABEL);
 
     // The current implementation of switch tables requires the first block to have a label so it
     // can generate offsets to the switch label targets.
@@ -371,25 +370,44 @@ void CodeGen::genMarkLabelsForCodegen()
     if (compiler->fgHasSwitch)
     {
         JITDUMP("  " FMT_BB " : function has switch; mark first block\n", compiler->fgFirstBB->bbNum);
-        compiler->fgFirstBB->bbFlags |= BBF_HAS_LABEL;
+        compiler->fgFirstBB->SetFlags(BBF_HAS_LABEL);
     }
 
     for (BasicBlock* const block : compiler->Blocks())
     {
-        switch (block->GetJumpKind())
+        switch (block->GetKind())
         {
-            case BBJ_ALWAYS: // This will also handle the BBJ_ALWAYS of a BBJ_CALLFINALLY/BBJ_ALWAYS pair.
-            case BBJ_COND:
+            case BBJ_ALWAYS:
+                // If we can skip this jump, don't create a label for the target
+                if (block->CanRemoveJumpToNext(compiler))
+                {
+                    break;
+                }
+
+                FALLTHROUGH;
+
             case BBJ_EHCATCHRET:
-                JITDUMP("  " FMT_BB " : branch target\n", block->GetJumpDest()->bbNum);
-                block->GetJumpDest()->bbFlags |= BBF_HAS_LABEL;
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTarget()->bbNum);
+                block->GetTarget()->SetFlags(BBF_HAS_LABEL);
+                break;
+
+            case BBJ_COND:
+                JITDUMP("  " FMT_BB " : branch target\n", block->GetTrueTarget()->bbNum);
+                block->GetTrueTarget()->SetFlags(BBF_HAS_LABEL);
+
+                // If we need a jump to the false target, give it a label
+                if (!block->CanRemoveJumpToTarget(block->GetFalseTarget(), compiler))
+                {
+                    JITDUMP("  " FMT_BB " : branch target\n", block->GetFalseTarget()->bbNum);
+                    block->GetFalseTarget()->SetFlags(BBF_HAS_LABEL);
+                }
                 break;
 
             case BBJ_SWITCH:
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    JITDUMP("  " FMT_BB " : branch target\n", bTarget->bbNum);
-                    bTarget->bbFlags |= BBF_HAS_LABEL;
+                    JITDUMP("  " FMT_BB " : switch target\n", bTarget->bbNum);
+                    bTarget->SetFlags(BBF_HAS_LABEL);
                 }
                 break;
 
@@ -400,67 +418,74 @@ void CodeGen::genMarkLabelsForCodegen()
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 {
-                    // For callfinally thunks, we need to mark the block following the callfinally/always pair,
+                    // For callfinally thunks, we need to mark the block following the callfinally/callfinallyret pair,
                     // as that's needed for identifying the range of the "duplicate finally" region in EH data.
                     BasicBlock* bbToLabel = block->Next();
-                    if (block->isBBCallAlwaysPair())
+                    if (block->isBBCallFinallyPair())
                     {
-                        bbToLabel = bbToLabel->Next(); // skip the BBJ_ALWAYS
+                        bbToLabel = bbToLabel->Next(); // skip the BBJ_CALLFINALLYRET
                     }
                     if (bbToLabel != nullptr)
                     {
                         JITDUMP("  " FMT_BB " : callfinally thunk region end\n", bbToLabel->bbNum);
-                        bbToLabel->bbFlags |= BBF_HAS_LABEL;
+                        bbToLabel->SetFlags(BBF_HAS_LABEL);
                     }
                 }
 #endif // FEATURE_EH_CALLFINALLY_THUNKS
 
                 break;
 
+            case BBJ_CALLFINALLYRET:
+                JITDUMP("  " FMT_BB " : finally continuation\n", block->GetFinallyContinuation()->bbNum);
+                block->GetFinallyContinuation()->SetFlags(BBF_HAS_LABEL);
+                break;
+
             case BBJ_EHFINALLYRET:
             case BBJ_EHFAULTRET:
-            case BBJ_EHFILTERRET:
+            case BBJ_EHFILTERRET: // The filter-handler will get marked when processing the EH handlers, below.
             case BBJ_RETURN:
             case BBJ_THROW:
-            case BBJ_NONE:
                 break;
 
             default:
-                noway_assert(!"Unexpected bbJumpKind");
+                noway_assert(!"Unexpected bbKind");
                 break;
         }
     }
 
     // Walk all the exceptional code blocks and mark them, since they don't appear in the normal flow graph.
-    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add; add = add->acdNext)
+    for (Compiler::AddCodeDsc* add = compiler->fgAddCodeList; add != nullptr; add = add->acdNext)
     {
-        JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
-        add->acdDstBlk->bbFlags |= BBF_HAS_LABEL;
+        if (add->acdUsed)
+        {
+            JITDUMP("  " FMT_BB " : throw helper block\n", add->acdDstBlk->bbNum);
+            add->acdDstBlk->SetFlags(BBF_HAS_LABEL);
+        }
     }
 
     for (EHblkDsc* const HBtab : EHClauses(compiler))
     {
-        HBtab->ebdTryBeg->bbFlags |= BBF_HAS_LABEL;
-        HBtab->ebdHndBeg->bbFlags |= BBF_HAS_LABEL;
+        HBtab->ebdTryBeg->SetFlags(BBF_HAS_LABEL);
+        HBtab->ebdHndBeg->SetFlags(BBF_HAS_LABEL);
 
         JITDUMP("  " FMT_BB " : try begin\n", HBtab->ebdTryBeg->bbNum);
         JITDUMP("  " FMT_BB " : hnd begin\n", HBtab->ebdHndBeg->bbNum);
 
         if (!HBtab->ebdTryLast->IsLast())
         {
-            HBtab->ebdTryLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdTryLast->Next()->SetFlags(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : try end\n", HBtab->ebdTryLast->Next()->bbNum);
         }
 
         if (!HBtab->ebdHndLast->IsLast())
         {
-            HBtab->ebdHndLast->Next()->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdHndLast->Next()->SetFlags(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : hnd end\n", HBtab->ebdHndLast->Next()->bbNum);
         }
 
         if (HBtab->HasFilter())
         {
-            HBtab->ebdFilter->bbFlags |= BBF_HAS_LABEL;
+            HBtab->ebdFilter->SetFlags(BBF_HAS_LABEL);
             JITDUMP("  " FMT_BB " : filter begin\n", HBtab->ebdFilter->bbNum);
         }
     }
@@ -857,18 +882,18 @@ BasicBlock* CodeGen::genCreateTempLabel()
 #endif
 
     // Label doesn't need a jump kind
-    BasicBlock* block = BasicBlock::bbNewBasicBlock(compiler);
+    BasicBlock* block = BasicBlock::New(compiler);
 
 #ifdef DEBUG
     compiler->fgSafeBasicBlockCreation = false;
 #endif
 
     JITDUMP("Mark " FMT_BB " as label: codegen temp block\n", block->bbNum);
-    block->bbFlags |= BBF_HAS_LABEL;
+    block->SetFlags(BBF_HAS_LABEL);
 
     // Use coldness of current block, as this label will
     // be contained in it.
-    block->bbFlags |= (compiler->compCurBB->bbFlags & BBF_COLD);
+    block->CopyFlags(compiler->compCurBB, BBF_COLD);
 
 #ifdef DEBUG
 #ifdef UNIX_X86_ABI
@@ -909,7 +934,7 @@ void CodeGen::genDefineTempLabel(BasicBlock* label)
 {
     genLogLabel(label);
     label->bbEmitCookie = GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                     gcInfo.gcRegByrefSetCur, false DEBUG_ARG(label));
+                                                     gcInfo.gcRegByrefSetCur DEBUG_ARG(label));
 }
 
 // genDefineInlineTempLabel: Define an inline label that does not affect the GC
@@ -960,7 +985,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
 
     if (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block))
     {
-        noway_assert(block->bbFlags & BBF_HAS_LABEL);
+        noway_assert(block->HasFlag(BBF_HAS_LABEL));
 
         SetStackLevel(compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int));
 
@@ -1254,11 +1279,6 @@ AGAIN:
             break;
 #endif // !TARGET_ARMARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
-        case GT_NOP:
-
-            op1 = op1->AsOp()->gtOp1;
-            goto AGAIN;
-
         case GT_COMMA:
 
             op1 = op1->AsOp()->gtOp2;
@@ -1332,11 +1352,6 @@ AGAIN:
             }
             break;
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-
-        case GT_NOP:
-
-            op2 = op2->AsOp()->gtOp1;
-            goto AGAIN;
 
         case GT_COMMA:
 
@@ -1441,7 +1456,7 @@ void CodeGen::genExitCode(BasicBlock* block)
     // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
     if (compiler->getNeedsGSSecurityCookie())
     {
         genEmitGSCookieCheck(jmpEpilog);
@@ -1508,6 +1523,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -1520,6 +1536,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -1621,7 +1638,7 @@ void CodeGen::genCheckOverflow(GenTree* tree)
 
 void CodeGen::genUpdateCurrentFunclet(BasicBlock* block)
 {
-    if (block->bbFlags & BBF_FUNCLET_BEG)
+    if (block->HasFlag(BBF_FUNCLET_BEG))
     {
         compiler->funSetCurrentFunc(compiler->funGetFuncIdx(block));
         if (compiler->funCurrentFunc()->funKind == FUNC_FILTER)
@@ -1672,6 +1689,8 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
         printf("*************** In genGenerateCode()\n");
         compiler->fgDispBasicBlocks(compiler->verboseTrees);
     }
+
+    genWriteBarrierUsed = false;
 #endif
 
     this->codePtr          = codePtr;
@@ -1680,6 +1699,19 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
     DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
+
+#ifdef DEBUG
+    // For R2R/NAOT not all these helpers are implemented. So don't ask for them.
+    //
+    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->opts.IsReadyToRun())
+    {
+        void* ignored;
+        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_ASSIGN_STRUCT; i++)
+        {
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+        }
+    }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -1780,9 +1812,9 @@ void CodeGen::genGenerateMachineCode()
         {
             printf(" - Windows");
         }
-        else if (TargetOS::IsMacOS)
+        else if (TargetOS::IsApplePlatform)
         {
-            printf(" - MacOS");
+            printf(" - Apple");
         }
         else if (TargetOS::IsUnix)
         {
@@ -1977,9 +2009,10 @@ void CodeGen::genEmitMachineCode()
         printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
 
-    codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
-                                            IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
-                                            &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
+    codeSize =
+        GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
+                                     compiler->compHndBBtabCount, &prologSize, &epilogSize, codePtr, &codePtrRW,
+                                     &coldCodePtr, &coldCodePtrRW, &consPtr, &consPtrRW DEBUGARG(&instrCount));
 
 #ifdef DEBUG
     assert(compiler->compCodeGenDone == false);
@@ -1988,30 +2021,42 @@ void CodeGen::genEmitMachineCode()
     compiler->compCodeGenDone = true;
 #endif
 
-#if defined(DEBUG) || defined(LATE_DISASM)
-    // Add code size information into the Perf Score
-    // All compPerfScore calculations must be performed using doubles
-    compiler->info.compPerfScore += ((double)compiler->info.compTotalHotCodeSize * (double)PERFSCORE_CODESIZE_COST_HOT);
-    compiler->info.compPerfScore +=
-        ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
-#endif // DEBUG || LATE_DISASM
-
     if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
 
 #ifdef DEBUG
-    if (compiler->opts.disAsm || verbose)
+    const bool dspMetrics     = compiler->opts.dspMetrics;
+    const bool dspSummary     = compiler->opts.disAsm || verbose;
+    const bool dspMetricsOnly = dspMetrics && !dspSummary;
+
+    if (dspSummary || dspMetrics)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
+        if (!dspMetricsOnly)
+        {
+            printf("\n");
+        }
+
+        printf("; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
                "code %d",
                codeSize, prologSize, compiler->info.compPerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
 
-        if (JitConfig.JitMetrics() > 0)
+        if (dspMetrics)
         {
-            printf(", num cse %d", compiler->optCSEcount);
+            printf(", num cse %d num cand %d", compiler->optCSEcount, compiler->optCSECandidateCount);
+
+            CSE_HeuristicCommon* const cseHeuristic = compiler->optGetCSEheuristic();
+            if (cseHeuristic != nullptr)
+            {
+                cseHeuristic->DumpMetrics();
+            }
+
+            if (compiler->info.compMethodSuperPMIIndex >= 0)
+            {
+                printf(" spmi index %d", compiler->info.compMethodSuperPMIIndex);
+            }
         }
 
 #if TRACK_LSRA_STATS
@@ -2024,7 +2069,10 @@ void CodeGen::genEmitMachineCode()
         printf(" (MethodHash=%08x) for method %s (%s)\n", compiler->info.compMethodHash(), compiler->info.compFullName,
                compiler->compGetTieringName(true));
 
-        printf("; ============================================================\n\n");
+        if (!dspMetricsOnly)
+        {
+            printf("; ============================================================\n\n");
+        }
         printf(""); // in our logic this causes a flush
     }
 
@@ -2072,7 +2120,7 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genSetScopeInfo();
 
-#ifdef LATE_DISASM
+#if defined(LATE_DISASM) || defined(DEBUG)
     unsigned finalHotCodeSize;
     unsigned finalColdCodeSize;
     if (compiler->fgFirstColdBlock != nullptr)
@@ -2094,81 +2142,51 @@ void CodeGen::genEmitUnwindDebugGCandEH()
         finalHotCodeSize  = codeSize;
         finalColdCodeSize = 0;
     }
-    getDisAssembler().disAsmCode((BYTE*)*codePtr, finalHotCodeSize, (BYTE*)coldCodePtr, finalColdCodeSize);
+#endif // defined(LATE_DISASM) || defined(DEBUG)
+
+#ifdef LATE_DISASM
+    getDisAssembler().disAsmCode((BYTE*)*codePtr, (BYTE*)codePtrRW, finalHotCodeSize, (BYTE*)coldCodePtr,
+                                 (BYTE*)coldCodePtrRW, finalColdCodeSize);
 #endif // LATE_DISASM
+
+#ifdef DEBUG
+    if (JitConfig.JitRawHexCode().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
+                                           &compiler->info.compMethodInfo->args))
+    {
+        // NOTE: code in cold region is not supported.
+
+        BYTE*  dumpAddr = (BYTE*)codePtrRW;
+        size_t dumpSize = finalHotCodeSize;
+
+        const WCHAR* rawHexCodeFilePath = JitConfig.JitRawHexCodeFile();
+        if (rawHexCodeFilePath)
+        {
+            FILE*   hexDmpf;
+            errno_t ec = _wfopen_s(&hexDmpf, rawHexCodeFilePath, W("at")); // NOTE: file append mode
+            if (ec == 0)
+            {
+                assert(hexDmpf);
+                hexDump(hexDmpf, dumpAddr, dumpSize);
+                fclose(hexDmpf);
+            }
+        }
+        else
+        {
+            FILE* dmpf = jitstdout();
+
+            fprintf(dmpf, "Generated native code for %s:\n", compiler->info.compFullName);
+            hexDump(dmpf, dumpAddr, dumpSize);
+            fprintf(dmpf, "\n\n");
+        }
+    }
+#endif // DEBUG
 
     /* Report any exception handlers to the VM */
 
     genReportEH();
 
-#ifdef JIT32_GCENCODER
-#ifdef DEBUG
-    void* infoPtr =
-#endif // DEBUG
-#endif
-        // Create and store the GC info for this method.
-        genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
-
-#ifdef DEBUG
-    FILE* dmpf = jitstdout();
-
-    compiler->opts.dmpHex = false;
-    if (!strcmp(compiler->info.compMethodName, "<name of method you want the hex dump for"))
-    {
-        FILE*   codf;
-        errno_t ec = fopen_s(&codf, "C:\\JIT.COD", "at"); // NOTE: file append mode
-        if (ec != 0)
-        {
-            assert(codf);
-            dmpf                  = codf;
-            compiler->opts.dmpHex = true;
-        }
-    }
-    if (compiler->opts.dmpHex)
-    {
-        size_t consSize = GetEmitter()->emitDataSize();
-
-        fprintf(dmpf, "Generated code for %s:\n", compiler->info.compFullName);
-        fprintf(dmpf, "\n");
-
-        if (codeSize)
-        {
-            fprintf(dmpf, "    Code  at %p [%04X bytes]\n", dspPtr(*codePtr), codeSize);
-        }
-        if (consSize)
-        {
-            fprintf(dmpf, "    Const at %p [%04X bytes]\n", dspPtr(consPtr), consSize);
-        }
-#ifdef JIT32_GCENCODER
-        size_t infoSize = compiler->compInfoBlkSize;
-        if (infoSize)
-            fprintf(dmpf, "    Info  at %p [%04X bytes]\n", dspPtr(infoPtr), infoSize);
-#endif // JIT32_GCENCODER
-
-        fprintf(dmpf, "\n");
-
-        if (codeSize)
-        {
-            hexDump(dmpf, "Code", (BYTE*)*codePtr, codeSize);
-        }
-        if (consSize)
-        {
-            hexDump(dmpf, "Const", (BYTE*)consPtr, consSize);
-        }
-#ifdef JIT32_GCENCODER
-        if (infoSize)
-            hexDump(dmpf, "Info", (BYTE*)infoPtr, infoSize);
-#endif // JIT32_GCENCODER
-
-        fflush(dmpf);
-    }
-
-    if (dmpf != jitstdout())
-    {
-        fclose(dmpf);
-    }
-
-#endif // DEBUG
+    // Create and store the GC info for this method.
+    genCreateAndStoreGCInfo(codeSize, prologSize, epilogSize DEBUGARG(codePtr));
 
     /* Tell the emitter that we're done with this function */
 
@@ -2594,12 +2612,12 @@ void CodeGen::genReportEH()
 
                 hndBeg = compiler->ehCodeOffset(block);
 
-                // How big is it? The BBJ_ALWAYS has a null bbEmitCookie! Look for the block after, which must be
-                // a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
+                // How big is it? The BBJ_CALLFINALLYRET has a null bbEmitCookie! Look for the block after, which must
+                // be a label or jump target, since the BBJ_CALLFINALLY doesn't fall through.
                 BasicBlock* bbLabel = block->Next();
-                if (block->isBBCallAlwaysPair())
+                if (block->isBBCallFinallyPair())
                 {
-                    bbLabel = bbLabel->Next(); // skip the BBJ_ALWAYS
+                    bbLabel = bbLabel->Next(); // skip the BBJ_CALLFINALLYRET
                 }
                 if (bbLabel == nullptr)
                 {
@@ -2607,7 +2625,6 @@ void CodeGen::genReportEH()
                 }
                 else
                 {
-                    assert(bbLabel->bbEmitCookie != nullptr);
                     hndEnd = compiler->ehCodeOffset(bbLabel);
                 }
 
@@ -2715,6 +2732,8 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 //
 CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf)
 {
+    INDEBUG(genWriteBarrierUsed = true);
+
     switch (wbf)
     {
         case GCInfo::WBF_BarrierChecked:
@@ -3701,7 +3720,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                  * have to "swap" the registers in the GC reg pointer mask
                  */
 
-                if (varTypeGCtype(varDscSrc->TypeGet()) != varTypeGCtype(varDscDest->TypeGet()))
+                if (varTypeIsGC(varDscSrc) != varTypeIsGC(varDscDest))
                 {
                     size = EA_GCREF;
                 }
@@ -4062,7 +4081,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // Don't process the double until both halves of the destination are clear.
                 if (genActualType(destMemType) == TYP_DOUBLE)
                 {
-                    assert((destMask & RBM_DBL_REGS) != 0);
+                    assert((destMask & RBM_ALLDOUBLE) != 0);
                     destMask |= genRegMask(REG_NEXT(destRegNum));
                 }
 #endif
@@ -4769,7 +4788,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 #else
 void CodeGen::genEnregisterOSRArgsAndLocals()
@@ -4910,7 +4929,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         // Patchpoint offset is from top of Tier0 frame
         //
@@ -4942,7 +4961,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
         *pInitRegZeroed = false;
-#endif
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 }
 
@@ -5186,7 +5205,7 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     /* The return value is special-cased: make sure it goes live for the epilog */
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     if (IsFullPtrRegMapRequired() && !jmpEpilog)
     {
@@ -5549,7 +5568,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
@@ -5564,7 +5583,7 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #ifdef DEBUG
 
@@ -5894,13 +5913,25 @@ void CodeGen::genFnProlog()
     {
         initReg = REG_SCRATCH;
     }
+#elif defined(TARGET_RISCV64)
+    // For RISC-V64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH; // REG_T0
+    }
 #endif
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     // For LoongArch64's OSR root frames, we may need a scratch register for large
     // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
+    //
+    // RISC-V64's OSR root frames are similar to LoongArch64's. In this case
+    // REG_SCRATCH also shouldn't conflict with REG_PINVOKE_FRAME, even if
+    // technically they are the same register - REG_T0.
+    //
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
-#endif
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
@@ -6211,7 +6242,7 @@ void CodeGen::genFnProlog()
         // Otherwise we'll do some of these fetches twice.
         //
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
 #else
         genEnregisterOSRArgsAndLocals();
@@ -6259,11 +6290,17 @@ void CodeGen::genFnProlog()
         };
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-        assignIncomingRegisterArgs(&intRegState);
+        // Handle float parameters first; in the presence of struct promotion
+        // we can have parameters that are homed into float registers but
+        // passed in integer registers. So make sure we get those out of the
+        // integer registers before we potentially override those as part of
+        // handling integer parameters.
+
         assignIncomingRegisterArgs(&floatRegState);
+        assignIncomingRegisterArgs(&intRegState);
 #else
         assignIncomingRegisterArgs(&intRegState);
-#endif
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
@@ -7512,6 +7549,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //------------------------------------------------------------------------
 // genReturn: Generates code for return statement.
 //            In case of struct return, delegates to the genStructReturn method.
+//            In case of LONG return on 32-bit, delegates to the genLongReturn method.
 //
 // Arguments:
 //    treeNode - The GT_RETURN or GT_RETFILT tree node.
@@ -7521,7 +7559,8 @@ void CodeGen::genLongReturn(GenTree* treeNode)
 //
 void CodeGen::genReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN, GT_RETFILT));
+
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -7622,9 +7661,9 @@ void CodeGen::genReturn(GenTree* treeNode)
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
     //
-    // There should be a single return block while generating profiler ELT callbacks,
-    // so we just look for that block to trigger insertion of the profile hook.
-    if ((compiler->compCurBB == compiler->genReturnBB) && compiler->compIsProfilerHookNeeded())
+    // There should be a single GT_RETURN while generating profiler ELT callbacks.
+    //
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsProfilerHookNeeded())
     {
         // !! NOTE !!
         // Since we are invalidating the assumption that we would slip into the epilog

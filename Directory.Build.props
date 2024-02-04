@@ -99,11 +99,11 @@
     <!-- when this is updated, make sure to keep $(_TargetFrameworkForNETCoreTasks)
          in src/mono/wasm/build/WasmApp.LocalBuild.props
          and in src/mono/msbuild/apple/build/AppleBuild.LocalBuild.props in sync -->
-    <NetCoreAppToolCurrentVersion>8.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>9.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
-    <AspNetCoreAppCurrentVersion>8.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>9.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
@@ -115,7 +115,7 @@
     <NetFrameworkCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
     <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
-    <ApiCompatNetCoreAppBaselineVersion>8.0.0-rc.1.23415.6</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineVersion>8.0.0</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net8.0</ApiCompatNetCoreAppBaselineTFM>
 
     <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
@@ -152,6 +152,9 @@
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <MibcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'mibc'))</MibcOptimizationDataDir>
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'docs'))</DocsDir>
+    <BrowserProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'browser'))</BrowserProjectRoot>
+    <WasmProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm'))</WasmProjectRoot>
+    <WasiProjectRoot>$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasi'))</WasiProjectRoot>
 
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
@@ -180,10 +183,10 @@
     <TestExclusionListTasksAssemblyPath>$([MSBuild]::NormalizePath('$(TestExclusionListTasksDir)', 'TestExclusionListTasks.dll'))</TestExclusionListTasksAssemblyPath>
     <CoreCLRToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfiguration)'))</CoreCLRToolPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true' or '$(BuildArchitecture)' == 's390x' or '$(BuildArchitecture)' == 'ppc64le'">$(CoreCLRToolPath)</ILAsmToolPath>
-
     <WasmtimeDir Condition="'$(WasmtimeDir)' == '' and '$(WASMTIME_PATH)' != '' and Exists($(WASMTIME_PATH))">$(WASMTIME_PATH)</WasmtimeDir>
     <WasmtimeDir Condition="'$(WasmtimeDir)' == ''">$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'wasmtime'))</WasmtimeDir>
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
+    <WasmCommonTargetsPath>$([MSBuild]::NormalizeDirectory($(WasmProjectRoot), 'build'))</WasmCommonTargetsPath>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculatePortableBuild">
@@ -332,6 +335,12 @@
 
     <!-- this property is used by the SDK to pull in mono-based runtime packs -->
     <UseMonoRuntime Condition="'$(UseMonoRuntime)' == '' and '$(RuntimeFlavor)' == 'Mono'">true</UseMonoRuntime>
+
+    <!-- For enabling the use of XUnitLogChecker in coreclr and libraries test runs. -->
+    <!-- TODO: Enable XUnitLogChecker for NativeAOT tests https://github.com/dotnet/runtime/issues/94722 -->
+    <IsXUnitLogCheckerSupported Condition="'$(IsXUnitLogCheckerSupported)' == ''">false</IsXUnitLogCheckerSupported>
+    <IsXUnitLogCheckerSupported Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TestNativeAot)' != 'true' and '$(RunNativeAotTestApps)' != 'true' and '$(TestSingleFile)' != 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi' and '$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator' and '$(TargetOS)' != 'maccatalyst' and '$(TargetOS)' != 'android'">true</IsXUnitLogCheckerSupported>
+    <XUnitLogCheckerLibrariesOutDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'XUnitLogChecker'))</XUnitLogCheckerLibrariesOutDir>
   </PropertyGroup>
 
   <!-- Packaging -->

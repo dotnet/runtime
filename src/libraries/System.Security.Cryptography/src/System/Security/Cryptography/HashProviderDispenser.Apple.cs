@@ -38,8 +38,32 @@ namespace System.Security.Cryptography
 
         internal static bool MacSupported(string hashAlgorithmId) => HashSupported(hashAlgorithmId);
 
+        internal static bool KmacSupported(string algorithmId)
+        {
+            _ = algorithmId;
+            return false;
+        }
+
         internal static class OneShotHashProvider
         {
+            public static int KmacData(
+                string algorithmId,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                Span<byte> destination,
+                ReadOnlySpan<byte> customizationString,
+                bool xof)
+            {
+                _ = algorithmId;
+                _ = key;
+                _ = customizationString;
+                _ = source;
+                _ = destination;
+                _ = xof;
+                Debug.Fail("Platform should have checked if KMAC was available first.");
+                throw new UnreachableException();
+            }
+
             public static unsafe int MacData(
                 string hashAlgorithmId,
                 ReadOnlySpan<byte> key,

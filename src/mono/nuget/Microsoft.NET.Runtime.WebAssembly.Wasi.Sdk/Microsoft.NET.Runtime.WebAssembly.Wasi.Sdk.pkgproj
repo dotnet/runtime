@@ -8,14 +8,17 @@
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)WasmAppBuilder\WasmAppBuilder.csproj" />
     <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" />
-    <ProjectReference Include="$(RepoRoot)src\mono\wasm\host\WasmAppHost.csproj" />
+    <ProjectReference Include="$(WasmProjectRoot)host\WasmAppHost.csproj" />
 
     <PackageFile Include="Sdk\AutoImport.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiApp.props" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiApp.targets" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiApp.Native.*" TargetPath="Sdk" />
-    <PackageFile Include="$(RepoRoot)\src\mono\wasi\build\WasiSdk.Defaults.props" TargetPath="Sdk" />
+    <PackageFile Include="$(WasiProjectRoot)build\WasiApp.props" TargetPath="Sdk" />
+    <PackageFile Include="$(WasiProjectRoot)build\WasiApp.targets" TargetPath="Sdk" />
+
+    <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
+    <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />
+
+    <PackageFile Include="$(WasiProjectRoot)build\WasiSdk.Defaults.props" TargetPath="Sdk" />
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">
@@ -30,7 +33,7 @@
 
     <GenerateFileFromTemplate
       TemplateFile="Sdk/Sdk.targets.in"
-      Properties="@(_ReplacementValue)"
+      Properties="@(_ReplacementValue->'%(Identity)=%(Value)')"
       OutputPath="$(SdkTargetsPath)" />
 
     <ItemGroup>

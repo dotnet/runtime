@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
 using System.Threading;
 
 namespace System
@@ -60,7 +61,7 @@ namespace System
                 }
 
                 // Fast path obtained offset incorporated into ToLocalTime(DateTime.UtcNow, true) logic
-                int localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
+                int localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset, CultureInfo.InvariantCulture);
                 TimeSpan offset = TimeSpan.FromSeconds(localDateTimeOffsetSeconds);
                 long localTicks = utcDateTime.Ticks + offset.Ticks;
                 if (localTicks < DateTime.MinTicks || localTicks > DateTime.MaxTicks)

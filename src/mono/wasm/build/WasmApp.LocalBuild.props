@@ -19,19 +19,20 @@
         $(WasmBuildSupportDir) - directory which has all the tasks, targets, and runtimepack
 -->
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)WasmApp.props" />
+  <Import Project="$(_WasmTargetsDir)$(_TargetsBaseName).props" />
 
   <PropertyGroup>
-    <_TargetFrameworkForNETCoreTasks>net8.0</_TargetFrameworkForNETCoreTasks>
+    <_TargetFrameworkForNETCoreTasks>net9.0</_TargetFrameworkForNETCoreTasks>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != '' and '$(WasmBuildSupportDir)' == ''">
     <ArtifactsBinDir>$(RuntimeSrcDir)\artifacts\bin\</ArtifactsBinDir>
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(RuntimeSrcDir)\src\mono\wasm\emsdk\</EMSDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$(RuntimeSrcDir)\src\mono\browser\emsdk\</EMSDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == ''">$(RuntimeSrcDir)\src\mono\wasi\wasi-sdk\</WASI_SDK_PATH>
 
-    <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
+    <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.$(RuntimeIdentifier)', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
 
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(TasksConfiguration)', '$(_TargetFrameworkForNETCoreTasks)'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', '$(TasksConfiguration)', '$(_TargetFrameworkForNETCoreTasks)', 'publish'))</WasmBuildTasksDir>
@@ -46,7 +47,7 @@
   <PropertyGroup Condition="'$(RuntimeSrcDir)' == '' and '$(WasmBuildSupportDir)' != ''">
     <BuildBaseDir>$(WasmBuildSupportDir)\</BuildBaseDir>
 
-    <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'microsoft.netcore.app.runtime.browser-wasm'))</MicrosoftNetCoreAppRuntimePackLocationToUse>
+    <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'microsoft.netcore.app.runtime.$(RuntimeIdentifier)'))</MicrosoftNetCoreAppRuntimePackLocationToUse>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoAOTCompiler'))</MonoAOTCompilerDir>
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoTargetsTasks'))</MonoTargetsTasksDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmAppBuilder'))</WasmAppBuilderDir>
@@ -62,7 +63,7 @@
 
   <PropertyGroup>
     <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse)))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', 'browser-wasm'))</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', $(RuntimeIdentifier)))</MicrosoftNetCoreAppRuntimePackRidDir>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>

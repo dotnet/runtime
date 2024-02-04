@@ -24,11 +24,11 @@ namespace NetCoreServer
 
             if (context.Request.QueryString.HasValue && context.Request.QueryString.Value.Contains("delay10sec"))
             {
-                Thread.Sleep(10000);
+                await Task.Delay(10000);
             }
             else if (context.Request.QueryString.HasValue && context.Request.QueryString.Value.Contains("delay20sec"))
             {
-                Thread.Sleep(20000);
+                await Task.Delay(20000);
             }
 
             try
@@ -124,14 +124,15 @@ namespace NetCoreServer
                 }
 
                 bool sendMessage = false;
+                string receivedMessage = null;
                 if (receiveResult.MessageType == WebSocketMessageType.Text)
                 {
-                    string receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, offset);
+                    receivedMessage = Encoding.UTF8.GetString(receiveBuffer, 0, offset);
                     if (receivedMessage == ".close")
                     {
                         await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
                     }
-                    if (receivedMessage == ".shutdown")
+                    else if (receivedMessage == ".shutdown")
                     {
                         await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
                     }
@@ -160,6 +161,14 @@ namespace NetCoreServer
                             receiveResult.MessageType,
                             !replyWithPartialMessages,
                             CancellationToken.None);
+                }
+                if (receivedMessage == ".closeafter")
+                {
+                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
+                }
+                else if (receivedMessage == ".shutdownafter")
+                {
+                    await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, receivedMessage, CancellationToken.None);
                 }
             }
         }

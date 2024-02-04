@@ -677,7 +677,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.PredefinedCulturesOnly)
             {
-                if (GlobalizationMode.Invariant || (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName)))
+                if (GlobalizationMode.Invariant || (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName) : !IcuIsEnsurePredefinedLocaleName(cultureName)))
                     return null;
             }
 
@@ -976,7 +976,12 @@ namespace System.Globalization
 
         private string GetLanguageDisplayNameCore(string cultureName) => GlobalizationMode.UseNls ?
                                                                             NlsGetLanguageDisplayName(cultureName) :
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+                                                                            GlobalizationMode.Hybrid ? GetLocaleInfoNative(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name) :
                                                                             IcuGetLanguageDisplayName(cultureName);
+#else
+                                                                            IcuGetLanguageDisplayName(cultureName);
+#endif
 
         /// <summary>
         /// English pretty name for this locale (ie: English (United States))
@@ -1993,7 +1998,7 @@ namespace System.Globalization
                     else
                     {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                        string? longTimeFormat =  GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
+                        string? longTimeFormat = GlobalizationMode.Hybrid ? GetTimeFormatStringNative() : IcuGetTimeFormatString();
 #else
                         string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
 #endif
@@ -2371,7 +2376,7 @@ namespace System.Globalization
                 return null!;
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type, uiCultureName);
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type, uiCultureName) : IcuGetLocaleInfo(type, uiCultureName);
 #else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
 #endif
@@ -2384,7 +2389,7 @@ namespace System.Globalization
                 return null!;
 
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type, uiCultureName) : IcuGetLocaleInfo(localeName, type, uiCultureName);
 #else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
 #endif

@@ -236,7 +236,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceHandler.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.MetadataHandling.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonConverter.ReadAhead.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.ReadCore.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterOfT.WriteCore.cs" />
@@ -393,10 +392,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
-                      ReferenceOutputAssembly="false"
-                      SetTargetFramework="TargetFramework=netstandard2.0"
-                      OutputItemType="Analyzer" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

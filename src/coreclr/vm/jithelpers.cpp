@@ -1779,24 +1779,13 @@ HCIMPL1(void*, JIT_GetGCThreadStaticBase_Helper, MethodTable * pMT)
 }
 HCIMPLEND
 
-struct ThreadStaticBlockInfo
-{
-    uint32_t NonGCMaxThreadStaticBlocks;
-    void** NonGCThreadStaticBlocks;
-
-    uint32_t GCMaxThreadStaticBlocks;
-    void** GCThreadStaticBlocks;
-};
-
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
-__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
-__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
+__declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
-EXTERN_C __thread ThreadStaticBlockInfo t_ThreadStatics;
-EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
-EXTERN_C __thread uint32_t t_GCThreadStaticBlocksSize;
-#endif
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
+#endif // !_MSC_VER
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
 //     CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR. Even though we always check
@@ -2456,7 +2445,6 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2483,7 +2471,6 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable* pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -3505,7 +3492,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3525,7 +3511,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3547,7 +3532,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -4245,7 +4229,7 @@ void ThrowNew(OBJECTREF oref)
         }
     }
 
-    DispatchManagedException(oref);
+    DispatchManagedException(oref, /* preserveStackTrace */ false);
 }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -4312,14 +4296,11 @@ HCIMPLEND
 #ifdef FEATURE_EH_FUNCLETS
 void RethrowNew()
 {
-    CONTEXT ctx = {};
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    REGDISPLAY rd;
     Thread *pThread = GetThread();
 
-    ExInfo *pActiveExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    ExInfo exInfo(pThread, &ctx, &rd, ExKind::None);
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pActiveExInfo->m_ptrs.ContextRecord, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
@@ -4327,6 +4308,8 @@ void RethrowNew()
 
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
 
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     CALL_MANAGED_METHOD_NORET(args)
@@ -5818,6 +5801,46 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
     *sampleIndex = static_cast<size_t>(x % S);
     return true;
 }
+
+HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
+
+HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    size_t sampleIndex;
+    if (!CheckSample(&valueProfile->Count, &sampleIndex))
+    {
+        return;
+    }
+
+#ifdef _DEBUG
+    PgoManager::VerifyAddress(valueProfile);
+    PgoManager::VerifyAddress(valueProfile + 1);
+#endif
+
+    valueProfile->ValueTable[sampleIndex] = val;
+}
+HCIMPLEND
 
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {

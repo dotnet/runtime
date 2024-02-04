@@ -37,9 +37,23 @@ namespace System.Runtime.CompilerServices
         // cloned when you pass them around, and are always passed by value.
         // Of course, reference types are not cloned.
         //
-        [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull(nameof(obj))]
-        public static extern object? GetObjectValue(object? obj);
+        public static unsafe object? GetObjectValue(object? obj)
+        {
+            if (obj == null)
+                return null;
+
+            MethodTable* pMT = GetMethodTable(obj);
+
+            if (!pMT->IsValueType || pMT->IsPrimitive)
+                return obj;
+
+            // Technically we could return boxed DateTimes and Decimals without
+            // copying them here, but VB realized that this would be a breaking change
+            // for their customers.  So copy them.
+
+            return obj.MemberwiseClone();
+        }
 
         // RunClassConstructor causes the class constructor for the given type to be triggered
         // in the current domain.  After this call returns, the class constructor is guaranteed to
@@ -287,6 +301,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object? Box(MethodTable* methodTable, ref byte data);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void Unbox_Nullable(ref byte destination, MethodTable* toTypeHnd, object? obj);
+
         // Given an object reference, returns its MethodTable*.
         //
         // WARNING: The caller has to ensure that MethodTable* does not get unloaded. The most robust way
@@ -305,7 +322,7 @@ namespace System.Runtime.CompilerServices
             // The body of this function will be replaced by the EE with unsafe code
             // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
 
-            return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
+            return (MethodTable*)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
         }
 
 
@@ -430,8 +447,7 @@ namespace System.Runtime.CompilerServices
         public uint BaseSize;
 
         // See additional native members in methodtable.h, not needed here yet.
-        // 0x8: m_wFlags2 (additional flags)
-        // 0xA: m_wToken (class token if it fits in 16 bits)
+        // 0x8: m_dwFlags2 (additional flags and token in upper 24 bits)
         // 0xC: m_wNumVirtuals
 
         /// <summary>
@@ -450,8 +466,8 @@ namespace System.Runtime.CompilerServices
         public MethodTable* ParentMethodTable;
 
         // Additional conditional fields (see methodtable.h).
-        // m_pLoaderModule
-        // m_pWriteableData
+        // m_pModule
+        // m_pAuxiliaryData
         // union {
         //   m_pEEClass (pointer to the EE class)
         //   m_pCanonMT (pointer to the canonical method table)
@@ -466,7 +482,7 @@ namespace System.Runtime.CompilerServices
         public void* ElementType;
 
         /// <summary>
-        /// This interface map is a union with a multipurpose slot, so should be checked before use.
+        /// This interface map used to list out the set of interfaces. Only meaningful if InterfaceCount is non-zero.
         /// </summary>
         [FieldOffset(InterfaceMapOffset)]
         public MethodTable** InterfaceMap;
@@ -487,6 +503,8 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
+        private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
+        private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
         private const uint enum_flag_Category_Interface = 0x000C0000;
         // Types that require non-trivial interface cast have this bit set in the category
@@ -564,6 +582,9 @@ namespace System.Runtime.CompilerServices
         public bool IsNullable => (Flags & enum_flag_Category_Mask) == enum_flag_Category_Nullable;
 
         public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
+
+        // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
+        public bool IsPrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_PrimitiveValueType or enum_flag_Category_TruePrimitive;
 
         public bool HasInstantiation => (Flags & enum_flag_HasComponentSize) == 0 && (Flags & enum_flag_GenericsMask) != enum_flag_GenericsMask_NonGeneric;
 

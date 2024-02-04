@@ -18,7 +18,7 @@ namespace
         HRESULT STDMETHODCALLTYPE FireEventImpl(DISPID dispId, VARIANTARG *arg)
         {
             HRESULT hr;
-            for (UINT i = 0; i < _sinks.size(); ++i)
+            for (uint32_t i = 0; i < _sinks.size(); ++i)
             {
                 IDispatch *handler = _sinks[i];
                 if (handler == nullptr)
@@ -65,7 +65,7 @@ namespace
             if (pUnkSink == nullptr || pdwCookie == nullptr)
                 return E_POINTER;
 
-            for (UINT i = 0; i < _sinks.size(); ++i)
+            for (uint32_t i = 0; i < _sinks.size(); ++i)
             {
                 if (_sinks[i] != nullptr)
                     continue;

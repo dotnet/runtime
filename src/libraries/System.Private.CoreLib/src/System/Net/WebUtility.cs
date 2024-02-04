@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Don't entity encode high chars (160 to 256)
-#define ENTITY_ENCODE_HIGH_ASCII_CHARS
-
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,17 +14,6 @@ namespace System.Net
 {
     public static class WebUtility
     {
-        // some consts copied from Char / CharUnicodeInfo since we don't have friend access to those types
-        private const char HIGH_SURROGATE_START = '\uD800';
-        private const char LOW_SURROGATE_START = '\uDC00';
-        private const char LOW_SURROGATE_END = '\uDFFF';
-        private const int UNICODE_PLANE00_END = 0x00FFFF;
-        private const int UNICODE_PLANE01_START = 0x10000;
-        private const int UNICODE_PLANE16_END = 0x10FFFF;
-
-        private const int UnicodeReplacementChar = '\uFFFD';
-        private const int MaxInt32Digits = 10;
-
         #region HtmlEncode / HtmlDecode methods
 
         [return: NotNullIfNotNull(nameof(value))]
@@ -131,26 +117,24 @@ namespace System.Net
                 {
                     int valueToEncode = -1; // set to >= 0 if needs to be encoded
 
-#if ENTITY_ENCODE_HIGH_ASCII_CHARS
-                    if (ch >= 160 && ch < 256)
+                    if (char.IsBetween(ch, (char)160, (char)255))
                     {
                         // The seemingly arbitrary 160 comes from RFC
                         valueToEncode = ch;
                     }
-                    else
-#endif // ENTITY_ENCODE_HIGH_ASCII_CHARS
-                        if (char.IsSurrogate(ch))
+                    else if (char.IsSurrogate(ch))
                     {
-                        int scalarValue = GetNextUnicodeScalarValueFromUtf16Surrogate(input, ref i);
-                        if (scalarValue >= UNICODE_PLANE01_START)
+                        if ((uint)(i + 1) < (uint)input.Length &&
+                            Rune.TryCreate(ch, input[i + 1], out Rune rune))
                         {
-                            valueToEncode = scalarValue;
+                            valueToEncode = rune.Value;
+                            i++;
                         }
                         else
                         {
                             // Don't encode BMP characters (like U+FFFD) since they wouldn't have
                             // been encoded if explicitly present in the string anyway.
-                            ch = (char)scalarValue;
+                            ch = (char)UnicodeUtility.ReplacementChar;
                         }
                     }
 
@@ -160,6 +144,7 @@ namespace System.Net
                         output.Append("&#");
 
                         // Use the buffer directly and reserve a conservative estimate of 10 chars.
+                        const int MaxInt32Digits = 10;
                         Span<char> encodingBuffer = output.AppendSpan(MaxInt32Digits);
                         valueToEncode.TryFormat(encodingBuffer, out int charsWritten); // Invariant
                         output.Length -= (MaxInt32Digits - charsWritten);
@@ -262,15 +247,9 @@ namespace System.Net
                                 ? uint.TryParse(inputSlice.Slice(2, entityLength - 2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out uint parsedValue)
                                 : uint.TryParse(inputSlice.Slice(1, entityLength - 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedValue);
 
-                            if (parsedSuccessfully)
+                            if (parsedSuccessfully && UnicodeUtility.IsValidUnicodeScalar(parsedValue))
                             {
-                                // decoded character must be U+0000 .. U+10FFFF, excluding surrogates
-                                parsedSuccessfully = ((parsedValue < HIGH_SURROGATE_START) || (LOW_SURROGATE_END < parsedValue && parsedValue <= UNICODE_PLANE16_END));
-                            }
-
-                            if (parsedSuccessfully)
-                            {
-                                if (parsedValue <= UNICODE_PLANE00_END)
+                                if (UnicodeUtility.IsBmpCodePoint(parsedValue))
                                 {
                                     // single character
                                     output.Append((char)parsedValue);
@@ -278,9 +257,9 @@ namespace System.Net
                                 else
                                 {
                                     // multi-character
-                                    ConvertSmpToUtf16(parsedValue, out char leadingSurrogate, out char trailingSurrogate);
-                                    output.Append(leadingSurrogate);
-                                    output.Append(trailingSurrogate);
+                                    UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(parsedValue, out char highSurrogate, out char lowSurrogate);
+                                    output.Append(highSurrogate);
+                                    output.Append(lowSurrogate);
                                 }
 
                                 i = entityEndPosition; // already looked at everything until semicolon
@@ -329,12 +308,10 @@ namespace System.Net
                             return i;
                     }
                 }
-#if ENTITY_ENCODE_HIGH_ASCII_CHARS
-                else if (ch >= 160 && ch < 256)
+                else if (char.IsBetween(ch, (char)160, (char)255))
                 {
                     return i;
                 }
-#endif // ENTITY_ENCODE_HIGH_ASCII_CHARS
                 else if (char.IsSurrogate(ch))
                 {
                     return i;
@@ -605,45 +582,6 @@ namespace System.Net
         #endregion
 
         #region Helper methods
-
-        // similar to Char.ConvertFromUtf32, but doesn't check arguments or generate strings
-        // input is assumed to be an SMP character
-        private static void ConvertSmpToUtf16(uint smpChar, out char leadingSurrogate, out char trailingSurrogate)
-        {
-            Debug.Assert(UNICODE_PLANE01_START <= smpChar && smpChar <= UNICODE_PLANE16_END);
-
-            int utf32 = (int)(smpChar - UNICODE_PLANE01_START);
-            leadingSurrogate = (char)((utf32 / 0x400) + HIGH_SURROGATE_START);
-            trailingSurrogate = (char)((utf32 % 0x400) + LOW_SURROGATE_START);
-        }
-
-        private static int GetNextUnicodeScalarValueFromUtf16Surrogate(ReadOnlySpan<char> input, ref int index)
-        {
-            // invariants
-            Debug.Assert(input.Length - index >= 1);
-            Debug.Assert(char.IsSurrogate(input[index]));
-
-            if (input.Length - index <= 1)
-            {
-                // not enough characters remaining to resurrect the original scalar value
-                return UnicodeReplacementChar;
-            }
-
-            char leadingSurrogate = input[index];
-            char trailingSurrogate = input[index + 1];
-
-            if (!char.IsSurrogatePair(leadingSurrogate, trailingSurrogate))
-            {
-                // unmatched surrogate
-                return UnicodeReplacementChar;
-            }
-
-            // we're going to consume an extra char
-            index++;
-
-            // below code is from Char.ConvertToUtf32, but without the checks (since we just performed them)
-            return (((leadingSurrogate - HIGH_SURROGATE_START) * 0x400) + (trailingSurrogate - LOW_SURROGATE_START) + UNICODE_PLANE01_START);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsUrlSafeChar(char ch)
@@ -1047,7 +985,7 @@ namespace System.Net
                 while (!tableData.IsEmpty)
                 {
                     ulong key = BinaryPrimitives.ReadUInt64LittleEndian(tableData);
-                    char value = (char) BinaryPrimitives.ReadUInt16LittleEndian(tableData.Slice(sizeof(ulong)));
+                    char value = (char)BinaryPrimitives.ReadUInt16LittleEndian(tableData.Slice(sizeof(ulong)));
                     dictionary[key] = value;
                     tableData = tableData.Slice(sizeof(ulong) + sizeof(char));
                 }

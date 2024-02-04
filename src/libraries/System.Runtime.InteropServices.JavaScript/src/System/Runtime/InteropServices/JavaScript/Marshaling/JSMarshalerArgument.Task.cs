@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using System.ComponentModel;
+using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -17,7 +19,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <typeparam name="T">Type of the marshaled value.</typeparam>
         /// <param name="arg">The low-level argument representation.</param>
         /// <param name="value">The value to be marshaled.</param>
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
 
         /// <summary>
@@ -27,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <typeparam name="T">Type of the marshaled value.</typeparam>
         /// <param name="arg">The low-level argument representation.</param>
         /// <param name="value">The value to be marshaled.</param>
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
 
         /// <summary>
@@ -43,30 +45,40 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = CreateJSOwnedHolder(slot.GCHandle);
-            TaskCompletionSource tcs = new TaskCompletionSource(holder);
-            ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
+            var ctx = ToManagedContext;
+            lock (ctx)
             {
-                if (arguments_buffer == null)
+                PromiseHolder holder = ctx.GetPromiseHolder(slot.GCHandle);
+                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
+                // TODO TaskCreationOptions.RunContinuationsAsynchronously
+                TaskCompletionSource tcs = new TaskCompletionSource(holder);
+                ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
-                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
-                    return;
-                }
-                ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
-                // arg_3 set by caller when this is SetResult call, un-used here
-                if (arg_2.slot.Type != MarshalerType.None)
-                {
-                    arg_2.ToManaged(out Exception? fail);
-                    tcs.SetException(fail!);
-                }
-                else
-                {
-                    tcs.SetResult();
-                }
-                // eventual exception is handled by caller
-            };
-            holder.Callback = callback;
-            value = tcs.Task;
+                    if (arguments_buffer == null)
+                    {
+                        tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                        return;
+                    }
+                    ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
+                                                                             // arg_3 set by caller when this is SetResult call, un-used here
+                    if (arg_2.slot.Type != MarshalerType.None)
+                    {
+                        arg_2.ToManaged(out Exception? fail);
+                        tcs.SetException(fail!);
+                    }
+                    else
+                    {
+                        tcs.SetResult();
+                    }
+                    // eventual exception is handled by caller
+                };
+                holder.Callback = callback;
+                value = tcs.Task;
+#if FEATURE_WASM_MANAGED_THREADS
+                // if the other thread created it, signal that it's ready
+                holder.CallbackReady?.Set();
+#endif
+            }
         }
 
         /// <summary>
@@ -74,8 +86,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        /// <param name="marshaler">The generated callback which marshals the result value of the <see cref="System.Threading.Tasks.Task"/>.</param>
-        /// <typeparam name="T">Type of marshaled result of the <see cref="System.Threading.Tasks.Task"/>.</typeparam>
+        /// <param name="marshaler">The generated callback which marshals the result value of the <see cref="Task"/>.</param>
+        /// <typeparam name="T">Type of marshaled result of the <see cref="Task"/>.</typeparam>
         public unsafe void ToManaged<T>(out Task<T>? value, ArgumentToManagedCallback<T> marshaler)
         {
             // there is no nice way in JS how to check that JS promise is already resolved, to send MarshalerType.TaskRejected, MarshalerType.TaskResolved
@@ -84,44 +96,43 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            PromiseHolder holder = CreateJSOwnedHolder(slot.GCHandle);
-            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
-            ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
+            var ctx = ToManagedContext;
+            lock (ctx)
             {
-                if (arguments_buffer == null)
+                var holder = ctx.GetPromiseHolder(slot.GCHandle);
+                // we want to run the continuations on the original thread which called the JSImport, so RunContinuationsAsynchronously, rather than ExecuteSynchronously
+                // TODO TaskCreationOptions.RunContinuationsAsynchronously
+                TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
+                ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
                 {
-                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
-                    return;
-                }
+                    if (arguments_buffer == null)
+                    {
+                        tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                        return;
+                    }
 
-                ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
-                ref JSMarshalerArgument arg_3 = ref arguments_buffer[4]; // set by caller when this is SetResult call
-                if (arg_2.slot.Type != MarshalerType.None)
-                {
-                    arg_2.ToManaged(out Exception? fail);
-                    if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
-                    tcs.SetException(fail);
-                }
-                else
-                {
-                    marshaler(ref arg_3, out T result);
-                    tcs.SetResult(result);
-                }
-                // eventual exception is handled by caller
-            };
-            holder.Callback = callback;
-            value = tcs.Task;
-        }
-
-        // TODO unregister and collect pending PromiseHolder also when no C# is awaiting ?
-        private static PromiseHolder CreateJSOwnedHolder(nint gcvHandle)
-        {
-#if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
+                    ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
+                    ref JSMarshalerArgument arg_3 = ref arguments_buffer[4]; // set by caller when this is SetResult call
+                    if (arg_2.slot.Type != MarshalerType.None)
+                    {
+                        arg_2.ToManaged(out Exception? fail);
+                        if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
+                        tcs.SetException(fail);
+                    }
+                    else
+                    {
+                        marshaler(ref arg_3, out T result);
+                        tcs.SetResult(result);
+                    }
+                    // eventual exception is handled by caller
+                };
+                holder.Callback = callback;
+                value = tcs.Task;
+#if FEATURE_WASM_MANAGED_THREADS
+                // if the other thread created it, signal that it's ready
+                holder.CallbackReady?.Set();
 #endif
-            var holder = new PromiseHolder(gcvHandle);
-            ThreadJsOwnedHolders.Add(gcvHandle, holder);
-            return holder;
+            }
         }
 
 
@@ -160,33 +171,45 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
             }
-            slot.Type = MarshalerType.Task;
 
-            slot.JSHandle = AllocJSVHandle();
-            var taskHolder = new JSObject(slot.JSHandle);
+            var ctx = ToJSContext;
 
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this path should only happen when the Task is passed as argument of JSImport
+                slot.JSHandle = ctx.AllocJSVHandle();
+                slot.Type = MarshalerType.Task;
+            }
+            else
+            {
+                // this path should hit for return values from JSExport/call_entry_point
+                // promise and handle is pre-allocated in slot.JSHandle
+            }
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+
+#if FEATURE_WASM_MANAGED_THREADS
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task task, object? th)
             {
+                var taskHolderArg = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(taskHolderArg, task.Exception);
                 }
                 else
                 {
                     if (GetTaskResultDynamic(task, out object? result))
                     {
-                        ResolvePromise(taskHolder, result, MarshalResult);
+                        ResolvePromise(taskHolderArg, result, MarshalResult);
                     }
                     else
                     {
-                        ResolveVoidPromise(taskHolder);
+                        ResolveVoidPromise(taskHolderArg);
                     }
                 }
             }
@@ -211,7 +234,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 slot.Type = MarshalerType.None;
                 return;
             }
-
             if (task.IsCompleted)
             {
                 if (task.Exception != null)
@@ -229,26 +251,39 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
             }
-            slot.Type = MarshalerType.Task;
 
-            slot.JSHandle = AllocJSVHandle();
-            var taskHolder = new JSObject(slot.JSHandle);
+            var ctx = ToJSContext;
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this path should only happen when the Task is passed as argument of JSImport
+                slot.JSHandle = ctx.AllocJSVHandle();
+                slot.Type = MarshalerType.Task;
+            }
+            else
+            {
+                // this path should hit for return values from JSExport/call_entry_point
+                // promise and handle is pre-allocated in slot.JSHandle
+            }
+
+            var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+
+#if FEATURE_WASM_MANAGED_THREADS
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, taskHolder, TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task task, object? th)
             {
+                JSObject taskHolderArg = (JSObject)th!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(taskHolderArg, task.Exception);
                 }
                 else
                 {
-                    ResolveVoidPromise(taskHolder);
+                    ResolveVoidPromise(taskHolderArg);
                 }
             }
         }
@@ -289,29 +324,44 @@ namespace System.Runtime.InteropServices.JavaScript
                     return;
                 }
             }
-            slot.Type = MarshalerType.Task;
-            slot.JSHandle = AllocJSVHandle();
-            var taskHolder = new JSObject(slot.JSHandle);
 
-#if FEATURE_WASM_THREADS
-            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+            var ctx = ToJSContext;
+            if (slot.Type != MarshalerType.TaskPreCreated)
+            {
+                // this path should only happen when the Task is passed as argument of JSImport
+                slot.JSHandle = ctx.AllocJSVHandle();
+                slot.Type = MarshalerType.Task;
+            }
+            else
+            {
+                // this path should hit for return values from JSExport/call_entry_point
+                // promise and handle is pre-allocated in slot.JSHandle
+            }
+
+            var taskHolder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+
+#if FEATURE_WASM_MANAGED_THREADS
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.FromCurrentSynchronizationContext());
 #else
-            task.GetAwaiter().OnCompleted(Complete);
+            task.ContinueWith(Complete, new HolderAndMarshaler<T>(taskHolder, marshaler), TaskScheduler.Current);
 #endif
 
-            void Complete()
+            static void Complete(Task<T> task, object? thm)
             {
+                var hm = (HolderAndMarshaler<T>)thm!;
                 if (task.Exception != null)
                 {
-                    RejectPromise(taskHolder, task.Exception);
+                    RejectPromise(hm.TaskHolder, task.Exception);
                 }
                 else
                 {
                     T result = task.Result;
-                    ResolvePromise(taskHolder, result, marshaler);
+                    ResolvePromise(hm.TaskHolder, result, hm.Marshaler);
                 }
             }
         }
+
+        private sealed record HolderAndMarshaler<T>(JSObject TaskHolder, ArgumentToJSCallback<T> Marshaler);
 
         private static void RejectPromise(JSObject holder, Exception ex)
         {
@@ -323,8 +373,16 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
+#if FEATURE_WASM_MANAGED_THREADS
+            exc.InitializeWithContext(holder.ProxyContext);
+            res.InitializeWithContext(holder.ProxyContext);
+            arg_value.InitializeWithContext(holder.ProxyContext);
+            arg_handle.InitializeWithContext(holder.ProxyContext);
+            JSProxyContext.JSImportNoCapture();
+#else
             exc.Initialize();
             res.Initialize();
+#endif
 
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskRejected;
@@ -333,9 +391,16 @@ namespace System.Runtime.InteropServices.JavaScript
             // should fail it with exception
             arg_value.ToJS(ex);
 
-            JavaScriptImports.ResolveOrRejectPromise(args);
+            // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
+            holder.DisposeImpl(skipJsCleanup: true);
 
-            holder.DisposeLocal();
+#if !FEATURE_WASM_MANAGED_THREADS
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(args);
+#else
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
+#endif
         }
 
         private static void ResolveVoidPromise(JSObject holder)
@@ -348,8 +413,16 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
+#if FEATURE_WASM_MANAGED_THREADS
+            exc.InitializeWithContext(holder.ProxyContext);
+            res.InitializeWithContext(holder.ProxyContext);
+            arg_value.InitializeWithContext(holder.ProxyContext);
+            arg_handle.InitializeWithContext(holder.ProxyContext);
+            JSProxyContext.JSImportNoCapture();
+#else
             exc.Initialize();
             res.Initialize();
+#endif
 
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskResolved;
@@ -357,9 +430,16 @@ namespace System.Runtime.InteropServices.JavaScript
 
             arg_value.slot.Type = MarshalerType.Void;
 
-            JavaScriptImports.ResolveOrRejectPromise(args);
+            // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
+            holder.DisposeImpl(skipJsCleanup: true);
 
-            holder.DisposeLocal();
+#if !FEATURE_WASM_MANAGED_THREADS
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(args);
+#else
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
+#endif
         }
 
         private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
@@ -372,8 +452,16 @@ namespace System.Runtime.InteropServices.JavaScript
             ref JSMarshalerArgument arg_handle = ref args[2];
             ref JSMarshalerArgument arg_value = ref args[3];
 
+#if FEATURE_WASM_MANAGED_THREADS
+            exc.InitializeWithContext(holder.ProxyContext);
+            res.InitializeWithContext(holder.ProxyContext);
+            arg_value.InitializeWithContext(holder.ProxyContext);
+            arg_handle.InitializeWithContext(holder.ProxyContext);
+            JSProxyContext.JSImportNoCapture();
+#else
             exc.Initialize();
             res.Initialize();
+#endif
 
             // should update existing promise
             arg_handle.slot.Type = MarshalerType.TaskResolved;
@@ -382,9 +470,16 @@ namespace System.Runtime.InteropServices.JavaScript
             // and resolve it with value
             marshaler(ref arg_value, value);
 
-            JavaScriptImports.ResolveOrRejectPromise(args);
+            // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
+            holder.DisposeImpl(skipJsCleanup: true);
 
-            holder.DisposeLocal();
+#if !FEATURE_WASM_MANAGED_THREADS
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(args);
+#else
+            // order of operations with DisposeImpl matters
+            JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
+#endif
         }
     }
 }

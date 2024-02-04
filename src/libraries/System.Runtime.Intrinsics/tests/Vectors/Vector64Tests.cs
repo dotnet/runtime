@@ -10,6 +10,32 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 {
     public sealed class Vector64Tests
     {
+        /// <summary>Verifies that two <see cref="Vector64{Single}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector64<float> expected, Vector64<float> actual, Vector64<float> variance)
+        {
+            for (int i = 0; i < Vector64<float>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
+        /// <summary>Verifies that two <see cref="Vector64{Double}" /> values are equal, within the <paramref name="variance" />.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        internal static void AssertEqual(Vector64<double> expected, Vector64<double> actual, Vector64<double> variance)
+        {
+            for (int i = 0; i < Vector64<double>.Count; i++)
+            {
+                AssertExtensions.Equal(expected.GetElement(i), actual.GetElement(i), variance.GetElement(i));
+            }
+        }
+
         [Fact]
         public unsafe void Vector64IsHardwareAcceleratedTest()
         {
@@ -3938,6 +3964,33 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector64SingleCopyToTest()
+        {
+            float[] array = new float[2];
+            Vector64.Create(2.0f).CopyTo(array);
+            Assert.True(array.AsSpan().SequenceEqual([2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector64SingleCopyToOffsetTest()
+        {
+            float[] array = new float[3];
+            Vector64.Create(2.0f).CopyTo(array, 1);
+            Assert.True(array.AsSpan().SequenceEqual([0.0f, 2.0f, 2.0f]));
+        }
+
+        [Fact]
+        public void Vector64SByteAbs_MinValue()
+        {
+            Vector64<sbyte> vector = Vector64.Create(sbyte.MinValue);
+            Vector64<sbyte> abs = Vector64.Abs(vector);
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
+            {
+                Assert.Equal(sbyte.MinValue, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void IsSupportedByte() => TestIsSupported<byte>();
 
         [Fact]
@@ -4049,6 +4102,54 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             MethodInfo methodInfo = typeof(Vector64<T>).GetProperty("One", BindingFlags.Public | BindingFlags.Static).GetMethod;
             Assert.Equal((Vector64<T>)methodInfo.Invoke(null, null), Vector64.Create(T.One));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.ExpDouble), MemberType = typeof(VectorTestMemberData))]
+        public void ExpDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector64<double> actualResult = Vector64.Exp(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.ExpSingle), MemberType = typeof(VectorTestMemberData))]
+        public void ExpSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector64<float> actualResult = Vector64.Exp(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.LogDouble), MemberType = typeof(VectorTestMemberData))]
+        public void LogDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector64<double> actualResult = Vector64.Log(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.LogSingle), MemberType = typeof(VectorTestMemberData))]
+        public void LogSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector64<float> actualResult = Vector64.Log(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Double), MemberType = typeof(VectorTestMemberData))]
+        public void Log2DoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector64<double> actualResult = Vector64.Log2(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorTestMemberData.Log2Single), MemberType = typeof(VectorTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            Vector64<float> actualResult = Vector64.Log2(Vector64.Create(value));
+            AssertEqual(Vector64.Create(expectedResult), actualResult, Vector64.Create(variance));
         }
     }
 }

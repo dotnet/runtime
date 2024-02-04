@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+namespace NativeFormatGen;
+
 /// <summary>
 /// Defines the set of flags that may be applied to a schema record definition.
 /// </summary>
@@ -65,18 +67,18 @@ public class MemberDef
         Comment = comment;
     }
 
-    readonly public string Name;
-    readonly public object TypeName;
-    readonly public MemberDefFlags Flags;
-    readonly public string Value;
-    readonly public string Comment;
+    public readonly string Name;
+    public readonly object TypeName;
+    public readonly MemberDefFlags Flags;
+    public readonly string Value;
+    public readonly string Comment;
 
     public string GetMemberType(MemberTypeKind kind = MemberTypeKind.Accessor)
     {
         string typeName;
         if ((Flags & MemberDefFlags.RecordRef) != 0)
         {
-            if (TypeName is String[])
+            if (TypeName is string[])
             {
                 typeName = (kind == MemberTypeKind.WriterField) ? "MetadataRecord" : "Handle";
             }
@@ -107,16 +109,16 @@ public class MemberDef
 
     public string GetMemberFieldName()
     {
-        return "_" + Char.ToLower(Name[0], System.Globalization.CultureInfo.InvariantCulture) + Name.Substring(1);
+        return "_" + char.ToLower(Name[0], System.Globalization.CultureInfo.InvariantCulture) + Name.Substring(1);
     }
 
     public string GetMemberDescription()
     {
-        var typeSet = TypeName as String[];
+        var typeSet = TypeName as string[];
         if (typeSet == null)
             return null;
 
-        return "One of: " + String.Join(", ", typeSet);
+        return "One of: " + string.Join(", ", typeSet);
     }
 }
 
@@ -134,11 +136,11 @@ public class RecordDef
         Members = members;
     }
 
-    readonly public string Name;
-    readonly public string BaseTypeName;
-    readonly public RecordDefFlags Flags;
-    readonly public string Comment;
-    readonly public MemberDef[] Members;
+    public readonly string Name;
+    public readonly string BaseTypeName;
+    public readonly RecordDefFlags Flags;
+    public readonly string Comment;
+    public readonly MemberDef[] Members;
 }
 
 public class EnumType
@@ -149,8 +151,8 @@ public class EnumType
         UnderlyingType = underlyingType;
     }
 
-    readonly public string Name;
-    readonly public string UnderlyingType;
+    public readonly string Name;
+    public readonly string UnderlyingType;
 }
 
 public class PrimitiveType
@@ -162,15 +164,15 @@ public class PrimitiveType
         CustomCompare = customCompare;
     }
 
-    readonly public string Name;
-    readonly public string TypeName;
-    readonly public bool CustomCompare;
+    public readonly string Name;
+    public readonly string TypeName;
+    public readonly bool CustomCompare;
 }
 
 /// <summary>
 /// This class defines the metadata schema that is consumed by all generators.
 /// </summary>
-class SchemaDef
+internal sealed class SchemaDef
 {
     public static readonly EnumType[] EnumTypes = new EnumType[]
     {
@@ -290,8 +292,8 @@ class SchemaDef
 
     private static readonly RecordDef[] ConstantValueRecordSchema =
         (
-            from primitiveType in PrimitiveTypes select
-                new RecordDef(
+            from primitiveType in PrimitiveTypes
+            select new RecordDef(
                     name: "Constant" + primitiveType.TypeName + "Value",
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: primitiveType.Name,
@@ -325,8 +327,8 @@ class SchemaDef
 
     private static readonly RecordDef[] ConstantArrayRecordSchema =
         (
-            from primitiveType in PrimitiveTypes select
-                new RecordDef(
+            from primitiveType in PrimitiveTypes
+            select new RecordDef(
                     name: "Constant" + primitiveType.TypeName + "Array",
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: primitiveType.TypeName,

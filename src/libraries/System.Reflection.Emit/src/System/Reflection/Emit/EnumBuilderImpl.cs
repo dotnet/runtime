@@ -11,12 +11,13 @@ namespace System.Reflection.Emit
         private readonly FieldBuilder _underlyingField;
         internal readonly TypeBuilderImpl _typeBuilder;
 
-        internal EnumBuilderImpl(string name, Type underlyingType, TypeAttributes visibility, ModuleBuilderImpl module, TypeDefinitionHandle typeHandle)
+        internal EnumBuilderImpl(string name, Type underlyingType, TypeAttributes visibility, ModuleBuilderImpl module)
         {
             if ((visibility & ~TypeAttributes.VisibilityMask) != 0)
                 throw new ArgumentException(SR.Argument_ShouldOnlySetVisibilityFlags, nameof(name));
 
-            _typeBuilder = new TypeBuilderImpl(name, visibility | TypeAttributes.Sealed, typeof(Enum), module, typeHandle, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, null);
+            _typeBuilder = new TypeBuilderImpl(name, visibility | TypeAttributes.Sealed, typeof(Enum), module,
+                interfaces: null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize, enclosingType: null);
 
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set.
             _underlyingField = _typeBuilder.DefineField("value__", underlyingType, FieldAttributes.Public | FieldAttributes.SpecialName | FieldAttributes.RTSpecialName);

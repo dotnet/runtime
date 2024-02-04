@@ -550,7 +550,7 @@ namespace System.IO
 
                 case SeekOrigin.End:
                     newPosition = (long)_length + offset;
-                    if (newPosition  < 0)
+                    if (newPosition < 0)
                         throw new IOException(SR.IO_SeekBeforeBegin);
                     break;
 

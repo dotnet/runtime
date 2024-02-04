@@ -66,6 +66,18 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArrayTypeMismatchException_CantAssignType()
+        {
+            throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidCastException_DownCastArrayElement()
+        {
+            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
         {
             throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
@@ -468,6 +480,12 @@ namespace System
         internal static void ThrowOutOfMemoryException()
         {
             throw new OutOfMemoryException();
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowDivideByZeroException()
+        {
+            throw new DivideByZeroException();
         }
 
         [DoesNotReturn]
@@ -970,8 +988,6 @@ namespace System
                     return "other";
                 case ExceptionArgument.newSize:
                     return "newSize";
-                case ExceptionArgument.lowerBounds:
-                    return "lowerBounds";
                 case ExceptionArgument.lengths:
                     return "lengths";
                 case ExceptionArgument.len:
@@ -986,12 +1002,6 @@ namespace System
                     return "index2";
                 case ExceptionArgument.index3:
                     return "index3";
-                case ExceptionArgument.length1:
-                    return "length1";
-                case ExceptionArgument.length2:
-                    return "length2";
-                case ExceptionArgument.length3:
-                    return "length3";
                 case ExceptionArgument.endIndex:
                     return "endIndex";
                 case ExceptionArgument.elementType:
@@ -1024,6 +1034,8 @@ namespace System
                     return "overlapped";
                 case ExceptionArgument.minimumBytes:
                     return "minimumBytes";
+                case ExceptionArgument.arrayType:
+                    return "arrayType";
                 case ExceptionArgument.divisor:
                     return "divisor";
                 case ExceptionArgument.factor:
@@ -1206,6 +1218,8 @@ namespace System
                     return SR.Format_UnclosedFormatItem;
                 case ExceptionResource.Format_ExpectedAsciiDigit:
                     return SR.Format_ExpectedAsciiDigit;
+                case ExceptionResource.Argument_HasToBeArrayClass:
+                    return SR.Argument_HasToBeArrayClass;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1290,7 +1304,6 @@ namespace System
         handle,
         other,
         newSize,
-        lowerBounds,
         lengths,
         len,
         keys,
@@ -1298,9 +1311,6 @@ namespace System
         index1,
         index2,
         index3,
-        length1,
-        length2,
-        length3,
         endIndex,
         elementType,
         arrayIndex,
@@ -1317,6 +1327,7 @@ namespace System
         anyOf,
         overlapped,
         minimumBytes,
+        arrayType,
         divisor,
         factor,
     }
@@ -1404,5 +1415,6 @@ namespace System
         Format_UnexpectedClosingBrace,
         Format_UnclosedFormatItem,
         Format_ExpectedAsciiDigit,
+        Argument_HasToBeArrayClass,
     }
 }

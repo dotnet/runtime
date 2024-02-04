@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -17,26 +17,31 @@
     <Compile Include="System\Numerics\BigIntegerCalculator.SquMul.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.Utils.cs" />
     <Compile Include="System\Numerics\BigInteger.cs" />
-    <Compile Include="System\Numerics\BigNumber.cs" />
+    <Compile Include="System\Number.BigInteger.cs" />
+    <Compile Include="System\Number.Polyfill.cs" />
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
     <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
+    <Compile Include="System\Globalization\FormatProvider.Number.cs" />
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs"
-             Link="System\Globalization\FormatProvider.Number.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="CoreLib\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Number.NumberBuffer.cs"
+             Link="Common\System\Number.NumberBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Number.Parsing.Common.cs"
+             Link="Common\System\Number.Parsing.Common.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Intrinsics" />
   </ItemGroup>
 
 </Project>

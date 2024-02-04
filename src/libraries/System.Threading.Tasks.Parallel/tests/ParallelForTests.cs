@@ -289,7 +289,6 @@ namespace System.Threading.Tasks.Tests
         [InlineData(1024)]
         [InlineData(1024 * 1024)]
         [InlineData(1024 * 1024 * 16)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void RunSimpleParallelForIncrementTest(int increms)
         {
             // Just increments a shared counter in a loop.
@@ -320,7 +319,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
@@ -454,7 +452,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -484,7 +481,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -515,7 +511,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -546,7 +541,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -578,7 +572,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(1024)]
@@ -718,7 +711,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestParallelForPaths()
         {
             int loopsize = 1000;
@@ -880,7 +872,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestParallelForPaths_Exceptions()
         {
             int loopsize = 1000;
@@ -894,7 +885,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91582", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestParallelScheduler()
         {
             ParallelOptions parallelOptions = new ParallelOptions();
@@ -1002,7 +992,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91541", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void TestInvokeDOPAndCancel()
         {
             ParallelOptions parallelOptions = null;
@@ -1120,7 +1109,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void RunParallelLoopCancellationTests()
         {
             int counter = 0; // Counts the actual number of iterations
@@ -1255,7 +1243,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void CancelForIntTest()
         {
             for (int i = 0; i < 100; ++i)
@@ -1290,7 +1277,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void CancelForLongTest()
         {
             for (int i = 0; i < 100; ++i)
@@ -1332,7 +1318,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91538", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(CancelForEachTest_MemberData))]
         public static void CancelForEachTest(IEnumerable<int> enumerable)
         {

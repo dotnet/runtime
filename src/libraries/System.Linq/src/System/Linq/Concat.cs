@@ -20,6 +20,16 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
+            if (IsEmptyArray(first))
+            {
+                return second;
+            }
+
+            if (IsEmptyArray(second))
+            {
+                return first;
+            }
+
             return first is ConcatIterator<TSource> firstConcat
                 ? firstConcat.Concat(second)
                 : new Concat2Iterator<TSource>(first, second);

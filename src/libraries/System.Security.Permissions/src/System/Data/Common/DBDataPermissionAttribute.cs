@@ -8,8 +8,8 @@ namespace System.Data.Common
 #if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
-    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor| AttributeTargets.Method,
-        AllowMultiple =true, Inherited =false)]
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method,
+        AllowMultiple = true, Inherited = false)]
     public abstract class DBDataPermissionAttribute : CodeAccessSecurityAttribute
     {
         protected DBDataPermissionAttribute(SecurityAction action) : base(action) { }

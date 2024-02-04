@@ -102,7 +102,7 @@ namespace System.Diagnostics.Metrics
                 return default;
             }
 
-            object? state =  null;
+            object? state = null;
             lock (Instrument.SyncObject)
             {
                 if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, object.ReferenceEquals) == default)
@@ -110,7 +110,7 @@ namespace System.Diagnostics.Metrics
                     return default;
                 }
 
-                state =  instrument.DisableMeasurements(this);
+                state = instrument.DisableMeasurements(this);
             }
 
             MeasurementsCompleted?.Invoke(instrument, state);

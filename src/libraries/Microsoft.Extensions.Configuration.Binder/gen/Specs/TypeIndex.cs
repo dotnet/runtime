@@ -68,33 +68,33 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public TypeSpec GetTypeSpec(TypeRef typeRef) => _index[typeRef];
 
-        public string GetInstantiationTypeDisplayString(CollectionWithCtorInitSpec type)
+        public static string GetInstantiationTypeDisplayString(CollectionWithCtorInitSpec type)
         {
             CollectionInstantiationConcreteType concreteType = type.InstantiationConcreteType;
             return concreteType is CollectionInstantiationConcreteType.Self
-                ? type.DisplayString
+                ? type.TypeRef.FullyQualifiedName
                 : GetGenericTypeDisplayString(type, concreteType);
         }
 
-        public string GetPopulationCastTypeDisplayString(CollectionWithCtorInitSpec type)
+        public static string GetPopulationCastTypeDisplayString(CollectionWithCtorInitSpec type)
         {
             CollectionPopulationCastType castType = type.PopulationCastType;
             Debug.Assert(castType is not CollectionPopulationCastType.NotApplicable);
             return GetGenericTypeDisplayString(type, castType);
         }
 
-        public string GetGenericTypeDisplayString(CollectionWithCtorInitSpec type, Enum genericProxyTypeName)
+        public static string GetGenericTypeDisplayString(CollectionWithCtorInitSpec type, Enum genericProxyTypeName)
         {
             string proxyTypeNameStr = genericProxyTypeName.ToString();
-            string elementTypeDisplayString = GetTypeSpec(type.ElementTypeRef).DisplayString;
+            string elementTypeFQN = type.ElementTypeRef.FullyQualifiedName;
 
             if (type is EnumerableSpec)
             {
-                return $"{proxyTypeNameStr}<{elementTypeDisplayString}>";
+                return $"{proxyTypeNameStr}<{elementTypeFQN}>";
             }
 
-            string keyTypeDisplayString = GetTypeSpec(((DictionarySpec)type).KeyTypeRef).DisplayString;
-            return $"{proxyTypeNameStr}<{keyTypeDisplayString}, {elementTypeDisplayString}>";
+            string keyTypeDisplayString = ((DictionarySpec)type).KeyTypeRef.FullyQualifiedName;
+            return $"{proxyTypeNameStr}<{keyTypeDisplayString}, {elementTypeFQN}>";
         }
 
         public bool KeyIsSupported(DictionarySpec typeSpec) =>
@@ -109,14 +109,31 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             Debug.Assert(type.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
 
-            string displayString = type.DisplayString;
+            if (type.StringParsableTypeKind is StringParsableTypeKind.ByteArray)
+            {
+                return "ParseByteArray";
+            }
 
-            string parseMethod = type.StringParsableTypeKind is StringParsableTypeKind.ByteArray
-                ? "ParseByteArray"
-                // MinimalDisplayString.Length is certainly > 2.
-                : $"Parse{(char.ToUpper(displayString[0]) + displayString.Substring(1)).Replace(".", "")}";
+            string displayString = type.TypeRef.FullyQualifiedName;
 
-            return parseMethod;
+            const string GlobalPrefix = "global::";
+            if (displayString.StartsWith(GlobalPrefix))
+            {
+                displayString = displayString.Substring(GlobalPrefix.Length);
+            }
+
+            Debug.Assert(displayString.Length > 0);
+            if (char.IsLower(displayString[0]))
+            {
+                displayString = char.ToUpperInvariant(displayString[0]) + displayString.Substring(1);
+            }
+
+            if (displayString.Contains('.'))
+            {
+                displayString = displayString.Replace(".", "");
+            }
+
+            return "Parse" + displayString;
         }
     }
 }

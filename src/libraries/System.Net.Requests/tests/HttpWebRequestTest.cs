@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Net.Http.Functional.Tests;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -2074,6 +2075,96 @@ namespace System.Net.Tests
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
             });
+        }
+
+        [Fact]
+        public async Task SendHttpPostRequest_WithContinueTimeoutAndBody_BodyIsDelayed()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    request.ServicePoint.Expect100Continue = true;
+                    request.ContinueTimeout = 30000;
+                    Stream requestStream = await request.GetRequestStreamAsync();
+                    requestStream.Write("aaaa\r\n\r\n"u8);
+                    await request.GetResponseAsync();
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(async (client) => 
+                    {
+                        await client.ReadRequestHeaderAsync();
+                        // This should time out, because we're expecting the body itself but we'll get it after 30 sec.
+                        await Assert.ThrowsAsync<TimeoutException>(() => client.ReadLineAsync().WaitAsync(TimeSpan.FromMilliseconds(100)));
+                        await client.SendResponseAsync();
+                    });
+                }
+            );
+        }
+
+        [Theory]
+        [InlineData(true, 1)]
+        [InlineData(false, 30000)]
+        public async Task SendHttpPostRequest_WithContinueTimeoutAndBody_Success(bool expect100Continue, int continueTimeout)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    request.ServicePoint.Expect100Continue = expect100Continue;
+                    request.ContinueTimeout = continueTimeout;
+                    Stream requestStream = await request.GetRequestStreamAsync();
+                    requestStream.Write("aaaa\r\n\r\n"u8);
+                    await request.GetResponseAsync();
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(async (client) => 
+                    {
+                        await client.ReadRequestHeaderAsync();
+                        // This should not time out, because we're expecting the body itself and we should get it after 1 sec.
+                        string data = await client.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
+                        Assert.StartsWith("aaaa", data);
+                        await client.SendResponseAsync();
+                    });
+                });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendHttpPostRequest_When100ContinueSet_ReceivedByServer(bool expect100Continue)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    request.ServicePoint.Expect100Continue = expect100Continue;
+                    await request.GetResponseAsync();
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(
+                        async (client) =>
+                        {
+                            List<string> headers = await client.ReadRequestHeaderAsync();
+                            if (expect100Continue)
+                            {
+                                Assert.Contains("Expect: 100-continue", headers);
+                            }
+                            else
+                            {
+                                Assert.DoesNotContain("Expect: 100-continue", headers);
+                            }
+                            await client.SendResponseAsync();
+                        }
+                    );
+                }
+            );
         }
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)

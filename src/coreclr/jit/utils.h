@@ -241,6 +241,66 @@ private:
     Range*   m_ranges;    // ranges of functions to include
 };
 
+// ConfigInArray is an integer-valued array
+//
+class ConfigIntArray
+{
+public:
+    // Ensure the string has been parsed.
+    void EnsureInit(const WCHAR* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void Dump();
+    int* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void Init(const WCHAR* str);
+    int*     m_values;
+    unsigned m_length;
+};
+
+// ConfigDoubleArray is an double-valued array
+//
+class ConfigDoubleArray
+{
+public:
+    // Ensure the string has been parsed.
+    void EnsureInit(const WCHAR* str)
+    {
+        if (m_values == nullptr)
+        {
+            Init(str);
+        }
+    }
+
+    void    Dump();
+    double* GetData() const
+    {
+        return m_values;
+    }
+    unsigned GetLength() const
+    {
+        return m_length;
+    }
+
+private:
+    void Init(const WCHAR* str);
+    double*  m_values;
+    unsigned m_length;
+};
+
 #endif // defined(DEBUG)
 
 class Compiler;
@@ -321,7 +381,7 @@ int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWri
                     ...);
 
 #ifdef DEBUG
-void hexDump(FILE* dmpf, const char* name, BYTE* addr, size_t size);
+void hexDump(FILE* dmpf, BYTE* addr, size_t size);
 #endif // DEBUG
 
 /******************************************************************************

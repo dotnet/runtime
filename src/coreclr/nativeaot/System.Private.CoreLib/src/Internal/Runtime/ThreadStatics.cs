@@ -5,6 +5,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
 using Internal.Runtime.CompilerHelpers;
 
 using Debug = System.Diagnostics.Debug;
@@ -136,7 +137,7 @@ namespace Internal.Runtime
                 gcDesc = Internal.Runtime.Augments.RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticGCDescForDynamicType(typeManager, typeTlsIndex);
             }
 
-            return RuntimeImports.RhNewObject(new EETypePtr(gcDesc));
+            return RuntimeImports.RhNewObject((MethodTable*)gcDesc);
         }
     }
 }

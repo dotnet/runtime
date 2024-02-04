@@ -19,7 +19,7 @@
 
 //---------------------------------------------------------------------------------------
 //
-// Callback of type promote_func called by GC while scanning roots (in GCProfileWalkHeap,
+// Callback of type ScanFunc called by GC while scanning roots (in GCProfileWalkHeap,
 // called after the collection).  Wrapper around EEToProfInterfaceImpl::RootReference2,
 // which does the real work.
 //

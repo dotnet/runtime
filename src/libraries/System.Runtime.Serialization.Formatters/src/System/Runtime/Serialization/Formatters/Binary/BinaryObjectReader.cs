@@ -731,7 +731,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     break;
             }
 
-            Debug.Assert(objectPr!= null && objectPr._objectInfo != null && pr._name != null);
+            Debug.Assert(objectPr != null && objectPr._objectInfo != null && pr._name != null);
             //if ((pr.PRdtType == null) && !objectPr.PRobjectInfo.isSi)
             if (pr._dtType == null && objectPr._objectInfo._isTyped)
             {

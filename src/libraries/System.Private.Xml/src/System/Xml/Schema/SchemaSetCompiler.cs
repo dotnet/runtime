@@ -4,10 +4,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
 
 namespace System.Xml.Schema
 {
@@ -2537,7 +2537,7 @@ namespace System.Xml.Schema
                         decl.Presence = SchemaDeclBase.Use.Fixed;
                     }
 
-                    decl.DefaultValueRaw = decl.DefaultValueExpanded = xa.FixedValue;
+                    decl.DefaultValueRaw = decl.DefaultValueExpanded = xa.FixedValue!;
                 }
 
                 if (decl.Datatype != null)

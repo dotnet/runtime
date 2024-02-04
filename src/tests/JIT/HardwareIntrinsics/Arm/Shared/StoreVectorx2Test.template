@@ -22,7 +22,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new StoreVector{Op2VectorType}x2Test__{Op1BaseType}();
+            var test = new {TestName}Test();
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
@@ -62,7 +62,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class StoreVector{Op2VectorType}x2Test__{Op1BaseType}
+    public sealed unsafe class {TestName}Test
     {
         private struct DataTable
         {
@@ -133,7 +133,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(StoreVector{Op2VectorType}x2Test__{Op1BaseType} testClass)
+            public void RunStructFldScenario({TestName}Test testClass)
             {
                 {Isa}.{Method}(({Op1BaseType}*)testClass._dataTable.outArrayPtr, (_fld1, _fld2));
 
@@ -154,7 +154,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public StoreVector{Op2VectorType}x2Test__{Op1BaseType}()
+        public {TestName}Test()
         {
             Succeeded = true;
             for (var i = 0; i < OpElementCount; i++) { _data1[i] = {NextValueOp2}; _data2[i] = {NextValueOp2}; }
@@ -299,7 +299,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<Int32>({Op2VectorType}<{Op2BaseType}>): {Method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<void>({Op2BaseType} *, {Op2VectorType}<{Op2BaseType}>, {Op2VectorType}<{Op2BaseType}>): {Method} failed:");
                 TestLibrary.TestFramework.LogInformation($" input1: ({string.Join(", ", input1)})");
                 TestLibrary.TestFramework.LogInformation($" input2: ({string.Join(", ", input2)})");
                 TestLibrary.TestFramework.LogInformation($" result: ({string.Join(", ", result)})");

@@ -3988,14 +3988,14 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_LOONGARCH64_F31,
 
         REGISTER_RISCV64_PC = 0,
-        REGISTER_RISCV64_RA,
         REGISTER_RISCV64_SP,
+        REGISTER_RISCV64_FP,
+        REGISTER_RISCV64_RA,
         REGISTER_RISCV64_GP,
         REGISTER_RISCV64_TP,
         REGISTER_RISCV64_T0,
         REGISTER_RISCV64_T1,
         REGISTER_RISCV64_T2,
-        REGISTER_RISCV64_FP,
         REGISTER_RISCV64_S1,
         REGISTER_RISCV64_A0,
         REGISTER_RISCV64_A1,
@@ -4050,8 +4050,7 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_RISCV64_F28,
         REGISTER_RISCV64_F29,
         REGISTER_RISCV64_F30,
-        REGISTER_RISCV64_F31,
-        REGISTER_RISCV64_X0, // TODO-RISCV64-CQ: Add X0 for an use in debug. Need to check.
+        REGISTER_RISCV64_F31
 
         // other architectures here
 

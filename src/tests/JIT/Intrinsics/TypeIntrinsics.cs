@@ -7,12 +7,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public partial class Program
 {
     private static int _errors = 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         IsTrue (typeof(byte).IsValueType);
         IsTrue (typeof(int).IsValueType);
@@ -130,7 +132,58 @@ public partial class Program
 
         GetEnumUnderlyingType.TestGetEnumUnderlyingType();
 
+        IsPrimitiveTests();
+
         return 100 + _errors;
+    }
+
+    private static void IsPrimitiveTests()
+    {
+        IsTrue(typeof(bool).IsPrimitive);
+        IsTrue(typeof(char).IsPrimitive);
+        IsTrue(typeof(sbyte).IsPrimitive);
+        IsTrue(typeof(byte).IsPrimitive);
+        IsTrue(typeof(short).IsPrimitive);
+        IsTrue(typeof(ushort).IsPrimitive);
+        IsTrue(typeof(int).IsPrimitive);
+        IsTrue(typeof(uint).IsPrimitive);
+        IsTrue(typeof(long).IsPrimitive);
+        IsTrue(typeof(ulong).IsPrimitive);
+        IsTrue(typeof(float).IsPrimitive);
+        IsTrue(typeof(double).IsPrimitive);
+        IsTrue(typeof(nint).IsPrimitive);
+        IsTrue(typeof(nuint).IsPrimitive);
+        IsTrue(typeof(IntPtr).IsPrimitive);
+        IsTrue(typeof(UIntPtr).IsPrimitive);
+
+        IsFalse(typeof(Enum).IsPrimitive);
+        IsFalse(typeof(ValueType).IsPrimitive);
+        IsFalse(typeof(SimpleEnum).IsPrimitive);
+        IsFalse(typeof(IntPtrEnum).IsPrimitive);
+        IsFalse(typeof(FloatEnum).IsPrimitive);
+        IsFalse(typeof(SimpleEnum?).IsPrimitive);
+        IsFalse(typeof(int?).IsPrimitive);
+        IsFalse(typeof(IntPtr?).IsPrimitive);
+        IsFalse(typeof(decimal).IsPrimitive);
+        IsFalse(typeof(TimeSpan).IsPrimitive);
+        IsFalse(typeof(DateTime).IsPrimitive);
+        IsFalse(typeof(DateTimeOffset).IsPrimitive);
+        IsFalse(typeof(Guid).IsPrimitive);
+        IsFalse(typeof(Half).IsPrimitive);
+        IsFalse(typeof(DateOnly).IsPrimitive);
+        IsFalse(typeof(TimeOnly).IsPrimitive);
+        IsFalse(typeof(Int128).IsPrimitive);
+        IsFalse(typeof(UInt128).IsPrimitive);
+        IsFalse(typeof(string).IsPrimitive);
+        IsFalse(typeof(object).IsPrimitive);
+        IsFalse(typeof(RuntimeArgumentHandle).IsPrimitive);
+        IsFalse(typeof(int[]).IsPrimitive);
+        IsFalse(typeof(int[,]).IsPrimitive);
+        IsFalse(typeof(int*).IsPrimitive);
+        IsFalse(typeof(void*).IsPrimitive);
+        IsFalse(typeof(delegate*<int>).IsPrimitive);
+        IsFalse(typeof(Nullable<>).IsPrimitive);
+        IsFalse(typeof(Dictionary<,>).IsPrimitive);
     }
 
     private static int _varInt = 42;
@@ -166,6 +219,7 @@ public partial class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static dynamic CreateDynamic2() => new { Name = "Test" };
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (!expression)
@@ -175,6 +229,7 @@ public partial class Program
         }
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static void IsFalse(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (expression)

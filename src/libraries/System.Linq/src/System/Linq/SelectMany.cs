@@ -20,6 +20,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             return new SelectManySingleSelectorIterator<TSource, TResult>(source, selector);
         }
 
@@ -33,6 +38,11 @@ namespace System.Linq
             if (selector == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return SelectManyIterator(source, selector);
@@ -72,6 +82,11 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return [];
+            }
+
             return SelectManyIterator(source, collectionSelector, resultSelector);
         }
 
@@ -107,6 +122,11 @@ namespace System.Linq
             if (resultSelector == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.resultSelector);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return SelectManyIterator(source, collectionSelector, resultSelector);

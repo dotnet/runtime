@@ -20,7 +20,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-            value = JSHostImplementation.CreateCSOwnedProxy(slot.JSHandle);
+            var ctx = ToManagedContext;
+            value = ctx.CreateCSOwnedProxy(slot.JSHandle);
         }
 
         /// <summary>
@@ -34,16 +35,27 @@ namespace System.Runtime.InteropServices.JavaScript
             if (value == null)
             {
                 slot.Type = MarshalerType.None;
+                // Note: when null JSObject is passed as argument, it can't be used to capture the target thread in JSProxyContext.CapturedInstance
+                // in case there is no other argument to capture it from, the call will be dispatched according to JSProxyContext.Default
             }
             else
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(value);
+                value.AssertNotDisposed();
+#if FEATURE_WASM_MANAGED_THREADS
+                var ctx = value.ProxyContext;
+
+                if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
+                {
+                    JSProxyContext.CaptureContextFromParameter(ctx);
+                    slot.ContextHandle = ctx.ContextHandle;
+                }
+                else if (slot.ContextHandle != ctx.ContextHandle)
+                {
+                    Environment.FailFast($"ContextHandle mismatch, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+                }
 #endif
-                ObjectDisposedException.ThrowIf(value.IsDisposed, value);
                 slot.Type = MarshalerType.JSObject;
                 slot.JSHandle = value.JSHandle;
-                ObjectDisposedException.ThrowIf(slot.JSHandle == IntPtr.Zero, value);
             }
         }
 

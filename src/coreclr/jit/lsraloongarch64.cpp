@@ -188,19 +188,9 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_NOP:
-            // A GT_NOP is either a passthrough (if it is void, or if it has
-            // a child), but must be considered to produce a dummy value if it
-            // has a type but no child.
             srcCount = 0;
-            if (tree->TypeGet() != TYP_VOID && tree->gtGetOp1() == nullptr)
-            {
-                assert(dstCount == 1);
-                BuildDef(tree);
-            }
-            else
-            {
-                assert(dstCount == 0);
-            }
+            assert(tree->TypeIs(TYP_VOID));
+            assert(dstCount == 0);
             break;
 
         case GT_KEEPALIVE:
@@ -655,11 +645,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
-        else if (addr->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
     }
 
 #ifdef FEATURE_SIMD
@@ -1113,6 +1098,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
             }
             break;
+
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
 
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());

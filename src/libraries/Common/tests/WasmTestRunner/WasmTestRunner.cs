@@ -23,6 +23,8 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
         var includedNamespaces = new List<string>();
         var includedClasses = new List<string>();
         var includedMethods = new List<string>();
+        var backgroundExec = false;
+        var untilFailed = false;
 
         for (int i = 1; i < args.Length; i++)
         {
@@ -49,6 +51,12 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
                     includedMethods.Add (args[i + 1]);
                     i++;
                     break;
+                case "-backgroundExec":
+                    backgroundExec = true;
+                    break;
+                case "-untilFailed":
+                    untilFailed = true;
+                    break;
                 default:
                     throw new ArgumentException($"Invalid argument '{option}'.");
             }
@@ -64,6 +72,25 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
             IncludedMethods = includedMethods
         };
 
-        return await runner.Run();
+        if (OperatingSystem.IsBrowser())
+        {
+            await Task.Yield();
+        }
+
+        var res = 0;
+        do
+        {
+            if (backgroundExec)
+            {
+                res = await Task.Run(() => runner.Run());
+            }
+            else
+            {
+                res = await runner.Run();
+            }
+        }
+        while(res == 0 && untilFailed);
+
+        return res;
     }
 }

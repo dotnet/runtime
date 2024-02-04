@@ -12,6 +12,7 @@ on:
 
 jobs:
   update:
+    if: github.repository == 'dotnet/runtime'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,7 +26,7 @@ jobs:
       - name: Run UpdateToLatestVersion
         run: >-
           make -C src/mono/wasm build-tasks &&
-          .dotnet/dotnet build eng/testing/bump-chrome-version.proj -p:Configuration=Release &&
+          PATH=$PWD/.dotnet:$PATH dotnet build eng/testing/bump-chrome-version.proj -p:Configuration=Release &&
           git add eng/testing/ChromeVersions.props &&
           cat eng/testing/bump-chrome-pr.env >> "$GITHUB_ENV"
 

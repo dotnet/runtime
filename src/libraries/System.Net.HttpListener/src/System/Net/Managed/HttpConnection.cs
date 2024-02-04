@@ -55,7 +55,6 @@ namespace System.Net
         private ListenerPrefix? _prefix;
         private HttpRequestStream? _requestStream;
         private HttpResponseStream? _responseStream;
-        private bool _chunked;
         private int _reuses;
         private bool _contextBound;
         private readonly bool _secure;
@@ -128,7 +127,6 @@ namespace System.Net
             _requestStream = null;
             _responseStream = null;
             _prefix = null;
-            _chunked = false;
             _memoryStream = new MemoryStream();
             _position = 0;
             _inputState = InputState.RequestLine;
@@ -209,7 +207,6 @@ namespace System.Net
                 _memoryStream = null;
                 if (chunked)
                 {
-                    _chunked = true;
                     _context.Response.SendChunked = true;
                     _requestStream = new ChunkedInputStream(_context, _stream, buffer, _position, length - _position);
                 }
@@ -516,16 +513,6 @@ namespace System.Net
 
                 if (!force && _context.Request.FlushInput())
                 {
-                    if (_chunked && _context.Response.ForceCloseChunked == false)
-                    {
-                        // Don't close. Keep working.
-                        _reuses++;
-                        Unbind();
-                        Init();
-                        BeginReadRequest();
-                        return;
-                    }
-
                     _reuses++;
                     Unbind();
                     Init();

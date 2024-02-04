@@ -3,13 +3,13 @@
 
 using System;
 using System.Collections;
-using System.Text;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
-using System.Diagnostics;
+using System.Text;
 using System.Xml.Schema;
 using System.Xml.XPath;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Schema
 {

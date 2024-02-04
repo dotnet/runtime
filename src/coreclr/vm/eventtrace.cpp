@@ -1254,10 +1254,6 @@ VOID ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
     }
 
     TypeHandle th = TypeHandle::FromTAddr((TADDR) thAsAddr);
-    if (!th.IsRestored())
-    {
-        return;
-    }
 
     // Check to see if we've already logged this type.  If so, bail immediately.
     // Otherwise, mark that it's getting logged (by adding it to the hash), and fall
@@ -2764,7 +2760,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 #ifndef FEATURE_EH_FUNCLETS
         PTR_ExInfo pExInfo = NULL;
 #else
-        PTR_ExceptionTracker pExInfo = NULL;
+        PTR_ExceptionTrackerBase pExInfo = NULL;
 #endif //!FEATURE_EH_FUNCLETS
         pExInfo = pExState->GetCurrentExceptionTracker();
         _ASSERTE(pExInfo != NULL);

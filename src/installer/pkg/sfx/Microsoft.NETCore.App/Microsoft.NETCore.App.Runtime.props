@@ -23,17 +23,17 @@
   <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
     <RuntimeSpecificFrameworkSuffix>NativeAOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and '$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono' and ('$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' or '$(TargetsMobile)' == 'true')">
     <RuntimeSpecificFrameworkSuffix>Mono</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <PropertyGroup Condition="'$(MonoEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true' and '$(TargetsBrowser)' != 'true'">
+  <PropertyGroup Condition="'$(MonoAOTEnableLLVM)' == 'true' and '$(RuntimeFlavor)' == 'Mono' and '$(TargetsMobile)' != 'true'">
     <RuntimeSpecificFrameworkSuffix>Mono.LLVM.AOT</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(MonoWasmBuildVariant)' != ''">
-    <RuntimeSpecificFrameworkSuffix>Mono.$(MonoWasmBuildVariant)</RuntimeSpecificFrameworkSuffix>
+  <PropertyGroup Condition="'$(WasmEnableThreads)' == 'true'">
+    <RuntimeSpecificFrameworkSuffix>Mono.multithread</RuntimeSpecificFrameworkSuffix>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeSpecificFrameworkSuffix)' != ''">
     <OverridePackageId>$(SharedFrameworkName).Runtime.$(RuntimeSpecificFrameworkSuffix).$(RuntimeIdentifier)</OverridePackageId>
@@ -62,6 +62,7 @@
       <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
       <!-- We build on an image with LTTNGv0, but we package on distros that have v1. Ignore inspecting dependencies on our LLTNG provider to ensure we can package. -->
       <DebJsonProperty Include="debian_ignored_libraries" Object="[&quot;libcoreclrtraceptprovider.so&quot;]" />
+      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet/shared/$(MicrosoftNetCoreAppFrameworkName)&quot; ]" />
     </ItemGroup>
   </Target>
 
@@ -195,6 +196,17 @@
       </FilesToPackageMibcData>
       <FilesToPackage Remove="$(CoreCLRArtifactsPath)StandardOptimizationData.mibc"/>
       <FilesToPackage Include="@(FilesToPackageMibcData)"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="IncludeSymbolFilesInNativeAOTPackage"
+          Condition="'$(BuildNativeAOTRuntimePack)' == 'true'"
+          AfterTargets="GetFilesToPackage">
+    <ItemGroup>
+      <!-- ILC needs the symbols next to the binaries -->
+      <FilesToPackage Update="@(FilesToPackage->WithMetadataValue('IsSymbolFile', 'true'))">
+        <IncludeAlways>true</IncludeAlways>
+      </FilesToPackage>
     </ItemGroup>
   </Target>
 

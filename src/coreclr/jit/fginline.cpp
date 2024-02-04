@@ -259,7 +259,7 @@ public:
 
             if (value->OperGet() == GT_COMMA)
             {
-                GenTree* effectiveValue = value->gtEffectiveVal(/*commaOnly*/ true);
+                GenTree* effectiveValue = value->gtEffectiveVal();
 
                 noway_assert(
                     !varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
@@ -384,7 +384,7 @@ private:
             {
                 // IR may potentially contain nodes that requires mandatory BB flags to be set.
                 // Propagate those flags from the containing BB.
-                m_compiler->compCurBB->bbFlags |= inlineeBB->bbFlags & BBF_COPY_PROPAGATE;
+                m_compiler->compCurBB->CopyFlags(inlineeBB, BBF_COPY_PROPAGATE);
             }
 
 #ifdef DEBUG
@@ -673,15 +673,16 @@ private:
                 tree->gtBashToNOP();
                 m_madeChanges = true;
 
-                if (!condTree->IsIntegralConst(0))
+                if (condTree->IsIntegralConst(0))
                 {
-                    block->SetJumpKind(BBJ_ALWAYS);
-                    m_compiler->fgRemoveRefPred(block->Next(), block);
+                    m_compiler->fgRemoveRefPred(block->GetTrueTarget(), block);
+                    block->SetKindAndTarget(BBJ_ALWAYS, block->Next());
+                    block->SetFlags(BBF_NONE_QUIRK);
                 }
                 else
                 {
-                    m_compiler->fgRemoveRefPred(block->GetJumpDest(), block);
-                    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(m_compiler));
+                    m_compiler->fgRemoveRefPred(block->GetFalseTarget(), block);
+                    block->SetKind(BBJ_ALWAYS);
                 }
             }
         }
@@ -1453,12 +1454,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             }
 
             // Copy inlinee bbFlags to caller bbFlags.
-            const BasicBlockFlags inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+            const BasicBlockFlags inlineeBlockFlags = InlineeCompiler->fgFirstBB->GetFlagsRaw();
             noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
             noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
 
             // Todo: we may want to exclude other flags here.
-            iciBlock->bbFlags |= (inlineeBlockFlags & ~BBF_RUN_RARELY);
+            iciBlock->SetFlags(inlineeBlockFlags & ~BBF_RUN_RARELY);
 
 #ifdef DEBUG
             if (verbose)
@@ -1495,7 +1496,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
         unsigned const baseBBNum = fgBBNumMax;
 
+        // The newly split block is not special so doesn't need to be kept.
         //
+        bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
+
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //
         for (BasicBlock* const block : InlineeCompiler->Blocks())
@@ -1503,7 +1507,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             noway_assert(!block->hasTryIndex());
             noway_assert(!block->hasHndIndex());
             block->copyEHRegion(iciBlock);
-            block->bbFlags |= iciBlock->bbFlags & BBF_BACKWARD_JUMP;
+            block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP);
 
             // Update block nums appropriately
             //
@@ -1520,25 +1524,23 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             {
                 block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
                 block->bbCodeOffsEnd = 0;
-                block->bbFlags |= BBF_INTERNAL;
+                block->SetFlags(BBF_INTERNAL);
             }
 
             if (block->KindIs(BBJ_RETURN))
             {
-                noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-                if (block->IsLast())
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                    block->SetJumpKindAndTarget(BBJ_NONE DEBUG_ARG(this));
-                }
-                else
-                {
-                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
-                            block->bbNum, bottomBlock->bbNum);
-                    block->SetJumpKindAndTarget(BBJ_ALWAYS, bottomBlock DEBUG_ARG(this));
-                }
+                noway_assert(!block->HasFlag(BBF_HAS_JMP));
+                JITDUMP("\nConvert bbKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
+                        bottomBlock->bbNum);
 
-                fgAddRefPred(bottomBlock, block);
+                block->SetKindAndTarget(BBJ_ALWAYS, bottomBlock);
+                FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
+                newEdge->setLikelihood(1.0);
+
+                if (block == InlineeCompiler->fgLastBB)
+                {
+                    block->SetFlags(BBF_NONE_QUIRK);
+                }
             }
         }
 
@@ -1547,9 +1549,13 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         InlineeCompiler->fgFirstBB->bbRefs--;
 
         // Insert inlinee's blocks into inliner's block list.
+        assert(topBlock->KindIs(BBJ_ALWAYS));
+        assert(topBlock->TargetIs(bottomBlock));
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
-        fgRemoveRefPred(bottomBlock, topBlock);
-        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
+        topBlock->SetTarget(topBlock->Next());
+        topBlock->SetFlags(BBF_NONE_QUIRK);
+        FlowEdge* const oldEdge = fgRemoveRefPred(bottomBlock, topBlock);
+        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock, oldEdge);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //
@@ -1943,7 +1949,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     CORINFO_METHOD_INFO* InlineeMethodInfo = InlineeCompiler->info.compMethodInfo;
 
     unsigned lclCnt     = InlineeMethodInfo->locals.numArgs;
-    bool     bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+    bool     bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
     bool     bbIsReturn = block->KindIs(BBJ_RETURN);
 
     // If the callee contains zero-init locals, we need to explicitly initialize them if we are

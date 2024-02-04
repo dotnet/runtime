@@ -39,7 +39,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
         pathsDict.UpdateTo(unchanged: true, mainAssembly, "icall-table.h", "pinvoke-table.h", "driver-gen.c");
         if (cflags.Length == 0)
-            pathsDict.UpdateTo(unchanged: true, "pinvoke.o", "corebindings.o", "driver.o");
+            pathsDict.UpdateTo(unchanged: true, "pinvoke.o", "corebindings.o", "driver.o", "runtime.o");
 
         pathsDict.Remove(mainAssembly);
         if (buildArgs.AOT)

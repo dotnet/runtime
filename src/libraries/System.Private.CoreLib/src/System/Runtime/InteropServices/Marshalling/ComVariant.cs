@@ -47,8 +47,14 @@ namespace System.Runtime.InteropServices.Marshalling
         [StructLayout(LayoutKind.Sequential)]
         private struct TypeUnion
         {
+            // The layout of _wReserved1 and _vt fields needs to match Decimal._flags
+#if BIGENDIAN
+            public ushort _wReserved1;
+            public ushort _vt;
+#else
             public ushort _vt;
             public ushort _wReserved1;
+#endif
             public ushort _wReserved2;
             public ushort _wReserved3;
 
@@ -211,7 +217,7 @@ namespace System.Runtime.InteropServices.Marshalling
                         break;
                     case VarEnum.VT_LPSTR:
                     case VarEnum.VT_LPWSTR:
-                    foreach (var str in GetRawDataRef<Vector<IntPtr>>().AsSpan())
+                        foreach (var str in GetRawDataRef<Vector<IntPtr>>().AsSpan())
                         {
                             Marshal.FreeCoTaskMem(str);
                         }
@@ -351,8 +357,11 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 throw new ArgumentException(SR.UnsupportedType, nameof(T));
             }
-            // We do not support mapping nint or nuint to VT_INT and VT_UINT respectively
-            // as this does not match the MS-OAUT spec.
+            // Historically, .NET built-in and dynamic-COM interop has mapped
+            // VT_INT and VT_UINT to use IntPtr. This is not valid per the MS-OAUT spec.
+            // The MS-OAUT spec specifies that VT_INT and VT_UINT map to 4-byte integers.
+            // As a result, do not support mapping nint or nuint to VT_INT and VT_UINT respectively
+            // how built-in interop traditionally has.
             // We do not map VT_BYREF automatically, nor do we map any of the array types.
             return variant;
         }

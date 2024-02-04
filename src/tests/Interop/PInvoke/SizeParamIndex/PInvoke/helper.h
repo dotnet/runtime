@@ -6,8 +6,8 @@
 #include "platformdefines.h"
 
 
-const LONG Array_Size = 10;
-const LONG CArray_Size = 20;
+const int32_t Array_Size = 10;
+const int32_t CArray_Size = 20;
 
 //////////////////////////////////////////////////////////////////////////////
 // Verify helper methods
@@ -153,8 +153,8 @@ template<> BOOL IsObjectEquals(BSTR o1, BSTR o2)
     else if ( o1 != NULL && o2 == NULL )
         return FALSE;
 
-    UINT uLen1 = SysStringLen(o1);
-    UINT uLen2 = SysStringLen(o2);
+    uint32_t uLen1 = SysStringLen(o1);
+    uint32_t uLen2 = SysStringLen(o2);
 
     if (uLen1 != uLen2 )
         return FALSE;
@@ -172,25 +172,25 @@ BSTR ToBSTR(int i)
 
 BOOL CmpBSTR(BSTR bstr1, BSTR bstr2)
 {
-    UINT uLen1 = SysStringLen(bstr1);
-    UINT uLen2 = SysStringLen(bstr2);
+    uint32_t uLen1 = SysStringLen(bstr1);
+    uint32_t uLen2 = SysStringLen(bstr2);
 
     if (uLen1 != uLen2 )
         return FALSE;
     return memcmp(bstr1, bstr2, uLen1) == 0;
 }
 
-BSTR* InitArrayBSTR(LONG arrSize)
+BSTR* InitArrayBSTR(int32_t arrSize)
 {
     BSTR* pExpectArr = (BSTR*)CoreClrAlloc(sizeof(BSTR)*arrSize);
-    for(LONG i = 0;i<arrSize;++i)
+    for(int32_t i = 0;i<arrSize;++i)
     {
         pExpectArr[i] = ToBSTR(i);
     }
     return pExpectArr;
 }
 
-BOOL EqualArrayBSTR(BSTR* ArrBSTR, LONG arrSize1, BSTR* CArrBSTR, LONG arrSize2)
+BOOL EqualArrayBSTR(BSTR* ArrBSTR, int32_t arrSize1, BSTR* CArrBSTR, int32_t arrSize2)
 {
     int failures = 0;
 

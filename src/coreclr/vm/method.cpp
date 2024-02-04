@@ -3082,9 +3082,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
 
     return
         g_pConfig->JitMinOpts() ||
-#ifdef _DEBUG
         g_pConfig->GenDebuggableCode() ||
-#endif
         CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
 }
 
@@ -3311,13 +3309,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         }
 #endif
 
-        PTR_PCODE pSlot = GetAddrOfNativeCodeSlot();
-        NativeCodeSlot expected;
-
-        expected = *pSlot;
-
-        return InterlockedCompareExchangeT(reinterpret_cast<TADDR*>(pSlot),
-            (TADDR&)addr, (TADDR&)expected) == (TADDR&)expected;
+        return InterlockedCompareExchangeT(GetAddrOfNativeCodeSlot(), addr, pExpected) == pExpected;
     }
 
     _ASSERTE(pExpected == NULL);

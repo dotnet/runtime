@@ -20,9 +20,7 @@
 #define g_ResourcesNS       g_SystemNS ".Resources"
 #define g_DiagnosticsNS     g_SystemNS ".Diagnostics"
 #define g_CodeContractsNS   g_DiagnosticsNS ".Contracts"
-#define g_AssembliesNS      g_SystemNS ".Configuration.Assemblies"
 #define g_GlobalizationNS   g_SystemNS ".Globalization"
-#define g_IsolatedStorageNS g_SystemNS ".IO.IsolatedStorage"
 #define g_TextNS            g_SystemNS ".Text"
 #define g_CollectionsGenericNS g_SystemNS ".Collections.Generic"
 
@@ -43,22 +41,8 @@
 #define g_ConstrainedExecutionNS g_RuntimeNS ".ConstrainedExecution"
 
 #define g_SecurityNS        g_SystemNS ".Security"
-#define g_UtilNS            g_SecurityNS ".Util"
-#define g_PublicKeyNS       g_SecurityNS ".PublicKey"
-#define g_PermissionsNS     g_SecurityNS ".Permissions"
-#define g_PrincipalNS       g_SecurityNS ".Principal"
-#define g_PolicyNS          g_SecurityNS ".Policy"
 #define g_CryptographyNS    g_SecurityNS ".Cryptography"
-#define g_X509NS            g_CryptographyNS ".X509Certificates"
-
 #define g_SerializationNS   g_RuntimeNS ".Serialization"
-#define g_RemotingNS        g_RuntimeNS ".Remoting"
-#define g_ActivationNS      g_RemotingNS ".Activation"
-#define g_ProxiesNS         g_RemotingNS ".Proxies"
-#define g_ContextsNS        g_RemotingNS ".Contexts"
-#define g_MessagingNS       g_RemotingNS ".Messaging"
-#define g_RemotingServicesNS g_RemotingNS ".Services"
-#define g_LifetimeNS        g_RemotingNS ".Lifetime"
 
 #define g_MicrosoftNS       "Microsoft"
 

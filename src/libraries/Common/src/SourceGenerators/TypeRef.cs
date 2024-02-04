@@ -19,7 +19,7 @@ namespace SourceGenerators
             FullyQualifiedName = type.GetFullyQualifiedName();
             IsValueType = type.IsValueType;
             TypeKind = type.TypeKind;
-            SpecialType = type.SpecialType;
+            SpecialType = type.OriginalDefinition.SpecialType;
         }
 
         public string Name { get; }

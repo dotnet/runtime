@@ -1,6 +1,71 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>Debug;Release;Checked</Configurations>
+  </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <SupportProject Include="$(TestLibraryProjectPath)" />
+    <SupportProject Include="PInvoke/Miscellaneous/CopyCtor/CopyCtorUtil.ilproj" />
+    <SupportProject Include="PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/ManagedDll*/*.csproj" />
+    <MergedWrapperProjectReference Include="*/**/*.??proj" Exclude="@(SupportProject)" />
+    <ProjectReference Include="@(SupportProject)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Directly compile tests into the merged wrapper -->
+    <Compile Include="WinRT/*.cs" />
+    <Compile Include="StructPacking/*.cs" />
+    <Compile Include="SimpleStruct/*.cs" />
+    <Compile Include="RefCharArray/*.cs" />
+    <Compile Include="IDynamicInterfaceCastable/*.cs" />
+    <Compile Include="LayoutClass/*.cs" />
+    <Compile Include="ArrayMarshalling/**/*.cs" />
+    <Compile Include="MarshalAPI/**/*.cs" />
+    <Compile Include="PInvoke/Array/**/*.cs" />
+    <Compile Include="PInvoke/ArrayWithOffset/**/*.cs" />
+    <Compile Include="PInvoke/AsAny/**/*.cs" />
+    <Compile Include="PInvoke/Attributes/**/*.cs" />
+    <Compile Include="PInvoke/CustomMarshalers/**/*.cs" />
+    <Compile Include="PInvoke/DateTime/**/*.cs" />
+    <Compile Include="PInvoke/Decimal/**/*.cs" />
+    <Compile Include="PInvoke/Delegate/**/*.cs" />
+    <Compile Include="PInvoke/Generics/**/*.cs" />
+    <Compile Include="PInvoke/IEnumerator/**/*.cs" />
+    <Compile Include="PInvoke/Int128/**/*.cs" />
+    <Compile Include="PInvoke/Miscellaneous/**/*.cs" Exclude="PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/ManagedDll*/*.cs" />
+    <Compile Include="PInvoke/Primitives/**/*.cs" />
+    <Compile Include="PInvoke/SafeHandles/**/*.cs" />
+    <Compile Include="PInvoke/SetLastError/**/*.cs" />
+    <Compile Include="PInvoke/SizeParamIndex/**/*.cs" />
+    <Compile Include="PInvoke/Varargs/**/*.cs" />
+    <Compile Include="PInvoke/Vector2_3_4/**/*.cs" />
+
+    <!-- Reference the CMake projects for the directly-compiled-in tests -->
+    <CMakeProjectReference Include="SimpleStruct/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="RefCharArray/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="LayoutClass/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="ArrayMarshalling/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="MarshalAPI/**/CMakeLists.txt" />
+    <CMakeProjectReference Include="PInvoke/**/CMakeLists.txt" />
+
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/Attributes/LCID/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/BestFitMapping/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/Variant/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/Varargs/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/NativeCallManagedComVisible/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/IEnumerator/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="PInvoke/CustomMarshalers/**/CMakeLists.txt" />
+    <WindowsOnlyCMakeProjectReference Include="ArrayMarshalling/SafeArray/**/CMakeLists.txt" />
+
+    <!--
+      Our CMake project reference system validates that we have output artifacts for each referenced directory.
+      For our Windows-only tests, we only build the native assets on Windows. So, we need to remove the CMake project reference
+      for these directories to get the build to pass.
+    -->
+    <CMakeProjectReference Condition="'$(TargetOS)' != 'windows'" Remove="@(WindowsOnlyCMakeProjectReference)" />
+
+    <!-- Reference nested CMake projects from the merged wrapper so we don't need to be process-isolated to run them. -->
+    <CMakeProjectReference Include="StringMarshalling/**/CMakeLists.txt" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

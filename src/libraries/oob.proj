@@ -55,7 +55,7 @@
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
       <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
       <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
-      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(OOBAssembliesTrimDir)" />

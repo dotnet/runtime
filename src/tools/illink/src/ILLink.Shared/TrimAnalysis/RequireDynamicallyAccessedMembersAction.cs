@@ -23,7 +23,7 @@ namespace ILLink.Shared.TrimAnalysis
 			if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
 				return;
 
-			foreach (var uniqueValue in value) {
+			foreach (var uniqueValue in value.AsEnumerable ()) {
 				if (targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
 					&& uniqueValue is GenericParameterValue genericParam
 					&& genericParam.GenericParameter.HasDefaultConstructorConstraint ()) {

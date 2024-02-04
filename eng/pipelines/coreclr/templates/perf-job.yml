@@ -18,6 +18,8 @@ parameters:
   logicalMachine: ''
   pgoRunType: ''
   physicalPromotionRunType: ''
+  r2rRunType: ''
+  experimentName: ''
   javascriptEngine: 'NoJS'
   iOSLlvmBuild: 'False'
   iOSStripSymbols: 'False'
@@ -40,8 +42,8 @@ jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}_{12}_{13}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols, parameters.hybridGlobalization) }}
-    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.iosLlvmBuild, parameters.iosStripSymbols, parameters.hybridGlobalization) }}
+    jobName: ${{ format('perfbuild_{0}{1}_{2}_{3}_{4}_{5}_{6}_{7}_{8}_{9}_{10}_{11}_{12}_{13}_{14}_{15}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.r2rRunType, parameters.experimentName, parameters.iosLlvmBuild, parameters.iosStripSymbols, parameters.hybridGlobalization) }}
+    displayName: ${{ format('Performance {0}{1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind, parameters.logicalMachine, parameters.javascriptEngine, parameters.pgoRunType, parameters.physicalPromotionRunType, parameters.r2rRunType, parameters.experimentName, parameters.iosLlvmBuild, parameters.iosStripSymbols, parameters.hybridGlobalization) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -58,6 +60,8 @@ jobs:
     logicalmachine: ${{ parameters.logicalmachine }}
     pgoRunType: ${{ parameters.pgoRunType }}
     physicalPromotionRunType: ${{ parameters.physicalPromotionRunType }}
+    r2rRunType: ${{ parameters.r2rRunType }}
+    experimentName: ${{ parameters.experimentName }}
     javascriptEngine: ${{ parameters.javascriptEngine }}
     iosLlvmBuild: ${{ parameters.iosLlvmBuild }}
     iosStripSymbols: ${{ parameters.iosStripSymbols }}
@@ -86,7 +90,7 @@ jobs:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
       - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
         - ${{ 'build_android_arm64_release_AndroidMono' }}
-        - ${{ 'Build_ios_arm64_release_PerfBDNApp' }}
+        # - ${{ 'Build_ios_arm64_release_PerfBDNApp' }} Disabled per: https://github.com/dotnet/performance/issues/3655
       - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
         - ${{ 'build_ios_arm64_release_iOSMono' }}
       - ${{ if eq(parameters.runtimeType, 'iOSNativeAOT')}}:
@@ -104,10 +108,8 @@ jobs:
         extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --javascriptengine ${{ parameters.javascriptEngine }} --hybridglobalization ${{ parameters.hybridGlobalization }} $(extraSetupParametersSuffix)
       ${{ if and(eq(parameters.runtimeType, 'wasm'), eq(parameters.codeGenType, 'AOT')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --wasmbundle $(librariesDownloadDir)/bin/wasm --wasmaot --javascriptengine ${{ parameters.javascriptEngine }} $(extraSetupParametersSuffix)
-      ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'), eq(parameters.archType, 'x64')) }}:
+      ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm')) }}:
         extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot --llvm
-      ${{ if and(eq(parameters.codeGenType, 'AOT'), ne(parameters.runtimeType, 'wasm'), eq(parameters.archType, 'arm64')) }}: # Temporarily keep arm64 as non-llvm tagged until switch to 9.0
-        extraSetupParameters: --architecture ${{ parameters.archType }} --monoaot $(librariesDownloadDir)/bin/aot
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), ne(parameters.osSubGroup, '_musl')) }}:
         extraSetupParameters: --corerootdirectory $(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.Release/Tests/Core_Root --architecture ${{ parameters.archType }}
       ${{ if and(eq(parameters.runtimeType, 'coreclr'), eq(parameters.osSubGroup, '_musl')) }}:
@@ -200,7 +202,7 @@ jobs:
           mkdir -p $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-latest/* $(librariesDownloadDir)/bin/wasm/dotnet &&
           cp -r $(librariesDownloadDir)/BrowserWasm/staging/built-nugets $(librariesDownloadDir)/bin/wasm &&
-          cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
+          cp src/mono/browser/test-main.js $(librariesDownloadDir)/bin/wasm/wasm-data/test-main.js &&
           find $(librariesDownloadDir)/bin/wasm -type d &&
           find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
         displayName: "Create wasm directory (Linux)"
@@ -226,13 +228,14 @@ jobs:
           artifactFileName: 'AndroidMonoarm64.tar.gz'
           artifactName: 'AndroidMonoarm64'
           displayName: 'Mono Android HelloWorld'
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(Build.SourcesDirectory)
-          cleanUnpackFolder: false
-          artifactFileName: 'AndroidBDNApk.tar.gz'
-          artifactName: 'AndroidBDNApk'
-          displayName: 'Mono Android BDN Apk'
+      # Disabled per: https://github.com/dotnet/performance/issues/3655
+      # - template: /eng/pipelines/common/download-artifact-step.yml
+      #   parameters:
+      #     unpackFolder: $(Build.SourcesDirectory)
+      #     cleanUnpackFolder: false
+      #     artifactFileName: 'AndroidBDNApk.tar.gz'
+      #     artifactName: 'AndroidBDNApk'
+      #     displayName: 'Mono Android BDN Apk'
 
     # Download iOSMono and Native AOT tests
     - ${{ if or(eq(parameters.runtimeType, 'iOSMono'), eq(parameters.runtimeType, 'iOSNativeAOT')) }}:

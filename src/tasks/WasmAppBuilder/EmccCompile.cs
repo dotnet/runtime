@@ -34,6 +34,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
         public string?      WorkingDirectory       { get; set; }
         public string       OutputMessageImportance{ get; set; } = "Low";
         public string?      MessageToIndicateCompiling { get; set; }
+        public string       CompilerBinaryPath     { get; set; } = "emcc";
 
         [Output]
         public ITaskItem[]? OutputFiles            { get; private set; }
@@ -192,7 +193,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 string tmpObjFile = Path.GetTempFileName();
                 try
                 {
-                    string command = $"emcc {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
+                    string command = $"\"{CompilerBinaryPath}\" {Arguments} -c -o \"{tmpObjFile}\" \"{srcFile}\"";
                     var startTime = DateTime.Now;
 
                     // Log the command in a compact format which can be copy pasted

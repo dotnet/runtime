@@ -90,6 +90,9 @@ namespace ILCompiler.PEWriter
                 case Internal.TypeSystem.TargetArchitecture.LoongArch64:
                     return Machine.LoongArch64;
 
+                case Internal.TypeSystem.TargetArchitecture.RiscV64:
+                    return (Machine)0x5064; /* TODO: update with RiscV64 */
+
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
             }

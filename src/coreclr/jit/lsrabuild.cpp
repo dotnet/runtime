@@ -185,6 +185,11 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
     // the allocation table.
     currBuildNode = nullptr;
     newRP->rpNum  = static_cast<unsigned>(refPositions.size() - 1);
+    if (!enregisterLocalVars)
+    {
+        assert(!((refType == RefTypeParamDef) || (refType == RefTypeZeroInit) || (refType == RefTypeDummyDef) ||
+                 (refType == RefTypeExpUse)));
+    }
 #endif // DEBUG
     return newRP;
 }
@@ -645,41 +650,6 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     return newRP;
 }
 
-//---------------------------------------------------------------------------
-// newUseRefPosition: allocate and initialize a RefTypeUse RefPosition at currentLoc.
-//
-// Arguments:
-//     theInterval     -  interval to which RefPosition is associated with.
-//     theTreeNode     -  GenTree node for which this RefPosition is created
-//     mask            -  Set of valid registers for this RefPosition
-//     multiRegIdx     -  register position if this RefPosition corresponds to a
-//                        multi-reg call node.
-//     minRegCount     -  Minimum number registers that needs to be ensured while
-//                        constraining candidates for this ref position under
-//                        LSRA stress. This is a DEBUG only arg.
-//
-// Return Value:
-//     a new RefPosition
-//
-// Notes:
-//     If the caller knows that 'theTreeNode' is NOT a candidate local, newRefPosition
-//     can/should be called directly.
-//
-RefPosition* LinearScan::newUseRefPosition(Interval* theInterval,
-                                           GenTree*  theTreeNode,
-                                           regMaskTP mask,
-                                           unsigned  multiRegIdx)
-{
-    GenTree* treeNode = isCandidateLocalRef(theTreeNode) ? theTreeNode : nullptr;
-
-    RefPosition* pos = newRefPosition(theInterval, currentLoc, RefTypeUse, treeNode, mask, multiRegIdx);
-    if (theTreeNode->IsRegOptional())
-    {
-        pos->setRegOptional(true);
-    }
-    return pos;
-}
-
 //------------------------------------------------------------------------
 // IsContainableMemoryOp: Checks whether this is a memory op that can be contained.
 //
@@ -968,6 +938,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 #endif
         case GenTreeBlk::BlkOpKindUnrollMemmove:
         case GenTreeBlk::BlkOpKindUnroll:
+        case GenTreeBlk::BlkOpKindLoop:
         case GenTreeBlk::BlkOpKindInvalid:
             // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
             break;
@@ -1207,6 +1178,12 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
 
                     if (newPreferences != RBM_NONE)
                     {
+                        if (!interval->isWriteThru)
+                        {
+                            // Update the register aversion as long as this is not write-thru vars for
+                            // reason mentioned above.
+                            interval->registerAversion |= killMask;
+                        }
                         interval->updateRegisterPreferences(newPreferences);
                     }
                     else
@@ -3179,6 +3156,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
         }
 #endif
 
+        interval->registerAversion |= unpref;
         regMaskTP newPreferences = allRegs(interval->registerType) & ~unpref;
         interval->updateRegisterPreferences(newPreferences);
     }

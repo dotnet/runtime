@@ -13,6 +13,7 @@ class DeadCodeElimination
     {
         SanityTest.Run();
         TestInstanceMethodOptimization.Run();
+        TestReflectionInvokeSignatures.Run();
         TestAbstractTypeNeverDerivedVirtualsOptimization.Run();
         TestAbstractNeverDerivedWithDevirtualizedCall.Run();
         TestAbstractDerivedByUnrelatedTypeWithDevirtualizedCall.Run();
@@ -20,9 +21,11 @@ class DeadCodeElimination
         TestArrayElementTypeOperations.Run();
         TestStaticVirtualMethodOptimizations.Run();
         TestTypeEquals.Run();
+        TestTypeIsValueType.Run();
         TestBranchesInGenericCodeRemoval.Run();
         TestUnmodifiableStaticFieldOptimization.Run();
         TestUnmodifiableInstanceFieldOptimization.Run();
+        TestGetMethodOptimization.Run();
 
         return 100;
     }
@@ -72,6 +75,32 @@ class DeadCodeElimination
 #endif
 
             ThrowIfPresent(typeof(TestInstanceMethodOptimization), nameof(UnreferencedType));
+        }
+    }
+
+    class TestReflectionInvokeSignatures
+    {
+        public class Never1 { }
+
+        public static void Invoke1(Never1 inst) { }
+
+        public struct Allocated1 { }
+
+        public static void Invoke2(out Allocated1 inst) { inst = default; }
+
+        public static void Run()
+        {
+            {
+                MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke1));
+                mi.Invoke(null, new object[1]);
+                ThrowIfPresentWithUsableMethodTable(typeof(TestReflectionInvokeSignatures), nameof(Never1));
+            }
+
+            {
+                MethodInfo mi = typeof(TestReflectionInvokeSignatures).GetMethod(nameof(Invoke2));
+                mi.Invoke(null, new object[1]);
+                ThrowIfNotPresent(typeof(TestReflectionInvokeSignatures), nameof(Allocated1));
+            }
         }
     }
 
@@ -322,8 +351,33 @@ class DeadCodeElimination
             Console.WriteLine(s_type == typeof(Never));
 
 #if !DEBUG
-            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Never));
+            ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
 #endif
+        }
+    }
+
+    class TestTypeIsValueType
+    {
+        class Never { }
+
+        class Ever { }
+
+        static void Generic<T>()
+        {
+            if (typeof(T).IsValueType)
+            {
+                Activator.CreateInstance(typeof(Never));
+            }
+
+            Activator.CreateInstance(typeof(Ever));
+        }
+
+        public static void Run()
+        {
+            Generic<object>();
+
+            ThrowIfPresent(typeof(TestTypeIsValueType), nameof(Never));
+            ThrowIfNotPresent(typeof(TestTypeIsValueType), nameof(Ever));
         }
     }
 
@@ -371,7 +425,7 @@ class DeadCodeElimination
 
             // We only expect to be able to get rid of it when optimizing
 #if !DEBUG
-            ThrowIfPresentWithUsableMethodTable(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
 #endif
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
 
@@ -512,6 +566,79 @@ class DeadCodeElimination
         }
     }
 
+    class TestGetMethodOptimization
+    {
+        delegate void ReflectedOnDelegate();
+        delegate void NotReflectedOnDelegate();
+        delegate void ReflectedOnGenericDelegate<T>();
+        delegate void NotReflectedOnGenericDelegate<T>();
+        delegate void AnotherReflectedOnDelegate();
+
+        static class Delegates
+        {
+            public static void Method1() { }
+            public static ReflectedOnDelegate GetReflectedOnDelegate() => Method1;
+
+            public static void Method2() { }
+            public static NotReflectedOnDelegate GetNotReflectedOnDelegate() => Method2;
+
+            public static void Method3() { }
+            public static ReflectedOnGenericDelegate<T> GetReflectedOnGenericDelegate<T>() => Method3;
+
+            public static void Method4() { }
+            public static NotReflectedOnGenericDelegate<T> GetNotReflectedOnGenericDelegate<T>() => Method4;
+
+            public static void Method5() { }
+            public static AnotherReflectedOnDelegate GetAnotherReflectedOnDelegate() => Method5;
+        }
+
+        static MethodInfo GetReflectedOnGenericDelegate<T>() => Delegates.GetReflectedOnGenericDelegate<T>().Method;
+
+        static NotReflectedOnGenericDelegate<T> GetNotReflectedOnGenericDelegate<T>() => Delegates.GetNotReflectedOnGenericDelegate<T>();
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "That's the point")]
+        public static void Run()
+        {
+            Type t = GetTypeSecretly(typeof(TestGetMethodOptimization), nameof(Delegates));
+
+            {
+                ReflectedOnDelegate del = Delegates.GetReflectedOnDelegate();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method1));
+                if (del.Method != mi)
+                    throw new Exception();
+            }
+
+            {
+                NotReflectedOnDelegate del = Delegates.GetNotReflectedOnDelegate();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method2));
+                if (mi != null)
+                    throw new Exception();
+            }
+
+            {
+                MethodInfo m = GetReflectedOnGenericDelegate<string>();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method3));
+                if (m != mi)
+                    throw new Exception();
+            }
+
+            {
+                NotReflectedOnGenericDelegate<string> del = GetNotReflectedOnGenericDelegate<string>();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method4));
+                if (mi != null)
+                    throw new Exception();
+            }
+
+            {
+                AnotherReflectedOnDelegate del = Delegates.GetAnotherReflectedOnDelegate();
+                MethodInfo mi = t.GetMethod(nameof(Delegates.Method5));
+                if (del.GetMethodInfo() != mi)
+                    throw new Exception();
+            }
+        }
+    }
+
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
         Justification = "That's the point")]
     private static Type GetTypeSecretly(Type testType, string typeName) => testType.GetNestedType(typeName, BindingFlags.NonPublic | BindingFlags.Public);
@@ -524,6 +651,8 @@ class DeadCodeElimination
         }
     }
 
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+        Justification = "That's the point")]
     private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
     {
         Type t = GetTypeSecretly(testType, typeName);

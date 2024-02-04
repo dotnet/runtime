@@ -37,7 +37,7 @@ PTR_VOID EEClassHashEntry::GetData()
     }
     CONTRACTL_END;
 
-    return m_Data;
+    return VolatileLoadWithoutBarrier(&m_Data);
 }
 
 #ifndef DACCESS_COMPILE
@@ -68,7 +68,7 @@ void EEClassHashEntry::SetEncloser(EEClassHashEntry *pEncloser)
 }
 
 /*static*/
-EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, BOOL bCaseInsensitive, AllocMemTracker *pamTracker)
+EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, PTR_EEClassHashTable pCaseSensitiveTable, AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -88,7 +88,7 @@ EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, 
     // loader heap instead of new so use an in-place new to call the constructors now.
     new (pThis) EEClassHashTable(pModule, pHeap, dwNumBuckets);
 
-    pThis->m_bCaseInsensitive = bCaseInsensitive;
+    pThis->m_pCaseSensitiveTable = pCaseSensitiveTable != NULL ? pCaseSensitiveTable : pThis;
 
     return pThis;
 }
@@ -223,20 +223,20 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         THROWS;
         WRAPPER(MODE_ANY);
         WRAPPER(GC_TRIGGERS);
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else WRAPPER(FORBID_FAULT);
+        if (IsCaseInsensitiveTable()) INJECT_FAULT(COMPlusThrowOM();); else WRAPPER(FORBID_FAULT);
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     {
 #ifdef _DEBUG_IMPL
-        _ASSERTE(!(m_bCaseInsensitive && FORBIDGC_LOADER_USE_ENABLED()));
+        _ASSERTE(!(IsCaseInsensitiveTable() && FORBIDGC_LOADER_USE_ENABLED()));
 #endif
 
-        // cqb - If m_bCaseInsensitive is true for the hash table, the bytes in Key will be allocated
-        // from cqb. This is to prevent wasting bytes in the Loader Heap. Thusly, it is important to note that
-        // in this case, the lifetime of Key is bounded by the lifetime of cqb, which will free the memory
-        // it allocated on destruction.
+        // If IsCaseInsensitiveTable() is true for the hash table, strings passed to the ConstructKeyCallback instance
+        // will be dynamically allocated. This is to prevent wasting bytes in the Loader Heap. Thusly, it is important 
+        // to note that in this case, the lifetime of Key is bounded by the lifetime of the single call to UseKeys, and
+        // will be freed when that function returns.
 
         _ASSERTE(m_pModule != NULL);
         LPSTR        pszName = NULL;
@@ -244,7 +244,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         IMDInternalImport *pInternalImport = NULL;
 
         PTR_VOID Data = NULL;
-        if (!m_bCaseInsensitive)
+        if (!IsCaseInsensitiveTable())
             Data = pEntry->GetData();
         else
             Data = (PTR_EEClassHashEntry(pEntry->GetData()))->GetData();
@@ -287,7 +287,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
             }
         }
 
-        if (!m_bCaseInsensitive)
+        if (!IsCaseInsensitiveTable())
         {
             LPUTF8 Key[2];
 
@@ -311,54 +311,6 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
 
 #ifndef DACCESS_COMPILE
 
-EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser, AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pszNamespace != NULL);
-    _ASSERTE(pszClassName != NULL);
-    _ASSERTE(m_pModule != NULL);
-
-    EEClassHashEntry *pEntry = BaseAllocateEntry(pamTracker);
-
-    pEntry->SetData(Data);
-    pEntry->SetEncloser(pEncloser);
-#ifdef _DEBUG
-    pEntry->DebugKey[0] = pszNamespace;
-    pEntry->DebugKey[1] = pszClassName;
-#endif
-
-    BaseInsertEntry(Hash(pszNamespace, pszClassName), pEntry);
-
-    return pEntry;
-}
-
-#ifdef _DEBUG
-class ConstructKeyCallbackValidate : public EEClassHashTable::ConstructKeyCallback
-{
-public:
-    virtual void UseKeys(_In_reads_(2) LPUTF8 *Key)
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_DEBUG_ONLY;
-        _ASSERTE (strcmp(pNewEntry->DebugKey[1], Key[1]) == 0);
-        _ASSERTE (strcmp(pNewEntry->DebugKey[0], Key[0]) == 0);
-        SUPPORTS_DAC;
-    }
-
-    EEClassHashEntry_t *pNewEntry;
-
-};
-#endif // _DEBUG
 
 // This entrypoint lets the caller separate the allocation of the entrypoint from the actual insertion into the hashtable. (This lets us
 // do multiple insertions without having to worry about an OOM occurring inbetween.)
@@ -386,302 +338,12 @@ EEClassHashEntry_t *EEClassHashTable::InsertValueUsingPreallocatedEntry(EEClassH
     pNewEntry->DebugKey[1] = pszClassName;
 #endif
 
-    BaseInsertEntry(Hash(pszNamespace, pszClassName), pNewEntry);
-
-    return pNewEntry;
-}
-
-EEClassHashEntry_t *EEClassHashTable::InsertValueIfNotFound(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, EEClassHashEntry_t *pEncloser, BOOL IsNested, BOOL *pbFound, AllocMemTracker *pamTracker)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-
-        PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pModule != NULL);
-    _ASSERTE(pszNamespace != NULL);
-    _ASSERTE(pszClassName != NULL);
-
-    EEClassHashEntry_t * pNewEntry = FindItem(pszNamespace, pszClassName, IsNested, NULL);
-
-    if (pNewEntry)
-    {
-        *pData = pNewEntry->GetData();
-        *pbFound = TRUE;
-        return pNewEntry;
-    }
-
-    // Reached here implies that we didn't find the entry and need to insert it
-    *pbFound = FALSE;
-
-    pNewEntry = BaseAllocateEntry(pamTracker);
-
-    pNewEntry->SetData(*pData);
-    pNewEntry->SetEncloser(pEncloser);
-
-#ifdef _DEBUG
-    pNewEntry->DebugKey[0] = pszNamespace;
-    pNewEntry->DebugKey[1] = pszClassName;
-#endif
-
-    BaseInsertEntry(Hash(pszNamespace, pszClassName), pNewEntry);
+    BaseInsertEntry(Hash(pszNamespace, pszClassName, pEncloser != NULL ? GetHash(pEncloser) : 0), pNewEntry);
 
     return pNewEntry;
 }
 
 #endif // !DACCESS_COMPILE
-
-EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, BOOL IsNested, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pModule != NULL);
-    _ASSERTE(pszNamespace != NULL);
-    _ASSERTE(pszClassName != NULL);
-
-    // It's legal for the caller not to pass us a LookupContext (when the type being queried is not nested
-    // there will never be any need to iterate over the search results). But we might need to iterate
-    // internally (since we lookup via hash and hashes may collide). So substitute our own private context if
-    // one was not provided.
-    LookupContext sAltContext;
-    if (pContext == NULL)
-        pContext = &sAltContext;
-
-    // The base class provides the ability to enumerate all entries with the same hash code. We call this and
-    // further check which of these entries actually match the full key (there can be multiple hits with
-    // nested types in the picture).
-    PTR_EEClassHashEntry pSearch = BaseFindFirstEntryByHash(Hash(pszNamespace, pszClassName), pContext);
-
-    while (pSearch)
-    {
-        LPCUTF8 rgKey[] = { pszNamespace, pszClassName };
-
-        if (CompareKeys(pSearch, rgKey))
-        {
-            // If (IsNested), then we're looking for a nested class
-            // If (pSearch->pEncloser), we've found a nested class
-            if ((IsNested != FALSE) == (pSearch->GetEncloser() != NULL))
-            {
-                return pSearch;
-            }
-        }
-
-        pSearch = BaseFindNextEntryByHash(pContext);
-    }
-
-    return NULL;
-}
-
-EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(const NameHandle* pName, PTR_VOID *pData, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pModule != NULL);
-    _ASSERTE(pName);
-
-    if (pName->GetNameSpace())
-    {
-        return FindNextNestedClass(pName->GetNameSpace(), pName->GetName(), pData, pContext);
-    }
-    else {
-#ifndef DACCESS_COMPILE
-        return FindNextNestedClass(pName->GetName(), pData, pContext); // this won't support dac--
-                                                                       // it allocates a new namespace string
-#else
-        DacNotImpl();
-        return NULL;
-#endif
-    }
-}
-
-
-EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pModule != NULL);
-
-    PTR_EEClassHashEntry pSearch = BaseFindNextEntryByHash(pContext);
-
-    while (pSearch)
-    {
-        LPCUTF8 rgKey[] = { pszNamespace, pszClassName };
-
-        if (pSearch->GetEncloser() && CompareKeys(pSearch, rgKey))
-        {
-            *pData = pSearch->GetData();
-            return pSearch;
-        }
-
-        pSearch = BaseFindNextEntryByHash(pContext);
-    }
-
-    return NULL;
-}
-
-const UTF8 Utf8Empty[] = { 0 };
-
-EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pModule != NULL);
-
-    CQuickBytes szNamespace;
-
-    LPCUTF8 pNamespace = Utf8Empty;
-    LPCUTF8 p;
-
-    if ((p = ns::FindSep(pszFullyQualifiedName)) != NULL)
-    {
-        SIZE_T d = p - pszFullyQualifiedName;
-
-        FAULT_NOT_FATAL();
-        pNamespace = szNamespace.SetStringNoThrow(pszFullyQualifiedName, d);
-
-        if (NULL == pNamespace)
-        {
-            return NULL;
-        }
-
-        p++;
-    }
-    else
-    {
-        p = pszFullyQualifiedName;
-    }
-
-    return FindNextNestedClass(pNamespace, p, pData, pContext);
-}
-
-
-EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pModule != NULL);
-
-    CQuickBytes szNamespace;
-
-    LPCUTF8 pNamespace = Utf8Empty;
-
-    LPCUTF8 p = ns::FindSep(pszFullyQualifiedName);
-
-    if (p != NULL)
-    {
-        SIZE_T d = p - pszFullyQualifiedName;
-
-        FAULT_NOT_FATAL();
-        pNamespace = szNamespace.SetStringNoThrow(pszFullyQualifiedName, d);
-
-        if (NULL == pNamespace)
-        {
-            return NULL;
-        }
-
-        p++;
-    }
-    else
-    {
-        p = pszFullyQualifiedName;
-    }
-
-    EEClassHashEntry_t * ret = GetValue(pNamespace, p, pData, IsNested, pContext);
-
-    return ret;
-}
-
-
-EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-
-    _ASSERTE(m_pModule != NULL);
-    EEClassHashEntry_t *pItem = FindItem(pszNamespace, pszClassName, IsNested, pContext);
-    if (pItem)
-        *pData = pItem->GetData();
-
-    return pItem;
-}
-
-
-EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
-{
-    CONTRACTL
-    {
-        // for DAC builds m_bCaseInsensitive should be false
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-
-    _ASSERTE(pName);
-    _ASSERTE(m_pModule != NULL);
-    if(pName->GetNameSpace() == NULL) {
-        return GetValue(pName->GetName(), pData, IsNested, pContext);
-    }
-    else {
-        return GetValue(pName->GetNameSpace(), pName->GetName(), pData, IsNested, pContext);
-    }
-}
 
 class ConstructKeyCallbackCompare : public EEClassHashTable::ConstructKeyCallback
 {
@@ -708,9 +370,9 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
 {
     CONTRACTL
     {
-        if (m_bCaseInsensitive) THROWS; else NOTHROW;
-        if (m_bCaseInsensitive) GC_TRIGGERS; else GC_NOTRIGGER;
-        if (m_bCaseInsensitive) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
+        if (IsCaseInsensitiveTable()) THROWS; else NOTHROW;
+        if (IsCaseInsensitiveTable()) GC_TRIGGERS; else GC_NOTRIGGER;
+        if (IsCaseInsensitiveTable()) INJECT_FAULT(COMPlusThrowOM();); else FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -791,7 +453,7 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
     // Allocate the table and verify that we actually got one.
     EEClassHashTable * pCaseInsTable = EEClassHashTable::Create(pModule,
                                                                 max(BaseGetElementCount() / 2, 11),
-                                                                TRUE /* bCaseInsensitive */,
+                                                                this,
                                                                 pamTracker);
 
     // Walk all of the buckets and insert them into our new case insensitive table
@@ -808,9 +470,409 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
 
         //Add the newly created name to our hash table.  The hash datum is a pointer
         //to the entry associated with that name in this hashtable.
-        pCaseInsTable->InsertValue(pszLowerNameSpace, pszLowerClsName, (PTR_VOID)pTempEntry, pTempEntry->GetEncloser(), pamTracker);
+        pCaseInsTable->InsertValueUsingPreallocatedEntry(pCaseInsTable->BaseAllocateEntry(pamTracker), pszLowerNameSpace, pszLowerClsName, pTempEntry, pTempEntry->GetEncloser());
     }
 
     return pCaseInsTable;
 }
 #endif // !DACCESS_COMPILE
+
+BOOL CompareNestedEntryWithExportedType(IMDInternalImport *  pImport,
+                                        mdExportedType       mdCurrent,
+                                        EEClassHashTable *   pClassHash,
+                                        PTR_EEClassHashEntry pEntry)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 Key[2];
+
+    do
+    {
+        if (FAILED(pImport->GetExportedTypeProps(
+            mdCurrent,
+            &Key[0],
+            &Key[1],
+            &mdCurrent,
+            NULL,   //binding (type def)
+            NULL))) //flags
+        {
+            return FALSE;
+        }
+
+        if (pClassHash->CompareKeys(pEntry, Key))
+        {
+            // Reached top level class for mdCurrent - return whether
+            // or not pEntry is a top level class
+            // (pEntry is a top level class if its pEncloser is NULL)
+            if ((TypeFromToken(mdCurrent) != mdtExportedType) ||
+                (mdCurrent == mdExportedTypeNil))
+            {
+                return pEntry->GetEncloser() == NULL;
+            }
+        }
+        else // Keys don't match - wrong entry
+        {
+            return FALSE;
+        }
+    }
+    while ((pEntry = pEntry->GetEncloser()) != NULL);
+
+    // Reached the top level class for pEntry, but mdCurrent is nested
+    return FALSE;
+}
+
+DWORD ComputeHashFunctionWithExportedType(EEClassHashTable * pClassHash, EEClassHashTable * pCaseSensitiveClassHash, IMDInternalImport *pImport, mdExportedType etCurrent, BOOL *pFailed)
+{
+    LPCSTR _namespace, name;
+    if (FAILED(pImport->GetExportedTypeProps(
+        etCurrent,
+        &_namespace,
+        &name,
+        &etCurrent,
+        NULL,   //binding (type def)
+        NULL))) //flags
+    {
+        return FALSE;
+    }
+    DWORD hashEncloser = 0;
+    if (TypeFromToken(etCurrent) == mdtExportedType && etCurrent != mdExportedTypeNil)
+    {
+        // The enclosing hash is always based on the entry from the case sensitive table
+        hashEncloser = ComputeHashFunctionWithExportedType(pCaseSensitiveClassHash, pCaseSensitiveClassHash, pImport, etCurrent, pFailed);
+    }
+    return pClassHash->Hash(_namespace, name, hashEncloser);
+}
+
+BOOL CompareNestedEntryWithTypeDef(IMDInternalImport *  pImport,
+                                                mdTypeDef            mdCurrent,
+                                                EEClassHashTable *   pClassHash,
+                                                PTR_EEClassHashEntry pEntry)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 Key[2];
+
+    do {
+        if (FAILED(pImport->GetNameOfTypeDef(mdCurrent, &Key[1], &Key[0])))
+        {
+            return FALSE;
+        }
+
+        if (pClassHash->CompareKeys(pEntry, Key)) {
+            // Reached top level class for mdCurrent - return whether
+            // or not pEntry is a top level class
+            // (pEntry is a top level class if its pEncloser is NULL)
+            if (FAILED(pImport->GetNestedClassProps(mdCurrent, &mdCurrent)))
+                return pEntry->GetEncloser() == NULL;
+        }
+        else // Keys don't match - wrong entry
+            return FALSE;
+    }
+    while ((pEntry = pEntry->GetEncloser()) != NULL);
+
+    // Reached the top level class for pEntry, but mdCurrent is nested
+    return FALSE;
+}
+
+DWORD ComputeHashFunctionWithTypeDef(EEClassHashTable *pClassHash, EEClassHashTable *pCaseSensitiveClassHash, IMDInternalImport *pImport, mdTypeDef tdCurrent, BOOL *pFailed)
+{
+    LPCSTR _namespace, name;
+    if (FAILED(pImport->GetNameOfTypeDef(tdCurrent, &name, &_namespace)))
+    {
+        *pFailed = TRUE;
+        return 0;
+    }
+    DWORD hashEncloser = 0;
+    if (SUCCEEDED(pImport->GetNestedClassProps(tdCurrent, &tdCurrent)))
+    {
+        // The enclosing hash is always based on the entry from the case sensitive table
+        hashEncloser = ComputeHashFunctionWithTypeDef(pCaseSensitiveClassHash, pCaseSensitiveClassHash, pImport, tdCurrent, pFailed);
+    }
+    return pClassHash->Hash(_namespace, name, hashEncloser);
+}
+
+BOOL CompareNestedEntryWithTypeRef(IMDInternalImport *  pImport,
+                                                mdTypeRef            mdCurrent,
+                                                EEClassHashTable *   pClassHash,
+                                                PTR_EEClassHashEntry pEntry)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        FORBID_FAULT;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 Key[2];
+
+    do {
+        if (FAILED(pImport->GetNameOfTypeRef(mdCurrent, &Key[0], &Key[1])))
+        {
+            return FALSE;
+        }
+
+        if (pClassHash->CompareKeys(pEntry, Key))
+        {
+            if (FAILED(pImport->GetResolutionScopeOfTypeRef(mdCurrent, &mdCurrent)))
+            {
+                return FALSE;
+            }
+            // Reached top level class for mdCurrent - return whether
+            // or not pEntry is a top level class
+            // (pEntry is a top level class if its pEncloser is NULL)
+            if ((TypeFromToken(mdCurrent) != mdtTypeRef) ||
+                (mdCurrent == mdTypeRefNil))
+                return pEntry->GetEncloser() == NULL;
+        }
+        else // Keys don't match - wrong entry
+            return FALSE;
+    }
+    while ((pEntry = pEntry->GetEncloser())!=NULL);
+
+    // Reached the top level class for pEntry, but mdCurrent is nested
+    return FALSE;
+}
+
+
+DWORD ComputeHashFunctionWithTypeRef(EEClassHashTable *pClassHash, EEClassHashTable *pCaseSensitiveClassHash, IMDInternalImport *pImport, mdTypeRef trCurrent, BOOL *pFailed)
+{
+    LPCSTR _namespace, name;
+    if (FAILED(pImport->GetNameOfTypeRef(trCurrent, &_namespace, &name)))
+    {
+        *pFailed = TRUE;
+        return 0;
+    }
+    DWORD hashEncloser = 0;
+    if (SUCCEEDED(pImport->GetResolutionScopeOfTypeRef(trCurrent, &trCurrent)) && TypeFromToken(trCurrent) == mdtTypeRef)
+    {
+        // The enclosing hash is always based on the entry from the case sensitive table
+        hashEncloser = ComputeHashFunctionWithTypeRef(pCaseSensitiveClassHash, pCaseSensitiveClassHash, pImport, trCurrent, pFailed);
+    }
+    return pClassHash->Hash(_namespace, name, hashEncloser);
+}
+
+/*static*/
+BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdEncloser)
+{
+    CONTRACTL
+    {
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    switch(TypeFromToken(token)) {
+        case mdtTypeDef:
+            return (SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser)));
+
+        case mdtTypeRef:
+            IfFailThrow(pModule->GetMDImport()->GetResolutionScopeOfTypeRef(token, mdEncloser));
+            return ((TypeFromToken(*mdEncloser) == mdtTypeRef) &&
+                    (*mdEncloser != mdTypeRefNil));
+
+        case mdtExportedType:
+            _ASSERTE(pModule->IsFullModule());
+            IfFailThrow(((Module*)pModule)->GetAssembly()->GetMDImport()->GetExportedTypeProps(
+                token,
+                NULL,   // namespace
+                NULL,   // name
+                mdEncloser,
+                NULL,   //binding (type def)
+                NULL)); //flags
+            return ((TypeFromToken(*mdEncloser) == mdtExportedType) &&
+                    (*mdEncloser != mdExportedTypeNil));
+
+        default:
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_TOKEN_TYPE);
+    }
+}
+
+BOOL EEClassHashTable::IsNested(const NameHandle* pName, mdToken *mdEncloser)
+{
+    CONTRACTL
+    {
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (pName->GetTypeModule()) {
+        if (TypeFromToken(pName->GetTypeToken()) == mdtBaseType)
+        {
+            if (!pName->GetBucket().IsNull())
+                return TRUE;
+            return FALSE;
+        }
+        else
+            return IsNested(pName->GetTypeModule(), pName->GetTypeToken(), mdEncloser);
+    }
+    else
+        return FALSE;
+}
+
+PTR_EEClassHashEntry EEClassHashTable::FindByNameHandle(const NameHandle* pName)
+{
+    // TODO remove this pointless local
+    EEClassHashTable *pTable = this;
+
+    PTR_EEClassHashEntry pBucket;
+    mdToken mdEncloser;
+    bool isNested = IsNested(pName, &mdEncloser);
+    LPCUTF8 pszName = NULL, pszNamespace = NULL;
+    DWORD hash;
+    BOOL failed;
+
+    _ASSERTE(pName->GetNameSpace() != NULL);
+    _ASSERTE(pName->GetName() != NULL);
+
+    pszName = pName->GetName();
+    pszNamespace = pName->GetNameSpace();
+
+    mdToken typeToken = pName->GetTypeToken();
+    ModuleBase *pNameModule = pName->GetTypeModule();
+
+    switch (TypeFromToken(typeToken))
+    {
+    case mdtTypeDef:
+        PREFIX_ASSUME(pNameModule != NULL);
+        hash = ComputeHashFunctionWithTypeDef(pTable, m_pCaseSensitiveTable, pNameModule->GetMDImport(), typeToken, &failed);
+        break;
+    case mdtTypeRef:
+        PREFIX_ASSUME(pNameModule != NULL);
+        hash = ComputeHashFunctionWithTypeRef(pTable, m_pCaseSensitiveTable, pNameModule->GetMDImport(), typeToken, &failed);
+        break;
+    case mdtExportedType:
+        PREFIX_ASSUME(pNameModule != NULL);
+        hash = ComputeHashFunctionWithExportedType(pTable, m_pCaseSensitiveTable, pNameModule->GetMDImport(), typeToken, &failed);
+        break;
+    default:
+        DWORD enclosingHash;
+        if (pName->GetBucket().IsNull())
+        {
+            enclosingHash = 0;
+        }
+        else
+        {
+            // The enclosing hash is always based on the entry from the case sensitive table
+            // A NameHandle bucket is always the entry in the CaseSensitive table
+            enclosingHash = GetHash(pName->GetBucket().GetClassHashBasedEntryValue());
+        }
+        hash = Hash(pszNamespace, pszName, enclosingHash);
+        break;
+    }
+
+    EEClassHashTable::LookupContext lookupContext;
+    pBucket = pTable->BaseFindFirstEntryByHash(hash, &lookupContext);
+    LPCUTF8 key[] = {pszNamespace, pszName};
+    while (pBucket != NULL)
+    {
+        if (pTable->CompareKeys(pBucket, key))
+        {
+            if ((pBucket->GetEncloser() != NULL) == isNested)
+            {
+                if (isNested)
+                {
+                    bool hasNameBucket = !pName->GetBucket().IsNull();
+#ifdef _DEBUG
+                    bool expectedMatchCheck = !hasNameBucket || (pBucket->GetEncloser() == pName->GetBucket().GetClassHashBasedEntryValue());
+                    bool expectedNotMatchCheck = !hasNameBucket || (pBucket->GetEncloser() != pName->GetBucket().GetClassHashBasedEntryValue());
+#endif
+#ifndef _DEBUG
+                    // In non-debug builds, we can simply check the encloser in the name first. If it matches then we've found the right
+                    // result, and if it doesn't match it also indicates that it shouldn't match. We only do this in non-debug builds
+                    // as we want to validate via asserts that this code is correct.
+                    if (!pName->GetBucket().IsNull())
+                    {
+                        if (pBucket->GetEncloser() == pName->GetBucket().GetClassHashBasedEntryValue())
+                        {
+                            // We found our result
+                            break;
+                        }
+                    } else
+#endif // !_DEBUG
+                    if (TypeFromToken(typeToken) == mdtTypeDef)
+                    {
+                        if (CompareNestedEntryWithTypeDef(pNameModule->GetMDImport(),
+                                                            mdEncloser,
+                                                            this,
+                                                            pBucket->GetEncloser()))
+                        {
+                            _ASSERTE(expectedMatchCheck);
+                            // We found our result
+                            break;
+                        }
+                        _ASSERTE(expectedNotMatchCheck);
+                    }
+                    else if (TypeFromToken(typeToken) == mdtTypeRef)
+                    {
+                        if (CompareNestedEntryWithTypeRef(pNameModule->GetMDImport(),
+                                                            mdEncloser,
+                                                            this,
+                                                            pBucket->GetEncloser()))
+                        {
+                            _ASSERTE(expectedMatchCheck);
+                            // We found our result
+                            break;
+                        }
+                        _ASSERTE(expectedNotMatchCheck);
+                    }
+                    else if (TypeFromToken(typeToken) == mdtExportedType)
+                    {
+                        if (CompareNestedEntryWithExportedType(pNameModule->GetMDImport(),
+                                                            mdEncloser,
+                                                            this,
+                                                            pBucket->GetEncloser()))
+                        {
+                            _ASSERTE(expectedMatchCheck);
+                            // We found our result
+                            break;
+                        }
+                        _ASSERTE(expectedNotMatchCheck);
+                    }
+                    else
+                    {
+                        // String based lookup always set the encloser bucket on the name. We will only
+                        // hit this particular block in debug builds
+                        if (pBucket->GetEncloser() == pName->GetBucket().GetClassHashBasedEntryValue())
+                        {
+                            // We found our result
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // We found our result
+                    break;
+                }
+            }
+        }
+        pBucket = pTable->BaseFindNextEntryByHash(&lookupContext);
+    }
+    return pBucket;
+}

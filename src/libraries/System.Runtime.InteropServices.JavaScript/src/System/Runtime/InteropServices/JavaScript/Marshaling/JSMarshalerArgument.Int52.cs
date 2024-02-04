@@ -7,8 +7,8 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public partial struct JSMarshalerArgument
     {
-        private const long I52_MAX_VALUE =((1L << 53) - 1);
-        private const long I52_MIN_VALUE =-I52_MAX_VALUE;
+        private const long I52_MAX_VALUE = ((1L << 53) - 1);
+        private const long I52_MIN_VALUE = -I52_MAX_VALUE;
 
         /// <summary>
         /// Implementation of the argument marshaling.

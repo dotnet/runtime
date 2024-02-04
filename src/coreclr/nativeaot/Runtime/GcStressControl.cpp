@@ -14,7 +14,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "RhConfig.h"
-#include "gcrhinterface.h"
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"

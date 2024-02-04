@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "gctoclreventsink.h"
+#include "thread.h"
 
 GCToCLREventSink g_gcToClrEventSink;
 
@@ -152,6 +153,8 @@ void GCToCLREventSink::FireGCAllocationTick_V1(uint32_t allocationAmount,
 {
 }
 
+MethodTable* GetLastAllocEEType();
+
 void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
         uint32_t allocationKind,
         uint32_t heapIndex,
@@ -160,7 +163,7 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
 {
     LIMITED_METHOD_CONTRACT;
 
-    void * typeId = RedhawkGCInterface::GetLastAllocEEType();
+    void * typeId = GetLastAllocEEType();
     WCHAR * name = nullptr;
 
     if (typeId != nullptr)

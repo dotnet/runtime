@@ -3,6 +3,7 @@
 
 using System.Security.Cryptography.Encryption.RC2.Tests;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -122,9 +123,17 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact]
+        [OuterLoop("RSA 16384 takes considerable time.")]
         public static void ReadWritePublicPkcs1()
         {
+            // Do not move this to the [ConditionalFact], otherwise the platform will check if RSA 16384 is supported
+            // during test discovery for innerloop, and the check itself is expensive.
+            if (!ImportExport.Supports16384)
+            {
+                throw new SkipTestException("Platform does not support RSA 16384.");
+            }
+
             ReadWriteBase64PublicPkcs1(
                 @"
 MIIICgKCCAEAmyxwX6kQNx+LSMao1StC1p5rKCEwcBjzI136An3B/BjthgezAOuu
@@ -198,9 +207,18 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+
+        [ConditionalFact]
+        [OuterLoop("RSA 16384 takes considerable time.")]
         public static void ReadWriteRsa16384SubjectPublicKeyInfo()
         {
+            // Do not move this to the [ConditionalFact], otherwise the platform will check if RSA 16384 is supported
+            // during test discovery for innerloop, and the check itself is expensive.
+            if (!ImportExport.Supports16384)
+            {
+                throw new SkipTestException("Platform does not support RSA 16384.");
+            }
+
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"
 MIIIIjANBgkqhkiG9w0BAQEFAAOCCA8AMIIICgKCCAEAmyxwX6kQNx+LSMao1StC
@@ -250,9 +268,17 @@ rAigcwt6noH/hX5ZO5X869SV1WvLOvhCt4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact]
+        [OuterLoop("RSA 16384 takes considerable time.")]
         public static void ReadWrite16384Pkcs8()
         {
+            // Do not move this to the [ConditionalFact], otherwise the platform will check if RSA 16384 is supported
+            // during test discovery for innerloop, and the check itself is expensive.
+            if (!ImportExport.Supports16384)
+            {
+                throw new SkipTestException("Platform does not support RSA 16384");
+            }
+
             ReadWriteBase64Pkcs8(
                 @"
 MIIkQgIBADANBgkqhkiG9w0BAQEFAASCJCwwgiQoAgEAAoIIAQCbLHBfqRA3H4tI
@@ -525,9 +551,17 @@ rBZc";
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
+        [ConditionalFact]
+        [OuterLoop("RSA 16384 takes considerable time.")]
         public static void ReadEncryptedRsa16384()
         {
+            // Do not move this to the [ConditionalFact], otherwise the platform will check if RSA 16384 is supported
+            // during test discovery for innerloop, and the check itself is expensive.
+            if (!ImportExport.Supports16384)
+            {
+                throw new SkipTestException("Platform does not support RSA 16384");
+            }
+
             // PBES2: PBKDF2 + des (single DES, not 3DES).
             const string base64 = @"
 MIIkizA9BgkqhkiG9w0BBQ0wMDAbBgkqhkiG9w0BBQwwDgQI63upT8JPNNcCAggA

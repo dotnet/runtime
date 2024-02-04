@@ -145,6 +145,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             }
                         case CollectionSpec collectionSpec:
                             {
+                                if (_typeIndex.GetTypeSpec(collectionSpec.ElementTypeRef) is ComplexTypeSpec)
+                                {
+                                    _namespaces.Add("System.Linq");
+                                }
+
                                 return TryRegisterTransitiveTypesForMethodGen(collectionSpec.ElementTypeRef) &&
                                     TryRegisterTypeForBindCoreGen(collectionSpec);
                             }
@@ -214,11 +219,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (types.Add(type))
                 {
                     _methodsToGen |= method;
-
-                    if (type is { Namespace: string @namespace })
-                    {
-                        _namespaces.Add(@namespace);
-                    }
                 }
             }
 

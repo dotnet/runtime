@@ -6,8 +6,8 @@ using System.Diagnostics;
 using System.Xml;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.XPath;
-using XPathParser = System.Xml.Xsl.XPath.XPathParser<System.Xml.Xsl.Qil.QilNode>;
 using XPathNodeType = System.Xml.XPath.XPathNodeType;
+using XPathParser = System.Xml.Xsl.XPath.XPathParser<System.Xml.Xsl.Qil.QilNode>;
 
 namespace System.Xml.Xsl.Xslt
 {

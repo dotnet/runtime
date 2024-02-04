@@ -151,7 +151,7 @@ namespace Internal.TypeSystem.Ecma
                         break;
 
                     default:
-                        ThrowHelper.ThrowBadImageFormatException("unknown metadata token type: " + handle.Kind);
+                        ThrowHelper.ThrowBadImageFormatException();
                         item = null;
                         break;
                 }
@@ -378,7 +378,7 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeDesc type = GetObject(handle, NotFoundBehavior.Throw) as TypeDesc;
             if (type == null)
-                ThrowHelper.ThrowBadImageFormatException($"type expected for handle {handle}");
+                ThrowHelper.ThrowBadImageFormatException();
             return type;
         }
 
@@ -386,7 +386,7 @@ namespace Internal.TypeSystem.Ecma
         {
             MethodDesc method = GetObject(handle, NotFoundBehavior.Throw) as MethodDesc;
             if (method == null)
-                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle}");
+                ThrowHelper.ThrowBadImageFormatException();
             return method;
         }
 
@@ -394,7 +394,7 @@ namespace Internal.TypeSystem.Ecma
         {
             FieldDesc field = GetObject(handle, NotFoundBehavior.Throw) as FieldDesc;
             if (field == null)
-                ThrowHelper.ThrowBadImageFormatException($"field expected for handle {handle}");
+                ThrowHelper.ThrowBadImageFormatException();
             return field;
         }
 
@@ -449,7 +449,7 @@ namespace Internal.TypeSystem.Ecma
 
             MethodDesc methodDef = resolvedMethod as MethodDesc;
             if (methodDef == null)
-                ThrowHelper.ThrowBadImageFormatException($"method expected for handle {handle}");
+                ThrowHelper.ThrowBadImageFormatException();
 
             BlobReader signatureReader = _metadataReader.GetBlobReader(methodSpecification.Signature);
             EcmaSignatureParser parser = new EcmaSignatureParser(this, signatureReader, NotFoundBehavior.ReturnResolutionFailure);

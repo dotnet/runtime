@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Xml.Xsl.XPath;
 using System.Xml.Xsl.Qil;
+using System.Xml.Xsl.XPath;
 using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt

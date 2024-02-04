@@ -144,8 +144,9 @@ CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLe
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
-CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), 0) // Bitflag: 0x1 check classic, 0x2 check likely, 0x4 enable
-                                                           // asserts
+// -1: just do internal checks
+// Else bitflag: 0x1 check classic, 0x2 check likely, 0x4 enable asserts
+CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), -1)
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
 CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
@@ -160,10 +161,6 @@ CONFIG_INTEGER(JitStackChecks, W("JitStackChecks"), 0)
 CONFIG_INTEGER(JitStress, W("JitStress"), 0) // Internal Jit stress mode: 0 = no stress, 2 = all stress, other = vary
                                              // stress based on a hash of the method and this value
 CONFIG_INTEGER(JitStressBBProf, W("JitStressBBProf"), 0)               // Internal Jit stress mode
-CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101)     // Internal Jit stress mode: decimal bias value
-                                                                       // between (0,100) to perform CSE on a candidate.
-                                                                       // 100% = All CSEs. 0% = 0 CSE. (> 100) means no
-                                                                       // stress.
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressProcedureSplitting, W("JitStressProcedureSplitting"), 0) // Always split after the first basic
@@ -194,7 +191,10 @@ CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees f
 CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 jit compilations
 CONFIG_INTEGER(JitDumpOSR, W("JitDumpOSR"), 1)                  // Dump OSR jit compilations
 CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Dump only OSR jit compilations with this offset
-CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
+CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1)     // Dump inline compiler phases
+CONFIG_INTEGER(JitDumpTerseNextBlock, W("JitDumpTerseNextBlock"), 0) // When dumping blocks, display "*" instead of
+                                                                     // block number for lexical "next" blocks, to
+                                                                     // reduce clutter.
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
 CONFIG_INTEGER(JitFakeProcedureSplitting, W("JitFakeProcedureSplitting"), 0) // Do code splitting independent of VM.
@@ -203,8 +203,10 @@ CONFIG_METHODSET(JitGCDump, W("JitGCDump"))
 CONFIG_METHODSET(JitDebugDump, W("JitDebugDump"))
 CONFIG_METHODSET(JitHalt, W("JitHalt")) // Emits break instruction into jitted code
 CONFIG_METHODSET(JitInclude, W("JitInclude"))
-CONFIG_METHODSET(JitLateDisasm, W("JitLateDisasm"))
-CONFIG_METHODSET(JitMinOptsName, W("JITMinOptsName"))                   // Forces MinOpts for a named function
+CONFIG_METHODSET(JitLateDisasm, W("JitLateDisasm"))   // Generate late disassembly for the specified methods.
+CONFIG_STRING(JitLateDisasmTo, W("JitLateDisasmTo"))  // If set, sends late disassembly output to this file instead of
+                                                      // stdout/JitStdOutFile.
+CONFIG_METHODSET(JitMinOptsName, W("JITMinOptsName")) // Forces MinOpts for a named function
 CONFIG_METHODSET(JitNoProcedureSplitting, W("JitNoProcedureSplitting")) // Disallow procedure splitting for specified
                                                                         // methods
 CONFIG_METHODSET(JitNoProcedureSplittingEH, W("JitNoProcedureSplittingEH")) // Disallow procedure splitting for
@@ -237,7 +239,6 @@ CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext 
                                                                  // order
 CONFIG_INTEGER(JitDumpFgMemorySsa, W("JitDumpFgMemorySsa"), 0)   // non-zero: show memory phis + SSA/VNs
 
-CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
 CONFIG_STRING(JitStressModeNames, W("JitStressModeNames")) // Internal Jit stress mode: stress using the given set of
                                                            // stress mode names, e.g. STRESS_REGS, STRESS_TAILCALL
@@ -245,6 +246,9 @@ CONFIG_STRING(JitStressModeNamesNot, W("JitStressModeNamesNot")) // Internal Jit
                                                                  // given set of stress mode names, e.g. STRESS_REGS,
                                                                  // STRESS_TAILCALL
 CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit stress mode
+CONFIG_METHODSET(JitEmitUnitTests, W("JitEmitUnitTests")) // Generate emitter unit tests in the specified functions
+CONFIG_STRING(JitEmitUnitTestsSections, W("JitEmitUnitTestsSections")) // Generate this set of unit tests
+
 ///
 /// JIT Hardware Intrinsics
 ///
@@ -253,18 +257,13 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
 
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                // Print codegen for given methods
 CONFIG_INTEGER(JitDisasmTesting, W("JitDisasmTesting"), 0) // Display BEGIN METHOD/END METHOD anchors for disasm testing
-CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0) // Make the disassembly diff-able
-CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0)   // Prints all jitted methods to the console
+CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0)           // Make the disassembly diff-able
+CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0)             // Prints all jitted methods to the console
+CONFIG_INTEGER(JitDisasmOnlyOptimized, W("JitDisasmOnlyOptimized"), 0) // Hides disassembly for unoptimized codegen
 CONFIG_INTEGER(JitDisasmWithAlignmentBoundaries, W("JitDisasmWithAlignmentBoundaries"), 0) // Print the alignment
                                                                                            // boundaries.
 CONFIG_INTEGER(JitDisasmWithCodeBytes, W("JitDisasmWithCodeBytes"), 0) // Print the instruction code bytes
 CONFIG_STRING(JitStdOutFile, W("JitStdOutFile")) // If set, sends JIT's stdout output to this file.
-
-// These are supported for backward compatibility, to be removed:
-#ifdef DEBUG
-CONFIG_INTEGER(JitDiffableDasm, W("JitDiffableDasm"), 0)
-CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
-#endif
 
 CONFIG_INTEGER(RichDebugInfo, W("RichDebugInfo"), 0) // If 1, keep rich debug info and report it back to the EE
 
@@ -324,7 +323,7 @@ CONFIG_INTEGER(EnableAVX512CD_VL,           W("EnableAVX512CD_VL"),         1) /
 CONFIG_INTEGER(EnableAVX512DQ,              W("EnableAVX512DQ"),            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512DQ_VL,           W("EnableAVX512DQ_VL"),         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512F,               W("EnableAVX512F"),             1) // Allows AVX512F+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI,            W("EnableAVX512VBMI"),          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512VBMI_VL,         W("EnableAVX512VBMI_VL"),       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
@@ -351,6 +350,7 @@ CONFIG_INTEGER(EnableArm64Dp,               W("EnableArm64Dp"),             1) /
 CONFIG_INTEGER(EnableArm64Rdm,              W("EnableArm64Rdm"),            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Sha1,             W("EnableArm64Sha1"),           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableArm64Sha256,           W("EnableArm64Sha256"),         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Sve,              W("EnableArm64Sve"),            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 #endif
 
 // clang-format on
@@ -381,8 +381,8 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 // Allow fine-grained controls of CSEs done in a particular method
 //
 // Specify method that will respond to the CSEMask.
-// 0 means feature disabled and all methods run CSE normally.
-CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), 0)
+// -1 means feature disabled and all methods run CSE normally.
+CONFIG_INTEGER(JitCSEHash, W("JitCSEHash"), -1)
 
 // Bitmask of allowed CSEs in methods specified by JitCSEHash.
 // These bits control the "cse attempts" made by normal jitting,
@@ -401,6 +401,41 @@ CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
 
 // Enable metric output in jit disasm & elsewhere
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
+
+// When nonzero, choose CSE candidates randomly, with hash salt
+// specified by the (decimal) value of the config
+CONFIG_INTEGER(JitRandomCSE, W("JitRandomCSE"), 0)
+
+// When set, specifies the exact CSEs to perform
+// as a sequence of CSE candidate numbers
+CONFIG_STRING(JitReplayCSE, W("JitReplayCSE"))
+
+// When set, specify the sequence of rewards from the CSE replay.
+// There should be one reward per step in the sequence.
+CONFIG_STRING(JitReplayCSEReward, W("JitReplayCSEReward"))
+
+// When set, specifies the initial parameter string for
+// a reinforcement-learning based CSE heuristic.
+//
+// Note you can also set JitReplayCSE and JitReplayCSEPerfScore
+// along with this, in which case we are asking for a policy
+// evaluation/update based on the provided sequence.
+CONFIG_STRING(JitRLCSE, W("JitRLCSE"))
+
+// When set, specify the alpha value (step size) to
+// use in learning.
+CONFIG_STRING(JitRLCSEAlpha, W("JitRLCSEAlpha"))
+
+// If nonzero, dump out details of policy evaluation and
+// gradient updates
+CONFIG_INTEGER(JitRLCSEVerbose, W("JitRLCSEVerbose"), 0)
+
+// If nonzero, dump candidate feature values
+CONFIG_INTEGER(JitRLCSECandidateFeatures, W("JitRLCSECandidateFeatures"), 0)
+
+// If nonzero, use the greedy policy with current parameters.
+CONFIG_INTEGER(JitRLCSEGreedy, W("JitRLCSEGreedy"), 0)
+
 #endif
 
 ///
@@ -460,6 +495,7 @@ CONFIG_STRING(JitEnableEarlyLivenessRange, W("JitEnableEarlyLivenessRange"))
 CONFIG_STRING(JitOnlyOptimizeRange,
               W("JitOnlyOptimizeRange")) // If set, all methods that do _not_ match are forced into MinOpts
 CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
+CONFIG_STRING(JitEnableCrossBlockLocalAssertionPropRange, W("JitEnableCrossBlockLocalAssertionPropRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -566,11 +602,11 @@ CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualiza
 #endif // DEBUG
 
 // Enable insertion of patchpoints into Tier0 methods, switching to optimized where needed.
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 1)
 #else
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
@@ -606,7 +642,8 @@ CONFIG_INTEGER(JitCounterPadding, W("JitCounterPadding"), 0) // number of unused
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 
-CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 0)                     // Profile castclass/isinst
+CONFIG_INTEGER(JitProfileValues, W("JitProfileValues"), 1) // Value profiling, e.g. Buffer.Memmove's size
+CONFIG_INTEGER(JitProfileCasts, W("JitProfileCasts"), 1)   // Profile castclass/isinst
 CONFIG_INTEGER(JitConsumeProfileForCasts, W("JitConsumeProfileForCasts"), 1) // Consume profile data (if any) for
                                                                              // castclass/isinst
 
@@ -653,6 +690,9 @@ CONFIG_INTEGER(JitEnableHeadTailMerge, W("JitEnableHeadTailMerge"), 1)
 // Enable physical promotion
 CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
+// Enable cross-block local assertion prop
+CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
+
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
@@ -671,6 +711,11 @@ CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 // If this is unset, then the JIT config values have their normal behavior.
 //
 CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
+#endif // DEBUG
+
+#if defined(DEBUG)
+CONFIG_METHODSET(JitRawHexCode, W("JitRawHexCode"))
+CONFIG_STRING(JitRawHexCodeFile, W("JitRawHexCodeFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)

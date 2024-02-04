@@ -105,6 +105,9 @@ namespace System
         internal const int TrailingSignificandLength = 23;
         internal const int SignificandLength = TrailingSignificandLength + 1;
 
+        internal const int PositiveInfinityBits = 0x7F80_0000;
+        internal const int SmallestNormalBits = 0x0080_0000;
+
         internal byte BiasedExponent
         {
             get
@@ -2240,7 +2243,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float TanForIntervalPiBy4(float  x, bool isReciprocal)
+        private static float TanForIntervalPiBy4(float x, bool isReciprocal)
         {
             // This code is based on `tan_piby4` from amd/aocl-libm-ose
             // Copyright (C) 2008-2020 Advanced Micro Devices, Inc. All rights reserved.

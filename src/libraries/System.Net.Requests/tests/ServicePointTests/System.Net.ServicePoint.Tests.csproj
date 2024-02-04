@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
+    <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ServicePointManagerTest.cs" />
+    <Compile Include="TlsSystemDefault.cs" />
+  </ItemGroup>
+</Project>

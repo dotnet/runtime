@@ -160,12 +160,20 @@ namespace ILCompiler.DependencyAnalysis
 #endif
                 }
 
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.PossiblyUnresolvedTargetMethod);
-
                 return dependencyList;
             }
 
             return null;
+        }
+
+        public override bool HasConditionalStaticDependencies => _id == ReadyToRunHelperId.DelegateCtor;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            List<CombinedDependencyListEntry> dependencyList = new List<CombinedDependencyListEntry>();
+            var info = (DelegateCreationInfo)_target;
+            factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencyList, factory, info.DelegateType, info.PossiblyUnresolvedTargetMethod);
+            return dependencyList;
         }
 
         IEnumerable<NativeSequencePoint> INodeWithDebugInfo.GetNativeSequencePoints()

@@ -30,20 +30,6 @@
 #ifndef DACCESS_COMPILE
 
 
-//*******************************************************************************
-EEClass::EEClass(DWORD cbFixedEEClassFields)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Cache size of fixed fields (this instance also contains a set of packed fields whose final size isn't
-    // determined until the end of class loading). We store the size into a spare byte made available by
-    // compiler field alignment, so we need to ensure we never allocate a flavor of EEClass more than 255
-    // bytes long.
-    _ASSERTE(cbFixedEEClassFields <= 0xff);
-    m_cbFixedEEClassFields = (BYTE)cbFixedEEClassFields;
-
-    // All other members are initialized to zero
-}
 
 //*******************************************************************************
 void *EEClass::operator new(
@@ -59,12 +45,7 @@ void *EEClass::operator new(
     }
     CONTRACTL_END;
 
-    // EEClass (or sub-type) is always followed immediately by an EEClassPackedFields structure. This is
-    // maximally sized at runtime but in the ngen scenario will be optimized into a smaller structure (which
-    // is why it must go after all the fixed sized fields).
-    S_SIZE_T safeSize = S_SIZE_T(size) + S_SIZE_T(sizeof(EEClassPackedFields));
-
-    void *p = pamTracker->Track(pHeap->AllocMem(safeSize));
+    void *p = pamTracker->Track(pHeap->AllocMem(S_SIZE_T(size)));
 
     // No need to memset since this memory came from VirtualAlloc'ed memory
     // memset (p, 0, size);
@@ -209,7 +190,7 @@ EEClass::CreateMinimalClass(LoaderHeap *pHeap, AllocMemTracker *pamTracker)
     }
     CONTRACTL_END;
 
-    return new (pHeap, pamTracker) EEClass(sizeof(EEClass));
+    return new (pHeap, pamTracker) EEClass();
 }
 
 
@@ -1536,7 +1517,7 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
 
     if (pMT->GetClass()->HasVTableMethodImpl())
     {
-        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, FALSE));
+        MethodTable::MethodDataWrapper hMTData(MethodTable::GetMethodData(pMT, MethodDataComputeOptions::CacheOnly));
 
         for (WORD i = 0; i < pParentMT->GetNumVirtuals(); i++)
         {
@@ -1596,7 +1577,8 @@ void ClassLoader::PropagateCovariantReturnMethodImplSlots(MethodTable* pMT)
                     pMT->SetSlot(j, pMT->GetSlot(i));
                     _ASSERT(pMT->GetMethodDescForSlot(j) == pMD);
 
-                    hMTData->UpdateImplMethodDesc(pMD, j);
+                    if (!hMTData.IsNull())
+                        hMTData->UpdateImplMethodDesc(pMD, j);
                 }
             }
         }
@@ -3282,11 +3264,6 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
     DAC_ENUM_DTHIS();
     EMEM_OUT(("MEM: %p EEClass\n", dac_cast<TADDR>(this)));
 
-    // The DAC_ENUM_DTHIS above won't have reported the packed fields tacked on the end of this instance (they
-    // aren't part of the static class definition because the fields are variably sized and thus have to come
-    // right at the end of the structure, even for sub-types such as LayoutEEClass or DelegateEEClass).
-    DacEnumMemoryRegion(dac_cast<TADDR>(GetPackedFields()), sizeof(EEClassPackedFields));
-
     if (HasOptionalFields())
         DacEnumMemoryRegion(dac_cast<TADDR>(GetOptionalFields()), sizeof(EEClassOptionalFields));
 
@@ -3319,45 +3296,3 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
 
 #endif // DACCESS_COMPILE
 
-// Get pointer to the packed fields structure attached to this instance.
-PTR_EEClassPackedFields EEClass::GetPackedFields()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return dac_cast<PTR_EEClassPackedFields>(PTR_HOST_TO_TADDR(this) + m_cbFixedEEClassFields);
-}
-
-// Get the value of the given field. Works regardless of whether the field is currently in its packed or
-// unpacked state.
-DWORD EEClass::GetPackableField(EEClassFieldId eField)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return m_fFieldsArePacked ?
-        GetPackedFields()->GetPackedField(eField) :
-        GetPackedFields()->GetUnpackedField(eField);
-}
-
-// Set the value of the given field. The field *must* be in the unpacked state for this to be legal (in
-// practice all packable fields must be initialized during class construction and from then on remain
-// immutable).
-void EEClass::SetPackableField(EEClassFieldId eField, DWORD dwValue)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!m_fFieldsArePacked);
-    GetPackedFields()->SetUnpackedField(eField, dwValue);
-}

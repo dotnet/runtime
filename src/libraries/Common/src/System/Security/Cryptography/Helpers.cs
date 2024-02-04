@@ -3,8 +3,8 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
 using System.Runtime.Versioning;
+using System.Security.Cryptography;
 
 namespace Internal.Cryptography
 {

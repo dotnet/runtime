@@ -75,6 +75,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\TagList.cs" />
     <Compile Include="System\Diagnostics\Metrics\UpDownCounter.cs" />
 
+    <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\DiagnosticsHelper.cs" Link="Common\System\Diagnostics\DiagnosticsHelper.cs" />
 

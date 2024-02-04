@@ -603,7 +603,9 @@ namespace System.Reflection.Emit
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
             }
 
-            rtype = returnType;
+            if (returnType != null)
+                rtype = returnType;
+
             returnModReq = returnTypeRequiredCustomModifiers;
             returnModOpt = returnTypeOptionalCustomModifiers;
             paramModReq = parameterTypeRequiredCustomModifiers;

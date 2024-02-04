@@ -84,8 +84,8 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithWorkload(string config, bool testUnicode)
     {
         string id = testUnicode ?
-            $"blz_no_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
-            $"blz_no_aot_{config}_{GetRandomId()}";
+            $"blz_aot_{config}_{GetRandomId()}_{s_unicodeChar}" :
+            $"blz_aot_{config}_{GetRandomId()}";
         CreateBlazorWasmTemplateProject(id);
 
         BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -155,11 +155,11 @@ public class BuildPublishTests : BlazorWasmTestBase
         if (config == "Release")
         {
             // relinking in publish for Release config
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
         }
         else
         {
-            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true));
+            BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack, ExpectRelinkDirWhenPublishing: true, IsPublish: true));
         }
 
         AssertResourcesDlls(FindBlazorBinFrameworkDir(config, true));
@@ -172,5 +172,29 @@ public class BuildPublishTests : BlazorWasmTestBase
                 Assert.True(File.Exists(resourceAssemblyPath), $"Expects to have a resource assembly at {resourceAssemblyPath}");
             }
         }
+    }
+
+    [Theory]
+    [InlineData("", true)] // Default case
+    [InlineData("false", false)] // the other case
+    public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
+    {
+        string config = "Release";
+        string id = $"blz_WasmStripILAfterAOT_{config}_{GetRandomId()}";
+        string projectFile = CreateBlazorWasmTemplateProject(id);
+        string projectDirectory = Path.GetDirectoryName(projectFile)!;
+
+        string extraProperties = "<RunAOTCompilation>true</RunAOTCompilation>";
+        if (!string.IsNullOrEmpty(stripILAfterAOT))
+            extraProperties += $"<WasmStripILAfterAOT>{stripILAfterAOT}</WasmStripILAfterAOT>";
+        AddItemsPropertiesToProject(projectFile, extraProperties);
+
+        BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.AOT, AssertAppBundle : false));
+        await BlazorRunForPublishWithWebServer(new BlazorRunOptions() { Config = config });
+
+        string frameworkDir = Path.Combine(projectDirectory, "bin", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "publish", "wwwroot", "_framework");
+        string objBuildDir = Path.Combine(projectDirectory, "obj", config, BuildTestBase.DefaultTargetFrameworkForBlazor, "wasm", "for-publish");
+
+        WasmTemplateTests.TestWasmStripILAfterAOTOutput(objBuildDir, frameworkDir, expectILStripping, _testOutput);
     }
 }

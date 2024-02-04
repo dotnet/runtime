@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-us">
+	<head>
+	</head>
+	<body>
+	<script type='text/javascript'>
+		var App = {
+			static_method_table: {},
+			init: async () => {
+				const exports = App.exports = await App.runtime.getAssemblyExports("debugger-test.dll");
+				App.int_add = exports.Math.IntAdd;
+				App.use_complex = exports.Math.UseComplex;
+				App.delegates_test = exports.Math.DelegatesTest;
+				App.generic_types_test = exports.Math.GenericTypesTest;
+				App.outer_method = exports.Math.OuterMethod;
+				App.async_method = exports.Math.NestedInMath.AsyncTest;
+				App.method_with_structs = exports.DebuggerTests.ValueTypesTest.MethodWithLocalStructs;
+				App.run_all = exports.DebuggerTest.run_all;
+				App.static_method_table = {};
+				console.debug ("#debugger-app-ready#");
+			},
+		};
+		function invoke_static_method (method_name, ...args) {
+			var method = App.static_method_table [method_name];
+			if (method == undefined)
+				method = App.static_method_table[method_name] = App.bind_static_method(method_name);
+
+			return method (...args);
+		}
+
+		async function invoke_static_method_async (method_name, ...args) {
+			var method = App.static_method_table [method_name];
+			if (method == undefined) {
+				method = App.static_method_table[method_name] = App.bind_static_method(method_name);
+			}
+
+			return await method (...args);
+		}
+
+		function invoke_big_array_js_test (len) {
+			big_array_js_test(len);
+		}
+
+		function invoke_getters_js_test () {
+			getters_js_test ();
+		}
+		function invoke_add () {
+			return App.int_add (10, 20);
+		}
+		function invoke_use_complex () {
+			return App.use_complex (10, 20);
+		}
+		function invoke_delegates_test () {
+			return App.delegates_test ();
+		}
+		function invoke_generic_types_test () {
+			return App.generic_types_test ();
+		}
+		function invoke_bad_js_test () {
+			console.log ("js: In invoke_bad_js_test");
+			App.non_existent ();
+			console.log ("js: After.. shouldn't reach here");
+		}
+		function invoke_outer_method () {
+			console.log('invoke_outer_method called');
+			return App.outer_method ();
+		}
+		async function invoke_async_method_with_await () {
+			return await App.async_method ("string from js", 42);
+		}
+		function invoke_method_with_structs () {
+			return App.method_with_structs ();
+		}
+		function invoke_run_all () {
+			return App.run_all ();
+		}
+		function conditional_breakpoint_test (a, b, p) {
+			var c = a + b;
+			var d = a + c;
+			var e = c + d;
+			console.log(c + d + e);
+		}
+		function invoke_add_with_parms (a, b) {
+			return App.int_add (a, b);
+		}
+		function load_non_wasm_page () {
+			console.log("load_non_wasm_page")
+			window.location.replace("http://localhost:9400/non-wasm-page.html");
+		}
+		function load_wasm_page_without_assets () {
+			console.log("load_wasm_page_without_assets")
+			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
+			console.debug ("#debugger-app-ready#");
+		}
+		function invoke_static_method_native (method_name, ...args) {
+			const native_method_name = "Native:" + method_name;
+			var method = App.static_method_table [native_method_name];
+			if (method == undefined)
+				method = App.static_method_table[native_method_name] = App.bind_static_method_native(method_name);
+
+			return method (...args);
+		}
+		</script>
+
+		<script type="text/javascript" src="other.js"></script>
+		<script type="module" src="debugger-main.js"></script>
+		Stuff goes here
+</body>
+</html>

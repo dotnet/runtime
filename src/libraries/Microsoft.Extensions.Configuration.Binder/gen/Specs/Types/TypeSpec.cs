@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public TypeSpec(ITypeSymbol type)
         {
             TypeRef = new TypeRef(type);
-            EffectiveTypeRef = TypeRef; // Overriden by NullableSpec.
-            (Namespace, DisplayString, Name) = type.GetTypeName();
+            EffectiveTypeRef = TypeRef; // Overridden by NullableSpec.
+            (DisplayString, FullName) = type.GetTypeNames();
             IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring();
             IsValueType = type.IsValueType;
         }
@@ -23,13 +23,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public TypeRef EffectiveTypeRef { get; protected init; }
 
-        public string Name { get; }
+        /// <summary>
+        /// <see cref="System.Type.FullName"/> like rendering of the type name.
+        /// </summary>
+        public string FullName { get; }
 
+        /// <summary>
+        /// Display name excluding the namespace.
+        /// </summary>
         public string DisplayString { get; }
 
         public string IdentifierCompatibleSubstring { get; }
-
-        public string? Namespace { get; }
 
         public bool IsValueType { get; }
     }

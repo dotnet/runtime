@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void DestroyStructure_NullStructureType_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("structureType", () => Marshal.DestroyStructure((IntPtr)1, null));
+            AssertExtensions.Throws<ArgumentNullException>("structuretype", () => Marshal.DestroyStructure((IntPtr)1, null));
         }
 
         public static IEnumerable<object[]> DestroyStructure_InvalidType_TestData()
@@ -99,15 +99,15 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(DestroyStructure_InvalidType_TestData))]
         public void DestroyStructure_NonRuntimeType_ThrowsArgumentException(Type invalidType)
         {
-            AssertExtensions.Throws<ArgumentException>("structureType", () => Marshal.DestroyStructure((IntPtr)1, invalidType));
+            AssertExtensions.Throws<ArgumentException>("structuretype", () => Marshal.DestroyStructure((IntPtr)1, invalidType));
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void DestroyStructure_AutoLayout_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("structureType", () => Marshal.DestroyStructure<AutoLayoutStruct>((IntPtr)1));
-            AssertExtensions.Throws<ArgumentException>("structureType", () => Marshal.DestroyStructure((IntPtr)1, typeof(AutoLayoutStruct)));
+            AssertExtensions.Throws<ArgumentException>("structuretype", () => Marshal.DestroyStructure<AutoLayoutStruct>((IntPtr)1));
+            AssertExtensions.Throws<ArgumentException>("structuretype", () => Marshal.DestroyStructure((IntPtr)1, typeof(AutoLayoutStruct)));
         }
 
         [Fact]

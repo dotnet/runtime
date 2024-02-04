@@ -901,7 +901,6 @@ class BaseDomain
     friend class Assembly;
     friend class AssemblySpec;
     friend class AppDomain;
-    friend class AppDomainNative;
 
     VPTR_BASE_VTABLE_CLASS(BaseDomain)
     VPTR_UNIQUE(VPTR_UNIQUE_BaseDomain)
@@ -1496,7 +1495,6 @@ const DWORD DefaultADID = 1;
 class AppDomain : public BaseDomain
 {
     friend class SystemDomain;
-    friend class AppDomainNative;
     friend class AssemblyNative;
     friend class AssemblySpec;
     friend class ClassLoader;
@@ -2330,7 +2328,6 @@ typedef VPTR(class SystemDomain) PTR_SystemDomain;
 
 class SystemDomain : public BaseDomain
 {
-    friend class AppDomainNative;
     friend class ClrDataAccess;
 
     VPTR_VTABLE_CLASS(SystemDomain, BaseDomain)

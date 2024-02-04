@@ -13,6 +13,7 @@
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
+    <NativeAotSupported Condition="$(OutputRID.EndsWith('-arm')) == 'true'">false</NativeAotSupported>
     <!-- Disable native AOT on FreeBSD when cross building from Linux. -->
     <NativeAotSupported Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</NativeAotSupported>
     <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>

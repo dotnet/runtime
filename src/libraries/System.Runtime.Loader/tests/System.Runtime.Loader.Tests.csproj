@@ -64,6 +64,7 @@
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField\System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField\System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows\System.Reflection.Metadata.ApplyUpdate.Test.NewMethodThrows.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
@@ -71,19 +72,20 @@
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
 
-  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="ConfigureTrimming">
+  <Target Name="PreserveEnCAssembliesFromLinking" Condition="'$(TargetOS)' == 'browser' and '$(EnableAggressiveTrimming)' == 'true'" BeforeTargets="PrepareForILLink">
     <ItemGroup>
-      <!-- want to compute the intersection: apply update test assemblies that are also resolved to publish.
+      <!-- want to compute the intersection: apply update test assemblies that are also resolved to link.
         -->
       <ApplyUpdateTestProjectReference Include="@(ProjectReference)" Condition="$([System.String]::new('%(FileName)').StartsWith('$(ApplyUpdateTestPrefix)'))" />
       <ApplyUpdateTestAssemblyName Include="@(ApplyUpdateTestProjectReference->'%(FileName).dll')" />
-      <ResolvedFileToPublishNoDirName Include="%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)">
-        <ResolvedFileToPublish>%(ResolvedFileToPublish.FullPath)</ResolvedFileToPublish>
-      </ResolvedFileToPublishNoDirName>
-      <ResolvedApplyUpdateAssembly Include="@(ResolvedFileToPublishNoDirName)" Condition="'@(ResolvedFileToPublishNoDirName)' == '@(ApplyUpdateTestAssemblyName)' and %(Identity) != ''" />
       <!-- Don't let the IL linker modify EnC test assemblies -->
-      <TrimmerRootAssembly Include="%(ResolvedApplyUpdateAssembly.ResolvedFileToPublish)" />
-    </ItemGroup>
+      <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(ApplyUpdateTestAssemblyName)'">
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+      <ManagedAssemblyToLink Condition="'%(FileName)%(Extension)' == '@(IntermediateAssembly->'%(FileName)%(Extension)')'">
+        <TrimMode>copy</TrimMode>
+      </ManagedAssemblyToLink>
+    </ItemGroup> 
   </Target>
 
   <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">

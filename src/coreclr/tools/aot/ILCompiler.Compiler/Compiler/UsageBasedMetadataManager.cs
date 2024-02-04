@@ -34,7 +34,7 @@ namespace ILCompiler
     /// This class is responsible for managing native metadata to be emitted into the compiled
     /// module. It applies a policy that every type/method that is statically used shall be reflectable.
     /// </summary>
-    public sealed class UsageBasedMetadataManager : GeneratingMetadataManager
+    public sealed class UsageBasedMetadataManager : MetadataManager
     {
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
@@ -50,7 +50,7 @@ namespace ILCompiler
             };
 
         private readonly List<TypeDesc> _typesWithForcedEEType = new List<TypeDesc>();
-        private readonly List<ModuleDesc> _modulesWithMetadata = new List<ModuleDesc>();
+        private readonly SortedSet<ModuleDesc> _modulesWithMetadata = new SortedSet<ModuleDesc>(CompilerComparer.Instance);
         private readonly List<FieldDesc> _fieldsWithMetadata = new List<FieldDesc>();
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
@@ -552,15 +552,55 @@ namespace ILCompiler
             }
         }
 
-        public override void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, MethodDesc target)
+        public override void GetDependenciesDueToDelegateCreation(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
         {
             if (!IsReflectionBlocked(target))
             {
-                dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectedMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Target of a delegate");
+                dependencies ??= new CombinedDependencyList();
+
+                ReflectedMethodNode reflectedMethod = factory.ReflectedMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
+                TypeDesc canonDelegateType = delegateType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                    reflectedMethod,
+                    factory.ReflectedDelegate(canonDelegateType),
+                    "Target of delegate could be reflection-visible"));
+
+                if (canonDelegateType.HasInstantiation)
+                {
+                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                        reflectedMethod,
+                        factory.ReflectedDelegate(canonDelegateType.GetTypeDefinition()),
+                        "Target of delegate could be reflection-visible"));
+                }
+
+                dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                        reflectedMethod,
+                        factory.ReflectedDelegate(null),
+                        "Target of delegate could be reflection-visible"));
 
                 if (target.IsVirtual)
-                    dependencies.Add(factory.DelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Target of a delegate");
+                {
+                    DelegateTargetVirtualMethodNode targetVirtualMethod = factory.DelegateTargetVirtualMethod(target.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
+                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                        targetVirtualMethod,
+                        factory.ReflectedDelegate(canonDelegateType),
+                        "Target of delegate could be reflection-visible"));
+
+                    if (canonDelegateType.HasInstantiation)
+                    {
+                        dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                            targetVirtualMethod,
+                            factory.ReflectedDelegate(canonDelegateType.GetTypeDefinition()),
+                            "Target of delegate could be reflection-visible"));
+                    }
+
+                    dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
+                            targetVirtualMethod,
+                            factory.ReflectedDelegate(null),
+                            "Target of delegate could be reflection-visible"));
+                }
             }
         }
 
@@ -660,10 +700,19 @@ namespace ILCompiler
         private IEnumerable<TypeDesc> GetTypesWithRuntimeMapping()
         {
             // All constructed types that are not blocked get runtime mapping
-            foreach (var constructedType in GetTypesWithEETypes())
+            foreach (var constructedType in GetTypesWithConstructedEETypes())
             {
                 if (!IsReflectionBlocked(constructedType))
                     yield return constructedType;
+            }
+
+            // All necessary types for which this is the highest load level that are not blocked
+            // get runtime mapping.
+            foreach (var necessaryType in GetTypesWithEETypes())
+            {
+                if (!ConstructedEETypeNode.CreationAllowed(necessaryType) &&
+                    !IsReflectionBlocked(necessaryType))
+                    yield return necessaryType;
             }
         }
 

@@ -1170,12 +1170,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
 
-	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
-		/*Arrays of those two types are invalid.*/
-		ERROR_DECL (prepared_error);
-		mono_error_set_invalid_program (prepared_error, "Arrays of System.TypedReference types are invalid.");
-		mono_class_set_failure (klass, mono_error_box (prepared_error, klass->image));
-		mono_error_cleanup (prepared_error);
+	if (MONO_TYPE_IS_VOID (m_class_get_byval_arg (eclass))) {
+		mono_class_set_type_load_failure (klass, "Arrays of System.Void types are invalid.");
 	} else if (m_class_is_byreflike (eclass)) {
 		/* .NET Core throws a type load exception: "Could not create array type 'fullname[]'" */
 		char *full_name = mono_type_get_full_name (eclass);

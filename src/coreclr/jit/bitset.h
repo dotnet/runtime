@@ -172,11 +172,11 @@ class BitSetOps
     // Returns "true" iff "bs" may be the uninit value.
     static bool MayBeUninit(BitSetValueArgType bs);
 
-    // Returns the a new BitSet that is empty.  Uses the Allocator of "env" to allocate memory for
+    // Returns a new BitSet that is empty.  Uses the Allocator of "env" to allocate memory for
     // the representation, if necessary.
     static BitSetValueRetType MakeEmpty(Env env);
 
-    // Returns the a new BitSet that is "full" -- represents all the integers in the current range.
+    // Returns a new BitSet that is "full" -- represents all the integers in the current range.
     // Uses the Allocator of "env" to allocate memory for the representation, if necessary.
     static BitSetValueRetType MakeFull(Env env);
 

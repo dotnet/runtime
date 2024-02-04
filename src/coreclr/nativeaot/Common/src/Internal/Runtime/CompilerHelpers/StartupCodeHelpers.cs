@@ -10,7 +10,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    public static partial class StartupCodeHelpers
+    internal static partial class StartupCodeHelpers
     {
         /// <summary>
         /// Table of logical modules. Only the first s_moduleCount elements of the array are in use.
@@ -153,7 +153,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static unsafe void InitializeModuleFrozenObjectSegment(IntPtr segmentStart, int length)
         {
-            if (RuntimeImports.RhpRegisterFrozenSegment(segmentStart, (IntPtr)length) == IntPtr.Zero)
+            if (RuntimeImports.RhRegisterFrozenSegment((void*)segmentStart, (nuint)length, (nuint)length, (nuint)length) == IntPtr.Zero)
             {
                 // This should only happen if we ran out of memory.
                 RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment for the module.");
@@ -224,7 +224,7 @@ namespace Internal.Runtime.CompilerHelpers
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything.
                         void* pPreInitDataAddr = MethodTable.SupportsRelativePointers ? ReadRelPtr32((int*)pBlock + 1) : (void*)*(pBlock + 1);
-                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawObjectDataSize());
+                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte*)pPreInitDataAddr, obj.GetRawObjectDataSize());
                     }
 
                     // Call write barrier directly. Assigning object reference does a type check.

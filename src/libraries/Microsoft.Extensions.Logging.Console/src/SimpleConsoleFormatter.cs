@@ -4,9 +4,9 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using System.Runtime.InteropServices;
 
 namespace Microsoft.Extensions.Logging.Console
 {

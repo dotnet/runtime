@@ -999,16 +999,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             if (_module == null)
             {
-                // Log("JavaScriptTestHelper.mjs importing");
-                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs");
+                _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
                 await Setup();
-                // Log("JavaScriptTestHelper.mjs imported");
+            }
+
+#if FEATURE_WASM_MANAGED_THREADS
+            // are we in the UI thread ?
+            if (Environment.CurrentManagedThreadId == 1)
+#endif
+            {
+                // this gives browser chance to serve UI thread event loop before every test
+                await Task.Yield();
             }
         }
 
         public static Task DisposeAsync()
         {
-            _module.Dispose();
+            _module?.Dispose();
             _module = null;
             return Task.CompletedTask;
         }

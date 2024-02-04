@@ -249,7 +249,7 @@ namespace standalone
             return ::GCToEEInterface::GetCurrentProcessCpuCount();
         }
 
-        void DiagAddNewRegion(int generation, BYTE * rangeStart, BYTE * rangeEnd, BYTE * rangeEndReserved)
+        void DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
         {
             ::GCToEEInterface::DiagAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
         }

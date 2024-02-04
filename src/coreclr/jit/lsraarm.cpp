@@ -258,21 +258,9 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_NOP:
-            // A GT_NOP is either a passthrough (if it is void, or if it has
-            // a child), but must be considered to produce a dummy value if it
-            // has a type but no child
             srcCount = 0;
-            assert((tree->gtGetOp1() == nullptr) || tree->isContained());
-            if (tree->TypeGet() != TYP_VOID && tree->gtGetOp1() == nullptr)
-            {
-                assert(dstCount == 1);
-                BuildUse(tree->gtGetOp1());
-                BuildDef(tree);
-            }
-            else
-            {
-                assert(dstCount == 0);
-            }
+            assert(tree->TypeIs(TYP_VOID));
+            assert(dstCount == 0);
             break;
 
         case GT_KEEPALIVE:
@@ -710,7 +698,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_LCL_ADDR:
         case GT_PHYSREG:
-        case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
         case GT_LABEL:
         case GT_PINVOKE_PROLOG:

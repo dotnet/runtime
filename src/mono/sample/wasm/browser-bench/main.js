@@ -9,27 +9,13 @@ let runBenchmark;
 let setTasks;
 let setExclusions;
 let getFullJsonResults;
-let legacyExportTargetInt;
 let jsExportTargetInt;
-let legacyExportTargetString;
 let jsExportTargetString;
-let _jiterpreter_dump_stats;
-
-function runLegacyExportInt(count) {
-    for (let i = 0; i < count; i++) {
-        legacyExportTargetInt(i);
-    }
-}
+let _jiterpreter_dump_stats, _interp_pgo_save_data;
 
 function runJSExportInt(count) {
     for (let i = 0; i < count; i++) {
         jsExportTargetInt(i);
-    }
-}
-
-function runLegacyExportString(count) {
-    for (let i = 0; i < count; i++) {
-        legacyExportTargetString("A" + i);
     }
 }
 
@@ -61,28 +47,23 @@ function importTargetThrows(value) {
 }
 
 class MainApp {
-    async init({ getAssemblyExports, setModuleImports, BINDING, INTERNAL }) {
+    async init({ getAssemblyExports, setModuleImports, INTERNAL }) {
         const exports = await getAssemblyExports("Wasm.Browser.Bench.Sample.dll");
-        INTERNAL.jiterpreter_apply_options({
-            enableStats: true
-        });
+        // Capture these two internal APIs for use at the end of the benchmark run
         _jiterpreter_dump_stats = INTERNAL.jiterpreter_dump_stats.bind(INTERNAL);
+        _interp_pgo_save_data = INTERNAL.interp_pgo_save_data.bind(INTERNAL);
         runBenchmark = exports.Sample.Test.RunBenchmark;
         setTasks = exports.Sample.Test.SetTasks;
         setExclusions = exports.Sample.Test.SetExclusions;
         getFullJsonResults = exports.Sample.Test.GetFullJsonResults;
 
-        legacyExportTargetInt = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetInt");
         jsExportTargetInt = exports.Sample.ImportsExportsHelper.JSExportTargetInt;
-        legacyExportTargetString = BINDING.bind_static_method("[Wasm.Browser.Bench.Sample]Sample.ImportsExportsHelper:LegacyExportTargetString");
         jsExportTargetString = exports.Sample.ImportsExportsHelper.JSExportTargetString;
 
         setModuleImports("main.js", {
             Sample: {
                 Test: {
-                    runLegacyExportInt,
                     runJSExportInt,
-                    runLegacyExportString,
                     runJSExportString,
                     importTargetInt,
                     importTargetString,
@@ -117,7 +98,6 @@ class MainApp {
             console.log(resultString);
         }
 
-        _jiterpreter_dump_stats();
         document.getElementById("out").innerHTML += "Finished";
         const r1 = await fetch("/results.json", {
             method: 'POST',
@@ -129,6 +109,21 @@ class MainApp {
             body: document.getElementById("out").innerHTML
         });
         console.log("post request complete, response: ", r2);
+
+        // If the jiterpreter's statistics are enabled, make sure we dump them at the
+        //  end of the benchmark run to have a definitive version of them that captures
+        //  everything, since the automatic ones are triggered at a basically random
+        //  interval
+        if (_jiterpreter_dump_stats)
+            _jiterpreter_dump_stats();
+
+        // We explicitly save the interpreter PGO table after a run is complete
+        //  in order to capture all the methods that were tiered while running benchmarks
+        // The normal automatic save-on-startup-timeout behavior is insufficient for
+        //  scenarios like this since we can't predict how long the benchmarks will
+        //  take, and "startup" is spread over the whole run instead of the beginning
+        if (_interp_pgo_save_data)
+            await _interp_pgo_save_data(true);
     }
 
     yieldBench() {
@@ -179,11 +174,27 @@ class MainApp {
                 ? 'unique/' + guid + '/' + page
                 : page;
 
+            let resolved = false;
             promise = new Promise(resolve => { promiseResolve = resolve; })
             window.resolveAppStartEvent = function (event) {
-                if (!eventName || event == eventName)
+                if (!eventName || event == eventName) {
+                    resolved = true;
                     promiseResolve();
+                }
             }
+
+            // The appstart event may never fire if something goes wrong, in that case
+            //  we want to time out within a reasonable period of time so that the run
+            //  of browser-bench will eventually complete instead of just freezing.
+            setTimeout(function () {
+                if (resolved)
+                    return;
+                console.error(`waitFor ${eventName} timed out`);
+                promiseResolve();
+                // Make sure this timeout is big enough that it won't cause measurements
+                //  to be truncated! i.e. "Blazor Reach managed cold" is nearly 10k in some
+                //  configurations right now
+            }, 20000);
 
             document.body.appendChild(this._frame);
             await promise;
@@ -208,7 +219,15 @@ try {
     globalThis.mainApp.SetFramePage = globalThis.mainApp.setFramePage.bind(globalThis.mainApp);
 
     const runtime = await dotnet
+        // We enable jiterpreter stats so that in local runs you can open the devtools
+        //  console to see statistics on how much code it generated and whether any new opcodes
+        //  are causing traces to fail to compile
         .withRuntimeOptions(["--jiterpreter-stats-enabled"])
+        // We enable interpreter PGO so that you can exercise it in local tests, i.e.
+        //  run browser-bench one, then refresh the tab to measure the performance improvement
+        //  on the second run of browser-bench. The overall speed of the benchmarks won't
+        //  improve much, but the time spent generating code during the run will go down
+        .withInterpreterPgo(true, 30)
         .withElementOnExit()
         .withExitCodeLogging()
         .create();

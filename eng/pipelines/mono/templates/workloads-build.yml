@@ -52,6 +52,9 @@ jobs:
         patterns: |
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg

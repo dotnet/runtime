@@ -162,6 +162,11 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     }
     else
     {
+        // Create a new edge
+        //
+        // We may be disallowing edge creation, except for edges targeting special blocks.
+        //
+        assert(fgSafeFlowEdgeCreation || block->HasFlag(BBF_CAN_ADD_PRED));
 
 #if MEASURE_BLOCK_SIZE
         genFlowNodeCnt += 1;
@@ -180,6 +185,13 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
         if (initializingPreds)
         {
             block->bbLastPred = flow;
+        }
+
+        // Copy likelihood from old edge, if any.
+        //
+        if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
+        {
+            flow->setLikelihood(oldEdge->getLikelihood());
         }
 
         if (fgHaveValidEdgeWeights)
@@ -341,22 +353,19 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 {
     PREFIX_ASSUME(block != nullptr);
 
-    switch (block->GetJumpKind())
+    switch (block->GetKind())
     {
         case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
         case BBJ_EHFILTERRET:
-            fgRemoveRefPred(block->GetJumpDest(), block);
-            break;
-
-        case BBJ_NONE:
-            fgRemoveRefPred(block->Next(), block);
+            fgRemoveRefPred(block->GetTarget(), block);
             break;
 
         case BBJ_COND:
-            fgRemoveRefPred(block->GetJumpDest(), block);
-            fgRemoveRefPred(block->Next(), block);
+            fgRemoveRefPred(block->GetTrueTarget(), block);
+            fgRemoveRefPred(block->GetFalseTarget(), block);
             break;
 
         case BBJ_EHFINALLYRET:
@@ -379,7 +388,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         default:
-            noway_assert(!"Block doesn't have a valid bbJumpKind!!!!");
+            noway_assert(!"Block doesn't have a valid bbKind!!!!");
             break;
     }
 }

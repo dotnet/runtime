@@ -184,7 +184,6 @@ RhpTrapThreads                              equ _RhpTrapThreads
 
 ifdef FEATURE_GC_STRESS
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SGXPAUPAL_LIMITED_CONTEXT@@@Z
-REDHAWKGCINTERFACE__STRESSGC                equ ?StressGc@RedhawkGCInterface@@SGXXZ
 endif ;; FEATURE_GC_STRESS
 
 ;;
@@ -200,7 +199,7 @@ EXTERN RhRethrow                                : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
-EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
+EXTERN RhpStressGc                              : PROC
 endif ;; FEATURE_GC_STRESS
 
 EXTERN G_LOWEST_ADDRESS : DWORD

@@ -36,13 +36,13 @@ namespace System.Linq
 
             public int Count => _count;
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
 
                 if (count >= _count)
                 {
-                    return EmptyPartition<TResult>.Instance;
+                    return null;
                 }
 
                 return new RepeatIterator<TResult>(_current, _count - count);

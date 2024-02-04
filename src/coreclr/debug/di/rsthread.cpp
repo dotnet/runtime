@@ -6327,6 +6327,126 @@ UINT_PTR * CordbNativeFrame::GetAddressOfRegister(CorDebugRegister regNum) const
     case REGISTER_ARM64_PC:
         ret = (UINT_PTR*)&m_rd.PC;
         break;
+#elif defined(TARGET_RISCV64)
+    case REGISTER_RISCV64_PC:
+        ret = (UINT_PTR*)&m_rd.PC;
+        break;
+
+    case REGISTER_RISCV64_RA:
+        ret = (UINT_PTR*)&m_rd.RA;
+        break;
+
+    case REGISTER_RISCV64_GP:
+        ret = (UINT_PTR*)&m_rd.GP;
+        break;
+
+    case REGISTER_RISCV64_TP:
+        ret = (UINT_PTR*)&m_rd.TP;
+        break;
+
+    case REGISTER_RISCV64_T0:
+        ret = (UINT_PTR*)&m_rd.T0;
+        break;
+
+    case REGISTER_RISCV64_T1:
+        ret = (UINT_PTR*)&m_rd.T1;
+        break;
+
+    case REGISTER_RISCV64_T2:
+        ret = (UINT_PTR*)&m_rd.T2;
+        break;
+
+    case REGISTER_RISCV64_S1:
+        ret = (UINT_PTR*)&m_rd.S1;
+        break;
+
+    case REGISTER_RISCV64_A0:
+        ret = (UINT_PTR*)&m_rd.A0;
+        break;
+
+    case REGISTER_RISCV64_A1:
+        ret = (UINT_PTR*)&m_rd.A1;
+        break;
+
+    case REGISTER_RISCV64_A2:
+        ret = (UINT_PTR*)&m_rd.A2;
+        break;
+
+    case REGISTER_RISCV64_A3:
+        ret = (UINT_PTR*)&m_rd.A3;
+        break;
+
+    case REGISTER_RISCV64_A4:
+        ret = (UINT_PTR*)&m_rd.A4;
+        break;
+
+    case REGISTER_RISCV64_A5:
+        ret = (UINT_PTR*)&m_rd.A5;
+        break;
+
+    case REGISTER_RISCV64_A6:
+        ret = (UINT_PTR*)&m_rd.A6;
+        break;
+
+    case REGISTER_RISCV64_A7:
+        ret = (UINT_PTR*)&m_rd.A7;
+        break;
+
+    case REGISTER_RISCV64_S2:
+        ret = (UINT_PTR*)&m_rd.S2;
+        break;
+
+    case REGISTER_RISCV64_S3:
+        ret = (UINT_PTR*)&m_rd.S3;
+        break;
+
+    case REGISTER_RISCV64_S4:
+        ret = (UINT_PTR*)&m_rd.S4;
+        break;
+
+    case REGISTER_RISCV64_S5:
+        ret = (UINT_PTR*)&m_rd.S5;
+        break;
+
+    case REGISTER_RISCV64_S6:
+        ret = (UINT_PTR*)&m_rd.S6;
+        break;
+
+    case REGISTER_RISCV64_S7:
+        ret = (UINT_PTR*)&m_rd.S7;
+        break;
+
+    case REGISTER_RISCV64_S8:
+        ret = (UINT_PTR*)&m_rd.S8;
+        break;
+
+    case REGISTER_RISCV64_S9:
+        ret = (UINT_PTR*)&m_rd.S9;
+        break;
+
+    case REGISTER_RISCV64_S10:
+        ret = (UINT_PTR*)&m_rd.S10;
+        break;
+
+    case REGISTER_RISCV64_S11:
+        ret = (UINT_PTR*)&m_rd.S11;
+        break;
+
+    case REGISTER_RISCV64_T3:
+        ret = (UINT_PTR*)&m_rd.T3;
+        break;
+
+    case REGISTER_RISCV64_T4:
+        ret = (UINT_PTR*)&m_rd.T4;
+        break;
+
+    case REGISTER_RISCV64_T5:
+        ret = (UINT_PTR*)&m_rd.T5;
+        break;
+
+    case REGISTER_RISCV64_T6:
+        ret = (UINT_PTR*)&m_rd.T6;
+        break;
 #endif
 
     default:
