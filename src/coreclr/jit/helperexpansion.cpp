@@ -7,21 +7,6 @@
 #pragma hdrstop
 #endif
 
-// Obtain constant pointer from a tree
-static void* GetConstantPointer(Compiler* comp, GenTree* tree)
-{
-    void* cns = nullptr;
-    if (tree->gtEffectiveVal()->IsCnsIntOrI())
-    {
-        cns = (void*)tree->gtEffectiveVal()->AsIntCon()->IconValue();
-    }
-    else if (comp->vnStore->IsVNConstant(tree->gtVNPair.GetLiberal()))
-    {
-        cns = (void*)comp->vnStore->CoercedConstantValue<ssize_t>(tree->gtVNPair.GetLiberal());
-    }
-    return cns;
-}
-
 // Save expression to a local and append it as the last statement in exprBlock
 static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
 {
@@ -186,14 +171,16 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     //
     //   type = call(genericCtx, signatureCns);
     //
-    void* signature = GetConstantPointer(this, call->gtArgs.GetArgByIndex(1)->GetNode());
-    if (signature == nullptr)
+    const GenTree* signatureNode = call->gtArgs.GetArgByIndex(1)->GetNode();
+    if (!signatureNode->IsCnsIntOrI())
     {
-        // Technically, it is possible (e.g. it was CSE'd and then VN was erased), but for Debug mode we
-        // want to catch such cases as we really don't want to emit just a fallback call - it's too slow
+        // We really expect the signature to be a constant node here.
+        // It's still correct if JIT decides to violate this assumption, but we really
+        // don't want it to happen, so we assert here
         assert(!"can't restore signature argument value");
         return false;
     }
+    void* signature = reinterpret_cast<void*>(signatureNode->AsIntCon()->IconValue());
 
     JITDUMP("Expanding runtime lookup for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum)
     DISPTREE(call)
@@ -1635,12 +1622,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
-    // Split block right before the call tree (this is a standard pattern we use in helperexpansion.cpp)
-    BasicBlock* prevBb       = block;
-    GenTree**   callUse      = nullptr;
-    Statement*  newFirstStmt = nullptr;
-    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
-    assert(prevBb != nullptr && block != nullptr);
+    BasicBlock* prevBb;
+    const unsigned resultLclNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &prevBb, &block);
+
     *pBlock = block;
 
     // If we suddenly need to use these arguments, we'll have to reload them from the call
@@ -1648,26 +1632,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     srcLen = nullptr;
     srcPtr = nullptr;
 
-    // Block ops inserted by the split need to be morphed here since we are after morph.
-    // We cannot morph stmt yet as we may modify it further below, and the morphing
-    // could invalidate callUse
-    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
-    {
-        fgMorphStmtBlockOps(block, newFirstStmt);
-        newFirstStmt = newFirstStmt->GetNextStmt();
-    }
-
     // We don't need this flag anymore.
     call->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
-
-    // Grab a temp to store the result.
-    // The result corresponds the number of bytes written to dstPtr (int32).
-    assert(call->TypeIs(TYP_INT));
-    const unsigned resultLclNum   = lvaGrabTemp(true DEBUGARG("local for result"));
-    lvaTable[resultLclNum].lvType = TYP_INT;
-    *callUse                      = gtNewLclvNode(resultLclNum, TYP_INT);
-    fgMorphStmtBlockOps(block, stmt);
-    gtUpdateStmtSideEffects(stmt);
 
     // srcLenU8 is the length of the string literal in chars (UTF16)
     // but we're going to use the same value as the "bytesWritten" result in the fast path and in the length check.
