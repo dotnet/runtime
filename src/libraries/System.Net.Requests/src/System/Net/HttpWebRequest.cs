@@ -1075,7 +1075,7 @@ namespace System.Net
             _sendRequestTask = SendRequest(async, new StreamContent(new HttpClientContentStream(streamBuffer)));
 
             // If any parameter changed, change the RequestStream.
-            _requestStream ??= new RequestStream(streamBuffer, AllowWriteStreamBuffering);
+            _requestStream = new RequestStream(streamBuffer, AllowWriteStreamBuffering);
 
             return Task.FromResult((Stream)_requestStream);
         }
