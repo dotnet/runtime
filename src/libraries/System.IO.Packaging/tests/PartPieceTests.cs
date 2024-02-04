@@ -290,24 +290,6 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        public void OutOfRangeStreamReadThrows()
-        {
-            byte[] buffer = new byte[10];
-            using var ms = new MemoryStream(buffer);
-
-            Assert.Throws<ArgumentException>(() => PackagingUtilities.VerifyStreamReadArgs(ms, buffer, 6, 5));
-        }
-
-        [Fact]
-        public void OutOfRangeStreamWriteThrows()
-        {
-            byte[] buffer = new byte[10];
-            using var ms = new MemoryStream(buffer);
-
-            Assert.Throws<ArgumentException>(() => PackagingUtilities.VerifyStreamWriteArgs(ms, buffer, 6, 5));
-        }
-
-        [Fact]
         public void UppercaseContentTypePartPieceSequenceIsFound()
         {
             using var ms = new MemoryStream(_uppercasePartPieceContentTypesSampleZipPackage);

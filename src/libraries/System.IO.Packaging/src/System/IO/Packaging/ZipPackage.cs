@@ -601,7 +601,7 @@ namespace System.IO.Packaging
                 else
                 {
                     //Check for incomplete sequence.
-                    if (string.CompareOrdinal(pieces[i].NormalizedPrefixName, normalizedPrefixNameForCurrentSequence) != 0)
+                    if (pieces[i].NormalizedPrefixName != normalizedPrefixNameForCurrentSequence)
                     {
                         // Check if the piece we have found is another first piece.
                         if (pieces[i].PieceNumber == 0)

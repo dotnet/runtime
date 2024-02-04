@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -52,27 +53,42 @@ namespace System.IO.Packaging
             Debug.Assert(_dir.GetStartOffset(GetCurrentPieceNumber()) == 0);
         }
 
-        /// <summary>
-        /// Return the bytes requested.
-        /// </summary>
-        /// <param name="buffer">Destination buffer.</param>
-        /// <param name="offset">
-        /// The zero-based byte offset in buffer at which to begin storing the data read
-        /// from the current stream.
-        /// </param>
-        /// <param name="count">How many bytes requested.</param>
-        /// <returns>How many bytes were written into buffer.</returns>
+        /// <inheritdoc/>
         public override int Read(byte[] buffer, int offset, int count)
+            => Read(new Span<byte>(buffer, offset, count));
+
+
+#if NETCOREAPP2_1_OR_GREATER
+        /// <inheritdoc/>
+        public override
+#else
+        /// <summary>
+        /// When overridden in a derived class, reads a sequence of bytes from the current stream and
+        /// advances the position within the stream by the number of bytes read.
+        /// </summary>
+        /// <param name="buffer">
+        /// A region of memory. When this method returns, the contents of this region are replaced by
+        /// the bytes read from the current source.
+        /// </param>
+        /// <returns>
+        /// The total number of bytes read into the buffer. This can be less than the size of the buffer
+        /// if that many bytes are not currently available, or zero (0) if the buffer's length is zero
+        /// or the end of the stream has been reached.
+        /// </returns>
+        public
+#endif
+        int Read(Span<byte> buffer)
         {
             CheckClosed();
 
             // Check arguments.
-            PackagingUtilities.VerifyStreamReadArgs(this, buffer, offset, count);
+            if (!CanRead)
+                throw new NotSupportedException(SR.ReadNotSupported);
 
             // Leave capability and FileAccess checks up to the underlying stream(s).
 
             // Reading 0 bytes is a no-op.
-            if (count == 0)
+            if (buffer.Length == 0)
                 return 0;
 
             int pieceNumber = GetCurrentPieceNumber();
@@ -80,6 +96,12 @@ namespace System.IO.Packaging
 
             Stream pieceStream = _dir.GetStream(pieceNumber);
             long pieceStreamRelativeOffset = _currentOffset - _dir.GetStartOffset(pieceNumber);
+
+            // .NET Standard 2.0 doesn't support the Read(Span<byte>) method. Instead, we rent a temporary
+            // buffer of the same length, read into that and perform a copy into the span.
+#if !NETCOREAPP2_1_OR_GREATER
+            byte[] tempInputBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+#endif
 
             checked
             {
@@ -100,12 +122,19 @@ namespace System.IO.Packaging
                     SeekUnderlyingPieceStream(pieceStream, pieceStreamRelativeOffset);
                 }
 
-                while (totalBytesRead < count)
+                while (totalBytesRead < buffer.Length)
                 {
+#if NETCOREAPP2_1_OR_GREATER
+                    int numBytesRead = pieceStream.Read(buffer.Slice(totalBytesRead));
+#else
                     int numBytesRead = pieceStream.Read(
-                        buffer,
-                        offset + totalBytesRead,
-                        count - totalBytesRead);
+                        tempInputBuffer,
+                        totalBytesRead,
+                        buffer.Length - totalBytesRead);
+
+                    tempInputBuffer.AsSpan(totalBytesRead, numBytesRead).CopyTo(buffer.Slice(totalBytesRead, numBytesRead));
+#endif
+
 
                     // End of the current stream: try to move to the next stream.
                     if (numBytesRead == 0)
@@ -135,6 +164,10 @@ namespace System.IO.Packaging
                     totalBytesRead += numBytesRead;
                 }
 
+#if !NETCOREAPP2_1_OR_GREATER
+                ArrayPool<byte>.Shared.Return(tempInputBuffer);
+#endif
+
                 // Advance current position now we know the operation completed successfully.
                 _currentOffset += totalBytesRead;
             }
@@ -142,11 +175,7 @@ namespace System.IO.Packaging
             return totalBytesRead;
         }
 
-        /// <summary>
-        /// Seek
-        /// </summary>
-        /// <param name="offset">Offset in byte.</param>
-        /// <param name="origin">Offset origin (start, current, or end).</param>
+        /// <inheritdoc/>
         public override long Seek(long offset, SeekOrigin origin)
         {
             CheckClosed();
@@ -186,9 +215,7 @@ namespace System.IO.Packaging
             return _currentOffset;
         }
 
-        /// <summary>
-        /// SetLength
-        /// </summary>
+        /// <inheritdoc/>
         public override void SetLength(long newLength)
         {
             CheckClosed();
@@ -228,25 +255,47 @@ namespace System.IO.Packaging
             }
         }
 
-        /// <summary>
-        /// Write. Distribute the bytes to write across several contiguous streams if needed.
-        /// </summary>
+        /// <inheritdoc/>
         /// <remarks>
         /// Zip streams can be assumed seekable so the length will be available for chaining
         /// pieces.
         /// </remarks>
         public override void Write(byte[] buffer, int offset, int count)
+            => Write(new ReadOnlySpan<byte>(buffer, offset, count));
+
+#if NETCOREAPP2_1_OR_GREATER
+        /// <inheritdoc/>
+        /// <remarks>
+        /// Zip streams can be assumed seekable so the length will be available for chaining
+        /// pieces.
+        /// </remarks>
+        public override
+#else
+        /// <summary>
+        /// When overridden in a derived class, writes a sequence of bytes to the current stream
+        /// and advances the current position within this stream by the number of bytes written.
+        /// </summary>
+        /// <param name="buffer">
+        /// A region of memory. This method copies the contents of this region to the current stream.
+        /// </param>
+        /// <remarks>
+        /// Zip streams can be assumed seekable so the length will be available for chaining
+        /// pieces.
+        /// </remarks>
+        public
+#endif
+        void Write(ReadOnlySpan<byte> buffer)
         {
             CheckClosed();
 
-            // Check arguments.
-            PackagingUtilities.VerifyStreamWriteArgs(this, buffer, offset, count);
+            if (!CanWrite)
+                throw new NotSupportedException(SR.WriteNotSupported);
 
             // No check for FileAccess and stream capability (CanWrite). This is the responsibility
             // of the underlying stream(s).
 
             // A no-op if zero bytes to write.
-            if (count == 0)
+            if (buffer.Length == 0)
                 return;
 
             // Write into piece streams, preserving all lengths in non-terminal pieces.
@@ -254,15 +303,22 @@ namespace System.IO.Packaging
             int pieceNumber = GetCurrentPieceNumber();
             Stream pieceStream = _dir.GetStream(pieceNumber);
 
+            // .NET Standard 2.0 doesn't support the Write(ReadOnlySpan<byte>) method. Instead, rent a temporary
+            // buffer of a specific length, write into that and write that to the underlying stream.
+            // To slightly reduce memory usage, this buffer is reallocated with every new piece.
+#if !NETCOREAPP2_1_OR_GREATER
+            byte[] tempInputBuffer = null;
+#endif
+
             checked
             {
                 //Seek to the correct location in the underlying stream for the current piece
                 pieceStream.Seek(_currentOffset - _dir.GetStartOffset(pieceNumber), SeekOrigin.Begin);
 
-                while (totalBytesWritten < count)
+                while (totalBytesWritten < buffer.Length)
                 {
                     // Compute the number of bytes to write into pieceStream.
-                    int numBytesToWriteInCurrentPiece = count - totalBytesWritten;
+                    int numBytesToWriteInCurrentPiece = buffer.Length - totalBytesWritten;
                     if (!_dir.IsLastPiece(pieceNumber))
                     {
                         // The write should not change the length of an intermediate piece.
@@ -276,14 +332,23 @@ namespace System.IO.Packaging
                         }
                     }
 
+#if !NETCOREAPP2_1_OR_GREATER
+                    // Allocate memory to tempInputBuffer, copy the correct segment from the ReadOnlySpan, and
+                    // do the write to pieceStream.
+                    tempInputBuffer ??= ArrayPool<byte>.Shared.Rent(numBytesToWriteInCurrentPiece);
+
+                    buffer.Slice(totalBytesWritten, numBytesToWriteInCurrentPiece).CopyTo(tempInputBuffer);
+                    pieceStream.Write(tempInputBuffer, 0, numBytesToWriteInCurrentPiece);
+#else
                     // Do the write.
-                    pieceStream.Write(buffer, offset + totalBytesWritten, numBytesToWriteInCurrentPiece);
+                    pieceStream.Write(buffer.Slice(totalBytesWritten, numBytesToWriteInCurrentPiece));
+#endif
 
                     // Update the tally.
                     totalBytesWritten += numBytesToWriteInCurrentPiece;
 
                     // If there is more data to write, get the next piece stream
-                    if (!_dir.IsLastPiece(pieceNumber) && totalBytesWritten < count)
+                    if (!_dir.IsLastPiece(pieceNumber) && totalBytesWritten < buffer.Length)
                     {
                         // The next write, should involve the next piece.
                         ++pieceNumber;
@@ -292,11 +357,18 @@ namespace System.IO.Packaging
 
                         //Seek inorder to set the correct pointer for the next piece stream
                         pieceStream.Seek(0, SeekOrigin.Begin);
+
+#if !NETCOREAPP2_1_OR_GREATER
+                        // Return and unset tempInputBuffer, forcing it to be reallocated with the size of
+                        // the next piece.
+                        ArrayPool<byte>.Shared.Return(tempInputBuffer);
+                        tempInputBuffer = null;
+#endif
                     }
                 }
 
                 // Now we know the operation has completed, the current position can be updated.
-                Debug.Assert(totalBytesWritten == count);
+                Debug.Assert(totalBytesWritten == buffer.Length);
                 _currentOffset += totalBytesWritten;
             }
         }
@@ -320,9 +392,7 @@ namespace System.IO.Packaging
             _dir.Flush();
         }
 
-        /// <summary>
-        /// Is stream readable?
-        /// </summary>
+        /// <inheritdoc/>
         /// <remarks>
         /// <para>
         /// Here, the assumption, as in all capability tests, is that the status of
@@ -344,9 +414,7 @@ namespace System.IO.Packaging
             }
         }
 
-        /// <summary>
-        /// Is stream seekable?
-        /// </summary>
+        /// <inheritdoc/>
         /// <remarks>
         /// <para>
         /// Here, the assumption, as in all capability tests, is that the status of
@@ -368,9 +436,7 @@ namespace System.IO.Packaging
             }
         }
 
-        /// <summary>
-        /// Is stream writable?
-        /// </summary>
+        /// <inheritdoc/>
         /// <remarks>
         /// <para>
         /// Here, the assumption, as in all capability tests, is that the status of
@@ -393,9 +459,7 @@ namespace System.IO.Packaging
             }
         }
 
-        /// <summary>
-        /// Logical byte position in this stream.
-        /// </summary>
+        /// <inheritdoc/>
         public override long Position
         {
             get
@@ -412,10 +476,7 @@ namespace System.IO.Packaging
             }
         }
 
-        /// <summary>
-        /// Length.
-        /// </summary>
-        //
+        /// <inheritdoc/>
         public override long Length
         {
             get
@@ -432,17 +493,7 @@ namespace System.IO.Packaging
             }
         }
 
-        /// <summary>
-        /// Dispose(bool)
-        /// </summary>
-        /// <param name="disposing"></param>
-        /// <remarks>
-        /// An instance of streams' peculiar dispose pattern, whereby
-        /// the inherited abstract class implements Close by calling
-        /// this virtual protected function.
-        /// In turn, each implementation is responsible for calling back
-        /// its base's implementation.
-        /// </remarks>
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
 
@@ -496,10 +547,9 @@ namespace System.IO.Packaging
         /// </summary>
         private static void SeekUnderlyingPieceStream(Stream pieceStream, long byteCount)
         {
-            // need to add a test for all of this
             const int BufferSize = 4096;
             long remainingBytes = byteCount;
-            byte[] readBuffer = new byte[BufferSize];
+            byte[] readBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
             int bytesRead = byteCount < BufferSize ? (int)byteCount : BufferSize;
 
             do
@@ -507,6 +557,8 @@ namespace System.IO.Packaging
                 bytesRead = pieceStream.Read(readBuffer, 0, bytesRead);
                 remainingBytes -= bytesRead;
             } while (remainingBytes > 0 && bytesRead > 0);
+
+            ArrayPool<byte>.Shared.Return(readBuffer);
 
             if (remainingBytes != 0)
             {
