@@ -4955,7 +4955,7 @@ bool Compiler::optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 {
     assert(indir->OperIsIndir());
 
-    if (!indir->OperIs(GT_STOREIND))
+    if (!indir->OperIs(GT_STOREIND) || (indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
     {
         return false;
     }
