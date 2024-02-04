@@ -5916,6 +5916,26 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I_I(INS_sve_cmla, EA_SCALABLE, REG_V6, REG_V7, REG_V15, 1, 3,
                                   INS_OPTS_SCALABLE_S); // CMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
 
+    // IF_SVE_FC_3A
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V0, REG_V7, REG_V1, 3, 0,
+                                  INS_OPTS_SCALABLE_H); // SQRDCMLAH <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V2, REG_V5, REG_V3, 2, 1,
+                                  INS_OPTS_SCALABLE_H); // SQRDCMLAH <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V4, REG_V3, REG_V5, 1, 2,
+                                  INS_OPTS_SCALABLE_H); // SQRDCMLAH <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V6, REG_V1, REG_V7, 0, 3,
+                                  INS_OPTS_SCALABLE_H); // SQRDCMLAH <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+
+    // IF_SVE_FC_3B
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V0, REG_V1, REG_V0, 0, 0,
+                                  INS_OPTS_SCALABLE_S); // SQRDCMLAH <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V2, REG_V3, REG_V5, 1, 1,
+                                  INS_OPTS_SCALABLE_S); // SQRDCMLAH <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V4, REG_V5, REG_V10, 0, 2,
+                                  INS_OPTS_SCALABLE_S); // SQRDCMLAH <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+    theEmitter->emitIns_R_R_R_I_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V6, REG_V7, REG_V15, 1, 3,
+                                  INS_OPTS_SCALABLE_S); // SQRDCMLAH <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+
     // IF_SVE_IH_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_ld1d, EA_SCALABLE, REG_V5, REG_P3, REG_R4, 0,
                                 INS_OPTS_SCALABLE_D); // LD1D    {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]

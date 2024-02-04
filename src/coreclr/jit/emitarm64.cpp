@@ -1596,6 +1596,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_FA_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
         case IF_SVE_FB_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
+        case IF_SVE_FC_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
@@ -1606,6 +1607,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_FA_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
         case IF_SVE_FB_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
+        case IF_SVE_FC_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
@@ -10710,6 +10712,26 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             break;
 
+        case INS_sve_sqrdcmlah:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmm
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(isValidUimm4(imm)); // ii rr
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                fmt = IF_SVE_FC_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+                assert(isValidUimm3(imm)); // i rr
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15));
+                fmt = IF_SVE_FC_3B;
+            }
+            break;
+
         case INS_sve_ld1d:
             assert(insOptsScalable(opt));
             assert(isVectorRegister(reg1));
@@ -11427,6 +11449,7 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
         }
 
         case INS_sve_cmla:
+        case INS_sve_sqrdcmlah:
         {
             if (opt == INS_OPTS_SCALABLE_H)
             {
@@ -18618,6 +18641,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SVE_FA_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
         case IF_SVE_FB_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
+        case IF_SVE_FC_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
         {
             const ssize_t imm   = emitGetInsSC(id);
             const ssize_t rot   = (imm & 0b11);
@@ -18634,6 +18658,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_SVE_FA_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
         case IF_SVE_FB_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
+        case IF_SVE_FC_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
         {
             const ssize_t imm   = emitGetInsSC(id);
             const ssize_t rot   = (imm & 0b11);
@@ -21553,7 +21578,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_S, true); // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);      // nnnnn
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);     // mmm
-            emitDispElementIndex(emitGetInsSC(id));                  // ii
+            emitDispElementIndex(emitGetInsSC(id), false);           // ii
             break;
 
         // <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B
@@ -21881,6 +21906,10 @@ void emitter::emitDispInsHelp(
         case IF_SVE_FB_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
         // CMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
         case IF_SVE_FB_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
+        // SQRDCMLAH <Zda>.H, <Zn>.H, <Zm>.H[<imm>], <const>
+        case IF_SVE_FC_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
+        // SQRDCMLAH <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_FC_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
         {
             const ssize_t imm   = emitGetInsSC(id);
             const ssize_t rot   = (imm & 0b11);
@@ -24905,6 +24934,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EE_1A: // ........xx...... ...iiiiiiiiddddd -- SVE integer multiply immediate (unpredicated)
         case IF_SVE_FB_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
         case IF_SVE_FB_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
+        case IF_SVE_FC_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
+        case IF_SVE_FC_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_5C;
             break;
