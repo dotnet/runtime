@@ -1622,7 +1622,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
-    BasicBlock* prevBb;
+    BasicBlock*    prevBb;
     const unsigned resultLclNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &prevBb, &block);
 
     *pBlock = block;
