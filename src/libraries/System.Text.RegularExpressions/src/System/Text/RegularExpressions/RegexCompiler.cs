@@ -4134,6 +4134,8 @@ namespace System.Text.RegularExpressions
                     // Determine where to branch, either back to the lazy loop body to add an additional iteration,
                     // or to the last backtracking label.
 
+                    Label jumpToDone = DefineLabel();
+
                     if (iterationMayBeEmpty)
                     {
                         // if (sawEmpty != 0)
@@ -4152,7 +4154,7 @@ namespace System.Text.RegularExpressions
                         Ldc(0);
                         Stloc(sawEmpty!);
 
-                        BrFar(doneLabel);
+                        Br(jumpToDone);
                         MarkLabel(sawEmptyZero);
                     }
 
@@ -4161,11 +4163,31 @@ namespace System.Text.RegularExpressions
                         // if (iterationCount >= maxIterations) goto doneLabel;
                         Ldloc(iterationCount);
                         Ldc(maxIterations);
-                        BgeFar(doneLabel);
+                        Bge(jumpToDone);
                     }
 
                     // goto body;
                     BrFar(body);
+
+                    MarkLabel(jumpToDone);
+
+                    // We're backtracking, which could either be to something prior to the lazy loop or to something
+                    // inside of the lazy loop.  If it's to something inside of the lazy loop, then either the loop
+                    // will eventually succeed or we'll eventually end up unwinding back through the iterations all
+                    // the way back to the loop not matching at all, in which case the state we first pushed on at the
+                    // beginning of the !isAtomic section will get popped off. But if here we're instead going to jump
+                    // to something prior to the lazy loop, then we need to pop off that state here.
+                    if (doneLabel == originalDoneLabel)
+                    {
+                        // stackpos -= entriesPerIteration;
+                        Ldloc(stackpos);
+                        Ldc(entriesPerIteration);
+                        Sub();
+                        Stloc(stackpos);
+                    }
+
+                    // goto done;
+                    BrFar(doneLabel);
 
                     doneLabel = backtrack;
                     MarkLabel(skipBacktrack);

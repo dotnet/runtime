@@ -1329,9 +1329,27 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (!targetMethod.IsVirtual ||
-                    // Final/sealed has no meaning for interfaces, but lets us devirtualize otherwise
-                    !targetMethod.OwningType.IsInterface && (targetMethod.IsFinal || targetMethod.OwningType.IsSealed()))
+                // We can devirtualize the callvirt if the method is not virtual to begin with
+                bool canDevirt = !targetMethod.IsVirtual;
+
+                // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
+                if (!canDevirt && !targetMethod.OwningType.IsInterface)
+                {
+                    // Check if we can devirt per metadata
+                    canDevirt = targetMethod.IsFinal || targetMethod.OwningType.IsSealed();
+
+                    // We might be able to devirt based on whole program view
+                    if (!canDevirt
+                        // Do not devirt if devirtualization would need a generic dictionary entry that we didn't predict
+                        // during scanning (i.e. compiling a shared method body and we need to call another shared body
+                        // with a method generic dictionary argument).
+                        && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
+                    {
+                        canDevirt = _compilation.IsEffectivelySealed(targetMethod);
+                    }
+                }
+
+                if (canDevirt)
                 {
                     resolvedCallVirt = true;
                     directCall = true;
