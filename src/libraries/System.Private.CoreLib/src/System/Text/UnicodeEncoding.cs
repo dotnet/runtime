@@ -1535,7 +1535,7 @@ namespace System.Text
                     }
 
                     // Valid surrogate pair, add our lastChar (will need 2 chars)
-                    if (chars >= charEnd - 1 || chars == charEnd)
+                    if (charEnd - chars < 2)
                     {
                         // couldn't find room for this surrogate pair
                         // We either advanced bytes or chars should == charStart and throw below
