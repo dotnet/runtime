@@ -5848,6 +5848,36 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_usdot, EA_SCALABLE, REG_V23, REG_V24, REG_V3, 3,
                                 INS_OPTS_SCALABLE_B); // USDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
 
+    // IF_SVE_FD_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V0, REG_V1, REG_V1, 1,
+                                INS_OPTS_SCALABLE_H); // MUL <Zd>.H, <Zn>.H, <Zm>.H[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V2, REG_V3, REG_V3, 3,
+                                INS_OPTS_SCALABLE_H); // MUL <Zd>.H, <Zn>.H, <Zm>.H[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V4, REG_V5, REG_V5, 5,
+                                INS_OPTS_SCALABLE_H); // MUL <Zd>.H, <Zn>.H, <Zm>.H[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V6, REG_V7, REG_V7, 7,
+                                INS_OPTS_SCALABLE_H); // MUL <Zd>.H, <Zn>.H, <Zm>.H[<imm>]
+
+    // IF_SVE_FD_3B
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V8, REG_V9, REG_V1, 0,
+                                INS_OPTS_SCALABLE_S); // MUL <Zd>.S, <Zn>.S, <Zm>.S[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V10, REG_V11, REG_V3, 1,
+                                INS_OPTS_SCALABLE_S); // MUL <Zd>.S, <Zn>.S, <Zm>.S[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V12, REG_V13, REG_V5, 2,
+                                INS_OPTS_SCALABLE_S); // MUL <Zd>.S, <Zn>.S, <Zm>.S[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V14, REG_V15, REG_V7, 3,
+                                INS_OPTS_SCALABLE_S); // MUL <Zd>.S, <Zn>.S, <Zm>.S[<imm>]
+
+    // IF_SVE_FD_3C
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V16, REG_V17, REG_V0, 0,
+                                INS_OPTS_SCALABLE_D); // MUL <Zd>.D, <Zn>.D, <Zm>.D[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V18, REG_V19, REG_V5, 1,
+                                INS_OPTS_SCALABLE_D); // MUL <Zd>.D, <Zn>.D, <Zm>.D[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V20, REG_V21, REG_V10, 0,
+                                INS_OPTS_SCALABLE_D); // MUL <Zd>.D, <Zn>.D, <Zm>.D[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_mul, EA_SCALABLE, REG_V22, REG_V23, REG_V15, 1,
+                                INS_OPTS_SCALABLE_D); // MUL <Zd>.D, <Zn>.D, <Zm>.D[<imm>]
+
     // IF_SVE_ED_1A
     theEmitter->emitIns_R_I(INS_sve_smax, EA_SCALABLE, REG_V0, -128,
                             INS_OPTS_SCALABLE_B); // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
