@@ -333,6 +333,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         emit->emitIns_R_R(ins, simdSize, op1Reg, op2Reg);
                     }
                 }
+                else if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) && !op3->IsCnsIntOrI())
+                {
+                    auto emitSwCase = [&](int8_t i) { genHWIntrinsic_R_R_RM(node, ins, simdSize, i); };
+                    regNumber                    baseReg = node->ExtractTempReg();
+                    regNumber                    offsReg = node->GetSingleTempReg();
+                    genHWIntrinsicJumpTableFallback(intrinsicId, op3Reg, baseReg, offsReg, emitSwCase);
+                }
                 else
                 {
                     switch (intrinsicId)
@@ -716,6 +723,31 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, e
 //    node - The hardware intrinsic node
 //    ins  - The instruction being generated
 //    attr - The emit attribute for the instruction being generated
+//    ival - a "fake" immediate to indicate the rounding mode
+//
+void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival)
+{
+    regNumber targetReg = node->GetRegNum();
+    GenTree*  op1       = node->Op(1);
+    GenTree*  op2       = node->Op(2);
+    regNumber op1Reg    = op1->GetRegNum();
+
+    assert(targetReg != REG_NA);
+    assert(op1Reg != REG_NA);
+
+    node->SetEmbRoundingMode((uint8_t)ival);
+
+    genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, op1Reg, op2);
+}
+
+//------------------------------------------------------------------------
+// genHWIntrinsic_R_R_RM: Generates the code for a hardware intrinsic node that takes a register operand, a
+//                        register/memory operand, and that returns a value in register
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//    ins  - The instruction being generated
+//    attr - The emit attribute for the instruction being generated
 //    targetReg - The register allocated to the result
 //    op1Reg    - The register allocated to the first operand
 //    op2       - Another operand that maybe in register or memory
@@ -733,6 +765,33 @@ void CodeGen::genHWIntrinsic_R_R_RM(
     }
 
     bool isRMW = node->isRMWHWIntrinsic(compiler);
+
+    if (node->GetEmbRoundingMode() != 0)
+    {
+        // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
+        OperandDesc op2Desc = genOperandDesc(op2);
+        assert(op2Desc.GetKind() == OperandKind::Reg);
+        regNumber op2Reg = op2Desc.GetReg();
+
+        if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
+        {
+            // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW instruction.
+            //
+            // For non-commutative instructions, we should have ensured that op2 was marked
+            // delay free in order to prevent it from getting assigned the same register
+            // as target. However, for commutative instructions, we can just swap the operands
+            // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+            op2Reg = op1Reg;
+            op1Reg = targetReg;
+        }
+
+        uint8_t mode        = node->GetEmbRoundingMode();
+        insOpts instOptions = GetEmitter()->GetEmbRoundingMode(mode);
+        GetEmitter()->emitIns_SIMD_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
+        return;
+    }
+
     inst_RV_RV_TT(ins, attr, targetReg, op1Reg, op2, isRMW);
 }
 

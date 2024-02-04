@@ -29,12 +29,12 @@ namespace System.Reflection.Emit
             _type = typeBuilder;
         }
 
-        public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder)
+        public GenericTypeParameterBuilderImpl(string name, int genParamPosition, MethodBuilderImpl methodBuilder, TypeBuilderImpl typeBuilder)
         {
             _name = name;
             _genParamPosition = genParamPosition;
             _methodBuilder = methodBuilder;
-            _type = methodBuilder.DeclaringType;
+            _type = typeBuilder;
         }
 
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)

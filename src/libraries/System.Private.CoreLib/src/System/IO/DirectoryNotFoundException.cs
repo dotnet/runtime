@@ -24,13 +24,13 @@ namespace System.IO
         }
 
         public DirectoryNotFoundException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_DirectoryNotFoundException)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
         public DirectoryNotFoundException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_DirectoryNotFoundException, innerException)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }

@@ -3651,6 +3651,7 @@ void Compiler::lvaSortByRefCount()
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 case TYP_SIMD64:
+                case TYP_MASK:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:
@@ -5229,7 +5230,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
     if (opts.IsOSR())
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Stack offset includes Tier0 frame.
         //
         JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
@@ -5334,7 +5335,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#if defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64)
     // We normally add alignment below the locals between them and the outgoing
     // arg space area. When we store fp/lr(ra) at the bottom, however, this will
     // be below the alignment. So we should not apply the alignment adjustment to
@@ -5346,11 +5347,11 @@ void Compiler::lvaFixVirtualFrameOffsets()
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(REGSIZE_BYTES);
     }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     assert(codeGen->isFramePointerUsed());
     if (lvaRetAddrVar != BAD_VAR_NUM)
     {
-        // For LoongArch64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
+        // For LoongArch64 and RISCV64, the RA is below the fp. see the `genPushCalleeSavedRegisters`
         lvaTable[lvaRetAddrVar].SetStackOffset(-REGSIZE_BYTES);
     }
 #endif // !TARGET_LOONGARCH64
@@ -6139,17 +6140,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     assert(compCalleeRegsPushed >= 2);
 
-#elif defined(TARGET_RISCV64)
-
-    // Subtract off FP and RA.
-    assert(compCalleeRegsPushed >= 2);
-    stkOffs -= (compCalleeRegsPushed - 2) * REGSIZE_BYTES;
-
-#else // !TARGET_RISCV64
+#else // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #ifdef TARGET_ARM
     // On ARM32 LR is part of the pushed registers and is always stored at the
     // top.
@@ -6160,7 +6155,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #endif
 
     stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
-#endif // !TARGET_RISCV64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
     // (2) Account for the remainder of the frame
     //
@@ -6882,11 +6877,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_ARM64
 
-#if defined(TARGET_RISCV64)
-    assert(isFramePointerUsed()); // Note that currently we always have a frame pointer
-    stkOffs -= 2 * REGSIZE_BYTES;
-#endif // TARGET_RISCV64
-
 #if FEATURE_FIXED_OUT_ARGS
     if (lvaOutgoingArgSpaceSize > 0)
     {
@@ -6903,8 +6893,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-#ifdef TARGET_LOONGARCH64
-    // For LoongArch64, CalleeSavedRegs are at bottom.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    // For LoongArch64 and RISCV64, CalleeSavedRegs are at bottom.
     int pushedCount = 0;
 #else
     // compLclFrameSize equals our negated virtual stack offset minus the pushed registers and return address
@@ -7891,7 +7881,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (forRootFrame && opts.IsOSR())
     {
         const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
@@ -7910,7 +7900,7 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         //
         const int adjustment = ppInfo->TotalFrameSize() + REGSIZE_BYTES;
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         const int adjustment = ppInfo->TotalFrameSize();
 #endif

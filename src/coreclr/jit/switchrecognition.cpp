@@ -38,7 +38,7 @@ PhaseStatus Compiler::optSwitchRecognition()
 
     if (modified)
     {
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        fgRenumberBlocks();
         return PhaseStatus::MODIFIED_EVERYTHING;
     }
 #endif

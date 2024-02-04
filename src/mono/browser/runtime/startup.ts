@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
+import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -30,11 +29,6 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
 import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-
-// legacy
-import { init_legacy_exports } from "./net6-legacy/corebindings";
-import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
-import { BINDING, MONO } from "./net6-legacy/globals";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 
@@ -382,10 +376,6 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
 
     init_c_exports();
     cwraps_internal(INTERNAL);
-    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
-        cwraps_mono_api(MONO);
-        cwraps_binding_api(BINDING);
-    }
     // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
     // emscripten - on a worker since we don't have any other dependencies that causes run() to get
     // called too soon; and then it will get called a second time when dotnet.native.js calls it directly.
@@ -409,24 +399,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
     mono_log_debug("mono_wasm_after_user_runtime_initialized");
     try {
-        if (!Module.disableDotnet6Compatibility && Module.exports) {
-            // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
-            // Useful to export IDBFS or other similar types generally exposed as
-            // global types when emscripten is not modularized.
-            const globalThisAny = globalThis as any;
-            for (let i = 0; i < Module.exports.length; ++i) {
-                const exportName = Module.exports[i];
-                const exportValue = (<any>Module)[exportName];
-
-                if (exportValue != undefined) {
-                    globalThisAny[exportName] = exportValue;
-                }
-                else {
-                    mono_log_warn(`The exported symbol ${exportName} could not be found in the emscripten module`);
-                }
-            }
-        }
-
         mono_log_debug("Initializing mono runtime");
 
         if (Module.onDotnetReady) {
@@ -606,9 +578,6 @@ export function bindings_init(): void {
         const mark = startMeasure();
         strings_init();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
-            init_legacy_exports();
-        }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);

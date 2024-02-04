@@ -65,7 +65,6 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                 result[index] =
                     NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
                         contextMethod,
-                        _methodHandle,
                         index - 1,
                         parameterHandle,
                         typeSignatures[index],
@@ -244,7 +243,6 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
                 result[index] =
                     NativeFormatMethodParameterInfo.GetNativeFormatMethodParameterInfo(
                         contextMethod,
-                        _methodHandle,
                         index - 1,
                         parameterHandle,
                         new QSignatureTypeHandle(reader, typeSignatures[index]),

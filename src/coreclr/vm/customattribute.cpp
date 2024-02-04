@@ -10,17 +10,13 @@
 #include "excep.h"
 #include "corerror.h"
 #include "classnames.h"
-#include "fcall.h"
 #include "assemblynative.hpp"
 #include "typeparse.h"
 #include "reflectioninvocation.h"
 #include "runtimehandles.h"
 #include "typestring.h"
 
-typedef InlineFactory<InlineSString<64>, 16> SStringFactory;
-
-/*static*/
-TypeHandle Attribute::GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, DomainAssembly* pDomainAssembly)
+static TypeHandle GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, DomainAssembly* pDomainAssembly)
 {
     CONTRACTL
     {
@@ -29,7 +25,7 @@ TypeHandle Attribute::GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Dom
         PRECONDITION(cbEnumName);
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
@@ -37,12 +33,11 @@ TypeHandle Attribute::GetTypeForEnum(LPCUTF8 szEnumName, COUNT_T cbEnumName, Dom
     return TypeName::GetTypeReferencedByCustomAttribute(sszEnumName.GetUnicode(), pDomainAssembly->GetAssembly());
 }
 
-/*static*/
-HRESULT Attribute::ParseCaType(
+static HRESULT ParseCaType(
     CustomAttributeParser &ca,
     CaType* pCaType,
     DomainAssembly* pDomainAssembly,
-    StackSString* ss)
+    StackSString* ss = NULL)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -50,10 +45,10 @@ HRESULT Attribute::ParseCaType(
 
     IfFailGo(::ParseEncodedType(ca, pCaType));
 
-    if (pCaType->tag == SERIALIZATION_TYPE_ENUM ||
-        (pCaType->tag == SERIALIZATION_TYPE_SZARRAY && pCaType->arrayType == SERIALIZATION_TYPE_ENUM ))
+    if (pCaType->tag == SERIALIZATION_TYPE_ENUM
+        || (pCaType->tag == SERIALIZATION_TYPE_SZARRAY && pCaType->arrayType == SERIALIZATION_TYPE_ENUM ))
     {
-        TypeHandle th = Attribute::GetTypeForEnum(pCaType->szEnumName, pCaType->cEnumName, pDomainAssembly);
+        TypeHandle th = GetTypeForEnum(pCaType->szEnumName, pCaType->cEnumName, pDomainAssembly);
 
         if (!th.IsNull() && th.IsEnum())
         {
@@ -78,148 +73,12 @@ ErrExit:
     return hr;
 }
 
-/*static*/
-void Attribute::SetBlittableCaValue(CustomAttributeValue* pVal, CaValue* pCaVal, BOOL* pbAllBlittableCa)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CorSerializationType type = pCaVal->type.tag;
-
-    pVal->m_type.m_tag = pCaVal->type.tag;
-    pVal->m_type.m_arrayType = pCaVal->type.arrayType;
-    pVal->m_type.m_enumType = pCaVal->type.enumType;
-    pVal->m_rawValue = 0;
-
-    if (type == SERIALIZATION_TYPE_STRING ||
-        type == SERIALIZATION_TYPE_SZARRAY ||
-        type == SERIALIZATION_TYPE_TYPE)
-    {
-        *pbAllBlittableCa = FALSE;
-    }
-    else
-    {
-        // Enum arg -> Object param
-        if (type == SERIALIZATION_TYPE_ENUM && pCaVal->type.cEnumName)
-            *pbAllBlittableCa = FALSE;
-
-        pVal->m_rawValue = pCaVal->i8;
-    }
-}
-
-/*static*/
-void Attribute::SetManagedValue(CustomAttributeManagedValues gc, CustomAttributeValue* pValue)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CorSerializationType type = pValue->m_type.m_tag;
-
-    if (type == SERIALIZATION_TYPE_TYPE || type == SERIALIZATION_TYPE_STRING)
-    {
-        SetObjectReference((OBJECTREF*)&pValue->m_enumOrTypeName, gc.string);
-    }
-    else if (type == SERIALIZATION_TYPE_ENUM)
-    {
-        SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string);
-    }
-    else if (type == SERIALIZATION_TYPE_SZARRAY)
-    {
-        SetObjectReference((OBJECTREF*)&pValue->m_value, gc.array);
-
-        if (pValue->m_type.m_arrayType == SERIALIZATION_TYPE_ENUM)
-            SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string);
-    }
-}
-
-/*static*/
-CustomAttributeManagedValues Attribute::GetManagedCaValue(CaValue* pCaVal)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CustomAttributeManagedValues gc;
-    gc.string = NULL;
-    gc.array = NULL;
-    GCPROTECT_BEGIN(gc)
-    {
-        CorSerializationType type = pCaVal->type.tag;
-
-        if (type == SERIALIZATION_TYPE_ENUM)
-        {
-            gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);
-        }
-        else if (type == SERIALIZATION_TYPE_STRING)
-        {
-            gc.string = NULL;
-
-            if (pCaVal->str.pStr)
-                gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);
-        }
-        else if (type == SERIALIZATION_TYPE_TYPE)
-        {
-            gc.string = StringObject::NewString(pCaVal->str.pStr, pCaVal->str.cbStr);
-        }
-        else if (type == SERIALIZATION_TYPE_SZARRAY)
-        {
-            CorSerializationType arrayType = pCaVal->type.arrayType;
-            ULONG length = pCaVal->arr.length;
-            BOOL bAllBlittableCa = arrayType != SERIALIZATION_TYPE_ENUM;
-
-            if (arrayType == SERIALIZATION_TYPE_ENUM)
-                gc.string = StringObject::NewString(pCaVal->type.szEnumName, pCaVal->type.cEnumName);
-
-            if (length != (ULONG)-1)
-            {
-                gc.array = (CaValueArrayREF)AllocateSzArray(TypeHandle(CoreLibBinder::GetClass(CLASS__CUSTOM_ATTRIBUTE_ENCODED_ARGUMENT)).MakeSZArray(), length);
-                CustomAttributeValue* pValues = gc.array->GetDirectPointerToNonObjectElements();
-
-                for (COUNT_T i = 0; i < length; i ++)
-                    Attribute::SetBlittableCaValue(&pValues[i], &pCaVal->arr[i], &bAllBlittableCa);
-
-                if (!bAllBlittableCa)
-                {
-                    for (COUNT_T i = 0; i < length; i ++)
-                    {
-                        CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaVal->arr[i]);
-                        Attribute::SetManagedValue(
-                            managedCaValue,
-                            &gc.array->GetDirectPointerToNonObjectElements()[i]);
-                    }
-                }
-            }
-        }
-    }
-    GCPROTECT_END();
-    return gc;
-}
-
-/*static*/
-HRESULT Attribute::ParseAttributeArgumentValues(
-    void* pCa,
-    INT32 cCa,
-    CaValueArrayFactory* pCaValueArrayFactory,
-    CaArg* pCaArgs,
-    COUNT_T cArgs,
-    CaNamedArg* pCaNamedArgs,
-    COUNT_T cNamedArgs,
-    DomainAssembly* pDomainAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-
-    HRESULT hr = S_OK;
-    CustomAttributeParser cap(pCa, cCa);
-
-    IfFailGo(Attribute::ParseCaCtorArgs(cap, pCaArgs, cArgs, pCaValueArrayFactory, pDomainAssembly));
-    IfFailGo(Attribute::ParseCaNamedArgs(cap, pCaNamedArgs, cNamedArgs, pCaValueArrayFactory, pDomainAssembly));
-
-ErrExit:
-    return hr;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Helper to parse the values for the ctor argument list and the named argument list.
 //
 
-HRESULT Attribute::ParseCaValue(
+static HRESULT ParseCaValue(
     CustomAttributeParser &ca,
     CaValue* pCaArg,
     CaType* pCaParam,
@@ -240,7 +99,7 @@ HRESULT Attribute::ParseCaValue(
     CaType elementType;
 
     if (pCaParam->tag == SERIALIZATION_TYPE_TAGGED_OBJECT)
-        IfFailGo(Attribute::ParseCaType(ca, &pCaArg->type, pDomainAssembly));
+        IfFailGo(ParseCaType(ca, &pCaArg->type, pDomainAssembly));
     else
         pCaArg->type = *pCaParam;
 
@@ -296,7 +155,7 @@ HRESULT Attribute::ParseCaValue(
         elementType.Init(pCaArg->type.arrayType, SERIALIZATION_TYPE_UNDEFINED,
             pCaArg->type.enumType, pCaArg->type.szEnumName, pCaArg->type.cEnumName);
         for (ULONG i = 0; i < pCaArg->arr.length; i++)
-            IfFailGo(Attribute::ParseCaValue(ca, &*pCaArg->arr.pSArray->Append(), &elementType, pCaValueArrayFactory, pDomainAssembly));
+            IfFailGo(ParseCaValue(ca, &*pCaArg->arr.pSArray->Append(), &elementType, pCaValueArrayFactory, pDomainAssembly));
 
         break;
 
@@ -310,8 +169,7 @@ ErrExit:
     return hr;
 }
 
-/*static*/
-HRESULT Attribute::ParseCaCtorArgs(
+static HRESULT ParseCaCtorArgs(
     CustomAttributeParser &ca,
     CaArg* pArgs,
     ULONG cArgs,
@@ -333,7 +191,7 @@ HRESULT Attribute::ParseCaCtorArgs(
     for (ix=0; ix<cArgs; ++ix)
     {
         CaArg* pArg = &pArgs[ix];
-        IfFailGo(Attribute::ParseCaValue(ca, &pArg->val, &pArg->type, pCaValueArrayFactory, pDomainAssembly));
+        IfFailGo(ParseCaValue(ca, &pArg->val, &pArg->type, pCaValueArrayFactory, pDomainAssembly));
     }
 
 ErrExit:
@@ -347,8 +205,7 @@ ErrExit:
 //   2. It Compares the enum type name with that of the loaded enum type, not the one in the CA record.
 //
 
-/*static*/
-HRESULT Attribute::ParseCaNamedArgs(
+static HRESULT ParseCaNamedArgs(
     CustomAttributeParser &ca,
     CaNamedArg *pNamedParams,
     ULONG cNamedParams,
@@ -386,7 +243,7 @@ HRESULT Attribute::ParseCaNamedArgs(
         // Get argument type information
         CaType* pNamedArgType = &namedArg.type;
         StackSString ss;
-        IfFailGo(Attribute::ParseCaType(ca, pNamedArgType, pDomainAssembly, &ss));
+        IfFailGo(ParseCaType(ca, pNamedArgType, pDomainAssembly, &ss));
 
         LPCSTR szLoadedEnumName = NULL;
 
@@ -462,7 +319,7 @@ HRESULT Attribute::ParseCaNamedArgs(
             IfFailGo(PostError(META_E_CA_REPEATED_ARG, namedArg.cName, namedArg.szName));
         }
 
-        IfFailGo(Attribute::ParseCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type, pCaValueArrayFactory, pDomainAssembly));
+        IfFailGo(ParseCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type, pCaValueArrayFactory, pDomainAssembly));
     }
 
 ErrExit:
@@ -470,184 +327,27 @@ ErrExit:
 }
 
 /*static*/
-HRESULT Attribute::InitCaType(CustomAttributeType* pType, Factory<SString>* pSstringFactory, CaType* pCaType)
+HRESULT Attribute::ParseAttributeArgumentValues(
+    void* pCa,
+    INT32 cCa,
+    CaValueArrayFactory* pCaValueArrayFactory,
+    CaArg* pCaArgs,
+    COUNT_T cArgs,
+    CaNamedArg* pCaNamedArgs,
+    COUNT_T cNamedArgs,
+    DomainAssembly* pDomainAssembly)
 {
-    CONTRACTL {
-        THROWS;
-        PRECONDITION(CheckPointer(pType));
-        PRECONDITION(CheckPointer(pSstringFactory));
-        PRECONDITION(CheckPointer(pCaType));
-    } CONTRACTL_END;
+    WRAPPER_NO_CONTRACT;
 
     HRESULT hr = S_OK;
+    CustomAttributeParser cap(pCa, cCa);
 
-    SString* psszName = NULL;
-
-    IfNullGo(psszName = pSstringFactory->Create());
-
-    psszName->Set(pType->m_enumName == NULL ? NULL : pType->m_enumName->GetBuffer());
-
-    pCaType->Init(
-        pType->m_tag,
-        pType->m_arrayType,
-        pType->m_enumType,
-        psszName->GetUTF8(),
-        (ULONG)psszName->GetCount());
+    IfFailGo(ParseCaCtorArgs(cap, pCaArgs, cArgs, pCaValueArrayFactory, pDomainAssembly));
+    IfFailGo(ParseCaNamedArgs(cap, pCaNamedArgs, cNamedArgs, pCaValueArrayFactory, pDomainAssembly));
 
 ErrExit:
     return hr;
 }
-
-FCIMPL5(VOID, Attribute::ParseAttributeArguments, void* pCa, INT32 cCa,
-        CaArgArrayREF* ppCustomAttributeArguments,
-        CaNamedArgArrayREF* ppCustomAttributeNamedArguments,
-        AssemblyBaseObject* pAssemblyUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
-    HELPER_METHOD_FRAME_BEGIN_1(refAssembly)
-    {
-        DomainAssembly *pDomainAssembly = refAssembly->GetDomainAssembly();
-
-        struct
-        {
-            CustomAttributeArgument* pArgs;
-            CustomAttributeNamedArgument* pNamedArgs;
-        } gc;
-
-        gc.pArgs = NULL;
-        gc.pNamedArgs = NULL;
-
-        HRESULT hr = S_OK;
-
-        GCPROTECT_BEGININTERIOR(gc);
-
-        BOOL bAllBlittableCa = TRUE;
-        COUNT_T cArgs = 0;
-        COUNT_T cNamedArgs = 0;
-        CaArg* pCaArgs = NULL;
-        CaNamedArg* pCaNamedArgs = NULL;
-#ifdef __GNUC__
-        // When compiling under GCC we have to use the -fstack-check option to ensure we always spot stack
-        // overflow. But this option is intolerant of locals growing too large, so we have to cut back a bit
-        // on what we can allocate inline here. Leave the Windows versions alone to retain the perf benefits
-        // since we don't have the same constraints.
-        NewHolder<CaValueArrayFactory> pCaValueArrayFactory = new InlineFactory<SArray<CaValue>, 4>();
-        InlineFactory<SString, 4> sstringFactory;
-#else // __GNUC__
-
-        // Preallocate 4 elements in each of the following factories for optimal performance.
-        // 4 is enough for 4 typed args or 2 named args which are enough for 99% of the cases.
-
-        // SArray<CaValue> is only needed if a argument is an array, don't preallocate any memory as arrays are rare.
-
-        // Need one per (ctor or named) arg + one per array element
-        InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-        InlineFactory<SArray<CaValue>, 4> *pCaValueArrayFactory = &caValueArrayFactory;
-
-        // Need one SString per ctor arg and two per named arg
-        InlineFactory<SString, 4> sstringFactory;
-#endif // __GNUC__
-
-        cArgs = (*ppCustomAttributeArguments)->GetNumComponents();
-
-        if (cArgs)
-        {
-            gc.pArgs = (*ppCustomAttributeArguments)->GetDirectPointerToNonObjectElements();
-
-            size_t size = sizeof(CaArg) * cArgs;
-            if ((size / sizeof(CaArg)) != cArgs) // uint over/underflow
-                IfFailGo(E_INVALIDARG);
-            pCaArgs = (CaArg*)_alloca(size);
-
-            for (COUNT_T i = 0; i < cArgs; i ++)
-            {
-                CaType caType;
-                IfFailGo(Attribute::InitCaType(&gc.pArgs[i].m_type, &sstringFactory, &caType));
-
-                pCaArgs[i].Init(caType);
-            }
-        }
-
-        cNamedArgs = (*ppCustomAttributeNamedArguments)->GetNumComponents();
-
-        if (cNamedArgs)
-        {
-            gc.pNamedArgs = (*ppCustomAttributeNamedArguments)->GetDirectPointerToNonObjectElements();
-
-            size_t size = sizeof(CaNamedArg) * cNamedArgs;
-            if ((size / sizeof(CaNamedArg)) != cNamedArgs) // uint over/underflow
-                IfFailGo(E_INVALIDARG);
-            pCaNamedArgs = (CaNamedArg*)_alloca(size);
-
-            for (COUNT_T i = 0; i < cNamedArgs; i ++)
-            {
-                CustomAttributeNamedArgument* pNamedArg = &gc.pNamedArgs[i];
-
-                CaType caType;
-                IfFailGo(Attribute::InitCaType(&pNamedArg->m_type, &sstringFactory, &caType));
-
-                SString* psszName = NULL;
-                IfNullGo(psszName = sstringFactory.Create());
-
-                psszName->Set(pNamedArg->m_argumentName->GetBuffer());
-
-                pCaNamedArgs[i].Init(
-                    psszName->GetUTF8(),
-                    pNamedArg->m_propertyOrField,
-                    caType);
-            }
-        }
-
-        // This call maps the named parameters (fields and arguments) and ctor parameters with the arguments in the CA record
-        // and retrieve their values.
-        IfFailGo(Attribute::ParseAttributeArgumentValues(pCa, cCa, pCaValueArrayFactory, pCaArgs, cArgs, pCaNamedArgs, cNamedArgs, pDomainAssembly));
-
-        for (COUNT_T i = 0; i < cArgs; i ++)
-            Attribute::SetBlittableCaValue(&gc.pArgs[i].m_value, &pCaArgs[i].val, &bAllBlittableCa);
-
-        for (COUNT_T i = 0; i < cNamedArgs; i ++)
-            Attribute::SetBlittableCaValue(&gc.pNamedArgs[i].m_value, &pCaNamedArgs[i].val, &bAllBlittableCa);
-
-        if (!bAllBlittableCa)
-        {
-            for (COUNT_T i = 0; i < cArgs; i ++)
-            {
-                CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaArgs[i].val);
-                Attribute::SetManagedValue(managedCaValue, &(gc.pArgs[i].m_value));
-            }
-
-            for (COUNT_T i = 0; i < cNamedArgs; i++)
-            {
-                CustomAttributeManagedValues managedCaValue = Attribute::GetManagedCaValue(&pCaNamedArgs[i].val);
-                Attribute::SetManagedValue(managedCaValue, &(gc.pNamedArgs[i].m_value));
-            }
-        }
-
-    ErrExit:
-
-        ; // Need empty statement to get GCPROTECT_END below to work.
-
-        GCPROTECT_END();
-
-
-        if (hr != S_OK)
-        {
-            if ((hr == E_OUTOFMEMORY) || (hr == NTE_NO_MEMORY))
-            {
-               COMPlusThrow(kOutOfMemoryException);
-            }
-            else
-            {
-                COMPlusThrow(kCustomAttributeFormatException);
-            }
-        }
-    }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
 
 FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectClassBaseObject* pCaTypeUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs)
 {

@@ -8,6 +8,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
@@ -46,13 +47,13 @@ namespace System.Runtime.InteropServices
         /// Return the stub to the pinvoke marshalling stub
         /// </summary>
         /// <param name="del">The delegate</param>
-        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
+        public static unsafe IntPtr GetFunctionPointerForDelegate(Delegate del)
         {
             if (del == null)
                 return IntPtr.Zero;
 
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly
-            if (del.GetEETypePtr().IsGeneric)
+            if (del.GetMethodTable()->IsGeneric)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, "delegate");
 #pragma warning restore CA2208
 
@@ -234,7 +235,7 @@ namespace System.Runtime.InteropServices
             // NativeFunctionPointerWrapper derived class
             //
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly
-            if (delegateType.ToEETypePtr().BaseType != EETypePtr.EETypePtrOf<MulticastDelegate>())
+            if (delegateType.ToMethodTable()->BaseType != MethodTable.Of<MulticastDelegate>())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, "t");
 #pragma warning restore CA2208
 

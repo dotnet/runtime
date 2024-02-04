@@ -121,6 +121,7 @@ typedef struct {
 	MonoInst *seq_point_info_var;
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
+	MonoInst *swift_error_var;
 	guint8 *thunks;
 	int thunks_size;
 } MonoCompileArch;
@@ -241,7 +242,6 @@ typedef enum {
 	ArgVtypeOnStack,
 	ArgHFA,
 	ArgSwiftError,
-	ArgSwiftSelf,
 	ArgNone
 } ArgStorage;
 
@@ -276,7 +276,7 @@ struct CallInfo {
 };
 
 typedef struct {
-	/* General registers + context registers + ARMREG_R8 for indirect returns */
+	/* General registers + ARMREG_R8 for indirect returns + context registers  */
 	host_mgreg_t gregs [PARAM_REGS + CTX_REGS + 1];
 	/* Floating registers */
 	double fregs [FP_PARAM_REGS];

@@ -62,6 +62,7 @@
       <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
       <!-- We build on an image with LTTNGv0, but we package on distros that have v1. Ignore inspecting dependencies on our LLTNG provider to ensure we can package. -->
       <DebJsonProperty Include="debian_ignored_libraries" Object="[&quot;libcoreclrtraceptprovider.so&quot;]" />
+      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet/shared/$(MicrosoftNetCoreAppFrameworkName)&quot; ]" />
     </ItemGroup>
   </Target>
 

@@ -13,8 +13,8 @@ public func setMyErrorMessage(message: UnsafePointer<unichar>, length: Int32) {
     errorMessage = NSString(characters: message, length: Int(length))
 }
 
-public func conditionallyThrowError(willThrow: Bool) throws -> Int {
-    if willThrow {
+public func conditionallyThrowError(willThrow: Int32) throws -> Int32 {
+    if willThrow != 0 {
         throw MyError.runtimeError(message: errorMessage)
     } else {
         return 42

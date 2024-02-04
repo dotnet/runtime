@@ -232,8 +232,7 @@ namespace System.Security.Cryptography.X509Certificates
                     // Because we don't validate for a specific usage, derived certificates are rejected.
                     // For now, we skip the certificates with AUX data and use the regular certificates.
                     ICertificatePal? pal;
-                    while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal) ||
-                        OpenSslX509CertificateReader.TryReadX509Der(fileBio, out pal))
+                    while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal))
                     {
                         readData = true;
                         X509Certificate2 cert = new X509Certificate2(pal);

@@ -127,9 +127,8 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "Sys
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
 
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -3627,22 +3626,22 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		}
 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
-			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-			MonoClass *swift_error_ptr = mono_class_try_get_swift_error_ptr_class ();
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
 			int swift_error_args = 0, swift_self_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
 				if (param_klass) {
-					if (param_klass == swift_error) {
+					if (param_klass == swift_error && !m_type_is_byref (method->signature->params [i])) {
 						swift_error_args = swift_self_args = 0;
-						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftError argument must be a pointer.");
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftError argument must be passed by reference.");
 						break;
-					} else if (param_klass == swift_error_ptr) {
+					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
 						swift_error_args++;
 					} else if (param_klass == swift_self) {
 						swift_self_args++;
-					} else if (!m_class_is_enumtype (param_klass) && !m_class_is_primitive (param_klass)) {
+					} else if (!m_class_is_blittable (param_klass) && m_class_get_this_arg (param_klass)->type != MONO_TYPE_FNPTR) {
 						swift_error_args = swift_self_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-primitive value types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
@@ -3651,7 +3650,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			}
 
 			if (swift_self_args > 1 || swift_error_args > 1) {
-				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf/SwiftError arguments.");
+				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf or SwiftError arguments.");
 			}
 
 			if (!is_ok (emitted_error)) {

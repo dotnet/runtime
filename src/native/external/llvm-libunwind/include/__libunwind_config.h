@@ -14,6 +14,10 @@
 #if defined(__arm__) && !defined(__USING_SJLJ_EXCEPTIONS__) && \
     !defined(__ARM_DWARF_EH__) && !defined(__SEH__)
 #define _LIBUNWIND_ARM_EHABI
+// Until ObjWriter is modified to convert DWARF to EHABI we want to
+// support both.
+#define _LIBUNWIND_SUPPORT_DWARF_UNWIND 1
+#define _LIBUNWIND_SUPPORT_DWARF_INDEX 1
 #endif
 
 #define _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86       8

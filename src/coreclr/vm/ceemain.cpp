@@ -633,6 +633,7 @@ void EEStartupHelper()
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
         OnStackReplacementManager::StaticInitialize();
+        MethodTable::InitMethodDataCache();
 
 #ifdef TARGET_UNIX
         ExecutableAllocator::InitPreferredRange();

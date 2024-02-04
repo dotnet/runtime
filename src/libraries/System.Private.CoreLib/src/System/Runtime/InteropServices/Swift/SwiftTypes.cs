@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Swift
     /// <para>
     /// Here's an example of how a SwiftSelf context can be declared:
     /// <code lang="csharp">
-    /// [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    /// [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     /// [DllImport("SwiftLibrary", EntryPoint = "export")]
     /// public static extern void swiftFunction(SwiftSelf self);
     /// </code>
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.Swift
     /// <para>
     /// Here's an example of how a SwiftError can be declared:
     /// <code lang="csharp">
-    /// [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    /// [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     /// [DllImport("SwiftLibrary", EntryPoint = "export")]
     /// public static extern void swiftFunction(SwiftError* error);
     /// </code>

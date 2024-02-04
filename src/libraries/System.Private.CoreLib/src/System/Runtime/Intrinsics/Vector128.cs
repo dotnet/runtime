@@ -1426,6 +1426,40 @@ namespace System.Runtime.Intrinsics
                 || Vector64.EqualsAny(left._upper, right._upper);
         }
 
+        /// <inheritdoc cref="Vector64.Exp(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Exp(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Exp(vector._lower),
+                    Vector64.Exp(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Exp(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Exp(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector128<float>, Vector128<uint>, Vector128<double>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Exp(vector._lower),
+                    Vector64.Exp(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose elements should have their most significant bit extracted.</param>
@@ -1781,7 +1815,42 @@ namespace System.Runtime.Intrinsics
         internal static Vector128<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
+        /// <inheritdoc cref="Vector64.Log(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Log(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Log(vector._lower),
+                    Vector64.Log(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Log(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Log(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector128<float>, Vector128<int>, Vector128<uint>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Log(vector._lower),
+                    Vector64.Log(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector64.Log2(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Log2(Vector128<double> vector)
         {
             if (IsHardwareAccelerated)
@@ -1798,6 +1867,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <inheritdoc cref="Vector64.Log2(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<float> Log2(Vector128<float> vector)
         {
             if (IsHardwareAccelerated)

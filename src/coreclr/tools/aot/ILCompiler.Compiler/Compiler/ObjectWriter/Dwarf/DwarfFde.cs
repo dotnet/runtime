@@ -89,16 +89,24 @@ namespace ILCompiler.ObjectWriter
                         break;
 
                     case CFI_OPCODE.CFI_REL_OFFSET:
-                        if (dwarfReg <= 0x3F)
+                        int absOffset = ((cfiOffset - cfaOffset) / cie.DataAlignFactor);
+                        if (absOffset < 0)
+                        {
+                            cfiCode[cfiCodeOffset++] = DW_CFA_offset_extended_sf;
+                            cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)dwarfReg);
+                            cfiCodeOffset += DwarfHelper.WriteSLEB128(cfiCode.AsSpan(cfiCodeOffset), absOffset);
+                        }
+                        else if (dwarfReg <= 0x3F)
                         {
                             cfiCode[cfiCodeOffset++] = (byte)(DW_CFA_offset | (byte)dwarfReg);
+                            cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)absOffset);
                         }
                         else
                         {
                             cfiCode[cfiCodeOffset++] = DW_CFA_offset_extended;
                             cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)dwarfReg);
+                            cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)absOffset);
                         }
-                        cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)((cfiOffset - cfaOffset) / cie.DataAlignFactor));
                         break;
 
                     case CFI_OPCODE.CFI_ADJUST_CFA_OFFSET:

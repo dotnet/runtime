@@ -75,8 +75,18 @@ namespace ILCompiler
 
             ILProvider ilProvider = new NativeAotILProvider();
 
+            Dictionary<int, bool> warningsAsErrors = new Dictionary<int, bool>();
+            foreach (int warning in ProcessWarningCodes(Get(_command.WarningsAsErrorsEnable)))
+            {
+                warningsAsErrors[warning] = true;
+            }
+            foreach (int warning in ProcessWarningCodes(Get(_command.WarningsAsErrorsDisable)))
+            {
+                warningsAsErrors[warning] = false;
+            }
             var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
-                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
+                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories,
+                Get(_command.TreatWarningsAsErrors), warningsAsErrors);
 
             // NativeAOT is full AOT and its pre-compiled methods can not be
             // thrown away at runtime if they mismatch in required ISAs or

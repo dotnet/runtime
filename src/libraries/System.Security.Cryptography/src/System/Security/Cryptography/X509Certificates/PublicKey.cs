@@ -15,10 +15,24 @@ namespace System.Security.Cryptography.X509Certificates
         private AsymmetricAlgorithm? _key;
 
         public PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue)
+            : this(oid, parameters, keyValue, skipCopy: false)
+        {
+        }
+
+        internal PublicKey(Oid oid, AsnEncodedData parameters, AsnEncodedData keyValue, bool skipCopy)
         {
             _oid = oid;
-            EncodedParameters = new AsnEncodedData(parameters);
-            EncodedKeyValue = new AsnEncodedData(keyValue);
+
+            if (skipCopy)
+            {
+                EncodedParameters = parameters;
+                EncodedKeyValue = keyValue;
+            }
+            else
+            {
+                EncodedParameters = new AsnEncodedData(parameters);
+                EncodedKeyValue = new AsnEncodedData(keyValue);
+            }
         }
 
         /// <summary>
@@ -136,7 +150,7 @@ namespace System.Security.Cryptography.X509Certificates
                 out AsnEncodedData localKeyValue);
 
             bytesRead = read;
-            return new PublicKey(localOid, localParameters, localKeyValue);
+            return new PublicKey(localOid, localParameters, localKeyValue, skipCopy: true);
         }
 
         /// <summary>
@@ -312,7 +326,7 @@ namespace System.Security.Cryptography.X509Certificates
                 out AsnEncodedData parameters,
                 out AsnEncodedData keyValue);
 
-            return new PublicKey(oid, parameters, keyValue);
+            return new PublicKey(oid, parameters, keyValue, skipCopy: true);
         }
 
         private static void DecodeSubjectPublicKeyInfo(

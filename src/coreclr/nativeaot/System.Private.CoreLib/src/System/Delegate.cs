@@ -11,6 +11,7 @@ using System.Runtime.Serialization;
 using System.Text;
 
 using Internal.Reflection.Augments;
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -112,7 +113,7 @@ namespace System
             else
             {
                 if (m_firstParameter != null)
-                    typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(m_firstParameter.GetEETypePtr());
+                    typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(m_firstParameter.GetMethodTable());
 
                 // TODO! Implementation issue for generic invokes here ... we need another IntPtr for uniqueness.
 
@@ -348,20 +349,20 @@ namespace System
             }
         }
 
-        internal static bool InternalEqualTypes(object a, object b)
+        internal static unsafe bool InternalEqualTypes(object a, object b)
         {
-            return a.GetEETypePtr() == b.GetEETypePtr();
+            return a.GetMethodTable() == b.GetMethodTable();
         }
 
         // Returns a new delegate of the specified type whose implementation is provided by the
         // provided delegate.
-        internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
+        internal static unsafe Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
             RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            EETypePtr delegateEEType = typeHandle.ToEETypePtr();
-            Debug.Assert(!delegateEEType.IsNull);
-            Debug.Assert(delegateEEType.IsCanonical);
+            MethodTable* delegateEEType = typeHandle.ToMethodTable();
+            Debug.Assert(delegateEEType != null);
+            Debug.Assert(delegateEEType->IsCanonical);
 
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 
@@ -383,9 +384,9 @@ namespace System
         // Note that delegates constructed the normal way do not come through here. The IL transformer generates the equivalent of
         // this code customized for each delegate type.
         //
-        internal static Delegate CreateDelegate(EETypePtr delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
+        internal static unsafe Delegate CreateDelegate(MethodTable* delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
-            Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
+            Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
             // What? No constructor call? That's right, and it's not an oversight. All "construction" work happens in
             // the Initialize() methods. This helper has a hard dependency on this invariant.

@@ -154,13 +154,13 @@ namespace ILCompiler.DependencyAnalysis
                 ((Opcode1 <<  1)        & 0x0000FFE);
 
             // Sign-extend and return
-            return (int)((ret << 7) >> 7);
+            return (int)(ret << 7) >> 7;
         }
 
         //*****************************************************************************
         // Returns whether the offset fits into bl instruction
         //*****************************************************************************
-        private static bool FitsInThumb2BlRel24(uint imm24)
+        private static bool FitsInThumb2BlRel24(int imm24)
         {
             return ((imm24 << 7) >> 7) == imm24;
         }
@@ -168,7 +168,7 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         //  Deposit the 24-bit rel offset into bl instruction
         //*****************************************************************************
-        private static unsafe void PutThumb2BlRel24(ushort* p, uint imm24)
+        private static unsafe void PutThumb2BlRel24(ushort* p, int imm24)
         {
             // Verify that we got a valid offset
             Debug.Assert(FitsInThumb2BlRel24(imm24));
@@ -182,17 +182,17 @@ namespace ILCompiler.DependencyAnalysis
             Opcode0 &= 0xF800;
             Opcode1 &= 0xD000;
 
-            uint S  =  (imm24 & 0x1000000) >> 24;
-            uint J1 = ((imm24 & 0x0800000) >> 23) ^ S ^ 1;
-            uint J2 = ((imm24 & 0x0400000) >> 22) ^ S ^ 1;
+            uint S  =  ((uint)imm24 & 0x1000000) >> 24;
+            uint J1 = (((uint)imm24 & 0x0800000) >> 23) ^ S ^ 1;
+            uint J2 = (((uint)imm24 & 0x0400000) >> 22) ^ S ^ 1;
 
-            Opcode0 |=  ((imm24 & 0x03FF000) >> 12) | (S << 10);
-            Opcode1 |=  ((imm24 & 0x0000FFE) >>  1) | (J1 << 13) | (J2 << 11);
+            Opcode0 |=  (((uint)imm24 & 0x03FF000) >> 12) | (S << 10);
+            Opcode1 |=  (((uint)imm24 & 0x0000FFE) >>  1) | (J1 << 13) | (J2 << 11);
 
             p[0] = (ushort)Opcode0;
             p[1] = (ushort)Opcode1;
 
-            Debug.Assert((uint)GetThumb2BlRel24(p) == imm24);
+            Debug.Assert(GetThumb2BlRel24(p) == imm24);
         }
 
         //*****************************************************************************
@@ -485,7 +485,7 @@ namespace ILCompiler.DependencyAnalysis
                     PutThumb2Mov32((ushort*)location, (uint)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
-                    PutThumb2BlRel24((ushort*)location, (uint)value);
+                    PutThumb2BlRel24((ushort*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
                     PutArm64Rel28((uint*)location, value);

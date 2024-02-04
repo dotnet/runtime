@@ -23,6 +23,7 @@ public class DownloadResourceProgressTests : AppTestBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
         CopyTestAsset("WasmBasicTestApp", $"DownloadResourceProgressTests_{failAssemblyDownload}");

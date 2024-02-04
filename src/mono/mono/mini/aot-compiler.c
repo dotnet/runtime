@@ -6692,6 +6692,9 @@ compute_line_numbers (MonoMethod *method, int code_size, MonoDebugMethodJitInfo 
 			mono_debug_free_source_location (loc);
 			continue;
 		}
+		if (loc->row > 0xffffff)
+			// FIXME: Invalid debug info
+			continue;
 		prev_line = loc->row;
 		//printf ("D: %s:%d il=%x native=%x\n", loc->source_file, loc->row, il_offset, i);
 		if (first)

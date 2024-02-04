@@ -478,18 +478,6 @@ bool interceptor_ICJI::isValueClass(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-// Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
-                                                            CorInfoInlineTypeCheckSource source)
-{
-    mc->cr->AddCall("canInlineTypeCheck");
-    CorInfoInlineTypeCheck temp = original_ICorJitInfo->canInlineTypeCheck(cls, source);
-    mc->recCanInlineTypeCheck(cls, source, temp);
-    return temp;
-}
-
 // return flags (defined above, CORINFO_FLG_PUBLIC ...)
 uint32_t interceptor_ICJI::getClassAttribs(CORINFO_CLASS_HANDLE cls)
 {
@@ -914,6 +902,15 @@ bool interceptor_ICJI::isMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     return temp;
 }
 
+// Returns true if a class handle can only describe values of exactly one type.
+bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isExactType");
+    bool temp = original_ICorJitInfo->isExactType(cls);
+    mc->recIsExactType(cls, temp);
+    return temp;
+}
+
 // Returns TypeCompareState::Must if cls is known to be an enum.
 // For enums with known exact type returns the underlying
 // type in underlyingType when the provided pointer is
@@ -1078,6 +1075,13 @@ void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
     mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
     mc->recGetThreadLocalStaticBlocksInfo(pInfo, isGCType);
+}
+
+void interceptor_ICJI::getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    mc->cr->AddCall("getThreadLocalStaticInfo_NativeAOT");
+    original_ICorJitInfo->getThreadLocalStaticInfo_NativeAOT(pInfo);
+    mc->recGetThreadLocalStaticInfo_NativeAOT(pInfo);
 }
 
 // Returns true iff "fldHnd" represents a static field.

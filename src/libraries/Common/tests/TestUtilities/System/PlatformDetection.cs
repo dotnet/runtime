@@ -30,6 +30,7 @@ namespace System
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
+        public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
@@ -382,17 +383,16 @@ namespace System
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
         public static bool IsHybridGlobalization => m_isHybrid.Value;
         public static bool IsHybridGlobalizationOnBrowser => m_isHybrid.Value && IsBrowser;
-        public static bool IsHybridGlobalizationOnOSX => m_isHybrid.Value && (IsOSX || IsMacCatalyst || IsiOS || IstvOS);
+        public static bool IsHybridGlobalizationOnApplePlatform => m_isHybrid.Value && (IsMacCatalyst || IsiOS || IstvOS);
         public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsNotHybridGlobalization => !IsHybridGlobalization;
-        public static bool IsNotHybridGlobalizationOnOSX => !IsHybridGlobalizationOnOSX;
+        public static bool IsNotHybridGlobalizationOnApplePlatform => !IsHybridGlobalizationOnApplePlatform;
 
-        // HG on apple platforms implies ICU 
-        public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnOSX || ICUVersion > new Version(0, 0, 0, 0));
+        // HG on apple platforms implies ICU
+        public static bool IsIcuGlobalization => !IsInvariantGlobalization && (IsHybridGlobalizationOnApplePlatform || ICUVersion > new Version(0, 0, 0, 0));
 
         public static bool IsIcuGlobalizationAndNotHybridOnBrowser => IsIcuGlobalization && IsNotHybridGlobalizationOnBrowser;
-        public static bool IsIcuGlobalizationAndNotHybrid => IsIcuGlobalization && IsNotHybridGlobalization;
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization && !IsHybridGlobalization;
 
         public static bool IsSubstAvailable
@@ -421,7 +421,7 @@ namespace System
         {
             int version = 0;
             // When HG on Apple platforms, our ICU lib is not loaded
-            if (IsNotHybridGlobalizationOnOSX)
+            if (IsNotHybridGlobalizationOnApplePlatform)
             {
                 try
                 {

@@ -11,9 +11,8 @@ using System.Runtime.Intrinsics.X86;
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 
 // TODO:
-// - Vectorize the trig-related functions for Ts other than floats
+// - Vectorize remaining trig-related functions (some aren't vectorized at all, some are only vectorized for float).
 // - Vectorize integer operations when sizeof(T) == 1 or 2 (currently only vectorized in most operations for sizeof(T) == 4 or 8).
-// - Implement generic version of IndexOfMinMaxCore and corresponding IndexOf methods.
 
 namespace System.Numerics.Tensors
 {
@@ -1624,7 +1623,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 T result;
 
@@ -1644,7 +1643,7 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 T result;
 
@@ -1664,7 +1663,7 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 T result;
 
@@ -2724,8 +2723,9 @@ namespace System.Numerics.Tensors
             return curResult;
         }
 
-        private static int IndexOfMinMaxCore<TIndexOfMinMax>(ReadOnlySpan<float> x)
-            where TIndexOfMinMax : struct, IIndexOfOperator
+        private static int IndexOfMinMaxCore<T, TIndexOfMinMax>(ReadOnlySpan<T> x)
+            where T : INumber<T>
+            where TIndexOfMinMax : struct, IIndexOfOperator<T>
         {
             if (x.IsEmpty)
             {
@@ -2737,193 +2737,270 @@ namespace System.Numerics.Tensors
             // otherwise returns the index of the greater of the inputs.
             // It treats +0 as greater than -0 as per the specification.
 
-            if (Vector512.IsHardwareAccelerated && x.Length >= Vector512<float>.Count)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
             {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-                Vector512<int> resultIndex = Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
-                Vector512<int> curIndex = resultIndex;
-                Vector512<int> increment = Vector512.Create(Vector512<float>.Count);
+                Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static Vector512<T> CreateVector512T(int i) =>
+                    sizeof(T) == sizeof(long) ? Vector512.Create((long)i).As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector512.Create(i).As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector512.Create((short)i).As<short, T>() :
+                    Vector512.Create((byte)i).As<byte, T>();
+
+                ref T xRef = ref MemoryMarshal.GetReference(x);
+                Vector512<T> resultIndex =
+                    sizeof(T) == sizeof(long) ? Vector512.Create(0L, 1, 2, 3, 4, 5, 6, 7).As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<short, T>() :
+                    Vector512.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63).As<byte, T>();
+                Vector512<T> currentIndex = resultIndex;
+                Vector512<T> increment = CreateVector512T(Vector512<T>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector512<float> result = Vector512.LoadUnsafe(ref xRef);
-                Vector512<float> current;
+                Vector512<T> result = Vector512.LoadUnsafe(ref xRef);
+                Vector512<T> current;
 
-                Vector512<float> nanMask = ~Vector512.Equals(result, result);
-                if (nanMask != Vector512<float>.Zero)
+                Vector512<T> nanMask;
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    nanMask = ~Vector512.Equals(result, result);
+                    if (nanMask != Vector512<T>.Zero)
+                    {
+                        return IndexOfFirstMatch(nanMask);
+                    }
                 }
 
-                int oneVectorFromEnd = x.Length - Vector512<float>.Count;
-                int i = Vector512<float>.Count;
+                int oneVectorFromEnd = x.Length - Vector512<T>.Count;
+                int i = Vector512<T>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
                 while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector512.LoadUnsafe(ref xRef, (uint)i);
-                    curIndex += increment;
+                    currentIndex += increment;
 
-                    nanMask = ~Vector512.Equals(current, current);
-                    if (nanMask != Vector512<float>.Zero)
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        return i + IndexOfFirstMatch(nanMask);
+                        nanMask = ~Vector512.Equals(current, current);
+                        if (nanMask != Vector512<T>.Zero)
+                        {
+                            return i + IndexOfFirstMatch(nanMask);
+                        }
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, currentIndex);
 
-                    i += Vector512<float>.Count;
+                    i += Vector512<T>.Count;
                 }
 
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
                 {
-                    current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<float>.Count));
-                    curIndex += Vector512.Create(x.Length - i);
+                    current = Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<T>.Count));
+                    currentIndex += CreateVector512T(x.Length - i);
 
-                    nanMask = ~Vector512.Equals(current, current);
-                    if (nanMask != Vector512<float>.Zero)
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        return curIndex[IndexOfFirstMatch(nanMask)];
+                        nanMask = ~Vector512.Equals(current, current);
+                        if (nanMask != Vector512<T>.Zero)
+                        {
+                            int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
+                            return typeof(T) == typeof(double) ?
+                                (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
+                                (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
+                        }
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, currentIndex);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TIndexOfMinMax.Invoke(result, resultIndex);
+                return IndexOfFinalAggregate<T, TIndexOfMinMax>(result, resultIndex);
             }
 
-            if (Vector256.IsHardwareAccelerated && x.Length >= Vector256<float>.Count)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
             {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-                Vector256<int> resultIndex = Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7);
-                Vector256<int> curIndex = resultIndex;
-                Vector256<int> increment = Vector256.Create(Vector256<float>.Count);
+                Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static Vector256<T> CreateVector256T(int i) =>
+                    sizeof(T) == sizeof(long) ? Vector256.Create((long)i).As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector256.Create(i).As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector256.Create((short)i).As<short, T>() :
+                    Vector256.Create((byte)i).As<byte, T>();
+
+                ref T xRef = ref MemoryMarshal.GetReference(x);
+                Vector256<T> resultIndex =
+                    sizeof(T) == sizeof(long) ? Vector256.Create(0L, 1, 2, 3).As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7).As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<short, T>() :
+                    Vector256.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<byte, T>();
+                Vector256<T> currentIndex = resultIndex;
+                Vector256<T> increment = CreateVector256T(Vector256<T>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector256<float> result = Vector256.LoadUnsafe(ref xRef);
-                Vector256<float> current;
+                Vector256<T> result = Vector256.LoadUnsafe(ref xRef);
+                Vector256<T> current;
 
-                Vector256<float> nanMask = ~Vector256.Equals(result, result);
-                if (nanMask != Vector256<float>.Zero)
+                Vector256<T> nanMask;
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    nanMask = ~Vector256.Equals(result, result);
+                    if (nanMask != Vector256<T>.Zero)
+                    {
+                        return IndexOfFirstMatch(nanMask);
+                    }
                 }
 
-                int oneVectorFromEnd = x.Length - Vector256<float>.Count;
-                int i = Vector256<float>.Count;
+                int oneVectorFromEnd = x.Length - Vector256<T>.Count;
+                int i = Vector256<T>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
                 while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector256.LoadUnsafe(ref xRef, (uint)i);
-                    curIndex += increment;
+                    currentIndex += increment;
 
-                    nanMask = ~Vector256.Equals(current, current);
-                    if (nanMask != Vector256<float>.Zero)
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        return i + IndexOfFirstMatch(nanMask);
+                        nanMask = ~Vector256.Equals(current, current);
+                        if (nanMask != Vector256<T>.Zero)
+                        {
+                            return i + IndexOfFirstMatch(nanMask);
+                        }
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, currentIndex);
 
-                    i += Vector256<float>.Count;
+                    i += Vector256<T>.Count;
                 }
 
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
                 {
-                    current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<float>.Count));
-                    curIndex += Vector256.Create(x.Length - i);
+                    current = Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<T>.Count));
+                    currentIndex += CreateVector256T(x.Length - i);
 
-                    nanMask = ~Vector256.Equals(current, current);
-                    if (nanMask != Vector256<float>.Zero)
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        return curIndex[IndexOfFirstMatch(nanMask)];
+                        nanMask = ~Vector256.Equals(current, current);
+                        if (nanMask != Vector256<T>.Zero)
+                        {
+                            int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
+                            return typeof(T) == typeof(double) ?
+                                (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
+                                (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
+                        }
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, currentIndex);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TIndexOfMinMax.Invoke(result, resultIndex);
+                return IndexOfFinalAggregate<T, TIndexOfMinMax>(result, resultIndex);
             }
 
-            if (Vector128.IsHardwareAccelerated && x.Length >= Vector128<float>.Count)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && x.Length >= Vector128<T>.Count)
             {
-                ref float xRef = ref MemoryMarshal.GetReference(x);
-                Vector128<int> resultIndex = Vector128.Create(0, 1, 2, 3);
-                Vector128<int> curIndex = resultIndex;
-                Vector128<int> increment = Vector128.Create(Vector128<float>.Count);
+                Debug.Assert(sizeof(T) is 1 or 2 or 4 or 8);
+
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                static Vector128<T> CreateVector128T(int i) =>
+                    sizeof(T) == sizeof(long) ? Vector128.Create((long)i).As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector128.Create(i).As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector128.Create((short)i).As<short, T>() :
+                    Vector128.Create((byte)i).As<byte, T>();
+
+                ref T xRef = ref MemoryMarshal.GetReference(x);
+                Vector128<T> resultIndex =
+                    sizeof(T) == sizeof(long) ? Vector128.Create(0L, 1).As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector128.Create(0, 1, 2, 3).As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector128.Create(0, 1, 2, 3, 4, 5, 6, 7).As<short, T>() :
+                    Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<byte, T>();
+                Vector128<T> currentIndex = resultIndex;
+                Vector128<T> increment = CreateVector128T(Vector128<T>.Count);
 
                 // Load the first vector as the initial set of results, and bail immediately
                 // to scalar handling if it contains any NaNs (which don't compare equally to themselves).
-                Vector128<float> result = Vector128.LoadUnsafe(ref xRef);
-                Vector128<float> current;
+                Vector128<T> result = Vector128.LoadUnsafe(ref xRef);
+                Vector128<T> current;
 
-                Vector128<float> nanMask = ~Vector128.Equals(result, result);
-                if (nanMask != Vector128<float>.Zero)
+                Vector128<T> nanMask;
+                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    return IndexOfFirstMatch(nanMask);
+                    nanMask = ~Vector128.Equals(result, result);
+                    if (nanMask != Vector128<T>.Zero)
+                    {
+                        return IndexOfFirstMatch(nanMask);
+                    }
                 }
 
-                int oneVectorFromEnd = x.Length - Vector128<float>.Count;
-                int i = Vector128<float>.Count;
+                int oneVectorFromEnd = x.Length - Vector128<T>.Count;
+                int i = Vector128<T>.Count;
 
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
                 while (i <= oneVectorFromEnd)
                 {
                     // Load the next vector, and early exit on NaN.
                     current = Vector128.LoadUnsafe(ref xRef, (uint)i);
-                    curIndex += increment;
+                    currentIndex += increment;
 
-                    nanMask = ~Vector128.Equals(current, current);
-                    if (nanMask != Vector128<float>.Zero)
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        return i + IndexOfFirstMatch(nanMask);
+                        nanMask = ~Vector128.Equals(current, current);
+                        if (nanMask != Vector128<T>.Zero)
+                        {
+                            return i + IndexOfFirstMatch(nanMask);
+                        }
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, currentIndex);
 
-                    i += Vector128<float>.Count;
+                    i += Vector128<T>.Count;
                 }
 
                 // If any elements remain, handle them in one final vector.
                 if (i != x.Length)
                 {
-                    curIndex += Vector128.Create(x.Length - i);
+                    current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<T>.Count));
+                    currentIndex += CreateVector128T(x.Length - i);
 
-                    current = Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<float>.Count));
-
-                    nanMask = ~Vector128.Equals(current, current);
-                    if (nanMask != Vector128<float>.Zero)
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        return curIndex[IndexOfFirstMatch(nanMask)];
+                        nanMask = ~Vector128.Equals(current, current);
+                        if (nanMask != Vector128<T>.Zero)
+                        {
+                            int indexInVectorOfFirstMatch = IndexOfFirstMatch(nanMask);
+                            return typeof(T) == typeof(double) ?
+                                (int)(long)(object)currentIndex.As<T, long>()[indexInVectorOfFirstMatch] :
+                                (int)(object)currentIndex.As<T, int>()[indexInVectorOfFirstMatch];
+                        }
                     }
 
-                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, curIndex);
+                    TIndexOfMinMax.Invoke(ref result, current, ref resultIndex, currentIndex);
                 }
 
                 // Aggregate the lanes in the vector to create the final scalar result.
-                return TIndexOfMinMax.Invoke(result, resultIndex);
+                return IndexOfFinalAggregate<T, TIndexOfMinMax>(result, resultIndex);
             }
 
             // Scalar path used when either vectorization is not supported or the input is too small to vectorize.
-            float curResult = x[0];
+            T curResult = x[0];
             int curIn = 0;
-            if (float.IsNaN(curResult))
+            if (T.IsNaN(curResult))
             {
                 return curIn;
             }
 
             for (int i = 1; i < x.Length; i++)
             {
-                float current = x[i];
-                if (float.IsNaN(current))
+                T current = x[i];
+                if (T.IsNaN(current))
                 {
                     return i;
                 }
@@ -2934,20 +3011,14 @@ namespace System.Numerics.Tensors
             return curIn;
         }
 
-        private static int IndexOfFirstMatch<T>(Vector128<T> mask)
-        {
-            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
-        }
+        private static int IndexOfFirstMatch<T>(Vector128<T> mask) =>
+            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
 
-        private static int IndexOfFirstMatch<T>(Vector256<T> mask)
-        {
-            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
-        }
+        private static int IndexOfFirstMatch<T>(Vector256<T> mask) =>
+            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
 
-        private static int IndexOfFirstMatch<T>(Vector512<T> mask)
-        {
-            return BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
-        }
+        private static int IndexOfFirstMatch<T>(Vector512<T> mask) =>
+            BitOperations.TrailingZeroCount(mask.ExtractMostSignificantBits());
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>
         /// <typeparam name="T">The element type.</typeparam>
@@ -3879,7 +3950,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -3897,7 +3968,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -3915,7 +3986,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -4865,6 +4936,19 @@ namespace System.Numerics.Tensors
         /// <typeparam name="TBinaryOperator">
         /// Specifies the operation to perform on each element loaded from <paramref name="x"/> with <paramref name="y"/>.
         /// </typeparam>
+        private static void InvokeScalarSpanIntoSpan<T, TBinaryOperator>(
+            T x, ReadOnlySpan<T> y, Span<T> destination)
+            where TBinaryOperator : struct, IBinaryOperator<T> =>
+            InvokeSpanScalarIntoSpan<T, IdentityOperator<T>, InvertedBinaryOperator<TBinaryOperator, T>>(y, x, destination);
+
+        /// <summary>
+        /// Performs an element-wise operation on <paramref name="x"/> and <paramref name="y"/>,
+        /// and writes the results to <paramref name="destination"/>.
+        /// </summary>
+        /// <typeparam name="T">The element type.</typeparam>
+        /// <typeparam name="TBinaryOperator">
+        /// Specifies the operation to perform on each element loaded from <paramref name="x"/> with <paramref name="y"/>.
+        /// </typeparam>
         private static void InvokeSpanScalarIntoSpan<T, TBinaryOperator>(
             ReadOnlySpan<T> x, T y, Span<T> destination)
             where TBinaryOperator : struct, IBinaryOperator<T> =>
@@ -4904,7 +4988,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TTransformOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -4922,7 +5006,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TTransformOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -4940,7 +5024,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TTransformOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -9281,6 +9365,11 @@ namespace System.Numerics.Tensors
                 if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(addend.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
             }
 
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(addend.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
+            }
+
             return (x * y) + addend;
         }
 
@@ -9416,24 +9505,6 @@ namespace System.Numerics.Tensors
 
             return Vector512.LessThan(vector, Vector512<T>.Zero);
         }
-
-        /// <summary>Gets whether the specified <see cref="float"/> is positive.</summary>
-        private static bool IsPositive(float f) => float.IsPositive(f);
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<float> IsPositive(Vector128<float> vector) =>
-            Vector128.GreaterThan(vector.AsInt32(), Vector128<int>.AllBitsSet).AsSingle();
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<float> IsPositive(Vector256<float> vector) =>
-            Vector256.GreaterThan(vector.AsInt32(), Vector256<int>.AllBitsSet).AsSingle();
-
-        /// <summary>Gets whether each specified <see cref="float"/> is positive.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<float> IsPositive(Vector512<float> vector) =>
-            Vector512.GreaterThan(vector.AsInt32(), Vector512<int>.AllBitsSet).AsSingle();
 
         /// <summary>
         /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
@@ -9672,6 +9743,8 @@ namespace System.Numerics.Tensors
         /// <summary>x + y</summary>
         internal readonly struct AddOperator<T> : IAggregationOperator<T> where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
+            public static bool Vectorizable => true;
+
             public static T Invoke(T x, T y) => x + y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x + y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x + y;
@@ -9684,9 +9757,20 @@ namespace System.Numerics.Tensors
             public static T IdentityValue => T.AdditiveIdentity;
         }
 
+        private readonly struct InvertedBinaryOperator<TOperator, T> : IBinaryOperator<T>
+            where TOperator : IBinaryOperator<T>
+        {
+            public static bool Vectorizable => TOperator.Vectorizable;
+            public static T Invoke(T x, T y) => TOperator.Invoke(y, x);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => TOperator.Invoke(y, x);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => TOperator.Invoke(y, x);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => TOperator.Invoke(y, x);
+        }
+
         /// <summary>x - y</summary>
         internal readonly struct SubtractOperator<T> : IBinaryOperator<T> where T : ISubtractionOperators<T, T, T>
         {
+            public static bool Vectorizable => true;
             public static T Invoke(T x, T y) => x - y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x - y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x - y;
@@ -9696,6 +9780,8 @@ namespace System.Numerics.Tensors
         /// <summary>(x - y) * (x - y)</summary>
         internal readonly struct SubtractSquaredOperator<T> : IBinaryOperator<T> where T : ISubtractionOperators<T, T, T>, IMultiplyOperators<T, T, T>
         {
+            public static bool Vectorizable => true;
+
             public static T Invoke(T x, T y)
             {
                 T tmp = x - y;
@@ -9724,6 +9810,8 @@ namespace System.Numerics.Tensors
         /// <summary>x * y</summary>
         internal readonly struct MultiplyOperator<T> : IAggregationOperator<T> where T : IMultiplyOperators<T, T, T>, IMultiplicativeIdentity<T, T>
         {
+            public static bool Vectorizable => true;
+
             public static T Invoke(T x, T y) => x * y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x * y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x * y;
@@ -9739,15 +9827,184 @@ namespace System.Numerics.Tensors
         /// <summary>x / y</summary>
         internal readonly struct DivideOperator<T> : IBinaryOperator<T> where T : IDivisionOperators<T, T, T>
         {
+            public static bool Vectorizable => true;
             public static T Invoke(T x, T y) => x / y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x / y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x / y;
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x / y;
         }
 
+        /// <summary>T.Ieee754Remainder(x, y)</summary>
+        internal readonly struct Ieee754RemainderOperator<T> : IBinaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => false;
+            public static T Invoke(T x, T y) => T.Ieee754Remainder(x, y);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+        }
+
+        // Ieee754Remainder
+
+        internal readonly struct ReciprocalOperator<T> : IUnaryOperator<T> where T : IFloatingPoint<T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x) => T.One / x;
+            public static Vector128<T> Invoke(Vector128<T> x) => Vector128<T>.One / x;
+            public static Vector256<T> Invoke(Vector256<T> x) => Vector256<T>.One / x;
+            public static Vector512<T> Invoke(Vector512<T> x) => Vector512<T>.One / x;
+        }
+
+        private readonly struct ReciprocalSqrtOperator<T> : IUnaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x) => T.One / T.Sqrt(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Vector128<T>.One / Vector128.Sqrt(x);
+            public static Vector256<T> Invoke(Vector256<T> x) => Vector256<T>.One / Vector256.Sqrt(x);
+            public static Vector512<T> Invoke(Vector512<T> x) => Vector512<T>.One / Vector512.Sqrt(x);
+        }
+
+        private readonly struct ReciprocalEstimateOperator<T> : IUnaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => true;
+
+            public static T Invoke(T x) => T.ReciprocalEstimate(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (Sse.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Sse.Reciprocal(x.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return AdvSimd.ReciprocalEstimate(x.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.ReciprocalEstimate(x.AsDouble()).As<double, T>();
+                }
+
+                return Vector128<T>.One / x;
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (Avx.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx.Reciprocal(x.AsSingle()).As<float, T>();
+                }
+
+                return Vector256<T>.One / x;
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (Avx512F.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.Reciprocal14(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.Reciprocal14(x.AsDouble()).As<double, T>();
+                }
+
+                return Vector512<T>.One / x;
+            }
+        }
+
+        private readonly struct ReciprocalSqrtEstimateOperator<T> : IUnaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => true;
+
+            public static T Invoke(T x) => T.ReciprocalSqrtEstimate(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (Sse.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Sse.ReciprocalSqrt(x.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return AdvSimd.ReciprocalSquareRootEstimate(x.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.ReciprocalSquareRootEstimate(x.AsDouble()).As<double, T>();
+                }
+
+                return Vector128<T>.One / Vector128.Sqrt(x);
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (Avx.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx.ReciprocalSqrt(x.AsSingle()).As<float, T>();
+                }
+
+                return Vector256<T>.One / Vector256.Sqrt(x);
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (Avx512F.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.ReciprocalSqrt14(x.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.ReciprocalSqrt14(x.AsDouble()).As<double, T>();
+                }
+
+                return Vector512<T>.One / Vector512.Sqrt(x);
+            }
+        }
+
+        /// <summary>x &amp; y</summary>
+        internal readonly struct BitwiseAndOperator<T> : IBinaryOperator<T> where T : IBitwiseOperators<T, T, T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x, T y) => x & y;
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x & y;
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x & y;
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x & y;
+        }
+
+        /// <summary>x | y</summary>
+        internal readonly struct BitwiseOrOperator<T> : IBinaryOperator<T> where T : IBitwiseOperators<T, T, T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x, T y) => x | y;
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x | y;
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x | y;
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x | y;
+        }
+
+        /// <summary>x ^ y</summary>
+        internal readonly struct XorOperator<T> : IBinaryOperator<T> where T : IBitwiseOperators<T, T, T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x, T y) => x ^ y;
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x ^ y;
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x ^ y;
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x ^ y;
+        }
+
+        /// <summary>~x</summary>
+        internal readonly struct OnesComplementOperator<T> : IUnaryOperator<T> where T : IBitwiseOperators<T, T, T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x) => ~x;
+            public static Vector128<T> Invoke(Vector128<T> x) => ~x;
+            public static Vector256<T> Invoke(Vector256<T> x) => ~x;
+            public static Vector512<T> Invoke(Vector512<T> x) => ~x;
+        }
+
         /// <summary>T.Max(x, y) (but NaNs may not be propagated)</summary>
         internal readonly struct MaxOperator<T> : IAggregationOperator<T> where T : INumber<T>
         {
+            public static bool Vectorizable => true;
+
             public static T Invoke(T x, T y)
             {
                 if (typeof(T) == typeof(Half) || typeof(T) == typeof(float) || typeof(T) == typeof(double))
@@ -9772,6 +10029,11 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(int)) return AdvSimd.Max(x.AsInt32(), y.AsInt32()).As<int, T>();
                     if (typeof(T) == typeof(uint)) return AdvSimd.Max(x.AsUInt32(), y.AsUInt32()).As<uint, T>();
                     if (typeof(T) == typeof(float)) return AdvSimd.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
                 }
 
                 if (typeof(T) == typeof(float))
@@ -9842,256 +10104,350 @@ namespace System.Numerics.Tensors
             public static T Invoke(Vector512<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
         }
 
-        private interface IIndexOfOperator
+        private interface IIndexOfOperator<T> where T : INumber<T>
         {
-            static abstract int Invoke(ref float result, float current, int resultIndex, int curIndex);
-            static abstract int Invoke(Vector128<float> result, Vector128<int> resultIndex);
-            static abstract void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex);
-            static abstract int Invoke(Vector256<float> result, Vector256<int> resultIndex);
-            static abstract void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex);
-            static abstract int Invoke(Vector512<float> result, Vector512<int> resultIndex);
-            static abstract void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex);
+            static abstract int Invoke(ref T result, T current, int resultIndex, int currentIndex);
+            static abstract void Invoke(ref Vector128<T> result, Vector128<T> current, ref Vector128<T> resultIndex, Vector128<T> currentIndex);
+            static abstract void Invoke(ref Vector256<T> result, Vector256<T> current, ref Vector256<T> resultIndex, Vector256<T> currentIndex);
+            static abstract void Invoke(ref Vector512<T> result, Vector512<T> current, ref Vector512<T> resultIndex, Vector512<T> currentIndex);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int IndexOfFinalAggregate<T, TIndexOfOperator>(Vector128<T> result, Vector128<T> resultIndex)
+            where T : INumber<T>
+            where TIndexOfOperator : struct, IIndexOfOperator<T>
+        {
+            Vector128<T> tmpResult;
+            Vector128<T> tmpIndex;
+
+            if (sizeof(T) == 8)
+            {
+                // Compare 0 with 1
+                tmpResult = Vector128.Shuffle(result.AsInt64(), Vector128.Create(1, 0)).As<long, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsInt64(), Vector128.Create(1, 0)).As<long, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Return 0
+                return (int)resultIndex.As<T, long>().ToScalar();
+            }
+
+            if (sizeof(T) == 4)
+            {
+                // Compare 0,1 with 2,3
+                tmpResult = Vector128.Shuffle(result.AsInt32(), Vector128.Create(2, 3, 0, 1)).As<int, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsInt32(), Vector128.Create(2, 3, 0, 1)).As<int, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Compare 0 with 1
+                tmpResult = Vector128.Shuffle(result.AsInt32(), Vector128.Create(1, 0, 3, 2)).As<int, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsInt32(), Vector128.Create(1, 0, 3, 2)).As<int, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Return 0
+                return resultIndex.As<T, int>().ToScalar();
+            }
+
+            if (sizeof(T) == 2)
+            {
+                // Compare 0,1,2,3 with 4,5,6,7
+                tmpResult = Vector128.Shuffle(result.AsInt16(), Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsInt16(), Vector128.Create(4, 5, 6, 7, 0, 1, 2, 3)).As<short, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Compare 0,1 with 2,3
+                tmpResult = Vector128.Shuffle(result.AsInt16(), Vector128.Create(2, 3, 0, 1, 4, 5, 6, 7)).As<short, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsInt16(), Vector128.Create(2, 3, 0, 1, 4, 5, 6, 7)).As<short, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Compare 0 with 1
+                tmpResult = Vector128.Shuffle(result.AsInt16(), Vector128.Create(1, 0, 2, 3, 4, 5, 6, 7)).As<short, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsInt16(), Vector128.Create(1, 0, 2, 3, 4, 5, 6, 7)).As<short, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Return 0
+                return resultIndex.As<T, short>().ToScalar();
+            }
+
+            if (sizeof(T) == 1)
+            {
+                // Compare 0,1,2,3,4,5,6,7 with 8,9,10,11,12,13,14,15
+                tmpResult = Vector128.Shuffle(result.AsByte(), Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).As<byte, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsByte(), Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).As<byte, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Compare 0,1,2,3 with 4,5,6,7
+                tmpResult = Vector128.Shuffle(result.AsByte(), Vector128.Create((byte)4, 5, 6, 7, 0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsByte(), Vector128.Create((byte)4, 5, 6, 7, 0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Compare 0,1 with 2,3
+                tmpResult = Vector128.Shuffle(result.AsByte(), Vector128.Create((byte)2, 3, 0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsByte(), Vector128.Create((byte)2, 3, 0, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Compare 0 with 1
+                tmpResult = Vector128.Shuffle(result.AsByte(), Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
+                tmpIndex = Vector128.Shuffle(resultIndex.AsByte(), Vector128.Create((byte)1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)).As<byte, T>();
+                TIndexOfOperator.Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
+
+                // Return 0
+                return resultIndex.As<T, byte>().ToScalar();
+            }
+
+            throw new NotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int IndexOfFinalAggregate<T, TIndexOfOperator>(Vector256<T> result, Vector256<T> resultIndex)
+            where T : INumber<T>
+            where TIndexOfOperator : struct, IIndexOfOperator<T>
+        {
+            // Min the upper/lower halves of the Vector256
+            Vector128<T> resultLower = result.GetLower();
+            Vector128<T> indexLower = resultIndex.GetLower();
+
+            TIndexOfOperator.Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+            return IndexOfFinalAggregate<T, TIndexOfOperator>(resultLower, indexLower);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int IndexOfFinalAggregate<T, TIndexOfOperator>(Vector512<T> result, Vector512<T> resultIndex)
+            where T : INumber<T>
+            where TIndexOfOperator : struct, IIndexOfOperator<T>
+        {
+            Vector256<T> resultLower = result.GetLower();
+            Vector256<T> indexLower = resultIndex.GetLower();
+
+            TIndexOfOperator.Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
+            return IndexOfFinalAggregate<T, TIndexOfOperator>(resultLower, indexLower);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<T> IndexLessThan<T>(Vector128<T> indices1, Vector128<T> indices2) =>
+            sizeof(T) == sizeof(long) ? Vector128.LessThan(indices1.AsInt64(), indices2.AsInt64()).As<long, T>() :
+            sizeof(T) == sizeof(int) ? Vector128.LessThan(indices1.AsInt32(), indices2.AsInt32()).As<int, T>() :
+            sizeof(T) == sizeof(short) ? Vector128.LessThan(indices1.AsInt16(), indices2.AsInt16()).As<short, T>() :
+            Vector128.LessThan(indices1.AsByte(), indices2.AsByte()).As<byte, T>();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<T> IndexLessThan<T>(Vector256<T> indices1, Vector256<T> indices2) =>
+            sizeof(T) == sizeof(long) ? Vector256.LessThan(indices1.AsInt64(), indices2.AsInt64()).As<long, T>() :
+            sizeof(T) == sizeof(int) ? Vector256.LessThan(indices1.AsInt32(), indices2.AsInt32()).As<int, T>() :
+            sizeof(T) == sizeof(short) ? Vector256.LessThan(indices1.AsInt16(), indices2.AsInt16()).As<short, T>() :
+            Vector256.LessThan(indices1.AsByte(), indices2.AsByte()).As<byte, T>();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<T> IndexLessThan<T>(Vector512<T> indices1, Vector512<T> indices2) =>
+            sizeof(T) == sizeof(long) ? Vector512.LessThan(indices1.AsInt64(), indices2.AsInt64()).As<long, T>() :
+            sizeof(T) == sizeof(int) ? Vector512.LessThan(indices1.AsInt32(), indices2.AsInt32()).As<int, T>() :
+            sizeof(T) == sizeof(short) ? Vector512.LessThan(indices1.AsInt16(), indices2.AsInt16()).As<short, T>() :
+            Vector512.LessThan(indices1.AsByte(), indices2.AsByte()).As<byte, T>();
+
         /// <summary>Returns the index of MathF.Max(x, y)</summary>
-        internal readonly struct IndexOfMaxOperator : IIndexOfOperator
+        internal readonly struct IndexOfMaxOperator<T> : IIndexOfOperator<T> where T : INumber<T>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector128<float> result, Vector128<int> maxIndex)
+            public static void Invoke(ref Vector128<T> result, Vector128<T> current, ref Vector128<T> resultIndex, Vector128<T> currentIndex)
             {
-                Vector128<float> tmpResult;
-                Vector128<int> tmpIndex;
+                Vector128<T> useResult = Vector128.GreaterThan(result, current);
+                Vector128<T> equalMask = Vector128.Equals(result, current);
 
-                tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
-                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
-
-                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
-                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
-
-                return maxIndex.ToScalar();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> max, Vector128<float> current, ref Vector128<int> maxIndex, Vector128<int> curIndex)
-            {
-                Vector128<float> greaterThanMask = Vector128.GreaterThan(max, current);
-
-                Vector128<float> equalMask = Vector128.Equals(max, current);
-                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                if (equalMask != Vector128<T>.Zero)
                 {
-                    Vector128<float> negativeMask = IsNegative(current);
-                    Vector128<int> lessThanMask = Vector128.LessThan(maxIndex, curIndex);
-
-                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                    Vector128<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                        Vector128<T> currentNegative = IsNegative(current);
+                        Vector128<T> sameSign = Vector128.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
                 }
 
-                max = ElementWiseSelect(greaterThanMask, max, current);
-
-                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector256<float> result, Vector256<int> maxIndex)
+            public static void Invoke(ref Vector256<T> result, Vector256<T> current, ref Vector256<T> resultIndex, Vector256<T> currentIndex)
             {
-                // Max the upper/lower halves of the Vector256
-                Vector128<float> resultLower = result.GetLower();
-                Vector128<int> indexLower = maxIndex.GetLower();
+                Vector256<T> useResult = Vector256.GreaterThan(result, current);
+                Vector256<T> equalMask = Vector256.Equals(result, current);
 
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, maxIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> max, Vector256<float> current, ref Vector256<int> maxIndex, Vector256<int> curIndex)
-            {
-                Vector256<float> greaterThanMask = Vector256.GreaterThan(max, current);
-
-                Vector256<float> equalMask = Vector256.Equals(max, current);
-                if (equalMask.AsInt32() != Vector256<int>.Zero)
+                if (equalMask != Vector256<T>.Zero)
                 {
-                    Vector256<float> negativeMask = IsNegative(current);
-                    Vector256<int> lessThanMask = Vector256.LessThan(maxIndex, curIndex);
-
-                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                    Vector256<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                        Vector256<T> currentNegative = IsNegative(current);
+                        Vector256<T> sameSign = Vector256.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
                 }
 
-                max = ElementWiseSelect(greaterThanMask, max, current);
-
-                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
+            public static void Invoke(ref Vector512<T> result, Vector512<T> current, ref Vector512<T> resultIndex, Vector512<T> currentIndex)
             {
-                // Min the upper/lower halves of the Vector512
-                Vector256<float> resultLower = result.GetLower();
-                Vector256<int> indexLower = resultIndex.GetLower();
+                Vector512<T> useResult = Vector512.GreaterThan(result, current);
+                Vector512<T> equalMask = Vector512.Equals(result, current);
 
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> max, Vector512<float> current, ref Vector512<int> maxIndex, Vector512<int> curIndex)
-            {
-                Vector512<float> greaterThanMask = Vector512.GreaterThan(max, current);
-
-                Vector512<float> equalMask = Vector512.Equals(max, current);
-                if (equalMask.AsInt32() != Vector512<int>.Zero)
+                if (equalMask != Vector512<T>.Zero)
                 {
-                    Vector512<float> negativeMask = IsNegative(current);
-                    Vector512<int> lessThanMask = Vector512.LessThan(maxIndex, curIndex);
-
-                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
+                    Vector512<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                        Vector512<T> currentNegative = IsNegative(current);
+                        Vector512<T> sameSign = Vector512.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
                 }
 
-                max = ElementWiseSelect(greaterThanMask, max, current);
-
-                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            public static int Invoke(ref T result, T current, int resultIndex, int currentIndex)
             {
                 if (result == current)
                 {
-                    if (IsNegative(result) && !IsNegative(current))
+                    bool resultNegative = IsNegative(result);
+                    if ((resultNegative == IsNegative(current)) ? (currentIndex < resultIndex) : resultNegative)
                     {
                         result = current;
-                        return curIndex;
+                        return currentIndex;
                     }
                 }
                 else if (current > result)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
             }
         }
 
-        internal readonly struct IndexOfMaxMagnitudeOperator : IIndexOfOperator
+        internal readonly struct IndexOfMaxMagnitudeOperator<T> : IIndexOfOperator<T> where T : INumber<T>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector128<float> result, Vector128<int> maxIndex)
+            public static void Invoke(ref Vector128<T> result, Vector128<T> current, ref Vector128<T> resultIndex, Vector128<T> currentIndex)
             {
-                Vector128<float> tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                Vector128<int> tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(2, 3, 0, 1));
+                Vector128<T> resultMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
+                Vector128<T> useResult = Vector128.GreaterThan(resultMag, currentMag);
+                Vector128<T> equalMask = Vector128.Equals(resultMag, currentMag);
 
-                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
-
-                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex = Vector128.Shuffle(maxIndex, Vector128.Create(1, 0, 3, 2));
-
-                Invoke(ref result, tmpResult, ref maxIndex, tmpIndex);
-                return maxIndex.ToScalar();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> max, Vector128<float> current, ref Vector128<int> maxIndex, Vector128<int> curIndex)
-            {
-                Vector128<float> maxMag = Vector128.Abs(max), currentMag = Vector128.Abs(current);
-
-                Vector128<float> greaterThanMask = Vector128.GreaterThan(maxMag, currentMag);
-
-                Vector128<float> equalMask = Vector128.Equals(max, current);
-                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                if (equalMask != Vector128<T>.Zero)
                 {
-                    Vector128<float> negativeMask = IsNegative(current);
-                    Vector128<int> lessThanMask = Vector128.LessThan(maxIndex, curIndex);
-
-                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
-                }
-
-                max = ElementWiseSelect(greaterThanMask, max, current);
-
-                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector256<float> result, Vector256<int> maxIndex)
-            {
-                // Max the upper/lower halves of the Vector256
-                Vector128<float> resultLower = result.GetLower();
-                Vector128<int> indexLower = maxIndex.GetLower();
-
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, maxIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> max, Vector256<float> current, ref Vector256<int> maxIndex, Vector256<int> curIndex)
-            {
-                Vector256<float> maxMag = Vector256.Abs(max), currentMag = Vector256.Abs(current);
-
-                Vector256<float> greaterThanMask = Vector256.GreaterThan(maxMag, currentMag);
-
-                Vector256<float> equalMask = Vector256.Equals(max, current);
-                if (equalMask.AsInt32() != Vector256<int>.Zero)
-                {
-                    Vector256<float> negativeMask = IsNegative(current);
-                    Vector256<int> lessThanMask = Vector256.LessThan(maxIndex, curIndex);
-
-                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
-                }
-
-                max = ElementWiseSelect(greaterThanMask, max, current);
-
-                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
-            {
-                // Min the upper/lower halves of the Vector512
-                Vector256<float> resultLower = result.GetLower();
-                Vector256<int> indexLower = resultIndex.GetLower();
-
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> max, Vector512<float> current, ref Vector512<int> maxIndex, Vector512<int> curIndex)
-            {
-                Vector512<float> maxMag = Vector512.Abs(max), currentMag = Vector512.Abs(current);
-                Vector512<float> greaterThanMask = Vector512.GreaterThan(maxMag, currentMag);
-
-                Vector512<float> equalMask = Vector512.Equals(max, current);
-                if (equalMask.AsInt32() != Vector512<int>.Zero)
-                {
-                    Vector512<float> negativeMask = IsNegative(current);
-                    Vector512<int> lessThanMask = Vector512.LessThan(maxIndex, curIndex);
-
-                    greaterThanMask |= (negativeMask & equalMask) | (~IsNegative(max) & equalMask & lessThanMask.AsSingle());
-                }
-
-                max = ElementWiseSelect(greaterThanMask, max, current);
-
-                maxIndex = ElementWiseSelect(greaterThanMask.AsInt32(), maxIndex, curIndex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
-            {
-                float curMaxAbs = MathF.Abs(result);
-                float currentAbs = MathF.Abs(current);
-
-                if (curMaxAbs == currentAbs)
-                {
-                    if (IsNegative(result) && !IsNegative(current))
+                    Vector128<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        result = current;
-                        return curIndex;
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                        Vector128<T> currentNegative = IsNegative(current);
+                        Vector128<T> sameSign = Vector128.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
                     }
                 }
-                else if (currentAbs > curMaxAbs)
+
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void Invoke(ref Vector256<T> result, Vector256<T> current, ref Vector256<T> resultIndex, Vector256<T> currentIndex)
+            {
+                Vector256<T> resultMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
+                Vector256<T> useResult = Vector256.GreaterThan(resultMag, currentMag);
+                Vector256<T> equalMask = Vector256.Equals(resultMag, currentMag);
+
+                if (equalMask != Vector256<T>.Zero)
+                {
+                    Vector256<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                        Vector256<T> currentNegative = IsNegative(current);
+                        Vector256<T> sameSign = Vector256.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
+                }
+
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void Invoke(ref Vector512<T> result, Vector512<T> current, ref Vector512<T> resultIndex, Vector512<T> currentIndex)
+            {
+                Vector512<T> resultMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
+                Vector512<T> useResult = Vector512.GreaterThan(resultMag, currentMag);
+                Vector512<T> equalMask = Vector512.Equals(resultMag, currentMag);
+
+                if (equalMask != Vector512<T>.Zero)
+                {
+                    Vector512<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(current));
+                        Vector512<T> currentNegative = IsNegative(current);
+                        Vector512<T> sameSign = Vector512.Equals(IsNegative(result).AsInt32(), currentNegative.AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, currentNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
+                }
+
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int Invoke(ref T result, T current, int resultIndex, int currentIndex)
+            {
+                T resultMag = T.Abs(result);
+                T currentMag = T.Abs(current);
+
+                if (resultMag == currentMag)
+                {
+                    bool resultNegative = IsNegative(result);
+                    if ((resultNegative == IsNegative(current)) ? (currentIndex < resultIndex) : resultNegative)
+                    {
+                        result = current;
+                        return currentIndex;
+                    }
+                }
+                else if (currentMag > resultMag)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
@@ -10099,243 +10455,210 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>Returns the index of MathF.Min(x, y)</summary>
-        internal readonly struct IndexOfMinOperator : IIndexOfOperator
+        internal readonly struct IndexOfMinOperator<T> : IIndexOfOperator<T> where T : INumber<T>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector128<float> result, Vector128<int> resultIndex)
+            public static void Invoke(ref Vector128<T> result, Vector128<T> current, ref Vector128<T> resultIndex, Vector128<T> currentIndex)
             {
-                Vector128<float> tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                Vector128<int> tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
+                Vector128<T> useResult = Vector128.LessThan(result, current);
+                Vector128<T> equalMask = Vector128.Equals(result, current);
 
-                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
-
-                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
-
-                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
-                return resultIndex.ToScalar();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex)
-            {
-                Vector128<float> lessThanMask = Vector128.LessThan(result, current);
-
-                Vector128<float> equalMask = Vector128.Equals(result, current);
-                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                if (equalMask != Vector128<T>.Zero)
                 {
-                    Vector128<float> negativeMask = IsNegative(current);
-                    Vector128<int> lessThanIndexMask = Vector128.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                    Vector128<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                        Vector128<T> resultNegative = IsNegative(result);
+                        Vector128<T> sameSign = Vector128.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
                 }
 
-                result = ElementWiseSelect(lessThanMask, result, current);
-
-                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
-            }
-
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector256<float> result, Vector256<int> resultIndex)
-            {
-                // Min the upper/lower halves of the Vector256
-                Vector128<float> resultLower = result.GetLower();
-                Vector128<int> indexLower = resultIndex.GetLower();
-
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex)
+            public static void Invoke(ref Vector256<T> result, Vector256<T> current, ref Vector256<T> resultIndex, Vector256<T> currentIndex)
             {
-                Vector256<float> lessThanMask = Vector256.LessThan(result, current);
+                Vector256<T> useResult = Vector256.LessThan(result, current);
+                Vector256<T> equalMask = Vector256.Equals(result, current);
 
-                Vector256<float> equalMask = Vector256.Equals(result, current);
-                if (equalMask.AsInt32() != Vector256<int>.Zero)
+                if (equalMask != Vector256<T>.Zero)
                 {
-                    Vector256<float> negativeMask = IsNegative(current);
-                    Vector256<int> lessThanIndexMask = Vector256.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                    Vector256<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                        Vector256<T> resultNegative = IsNegative(result);
+                        Vector256<T> sameSign = Vector256.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
                 }
 
-                result = ElementWiseSelect(lessThanMask, result, current);
-
-                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
+            public static void Invoke(ref Vector512<T> result, Vector512<T> current, ref Vector512<T> resultIndex, Vector512<T> currentIndex)
             {
-                // Min the upper/lower halves of the Vector512
-                Vector256<float> resultLower = result.GetLower();
-                Vector256<int> indexLower = resultIndex.GetLower();
+                Vector512<T> useResult = Vector512.LessThan(result, current);
+                Vector512<T> equalMask = Vector512.Equals(result, current);
 
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex)
-            {
-                Vector512<float> lessThanMask = Vector512.LessThan(result, current);
-
-                Vector512<float> equalMask = Vector512.Equals(result, current);
-                if (equalMask.AsInt32() != Vector512<int>.Zero)
+                if (equalMask != Vector512<T>.Zero)
                 {
-                    Vector512<float> negativeMask = IsNegative(current);
-                    Vector512<int> lessThanIndexMask = Vector512.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
+                    Vector512<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                        Vector512<T> resultNegative = IsNegative(result);
+                        Vector512<T> sameSign = Vector512.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
                 }
 
-                result = ElementWiseSelect(lessThanMask, result, current);
-
-                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
+            public static int Invoke(ref T result, T current, int resultIndex, int currentIndex)
             {
                 if (result == current)
                 {
-                    if (IsPositive(result) && !IsPositive(current))
+                    bool currentNegative = IsNegative(current);
+                    if ((IsNegative(result) == currentNegative) ? (currentIndex < resultIndex) : currentNegative)
                     {
                         result = current;
-                        return curIndex;
+                        return currentIndex;
                     }
                 }
                 else if (current < result)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
             }
         }
 
-        internal readonly struct IndexOfMinMagnitudeOperator : IIndexOfOperator
+        internal readonly struct IndexOfMinMagnitudeOperator<T> : IIndexOfOperator<T> where T : INumber<T>
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector128<float> result, Vector128<int> resultIndex)
+            public static void Invoke(ref Vector128<T> result, Vector128<T> current, ref Vector128<T> resultIndex, Vector128<T> currentIndex)
             {
-                Vector128<float> tmpResult = Vector128.Shuffle(result, Vector128.Create(2, 3, 0, 1));
-                Vector128<int> tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(2, 3, 0, 1));
+                Vector128<T> resultMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
+                Vector128<T> useResult = Vector128.LessThan(resultMag, currentMag);
+                Vector128<T> equalMask = Vector128.Equals(resultMag, currentMag);
 
-                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
-
-                tmpResult = Vector128.Shuffle(result, Vector128.Create(1, 0, 3, 2));
-                tmpIndex = Vector128.Shuffle(resultIndex, Vector128.Create(1, 0, 3, 2));
-
-                Invoke(ref result, tmpResult, ref resultIndex, tmpIndex);
-                return resultIndex.ToScalar();
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector128<float> result, Vector128<float> current, ref Vector128<int> resultIndex, Vector128<int> curIndex)
-            {
-                Vector128<float> minMag = Vector128.Abs(result), currentMag = Vector128.Abs(current);
-
-                Vector128<float> lessThanMask = Vector128.LessThan(minMag, currentMag);
-
-                Vector128<float> equalMask = Vector128.Equals(result, current);
-                if (equalMask.AsInt32() != Vector128<int>.Zero)
+                if (equalMask != Vector128<T>.Zero)
                 {
-                    Vector128<float> negativeMask = IsNegative(current);
-                    Vector128<int> lessThanIndexMask = Vector128.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
-                }
-
-                result = ElementWiseSelect(lessThanMask, result, current);
-
-                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector256<float> result, Vector256<int> resultIndex)
-            {
-                // Min the upper/lower halves of the Vector256
-                Vector128<float> resultLower = result.GetLower();
-                Vector128<int> indexLower = resultIndex.GetLower();
-
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector256<float> result, Vector256<float> current, ref Vector256<int> resultIndex, Vector256<int> curIndex)
-            {
-                Vector256<float> minMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
-
-                Vector256<float> lessThanMask = Vector256.LessThan(minMag, currentMag);
-
-                Vector256<float> equalMask = Vector256.Equals(result, current);
-                if (equalMask.AsInt32() != Vector256<int>.Zero)
-                {
-                    Vector256<float> negativeMask = IsNegative(current);
-                    Vector256<int> lessThanIndexMask = Vector256.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
-                }
-
-                result = ElementWiseSelect(lessThanMask, result, current);
-
-                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(Vector512<float> result, Vector512<int> resultIndex)
-            {
-                // Min the upper/lower halves of the Vector512
-                Vector256<float> resultLower = result.GetLower();
-                Vector256<int> indexLower = resultIndex.GetLower();
-
-                Invoke(ref resultLower, result.GetUpper(), ref indexLower, resultIndex.GetUpper());
-                return Invoke(resultLower, indexLower);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void Invoke(ref Vector512<float> result, Vector512<float> current, ref Vector512<int> resultIndex, Vector512<int> curIndex)
-            {
-                Vector512<float> minMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
-
-                Vector512<float> lessThanMask = Vector512.LessThan(minMag, currentMag);
-
-                Vector512<float> equalMask = Vector512.Equals(result, current);
-                if (equalMask.AsInt32() != Vector512<int>.Zero)
-                {
-                    Vector512<float> negativeMask = IsNegative(current);
-                    Vector512<int> lessThanIndexMask = Vector512.LessThan(resultIndex, curIndex);
-
-                    lessThanMask |= (~negativeMask & equalMask) | (IsNegative(result) & equalMask & lessThanIndexMask.AsSingle());
-                }
-
-                result = ElementWiseSelect(lessThanMask, result, current);
-
-                resultIndex = ElementWiseSelect(lessThanMask.AsInt32(), resultIndex, curIndex);
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int Invoke(ref float result, float current, int resultIndex, int curIndex)
-            {
-                float curMinAbs = MathF.Abs(result);
-                float currentAbs = MathF.Abs(current);
-                if (curMinAbs == currentAbs)
-                {
-                    if (IsPositive(result) && !IsPositive(current))
+                    Vector128<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                     {
-                        result = current;
-                        return curIndex;
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                        Vector128<T> resultNegative = IsNegative(result);
+                        Vector128<T> sameSign = Vector128.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
                     }
                 }
-                else if (currentAbs < curMinAbs)
+
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void Invoke(ref Vector256<T> result, Vector256<T> current, ref Vector256<T> resultIndex, Vector256<T> currentIndex)
+            {
+                Vector256<T> resultMag = Vector256.Abs(result), currentMag = Vector256.Abs(current);
+                Vector256<T> useResult = Vector256.LessThan(resultMag, currentMag);
+                Vector256<T> equalMask = Vector256.Equals(resultMag, currentMag);
+
+                if (equalMask != Vector256<T>.Zero)
+                {
+                    Vector256<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                        Vector256<T> resultNegative = IsNegative(result);
+                        Vector256<T> sameSign = Vector256.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
+                }
+
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static void Invoke(ref Vector512<T> result, Vector512<T> current, ref Vector512<T> resultIndex, Vector512<T> currentIndex)
+            {
+                Vector512<T> resultMag = Vector512.Abs(result), currentMag = Vector512.Abs(current);
+                Vector512<T> useResult = Vector512.LessThan(resultMag, currentMag);
+                Vector512<T> equalMask = Vector512.Equals(resultMag, currentMag);
+
+                if (equalMask != Vector512<T>.Zero)
+                {
+                    Vector512<T> lessThanIndexMask = IndexLessThan(resultIndex, currentIndex);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        // bool useResult = equal && ((IsNegative(result) == IsNegative(current)) ? (resultIndex < currentIndex) : IsNegative(result));
+                        Vector512<T> resultNegative = IsNegative(result);
+                        Vector512<T> sameSign = Vector512.Equals(resultNegative.AsInt32(), IsNegative(current).AsInt32()).As<int, T>();
+                        useResult |= equalMask & ElementWiseSelect(sameSign, lessThanIndexMask, resultNegative);
+                    }
+                    else
+                    {
+                        useResult |= equalMask & lessThanIndexMask;
+                    }
+                }
+
+                result = ElementWiseSelect(useResult, result, current);
+                resultIndex = ElementWiseSelect(useResult, resultIndex, currentIndex);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int Invoke(ref T result, T current, int resultIndex, int currentIndex)
+            {
+                T resultMag = T.Abs(result);
+                T currentMag = T.Abs(current);
+
+                if (resultMag == currentMag)
+                {
+                    bool currentNegative = IsNegative(current);
+                    if ((IsNegative(result) == currentNegative) ? (currentIndex < resultIndex) : currentNegative)
+                    {
+                        result = current;
+                        return currentIndex;
+                    }
+                }
+                else if (currentMag < resultMag)
                 {
                     result = current;
-                    return curIndex;
+                    return currentIndex;
                 }
 
                 return resultIndex;
@@ -10346,6 +10669,8 @@ namespace System.Numerics.Tensors
         internal readonly struct MaxPropagateNaNOperator<T> : IBinaryOperator<T>
              where T : INumber<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y) => T.Max(x, y);
 
@@ -10361,6 +10686,11 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(uint)) return AdvSimd.Max(x.AsUInt32(), y.AsUInt32()).As<uint, T>();
                     if (typeof(T) == typeof(int)) return AdvSimd.Max(x.AsInt32(), y.AsInt32()).As<int, T>();
                     if (typeof(T) == typeof(float)) return AdvSimd.Max(x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.Max(x.AsDouble(), y.AsDouble()).As<double, T>();
                 }
 
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
@@ -10419,6 +10749,8 @@ namespace System.Numerics.Tensors
         internal readonly struct MaxMagnitudeOperator<T> : IAggregationOperator<T>
             where T : INumberBase<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y) => T.MaxMagnitude(x, y);
 
@@ -10506,6 +10838,8 @@ namespace System.Numerics.Tensors
         internal readonly struct MaxMagnitudePropagateNaNOperator<T> : IBinaryOperator<T>
             where T : INumberBase<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y) => T.MaxMagnitude(x, y);
 
@@ -10574,6 +10908,8 @@ namespace System.Numerics.Tensors
         internal readonly struct MinOperator<T> : IAggregationOperator<T>
             where T : INumber<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y)
             {
@@ -10599,6 +10935,11 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(int)) return AdvSimd.Min(x.AsInt32(), y.AsInt32()).As<int, T>();
                     if (typeof(T) == typeof(uint)) return AdvSimd.Min(x.AsUInt32(), y.AsUInt32()).As<uint, T>();
                     if (typeof(T) == typeof(float)) return AdvSimd.Min(x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.Min(x.AsDouble(), y.AsDouble()).As<double, T>();
                 }
 
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
@@ -10647,6 +10988,8 @@ namespace System.Numerics.Tensors
         internal readonly struct MinPropagateNaNOperator<T> : IBinaryOperator<T>
             where T : INumber<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y) => T.Min(x, y);
 
@@ -10662,6 +11005,11 @@ namespace System.Numerics.Tensors
                     if (typeof(T) == typeof(int)) return AdvSimd.Min(x.AsInt32(), y.AsInt32()).As<int, T>();
                     if (typeof(T) == typeof(uint)) return AdvSimd.Min(x.AsUInt32(), y.AsUInt32()).As<uint, T>();
                     if (typeof(T) == typeof(float)) return AdvSimd.Min(x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.Min(x.AsDouble(), y.AsDouble()).As<double, T>();
                 }
 
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
@@ -10720,6 +11068,8 @@ namespace System.Numerics.Tensors
         internal readonly struct MinMagnitudeOperator<T> : IAggregationOperator<T>
             where T : INumberBase<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y) => T.MinMagnitude(x, y);
 
@@ -10804,6 +11154,8 @@ namespace System.Numerics.Tensors
         internal readonly struct MinMagnitudePropagateNaNOperator<T> : IBinaryOperator<T>
             where T : INumberBase<T>
         {
+            public static bool Vectorizable => true;
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static T Invoke(T x, T y) => T.MinMagnitude(x, y);
 
@@ -10894,6 +11246,24 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => (x * y) + z;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => (x * y) + z;
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z) => (x * y) + z;
+        }
+
+        /// <summary>(x * y) + z</summary>
+        internal readonly struct FusedMultiplyAddOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            public static T Invoke(T x, T y, T z) => FusedMultiplyAdd(x, y, z);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => FusedMultiplyAdd(x, y, z);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => FusedMultiplyAdd(x, y, z);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z) => FusedMultiplyAdd(x, y, z);
+        }
+
+        /// <summary>(x * (1 - z)) + (y * z)</summary>
+        internal readonly struct LerpOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
+        {
+            public static T Invoke(T x, T y, T amount) => T.Lerp(x, y, amount);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> amount) => (x * (Vector128<T>.One - amount)) + (y * amount);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> amount) => (x * (Vector256<T>.One - amount)) + (y * amount);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> amount) => (x * (Vector512<T>.One - amount)) + (y * amount);
         }
 
         /// <summary>x</summary>
@@ -11000,6 +11370,310 @@ namespace System.Numerics.Tensors
         internal readonly struct ExpOperator<T> : IUnaryOperator<T>
             where T : IExponentialFunctions<T>
         {
+            public static bool Vectorizable => (typeof(T) == typeof(double))
+                                            || (typeof(T) == typeof(float));
+
+            public static T Invoke(T x) => T.Exp(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Exp(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Exp(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return ExpOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return ExpOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Exp(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Exp(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return ExpOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return ExpOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Exp(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Exp(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return ExpOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return ExpOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+        }
+
+#if !NET9_0_OR_GREATER
+        /// <summary>double.Exp(x)</summary>
+        internal readonly struct ExpOperatorDouble : IUnaryOperator<double>
+        {
+            // This code is based on `vrd2_exp` from amd/aocl-libm-ose
+            // Copyright (C) 2019-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Implementation Notes
+            // ----------------------
+            // 1. Argument Reduction:
+            //      e^x = 2^(x/ln2) = 2^(x*(64/ln(2))/64)     --- (1)
+            //
+            //      Choose 'n' and 'f', such that
+            //      x * 64/ln2 = n + f                        --- (2) | n is integer
+            //                            | |f| <= 0.5
+            //     Choose 'm' and 'j' such that,
+            //      n = (64 * m) + j                          --- (3)
+            //
+            //     From (1), (2) and (3),
+            //      e^x = 2^((64*m + j + f)/64)
+            //          = (2^m) * (2^(j/64)) * 2^(f/64)
+            //          = (2^m) * (2^(j/64)) * e^(f*(ln(2)/64))
+            //
+            // 2. Table Lookup
+            //      Values of (2^(j/64)) are precomputed, j = 0, 1, 2, 3 ... 63
+            //
+            // 3. Polynomial Evaluation
+            //   From (2),
+            //     f = x*(64/ln(2)) - n
+            //   Let,
+            //     r  = f*(ln(2)/64) = x - n*(ln(2)/64)
+            //
+            // 4. Reconstruction
+            //      Thus,
+            //        e^x = (2^m) * (2^(j/64)) * e^r
+
+            private const ulong V_ARG_MAX = 0x40862000_00000000;
+            private const ulong V_DP64_BIAS = 1023;
+
+            private const double V_EXPF_MIN = -709.782712893384;
+            private const double V_EXPF_MAX = +709.782712893384;
+
+            private const double V_EXPF_HUGE = 6755399441055744;
+            private const double V_TBL_LN2 = 1.4426950408889634;
+
+            private const double V_LN2_HEAD = +0.693359375;
+            private const double V_LN2_TAIL = -0.00021219444005469057;
+
+            private const double C3 = 0.5000000000000018;
+            private const double C4 = 0.1666666666666617;
+            private const double C5 = 0.04166666666649277;
+            private const double C6 = 0.008333333333559272;
+            private const double C7 = 0.001388888895122404;
+            private const double C8 = 0.00019841269432677495;
+            private const double C9 = 2.4801486521374483E-05;
+            private const double C10 = 2.7557622532543023E-06;
+            private const double C11 = 2.7632293298250954E-07;
+            private const double C12 = 2.499430431958571E-08;
+
+            public static bool Vectorizable => true;
+
+            public static double Invoke(double x) => double.Exp(x);
+
+            public static Vector128<double> Invoke(Vector128<double> x)
+            {
+                // x * (64.0 / ln(2))
+                Vector128<double> z = x * Vector128.Create(V_TBL_LN2);
+
+                Vector128<double> dn = z + Vector128.Create(V_EXPF_HUGE);
+
+                // n = (int)z
+                Vector128<ulong> n = dn.AsUInt64();
+
+                // dn = (double)n
+                dn -= Vector128.Create(V_EXPF_HUGE);
+
+                // r = x - (dn * (ln(2) / 64))
+                // where ln(2) / 64 is split into Head and Tail values
+                Vector128<double> r = x - (dn * Vector128.Create(V_LN2_HEAD)) - (dn * Vector128.Create(V_LN2_TAIL));
+
+                Vector128<double> r2 = r * r;
+                Vector128<double> r4 = r2 * r2;
+                Vector128<double> r8 = r4 * r4;
+
+                // Compute polynomial
+                Vector128<double> poly = ((Vector128.Create(C12) * r + Vector128.Create(C11)) * r2 +
+                                           Vector128.Create(C10) * r + Vector128.Create(C9))  * r8 +
+                                         ((Vector128.Create(C8)  * r + Vector128.Create(C7))  * r2 +
+                                          (Vector128.Create(C6)  * r + Vector128.Create(C5))) * r4 +
+                                         ((Vector128.Create(C4)  * r + Vector128.Create(C3))  * r2 + (r + Vector128<double>.One));
+
+                // m = (n - j) / 64
+                // result = polynomial * 2^m
+                Vector128<double> ret = poly * ((n + Vector128.Create(V_DP64_BIAS)) << 52).AsDouble();
+
+                // Check if -709 < vx < 709
+                if (Vector128.GreaterThanAny(Vector128.Abs(x).AsUInt64(), Vector128.Create(V_ARG_MAX)))
+                {
+                    // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
+                    Vector128<double> infinityMask = Vector128.GreaterThan(x, Vector128.Create(V_EXPF_MAX));
+
+                    ret = Vector128.ConditionalSelect(
+                        infinityMask,
+                        Vector128.Create(double.PositiveInfinity),
+                        ret
+                    );
+
+                    // (x < V_EXPF_MIN) ? 0 : x
+                    ret = Vector128.AndNot(ret, Vector128.LessThan(x, Vector128.Create(V_EXPF_MIN)));
+                }
+
+                return ret;
+            }
+
+            public static Vector256<double> Invoke(Vector256<double> x)
+            {
+                // x * (64.0 / ln(2))
+                Vector256<double> z = x * Vector256.Create(V_TBL_LN2);
+
+                Vector256<double> dn = z + Vector256.Create(V_EXPF_HUGE);
+
+                // n = (int)z
+                Vector256<ulong> n = dn.AsUInt64();
+
+                // dn = (double)n
+                dn -= Vector256.Create(V_EXPF_HUGE);
+
+                // r = x - (dn * (ln(2) / 64))
+                // where ln(2) / 64 is split into Head and Tail values
+                Vector256<double> r = x - (dn * Vector256.Create(V_LN2_HEAD)) - (dn * Vector256.Create(V_LN2_TAIL));
+
+                Vector256<double> r2 = r * r;
+                Vector256<double> r4 = r2 * r2;
+                Vector256<double> r8 = r4 * r4;
+
+                // Compute polynomial
+                Vector256<double> poly = ((Vector256.Create(C12) * r + Vector256.Create(C11)) * r2 +
+                                           Vector256.Create(C10) * r + Vector256.Create(C9))  * r8 +
+                                         ((Vector256.Create(C8)  * r + Vector256.Create(C7))  * r2 +
+                                          (Vector256.Create(C6)  * r + Vector256.Create(C5))) * r4 +
+                                         ((Vector256.Create(C4)  * r + Vector256.Create(C3))  * r2 + (r + Vector256<double>.One));
+
+                // m = (n - j) / 64
+                // result = polynomial * 2^m
+                Vector256<double> ret = poly * ((n + Vector256.Create(V_DP64_BIAS)) << 52).AsDouble();
+
+                // Check if -709 < vx < 709
+                if (Vector256.GreaterThanAny(Vector256.Abs(x).AsUInt64(), Vector256.Create(V_ARG_MAX)))
+                {
+                    // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
+                    Vector256<double> infinityMask = Vector256.GreaterThan(x, Vector256.Create(V_EXPF_MAX));
+
+                    ret = Vector256.ConditionalSelect(
+                        infinityMask,
+                        Vector256.Create(double.PositiveInfinity),
+                        ret
+                    );
+
+                    // (x < V_EXPF_MIN) ? 0 : x
+                    ret = Vector256.AndNot(ret, Vector256.LessThan(x, Vector256.Create(V_EXPF_MIN)));
+                }
+
+                return ret;
+            }
+
+            public static Vector512<double> Invoke(Vector512<double> x)
+            {
+                // x * (64.0 / ln(2))
+                Vector512<double> z = x * Vector512.Create(V_TBL_LN2);
+
+                Vector512<double> dn = z + Vector512.Create(V_EXPF_HUGE);
+
+                // n = (int)z
+                Vector512<ulong> n = dn.AsUInt64();
+
+                // dn = (double)n
+                dn -= Vector512.Create(V_EXPF_HUGE);
+
+                // r = x - (dn * (ln(2) / 64))
+                // where ln(2) / 64 is split into Head and Tail values
+                Vector512<double> r = x - (dn * Vector512.Create(V_LN2_HEAD)) - (dn * Vector512.Create(V_LN2_TAIL));
+
+                Vector512<double> r2 = r * r;
+                Vector512<double> r4 = r2 * r2;
+                Vector512<double> r8 = r4 * r4;
+
+                // Compute polynomial
+                Vector512<double> poly = ((Vector512.Create(C12) * r + Vector512.Create(C11)) * r2 +
+                                           Vector512.Create(C10) * r + Vector512.Create(C9))  * r8 +
+                                         ((Vector512.Create(C8)  * r + Vector512.Create(C7))  * r2 +
+                                          (Vector512.Create(C6)  * r + Vector512.Create(C5))) * r4 +
+                                         ((Vector512.Create(C4)  * r + Vector512.Create(C3))  * r2 + (r + Vector512<double>.One));
+
+                // m = (n - j) / 64
+                // result = polynomial * 2^m
+                Vector512<double> ret = poly * ((n + Vector512.Create(V_DP64_BIAS)) << 52).AsDouble();
+
+                // Check if -709 < vx < 709
+                if (Vector512.GreaterThanAny(Vector512.Abs(x).AsUInt64(), Vector512.Create(V_ARG_MAX)))
+                {
+                    // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
+                    Vector512<double> infinityMask = Vector512.GreaterThan(x, Vector512.Create(V_EXPF_MAX));
+
+                    ret = Vector512.ConditionalSelect(
+                        infinityMask,
+                        Vector512.Create(double.PositiveInfinity),
+                        ret
+                    );
+
+                    // (x < V_EXPF_MIN) ? 0 : x
+                    ret = Vector512.AndNot(ret, Vector512.LessThan(x, Vector512.Create(V_EXPF_MIN)));
+                }
+
+                return ret;
+            }
+        }
+
+        /// <summary>float.Exp(x)</summary>
+        internal readonly struct ExpOperatorSingle : IUnaryOperator<float>
+        {
             // This code is based on `vrs4_expf` from amd/aocl-libm-ose
             // Copyright (C) 2019-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
@@ -11030,10 +11704,9 @@ namespace System.Numerics.Tensors
             //        e^x = (2^N) * (2^r)
 
             private const uint V_ARG_MAX = 0x42AE0000;
-            private const uint V_MASK = 0x7FFFFFFF;
 
             private const float V_EXPF_MIN = -103.97208f;
-            private const float V_EXPF_MAX = 88.72284f;
+            private const float V_EXPF_MAX = +88.72284f;
 
             private const double V_EXPF_HUGE = 6755399441055744;
             private const double V_TBL_LN2 = 1.4426950408889634;
@@ -11045,15 +11718,12 @@ namespace System.Numerics.Tensors
             private const double C5 = 0.009676036358193323;
             private const double C6 = 0.001341000536524434;
 
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            public static bool Vectorizable => true;
 
-            public static T Invoke(T x) => T.Exp(x);
+            public static float Invoke(float x) => float.Exp(x);
 
-            public static Vector128<T> Invoke(Vector128<T> t)
+            public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector128<float> x = t.AsSingle();
-
                 // Convert x to double precision
                 (Vector128<double> xl, Vector128<double> xu) = Vector128.Widen(x);
 
@@ -11068,11 +11738,11 @@ namespace System.Numerics.Tensors
                 Vector128<double> dnl = zl + v_expf_huge;
                 Vector128<double> dnu = zu + v_expf_huge;
 
-                // n = int (z)
+                // n = (int)z
                 Vector128<ulong> nl = dnl.AsUInt64();
                 Vector128<ulong> nu = dnu.AsUInt64();
 
-                // dn = double(n)
+                // dn = (double)n
                 dnl -= v_expf_huge;
                 dnu -= v_expf_huge;
 
@@ -11103,14 +11773,14 @@ namespace System.Numerics.Tensors
                                        + ((c6 * ru + c5) * ru4
                                         + (c2 * ru + c1));
 
-                // result = (float)[poly + (n << 52)]
+                // result = (float)(poly + (n << 52))
                 Vector128<float> ret = Vector128.Narrow(
-                    (polyl.AsUInt64() + Vector128.ShiftLeft(nl, 52)).AsDouble(),
-                    (polyu.AsUInt64() + Vector128.ShiftLeft(nu, 52)).AsDouble()
+                    (polyl.AsUInt64() + (nl << 52)).AsDouble(),
+                    (polyu.AsUInt64() + (nu << 52)).AsDouble()
                 );
 
                 // Check if -103 < |x| < 88
-                if (Vector128.GreaterThanAny(x.AsUInt32() & Vector128.Create(V_MASK), Vector128.Create(V_ARG_MAX)))
+                if (Vector128.GreaterThanAny(Vector128.Abs(x).AsUInt32(), Vector128.Create(V_ARG_MAX)))
                 {
                     // (x > V_EXPF_MAX) ? float.PositiveInfinity : x
                     Vector128<float> infinityMask = Vector128.GreaterThan(x, Vector128.Create(V_EXPF_MAX));
@@ -11125,14 +11795,11 @@ namespace System.Numerics.Tensors
                     ret = Vector128.AndNot(ret, Vector128.LessThan(x, Vector128.Create(V_EXPF_MIN)));
                 }
 
-                return ret.As<float, T>();
+                return ret;
             }
 
-            public static Vector256<T> Invoke(Vector256<T> t)
+            public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector256<float> x = t.AsSingle();
-
                 // Convert x to double precision
                 (Vector256<double> xl, Vector256<double> xu) = Vector256.Widen(x);
 
@@ -11147,11 +11814,11 @@ namespace System.Numerics.Tensors
                 Vector256<double> dnl = zl + v_expf_huge;
                 Vector256<double> dnu = zu + v_expf_huge;
 
-                // n = int (z)
+                // n = (int)z
                 Vector256<ulong> nl = dnl.AsUInt64();
                 Vector256<ulong> nu = dnu.AsUInt64();
 
-                // dn = double(n)
+                // dn = (double)n
                 dnl -= v_expf_huge;
                 dnu -= v_expf_huge;
 
@@ -11182,14 +11849,14 @@ namespace System.Numerics.Tensors
                                        + ((c6 * ru + c5) * ru4
                                         + (c2 * ru + c1));
 
-                // result = (float)[poly + (n << 52)]
+                // result = (float)(poly + (n << 52))
                 Vector256<float> ret = Vector256.Narrow(
-                    (polyl.AsUInt64() + Vector256.ShiftLeft(nl, 52)).AsDouble(),
-                    (polyu.AsUInt64() + Vector256.ShiftLeft(nu, 52)).AsDouble()
+                    (polyl.AsUInt64() + (nl << 52)).AsDouble(),
+                    (polyu.AsUInt64() + (nu << 52)).AsDouble()
                 );
 
                 // Check if -103 < |x| < 88
-                if (Vector256.GreaterThanAny(x.AsUInt32() & Vector256.Create(V_MASK), Vector256.Create(V_ARG_MAX)))
+                if (Vector256.GreaterThanAny(Vector256.Abs(x).AsUInt32(), Vector256.Create(V_ARG_MAX)))
                 {
                     // (x > V_EXPF_MAX) ? float.PositiveInfinity : x
                     Vector256<float> infinityMask = Vector256.GreaterThan(x, Vector256.Create(V_EXPF_MAX));
@@ -11204,14 +11871,11 @@ namespace System.Numerics.Tensors
                     ret = Vector256.AndNot(ret, Vector256.LessThan(x, Vector256.Create(V_EXPF_MIN)));
                 }
 
-                return ret.As<float, T>();
+                return ret;
             }
 
-            public static Vector512<T> Invoke(Vector512<T> t)
+            public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector512<float> x = t.AsSingle();
-
                 // Convert x to double precision
                 (Vector512<double> xl, Vector512<double> xu) = Vector512.Widen(x);
 
@@ -11226,11 +11890,11 @@ namespace System.Numerics.Tensors
                 Vector512<double> dnl = zl + v_expf_huge;
                 Vector512<double> dnu = zu + v_expf_huge;
 
-                // n = int (z)
+                // n = (int)z
                 Vector512<ulong> nl = dnl.AsUInt64();
                 Vector512<ulong> nu = dnu.AsUInt64();
 
-                // dn = double(n)
+                // dn = (double)n
                 dnl -= v_expf_huge;
                 dnu -= v_expf_huge;
 
@@ -11261,14 +11925,14 @@ namespace System.Numerics.Tensors
                                        + ((c6 * ru + c5) * ru4
                                         + (c2 * ru + c1));
 
-                // result = (float)[poly + (n << 52)]
+                // result = (float)(poly + (n << 52))
                 Vector512<float> ret = Vector512.Narrow(
-                    (polyl.AsUInt64() + Vector512.ShiftLeft(nl, 52)).AsDouble(),
-                    (polyu.AsUInt64() + Vector512.ShiftLeft(nu, 52)).AsDouble()
+                    (polyl.AsUInt64() + (nl << 52)).AsDouble(),
+                    (polyu.AsUInt64() + (nu << 52)).AsDouble()
                 );
 
                 // Check if -103 < |x| < 88
-                if (Vector512.GreaterThanAny(x.AsUInt32() & Vector512.Create(V_MASK), Vector512.Create(V_ARG_MAX)))
+                if (Vector512.GreaterThanAny(Vector512.Abs(x).AsUInt32(), Vector512.Create(V_ARG_MAX)))
                 {
                     // (x > V_EXPF_MAX) ? float.PositiveInfinity : x
                     Vector512<float> infinityMask = Vector512.GreaterThan(x, Vector512.Create(V_EXPF_MAX));
@@ -11283,8 +11947,256 @@ namespace System.Numerics.Tensors
                     ret = Vector512.AndNot(ret, Vector512.LessThan(x, Vector512.Create(V_EXPF_MIN)));
                 }
 
-                return ret.As<float, T>();
+                return ret;
             }
+        }
+#endif
+
+        /// <summary>T.ExpM1(x)</summary>
+        internal readonly struct ExpM1Operator<T> : IUnaryOperator<T>
+            where T : IExponentialFunctions<T>
+        {
+            public static bool Vectorizable => ExpOperator<T>.Vectorizable;
+
+            public static T Invoke(T x) => T.ExpM1(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => ExpOperator<T>.Invoke(x) - Vector128<T>.One;
+            public static Vector256<T> Invoke(Vector256<T> x) => ExpOperator<T>.Invoke(x) - Vector256<T>.One;
+            public static Vector512<T> Invoke(Vector512<T> x) => ExpOperator<T>.Invoke(x) - Vector512<T>.One;
+        }
+
+        /// <summary>T.Exp2(x)</summary>
+        internal readonly struct Exp2Operator<T> : IUnaryOperator<T>
+            where T : IExponentialFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+
+            public static T Invoke(T x) => T.Exp2(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Exp2M1(x)</summary>
+        internal readonly struct Exp2M1Operator<T> : IUnaryOperator<T>
+            where T : IExponentialFunctions<T>
+        {
+            public static bool Vectorizable => Exp2Operator<T>.Vectorizable;
+
+            public static T Invoke(T x) => T.Exp2M1(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Exp2Operator<T>.Invoke(x) - Vector128<T>.One;
+            public static Vector256<T> Invoke(Vector256<T> x) => Exp2Operator<T>.Invoke(x) - Vector256<T>.One;
+            public static Vector512<T> Invoke(Vector512<T> x) => Exp2Operator<T>.Invoke(x) - Vector512<T>.One;
+        }
+
+        /// <summary>T.Exp10(x)</summary>
+        internal readonly struct Exp10Operator<T> : IUnaryOperator<T>
+            where T : IExponentialFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+
+            public static T Invoke(T x) => T.Exp10(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Exp10M1(x)</summary>
+        internal readonly struct Exp10M1Operator<T> : IUnaryOperator<T>
+            where T : IExponentialFunctions<T>
+        {
+            public static bool Vectorizable => Exp2Operator<T>.Vectorizable;
+
+            public static T Invoke(T x) => T.Exp10M1(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Exp10Operator<T>.Invoke(x) - Vector128<T>.One;
+            public static Vector256<T> Invoke(Vector256<T> x) => Exp10Operator<T>.Invoke(x) - Vector256<T>.One;
+            public static Vector512<T> Invoke(Vector512<T> x) => Exp10Operator<T>.Invoke(x) - Vector512<T>.One;
+        }
+
+        /// <summary>T.Pow(x, y)</summary>
+        internal readonly struct PowOperator<T> : IBinaryOperator<T>
+            where T : IPowerFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x, T y) => T.Pow(x, y);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Sqrt(x)</summary>
+        internal readonly struct SqrtOperator<T> : IUnaryOperator<T>
+            where T : IRootFunctions<T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x) => T.Sqrt(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Vector128.Sqrt(x);
+            public static Vector256<T> Invoke(Vector256<T> x) => Vector256.Sqrt(x);
+            public static Vector512<T> Invoke(Vector512<T> x) => Vector512.Sqrt(x);
+        }
+
+        /// <summary>T.Cbrt(x)</summary>
+        internal readonly struct CbrtOperator<T> : IUnaryOperator<T>
+            where T : IRootFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Cbrt(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Hypot(x, y)</summary>
+        internal readonly struct HypotOperator<T> : IBinaryOperator<T>
+            where T : IRootFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x, T y) => T.Hypot(x, y);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Acos(x)</summary>
+        internal readonly struct AcosOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Acos(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Acosh(x)</summary>
+        internal readonly struct AcoshOperator<T> : IUnaryOperator<T>
+            where T : IHyperbolicFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Acosh(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.AcosPi(x)</summary>
+        internal readonly struct AcosPiOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => AcosOperator<T>.Vectorizable;
+            public static T Invoke(T x) => T.AcosPi(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => AcosOperator<T>.Invoke(x) / Vector128.Create(T.Pi);
+            public static Vector256<T> Invoke(Vector256<T> x) => AcosOperator<T>.Invoke(x) / Vector256.Create(T.Pi);
+            public static Vector512<T> Invoke(Vector512<T> x) => AcosOperator<T>.Invoke(x) / Vector512.Create(T.Pi);
+        }
+
+        /// <summary>T.Asin(x)</summary>
+        internal readonly struct AsinOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Asin(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Asinh(x)</summary>
+        internal readonly struct AsinhOperator<T> : IUnaryOperator<T>
+            where T : IHyperbolicFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Asinh(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.AsinPi(x)</summary>
+        internal readonly struct AsinPiOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => AsinOperator<T>.Vectorizable;
+            public static T Invoke(T x) => T.AsinPi(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => AsinOperator<T>.Invoke(x) / Vector128.Create(T.Pi);
+            public static Vector256<T> Invoke(Vector256<T> x) => AsinOperator<T>.Invoke(x) / Vector256.Create(T.Pi);
+            public static Vector512<T> Invoke(Vector512<T> x) => AsinOperator<T>.Invoke(x) / Vector512.Create(T.Pi);
+        }
+
+        /// <summary>T.Atan(x)</summary>
+        internal readonly struct AtanOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Atan(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Atanh(x)</summary>
+        internal readonly struct AtanhOperator<T> : IUnaryOperator<T>
+            where T : IHyperbolicFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Atanh(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.AtanPi(x)</summary>
+        internal readonly struct AtanPiOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => AtanOperator<T>.Vectorizable;
+            public static T Invoke(T x) => T.AtanPi(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => AtanOperator<T>.Invoke(x) / Vector128.Create(T.Pi);
+            public static Vector256<T> Invoke(Vector256<T> x) => AtanOperator<T>.Invoke(x) / Vector256.Create(T.Pi);
+            public static Vector512<T> Invoke(Vector512<T> x) => AtanOperator<T>.Invoke(x) / Vector512.Create(T.Pi);
+        }
+
+        /// <summary>T.Atan2(y, x)</summary>
+        internal readonly struct Atan2Operator<T> : IBinaryOperator<T>
+            where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T y, T x) => T.Atan2(y, x);
+            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.Atan2Pi(y, x)</summary>
+        internal readonly struct Atan2PiOperator<T> : IBinaryOperator<T>
+            where T : IFloatingPointIeee754<T>
+        {
+            public static bool Vectorizable => Atan2Operator<T>.Vectorizable;
+            public static T Invoke(T y, T x) => T.Atan2Pi(y, x);
+            public static Vector128<T> Invoke(Vector128<T> y, Vector128<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector128.Create(T.Pi);
+            public static Vector256<T> Invoke(Vector256<T> y, Vector256<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector256.Create(T.Pi);
+            public static Vector512<T> Invoke(Vector512<T> y, Vector512<T> x) => Atan2Operator<T>.Invoke(y, x) / Vector512.Create(T.Pi);
+        }
+
+        /// <summary>T.Cos(x)</summary>
+        internal readonly struct CosOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Cos(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.CosPi(x)</summary>
+        internal readonly struct CosPiOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => CosOperator<T>.Vectorizable;
+            public static T Invoke(T x) => T.CosPi(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => CosOperator<T>.Invoke(x * Vector128.Create(T.Pi));
+            public static Vector256<T> Invoke(Vector256<T> x) => CosOperator<T>.Invoke(x * Vector256.Create(T.Pi));
+            public static Vector512<T> Invoke(Vector512<T> x) => CosOperator<T>.Invoke(x * Vector512.Create(T.Pi));
         }
 
         /// <summary>T.Cosh(x)</summary>
@@ -11351,6 +12263,28 @@ namespace System.Numerics.Tensors
             }
         }
 
+        /// <summary>T.Sin(x)</summary>
+        internal readonly struct SinOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Sin(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.SinPi(x)</summary>
+        internal readonly struct SinPiOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => SinOperator<T>.Vectorizable;
+            public static T Invoke(T x) => T.SinPi(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => SinOperator<T>.Invoke(x * Vector128.Create(T.Pi));
+            public static Vector256<T> Invoke(Vector256<T> x) => SinOperator<T>.Invoke(x * Vector256.Create(T.Pi));
+            public static Vector512<T> Invoke(Vector512<T> x) => SinOperator<T>.Invoke(x * Vector512.Create(T.Pi));
+        }
+
         /// <summary>T.Sinh(x)</summary>
         internal readonly struct SinhOperator<T> : IUnaryOperator<T>
             where T : IHyperbolicFunctions<T>
@@ -11402,6 +12336,28 @@ namespace System.Numerics.Tensors
                 Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
                 return (sign ^ result.AsUInt32()).AsSingle().As<float, T>();
             }
+        }
+
+        /// <summary>T.Tan(x)</summary>
+        internal readonly struct TanOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Tan(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.TanPi(x)</summary>
+        internal readonly struct TanPiOperator<T> : IUnaryOperator<T>
+            where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => TanOperator<T>.Vectorizable;
+            public static T Invoke(T x) => T.TanPi(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => TanOperator<T>.Invoke(x * Vector128.Create(T.Pi));
+            public static Vector256<T> Invoke(Vector256<T> x) => TanOperator<T>.Invoke(x * Vector256.Create(T.Pi));
+            public static Vector512<T> Invoke(Vector512<T> x) => TanOperator<T>.Invoke(x * Vector512.Create(T.Pi));
         }
 
         /// <summary>T.Tanh(x)</summary>
@@ -11470,6 +12426,397 @@ namespace System.Numerics.Tensors
         /// <summary>T.Log(x)</summary>
         internal readonly struct LogOperator<T> : IUnaryOperator<T>
             where T : ILogarithmicFunctions<T>
+        {
+            public static bool Vectorizable => (typeof(T) == typeof(double))
+                                            || (typeof(T) == typeof(float));
+
+            public static T Invoke(T x) => T.Log(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Log(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Log(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Log(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Log(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Log(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Log(x.AsSingle()).As<float, T>();
+                }
+#else
+                if (typeof(T) == typeof(double))
+                {
+                    return LogOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return LogOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
+                }
+#endif
+            }
+        }
+
+#if !NET9_0_OR_GREATER
+        /// <summary>double.Log(x)</summary>
+        internal readonly struct LogOperatorDouble : IUnaryOperator<double>
+        {
+            // This code is based on `vrd2_log` from amd/aocl-libm-ose
+            // Copyright (C) 2018-2020 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            // Reduce x into the form:
+            //        x = (-1)^s*2^n*m
+            // s will be always zero, as log is defined for positive numbers
+            // n is an integer known as the exponent
+            // m is mantissa
+            //
+            // x is reduced such that the mantissa, m lies in [2/3,4/3]
+            //      x = 2^n*m where m is in [2/3,4/3]
+            //      log(x) = log(2^n*m)                 We have log(a*b) = log(a)+log(b)
+            //             = log(2^n) + log(m)          We have log(a^n) = n*log(a)
+            //             = n*log(2) + log(m)
+            //             = n*log(2) + log(1+(m-1))
+            //             = n*log(2) + log(1+f)        Where f = m-1
+            //             = n*log(2) + log1p(f)        f lies in [-1/3,+1/3]
+            //
+            // Thus we have :
+            // log(x) = n*log(2) + log1p(f)
+            // In the above, the first term n*log(2), n can be calculated by using right shift operator and the value of log(2)
+            // is known and is stored as a constant
+            // The second term log1p(F) is approximated by using a polynomial
+
+            private const ulong V_MIN = 0x00100000_00000000;    // SmallestNormal
+            private const ulong V_MAX = 0x7FF00000_00000000;    // +Infinity
+            private const ulong V_MSK = 0x000FFFFF_FFFFFFFF;    // (1 << 52) - 1
+            private const ulong V_OFF = 0x3FE55555_55555555;    // 2.0 / 3.0
+
+            private const double LN2_HEAD = 0.693359375;
+            private const double LN2_TAIL = -0.00021219444005469057;
+
+            private const double C02 = -0.499999999999999560;
+            private const double C03 = +0.333333333333414750;
+            private const double C04 = -0.250000000000297430;
+            private const double C05 = +0.199999999975985220;
+            private const double C06 = -0.166666666608919500;
+            private const double C07 = +0.142857145600277100;
+            private const double C08 = -0.125000005127831270;
+            private const double C09 = +0.111110952357159440;
+            private const double C10 = -0.099999750495501240;
+            private const double C11 = +0.090914349823462390;
+            private const double C12 = -0.083340600527551860;
+            private const double C13 = +0.076817603328311300;
+            private const double C14 = -0.071296718946287310;
+            private const double C15 = +0.067963465211535730;
+            private const double C16 = -0.063995035098960040;
+            private const double C17 = +0.049370587082412105;
+            private const double C18 = -0.045370170994891980;
+            private const double C19 = +0.088970636003577750;
+            private const double C20 = -0.086906174116908760;
+
+            public static bool Vectorizable => true;
+
+            public static double Invoke(double x) => double.Log(x);
+
+            public static Vector128<double> Invoke(Vector128<double> x)
+            {
+                Vector128<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector128<ulong> specialMask = Vector128.GreaterThanOrEqual(x.AsUInt64() - Vector128.Create(V_MIN), Vector128.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector128<ulong>.Zero)
+                {
+                    Vector128<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector128<double> lessThanZeroMask = Vector128.LessThan(xBits, Vector128<long>.Zero).AsDouble();
+
+                    specialResult = Vector128.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector128.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector128<double> zeroMask = Vector128.Equals(xBits << 1, Vector128<long>.Zero).AsDouble();
+
+                    specialResult = Vector128.ConditionalSelect(
+                        zeroMask,
+                        Vector128.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector128<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector128.GreaterThanOrEqual(xBits, Vector128.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector128<double> subnormalMask = Vector128.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector128.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector128.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = temp.AsUInt64();
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector128<ulong> vx = x.AsUInt64() - Vector128.Create(V_OFF);
+                Vector128<double> n = Vector128.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector128.Create(V_MSK)) + Vector128.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector128<double> r = vx.AsDouble() - Vector128<double>.One;
+
+                Vector128<double> r02 = r * r;
+                Vector128<double> r04 = r02 * r02;
+                Vector128<double> r08 = r04 * r04;
+                Vector128<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using Polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector128<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector128.Create(C18)) * r02)
+                                          + ((r * C17) + Vector128.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector128.Create(C14)) * r02)
+                                          + ((r * C13) + Vector128.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector128.Create(C10)) * r02)
+                                          + ((r * C09) + Vector128.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector128.Create(C06)) * r02)
+                                          + ((r * C05) + Vector128.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector128.Create(C02)) * r02) + r);
+
+                return Vector128.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (n * LN2_HEAD) + ((n * LN2_TAIL) + poly)
+                );
+            }
+
+            public static Vector256<double> Invoke(Vector256<double> x)
+            {
+                Vector256<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector256<ulong> specialMask = Vector256.GreaterThanOrEqual(x.AsUInt64() - Vector256.Create(V_MIN), Vector256.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector256<ulong>.Zero)
+                {
+                    Vector256<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector256<double> lessThanZeroMask = Vector256.LessThan(xBits, Vector256<long>.Zero).AsDouble();
+
+                    specialResult = Vector256.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector256.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector256<double> zeroMask = Vector256.Equals(xBits << 1, Vector256<long>.Zero).AsDouble();
+
+                    specialResult = Vector256.ConditionalSelect(
+                        zeroMask,
+                        Vector256.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector256<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector256.GreaterThanOrEqual(xBits, Vector256.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector256<double> subnormalMask = Vector256.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector256.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector256.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = temp.AsUInt64();
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector256<ulong> vx = x.AsUInt64() - Vector256.Create(V_OFF);
+                Vector256<double> n = Vector256.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector256.Create(V_MSK)) + Vector256.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector256<double> r = vx.AsDouble() - Vector256<double>.One;
+
+                Vector256<double> r02 = r * r;
+                Vector256<double> r04 = r02 * r02;
+                Vector256<double> r08 = r04 * r04;
+                Vector256<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using Polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector256<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector256.Create(C18)) * r02)
+                                          + ((r * C17) + Vector256.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector256.Create(C14)) * r02)
+                                          + ((r * C13) + Vector256.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector256.Create(C10)) * r02)
+                                          + ((r * C09) + Vector256.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector256.Create(C06)) * r02)
+                                          + ((r * C05) + Vector256.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector256.Create(C02)) * r02) + r);
+
+                return Vector256.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (n * LN2_HEAD) + ((n * LN2_TAIL) + poly)
+                );
+            }
+
+            public static Vector512<double> Invoke(Vector512<double> x)
+            {
+                Vector512<double> specialResult = x;
+
+                // x is zero, subnormal, infinity, or NaN
+                Vector512<ulong> specialMask = Vector512.GreaterThanOrEqual(x.AsUInt64() - Vector512.Create(V_MIN), Vector512.Create(V_MAX - V_MIN));
+
+                if (specialMask != Vector512<ulong>.Zero)
+                {
+                    Vector512<long> xBits = x.AsInt64();
+
+                    // (x < 0) ? float.NaN : x
+                    Vector512<double> lessThanZeroMask = Vector512.LessThan(xBits, Vector512<long>.Zero).AsDouble();
+
+                    specialResult = Vector512.ConditionalSelect(
+                        lessThanZeroMask,
+                        Vector512.Create(double.NaN),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) ? double.NegativeInfinity : x
+                    Vector512<double> zeroMask = Vector512.Equals(xBits << 1, Vector512<long>.Zero).AsDouble();
+
+                    specialResult = Vector512.ConditionalSelect(
+                        zeroMask,
+                        Vector512.Create(double.NegativeInfinity),
+                        specialResult
+                    );
+
+                    // double.IsZero(x) | (x < 0) | double.IsNaN(x) | double.IsPositiveInfinity(x)
+                    Vector512<double> temp = zeroMask
+                                           | lessThanZeroMask
+                                           | Vector512.GreaterThanOrEqual(xBits, Vector512.Create(double.PositiveInfinity).AsInt64()).AsDouble();
+
+                    // subnormal
+                    Vector512<double> subnormalMask = Vector512.AndNot(specialMask.AsDouble(), temp);
+
+                    // multiply by 2^52, then normalize
+                    x = Vector512.ConditionalSelect(
+                        subnormalMask,
+                        ((x * 4503599627370496.0).AsUInt64() - Vector512.Create(52ul << 52)).AsDouble(),
+                        x
+                    );
+
+                    specialMask = temp.AsUInt64();
+                }
+
+                // Reduce the mantissa to [+2/3, +4/3]
+                Vector512<ulong> vx = x.AsUInt64() - Vector512.Create(V_OFF);
+                Vector512<double> n = Vector512.ConvertToDouble(vx.AsInt64() >> 52);
+                vx = (vx & Vector512.Create(V_MSK)) + Vector512.Create(V_OFF);
+
+                // Adjust the mantissa to [-1/3, +1/3]
+                Vector512<double> r = vx.AsDouble() - Vector512<double>.One;
+
+                Vector512<double> r02 = r * r;
+                Vector512<double> r04 = r02 * r02;
+                Vector512<double> r08 = r04 * r04;
+                Vector512<double> r16 = r08 * r08;
+
+                // Compute log(x + 1) using Polynomial approximation
+                //      C0 + (r * C1) + (r^2 * C2) + ... + (r^20 * C20)
+
+                Vector512<double> poly = (((r04 * C20)
+                                        + ((((r * C19) + Vector512.Create(C18)) * r02)
+                                          + ((r * C17) + Vector512.Create(C16)))) * r16)
+                                     + (((((((r * C15) + Vector512.Create(C14)) * r02)
+                                          + ((r * C13) + Vector512.Create(C12))) * r04)
+                                        + ((((r * C11) + Vector512.Create(C10)) * r02)
+                                          + ((r * C09) + Vector512.Create(C08)))) * r08)
+                                       + (((((r * C07) + Vector512.Create(C06)) * r02)
+                                          + ((r * C05) + Vector512.Create(C04))) * r04)
+                                        + ((((r * C03) + Vector512.Create(C02)) * r02) + r);
+
+                return Vector512.ConditionalSelect(
+                    specialMask.AsDouble(),
+                    specialResult,
+                    (n * LN2_HEAD) + ((n * LN2_TAIL) + poly)
+                );
+            }
+        }
+
+        /// <summary>float.Log(x)</summary>
+        internal readonly struct LogOperatorSingle : IUnaryOperator<float>
         {
             // This code is based on `vrs4_logf` from amd/aocl-libm-ose
             // Copyright (C) 2018-2019 Advanced Micro Devices, Inc. All rights reserved.
@@ -11542,15 +12889,12 @@ namespace System.Numerics.Tensors
             private const float C9 = 0.14401625f;
             private const float C10 = -0.13657966f;
 
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            public static bool Vectorizable => true;
 
-            public static T Invoke(T x) => T.Log(x);
+            public static float Invoke(float x) => float.Log(x);
 
-            public static Vector128<T> Invoke(Vector128<T> t)
+            public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector128<float> x = t.AsSingle();
-
                 Vector128<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11615,14 +12959,11 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n * Vector128.Create(V_LN2) + q
-                ).As<float, T>();
+                );
             }
 
-            public static Vector256<T> Invoke(Vector256<T> t)
+            public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector256<float> x = t.AsSingle();
-
                 Vector256<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11687,14 +13028,11 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n * Vector256.Create(V_LN2) + q
-                ).As<float, T>();
+                );
             }
 
-            public static Vector512<T> Invoke(Vector512<T> t)
+            public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector512<float> x = t.AsSingle();
-
                 Vector512<float> specialResult = x;
 
                 // x is subnormal or infinity or NaN
@@ -11759,9 +13097,10 @@ namespace System.Numerics.Tensors
                     specialMask.AsSingle(),
                     specialResult,
                     n * Vector512.Create(V_LN2) + q
-                ).As<float, T>();
+                );
             }
         }
+#endif
 
         /// <summary>T.Log2(x)</summary>
         internal readonly struct Log2Operator<T> : IUnaryOperator<T>
@@ -11880,7 +13219,7 @@ namespace System.Numerics.Tensors
             private const ulong V_MIN = 0x00100000_00000000;    // SmallestNormal
             private const ulong V_MAX = 0x7FF00000_00000000;    // +Infinity
             private const ulong V_MSK = 0x000FFFFF_FFFFFFFF;    // (1 << 52) - 1
-            private const ulong V_OFF = 0x3FE55555_55555555;    // 2.0 / 3.0\
+            private const ulong V_OFF = 0x3FE55555_55555555;    // 2.0 / 3.0
 
             private const double LN2_HEAD = 1.44269180297851562500E+00;
             private const double LN2_TAIL = 3.23791044778235969970E-06;
@@ -11953,7 +13292,7 @@ namespace System.Numerics.Tensors
                         x
                     );
 
-                    specialMask = Unsafe.BitCast<Vector128<double>, Vector128<ulong>>(temp);
+                    specialMask = temp.AsUInt64();
                 }
 
                 // Reduce the mantissa to [+2/3, +4/3]
@@ -12034,7 +13373,7 @@ namespace System.Numerics.Tensors
                         x
                     );
 
-                    specialMask = Unsafe.BitCast<Vector256<double>, Vector256<ulong>>(temp);
+                    specialMask = temp.AsUInt64();
                 }
 
                 // Reduce the mantissa to [+2/3, +4/3]
@@ -12115,7 +13454,7 @@ namespace System.Numerics.Tensors
                         x
                     );
 
-                    specialMask = Unsafe.BitCast<Vector512<double>, Vector512<ulong>>(temp);
+                    specialMask = temp.AsUInt64();
                 }
 
                 // Reduce the mantissa to [+2/3, +4/3]
@@ -12435,21 +13774,73 @@ namespace System.Numerics.Tensors
         }
 #endif
 
+        /// <summary>T.Log10(x)</summary>
+        internal readonly struct Log10Operator<T> : IUnaryOperator<T>
+            where T : ILogarithmicFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.Log10(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.LogP1(x)</summary>
+        internal readonly struct LogP1Operator<T> : IUnaryOperator<T>
+            where T : ILogarithmicFunctions<T>
+        {
+            public static bool Vectorizable => LogOperator<T>.Vectorizable;
+            public static T Invoke(T x) => T.LogP1(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => LogOperator<T>.Invoke(x + Vector128<T>.One);
+            public static Vector256<T> Invoke(Vector256<T> x) => LogOperator<T>.Invoke(x + Vector256<T>.One);
+            public static Vector512<T> Invoke(Vector512<T> x) => LogOperator<T>.Invoke(x + Vector512<T>.One);
+        }
+
+        /// <summary>T.Log2P1(x)</summary>
+        internal readonly struct Log2P1Operator<T> : IUnaryOperator<T>
+            where T : ILogarithmicFunctions<T>
+        {
+            public static bool Vectorizable => Log2Operator<T>.Vectorizable;
+            public static T Invoke(T x) => T.Log2P1(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Log2Operator<T>.Invoke(x + Vector128<T>.One);
+            public static Vector256<T> Invoke(Vector256<T> x) => Log2Operator<T>.Invoke(x + Vector256<T>.One);
+            public static Vector512<T> Invoke(Vector512<T> x) => Log2Operator<T>.Invoke(x + Vector512<T>.One);
+        }
+
+        /// <summary>T.Log10P1(x)</summary>
+        internal readonly struct Log10P1Operator<T> : IUnaryOperator<T>
+            where T : ILogarithmicFunctions<T>
+        {
+            public static bool Vectorizable => Log10Operator<T>.Vectorizable;
+            public static T Invoke(T x) => T.Log10P1(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => Log10Operator<T>.Invoke(x + Vector128<T>.One);
+            public static Vector256<T> Invoke(Vector256<T> x) => Log10Operator<T>.Invoke(x + Vector256<T>.One);
+            public static Vector512<T> Invoke(Vector512<T> x) => Log10Operator<T>.Invoke(x + Vector512<T>.One);
+        }
+
+        /// <summary>T.Log(x, y)</summary>
+        internal readonly struct LogBaseOperator<T> : IBinaryOperator<T>
+            where T : ILogarithmicFunctions<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x, T y) => T.Log(x, y);
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => throw new NotSupportedException();
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<T> ElementWiseSelect<T>(Vector128<T> mask, Vector128<T> left, Vector128<T> right)
         {
             if (Sse41.IsSupported)
             {
-                if (typeof(T) == typeof(byte)) return Sse41.BlendVariable(left.AsByte(), right.AsByte(), (~mask).AsByte()).As<byte, T>();
-                if (typeof(T) == typeof(sbyte)) return Sse41.BlendVariable(left.AsSByte(), right.AsSByte(), (~mask).AsSByte()).As<sbyte, T>();
-                if (typeof(T) == typeof(ushort)) return Sse41.BlendVariable(left.AsUInt16(), right.AsUInt16(), (~mask).AsUInt16()).As<ushort, T>();
-                if (typeof(T) == typeof(short)) return Sse41.BlendVariable(left.AsInt16(), right.AsInt16(), (~mask).AsInt16()).As<short, T>();
-                if (typeof(T) == typeof(uint)) return Sse41.BlendVariable(left.AsUInt32(), right.AsUInt32(), (~mask).AsUInt32()).As<uint, T>();
-                if (typeof(T) == typeof(int)) return Sse41.BlendVariable(left.AsInt32(), right.AsInt32(), (~mask).AsInt32()).As<int, T>();
-                if (typeof(T) == typeof(ulong)) return Sse41.BlendVariable(left.AsUInt64(), right.AsUInt64(), (~mask).AsUInt64()).As<ulong, T>();
-                if (typeof(T) == typeof(long)) return Sse41.BlendVariable(left.AsInt64(), right.AsInt64(), (~mask).AsInt64()).As<long, T>();
                 if (typeof(T) == typeof(float)) return Sse41.BlendVariable(left.AsSingle(), right.AsSingle(), (~mask).AsSingle()).As<float, T>();
                 if (typeof(T) == typeof(double)) return Sse41.BlendVariable(left.AsDouble(), right.AsDouble(), (~mask).AsDouble()).As<double, T>();
+
+                if (sizeof(T) == 1) return Sse41.BlendVariable(left.AsByte(), right.AsByte(), (~mask).AsByte()).As<byte, T>();
+                if (sizeof(T) == 2) return Sse41.BlendVariable(left.AsUInt16(), right.AsUInt16(), (~mask).AsUInt16()).As<ushort, T>();
+                if (sizeof(T) == 4) return Sse41.BlendVariable(left.AsUInt32(), right.AsUInt32(), (~mask).AsUInt32()).As<uint, T>();
+                if (sizeof(T) == 8) return Sse41.BlendVariable(left.AsUInt64(), right.AsUInt64(), (~mask).AsUInt64()).As<ulong, T>();
             }
 
             return Vector128.ConditionalSelect(mask, left, right);
@@ -12460,16 +13851,13 @@ namespace System.Numerics.Tensors
         {
             if (Avx2.IsSupported)
             {
-                if (typeof(T) == typeof(byte)) return Avx2.BlendVariable(left.AsByte(), right.AsByte(), (~mask).AsByte()).As<byte, T>();
-                if (typeof(T) == typeof(sbyte)) return Avx2.BlendVariable(left.AsSByte(), right.AsSByte(), (~mask).AsSByte()).As<sbyte, T>();
-                if (typeof(T) == typeof(ushort)) return Avx2.BlendVariable(left.AsUInt16(), right.AsUInt16(), (~mask).AsUInt16()).As<ushort, T>();
-                if (typeof(T) == typeof(short)) return Avx2.BlendVariable(left.AsInt16(), right.AsInt16(), (~mask).AsInt16()).As<short, T>();
-                if (typeof(T) == typeof(uint)) return Avx2.BlendVariable(left.AsUInt32(), right.AsUInt32(), (~mask).AsUInt32()).As<uint, T>();
-                if (typeof(T) == typeof(int)) return Avx2.BlendVariable(left.AsInt32(), right.AsInt32(), (~mask).AsInt32()).As<int, T>();
-                if (typeof(T) == typeof(ulong)) return Avx2.BlendVariable(left.AsUInt64(), right.AsUInt64(), (~mask).AsUInt64()).As<ulong, T>();
-                if (typeof(T) == typeof(long)) return Avx2.BlendVariable(left.AsInt64(), right.AsInt64(), (~mask).AsInt64()).As<long, T>();
                 if (typeof(T) == typeof(float)) return Avx2.BlendVariable(left.AsSingle(), right.AsSingle(), (~mask).AsSingle()).As<float, T>();
                 if (typeof(T) == typeof(double)) return Avx2.BlendVariable(left.AsDouble(), right.AsDouble(), (~mask).AsDouble()).As<double, T>();
+
+                if (sizeof(T) == 1) return Avx2.BlendVariable(left.AsByte(), right.AsByte(), (~mask).AsByte()).As<byte, T>();
+                if (sizeof(T) == 2) return Avx2.BlendVariable(left.AsUInt16(), right.AsUInt16(), (~mask).AsUInt16()).As<ushort, T>();
+                if (sizeof(T) == 4) return Avx2.BlendVariable(left.AsUInt32(), right.AsUInt32(), (~mask).AsUInt32()).As<uint, T>();
+                if (sizeof(T) == 8) return Avx2.BlendVariable(left.AsUInt64(), right.AsUInt64(), (~mask).AsUInt64()).As<ulong, T>();
             }
 
             return Vector256.ConditionalSelect(mask, left, right);
@@ -12480,18 +13868,17 @@ namespace System.Numerics.Tensors
         {
             if (Avx512F.IsSupported)
             {
-                if (typeof(T) == typeof(uint)) return Avx512F.BlendVariable(left.AsUInt32(), right.AsUInt32(), (~mask).AsUInt32()).As<uint, T>();
-                if (typeof(T) == typeof(int)) return Avx512F.BlendVariable(left.AsInt32(), right.AsInt32(), (~mask).AsInt32()).As<int, T>();
-                if (typeof(T) == typeof(ulong)) return Avx512F.BlendVariable(left.AsUInt64(), right.AsUInt64(), (~mask).AsUInt64()).As<ulong, T>();
-                if (typeof(T) == typeof(long)) return Avx512F.BlendVariable(left.AsInt64(), right.AsInt64(), (~mask).AsInt64()).As<long, T>();
                 if (typeof(T) == typeof(float)) return Avx512F.BlendVariable(left.AsSingle(), right.AsSingle(), (~mask).AsSingle()).As<float, T>();
                 if (typeof(T) == typeof(double)) return Avx512F.BlendVariable(left.AsDouble(), right.AsDouble(), (~mask).AsDouble()).As<double, T>();
+
+                if (sizeof(T) == 4) return Avx512F.BlendVariable(left.AsUInt32(), right.AsUInt32(), (~mask).AsUInt32()).As<uint, T>();
+                if (sizeof(T) == 8) return Avx512F.BlendVariable(left.AsUInt64(), right.AsUInt64(), (~mask).AsUInt64()).As<ulong, T>();
             }
 
             return Vector512.ConditionalSelect(mask, left, right);
         }
 
-        /// <summary>1f / (1f + MathF.Exp(-x))</summary>
+        /// <summary>1 / (1 + T.Exp(-x))</summary>
         internal readonly struct SigmoidOperator<T> : IUnaryOperator<T> where T : IExponentialFunctions<T>
         {
             public static bool Vectorizable => typeof(T) == typeof(float);
@@ -12499,6 +13886,329 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.Create(T.One) / (Vector128.Create(T.One) + ExpOperator<T>.Invoke(-x));
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.Create(T.One) / (Vector256.Create(T.One) + ExpOperator<T>.Invoke(-x));
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.Create(T.One) / (Vector512.Create(T.One) + ExpOperator<T>.Invoke(-x));
+        }
+
+        internal readonly struct CeilingOperator<T> : IUnaryOperator<T> where T : IFloatingPoint<T>
+        {
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public static T Invoke(T x) => T.Ceiling(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector128.Ceiling(x.AsSingle()).As<float, T>();
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Ceiling(x.AsDouble()).As<double, T>();
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector256.Ceiling(x.AsSingle()).As<float, T>();
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Ceiling(x.AsDouble()).As<double, T>();
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector512.Ceiling(x.AsSingle()).As<float, T>();
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Ceiling(x.AsDouble()).As<double, T>();
+                }
+
+                throw new NotSupportedException();
+            }
+        }
+
+        internal readonly struct FloorOperator<T> : IUnaryOperator<T> where T : IFloatingPoint<T>
+        {
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public static T Invoke(T x) => T.Floor(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector128.Floor(x.AsSingle()).As<float, T>();
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Floor(x.AsDouble()).As<double, T>();
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector256.Floor(x.AsSingle()).As<float, T>();
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Floor(x.AsDouble()).As<double, T>();
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector512.Floor(x.AsSingle()).As<float, T>();
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Floor(x.AsDouble()).As<double, T>();
+                }
+
+                throw new NotSupportedException();
+            }
+        }
+
+        private readonly struct TruncateOperator<T> : IUnaryOperator<T> where T : IFloatingPoint<T>
+        {
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public static T Invoke(T x) => T.Truncate(x);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    if (Sse41.IsSupported) return Sse41.RoundToZero(x.AsSingle()).As<float, T>();
+                    if (AdvSimd.IsSupported) return AdvSimd.RoundToZero(x.AsSingle()).As<float, T>();
+
+                    return Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(x, Vector128<T>.Zero),
+                        Vector128.Floor(x.AsSingle()).As<float, T>(),
+                        Vector128.Ceiling(x.AsSingle()).As<float, T>());
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    if (Sse41.IsSupported) return Sse41.RoundToZero(x.AsDouble()).As<double, T>();
+                    if (AdvSimd.Arm64.IsSupported) return AdvSimd.Arm64.RoundToZero(x.AsDouble()).As<double, T>();
+
+                    return Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(x, Vector128<T>.Zero),
+                        Vector128.Floor(x.AsDouble()).As<double, T>(),
+                        Vector128.Ceiling(x.AsDouble()).As<double, T>());
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    if (Avx.IsSupported) return Avx.RoundToZero(x.AsSingle()).As<float, T>();
+
+                    return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(x, Vector256<T>.Zero),
+                        Vector256.Floor(x.AsSingle()).As<float, T>(),
+                        Vector256.Ceiling(x.AsSingle()).As<float, T>());
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    if (Avx.IsSupported) return Avx.RoundToZero(x.AsDouble()).As<double, T>();
+
+                    return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(x, Vector256<T>.Zero),
+                        Vector256.Floor(x.AsDouble()).As<double, T>(),
+                        Vector256.Ceiling(x.AsDouble()).As<double, T>());
+                }
+
+                throw new NotSupportedException();
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    if (Avx512F.IsSupported) return Avx512F.RoundScale(x.AsSingle(), 0b11).As<float, T>();
+
+                    return Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(x, Vector512<T>.Zero),
+                        Vector512.Floor(x.AsSingle()).As<float, T>(),
+                        Vector512.Ceiling(x.AsSingle()).As<float, T>());
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    if (Avx512F.IsSupported) return Avx512F.RoundScale(x.AsDouble(), 0b11).As<double, T>();
+
+                    return Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(x, Vector512<T>.Zero),
+                        Vector512.Floor(x.AsDouble()).As<double, T>(),
+                        Vector512.Ceiling(x.AsDouble()).As<double, T>());
+                }
+
+                throw new NotSupportedException();
+            }
+        }
+
+        /// <summary>T.PopCount(x)</summary>
+        internal readonly struct PopCountOperator<T> : IUnaryOperator<T> where T : IBinaryInteger<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.PopCount(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.LeadingZeroCount(x)</summary>
+        internal readonly struct LeadingZeroCountOperator<T> : IUnaryOperator<T> where T : IBinaryInteger<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.LeadingZeroCount(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>T.TrailingZeroCount(x)</summary>
+        internal readonly struct TrailingZeroCountOperator<T> : IUnaryOperator<T> where T : IBinaryInteger<T>
+        {
+            public static bool Vectorizable => false; // TODO: Vectorize
+            public static T Invoke(T x) => T.TrailingZeroCount(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        private readonly struct CopySignOperator<T> : IBinaryOperator<T> where T : INumber<T>
+        {
+            public static bool Vectorizable => true;
+
+            public static T Invoke(T x, T y) => T.CopySign(x, y);
+
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector128.ConditionalSelect(Vector128.Create(-0.0f).As<float, T>(), y, x);
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.ConditionalSelect(Vector128.Create(-0.0d).As<double, T>(), y, x);
+                }
+
+                if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
+                {
+                    Vector128<T> absValue = Vector128.Abs(x);
+                    Vector128<T> sign = Vector128.GreaterThanOrEqual(y, Vector128<T>.Zero);
+                    Vector128<T> error = sign & Vector128.LessThan(absValue, Vector128<T>.Zero);
+                    if (error != Vector128<T>.Zero)
+                    {
+                        Math.Abs(int.MinValue); // throw OverflowException
+                    }
+
+                    return Vector128.ConditionalSelect(sign, absValue, -absValue);
+                }
+
+                return x;
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector256.ConditionalSelect(Vector256.Create(-0.0f).As<float, T>(), y, x);
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.ConditionalSelect(Vector256.Create(-0.0d).As<double, T>(), y, x);
+                }
+
+                if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
+                {
+                    Vector256<T> absValue = Vector256.Abs(x);
+                    Vector256<T> sign = Vector256.GreaterThanOrEqual(y, Vector256<T>.Zero);
+                    Vector256<T> error = sign & Vector256.LessThan(absValue, Vector256<T>.Zero);
+                    if (error != Vector256<T>.Zero)
+                    {
+                        Math.Abs(int.MinValue); // throw OverflowException
+                    }
+
+                    return Vector256.ConditionalSelect(sign, absValue, -absValue);
+                }
+
+                return x;
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return Vector512.ConditionalSelect(Vector512.Create(-0.0f).As<float, T>(), y, x);
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.ConditionalSelect(Vector512.Create(-0.0d).As<double, T>(), y, x);
+                }
+
+                if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) || typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(nint))
+                {
+                    Vector512<T> absValue = Vector512.Abs(x);
+                    Vector512<T> sign = Vector512.GreaterThanOrEqual(y, Vector512<T>.Zero);
+                    Vector512<T> error = sign & Vector512.LessThan(absValue, Vector512<T>.Zero);
+                    if (error != Vector512<T>.Zero)
+                    {
+                        Math.Abs(int.MinValue); // throw OverflowException
+                    }
+
+                    return Vector512.ConditionalSelect(sign, absValue, -absValue);
+                }
+
+                return x;
+            }
+        }
+
+        /// <summary>T.DegreesToRadians(x)</summary>
+        internal readonly struct DegreesToRadiansOperator<T> : IUnaryOperator<T> where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x) => T.DegreesToRadians(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => (x * T.Pi) / T.CreateChecked(180);
+            public static Vector256<T> Invoke(Vector256<T> x) => (x * T.Pi) / T.CreateChecked(180);
+            public static Vector512<T> Invoke(Vector512<T> x) => (x * T.Pi) / T.CreateChecked(180);
+        }
+
+        /// <summary>T.RadiansToDegrees(x)</summary>
+        internal readonly struct RadiansToDegreesOperator<T> : IUnaryOperator<T> where T : ITrigonometricFunctions<T>
+        {
+            public static bool Vectorizable => true;
+            public static T Invoke(T x) => T.RadiansToDegrees(x);
+            public static Vector128<T> Invoke(Vector128<T> x) => (x * T.CreateChecked(180)) / T.Pi;
+            public static Vector256<T> Invoke(Vector256<T> x) => (x * T.CreateChecked(180)) / T.Pi;
+            public static Vector512<T> Invoke(Vector512<T> x) => (x * T.CreateChecked(180)) / T.Pi;
         }
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>
@@ -12514,6 +14224,7 @@ namespace System.Numerics.Tensors
         /// <summary>Operator that takes two input values and returns a single value.</summary>
         private interface IBinaryOperator<T>
         {
+            static abstract bool Vectorizable { get; }
             static abstract T Invoke(T x, T y);
             static abstract Vector128<T> Invoke(Vector128<T> x, Vector128<T> y);
             static abstract Vector256<T> Invoke(Vector256<T> x, Vector256<T> y);

@@ -32,37 +32,44 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static Task<T> RunAsync<T>(Func<Task<T>> body, CancellationToken cancellationToken)
         {
-            var instance = new JSWebWorkerInstance<T>(body, null, cancellationToken);
+            var instance = new JSWebWorkerInstance<T>(body, cancellationToken);
             return instance.Start();
         }
 
         public static Task RunAsync(Func<Task> body, CancellationToken cancellationToken)
         {
-            var instance = new JSWebWorkerInstance<int>(null, body, cancellationToken);
+            var instance = new JSWebWorkerInstance<int>(async () =>
+            {
+                await body().ConfigureAwait(false);
+                return 0;
+            }, cancellationToken);
             return instance.Start();
         }
 
         internal sealed class JSWebWorkerInstance<T> : IDisposable
         {
-            private JSSynchronizationContext? _jsSynchronizationContext;
-            private TaskCompletionSource<T> _taskCompletionSource;
-            private Thread _thread;
-            private CancellationToken _cancellationToken;
+            private readonly TaskCompletionSource<T> _taskCompletionSource;
+            private readonly Thread _thread;
+            private readonly CancellationToken _cancellationToken;
+            private readonly Func<Task<T>> _body;
+
             private CancellationTokenRegistration? _cancellationRegistration;
-            private Func<Task<T>>? _bodyRes;
-            private Func<Task>? _bodyVoid;
-            private Task? _resultTask;
+            private JSSynchronizationContext? _jsSynchronizationContext;
+            private Task<T>? _resultTask;
             private bool _isDisposed;
 
-            public JSWebWorkerInstance(Func<Task<T>>? bodyRes, Func<Task>? bodyVoid, CancellationToken cancellationToken)
+            public JSWebWorkerInstance(Func<Task<T>> body, CancellationToken cancellationToken)
             {
+                // Task created from this TCS is consumed by external caller, on outer thread.
+                // We don't want the continuations of that task to run on JSWebWorker
+                // only the tasks created inside of the callback should run in JSWebWorker
+                // TODO TaskCreationOptions.HideScheduler ?
                 _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _thread = new Thread(ThreadMain);
                 _resultTask = null;
                 _cancellationToken = cancellationToken;
                 _cancellationRegistration = null;
-                _bodyRes = bodyRes;
-                _bodyVoid = bodyVoid;
+                _body = body;
                 JSHostImplementation.SetHasExternalEventLoop(_thread);
             }
 
@@ -73,14 +80,20 @@ namespace System.Runtime.InteropServices.JavaScript
                     // give browser chance to load more threads
                     // until there at least one thread loaded, it doesn't make sense to `Start`
                     // because that would also hang, but in a way blocking the UI thread, much worse.
-                    JavaScriptImports.ThreadAvailable().ContinueWith(t =>
+                    JavaScriptImports.ThreadAvailable().ContinueWith(static (t, o) =>
                     {
+                        var self = (JSWebWorkerInstance<T>)o!;
                         if (t.IsCompletedSuccessfully)
                         {
-                            _thread.Start();
+                            self._thread.Start();
                         }
-                        return t;
-                    }, _cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Current);
+                        if (t.IsCanceled)
+                        {
+                            throw new OperationCanceledException("Cancelled while waiting for underlying WebWorker to become available.", self._cancellationToken);
+                        }
+                        throw t.Exception!;
+                        // ideally this will execute on UI thread quickly: ExecuteSynchronously
+                    }, this, _cancellationToken, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.FromCurrentSynchronizationContext());
                 }
                 else
                 {
@@ -95,32 +108,26 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     if (_cancellationToken.IsCancellationRequested)
                     {
-                        PropagateCompletionAndDispose(Task.FromException<T>(new OperationCanceledException(_cancellationToken)));
+                        PropagateCompletionAndDispose(Task.FromCanceled<T>(_cancellationToken));
                         return;
                     }
 
                     // receive callback when the cancellation is requested
-                    _cancellationRegistration = _cancellationToken.Register(() =>
+                    _cancellationRegistration = _cancellationToken.Register(static (o) =>
                     {
+                        var self = (JSWebWorkerInstance<T>)o!;
                         // this could be executing on any thread
-                        PropagateCompletionAndDispose(Task.FromException<T>(new OperationCanceledException(_cancellationToken)));
-                    });
+                        self.PropagateCompletionAndDispose(Task.FromCanceled<T>(self._cancellationToken));
+                    }, this);
 
                     // JSSynchronizationContext also registers to _cancellationToken
                     _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
 
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-                    if (_bodyRes != null)
-                    {
-                        _resultTask = _bodyRes();
-                    }
-                    else
-                    {
-                        _resultTask = _bodyVoid!();
-                    }
+
                     // This code is exiting thread ThreadMain() before all promises are resolved.
                     // the continuation is executed by setTimeout() callback of the WebWorker thread.
-                    _resultTask.ContinueWith(PropagateCompletionAndDispose, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, childScheduler);
+                    _body().ContinueWith(PropagateCompletionAndDispose, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, childScheduler);
                 }
                 catch (Exception ex)
                 {
@@ -129,7 +136,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             // run actions on correct thread
-            private void PropagateCompletionAndDispose(Task result)
+            private void PropagateCompletionAndDispose(Task<T> result)
             {
                 _resultTask = result;
 
@@ -170,35 +177,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Dispose();
             }
 
-            private void PropagateCompletion()
-            {
-                if (_resultTask!.IsFaulted)
-                {
-                    if (_resultTask.Exception is AggregateException ag && ag.InnerException != null)
-                    {
-                        _taskCompletionSource.TrySetException(ag.InnerException);
-                    }
-                    else
-                    {
-                        _taskCompletionSource.TrySetException(_resultTask.Exception);
-                    }
-                }
-                else if (_resultTask.IsCanceled)
-                {
-                    _taskCompletionSource.TrySetCanceled();
-                }
-                else
-                {
-                    if (_bodyRes != null)
-                    {
-                        _taskCompletionSource.TrySetResult(((Task<T>)_resultTask).Result);
-                    }
-                    else
-                    {
-                        _taskCompletionSource.TrySetResult(default!);
-                    }
-                }
-            }
+            private void PropagateCompletion() => _taskCompletionSource.TrySetFromTask(_resultTask!);
 
             private void Dispose(bool disposing)
             {

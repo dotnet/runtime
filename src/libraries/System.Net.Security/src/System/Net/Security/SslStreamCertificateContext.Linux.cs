@@ -282,11 +282,10 @@ namespace System.Net.Security
                 _pendingDownload = null;
                 if (ret == null)
                 {
-                    // all download attempts failed, don't try again for 5 seconds.
-                    // Note that if server does not send OCSP staples, clients may still
-                    // contact OCSP responders directly.
+                    // All download attempts failed, don't try again for 5 seconds.
+                    // This backoff will be applied only if the OCSP staple is not expired.
+                    // If it is expired, we will force-refresh it during next GetOcspResponseAsync call.
                     _nextDownload = DateTimeOffset.UtcNow.AddSeconds(5);
-                    _ocspExpiration = _nextDownload;
                 }
                 return ret;
             }

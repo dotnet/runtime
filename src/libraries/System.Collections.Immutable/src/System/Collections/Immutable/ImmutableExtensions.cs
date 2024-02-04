@@ -175,7 +175,9 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The list-ified sequence.
             /// </summary>
+#pragma warning disable CA1859
             private IList<T>? _collection;
+#pragma warning restore
 
             /// <summary>
             /// Initializes a new instance of the <see cref="FallbackWrapper{T}"/> class.

@@ -1362,7 +1362,7 @@ mono_create_rgctx_var (MonoCompile *cfg)
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* force the var to be stack allocated */
-		if (!cfg->llvm_only)
+		if (!COMPILE_LLVM (cfg))
 			cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 		if (cfg->verbose_level > 2) {
 			printf ("\trgctx : ");
@@ -2519,7 +2519,7 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
 		*/
 
-		if (cfg->llvm_only) {
+		if (COMPILE_LLVM (cfg)) {
 			mrgctx_var = mono_get_mrgctx_var (cfg);
 		} else {
 			/* Volatile */
@@ -6793,7 +6793,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		args [0] = mono_get_mrgctx_var (cfg);
 
 		if (COMPILE_LLVM (cfg) || cfg->backend->have_init_mrgctx) {
-			if (cfg->compile_aot)
+			if (COMPILE_LLVM (cfg))
+				/* OP_INIT_MRGCTX emits it itself */
+				EMIT_NEW_PCONST (cfg, args [1], NULL);
+			else if (cfg->compile_aot)
 				args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GSHARED_METHOD_INFO, info);
 			else
 				EMIT_NEW_PCONST (cfg, args [1], info);
@@ -7656,7 +7659,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					goto calli_end;
 				}
 			}
-
 			/* Some wrappers use calli with ftndesc-es */
 			if (cfg->llvm_only && !(cfg->method->wrapper_type &&
 									cfg->method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD &&

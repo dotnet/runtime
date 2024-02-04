@@ -42,8 +42,7 @@ namespace System.Diagnostics.CodeAnalysis
 		{
 			var test = new VerifyCSUSM.Test {
 				TestCode = source,
-				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
+				FixedCode = fixedSource
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -62,8 +61,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 		{
 			var test = new VerifyCSUSM.Test {
 				TestCode = source,
-				FixedCode = fixedSource,
-				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
+				FixedCode = fixedSource
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (
@@ -82,8 +80,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 		{
 			var test = new VerifyCSUSM.Test {
 				TestCode = source + dynamicCodeAttribute,
-				FixedCode = fixedSource + dynamicCodeAttribute,
-				ReferenceAssemblies = TestCaseUtils.NetCoreAppReferencessemblies
+				FixedCode = fixedSource + dynamicCodeAttribute
 			};
 			test.ExpectedDiagnostics.AddRange (baselineExpected);
 			test.TestState.AnalyzerConfigFiles.Add (

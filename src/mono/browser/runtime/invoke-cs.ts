@@ -13,13 +13,14 @@ import {
 } from "./marshal";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
 import { monoStringToString } from "./strings";
-import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull, MarshalerType } from "./types/internal";
+import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull, MarshalerType, MonoAssembly } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
-import { assembly_load } from "./class-loader";
 import { assert_c_interop, assert_js_interop, wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { mono_log_debug } from "./logging";
+
+const _assembly_cache_by_name = new Map<string, MonoAssembly>();
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     assert_js_interop();
@@ -468,4 +469,13 @@ export function parseFQN(fqn: string)
     if (!methodname.trim())
         throw new Error("No method name specified " + fqn);
     return { assembly, namespace, classname, methodname };
+}
+
+export function assembly_load(name: string): MonoAssembly {
+    if (_assembly_cache_by_name.has(name))
+        return <MonoAssembly>_assembly_cache_by_name.get(name);
+
+    const result = cwraps.mono_wasm_assembly_load(name);
+    _assembly_cache_by_name.set(name, result);
+    return result;
 }

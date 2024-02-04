@@ -98,13 +98,13 @@ export function setup_proxy_console(id: string, console: Console, origin: string
         ...console
     };
 
-    setupWS();
-
     const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
 
     consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.addEventListener("error", logWSError);
     consoleWebSocket.addEventListener("close", logWSClose);
+
+    setupWS();
 }
 
 export function teardown_proxy_console(message?: string) {
@@ -135,7 +135,7 @@ export function teardown_proxy_console(message?: string) {
 }
 
 function send(msg: string) {
-    if (consoleWebSocket.readyState === WebSocket.OPEN) {
+    if (consoleWebSocket && consoleWebSocket.readyState === WebSocket.OPEN) {
         consoleWebSocket.send(msg);
     }
     else {

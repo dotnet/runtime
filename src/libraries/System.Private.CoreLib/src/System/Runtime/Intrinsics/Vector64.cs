@@ -1156,6 +1156,52 @@ namespace System.Runtime.Intrinsics
             return false;
         }
 
+        internal static Vector64<T> Exp<T>(Vector64<T> vector)
+            where T : IExponentialFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Exp(vector.GetElement(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Exp computed.</param>
+        /// <returns>A vector whose elements are the exp of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Exp(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the exp of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its exp computed.</param>
+        /// <returns>A vector whose elements are the exp of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Exp(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector64<float>, Vector64<uint>, Vector64<double>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Exp<float>(vector);
+            }
+        }
+
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose elements should have their most significant bit extracted.</param>
@@ -1571,6 +1617,52 @@ namespace System.Runtime.Intrinsics
             return Unsafe.ReadUnaligned<Vector64<T>>(in address);
         }
 
+        internal static Vector64<T> Log<T>(Vector64<T> vector)
+            where T : ILogarithmicFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Log(vector.GetElement(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the log of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log computed.</param>
+        /// <returns>A vector whose elements are the log of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Log(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+            }
+            else
+            {
+                return Log<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the log of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its log computed.</param>
+        /// <returns>A vector whose elements are the log of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Log(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.LogSingle<Vector64<float>, Vector64<int>, Vector64<uint>>(vector);
+            }
+            else
+            {
+                return Log<float>(vector);
+            }
+        }
+
         internal static Vector64<T> Log2<T>(Vector64<T> vector)
             where T : ILogarithmicFunctions<T>
         {
@@ -1588,6 +1680,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the log2 of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its log2 computed.</param>
         /// <returns>A vector whose elements are the log2 of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<double> Log2(Vector64<double> vector)
         {
             if (IsHardwareAccelerated)
@@ -1603,6 +1696,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Computes the log2 of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its log2 computed.</param>
         /// <returns>A vector whose elements are the log2 of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector64<float> Log2(Vector64<float> vector)
         {
             if (IsHardwareAccelerated)

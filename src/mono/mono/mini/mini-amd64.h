@@ -211,6 +211,7 @@ typedef struct MonoCompileArch {
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
 	MonoInst *lmf_var;
+	MonoInst *swift_error_var;
 #ifdef HOST_WIN32
 	struct _UNWIND_INFO* unwindinfo;
 #endif
@@ -230,16 +231,12 @@ static const AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0 };
 #define FLOAT_PARAM_REGS G_N_ELEMENTS(float_param_regs)
 #define RETURN_REGS G_N_ELEMENTS(return_regs)
 #define FLOAT_RETURN_REGS G_N_ELEMENTS(float_return_regs)
-#define CTX_REGS 2
-#define CTX_REGS_OFFSET AMD64_R12
 
 #else
 #define PARAM_REGS 6
 #define FLOAT_PARAM_REGS 8
 #define RETURN_REGS 2
 #define FLOAT_RETURN_REGS 2
-#define CTX_REGS 2
-#define CTX_REGS_OFFSET AMD64_R12
 
 static const AMD64_Reg_No param_regs [] = {AMD64_RDI, AMD64_RSI, AMD64_RDX,
 					   AMD64_RCX, AMD64_R8,  AMD64_R9};
@@ -250,6 +247,9 @@ static const AMD64_XMM_Reg_No float_param_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD6
 
 static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
 #endif
+
+#define CTX_REGS 2
+#define CTX_REGS_OFFSET AMD64_R12
 
 typedef struct {
 	/* Method address to call */
@@ -302,7 +302,6 @@ typedef enum {
 	/* Variable sized gsharedvt argument passed/returned by addr */
 	ArgGsharedvtVariableInReg,
 	ArgSwiftError,
-	ArgSwiftSelf,
 	ArgNone /* only in pair_storage */
 } ArgStorage;
 
@@ -330,6 +329,7 @@ struct CallInfo {
 	guint32 stack_usage;
 	guint32 reg_usage;
 	guint32 freg_usage;
+	gint32 swift_error_index;
 	gboolean need_stack_align;
 	gboolean gsharedvt;
 	/* The index of the vret arg in the argument list */

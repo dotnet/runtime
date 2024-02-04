@@ -5,9 +5,9 @@ import { ENVIRONMENT_IS_NODE, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
-import { assembly_load } from "./class-loader";
 import { mono_log_info } from "./logging";
 import { assert_js_interop } from "./invoke-js";
+import { assembly_load } from "./invoke-cs";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line

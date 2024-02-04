@@ -654,7 +654,7 @@ namespace Microsoft.Extensions.Logging.Generators
             /// Finds the template arguments contained in the message string.
             /// </summary>
             /// <returns>A value indicating whether the extraction was successful.</returns>
-            private static bool ExtractTemplates(string? message, IDictionary<string, string> templateMap, List<string> templateList)
+            private static bool ExtractTemplates(string? message, Dictionary<string, string> templateMap, List<string> templateList)
             {
                 if (string.IsNullOrEmpty(message))
                 {

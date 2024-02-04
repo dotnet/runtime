@@ -914,6 +914,10 @@
     <Target>M:System.Reflection.MethodBase.GetParametersAsSpan</Target>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.Lock.#ctor(System.Boolean)</Target>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Diagnostics.Tracing.EventSource.Write``1(System.String,``0):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
   </Suppression>

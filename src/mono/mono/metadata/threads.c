@@ -2140,6 +2140,22 @@ gint64 ves_icall_System_Threading_Interlocked_Decrement_Long (gint64 * location)
 	return mono_atomic_dec_i64 (location);
 }
 
+guint8 ves_icall_System_Threading_Interlocked_Exchange_Byte (guint8 *location, guint8 value)
+{
+	if (G_UNLIKELY (!location))
+		return (guint8)set_pending_null_reference_exception ();
+
+	return mono_atomic_xchg_u8(location, value);
+}
+
+gint16 ves_icall_System_Threading_Interlocked_Exchange_Short (gint16 *location, gint16 value)
+{
+	if (G_UNLIKELY (!location))
+		return (gint16)set_pending_null_reference_exception ();
+
+	return mono_atomic_xchg_i16(location, value);
+}
+
 gint32 ves_icall_System_Threading_Interlocked_Exchange_Int (gint32 *location, gint32 value)
 {
 	if (G_UNLIKELY (!location))
@@ -2186,6 +2202,22 @@ ves_icall_System_Threading_Interlocked_Exchange_Long (gint64 *location, gint64 v
 	}
 #endif
 	return mono_atomic_xchg_i64 (location, value);
+}
+
+guint8 ves_icall_System_Threading_Interlocked_CompareExchange_Byte(guint8 *location, guint8 value, guint8 comparand)
+{
+	if (G_UNLIKELY (!location))
+		return (guint8)set_pending_null_reference_exception ();
+
+	return mono_atomic_cas_u8(location, value, comparand);
+}
+
+gint16 ves_icall_System_Threading_Interlocked_CompareExchange_Short(gint16 *location, gint16 value, gint16 comparand)
+{
+	if (G_UNLIKELY (!location))
+		return (gint16)set_pending_null_reference_exception ();
+
+	return mono_atomic_cas_i16(location, value, comparand);
 }
 
 gint32 ves_icall_System_Threading_Interlocked_CompareExchange_Int(gint32 *location, gint32 value, gint32 comparand)

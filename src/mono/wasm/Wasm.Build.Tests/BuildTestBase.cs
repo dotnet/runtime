@@ -27,7 +27,7 @@ namespace Wasm.Build.Tests
     {
         public const string DefaultTargetFramework = "net9.0";
         public const string DefaultTargetFrameworkForBlazor = "net9.0";
-        public const string TargetFrameworkForTasks = "net8.0";
+        public const string TargetFrameworkForTasks = "net9.0";
         private const string DefaultEnvironmentLocale = "en-US";
         protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;

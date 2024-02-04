@@ -978,25 +978,6 @@ mono_class_try_get_##shortname##_class (void)	\
 	return klass;	\
 }
 
-
-#define GENERATE_TRY_GET_CLASS_PTR_WITH_CACHE(shortname,name_space,name) \
-MonoClass*	\
-mono_class_try_get_##shortname##_ptr_class (void)	\
-{	\
-	static volatile MonoClass *tmp_class;	\
-	static volatile gboolean inited;	\
-	MonoClass *klass = (MonoClass *)tmp_class;	\
-	mono_memory_barrier ();	\
-	if (!inited) {	\
-		klass = mono_class_try_load_from_name (mono_class_generate_get_corlib_impl (), name_space, name);	\
-		klass = mono_class_create_ptr (m_class_get_byval_arg (klass));	\
-		tmp_class = klass;	\
-		mono_memory_barrier ();	\
-		inited = TRUE;	\
-	}	\
-	return klass;	\
-}
-
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)
 
 #ifndef DISABLE_COM

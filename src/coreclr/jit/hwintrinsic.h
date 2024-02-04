@@ -201,8 +201,11 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is a PermuteVar2x intrinsic
     HW_Flag_PermuteVar2x = 0x4000000,
 
-    // The intrinsic is an embedded broadcast compatiable intrinsic
+    // The intrinsic is an embedded broadcast compatible intrinsic
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
+
+    // The intrinsic is an embedded rounding compatible intrinsic
+    HW_Flag_EmbRoundingCompatible = 0x10000000
 #endif // TARGET_XARCH
 };
 
@@ -586,6 +589,27 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
+    }
+
+    static bool IsEmbRoundingCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_EmbRoundingCompatible) != 0;
+    }
+
+    static size_t EmbRoundingArgPos(NamedIntrinsic id)
+    {
+        // This helper function returns the expected position,
+        // where the embedded rounding control argument should be.
+        assert(IsEmbRoundingCompatible(id));
+        switch (id)
+        {
+            case NI_AVX512F_Add:
+                return 3;
+
+            default:
+                unreached();
+        }
     }
 #endif // TARGET_XARCH
 

@@ -2567,7 +2567,7 @@ gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpoi
 void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 // After the pinvoke call is done, this return an error context value from the ccontext.
-gpointer mono_arch_get_swift_error 				(CallContext *ccontext, MonoMethodSignature *sig, gpointer call_info, int *arg_index);
+gpointer mono_arch_get_swift_error 				(CallContext *ccontext, MonoMethodSignature *sig, int *arg_index);
 #endif
 /* Free the structure returned by mono_arch_get_interp_native_call_info (NULL, sig) */
 void mono_arch_free_interp_native_call_info (gpointer call_info);

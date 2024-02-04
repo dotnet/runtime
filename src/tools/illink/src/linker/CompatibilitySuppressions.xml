@@ -1,2308 +1,1540 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.Box`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.ConditionKind</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.DefaultValueDictionary`2</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.DictionaryLattice`3</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.ForwardDataFlowAnalysis`8</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.IBlock`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.IControlFlowGraph`2</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.IDataFlowState`2</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.IDeepCopyValue`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.ILattice`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.INegate`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.IRegion`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.ITransfer`5</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.Maybe`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.MaybeLattice`2</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.RegionKind</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.SingleValue</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.ValueSet`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DataFlow.ValueSetLattice`1</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DiagnosticId</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DiagnosticIdExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.DiagnosticString</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.MessageSubCategory</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TrimAnalysis.FieldReferenceValue</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TrimAnalysis.LocalVariableReferenceValue</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TrimAnalysis.ReferenceValue</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TrimAnalysis.ValueWithDynamicallyAccessedMembers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TypeSystemProxy.ParameterIndex</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TypeSystemProxy.ReferenceKind</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TypeSystemProxy.WellKnownType</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:ILLink.Shared.TypeSystemProxy.WellKnownTypeExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.AssemblyDefinitionExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.AssemblyResolver</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.AssemblyRootMode</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.AttributeInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.BannedApiExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.BCL</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.CodeOptimizations</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.CodeOptimizationsSettings</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.ConsoleLogger</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.CustomAttributeArgumentExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.CustomAttributeSource</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.AttributeDataFlow</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.CompilerGeneratedState</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.GenericArgumentDataFlow</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.HoistedLocalKey</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.ReflectionMarker</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.TrimAnalysisAssignmentPattern</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.TrimAnalysisMethodCallPattern</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.TrimAnalysisPatternStore</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.ValueBasicBlockPair</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Dataflow.ValueNodeList</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.DependencyInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.DependencyKind</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.DependencyRecorderHelper</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.DgmlDependencyRecorder</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.DocumentationSignatureGenerator</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.DocumentationSignatureParser</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Driver</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.EmbeddedXmlInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.FeatureSettings</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.IDependencyRecorder</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.ILogger</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.InternalErrorException</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.ITryResolveMetadata</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.IXApiVisitor</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.KnownMembers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.LinkerFatalErrorException</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.LinkerILProcessor</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MarkingHelpers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MemberActionStore</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MemberReferenceExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MetadataTrimming</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MethodBodyScanner</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MethodDefinitionExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MethodIL</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.MethodReferenceExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.ModuleDefinitionExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.OverrideInformation.OverridePair</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.ParameterHelpers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.PInvokeInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Pipeline</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.PlatformAssemblies</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.RemoveAttributeInstancesAttribute</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.SerializationMarker</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.SerializerKind</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.AddBypassNGenStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.AllowedAssemblies</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.BodySubstituterStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.BodySubstitutionParser</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.CheckSuppressionsDispatcher</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.CheckSuppressionsStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.CleanStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.CodeRewriterStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.DescriptorMarker</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.DiscoverOperatorsHandler</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.DiscoverSerializationHandler</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.LinkAttributesParser</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.LinkAttributesStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.MarkExportedTypesTarget</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.MarkScopeStack</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.MarkStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.MarkStepContext</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.OutputStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.OutputWarningSuppressions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.ProcessLinkerXmlBase</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.ProcessLinkerXmlStepBase</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.ProcessReferencesStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.ProcessWarningsStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.ReflectionBlockedStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.RegenerateGuidStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.RemoveResourcesStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.RemoveSecurity</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.ResolveFromXmlStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.RootAssemblyInput</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.SealerStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.SweepStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.UnreachableBlocksOptimizer</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Steps.ValidateVirtualMethodAnnotationsStep</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.SubstitutionInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.SuppressMessageInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.TargetRuntimeVersion</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.Tracer</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.TypeDefinitionExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.TypeMapInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.TypePreserveMembers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.TypeReferenceExtensions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.UnconditionalSuppressMessageAttributeState</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.UnintializedContextFactory</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.WarningSuppressionWriter</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.XmlDependencyRecorder</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.AssemblyNameHelpers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.Runtime.TypeParsing.AssemblyQualifiedTypeName</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.Runtime.TypeParsing.NonQualifiedTypeName</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.Runtime.TypeParsing.TypeName</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.Runtime.TypeParsing.TypeParser</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Reflection.RuntimeAssemblyName</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.assembly_actions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.context</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.fieldType_init</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.indirectly_called</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.marked_attributes</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.marked_instantiated</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.marked_pending</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.pending_preserve</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.preserved_exportedtype_members</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.preserved_methods</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.preserved_type_members</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.preserved_types</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.processed</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.public_api</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.resources_to_remove</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.symbol_readers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.AnnotationStore.types_relevant_to_variant_casting</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.LinkContext.PInvokesListFile</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.MessageCategory.WarningAsError</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>F:Mono.Linker.MessageContainer.Empty</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.#ctor(Mono.Linker.LinkContext)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.AddResourceToRemove(Mono.Cecil.AssemblyDefinition,Mono.Cecil.EmbeddedResource)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.AddSymbolReader(Mono.Cecil.AssemblyDefinition,Mono.Cecil.Cil.ISymbolReader)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.ChoosePreserveActionWhichPreservesTheMost(Mono.Linker.TypePreserve,Mono.Linker.TypePreserve)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.ClearPreservedMethods(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.ClearPreservedMethods(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.CloseSymbolReader(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.EnqueueVirtualMethod(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.get_MemberActions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.get_ProcessSatelliteAssemblies</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.get_Tracer</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.get_TypeMapInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetAction(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetAssemblies</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetBaseMethods(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetDefaultInterfaceImplementations(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetLinkerAttributes``1(Mono.Cecil.IMemberDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetMarkedPending</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetPendingPreserve</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetPreservedMethods(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetPreservedMethods(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.GetResourcesToRemove(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.HasAppliedPreserve(Mono.Cecil.TypeDefinition,Mono.Linker.TypePreserve)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.HasLinkerAttribute``1(Mono.Cecil.IMemberDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.HasMarkedAnyIndirectlyCalledMethods</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.HasPreservedStaticCtor(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.HasSubstitutedInit(Mono.Cecil.FieldDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.HasSubstitutedInit(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsIndirectlyCalled(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsInstantiated(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsProcessed(Mono.Cecil.IMetadataTokenProvider)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsPublic(Mono.Cecil.IMetadataTokenProvider)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsReflectionUsed(Mono.Cecil.IMemberDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsRelevantToVariantCasting(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsRootAssembly(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.CustomAttribute,Mono.Linker.DependencyInfo@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.IMetadataTokenProvider,Mono.Linker.DependencyInfo@,Mono.Linker.MessageOrigin@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.MarkIndirectlyCalledMethod(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.MarkInstantiated(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.MarkProcessed(Mono.Cecil.IMetadataTokenProvider,Mono.Linker.DependencyInfo@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.MarkReflectionUsed(Mono.Cecil.IMemberDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.MarkRelevantToVariantCasting(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.PrepareDependenciesDump</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.PrepareDependenciesDump(System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.set_ProcessSatelliteAssemblies(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetAppliedPreserve(Mono.Cecil.TypeDefinition,Mono.Linker.TypePreserve)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetMembersPreserve(Mono.Cecil.ExportedType,Mono.Linker.TypePreserveMembers)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetMembersPreserve(Mono.Cecil.TypeDefinition,Mono.Linker.TypePreserveMembers)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetPreservedStaticCtor(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetProcessed(Mono.Cecil.IMetadataTokenProvider)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetPublic(Mono.Cecil.IMetadataTokenProvider)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetRootAssembly(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.SetSubstitutedInit(Mono.Cecil.TypeDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.TryGetFieldUserValue(Mono.Cecil.FieldDefinition,System.Object@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.TryGetLinkerAttribute``1(Mono.Cecil.IMemberDefinition,``0@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.TryGetMethodStubValue(Mono.Cecil.MethodDefinition,System.Object@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.TryGetPreserve(Mono.Cecil.TypeDefinition,Mono.Linker.TypePreserve@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.TryGetPreservedMembers(Mono.Cecil.ExportedType,Mono.Linker.TypePreserveMembers@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.TryGetPreservedMembers(Mono.Cecil.TypeDefinition,Mono.Linker.TypePreserveMembers@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.#ctor(Mono.Linker.Pipeline,Mono.Linker.ILogger,System.String,Mono.Linker.UnintializedContextFactory)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.#ctor(Mono.Linker.Pipeline,Mono.Linker.ILogger,System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.CalculateAssemblyAction(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.CanApplyOptimization(Mono.Linker.CodeOptimizations,Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.Dispose</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.FatalError(System.String,System.Int32,System.Exception,System.String,System.Nullable{Mono.Linker.MessageOrigin})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.FatalError(System.String,System.Int32,System.String,System.Nullable{Mono.Linker.MessageOrigin})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.FlushCachedWarnings</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Actions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_AddReflectionAnnotations</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_AssembliesWithGeneratedSingleWarning</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_AssemblyListFile</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_CompilerGeneratedState</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_CustomAttributes</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_DefaultAction</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_DeterministicOutput</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_DisableEventSourceSpecialHandling</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_DisableOperatorDiscovery</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_EmbeddedXmlInfo</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_EnableReducedTracing</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_EnableSerializationDiscovery</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_ErrorsCount</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_FeatureSettings</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_GeneralSingleWarn</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_GeneralWarnAsError</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_IgnoreDescriptors</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_IgnoreLinkAttributes</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_IgnoreSubstitutions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_IgnoreUnresolved</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_KeepMembersForDebugger</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_KeepUsedAttributeTypesOnly</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_LinkSymbols</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_LogMessages</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_MarkedKnownMembers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_MarkHandlers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_MarkingHelpers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_MetadataTrimming</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_NoTrimWarn</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_NoWarn</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Optimizations</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_OutputDirectory</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_PInvokes</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Pipeline</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Resolver</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_SerializationMarker</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_SingleWarn</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_StripSecurity</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Suppressions</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_SymbolReaderProvider</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_Tracer</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_TrimAction</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_WarnAsError</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_WarningSuppressionWriter</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.get_WarnVersion</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.GetAssemblies</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.GetMethodIL(Mono.Cecil.Cil.MethodBody)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.GetMethodIL(Mono.Cecil.MethodDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.GetReferencedAssemblies</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.GetTargetRuntimeVersion</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.HasFeatureValue(System.String,System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.IsOptimizationEnabled(Mono.Linker.CodeOptimizations,Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.IsOptimizationEnabled(Mono.Linker.CodeOptimizations,Mono.Cecil.MemberReference)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.IsSingleWarn(System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.IsTrimmable(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.IsWarningAsError(System.Int32)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.IsWarningSuppressed(System.Int32,System.String,Mono.Linker.MessageOrigin)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogDiagnostic(System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogError(System.Nullable{Mono.Linker.MessageOrigin},ILLink.Shared.DiagnosticId,System.String[])</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogError(System.String,System.Int32,System.String,System.Nullable{Mono.Linker.MessageOrigin})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogMessage(System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogWarning(Mono.Cecil.IMemberDefinition,ILLink.Shared.DiagnosticId,System.Nullable{System.Int32},System.String[])</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogWarning(Mono.Cecil.IMemberDefinition,ILLink.Shared.DiagnosticId,System.String[])</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogWarning(Mono.Linker.MessageOrigin,ILLink.Shared.DiagnosticId,System.String[])</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogWarning(System.String,ILLink.Shared.DiagnosticId,System.String[])</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogWarning(System.String,System.Int32,Mono.Cecil.IMemberDefinition,System.Nullable{System.Int32},System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogWarning(System.String,System.Int32,Mono.Linker.MessageOrigin,System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.LogWarning(System.String,System.Int32,System.String,System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.RegisterAssembly(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.RegisterAssemblyAction(System.String,Mono.Linker.AssemblyAction)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.ReportUnresolved(Mono.Cecil.ExportedType)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.ReportUnresolved(Mono.Cecil.FieldReference)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.ReportUnresolved(Mono.Cecil.MethodReference)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.ReportUnresolved(Mono.Cecil.TypeReference)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.Resolve(Mono.Cecil.ExportedType)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.Resolve(Mono.Cecil.IMetadataScope)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.ResolveReferences(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.SafeReadSymbols(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.SeenFirstTime(Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_AddReflectionAnnotations(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_AssembliesWithGeneratedSingleWarning(System.Collections.Generic.HashSet{System.String})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_AssemblyListFile(System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_DefaultAction(Mono.Linker.AssemblyAction)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_DeterministicOutput(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_DisableEventSourceSpecialHandling(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_DisableOperatorDiscovery(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_EnableReducedTracing(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_EnableSerializationDiscovery(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_FeatureSettings(System.Collections.Generic.Dictionary{System.String,System.Boolean})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_GeneralSingleWarn(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_GeneralWarnAsError(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_IgnoreDescriptors(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_IgnoreLinkAttributes(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_IgnoreSubstitutions(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_IgnoreUnresolved(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_KeepMembersForDebugger(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_KeepUsedAttributeTypesOnly(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_LinkSymbols(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_LogMessages(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_MetadataTrimming(Mono.Linker.MetadataTrimming)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_NoTrimWarn(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_NoWarn(System.Collections.Generic.HashSet{System.Int32})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_Optimizations(Mono.Linker.CodeOptimizationsSettings)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_OutputDirectory(System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_SingleWarn(System.Collections.Generic.Dictionary{System.String,System.Boolean})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_StripSecurity(System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_Suppressions(Mono.Linker.UnconditionalSuppressMessageAttributeState)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_SymbolReaderProvider(Mono.Cecil.Cil.ISymbolReaderProvider)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_TrimAction(Mono.Linker.AssemblyAction)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_WarnAsError(System.Collections.Generic.Dictionary{System.Int32,System.Boolean})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_WarningSuppressionWriter(Mono.Linker.WarningSuppressionWriter)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.set_WarnVersion(Mono.Linker.WarnVersion)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.SetAction(Mono.Cecil.AssemblyDefinition,Mono.Linker.AssemblyAction)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.SetCustomData(System.String,System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.SetFeatureValue(System.String,System.Boolean)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.TryResolve(Mono.Cecil.AssemblyDefinition,System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.TryResolve(Mono.Cecil.AssemblyNameReference)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.TryResolve(Mono.Cecil.ExportedType)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.TryResolve(System.String)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.CompareTo(Mono.Linker.MessageContainer)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.get_Category</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.get_Code</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.get_Origin</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.get_SubCategory</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.get_Text</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.IsWarningMessage(System.Nullable{System.Int32}@)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.op_Equality(Mono.Linker.MessageContainer,Mono.Linker.MessageContainer)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.op_Inequality(Mono.Linker.MessageContainer,Mono.Linker.MessageContainer)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageContainer.ToMSBuildString</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.#ctor(Mono.Cecil.ICustomAttributeProvider,System.Nullable{System.Int32})</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.#ctor(Mono.Cecil.ICustomAttributeProvider)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.#ctor(Mono.Linker.MessageOrigin,System.Int32)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.#ctor(Mono.Linker.MessageOrigin)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.#ctor(System.String,System.Int32,System.Int32,Mono.Cecil.AssemblyDefinition)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.CompareTo(Mono.Linker.MessageOrigin)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.get_FileName</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.get_ILOffset</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.get_Provider</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.get_SourceColumn</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.get_SourceLine</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.op_Equality(Mono.Linker.MessageOrigin,Mono.Linker.MessageOrigin)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.op_Inequality(Mono.Linker.MessageOrigin,Mono.Linker.MessageOrigin)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.MessageOrigin.WithInstructionOffset(System.Int32)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.OverrideInformation.#ctor(Mono.Cecil.MethodDefinition,Mono.Cecil.MethodDefinition,Mono.Linker.ITryResolveMetadata,Mono.Cecil.InterfaceImplementation)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.OverrideInformation.get_IsOverrideOfInterfaceMember</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.OverrideInformation.get_IsStaticInterfaceMethodPair</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.Steps.BaseStep.get_MarkingHelpers</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.Steps.BaseStep.get_Tracer</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.Steps.SubStepsDispatcher.Process(Mono.Linker.LinkContext)</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:Mono.Linker.LinkContext</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:Mono.Linker.MessageContainer</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:Mono.Linker.MessageOrigin</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0009</DiagnosticId>
     <Target>T:Mono.Linker.AnnotationStore</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0009</DiagnosticId>
     <Target>T:Mono.Linker.LinkContext</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0009</DiagnosticId>
     <Target>T:Mono.Linker.OverrideInformation</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.CustomAttribute):[T:System.ObsoleteAttribute]</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.Mark(Mono.Cecil.IMetadataTokenProvider):[T:System.ObsoleteAttribute]</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.TryGetCustomData(System.String,System.String@)$1:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0017</DiagnosticId>
     <Target>M:Mono.Linker.LinkContext.Resolve(Mono.Cecil.AssemblyNameReference)$0</Target>
-    <Left>ref/net8.0/illink.dll</Left>
-    <Right>lib/net8.0/illink.dll</Right>
   </Suppression>
 </Suppressions>

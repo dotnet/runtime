@@ -140,11 +140,11 @@ namespace System.Security.Cryptography.X509Certificates
                     CryptDecodeObjectStructType.X509_ENHANCED_KEY_USAGE,
                     static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        var localUsages = new OidCollection();
 
                         Debug.Assert(cbDecoded >= sizeof(CERT_ENHKEY_USAGE));
                         CERT_ENHKEY_USAGE* pEnhKeyUsage = (CERT_ENHKEY_USAGE*)pvDecoded;
                         int count = pEnhKeyUsage->cUsageIdentifier;
+                        var localUsages = new OidCollection(count);
                         for (int i = 0; i < count; i++)
                         {
                             IntPtr oidValuePointer = pEnhKeyUsage->rgpszUsageIdentifier[i];

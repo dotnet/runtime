@@ -138,10 +138,10 @@ namespace System
             return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
         }
 
-        private MulticastDelegate NewMulticastDelegate(Delegate[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
+        private unsafe MulticastDelegate NewMulticastDelegate(Delegate[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = (MulticastDelegate)RuntimeImports.RhNewObject(this.GetEETypePtr());
+            MulticastDelegate result = (MulticastDelegate)RuntimeImports.RhNewObject(this.GetMethodTable());
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them

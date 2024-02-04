@@ -277,21 +277,32 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 
 /*****************************************************************************
  *
- *  Displays a register set.
- *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
+ *  Displays a range of registers
+ *   -- This is a helper used by dspRegMask
  */
-
-void dspRegMask(regMaskTP regMask, size_t minSiz)
+const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-    const char* sep = "";
+#ifdef TARGET_XARCH
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+           ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
+           ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
+#else
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+           ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)));
+#endif
 
-    printf("[");
+    if (strlen(sep) > 0)
+    {
+        // We've already printed something.
+        sep = " ";
+    }
 
     bool      inRegRange = false;
     regNumber regPrev    = REG_NA;
     regNumber regHead    = REG_NA; // When we start a range, remember the first register of the range, so we don't use
                                    // range notation if the range contains just a single register.
-    for (regNumber regNum = REG_INT_FIRST; regNum <= REG_INT_LAST; regNum = REG_NEXT(regNum))
+
+    for (regNumber regNum = regFirst; regNum <= regLast; regNum = REG_NEXT(regNum))
     {
         regMaskTP regBit = genRegMask(regNum);
 
@@ -300,7 +311,7 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
             //    no register has ever been displayed).
-            // 2. This is the last register of an acceptable range (either the last integer register,
+            // 2. This is the last register of an acceptable range (either the last register of a type,
             //    or the last of a range that is displayed with range notation).
             if (!inRegRange)
             {
@@ -309,140 +320,101 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                 printf("%s%s", sep, nam);
                 minSiz -= strlen(sep) + strlen(nam);
 
-                // By default, we're not starting a potential register range.
-                sep = " ";
-
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_AMD64)
-                // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
-                if (regNum >= REG_R8)
+                if (genIsValidIntReg(regNum))
                 {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
-#elif defined(TARGET_ARM64)
-                // R17 and R28 can't be the start of a range, since the range would include TEB or FP
-                if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
-#elif defined(TARGET_ARM)
-                if (regNum < REG_R12)
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
-#elif defined(TARGET_X86)
-// No register ranges
+                    // By default, we're not starting a potential register range.
+                    sep = " ";
 
+#if defined(TARGET_AMD64)
+                    // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
+                    if (regNum >= REG_R8)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
+#elif defined(TARGET_ARM64)
+                    // R17 and R28 can't be the start of a range, since the range would include TEB or FP
+                    if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
+#elif defined(TARGET_ARM)
+                    if (regNum < REG_R12)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
+#elif defined(TARGET_X86)
+                    // No register ranges
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 #elif defined(TARGET_LOONGARCH64)
-                if (REG_A0 <= regNum && regNum <= REG_T8)
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    if (REG_A0 <= regNum && regNum <= REG_T8)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #elif defined(TARGET_RISCV64)
-                if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
-                    (REG_T2 <= regNum && REG_T6 >= regNum))
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
+                        (REG_T2 <= regNum && REG_T6 >= regNum))
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
+                }
+                else
+                {
+                    regHead    = regNum;
+                    inRegRange = true;
+                    sep        = "-";
+                }
             }
-
 #if defined(TARGET_ARM64)
-            // We've already printed a register. Is this the end of a range?
-            else if ((regNum == REG_INT_LAST) || (regNum == REG_R17) // last register before TEB
-                     || (regNum == REG_R28))                         // last register before FP
+            else if ((regNum == regLast) || (regNum == REG_R17) // last register before TEB
+                     || (regNum == REG_R28))                    // last register before FP
 #elif defined(TARGET_LOONGARCH64)
-            else if ((regNum == REG_INT_LAST) || (regNum == REG_A7) || (regNum == REG_T8))
-#else  // TARGET_LOONGARCH64
-            // We've already printed a register. Is this the end of a range?
-            else if (regNum == REG_INT_LAST)
-#endif // TARGET_LOONGARCH64
+            else if ((regNum == regLast) || (regNum == REG_A7) || (regNum == REG_T8))
+#else
+            else if (regNum == regLast)
+#endif
             {
+                // We've already printed a register and hit the end of a range
+
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);
                 minSiz -= strlen(sep) + strlen(nam);
+
+                regHead    = REG_NA;
                 inRegRange = false; // No longer in the middle of a register range
-                regHead    = REG_NA;
                 sep        = " ";
             }
         }
-        else // ((regMask & regBit) == 0)
+        else if (inRegRange)
         {
-            if (inRegRange)
+            assert(regHead != REG_NA);
+
+            if (regPrev != regHead)
             {
-                assert(regHead != REG_NA);
-                if (regPrev != regHead)
-                {
-                    // Close out the previous range, if it included more than one register.
-                    const char* nam = getRegName(regPrev);
-                    printf("%s%s", sep, nam);
-                    minSiz -= strlen(sep) + strlen(nam);
-                }
-                sep        = " ";
-                inRegRange = false;
-                regHead    = REG_NA;
-            }
-        }
-
-        if (regBit > regMask)
-        {
-            break;
-        }
-
-        regPrev = regNum;
-    }
-
-    if (strlen(sep) > 0)
-    {
-        // We've already printed something.
-        sep = " ";
-    }
-    inRegRange = false;
-    regPrev    = REG_NA;
-    regHead    = REG_NA;
-    for (regNumber regNum = REG_FP_FIRST; regNum <= REG_FP_LAST; regNum = REG_NEXT(regNum))
-    {
-        regMaskTP regBit = genRegMask(regNum);
-
-        if (regMask & regBit)
-        {
-            if (!inRegRange || (regNum == REG_FP_LAST))
-            {
-                const char* nam = getRegName(regNum);
+                // Close out the previous range, if it included more than one register.
+                const char* nam = getRegName(regPrev);
                 printf("%s%s", sep, nam);
-                minSiz -= strlen(sep) + strlen(nam);
-                sep     = "-";
-                regHead = regNum;
+                minSiz -= (strlen(sep) + strlen(nam));
             }
-            inRegRange = true;
-        }
-        else
-        {
-            if (inRegRange)
-            {
-                if (regPrev != regHead)
-                {
-                    const char* nam = getRegName(regPrev);
-                    printf("%s%s", sep, nam);
-                    minSiz -= (strlen(sep) + strlen(nam));
-                }
-                sep = " ";
-            }
+
+            regHead    = REG_NA;
             inRegRange = false;
+            sep        = " ";
         }
 
         if (regBit > regMask)
@@ -452,6 +424,27 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
 
         regPrev = regNum;
     }
+
+    return sep;
+}
+
+/*****************************************************************************
+ *
+ *  Displays a register set.
+ *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
+ */
+void dspRegMask(regMaskTP regMask, size_t minSiz)
+{
+    const char* sep = "";
+
+    printf("[");
+
+    sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
+    sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
+
+#ifdef TARGET_XARCH
+    sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
+#endif // TARGET_XARCH
 
     printf("]");
 
@@ -1557,6 +1550,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
             case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR:
 
                 // These do not invoke static class constructors
                 //

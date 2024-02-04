@@ -1567,7 +1567,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
         if (m_pDynamicStaticsInfo)
             memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
 
-        m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
+        VolatileStore(&m_pDynamicStaticsInfo, pNewDynamicStaticsInfo);
         m_maxDynamicEntries = maxDynamicEntries;
     }
 
