@@ -4648,12 +4648,12 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 //   based on assertions
 //
 // Arguments:
-//   op - tree to check
+//   op          - tree to check
 //   assertions  - set of live assertions
-//   pVnBased - [out] set to true if value numbers were used
-//   pIndex - [out] the assertion used in the proof
+//   pVnBased    - [out] set to true if value numbers were used
+//   pIndex      - [out] the assertion used in the proof
 //
-// Returns:
+// Return Value:
 //   true if the tree's value will be non-null
 //
 // Notes:
@@ -4703,11 +4703,11 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
 //   be non-null based on assertions
 //
 // Arguments:
-//   op - tree to check
-//   assertions  - set of live assertions
-//   pVnBased - [out] set to true if value numbers were used
+//   op         - tree to check
+//   assertions - set of live assertions
+//   pVnBased   - [out] set to true if value numbers were used
 //
-// Returns:
+// Return Value:
 //   index of assertion, or NO_ASSERTION_INDEX
 //
 AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
@@ -4813,6 +4813,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
     }
     return NO_ASSERTION_INDEX;
 }
+
 /*****************************************************************************
  *
  *  Given a tree consisting of a call and a set of available assertions, we
@@ -4903,12 +4904,12 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 //   based on assertions
 //
 // Arguments:
-//   op - tree to check
-//   assertions  - set of live assertions
-//   pVnBased - [out] set to true if value numbers were used
-//   pIndex - [out] the assertion used in the proof
+//   op         - tree to check
+//   assertions - set of live assertions
+//   pVnBased   - [out] set to true if value numbers were used
+//   pIndex     - [out] the assertion used in the proof
 //
-// Returns:
+// Return Value:
 //   true if the tree's value will be not GC-tracked
 //
 // Notes:
