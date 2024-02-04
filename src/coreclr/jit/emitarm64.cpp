@@ -19157,7 +19157,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         default:
-            dst = emitInstrSve(id, dst);
+            dst = emitOutput_InstrSve(dst, id);
             break;
     }
 
@@ -19348,7 +19348,7 @@ SKIP_GC_UPDATE:
  *
  *  Append the machine code corresponding to the given SVE instruction descriptor.
  */
-BYTE* emitter::emitInstrSve(instrDesc* id, BYTE* dst)
+BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 {
     code_t      code = 0;
     instruction ins  = id->idIns();

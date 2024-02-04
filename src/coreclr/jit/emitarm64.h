@@ -129,6 +129,9 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 //  Emit the 32-bit Arm64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
+// Append the machine code corresponding to the given SVE instruction descriptor.
+BYTE* emitOutput_InstrSve(BYTE* dst, instrDesc* id);
+
 // A helper method to return the natural scale for an EA 'size'
 static unsigned NaturalScale_helper(emitAttr size);
 
