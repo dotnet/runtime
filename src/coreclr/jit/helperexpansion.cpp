@@ -174,9 +174,9 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     const GenTree* signatureNode = call->gtArgs.GetArgByIndex(1)->GetNode();
     if (!signatureNode->IsCnsIntOrI())
     {
-        // We really expect the signature to be a constant node here.
+        // We expect the signature to be a constant node here (it's marked as DONT_CSE)
         // It's still correct if JIT decides to violate this assumption, but we really
-        // don't want it to happen, so we assert here
+        // don't want it to happen, hence, the assert.
         assert(!"can't restore signature argument value");
         return false;
     }
