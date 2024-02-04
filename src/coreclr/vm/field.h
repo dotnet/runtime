@@ -285,6 +285,14 @@ public:
         SetOffset(FIELD_OFFSET_NEW_ENC);
     }
 
+    BOOL IsCollectible()    
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        LoaderAllocator *pLoaderAllocatorOfMethod = GetApproxEnclosingMethodTable()->GetLoaderAllocator();
+        return pLoaderAllocatorOfMethod->IsCollectible();
+    }
+
     // Was this field added by EnC?
     // If this is true, then this object is an instance of EnCFieldDesc
     BOOL IsEnCNew()

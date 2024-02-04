@@ -1227,6 +1227,21 @@ lExit: ;
 }
 FCIMPLEND
 
+static FC_BOOL_RET IsFastPathSupportedHelper(FieldDesc* pFieldDesc)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pFieldDesc));
+    }
+    CONTRACTL_END;
+
+    return pFieldDesc->IsThreadStatic() ||
+        pFieldDesc->IsEnCNew() ||
+        pFieldDesc->IsCollectible() ? FALSE : TRUE;
+}
+
 FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject *pFieldUNSAFE)
 {
     CONTRACTL {
@@ -1239,11 +1254,11 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     FieldDesc* pFieldDesc = refField->GetField();
-    return pFieldDesc->IsThreadStatic() || pFieldDesc->IsEnCNew() ? FALSE : TRUE;
+    return IsFastPathSupportedHelper(pFieldDesc);
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldAddress, ReflectFieldObject *pFieldUNSAFE)
+FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldOffset, ReflectFieldObject *pFieldUNSAFE)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -1258,7 +1273,7 @@ FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldAddress, ReflectFieldObject *
     FieldDesc* pFieldDesc = refField->GetField();
 
     // IsFastPathSupported needs to checked before calling this method.
-    _ASSERTE(!pFieldDesc->IsEnCNew());
+    _ASSERTE(IsFastPathSupportedHelper(pFieldDesc));
 
     return pFieldDesc->GetOffset();
 }
@@ -1276,25 +1291,26 @@ FCIMPL2(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
     if (refField == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    void *ret = NULL;
     FieldDesc* pFieldDesc = refField->GetField();
 
     // IsFastPathSupported needs to checked before calling this method.
-    _ASSERTE(!pFieldDesc->IsEnCNew());
-    _ASSERTE(!refField->GetField()->IsThreadStatic());
-
-    GCPROTECT_BEGIN(refField);
+    _ASSERTE(IsFastPathSupportedHelper(pFieldDesc));
 
     PTR_BYTE base = 0;
-    if (!pFieldDesc->IsRVA()) // For RVA the base is ignored.
+    if (pFieldDesc->IsRVA())
+    {
+        // For RVA the base is ignored and offset is used.
+        *isBoxed = FALSE;
+    }
+    else
+    {
         base = pFieldDesc->GetBase();
+        CorElementType fieldType = pFieldDesc->GetFieldType();
+        // Non-primitive value types need to be unboxed to get the base address.
+        *isBoxed = (pFieldDesc->GetFieldType() == ELEMENT_TYPE_VALUETYPE) ? TRUE : FALSE;
+    }
 
-    ret = pFieldDesc->GetStaticAddressHandle(base);
-
-    *isBoxed = ((pFieldDesc->GetFieldType() == ELEMENT_TYPE_VALUETYPE && !pFieldDesc->IsRVA())) ? TRUE : FALSE;
-
-    GCPROTECT_END();
-    return ret;
+    return pFieldDesc->GetStaticAddressHandle(base);
 }
 FCIMPLEND
 

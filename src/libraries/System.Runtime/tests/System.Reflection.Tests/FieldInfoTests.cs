@@ -75,7 +75,7 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_stringField), null, "static" };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_objectField), null, MyStruct.s_objectField };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_intPtr), null, MyStruct.s_intPtrForComparison };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), new MyStruct(), MyStruct.s_rvaIntField };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), null, new int[] { 1, 2, 3 } };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.threadStatic_intField), null, 100 };
 
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.stringField), new MyStruct(), "non static" };
@@ -219,7 +219,7 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(FieldInfoTests), nameof(stringField), new object(), "new", typeof(ArgumentException) };
             yield return new object[] { typeof(FieldInfoTests), nameof(stringField), new FieldInfoTests(), 100, typeof(ArgumentException) };
             yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_constIntField), null, 100, typeof(FieldAccessException) };
-            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), null, new int[] { 3, 4 }, typeof(FieldAccessException) };
+            yield return new object[] { typeof(MyStruct), nameof(MyStruct.s_rvaIntField), null, new int[] { 3, 4, 5 }, typeof(FieldAccessException) };
         }
 
         [Theory]
@@ -724,7 +724,10 @@ namespace System.Reflection.Tests
             public static string s_stringField_Set = null;
             public static object s_objectField = new MyClass1();
             public static object s_objectField_Set = null;
-            public static readonly int[] s_rvaIntField = [1, 2];
+
+            // This does not report FieldAttributes.HasFieldRVA since Roslyn wraps thd .data with generated helper class.
+            public static readonly int[] s_rvaIntField = [1, 2, 3];
+
             public unsafe static object intPtrForComparison = Pointer.Box((void*)42, typeof(int*));
             public unsafe static int* s_intPtr = (int*)43;
             public unsafe static int* s_intPtr_Set = (int*)0;

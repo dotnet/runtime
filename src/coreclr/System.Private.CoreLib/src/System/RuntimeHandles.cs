@@ -1194,10 +1194,10 @@ namespace System
         internal static extern bool IsFastPathSupported(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetInstanceFieldAddress(RtFieldInfo field);
+        internal static extern int GetInstanceFieldOffset(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field, ref bool isBoxed);
+        internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field, out bool isBoxed);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);

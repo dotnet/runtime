@@ -243,7 +243,7 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("AcquiresContextFromThis", RuntimeFieldHandle::AcquiresContextFromThis)
     FCFuncElement("GetLoaderAllocator", RuntimeFieldHandle::GetLoaderAllocator)
     FCFuncElement("IsFastPathSupported", RuntimeFieldHandle::IsFastPathSupported)
-    FCFuncElement("GetInstanceFieldAddress", RuntimeFieldHandle::GetInstanceFieldAddress)
+    FCFuncElement("GetInstanceFieldOffset", RuntimeFieldHandle::GetInstanceFieldOffset)
     FCFuncElement("GetStaticFieldAddress", RuntimeFieldHandle::GetStaticFieldAddress)        
 FCFuncEnd()
 

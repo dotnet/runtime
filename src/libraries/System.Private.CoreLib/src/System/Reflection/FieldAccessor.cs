@@ -29,7 +29,7 @@ namespace System.Reflection
             }
             else if (!declaringType.DomainInitialized)
             {
-                InvokeClassConstructor();
+                InvokeClassConstructor(fieldInfo);
                 declaringType.DomainInitialized = true;
             }
 
@@ -42,13 +42,11 @@ namespace System.Reflection
             // Initialize for the type of field.
             if (declaringType is not null && declaringType.ContainsGenericParameters)
             {
-                _addressOrOffset = default;
                 _fieldAccessType = FieldAccessorType.NoInvoke;
             }
             else if (!RuntimeFieldHandle.IsFastPathSupported(_fieldInfo))
             {
                 // Currently this is true for [ThreadStatic] cases and for fields added from EnC.
-                _addressOrOffset = default;
                 _fieldAccessType = FieldAccessorType.SlowPath;
             }
             else
@@ -57,22 +55,21 @@ namespace System.Reflection
 
                 if (fieldInfo.IsStatic)
                 {
-                    bool isBoxed = false;
-                    _addressOrOffset = RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo, ref isBoxed);
+                    _addressOrOffset = RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo, out bool isBoxed);
 
                     if (fieldType.IsValueType)
                     {
-                        // The runtime stores non-primitive value types as boxed.
+                        // The runtime stores non-primitive value types as a boxed value.
                         _fieldAccessType = isBoxed ? FieldAccessorType.StaticValueTypeBoxed : FieldAccessorType.StaticValueType;
                     }
                     else if (fieldType.IsPointer)
                     {
-                        Debug.Assert(isBoxed == false);
+                        Debug.Assert(!isBoxed);
                         _fieldAccessType = FieldAccessorType.StaticPointerType;
                     }
                     else if (fieldType.IsFunctionPointer)
                     {
-                        Debug.Assert(isBoxed == false);
+                        Debug.Assert(!isBoxed);
                         _fieldAccessType = FieldAccessorType.StaticValueType;
                         unsafe
                         {
@@ -81,13 +78,13 @@ namespace System.Reflection
                     }
                     else
                     {
-                        Debug.Assert(isBoxed == false);
+                        Debug.Assert(!isBoxed);
                         _fieldAccessType = FieldAccessorType.StaticReferenceType;
                     }
                 }
                 else
                 {
-                    _addressOrOffset = RuntimeFieldHandle.GetInstanceFieldAddress(_fieldInfo);
+                    _addressOrOffset = RuntimeFieldHandle.GetInstanceFieldOffset(_fieldInfo);
 
                     if (fieldType.IsValueType)
                     {
@@ -135,7 +132,6 @@ namespace System.Reflection
                         ret = RuntimeHelpers.Box(
                             _methodTable,
                             ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset));
-
                         break;
 
                     case FieldAccessorType.InstancePointerType:
@@ -144,7 +140,6 @@ namespace System.Reflection
                         ret = Pointer.Box(
                             (void*)Unsafe.As<byte, IntPtr>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
                             _fieldInfo.FieldType);
-
                         break;
 
                     case FieldAccessorType.StaticReferenceType:
@@ -160,13 +155,11 @@ namespace System.Reflection
                         ret = RuntimeHelpers.Box(
                             _methodTable,
                             ref Unsafe.As<IntPtr, object>(ref *(IntPtr*)_addressOrOffset).GetRawData());
-
                         break;
 
                     case FieldAccessorType.StaticPointerType:
                         ret = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(
                             ref Unsafe.AsRef<byte>(_addressOrOffset.ToPointer())), _fieldInfo.FieldType);
-
                         break;
 
                     case FieldAccessorType.SlowPath:
@@ -214,12 +207,6 @@ namespace System.Reflection
                         Unsafe.As<IntPtr, object?>(ref *(IntPtr*)_addressOrOffset) = value;
                     }
                     return;
-
-                case FieldAccessorType.NoInvoke:
-                    if (_fieldInfo.DeclaringType is not null && _fieldInfo.DeclaringType.ContainsGenericParameters)
-                        throw new InvalidOperationException(SR.Arg_UnboundGenField);
-
-                    throw new FieldAccessException();
 
                 case FieldAccessorType.InstanceValueType:
                     VerifyTarget(obj);
@@ -302,6 +289,12 @@ namespace System.Reflection
 
                         return;
                     }
+
+                case FieldAccessorType.NoInvoke:
+                    if (_fieldInfo.DeclaringType is not null && _fieldInfo.DeclaringType.ContainsGenericParameters)
+                        throw new InvalidOperationException(SR.Arg_UnboundGenField);
+
+                    throw new FieldAccessException();
             }
 
             if (!IsStatic())
@@ -359,19 +352,19 @@ namespace System.Reflection
         internal void VerifyInitOnly()
         {
             Debug.Assert(IsStatic());
-            Debug.Assert(((RuntimeType)_fieldInfo.DeclaringType!).DomainInitialized);
+            Debug.Assert(_fieldInfo.DeclaringType == null || ((RuntimeType)_fieldInfo.DeclaringType).DomainInitialized);
 
             if ((_fieldInfo.Attributes & FieldAttributes.InitOnly) == FieldAttributes.InitOnly)
             {
-                ThrowHelperFieldAccessException(_fieldInfo.Name, _fieldInfo.DeclaringType!.FullName);
+                ThrowHelperFieldAccessException(_fieldInfo.Name, _fieldInfo.DeclaringType?.FullName);
             }
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",
             Justification = "This represents the static constructor, so if this object was created, the static constructor exists.")]
-        private void InvokeClassConstructor()
+        private static void InvokeClassConstructor(FieldInfo fieldInfo)
         {
-            RuntimeHelpers.RunClassConstructor(_fieldInfo.DeclaringType!.TypeHandle);
+            RuntimeHelpers.RunClassConstructor(fieldInfo.DeclaringType!.TypeHandle);
         }
 
         private static void InvokeModuleConstructor(Module module)
