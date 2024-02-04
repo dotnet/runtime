@@ -9573,9 +9573,20 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         _ASSERTE(m_callThisArg == NULL);  // "m_callThisArg" non-null only for .ctor, which are not callvirts.
 
-        CorInfoType argCIT = OpStackTypeGet(argsBase + arg).ToCorInfoType();
-        if (argCIT != CORINFO_TYPE_BYREF)
-            VerificationError("This arg of constrained call must be managed pointer.");
+        // The constrained. prefix will be immediately followed by a ldftn, call or callvirt instruction.
+        // See Ecma-335-Augments.md#iii21-constrained---prefix-invoke-a-member-on-a-value-of-a-variable-type-page-316 for more detail
+        if (sigInfo.hasThis())
+        {
+            // For the callvirt instruction, the ptr argument will be a managed pointer (&) to thisType.
+            CorInfoType argCIT = OpStackTypeGet(argsBase + arg).ToCorInfoType();
+            if (argCIT != CORINFO_TYPE_BYREF)
+                VerificationError("This arg of constrained call must be managed pointer.");
+        }
+        else
+        {
+            // If the constrained. prefix is applied to a call or ldftn instruction, method must be a virtual static method.
+            // TODO: Assert it is a virtual static method.
+        }
 
         // We only cache for the CORINFO_NO_THIS_TRANSFORM case, so we may assume that if we have a cached call site,
         // there's no thisTransform to perform.
