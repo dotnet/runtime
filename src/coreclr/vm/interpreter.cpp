@@ -9286,11 +9286,15 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             const char* className = NULL;
             const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
             if (
+                (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0 ||
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0 &&
+                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
 #elif defined(TARGET_ARM64)
-                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0 &&
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0
+#else
+                0
+#endif
+                ) &&
                 strcmp(methodName, "get_IsSupported") == 0
             )
             {
@@ -9298,7 +9302,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                 DoGetIsSupported();
                 didIntrinsic = true;
             }
-            else if (strcmp(methodName, "get_IsHardwareAccelerated") == 0 && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+
+            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0 && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
             {
                 GCX_COOP();
                 DoGetIsSupported();
