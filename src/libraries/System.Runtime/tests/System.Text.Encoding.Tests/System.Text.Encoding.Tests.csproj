@@ -64,6 +64,8 @@
     <Compile Include="UnicodeEncoding\UnicodeEncodingGetMaxCharCount.cs" />
     <Compile Include="UnicodeEncoding\UnicodeEncodingTests.cs" />
     <Compile Include="UTF32Encoding\UTF32EncodingDecode.cs" />
+    <Compile Include="UTF32Encoding\UTF32EncodingGetDecoder.cs" />
+    <Compile Include="UTF32Encoding\UTF32EncodingGetEncoder.cs" />
     <Compile Include="UTF32Encoding\UTF32EncodingGetMaxByteCount.cs" />
     <Compile Include="UTF32Encoding\UTF32EncodingGetMaxCharCount.cs" />
     <Compile Include="UTF32Encoding\UTF32EncodingTests.cs" />
