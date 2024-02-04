@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using ILCompiler.DependencyAnalysis;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -73,6 +77,7 @@ namespace ILCompiler
             return null;
         }
 
+#if !READYTORUN
         /// <summary>
         /// Determine whether a method can go into the sealed vtable of a type. Such method must be a sealed virtual
         /// method that is not overriding any method on a base type.
@@ -82,15 +87,17 @@ namespace ILCompiler
         /// since all of their collection interface methods are sealed and implemented on the System.Array and
         /// System.Array&lt;T&gt; base types, and therefore we can minimize the vtable sizes of all derived array types.
         /// </summary>
-        public static bool CanMethodBeInSealedVTable(this MethodDesc method)
+        public static bool CanMethodBeInSealedVTable(this MethodDesc method, NodeFactory factory)
         {
+            Debug.Assert(!method.OwningType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true));
+
             bool isInterfaceMethod = method.OwningType.IsInterface;
 
             // Methods on interfaces never go into sealed vtable
             // We would hit this code path for default implementations of interface methods (they are newslot+final).
             // Interface types don't get physical slots, but they have logical slot numbers and that logic shouldn't
             // attempt to place final+newslot methods differently.
-            if (method.IsFinal && method.IsNewSlot && !isInterfaceMethod)
+            if (method.IsNewSlot && !isInterfaceMethod && factory.DevirtualizationManager.IsEffectivelySealed(method))
                 return true;
 
             // Implementations of static virtual method also go into the sealed vtable.
@@ -101,6 +108,7 @@ namespace ILCompiler
 
             return false;
         }
+#endif
 
         public static bool NotCallableWithoutOwningEEType(this MethodDesc method)
         {
