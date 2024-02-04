@@ -3829,7 +3829,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = temp->dreg;
 			}
 			break;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 		case OP_EXPAND_I1: {
 			int temp_reg1 = mono_alloc_ireg (cfg);
 			int temp_reg2 = mono_alloc_ireg (cfg);
@@ -4056,7 +4055,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert_not_reached();
 			break;
 		}
-#endif
 		default:
 			break;
 		}
@@ -6756,7 +6754,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				x86_patch (br, code);
 			break;
 		}
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 		/* TODO: Some of these IR opcodes are marked as no clobber when they indeed do. */
 		case OP_XBINOP: {
 			switch (ins->inst_c0) {
@@ -7633,7 +7630,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_roundps_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
 		}
-#endif
 
 		case OP_LZCNT32:
 			amd64_sse_lzcnt_reg_reg_size (code, ins->dreg, ins->sreg1, 4);

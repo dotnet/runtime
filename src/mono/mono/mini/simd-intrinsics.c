@@ -6060,10 +6060,9 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (m_class_get_nested_in (cmethod->klass))
 		class_ns = m_class_get_name_space (m_class_get_nested_in (cmethod->klass));
 
-
 	MonoInst *simd_inst = ecb (class_ns, class_name, cfg, cmethod, fsig, args);
 	if (simd_inst)
-		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
+		cfg->uses_simd_intrinsics = TRUE;
 	return simd_inst;
 }
 
@@ -6088,7 +6087,7 @@ mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 static gboolean
 decompose_vtype_opt_uses_simd_intrinsics (MonoCompile *cfg, MonoInst *ins)
 {
-	if (cfg->uses_simd_intrinsics & MONO_CFG_USES_SIMD_INTRINSICS)
+	if (cfg->uses_simd_intrinsics)
 		return TRUE;
 
 	switch (ins->opcode) {
@@ -6166,6 +6165,37 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 #endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
 
 #endif /* DISABLE_JIT */
+
+#else /* MONO_ARCH_SIMD_INTRINSICS */
+
+void
+mono_simd_intrinsics_init (void)
+{
+}
+
+MonoInst*
+mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr)
+{
+	return NULL;
+}
+
+MonoInst*
+mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	return NULL;
+}
+
+MonoInst*
+mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	return NULL;
+}
+
+void
+mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
+{
+}
+
 #endif /* MONO_ARCH_SIMD_INTRINSICS */
 
 #if defined(TARGET_AMD64)
