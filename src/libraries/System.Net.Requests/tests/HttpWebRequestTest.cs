@@ -2133,7 +2133,7 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData(0)]
-        [InlineData(100)]
+        [InlineData(1)]
         public async Task SendHttpPost_WriteBufferingEnabled(int delayMs)
         {
             const string text = "Hello World!!!!\n";
