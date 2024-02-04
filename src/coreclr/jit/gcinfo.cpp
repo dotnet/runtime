@@ -249,7 +249,8 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     if ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
     {
         // This indirection is not storing to the heap.
-        // This case occurs for stack-allocated objects.
+        // This case occurs for stack-allocated objects
+        // and for some types of CSE'd frozen object handles.
         return WBF_NoBarrier;
     }
 

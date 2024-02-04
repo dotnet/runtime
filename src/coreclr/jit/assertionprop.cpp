@@ -4631,7 +4631,11 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 //
 GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    if (optNonNullAssertionProp_Ind(assertions, tree))
+    assert(tree->OperIsIndir());
+
+    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
+    bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
+    if (didNonNullProp || didNonHeapProp)
     {
         return optAssertionProp_Update(tree, tree, stmt);
     }
@@ -4887,6 +4891,98 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 
         // Set this flag to prevent reordering
         indir->SetHasOrderingSideEffect();
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optAssertionIsNonHeap: see if we can prove a tree's value will be not GC-tracked
+//   based on assertions
+//
+// Arguments:
+//   op - tree to check
+//   assertions  - set of live assertions
+//   pVnBased - [out] set to true if value numbers were used
+//   pIndex - [out] the assertion used in the proof
+//
+// Returns:
+//   true if the tree's value will be not GC-tracked
+//
+// Notes:
+//   Sets "pVnBased" if the assertion is value number based. If no matching
+//    assertions are found from the table, then returns "NO_ASSERTION_INDEX."
+//
+//   If both VN and assertion table yield a matching assertion, "pVnBased"
+//   is only set and the return value is "NO_ASSERTION_INDEX."
+//
+bool Compiler::optAssertionIsNonHeap(GenTree*         op,
+                                     ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
+                                         DEBUGARG(AssertionIndex* pIndex))
+{
+    bool vnBased = (!optLocalAssertionProp && vnStore->IsVNObjHandle(op->gtVNPair.GetConservative()));
+#ifdef DEBUG
+    *pIndex   = NO_ASSERTION_INDEX;
+    *pVnBased = vnBased;
+#endif
+
+    if (vnBased)
+    {
+        return true;
+    }
+
+    if (op->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optNonHeapAssertionProp_Ind: Possibly prove an indirection not GC-tracked.
+//
+// Arguments:
+//    assertions - Active assertions
+//    indir      - The indirection
+//
+// Return Value:
+//    Whether the indirection was found to be not GC-tracked and marked as such.
+//
+bool Compiler::optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
+{
+    assert(indir->OperIsIndir());
+
+    if (!indir->OperIs(GT_STOREIND))
+    {
+        return false;
+    }
+
+// We like CSE to happen for handles, as the codegen for loading a 64-bit constant can be pretty heavy
+// and this is particularly true on platforms with a fixed-width instruction encoding. However, this
+// pessimizes stores as we can no longer optimize around some object handles that would allow us to
+// bypass the write barrier.
+//
+// In order to handle that, we'll propagate the IND_TGT_NOT_HEAP flag onto the store if the handle is
+// directly or if the underlying value number is an applicable object handle.
+
+#ifdef DEBUG
+    bool           vnBased = false;
+    AssertionIndex index   = NO_ASSERTION_INDEX;
+#endif
+    if (optAssertionIsNonHeap(indir->AsIndir()->Data(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            (vnBased) ? printf("\nVN based non-heap prop in " FMT_BB ":\n", compCurBB->bbNum)
+                      : printf("\nNon-heap prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+            gtDispTree(indir, nullptr, nullptr, true);
+        }
+#endif
+        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
 
         return true;
     }
