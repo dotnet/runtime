@@ -607,54 +607,6 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbMaskingIncompatible) == 0;
     }
-
-    static size_t EmbRoundingArgPos(NamedIntrinsic id)
-    {
-        // This helper function returns the expected position,
-        // where the embedded rounding control argument should be.
-        assert(IsEmbRoundingCompatible(id));
-        switch (id)
-        {
-            case NI_AVX512F_Add:
-            case NI_AVX512F_Divide:
-            case NI_AVX512F_Multiply:
-            case NI_AVX512F_Subtract:
-
-            case NI_AVX512F_AddScalar:
-            case NI_AVX512F_DivideScalar:
-            case NI_AVX512F_MultiplyScalar:
-            case NI_AVX512F_SubtractScalar:
-            case NI_AVX512F_SqrtScalar:
-
-            case NI_AVX512F_Scale:
-
-            case NI_AVX512F_ConvertScalarToVector128Double:
-            case NI_AVX512F_ConvertScalarToVector128Single:
-#if defined(TARGET_AMD64)
-            case NI_AVX512F_X64_ConvertScalarToVector128Double:
-            case NI_AVX512F_X64_ConvertScalarToVector128Single:
-#endif // TARGET_AMD64
-                return 3;
-
-            case NI_AVX512F_Sqrt:
-            case NI_AVX512F_ConvertToInt32:
-            case NI_AVX512F_ConvertToUInt32:
-            case NI_AVX512F_ConvertToVector256Int32:
-            case NI_AVX512F_ConvertToVector256Single:
-            case NI_AVX512F_ConvertToVector256UInt32:
-            case NI_AVX512F_ConvertToVector512Single:
-            case NI_AVX512F_ConvertToVector512UInt32:
-            case NI_AVX512F_ConvertToVector512Int32:
-#if defined(TARGET_AMD64)
-            case NI_AVX512F_X64_ConvertToInt64:
-            case NI_AVX512F_X64_ConvertToUInt64:
-#endif // TARGET_AMD64
-                return 2;
-
-            default:
-                unreached();
-        }
-    }
 #endif // TARGET_XARCH
 
     static bool CanBenefitFromConstantProp(NamedIntrinsic id)

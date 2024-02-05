@@ -782,7 +782,7 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
 
     if ((instOptions & INS_OPTS_EVEX_b_MASK) != 0)
     {
-        // As embedded rounding only appies in R_R_R case, we can skip other checks for different paths.
+        // As embedded rounding only appies in R_R case, we can skip other checks for different paths.
         assert(rmOpDesc.GetKind() == OperandKind::Reg);
         regNumber op1Reg = rmOp->GetRegNum();
         assert(op1Reg != REG_NA);
@@ -1363,9 +1363,10 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         {
             // This intrinsic has several overloads, only the ones with floating number inputs should reach this part.
             assert(varTypeIsFloating(baseType));
+            GenTree* rmOp = node->Op(1);
             auto emitSwCase = [&](int8_t i) {
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, lastOp, newInstOptions);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, rmOp, newInstOptions);
                 };
             regNumber baseReg = node->ExtractTempReg();
             regNumber offsReg = node->GetSingleTempReg();
@@ -1382,11 +1383,12 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 #endif // TARGET_AMD64
         {
             assert(varTypeIsFloating(baseType));
-            emitAttr attr = emitTypeSize(targetType);
+            attr = emitTypeSize(targetType);
+            GenTree* rmOp = node->Op(1);
 
             auto emitSwCase = [&](int8_t i) {
                 insOpts newInstOptions = AddEmbRoundingMode(instOptions, i);
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, lastOp, newInstOptions);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, rmOp, newInstOptions);
                 };
             regNumber baseReg = node->ExtractTempReg();
             regNumber offsReg = node->GetSingleTempReg();

@@ -2164,8 +2164,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
         }
 
-        if (HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId) &&
-            numArgs == HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId) && !lastOp->IsCnsIntOrI())
+        if (intrinsicTree->OperIsEmbRoundingEnabled() && !lastOp->IsCnsIntOrI())
         {
             buildInternalIntRegisterDefForNode(intrinsicTree);
             buildInternalIntRegisterDefForNode(intrinsicTree);
