@@ -824,7 +824,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         profilerList.Replace(pathEnd, W('\0'));
         profilerList.Replace(sectionEnd, W('\0'));
         
-        SString clsidString{profilerList.GetUnicode(clsidStart)};
+        SString clsidString{SString::Literal, profilerList.GetUnicode(clsidStart)};
         NewArrayHolder<WCHAR> clsidStringRaw = clsidString.GetCopyOfUnicodeString();
         CLSID clsid;
         hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidStringRaw, &clsid);
