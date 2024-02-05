@@ -815,10 +815,12 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 // Arguments:
 //    heuristic to consult in assessing candidates
 //
-// Returns:
-//    true if there are any CSE candidates, false otherwise
+// Notes:
+//    Sets optDoCSE if there are any CSE candidates.
+//    Sets optCSECandidateCount to the number of candidates,
+//    and fills in optCSEtab.
 //
-bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
+void Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
 {
     for (BasicBlock* const block : Blocks())
     {
@@ -864,18 +866,9 @@ bool Compiler::optValnumCSE_Locate(CSE_HeuristicCommon* heuristic)
         }
     }
 
-    /* We're done if there were no interesting expressions */
-
-    if (!optDoCSE)
-    {
-        return false;
-    }
-
     /* We're finished building the expression lookup table */
 
     optCSEstop();
-
-    return true;
 }
 
 //------------------------------------------------------------------------
@@ -5077,11 +5070,18 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
     optCSEweight       = -1.0f;
     bool madeChanges   = false;
 
-    optFindCseCandidatesNew();
-
     optValnumCSE_Init();
 
-    if (optValnumCSE_Locate(heuristic))
+    if (JitConfig.JitCSELocateNew() > 0)
+    {
+        optValnumCSE_LocateNew(heuristic);
+    }
+    else
+    {
+        optValnumCSE_Locate(heuristic);
+    }
+
+    if (optDoCSE)
     {
         optValnumCSE_InitDataFlow();
         optValnumCSE_DataFlow();
@@ -5431,8 +5431,10 @@ void CseCandidateState::PopBlockDefs(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// optFindCseCandidatesNew: use dominance checks to locate sets of trees
-//    for CSEs
+// optFindCseCandidatesNew: use dominance checks to locate sets of trees for CSEs
+//
+// Arguments:
+//   heuristic - CSE heuristic in use
 //
 // Notes:
 //    This is mainly intended to avoid two pitfalls of the current CSE
@@ -5451,7 +5453,7 @@ void CseCandidateState::PopBlockDefs(BasicBlock* block)
 //    frontier check if each pred brings in an available expression with the
 //    right key. However we're not set up to do that and the value is likely low.
 //
-void Compiler::optFindCseCandidatesNew()
+void Compiler::optValnumCSE_LocateNew(CSE_HeuristicCommon* heuristic)
 {
     struct CseFindingTreeVisitor : GenTreeVisitor<CseFindingTreeVisitor>
     {
@@ -5467,12 +5469,12 @@ void Compiler::optFindCseCandidatesNew()
             UseExecutionOrder = true
         };
 
-        CseFindingTreeVisitor(Compiler* comp, CseCandidateState& state)
+        CseFindingTreeVisitor(Compiler* comp, CseCandidateState& state, CSE_HeuristicCommon* heuristic)
             : GenTreeVisitor(comp)
             , m_statement(nullptr)
             , m_block(nullptr)
             , m_state(state)
-            , m_heuristic(comp->optGetCSEheuristic())
+            , m_heuristic(heuristic)
             , m_hasArrLenCandidate(false)
         {
         }
@@ -5518,10 +5520,13 @@ void Compiler::optFindCseCandidatesNew()
     {
         CseCandidateState&    m_candidateState;
         CseFindingTreeVisitor m_treeVisitor;
+        CSE_HeuristicCommon*  m_heuristic;
 
     public:
-        CseFindingDomTreeVisitor(Compiler* compiler, CseCandidateState& candidateState)
-            : DomTreeVisitor(compiler), m_candidateState(candidateState), m_treeVisitor(compiler, candidateState)
+        CseFindingDomTreeVisitor(Compiler* compiler, CseCandidateState& candidateState, CSE_HeuristicCommon* heuristic)
+            : DomTreeVisitor(compiler)
+            , m_candidateState(candidateState)
+            , m_treeVisitor(compiler, candidateState, heuristic)
         {
         }
 
@@ -5545,7 +5550,7 @@ void Compiler::optFindCseCandidatesNew()
     m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 
     CseCandidateState        cseState(this);
-    CseFindingDomTreeVisitor visitor(this, cseState);
+    CseFindingDomTreeVisitor visitor(this, cseState, heuristic);
     visitor.WalkTree(m_domTree);
 
     JITDUMP("NEWCSE: found %d candidates\n", cseState.GetCandidates().size());
@@ -5569,6 +5574,9 @@ void Compiler::optFindCseCandidatesNew()
     // Now build the classic candidate sets from what we've found.
     //
     optCSECandidateCount = 0;
+    optCSEhashSize       = min(MAX_CSE_CNT, cseState.GetCandidates().size());
+    optCSEhash           = new (this, CMK_CSE) CSEdsc*[optCSEhashSize]();
+
     for (CseDef* const cse : cseState.GetCandidates())
     {
         GenTree* const tree = cse->tslTree;
@@ -5576,10 +5584,13 @@ void Compiler::optFindCseCandidatesNew()
         if (optCSECandidateCount == MAX_CSE_CNT)
         {
             JITDUMP("Exceeded the MAX_CSE_CNT, not using tree [%06u]:\n", dspTreeID(tree));
+            tree->gtCSEnum = NO_CSE;
             continue;
         }
 
-        CSEdsc* const dsc = new (this, CMK_CSE) CSEdsc;
+        CSEdsc* const dsc                = new (this, CMK_CSE) CSEdsc;
+        optCSEhash[optCSECandidateCount] = dsc;
+        optDoCSE                         = true;
 
         assert(FitsIn<signed char>(i));
         signed char CSEindex = (signed char)++optCSECandidateCount;
@@ -5608,12 +5619,12 @@ void Compiler::optFindCseCandidatesNew()
         dsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
         dsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
         dsc->defConservNormVN  = vnStore->VNForNull(); // uninit value
-
-        dsc->csdTree     = tree;
-        dsc->csdStmt     = cse->tslStmt;
-        dsc->csdBlock    = cse->tslBlock;
-        dsc->csdTreeList = cse->tslNext;
-        dsc->csdTreeLast = nullptr;
+        dsc->csdNextInBucket   = nullptr;
+        dsc->csdTree           = tree;
+        dsc->csdStmt           = cse->tslStmt;
+        dsc->csdBlock          = cse->tslBlock;
+        dsc->csdTreeList       = cse->tslNext;
+        dsc->csdTreeLast       = nullptr;
 
 #ifdef DEBUG
         if (verbose)
@@ -5635,4 +5646,6 @@ void Compiler::optFindCseCandidatesNew()
         }
 #endif // DEBUG
     }
+
+    optCSEstop();
 }

@@ -402,6 +402,9 @@ CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
 // Enable metric output in jit disasm & elsewhere
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
 
+// Use new dominanced-based CSE candidate finder
+CONFIG_INTEGER(JitCSELocateNew, W("JitCSELocateNew"), 0)
+
 // When nonzero, choose CSE candidates randomly, with hash salt
 // specified by the (decimal) value of the config
 CONFIG_INTEGER(JitRandomCSE, W("JitRandomCSE"), 0)
