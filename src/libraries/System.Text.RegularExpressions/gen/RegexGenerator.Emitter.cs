@@ -3836,6 +3836,17 @@ namespace System.Text.RegularExpressions.Generator
 
                         using (clause)
                         {
+                            // We're backtracking, which could either be to something prior to the lazy loop or to something
+                            // inside of the lazy loop.  If it's to something inside of the lazy loop, then either the loop
+                            // will eventually succeed or we'll eventually end up unwinding back through the iterations all
+                            // the way back to the loop not matching at all, in which case the state we first pushed on at the
+                            // beginning of the !isAtomic section will get popped off. But if here we're instead going to jump
+                            // to something prior to the lazy loop, then we need to pop off that state here.
+                            if (doneLabel == originalDoneLabel)
+                            {
+                                EmitAdd(writer, "stackpos", -entriesPerIteration);
+                            }
+
                             if (iterationMayBeEmpty)
                             {
                                 // If we saw empty, it must have been in the most recent iteration, as we wouldn't have
@@ -3843,6 +3854,7 @@ namespace System.Text.RegularExpressions.Generator
                                 // false prior to backtracking / undoing that iteration.
                                 writer.WriteLine($"{sawEmpty} = 0; // false");
                             }
+
                             Goto(doneLabel);
                         }
                     }

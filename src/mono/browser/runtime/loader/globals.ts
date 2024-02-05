@@ -10,7 +10,7 @@ import gitHash from "consts:gitHash";
 
 import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
-import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
+import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
 import { mono_log_error, mono_set_thread_name, setup_proxy_console } from "./logging";
@@ -117,6 +117,7 @@ export function setLoaderGlobals(
         mono_set_thread_name,
         logDownloadStatsToConsole,
         purgeUnusedCacheEntriesAsync,
+        installUnhandledErrorHandler,
 
         hasDebuggingEnabled,
         retrieve_asset_download,

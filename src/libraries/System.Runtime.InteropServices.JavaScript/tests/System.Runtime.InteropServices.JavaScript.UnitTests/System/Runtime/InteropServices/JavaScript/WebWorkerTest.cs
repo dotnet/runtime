@@ -84,8 +84,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 capturedSynchronizationContext = SynchronizationContext.Current;
                 jswReady.SetResult();
 
-                // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
-                blocker.Wait();
+                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
+                try
+                {
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
+                    
+                    // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
+                    blocker.Wait();
+                }
+                finally
+                {
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
+                }
 
                 return never.Task;
             }, cts.Token);
@@ -98,35 +108,51 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var hitAfterPost = false;
             var hitAfterSend = false;
 
-            var canceledSend = Task.Run(async () =>
+            var canceledSend = Task.Run(() =>
             {
-                // this will be blocked until blocker.Set()
                 sendReady.SetResult();
-                await canceled.Task;
-                capturedSynchronizationContext.Send(_ =>
+                // this will be blocked until blocker.Set()
+                try
                 {
-                    // then it should get canceled and not executed
-                    shouldNotHitSend = true;
-                }, null);
+                    capturedSynchronizationContext.Send(_ =>
+                    {
+                        // then it should get canceled and not executed
+                        shouldNotHitSend = true;
+                    }, null);
+                }
+                catch (Exception ex)
+                {
+                    return Task.FromException(ex);
+                }
                 hitAfterSend = true;
-                return Task.CompletedTask;
+                return Task.FromException(new Exception("Should be unreachable"));
             });
 
             var canceledPost = Task.Run(() =>
             {
-                capturedSynchronizationContext.Post(_ =>
+                try
                 {
-                    // then it should get canceled and not executed
-                    shouldNotHitPost = true;
-                }, null);
+                    capturedSynchronizationContext.Post(_ =>
+                    {
+                        // then it should get canceled and not executed
+                        shouldNotHitPost = true;
+                    }, null);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Unexpected exception " + ex);
+                    postReady.SetException(ex);
+                    return Task.FromException(ex);
+                }
                 hitAfterPost = true;
                 postReady.SetResult();
                 return Task.CompletedTask;
             });
 
             // make sure that jobs got the chance to enqueue
-            await sendReady.Task;
             await postReady.Task;
+            await sendReady.Task;
+            await Task.Delay(200); // make sure that 
 
             // this could should be delivered immediately
             cts.Cancel();
@@ -300,6 +326,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
+                Console.Clear();
                 return Task.CompletedTask;
             }, cts.Token);
         }
@@ -415,6 +442,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Task.Delay(10, cts.Token).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
+            }, cts.Token);
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreads))]
+        public async Task WaitAssertsOnJSInteropThreads(Executor executor)
+        {
+            var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(Task () =>
+            {
+                Exception? exception = null;
+                try {
+                    Task.Delay(10, cts.Token).Wait();
+                } catch (Exception ex) {
+                    exception = ex;
+                }
+
+                executor.AssertBlockingWait(exception);
+
+                return Task.CompletedTask;
             }, cts.Token);
         }
 
