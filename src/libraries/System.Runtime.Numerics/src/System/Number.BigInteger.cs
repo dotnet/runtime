@@ -484,8 +484,8 @@ namespace System
                     // Require to store in _bits.
 
                     // Positive: sign=1, bits=[leading]
-                    // Negative: sign=-1, bits=[leading ^ -1 + 1]=[-leading]
-                    result = new BigInteger((int)signBits | 1, [leading ^ signBits - signBits]);
+                    // Negative: sign=-1, bits=[(leading ^ -1) + 1]=[-leading]
+                    result = new BigInteger((int)signBits | 1, [(leading ^ signBits) - signBits]);
                     return ParsingStatus.OK;
                 }
                 else

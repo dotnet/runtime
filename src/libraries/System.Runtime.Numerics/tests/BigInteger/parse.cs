@@ -175,6 +175,7 @@ namespace System.Numerics.Tests
         [InlineData("10000000000000000000000000000000", (long)int.MinValue)]
         [InlineData("010000000000000000000000000000001", 0x080000001L)]
         [InlineData("111111111111111111111111111111110", -2L)]
+        [InlineData("100000000000000000000000000000001", -0xFFFFFFFFL)]
         [InlineData("0111111111111111111111111111111111", 0x1FFFFFFFFL)]
         public void Parse_BinSpecialCases(string input, long expectedValue)
         {
