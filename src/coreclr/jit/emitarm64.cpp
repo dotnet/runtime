@@ -1830,7 +1830,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
-        case IF_SVE_II_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        case IF_SVE_II_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
             elemsize = id->idOpSize();
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
             assert(isVectorRegister(id->idReg1()));    // ttttt
@@ -1962,9 +1962,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_IN_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal load (scalar plus scalar)
         case IF_SVE_IP_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load and broadcast quadword (scalar plus scalar)
         case IF_SVE_IT_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE load multiple structures (scalar plus scalar)
-        case IF_SVE_JB_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
-                             // scalar)
-        case IF_SVE_JC_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (scalar plus scalar)
+        case IF_SVE_JB_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
+                           // scalar)
+        case IF_SVE_JC_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (scalar plus scalar)
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ttttt
@@ -16385,7 +16385,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         case IF_SVE_IP_4A:
             switch (ins)
-            {             
+            {
                 case INS_sve_ld1roh:
                 case INS_sve_ld1row:
                 case INS_sve_ld1rod:
@@ -17285,7 +17285,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
  * for the 'dtype' field.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, emitAttr size, code_t code)
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtype_ld1w(instruction ins,
+                                                                    insFormat   fmt,
+                                                                    emitAttr    size,
+                                                                    code_t      code)
 {
     assert(canEncodeSveElemsize_dtype(ins));
     assert(ins == INS_sve_ld1w);
@@ -23475,8 +23478,8 @@ void emitter::emitDispInsHelp(
         case IF_SVE_HW_4B_D: // ...........mmmmm ...gggnnnnnttttt -- SVE 32-bit gather load (scalar plus 32-bit unscaled
                              // offsets)
         // {<Zt>.S }, <Pg>/Z, [<Zn>.S{, <Xm>}]
-        case IF_SVE_IF_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus
-                             // scalar)
+        case IF_SVE_IF_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus
+                           // scalar)
         // {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
         case IF_SVE_IF_4A_A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus
                              // scalar)
@@ -23506,13 +23509,13 @@ void emitter::emitDispInsHelp(
         case IF_SVE_IG_4A_G: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous first-fault load (scalar plus
                              // scalar)
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
-        case IF_SVE_II_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
+        case IF_SVE_II_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         // {<Zt>.Q }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_II_4A_B: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2]
         case IF_SVE_II_4A_H: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus scalar)
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>, LSL #2
-        case IF_SVE_IK_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
+        case IF_SVE_IK_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous load (scalar plus scalar)
         // {<Zt>.H }, <Pg>/Z, [<Xn|SP>, <Xm>]
         // {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Xm>]
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>]
@@ -23568,27 +23571,27 @@ void emitter::emitDispInsHelp(
         case IF_SVE_IU_4B_D: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                              // scaled offsets)
         // {<Zt>.Q }, <Pg>/Z, [<Zn>.D{, <Xm>}]
-        case IF_SVE_IW_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
+        case IF_SVE_IW_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit gather load (vector plus scalar)
         // {<Zt>.D }, <Pg>/Z, [<Zn>.D{, <Xm>}]
-        case IF_SVE_IX_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
-                             // scalar)
+        case IF_SVE_IX_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit gather non-temporal load (vector plus
+                           // scalar)
         // {<Zt>.Q }, <Pg>, [<Zn>.D{, <Xm>}]
-        case IF_SVE_IY_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit scatter store (vector plus scalar)
+        case IF_SVE_IY_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 128-bit scatter store (vector plus scalar)
         // {<Zt>.S }, <Pg>, [<Zn>.S{, <Xm>}]
-        case IF_SVE_IZ_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
-                             // scalar)
+        case IF_SVE_IZ_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
+                           // scalar)
         // {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]
         case IF_SVE_IZ_4A_A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
                              // scalar)
         // {<Zt>.D }, <Pg>, [<Zn>.D{, <Xm>}]
-        case IF_SVE_JA_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit scatter non-temporal store (vector plus
-                             // scalar)
+        case IF_SVE_JA_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit scatter non-temporal store (vector plus
+                           // scalar)
         // {<Zt>.B }, <Pg>, [<Xn|SP>, <Xm>]
         // {<Zt>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
         // {<Zt>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
         // {<Zt>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
-        case IF_SVE_JB_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
-                             // scalar)
+        case IF_SVE_JB_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous non-temporal store (scalar plus
+                           // scalar)
         // {<Zt1>.B, <Zt2>.B }, <Pg>, [<Xn|SP>, <Xm>]
         // {<Zt1>.H, <Zt2>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
         // {<Zt1>.S, <Zt2>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
@@ -23601,10 +23604,10 @@ void emitter::emitDispInsHelp(
         // {<Zt1>.H, <Zt2>.H, <Zt3>.H, <Zt4>.H }, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
         // {<Zt1>.S, <Zt2>.S, <Zt3>.S, <Zt4>.S }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
         // {<Zt1>.D, <Zt2>.D, <Zt3>.D, <Zt4>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
-        case IF_SVE_JC_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (scalar plus scalar)
+        case IF_SVE_JC_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE store multiple structures (scalar plus scalar)
         // {<Zt>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
         // {<Zt>.D }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
-        case IF_SVE_JD_4C:   // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
+        case IF_SVE_JD_4C: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
         // {<Zt>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
         case IF_SVE_JD_4C_A: // ...........mmmmm ...gggnnnnnttttt -- SVE contiguous store (scalar plus scalar)
         // {<Zt1>.Q, <Zt2>.Q }, <Pg>, [<Xn|SP>, <Xm>, LSL #4]
@@ -26765,7 +26768,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_9C;
             break;
 
-        case IF_SVE_IF_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus scalar)
+        case IF_SVE_IF_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus
+                             // scalar)
         case IF_SVE_IF_4A_A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit gather non-temporal load (vector plus
                              // scalar)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -26921,8 +26925,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SVE_IU_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
-                           // scaled offsets)
+        case IF_SVE_IU_4B:   // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
+                             // scaled offsets)
         case IF_SVE_IU_4B_B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
                              // scaled offsets)
         case IF_SVE_IU_4B_D: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit gather load (scalar plus 32-bit unpacked
@@ -26965,8 +26969,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SVE_IZ_4A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
-                           // scalar)
+        case IF_SVE_IZ_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
+                             // scalar)
         case IF_SVE_IZ_4A_A: // ...........mmmmm ...gggnnnnnttttt -- SVE2 32-bit scatter non-temporal store (vector plus
                              // scalar)
         case IF_SVE_JA_4A:   // ...........mmmmm ...gggnnnnnttttt -- SVE2 64-bit scatter non-temporal store (vector plus
@@ -27060,8 +27064,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SVE_JJ_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
-                           // offsets)
+        case IF_SVE_JJ_4B:   // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
+                             // offsets)
         case IF_SVE_JJ_4B_C: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
                              // offsets)
         case IF_SVE_JJ_4B_E: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit scaled
