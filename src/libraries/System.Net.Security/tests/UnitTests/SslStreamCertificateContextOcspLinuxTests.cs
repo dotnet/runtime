@@ -118,12 +118,10 @@ public class SslStreamCertificateContextOcspLinuxTests
             byte[] ocsp2 = ctx.GetOcspResponseNoWaiting();
             Assert.Equal(ocsp, ocsp2);
 
-            await RetryHelper.ExecuteAsync(async () =>
-            {
-                byte[] ocsp3 = await ctx.GetOcspResponseAsync();
-                Assert.NotNull(ocsp3);
-                Assert.NotEqual(ocsp, ocsp3);
-            }, maxAttempts: 5, backoffFunc: i => (i + 1) * 200 /* ms */);
+            // The download should succeed
+            byte[] ocsp3 = await ctx.WaitForPendingOcspFetchAsync();
+            Assert.NotNull(ocsp3);
+            Assert.NotEqual(ocsp, ocsp3);
         });
     }
 
@@ -148,8 +146,8 @@ public class SslStreamCertificateContextOcspLinuxTests
             byte[] ocsp = ctx.GetOcspResponseNoWaiting();
             Assert.Null(ocsp);
 
-            // subsequent call will return the new response
-            byte[] ocsp2 = await ctx.GetOcspResponseAsync();
+            // The download should succeed
+            byte[] ocsp2 = await ctx.WaitForPendingOcspFetchAsync();
             Assert.NotNull(ocsp2);
         });
     }
@@ -172,19 +170,23 @@ public class SslStreamCertificateContextOcspLinuxTests
             Assert.NotNull(ocsp);
 
             responder.RespondKind = RespondKind.Invalid;
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 2; i++)
             {
                 await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
                 byte[] ocsp2 = await ctx.GetOcspResponseAsync();
                 Assert.Equal(ocsp, ocsp2);
             }
+
+            // wait until backoff expires
             await ctx.WaitForPendingOcspFetchAsync();
+            await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
 
             // after responder comes back online, the staple is eventually refreshed
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
             responder.RespondKind = RespondKind.Normal;
 
             // dispatch background refresh (first call still returns the old cached value)
-            ctx.GetOcspResponseNoWaiting();
+            await ctx.GetOcspResponseAsync();
 
             // after refresh we should have a new staple
             byte[] ocsp3 = await ctx.WaitForPendingOcspFetchAsync();
