@@ -1728,10 +1728,7 @@ namespace System.Net
                                 }
                             }
 
-                            if (servicePoint.UseNagleAlgorithm is not true)
-                            {
-                                socket.NoDelay = true;
-                            }
+                            socket.NoDelay = !servicePoint.UseNagleAlgorithm;
                         }
 
                         addresses ??= await addressesTask.ConfigureAwait(false);
