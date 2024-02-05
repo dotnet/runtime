@@ -193,10 +193,10 @@ namespace ILCompiler
                     mangledName = "RhpFltRem";
                     break;
                 case ReadyToRunHelper.DblRound:
-                    mangledName = "RhpDblRound";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "DblRoundEven");
                     break;
                 case ReadyToRunHelper.FltRound:
-                    mangledName = "RhpFltRound";
+                    methodDesc = context.GetHelperEntryPoint("MathHelpers", "FltRoundEven");
                     break;
 
                 case ReadyToRunHelper.LMul:
