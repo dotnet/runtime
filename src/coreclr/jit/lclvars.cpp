@@ -275,7 +275,24 @@ void Compiler::lvaInitTypeRef()
 
         if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) != 0)
         {
-            if ((corInfoType == CORINFO_TYPE_CLASS) || (corInfoType == CORINFO_TYPE_BYREF))
+            CORINFO_CLASS_HANDLE refClsHnd = NO_CLASS_HANDLE;
+            if (corInfoType == CORINFO_TYPE_BYREF)
+            {
+                CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->locals, localsSig);
+
+                CORINFO_CLASS_HANDLE realClsHnd = NO_CLASS_HANDLE;
+                if (info.compCompHnd->getChildType(clsHnd, &realClsHnd) == CORINFO_TYPE_VALUECLASS)
+                {
+                    refClsHnd = realClsHnd;
+                }
+            }
+
+            if ((refClsHnd != NO_CLASS_HANDLE) &&
+                ((info.compCompHnd->getClassAttribs(refClsHnd) & CORINFO_FLG_BYREF_LIKE) != 0))
+            {
+                JITDUMP("Ignoring pinned on local V%02u for byref-like type %s\n", varNum, eeGetClassName(refClsHnd));
+            }
+            else if ((corInfoType == CORINFO_TYPE_CLASS) || (corInfoType == CORINFO_TYPE_BYREF))
             {
                 JITDUMP("Setting lvPinned for V%02u\n", varNum);
                 varDsc->lvPinned = 1;
