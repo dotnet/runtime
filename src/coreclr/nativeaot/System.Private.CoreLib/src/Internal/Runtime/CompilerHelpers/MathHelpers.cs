@@ -335,6 +335,74 @@ namespace Internal.Runtime.CompilerHelpers
             else
                 return RhpUMod(i, j);
         }
+
+        public static float FltRoundEven(float arg)
+        {
+            uint value = Unsafe.BitCast<float, uint>(arg);
+            byte exponent = (byte)(value >> 23);
+            uint mantissa = value & 0x7fffffff;
+
+            if (exponent >= 127 + 23)
+            {
+                // Integer, Infinity or NaN
+                return arg;
+            }
+            else if (exponent >= 127)
+            {
+                // >= 1
+                uint intBit = 1u << (127 + 23 - exponent);
+                uint halfBit = intBit >> 1;
+                value += (value & (intBit | (halfBit - 1))) != 0 ? halfBit : 0;
+                value &= ~(intBit - 1);
+            }
+            else if (exponent == 126 && mantissa > 0x3f000000)
+            {
+                // (0.5, 1)
+                value &= 0x80000000;
+                value |= 0x3f800000;
+            }
+            else
+            {
+                // 0
+                value &= 0x80000000;
+            }
+
+            return Unsafe.BitCast<uint, float>(value);
+        }
+
+        public static double DblRoundEven(double arg)
+        {
+            ulong value = Unsafe.BitCast<double, ulong>(arg);
+            int exponent = (int)((value >> 52) & 0x7ff);
+            ulong mantissa = value & 0xffffffffffffful;
+
+            if (exponent >= 1023 + 52)
+            {
+                // Integer, Infinity or NaN
+                return arg;
+            }
+            else if (exponent >= 1023)
+            {
+                // >= 1
+                ulong intBit = 1ul << (1023 + 52 - exponent);
+                ulong halfBit = intBit >> 1;
+                value += (value & (intBit | (halfBit - 1))) != 0 ? halfBit : 0;
+                value &= ~(intBit - 1);
+            }
+            else if (exponent == 1053 && mantissa > 0x3fe0000000000000ul)
+            {
+                // (0.5, 1)
+                value &= 0x8000000000000000ul;
+                value |= 0x3ff0000000000000ul;
+            }
+            else
+            {
+                // 0
+                value &= 0x8000000000000000ul;
+            }
+
+            return Unsafe.BitCast<ulong, double>(value);
+        }
 #endif // TARGET_ARM
 
         //

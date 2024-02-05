@@ -688,6 +688,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBLREM:
                     id = ReadyToRunHelper.DblRem;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTROUND:
+                    id = ReadyToRunHelper.FltRound;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLROUND:
+                    id = ReadyToRunHelper.DblRound;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
                     id = ReadyToRunHelper.PInvokeBegin;

@@ -12718,6 +12718,12 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_DBLREM:
             vnf = VNFunc(GT_MOD);
             break;
+        case CORINFO_HELP_FLTROUND:
+            vnf = VNF_FltRound;
+            break; // Is this the right thing?
+        case CORINFO_HELP_DBLROUND:
+            vnf = VNF_DblRound;
+            break; // Is this the right thing?
 
         // These allocation operations probably require some augmentation -- perhaps allocSiteId,
         // something about array length...

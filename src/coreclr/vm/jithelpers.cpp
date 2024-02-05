@@ -510,6 +510,57 @@ HCIMPL1_V(double, JIT_Lng2Dbl, INT64 val)
 }
 HCIMPLEND
 
+//--------------------------------------------------------------------------
+template <class ftype>
+ftype modftype(ftype value, ftype *iptr);
+template <> float modftype(float value, float *iptr) { return modff(value, iptr); }
+template <> double modftype(double value, double *iptr) { return modf(value, iptr); }
+
+// round to nearest, round to even if tied
+template <class ftype>
+ftype BankersRound(ftype value)
+{
+    if (value < 0.0) return -BankersRound <ftype> (-value);
+
+    ftype integerPart;
+    modftype( value, &integerPart );
+
+    // if decimal part is exactly .5
+    if ((value -(integerPart +0.5)) == 0.0)
+    {
+        // round to even
+        if (fmod(ftype(integerPart), ftype(2.0)) == 0.0)
+            return integerPart;
+
+        // Else return the nearest even integer
+        return (ftype)_copysign(ceil(fabs(value+0.5)),
+                         value);
+    }
+
+    // Otherwise round to closest
+    return (ftype)_copysign(floor(fabs(value)+0.5),
+                     value);
+}
+
+
+/*********************************************************************/
+// round double to nearest int (as double)
+HCIMPL1_V(double, JIT_DoubleRound, double val)
+{
+    FCALL_CONTRACT;
+    return BankersRound(val);
+}
+HCIMPLEND
+
+/*********************************************************************/
+// round float to nearest int (as float)
+HCIMPL1_V(float, JIT_FloatRound, float val)
+{
+    FCALL_CONTRACT;
+    return BankersRound(val);
+}
+HCIMPLEND
+
 /*********************************************************************/
 // Call fast Dbl2Lng conversion - used by functions below
 FORCEINLINE INT64 FastDbl2Lng(double val)

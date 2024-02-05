@@ -1920,6 +1920,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                 case ReadyToRunHelper.FltRem:
                     builder.Append("FLT_REM");
                     break;
+                case ReadyToRunHelper.DblRound:
+                    builder.Append("DBL_ROUND");
+                    break;
+                case ReadyToRunHelper.FltRound:
+                    builder.Append("FLT_ROUND");
+                    break;
 
                 // Personality routines
                 case ReadyToRunHelper.PersonalityRoutine:
