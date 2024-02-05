@@ -143,6 +143,18 @@ namespace System.Numerics.Tests
             Assert.True(BigInteger.TryParse("080000001", NumberStyles.HexNumber, null, out result));
             Assert.Equal(0x80000001u, result);
 
+            Assert.True(BigInteger.TryParse("F0000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F0000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF0000001u, result);
+            
+            Assert.True(BigInteger.TryParse("F00000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F00000001", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF00000001u, result);
+
             // Regression test for: https://github.com/dotnet/runtime/issues/74758
             Assert.True(BigInteger.TryParse("FFFFFFFFE", NumberStyles.HexNumber, null, out result));
             Assert.Equal(new BigInteger(-2), result);
