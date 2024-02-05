@@ -289,7 +289,7 @@ namespace System.Reflection.Emit.Tests
             Assert.True(stringToken > 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public static void GetArrayMethodTest()
         {
             using (TempFile file = TempFile.Create())

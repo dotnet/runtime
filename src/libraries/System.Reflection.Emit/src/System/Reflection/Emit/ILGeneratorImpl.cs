@@ -576,7 +576,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(cls);
 
             EmitOpcode(opcode);
-            WriteOrReserveToken(_moduleBuilder.GetTypeHandle(cls), cls);
+            WriteOrReserveToken(_moduleBuilder.GetTypeHandleForIL(cls), cls);
         }
 
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)

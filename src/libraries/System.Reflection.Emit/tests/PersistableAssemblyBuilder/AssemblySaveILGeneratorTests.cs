@@ -2452,5 +2452,56 @@ internal class Dummy
                 tlc.Unload();
             }
         }
+
+        [Fact]
+        public void ReferenceNestedGenericTypeWithConstructedTypeBuilderParameterInIL()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                string[] genParams = new string[] { "T" };
+                GenericTypeParameterBuilder[] param = type.DefineGenericParameters(genParams);
+                TypeBuilder nestedItem = type.DefineNestedType("ItemInfo", TypeAttributes.NestedPublic);
+                GenericTypeParameterBuilder itemParam = nestedItem.DefineGenericParameters(genParams)[0];
+                TypeBuilder nestedSector = type.DefineNestedType("Sector", TypeAttributes.NestedPublic);
+                GenericTypeParameterBuilder nestedParam = nestedSector.DefineGenericParameters(genParams)[0];
+
+                Type nestedOfT = nestedItem.MakeGenericType(nestedParam);
+                Type parent = typeof(HashSet<>).MakeGenericType(nestedOfT);
+                nestedSector.SetParent(parent);
+
+                Type hashSetOf = typeof(HashSet<>);
+                Type tFromHashSetOf = hashSetOf.GetGenericArguments()[0];
+                Type iEqCompOf = typeof(IEqualityComparer<>).MakeGenericType(tFromHashSetOf);
+                Type paramType = typeof(IEqualityComparer<>).MakeGenericType(nestedOfT);
+                ConstructorBuilder nestedCtor = nestedSector.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, [paramType]);
+                ILGenerator ctorIL = nestedCtor.GetILGenerator();
+                ctorIL.Emit(OpCodes.Ldarg_0);
+                ctorIL.Emit(OpCodes.Ldarg_1);
+                ctorIL.Emit(OpCodes.Call, TypeBuilder.GetConstructor(parent, hashSetOf.GetConstructor([iEqCompOf])));
+                ctorIL.Emit(OpCodes.Ret);
+
+                MethodBuilder nestedMethod = nestedSector.DefineMethod("Test", MethodAttributes.Public | MethodAttributes.Static);
+                ILGenerator methodIL = nestedMethod.GetILGenerator();
+                methodIL.Emit(OpCodes.Initobj, parent);
+                methodIL.Emit(OpCodes.Ret);
+
+                type.CreateType();
+                nestedItem.CreateType();
+                nestedSector.CreateType();
+                ab.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.GetType("MyType");
+                    Type ntfdSector = typeFromDisk.GetNestedType("Sector");
+                    MethodInfo methodFromDisk = ntfdSector.GetMethod("Test");
+                    byte[] body = methodFromDisk.GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(0xFE, body[0]); // Initobj instruction occupies 2 bytes 0xfe15
+                    Assert.Equal(0x15, body[1]);
+                }
+            }
+        }
     }
 }

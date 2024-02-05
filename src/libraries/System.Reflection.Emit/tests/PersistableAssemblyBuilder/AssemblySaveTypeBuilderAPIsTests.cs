@@ -866,5 +866,33 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(allFields[10], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.IgnoreCase));
             Assert.Equal(allFields[9], type.GetField("testname5", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.IgnoreCase));
         }
+
+        [Fact]
+        public void AbstractBaseMethodImplementationReturnsDifferentType()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                TypeBuilder baseType = ab.GetDynamicModule("MyModule").DefineType("Base", TypeAttributes.Public | TypeAttributes.Abstract);
+                MethodBuilder getBase = baseType.DefineMethod("Get", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual, baseType, null);
+                type.SetParent(baseType);
+                MethodBuilder getDerived = type.DefineMethod("Get", MethodAttributes.Public | MethodAttributes.Virtual, type, null);
+                ILGenerator ilGenerator = getDerived.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldarg_0);
+                ilGenerator.Emit(OpCodes.Ret);
+
+                type.DefineMethodOverride(getDerived, getBase);
+                baseType.CreateType();
+                type.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                MethodInfo getFromDisk = typeFromDisk.GetMethod("Get");
+                object instance = Activator.CreateInstance(typeFromDisk);
+                object obj = getFromDisk.Invoke(instance, null);
+                Assert.IsType(typeFromDisk, obj);
+            }
+        }
     }
 }

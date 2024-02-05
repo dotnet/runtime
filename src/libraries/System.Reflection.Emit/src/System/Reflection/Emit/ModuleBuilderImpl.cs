@@ -804,6 +804,11 @@ namespace System.Reflection.Emit
                 return tb._handle;
             }
 
+            if (member is EnumBuilderImpl en && Equals(en.Module))
+            {
+                return en._typeBuilder._handle;
+            }
+
             if (member is Type type)
             {
                 return GetTypeReferenceOrSpecificationHandle(type);
@@ -827,11 +832,6 @@ namespace System.Reflection.Emit
             if (member is PropertyBuilderImpl prop && Equals(prop.Module))
             {
                 return prop._handle;
-            }
-
-            if (member is EnumBuilderImpl en && Equals(en.Module))
-            {
-                return en._typeBuilder._handle;
             }
 
             return GetMemberReferenceHandle(member);
@@ -897,13 +897,33 @@ namespace System.Reflection.Emit
                     return true;
                 }
 
-                if (type.IsConstructedGenericType && ContainsNotBakedTypeBuilder(type.GetGenericArguments()))
+                if (IsConstructedFromNotBakedTypeBuilder(type))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        internal EntityHandle GetTypeHandleForIL(Type type)
+        {
+            if (type is TypeBuilderImpl tb && Equals(tb.Module))
+            {
+                return tb._handle;
+            }
+
+            if (type is EnumBuilderImpl eb && Equals(eb.Module))
+            {
+                return eb._typeBuilder._handle;
+            }
+
+            if (IsConstructedFromNotBakedTypeBuilder(type))
+            {
+                return default;
+            }
+
+            return GetTypeReferenceOrSpecificationHandle(type);
         }
 
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(GetConstructorHandle(constructor));

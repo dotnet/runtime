@@ -392,7 +392,7 @@ namespace System.Reflection.Emit
         {
             if ((methodInfoBody.IsVirtual || methodInfoBody.IsStatic) &&
                 (methodInfoDeclaration.IsAbstract || methodInfoDeclaration.IsVirtual) &&
-                methodInfoBody.ReturnType.Equals(methodInfoDeclaration.ReturnType))
+                methodInfoDeclaration.ReturnType.IsAssignableFrom(methodInfoBody.ReturnType))
             {
                 ParameterInfo[] bodyParameters = methodInfoBody.GetParameters();
                 ParameterInfo[] declarationParameters = methodInfoDeclaration.GetParameters();
