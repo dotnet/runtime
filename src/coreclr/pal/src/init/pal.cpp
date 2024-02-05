@@ -288,12 +288,20 @@ InitializeDefaultStackSize()
         }
     }
 
+#ifdef HOST_OSX
+    // Match Windows stack size
+    if (g_defaultStackSize == 0)
+    {
+        g_defaultStackSize = 4096 * 1024;
+    }
+#endif
+
 #ifdef ENSURE_PRIMARY_STACK_SIZE
     if (g_defaultStackSize == 0)
     {
         // Set the default minimum stack size for MUSL to the same value as we
         // use on Windows.
-        g_defaultStackSize = 1536 * 1024;
+        g_defaultStackSize = 4096 * 1024;
     }
 #endif // ENSURE_PRIMARY_STACK_SIZE
 }
