@@ -848,16 +848,15 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
                         node->AsLclVarCommon()->SetLclNum(m_newLclNum);
                         // No cast needed -- the backend allows TYP_INT uses of TYP_LONG locals.
                         break;
-                    case GT_LCL_FLD:
-                    case GT_STORE_LCL_FLD: // TODO: Do we need to skip widening if we have one of these?
-                        node->AsLclFld()->SetLclNum(m_newLclNum);
-                        m_compiler->lvaSetVarDoNotEnregister(m_newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-                        break;
                     case GT_STORE_LCL_VAR:
                         node->AsLclVarCommon()->SetLclNum(m_newLclNum);
                         node->AsLclVarCommon()->gtType = TYP_LONG;
                         node->AsLclVarCommon()->Data() =
                             m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
+                        break;
+                    case GT_LCL_FLD:
+                    case GT_STORE_LCL_FLD:
+                        assert(!"Unexpected field use for local not marked as DNER");
                         break;
                     default:
                         break;
@@ -913,6 +912,16 @@ PhaseStatus Compiler::optInductionVariables()
 
     bool changed = false;
 
+    m_dfsTree = fgComputeDfs();
+    m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+    if (optCanonicalizeLoops())
+    {
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+        changed = true;
+    }
+
 #ifdef TARGET_64BIT
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Widening primary induction variables:\n");
@@ -940,7 +949,11 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
-            // TODO: Skip DNERs?
+            if (lvaGetDesc(lcl)->lvDoNotEnregister)
+            {
+                JITDUMP("  V%02u is marked DNER\n", lcl->GetLclNum());
+                continue;
+            }
 
             Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
             if (scev == nullptr)
@@ -1019,10 +1032,7 @@ PhaseStatus Compiler::optInductionVariables()
     }
 #endif
 
-    if (changed)
-    {
-        fgSsaBuild();
-    }
+    fgInvalidateDfsTree();
 
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

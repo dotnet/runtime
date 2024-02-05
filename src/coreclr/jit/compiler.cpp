@@ -4940,13 +4940,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_EARLY_PROP, &Compiler::optEarlyProp);
             }
 
-            if (doOptimizeIVs)
-            {
-                // Simplify and optimize induction variables used in natural loops
-                //
-                DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
-            }
-
             if (doValueNum)
             {
                 // Value number the trees
@@ -5007,6 +5000,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Bounds check elimination via range analysis
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
+            }
+
+            if (doOptimizeIVs)
+            {
+                // Simplify and optimize induction variables used in natural loops
+                //
+                DoPhase(this, PHASE_OPTIMIZE_INDUCTION_VARIABLES, &Compiler::optInductionVariables);
             }
 
             if (doVNBasedDeadStoreRemoval)
