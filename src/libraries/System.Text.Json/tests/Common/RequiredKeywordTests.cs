@@ -708,7 +708,6 @@ namespace System.Text.Json.Serialization.Tests
             public new required int MyMember2;
 
             public new required string MyField;
-
         }
 
         public static IEnumerable<object[]> InheritedPersonWithRequiredMembersSetsRequiredMembersWorksAsExpectedSources()
