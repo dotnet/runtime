@@ -103,7 +103,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
 	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
-	mono_add_internal_call ("System.ConsolePal::MainThreadScheduleTimer", mono_wasm_console_clear);
+	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 }
 
 #ifndef DISABLE_THREADS
