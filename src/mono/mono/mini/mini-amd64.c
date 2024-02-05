@@ -1992,6 +1992,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					ins->opcode = OP_REGOFFSET;
 					ins->inst_basereg = cfg->frame_reg;
 					ins->inst_offset = ainfo->offset + ARGS_OFFSET;
+					offset = ALIGN_TO (offset, sizeof (target_mgreg_t));
 					offset += sizeof (target_mgreg_t);
 
 					cfg->arch.swift_error_var = ins;
@@ -2002,7 +2003,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				NOT_IMPLEMENTED;
 			}
 
-			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgValuetypeAddrOnStack) && (ainfo->storage != ArgGSharedVtOnStack)) {
+			if (!inreg && (ainfo->storage != ArgOnStack) && (ainfo->storage != ArgValuetypeAddrInIReg) && (ainfo->storage != ArgValuetypeAddrOnStack) && (ainfo->storage != ArgGSharedVtOnStack) && (ainfo->storage != ArgSwiftError)) {
 				ins->opcode = OP_REGOFFSET;
 				ins->inst_basereg = cfg->frame_reg;
 				/* These arguments are saved to the stack in the prolog */
