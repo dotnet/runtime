@@ -15290,172 +15290,32 @@ namespace System.Numerics.Tensors
         /// <summary>T.Round(x)</summary>
         internal readonly struct RoundToEvenOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
         {
-            public static bool Vectorizable =>
-                (typeof(T) == typeof(float) || typeof(T) == typeof(double)) &&
-                (Avx2.IsSupported | AdvSimd.IsSupported);
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Round(x);
 
-            private const uint Single_BiasedExponentMask = 0x7F80_0000;
-            private const int Single_BiasedExponentShift = 23;
-            private const uint Single_ShiftedBiasedExponentMask = (byte)(Single_BiasedExponentMask >> Single_BiasedExponentShift);
-            private const uint Single_TrailingSignificandMask = 0x007F_FFFF;
-
-            private const ulong Double_BiasedExponentMask = 0x7FF0_0000_0000_0000;
-            private const int Double_BiasedExponentShift = 52;
-            private const ulong Double_ShiftedBiasedExponentMask = (ushort)(Double_BiasedExponentMask >> Double_BiasedExponentShift);
-            private const ulong Double_TrailingSignificandMask = 0x000F_FFFF_FFFF_FFFF;
+            private const float SingleBoundary = 8388608.0f; // 2^23
+            private const double DoubleBoundary = 4503599627370496.0; // 2^52
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
-                if (typeof(T) == typeof(float))
-                {
-                    Vector128<uint> bits = x.AsUInt32();
-                    Vector128<uint> biasedExponent = (bits >> Single_BiasedExponentShift) & Vector128.Create(Single_ShiftedBiasedExponentMask) & Vector128.Create(0xffu);
-
-                    Vector128<uint> lastBitMask = Avx2.IsSupported ?
-                        Avx2.ShiftLeftLogicalVariable(Vector128<uint>.One, Vector128.Create(0x96u) - biasedExponent) :
-                        AdvSimd.ShiftLogical(Vector128<uint>.One, (Vector128.Create(0x96u) - biasedExponent).AsInt32());
-
-                    Vector128<uint> roundBitsMask = lastBitMask - Vector128<uint>.One;
-                    Vector128<uint> bits2 = bits + (lastBitMask >> 1);
-                    bits2 &= ~Vector128.ConditionalSelect(Vector128.Equals(bits2 & roundBitsMask, Vector128<uint>.Zero), lastBitMask, roundBitsMask);
-
-                    return Vector128.ConditionalSelect(Vector128.LessThanOrEqual(biasedExponent, Vector128.Create(0x7Eu)),
-                        Vector128.ConditionalSelect(Vector128.Equals(bits << 1, Vector128<uint>.Zero),
-                            x.AsUInt32(),
-                            CopySignOperator<float>.Invoke(Vector128.ConditionalSelect((Vector128.Equals(biasedExponent, Vector128.Create(0x7Eu)) & ~Vector128.Equals(bits & Vector128.Create(Single_TrailingSignificandMask), Vector128<uint>.Zero)).AsSingle(),
-                                Vector128<float>.One,
-                                Vector128<float>.Zero), x.AsSingle()).AsUInt32()),
-                        Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(biasedExponent, Vector128.Create(0x96u)),
-                            x.AsUInt32(),
-                            bits2)).As<uint, T>();
-                }
-                else
-                {
-                    Vector128<ulong> bits = x.AsUInt64();
-                    Vector128<ulong> biasedExponent = (bits >> Double_BiasedExponentShift) & Vector128.Create(Double_ShiftedBiasedExponentMask) & Vector128.Create(0xfffful);
-
-                    Vector128<ulong> lastBitMask = Avx2.IsSupported ?
-                        Avx2.ShiftLeftLogicalVariable(Vector128<ulong>.One, Vector128.Create(0x0433ul) - biasedExponent) :
-                        AdvSimd.ShiftLogical(Vector128<ulong>.One, (Vector128.Create(0x0433ul) - biasedExponent).AsInt64());
-
-                    Vector128<ulong> roundBitsMask = lastBitMask - Vector128<ulong>.One;
-                    Vector128<ulong> bits2 = bits + (lastBitMask >> 1);
-                    bits2 &= ~Vector128.ConditionalSelect(Vector128.Equals(bits2 & roundBitsMask, Vector128<ulong>.Zero), lastBitMask, roundBitsMask);
-
-                    return Vector128.ConditionalSelect(Vector128.LessThanOrEqual(biasedExponent, Vector128.Create(0x03FEul)),
-                        Vector128.ConditionalSelect(Vector128.Equals(bits << 1, Vector128<ulong>.Zero),
-                            x.AsUInt64(),
-                            CopySignOperator<double>.Invoke(Vector128.ConditionalSelect((Vector128.Equals(biasedExponent, Vector128.Create(0x03FEul)) & ~Vector128.Equals(bits & Vector128.Create(Double_TrailingSignificandMask), Vector128<ulong>.Zero)).AsDouble(),
-                                Vector128<double>.One,
-                                Vector128<double>.Zero), x.AsDouble()).AsUInt64()),
-                        Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(biasedExponent, Vector128.Create(0x0433ul)),
-                            x.AsUInt64(),
-                            bits2)).As<ulong, T>();
-                }
+                Vector128<T> boundary = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector128<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector128.ConditionalSelect(Vector128.GreaterThan(Vector128.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
-                if (!Avx2.IsSupported)
-                {
-                    return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
-                }
-
-                if (typeof(T) == typeof(float))
-                {
-                    Vector256<uint> bits = x.AsUInt32();
-                    Vector256<uint> biasedExponent = (bits >> Single_BiasedExponentShift) & Vector256.Create(Single_ShiftedBiasedExponentMask) & Vector256.Create(0xffu);
-
-                    Vector256<uint> lastBitMask = Avx2.ShiftLeftLogicalVariable(Vector256<uint>.One, Vector256.Create(0x96u) - biasedExponent);
-
-                    Vector256<uint> roundBitsMask = lastBitMask - Vector256<uint>.One;
-                    Vector256<uint> bits2 = bits + (lastBitMask >> 1);
-                    bits2 &= ~Vector256.ConditionalSelect(Vector256.Equals(bits2 & roundBitsMask, Vector256<uint>.Zero), lastBitMask, roundBitsMask);
-
-                    return Vector256.ConditionalSelect(Vector256.LessThanOrEqual(biasedExponent, Vector256.Create(0x7Eu)),
-                        Vector256.ConditionalSelect(Vector256.Equals(bits << 1, Vector256<uint>.Zero),
-                            x.AsUInt32(),
-                            CopySignOperator<float>.Invoke(Vector256.ConditionalSelect((Vector256.Equals(biasedExponent, Vector256.Create(0x7Eu)) & ~Vector256.Equals(bits & Vector256.Create(Single_TrailingSignificandMask), Vector256<uint>.Zero)).AsSingle(),
-                                Vector256<float>.One,
-                                Vector256<float>.Zero), x.AsSingle()).AsUInt32()),
-                        Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(biasedExponent, Vector256.Create(0x96u)),
-                            x.AsUInt32(),
-                            bits2)).As<uint, T>();
-                }
-                else
-                {
-                    Vector256<ulong> bits = x.AsUInt64();
-                    Vector256<ulong> biasedExponent = (bits >> Double_BiasedExponentShift) & Vector256.Create(Double_ShiftedBiasedExponentMask) & Vector256.Create(0xfffful);
-
-                    Vector256<ulong> lastBitMask = Avx2.ShiftLeftLogicalVariable(Vector256<ulong>.One, Vector256.Create(0x0433ul) - biasedExponent);
-
-                    Vector256<ulong> roundBitsMask = lastBitMask - Vector256<ulong>.One;
-                    Vector256<ulong> bits2 = bits + (lastBitMask >> 1);
-                    bits2 &= ~Vector256.ConditionalSelect(Vector256.Equals(bits2 & roundBitsMask, Vector256<ulong>.Zero), lastBitMask, roundBitsMask);
-
-                    return Vector256.ConditionalSelect(Vector256.LessThanOrEqual(biasedExponent, Vector256.Create(0x03FEul)),
-                        Vector256.ConditionalSelect(Vector256.Equals(bits << 1, Vector256<ulong>.Zero),
-                            x.AsUInt64(),
-                            CopySignOperator<double>.Invoke(Vector256.ConditionalSelect((Vector256.Equals(biasedExponent, Vector256.Create(0x03FEul)) & ~Vector256.Equals(bits & Vector256.Create(Double_TrailingSignificandMask), Vector256<ulong>.Zero)).AsDouble(),
-                                Vector256<double>.One,
-                                Vector256<double>.Zero), x.AsDouble()).AsUInt64()),
-                        Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(biasedExponent, Vector256.Create(0x0433ul)),
-                            x.AsUInt64(),
-                            bits2)).As<ulong, T>();
-                }
+                Vector256<T> boundary = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector256<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector256.ConditionalSelect(Vector256.GreaterThan(Vector256.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
-                if (!Avx512F.IsSupported)
-                {
-                    return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
-                }
-
-                if (typeof(T) == typeof(float))
-                {
-                    Vector512<uint> bits = x.AsUInt32();
-                    Vector512<uint> biasedExponent = (bits >> Single_BiasedExponentShift) & Vector512.Create(Single_ShiftedBiasedExponentMask) & Vector512.Create(0xffu);
-
-                    Vector512<uint> lastBitMask = Avx512F.ShiftLeftLogicalVariable(Vector512<uint>.One, Vector512.Create(0x96u) - biasedExponent);
-
-                    Vector512<uint> roundBitsMask = lastBitMask - Vector512<uint>.One;
-                    Vector512<uint> bits2 = bits + (lastBitMask >> 1);
-                    bits2 &= ~Vector512.ConditionalSelect(Vector512.Equals(bits2 & roundBitsMask, Vector512<uint>.Zero), lastBitMask, roundBitsMask);
-
-                    return Vector512.ConditionalSelect(Vector512.LessThanOrEqual(biasedExponent, Vector512.Create(0x7Eu)),
-                        Vector512.ConditionalSelect(Vector512.Equals(bits << 1, Vector512<uint>.Zero),
-                            x.AsUInt32(),
-                            CopySignOperator<float>.Invoke(Vector512.ConditionalSelect((Vector512.Equals(biasedExponent, Vector512.Create(0x7Eu)) & ~Vector512.Equals(bits & Vector512.Create(Single_TrailingSignificandMask), Vector512<uint>.Zero)).AsSingle(),
-                                Vector512<float>.One,
-                                Vector512<float>.Zero), x.AsSingle()).AsUInt32()),
-                        Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(biasedExponent, Vector512.Create(0x96u)),
-                            x.AsUInt32(),
-                            bits2)).As<uint, T>();
-                }
-                else
-                {
-                    Vector512<ulong> bits = x.AsUInt64();
-                    Vector512<ulong> biasedExponent = (bits >> Double_BiasedExponentShift) & Vector512.Create(Double_ShiftedBiasedExponentMask) & Vector512.Create(0xfffful);
-
-                    Vector512<ulong> lastBitMask = Avx512F.ShiftLeftLogicalVariable(Vector512<ulong>.One, Vector512.Create(0x0433ul) - biasedExponent);
-
-                    Vector512<ulong> roundBitsMask = lastBitMask - Vector512<ulong>.One;
-                    Vector512<ulong> bits2 = bits + (lastBitMask >> 1);
-                    bits2 &= ~Vector512.ConditionalSelect(Vector512.Equals(bits2 & roundBitsMask, Vector512<ulong>.Zero), lastBitMask, roundBitsMask);
-
-                    return Vector512.ConditionalSelect(Vector512.LessThanOrEqual(biasedExponent, Vector512.Create(0x03FEul)),
-                        Vector512.ConditionalSelect(Vector512.Equals(bits << 1, Vector512<ulong>.Zero),
-                            x.AsUInt64(),
-                            CopySignOperator<double>.Invoke(Vector512.ConditionalSelect((Vector512.Equals(biasedExponent, Vector512.Create(0x03FEul)) & ~Vector512.Equals(bits & Vector512.Create(Double_TrailingSignificandMask), Vector512<ulong>.Zero)).AsDouble(),
-                                Vector512<double>.One,
-                                Vector512<double>.Zero), x.AsDouble()).AsUInt64()),
-                        Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(biasedExponent, Vector512.Create(0x0433ul)),
-                            x.AsUInt64(),
-                            bits2)).As<ulong, T>();
-                }
+                Vector512<T> boundary = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector512<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector512.ConditionalSelect(Vector512.GreaterThan(Vector512.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
             }
         }
 
@@ -15545,7 +15405,7 @@ namespace System.Numerics.Tensors
             public Vector128<T> Invoke(Vector128<T> x)
             {
                 Vector128<T> limit = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
-                return Vector128.ConditionalSelect(Vector128.LessThan(AbsoluteOperator<T>.Invoke(x), limit),
+                return Vector128.ConditionalSelect(Vector128.LessThan(Vector128.Abs(x), limit),
                     TDelegatedRound.Invoke(x * _factor) / _factor,
                     x);
             }
@@ -15553,7 +15413,7 @@ namespace System.Numerics.Tensors
             public Vector256<T> Invoke(Vector256<T> x)
             {
                 Vector256<T> limit = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
-                return Vector256.ConditionalSelect(Vector256.LessThan(AbsoluteOperator<T>.Invoke(x), limit),
+                return Vector256.ConditionalSelect(Vector256.LessThan(Vector256.Abs(x), limit),
                     TDelegatedRound.Invoke(x * _factor) / _factor,
                     x);
             }
@@ -15561,7 +15421,7 @@ namespace System.Numerics.Tensors
             public Vector512<T> Invoke(Vector512<T> x)
             {
                 Vector512<T> limit = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
-                return Vector512.ConditionalSelect(Vector512.LessThan(AbsoluteOperator<T>.Invoke(x), limit),
+                return Vector512.ConditionalSelect(Vector512.LessThan(Vector512.Abs(x), limit),
                     TDelegatedRound.Invoke(x * _factor) / _factor,
                     x);
             }
