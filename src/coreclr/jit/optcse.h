@@ -502,56 +502,48 @@ public:
     }
 };
 
+struct CseDef : treeStmtLst
+{
+    // Link to the previous def, if any
+    CseDef* m_prevDef;
+
+    CseDef(GenTree* tree, Statement* stmt, BasicBlock* block, CseDef* prevDef) : m_prevDef(prevDef)
+    {
+        tslNext  = nullptr;
+        tslTree  = tree;
+        tslStmt  = stmt;
+        tslBlock = block;
+    }
+};
+
 class CseCandidateState
 {
 public:
-    struct StackNode
-    {
-        // Link to the previous stack top node
-        StackNode* m_prev;
-        // The basic block (used when popping blocks)
-        BasicBlock* m_block;
-        // The Def tree
-        GenTree* m_def;
-        // And the use trees
-        jitstd::vector<GenTree*>* m_uses;
-        // Sum of normalized use tree block weights
-        weight_t m_useWeight;
-
-        StackNode(BasicBlock* block, GenTree* tree, StackNode* prev)
-            : m_prev(prev), m_block(block), m_def(tree), m_uses(nullptr), m_useWeight(0)
-        {
-        }
-    };
-
 private:
     // Compiler
     Compiler* m_compiler;
     // Memory allocator
     CompAllocator m_alloc;
     // Map of current CSEs (or potential CSEs)
-    typedef JitHashTable<size_t, JitSmallPrimitiveKeyFuncs<size_t>, StackNode*> KeyToStackNodeMap;
-    KeyToStackNodeMap* m_stackMap;
+    typedef JitHashTable<size_t, JitSmallPrimitiveKeyFuncs<size_t>, CseDef*> KeyToDefMap;
+    KeyToDefMap m_defMap;
     // CSEs found so far
-    jitstd::vector<StackNode*>* m_candidates;
+    jitstd::vector<CseDef*> m_candidates;
 
 public:
     CseCandidateState(Compiler* comp);
 
-    // Find an available CSE tree, if any (or nullptr)
-    StackNode* Top(GenTree* tree);
+    // Find closest available CSE def, if any (or nullptr)
+    CseDef* Def(GenTree* tree);
 
-    // Push a new tree onto the stack
-    void Push(BasicBlock* block, GenTree* tree);
+    // Consider this tree for CSE candidacy
+    void Consider(GenTree* tree, Statement* stmt, BasicBlock* block);
 
-    // Pop all stacks that have an entry for "block" on top.
-    void PopBlockStacks(BasicBlock* block);
-
-    // Push a tree onto a stack
-    void Push(GenTree* tree, BasicBlock* block);
+    // Remove all defs assoicated with a given block
+    void PopBlockDefs(BasicBlock* block);
 
     // Get the candidates found so far.
-    jitstd::vector<StackNode*>* GetCandidates()
+    jitstd::vector<CseDef*>& GetCandidates()
     {
         return m_candidates;
     }

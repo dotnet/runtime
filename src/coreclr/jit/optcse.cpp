@@ -5327,18 +5327,17 @@ void Compiler::optPrintCSEDataFlowSet(EXPSET_VALARG_TP cseDataFlowSet, bool incl
 //    compiler - the compiler instance
 //
 CseCandidateState::CseCandidateState(Compiler* compiler)
-    : m_compiler(compiler), m_alloc(compiler->getAllocator(CMK_CSE)), m_stackMap(nullptr), m_candidates(nullptr)
+    : m_compiler(compiler), m_alloc(compiler->getAllocator(CMK_CSE)), m_defMap(m_alloc), m_candidates(m_alloc)
 {
-    m_candidates = new (m_alloc) jitstd::vector<StackNode*>(m_alloc);
-    m_stackMap   = new (m_alloc) KeyToStackNodeMap(m_alloc);
 }
 
 //------------------------------------------------------------------------
-// Push: push a new tree into the CSE candidate data
+// Consider: consider a tree for CSE eligibility
 //
 // Arguments:
-//    tree - the tree to add
-//    block - The block where the tree appears
+//    tree - the tree to consider
+//    stmt - the statement where the tree appears
+//    block - The block where the statement appears
 //
 // Notes:
 //    trees should be pre-screened by the heuristic, via
@@ -5346,79 +5345,87 @@ CseCandidateState::CseCandidateState(Compiler* compiler)
 //    check here and allow for things like LCL_VARs for uses
 //    (basically enabling aggressive copy prop of the CSE var)
 //
-void CseCandidateState::Push(GenTree* tree, BasicBlock* block)
+void CseCandidateState::Consider(GenTree* tree, Statement* statement, BasicBlock* block)
 {
-    size_t     key = m_compiler->optKeyForCSE(tree);
-    StackNode* top = nullptr;
-    m_stackMap->Lookup(key, &top);
+    size_t  key = m_compiler->optKeyForCSE(tree);
+    CseDef* def = nullptr;
+    m_defMap.Lookup(key, &def);
 
     // If a tree with this key is available, this is a potential CSE use
     //
-    if (top != nullptr)
+    while (def != nullptr)
     {
         // Watch for retyping of constant nodes
         //
-        if (!tree->OperIs(GT_CNS_INT) || (tree->TypeGet() == top->m_def->TypeGet()))
+        if (!tree->OperIs(GT_CNS_INT) || (tree->TypeGet() == def->tslTree->TypeGet()))
         {
             // See if the exceptional behavior of tree is covered by the def.
             //
-            ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(top->m_def->gtVNPair.GetLiberal());
+            ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(def->tslTree->gtVNPair.GetLiberal());
             ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
 
             if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
             {
                 // Exceptions are covered; this tree is a use.
                 //
-                if (top->m_uses == nullptr)
+                if (def->tslNext == nullptr)
                 {
                     // This is the first use, so we now have a bona-fide CSE candidate.
                     //
-                    m_candidates->push_back(top);
-
-                    // Prepare to keep track of the uses.
-                    //
-                    top->m_uses = new (m_alloc) jitstd::vector<GenTree*>(m_alloc);
-
-                    JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(top->m_def));
+                    JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(def->tslTree));
                 }
 
-                // We could search up the stack, perhaps we'd find a compatible def
-                // higher up...?
+                // Create new use entry
                 //
-                top->m_uses->push_back(tree);
-                top->m_useWeight += block->getBBWeight(m_compiler);
+                treeStmtLst* const newUse = new (m_compiler, CMK_TreeStatementList) treeStmtLst;
+
+                newUse->tslNext  = def->tslNext;
+                newUse->tslTree  = tree;
+                newUse->tslStmt  = statement;
+                newUse->tslBlock = block;
+
+                // Link it in
+                //
+                def->tslNext = newUse;
                 return;
             }
         }
+
+        // There was an available def, but not one that was compatible.
+        // Try again higher up the stack.
+        //
+        // Todo: this may never end up working out, see if it ever does.
+        //
+        def = def->m_prevDef;
     }
 
     // No available def, or mistyped constant, or exceptions were not covered.
-    // This is a new (potential) def, shadowing the old one.
+    // This is a new (potential) def, shadowing the old one (if any).
     //
-    StackNode* newNode = new (m_alloc) StackNode(block, tree, top);
-    m_stackMap->Set(key, newNode, KeyToStackNodeMap::Overwrite);
+    def = new (m_alloc) CseDef(tree, statement, block, def);
+    m_defMap.Set(key, def, KeyToDefMap::Overwrite);
 }
 
 //------------------------------------------------------------------------
-// PopStacks: Remove any CSE candidates whose defining tree is from the indicated block
+// PopBlockDefs: Remove any CSE candidates whose defining tree is from the indicated block
 //
 // Arguments:
 //   block - block in question
 //
-void CseCandidateState::PopBlockStacks(BasicBlock* block)
+void CseCandidateState::PopBlockDefs(BasicBlock* block)
 {
-    for (size_t key : KeyToStackNodeMap::KeyIteration(m_stackMap))
+    for (size_t key : KeyToDefMap::KeyIteration(&m_defMap))
     {
-        StackNode* origNode = nullptr;
-        m_stackMap->Lookup(key, &origNode);
-        StackNode* node = origNode;
-        while ((node != nullptr) && (node->m_block == block))
+        CseDef* origDef = nullptr;
+        m_defMap.Lookup(key, &origDef);
+        CseDef* def = origDef;
+        while ((def != nullptr) && (def->tslBlock == block))
         {
-            node = node->m_prev;
+            def = def->m_prevDef;
         }
-        if (node != origNode)
+        if (def != origDef)
         {
-            m_stackMap->Set(key, node, KeyToStackNodeMap::SetKind::Overwrite);
+            m_defMap.Set(key, def, KeyToDefMap::SetKind::Overwrite);
         }
     }
 }
@@ -5448,6 +5455,7 @@ void Compiler::optFindCseCandidatesNew()
 {
     struct CseFindingTreeVisitor : GenTreeVisitor<CseFindingTreeVisitor>
     {
+        Statement*           m_statement;
         BasicBlock*          m_block;
         CseCandidateState&   m_state;
         CSE_HeuristicCommon* m_heuristic;
@@ -5459,13 +5467,23 @@ void Compiler::optFindCseCandidatesNew()
             UseExecutionOrder = true
         };
 
-        CseFindingTreeVisitor(Compiler* comp, BasicBlock* block, CseCandidateState& state)
+        CseFindingTreeVisitor(Compiler* comp, CseCandidateState& state)
             : GenTreeVisitor(comp)
-            , m_block(block)
+            , m_statement(nullptr)
+            , m_block(nullptr)
             , m_state(state)
             , m_heuristic(comp->optGetCSEheuristic())
             , m_hasArrLenCandidate(false)
         {
+        }
+
+        void SetStatement(Statement* stmt)
+        {
+            m_statement = stmt;
+        }
+        void SetBlock(BasicBlock* block)
+        {
+            m_block = block;
         }
 
         fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
@@ -5484,7 +5502,7 @@ void Compiler::optFindCseCandidatesNew()
 
             if (m_heuristic->CanConsiderTree(tree, m_block->KindIs(BBJ_RETURN)))
             {
-                m_state.Push(tree, m_block);
+                m_state.Consider(tree, m_statement, m_block);
 
                 if (tree->OperIsArrLength())
                 {
@@ -5498,26 +5516,28 @@ void Compiler::optFindCseCandidatesNew()
 
     class CseFindingDomTreeVisitor : public DomTreeVisitor<CseFindingDomTreeVisitor>
     {
-        CseCandidateState& m_candidateState;
+        CseCandidateState&    m_candidateState;
+        CseFindingTreeVisitor m_treeVisitor;
 
     public:
         CseFindingDomTreeVisitor(Compiler* compiler, CseCandidateState& candidateState)
-            : DomTreeVisitor(compiler), m_candidateState(candidateState)
+            : DomTreeVisitor(compiler), m_candidateState(candidateState), m_treeVisitor(compiler, candidateState)
         {
         }
 
         void PreOrderVisit(BasicBlock* block)
         {
-            CseFindingTreeVisitor visitor(m_compiler, block, m_candidateState);
+            m_treeVisitor.SetBlock(block);
             for (Statement* statement : block->Statements())
             {
-                visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
+                m_treeVisitor.SetStatement(statement);
+                m_treeVisitor.WalkTree(statement->GetRootNodePointer(), nullptr);
             }
         }
 
         void PostOrderVisit(BasicBlock* block)
         {
-            m_candidateState.PopBlockStacks(block);
+            m_candidateState.PopBlockDefs(block);
         }
     };
 
@@ -5528,16 +5548,16 @@ void Compiler::optFindCseCandidatesNew()
     CseFindingDomTreeVisitor visitor(this, cseState);
     visitor.WalkTree(m_domTree);
 
-    JITDUMP("NEWCSE: found %d candidates\n", cseState.GetCandidates()->size());
+    JITDUMP("NEWCSE: found %d candidates\n", cseState.GetCandidates().size());
 
     int i = 1;
-    for (CseCandidateState::StackNode* cse : *cseState.GetCandidates())
+    for (CseDef* const def : cseState.GetCandidates())
     {
-        JITDUMP("Candidate %02i: def [%06u] uses", i, dspTreeID(cse->m_def));
+        JITDUMP("Candidate %02i: def [%06u] uses", i, dspTreeID(def->tslTree));
 
-        for (GenTree* use : *cse->m_uses)
+        for (treeStmtLst* use = def->tslNext; use != nullptr; use = use->tslNext)
         {
-            JITDUMP(" [%06u]", dspTreeID(use));
+            JITDUMP(" [%06u]", dspTreeID(use->tslTree));
         }
         JITDUMP("\n");
         i++;
@@ -5546,10 +5566,12 @@ void Compiler::optFindCseCandidatesNew()
     m_dfsTree = nullptr;
     m_domTree = nullptr;
 
+#if 0
+
     // Now build the classic candidate sets from what we've found.
     //
     i = 1;
-    for (CseCandidateState::StackNode* cse : *cseState.GetCandidates())
+    for (CseCandidateState::Def* cse : *cseState.GetCandidates())
     {
         CSEdsc* const dsc = new (this, CMK_CSE) CSEdsc;
 
@@ -5574,4 +5596,6 @@ void Compiler::optFindCseCandidatesNew()
         // need to know block and stmt for all appearances.
         // Can just build the tree list during finding?
     }
+
+#endif
 }
