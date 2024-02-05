@@ -2572,7 +2572,7 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         if (c1->IsHelperCall() && ((c1->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) !=
                                    (c2->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL)))
         {
-            return true;
+            return false;
         }
 
 #ifdef FEATURE_READYTORUN
