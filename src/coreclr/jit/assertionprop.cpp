@@ -4633,13 +4633,16 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 {
     assert(tree->OperIsIndir());
 
-    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
-    bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
-    if (didNonNullProp || didNonHeapProp)
+    bool updated = optNonNullAssertionProp_Ind(assertions, tree);
+    if (tree->OperIs(GT_STOREIND))
+    {
+        updated |= optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
+    }
+
+    if (updated)
     {
         return optAssertionProp_Update(tree, tree, stmt);
     }
-
     return nullptr;
 }
 
@@ -4900,94 +4903,128 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 }
 
 //------------------------------------------------------------------------
-// optAssertionIsNonHeap: see if we can prove a tree's value will be not GC-tracked
-//   based on assertions
+// GetWriteBarrierForm: Determinate the exact type of write barrier required for the
+//    given address.
 //
 // Arguments:
-//   op         - tree to check
-//   assertions - set of live assertions
-//   pVnBased   - [out] set to true if value numbers were used
-//   pIndex     - [out] the assertion used in the proof
+//    vnStore - ValueNumStore object
+//    vn      - VN of the address
 //
 // Return Value:
-//   true if the tree's value will be not GC-tracked
+//    Exact type of write barrier required for the given address.
 //
-// Notes:
-//   Sets "pVnBased" if the assertion is value number based. If no matching
-//    assertions are found from the table, then returns "NO_ASSERTION_INDEX."
-//
-//   If both VN and assertion table yield a matching assertion, "pVnBased"
-//   is only set and the return value is "NO_ASSERTION_INDEX."
-//
-bool Compiler::optAssertionIsNonHeap(GenTree*         op,
-                                     ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
-                                         DEBUGARG(AssertionIndex* pIndex))
+static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, ValueNum vn)
 {
-    bool vnBased = (!optLocalAssertionProp && vnStore->IsVNObjHandle(op->gtVNPair.GetConservative()));
-#ifdef DEBUG
-    *pIndex   = NO_ASSERTION_INDEX;
-    *pVnBased = vnBased;
-#endif
-
-    if (vnBased)
+    const var_types type = vnStore->TypeOfVN(vn);
+    if (type == TYP_REF)
     {
-        return true;
+        return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+    }
+    if (type != TYP_BYREF)
+    {
+        return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
     }
 
-    if (op->IsIconHandle(GTF_ICON_OBJ_HDL))
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
-        return true;
+        if (funcApp.m_func == VNF_PtrToArrElem)
+        {
+            // Arrays are always on the heap
+            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+        }
+        if (funcApp.m_func == VNF_PtrToLoc)
+        {
+            // Pointer to a local
+            return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+        }
+        if (funcApp.m_func == VNFunc(GT_ADD))
+        {
+            // Check arguments of the byref add
+            const GCInfo::WriteBarrierForm arg0Type = GetWriteBarrierForm(vnStore, funcApp.m_args[0]);
+            if (arg0Type != GCInfo::WriteBarrierForm::WBF_BarrierUnknown)
+            {
+                return arg0Type;
+            }
+
+            const GCInfo::WriteBarrierForm arg1Type = GetWriteBarrierForm(vnStore, funcApp.m_args[1]);
+            if (arg1Type != GCInfo::WriteBarrierForm::WBF_BarrierUnknown)
+            {
+                return arg1Type;
+            }
+        }
     }
 
-    return false;
+    // TODO:
+    // * addr is ByRefLike          - NoBarrier (https://github.com/dotnet/runtime/issues/9512)
+    // * addr is address of a local - NoBarrier
+    //
+    return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 }
 
 //------------------------------------------------------------------------
-// optNonHeapAssertionProp_Ind: Possibly prove an indirection not GC-tracked.
+// optWriteBarrierAssertionProp_StoreInd: This function assists gcIsWriteBarrierCandidate with help of
+//    assertions and VNs since CSE may "hide" addresses/values under locals, making it impossible for
+//    gcIsWriteBarrierCandidate to determine the exact type of write barrier required
+//    (it's too late for it to rely on VNs).
+//
+//    There are three cases we handle here:
+//     * Target is not on the heap - no write barrier is required
+//     * Target could be on the heap, but the value being stored doesn't require any write barrier
+//     * Target is definitely on the heap - checked (slower) write barrier is not required
 //
 // Arguments:
 //    assertions - Active assertions
-//    indir      - The indirection
+//    indir      - The STOREIND node
 //
 // Return Value:
-//    Whether the indirection was found to be not GC-tracked and marked as such.
+//    Whether the exact type of write barrier was determined and marked on the STOREIND node.
 //
-bool Compiler::optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
+bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir)
 {
-    assert(indir->OperIsIndir());
-
-    if (!indir->OperIs(GT_STOREIND) || (indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
+    if (optLocalAssertionProp || !indir->TypeIs(TYP_REF) || ((indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0))
     {
         return false;
     }
 
-// We like CSE to happen for handles, as the codegen for loading a 64-bit constant can be pretty heavy
-// and this is particularly true on platforms with a fixed-width instruction encoding. However, this
-// pessimizes stores as we can no longer optimize around some object handles that would allow us to
-// bypass the write barrier.
-//
-// In order to handle that, we'll propagate the IND_TGT_NOT_HEAP flag onto the store if the handle is
-// directly or if the underlying value number is an applicable object handle.
+    const GenTree* value   = indir->AsIndir()->Data();
+    const GenTree* addr    = indir->AsIndir()->Addr();
+    const ValueNum valueVN = value->gtVNPair.GetConservative();
+    const ValueNum addrVN  = addr->gtVNPair.GetConservative();
 
-#ifdef DEBUG
-    bool           vnBased = false;
-    AssertionIndex index   = NO_ASSERTION_INDEX;
-#endif
-    if (optAssertionIsNonHeap(indir->AsIndir()->Data(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    GCInfo::WriteBarrierForm barrierType;
+
+    // First, analyze the value being stored
+    if (value->IsIntegralConst(0) || valueVN == ValueNumStore::VNForNull())
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            (vnBased) ? printf("\nVN based non-heap prop in " FMT_BB ":\n", compCurBB->bbNum)
-                      : printf("\nNon-heap prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-            gtDispTree(indir, nullptr, nullptr, true);
-        }
-#endif
-        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
-
-        return true;
+        // The value being stored is null
+        barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
+    }
+    else if (value->IsIconHandle(GTF_ICON_OBJ_HDL) || vnStore->IsVNObjHandle(valueVN))
+    {
+        // The value being stored is a handle
+        barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
+    }
+    else
+    {
+        // Next, analyze the address if we haven't already determined the barrier type from the value
+        barrierType = GetWriteBarrierForm(vnStore, addrVN);
     }
 
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
+    {
+        JITDUMP("Marking STOREIND as not requiring a write barrier:\n");
+        DISPTREE(indir);
+        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        return true;
+    }
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
+    {
+        JITDUMP("Marking STOREIND as not requiring a CHECKED write barrier:\n");
+        DISPTREE(indir);
+        indir->gtFlags |= GTF_IND_TGT_HEAP;
+        return true;
+    }
     return false;
 }
 
