@@ -1260,10 +1260,14 @@ namespace System.Runtime.CompilerServices
             Half h = Unsafe.ReadUnaligned<Half>(ref Unsafe.As<S2, byte>(ref s2));
             float s = Unsafe.ReadUnaligned<float>(ref Unsafe.As<S4, byte>(ref s4));
             double d = Unsafe.ReadUnaligned<double>(ref Unsafe.As<S8, byte>(ref s8));
+            (float, float) tf = Unsafe.ReadUnaligned<(float, float)>(ref Unsafe.As<S8, byte>(ref s8));
+            (uint, uint) ti = Unsafe.ReadUnaligned<(uint, uint)>(ref Unsafe.As<S8, byte>(ref s8));
 
             Assert.Equal(h, Unsafe.BitCast<S2, Half>(s2));
             Assert.Equal(s, Unsafe.BitCast<S4, float>(s4));
             Assert.Equal(d, Unsafe.BitCast<S8, double>(s8));
+            Assert.Equal(tf, Unsafe.BitCast<S8, (float, float)>(s8));
+            Assert.Equal(ti, Unsafe.BitCast<S8, (uint, uint)>(s8));
 
             *(S2*)misalignedPtr = s2;
             Assert.Equal(h, Unsafe.BitCast<S2, Half>(*(S2*)misalignedPtr));
@@ -1271,6 +1275,8 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(s, Unsafe.BitCast<S4, float>(*(S4*)misalignedPtr));
             *(S8*)misalignedPtr = s8;
             Assert.Equal(d, Unsafe.BitCast<S8, double>(*(S8*)misalignedPtr));
+            Assert.Equal(tf, Unsafe.BitCast<S8, (float, float)>(*(S8*)misalignedPtr));
+            Assert.Equal(ti, Unsafe.BitCast<S8, (uint, uint)>(*(S8*)misalignedPtr));
 
             NativeMemory.AlignedFree(misalignedPtr - 1);
         }
