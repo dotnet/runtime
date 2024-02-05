@@ -172,12 +172,12 @@ public class SslStreamCertificateContextOcspLinuxTests
             responder.RespondKind = RespondKind.Invalid;
             for (int i = 0; i < 2; i++)
             {
-                await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
                 byte[] ocsp2 = await ctx.GetOcspResponseAsync();
                 Assert.Equal(ocsp, ocsp2);
+                await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
             }
 
-            // wait until backoff expires
+            // make sure we try again only after backoff expires
             await ctx.WaitForPendingOcspFetchAsync();
             await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
 
