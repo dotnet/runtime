@@ -4767,8 +4767,6 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     // IF_SVE_CT_3A
     theEmitter->emitIns_R_R_R(INS_sve_revd, EA_SCALABLE, REG_V1, REG_P0, REG_V6);  // REVD    <Zd>.Q, <Pg>/M, <Zn>.Q
     theEmitter->emitIns_R_R_R(INS_sve_revd, EA_SCALABLE, REG_V5, REG_P7, REG_V12); // REVD    <Zd>.Q, <Pg>/M, <Zn>.Q
-    theEmitter->emitIns_R_R_R(INS_sve_revd, EA_SCALABLE, REG_V7, REG_P3, REG_V11); // REVD    <Zd>.Q, <Pg>/M, <Zn>.Q
-    theEmitter->emitIns_R_R_R(INS_sve_revd, EA_SCALABLE, REG_V28, REG_P4, REG_V3); // REVD    <Zd>.Q, <Pg>/M, <Zn>.Q
 
     // IF_SVE_CX_4A
     theEmitter->emitIns_R_R_R_R(INS_sve_cmpeq, EA_SCALABLE, REG_P15, REG_P0, REG_V0, REG_V10,

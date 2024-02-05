@@ -1110,10 +1110,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isPredicateRegister(id->idReg2()));       // NNNN
             break;
 
-        case IF_SVE_CT_3A:                             // ................ ...gggnnnnnddddd -- SVE reverse doublewords
-            assert(isVectorRegister(id->idReg3()));    // ddddd
-            assert(isPredicateRegister(id->idReg2())); // ggg
-            assert(isVectorRegister(id->idReg1()));    // nnnnn
+        case IF_SVE_CT_3A:                          // ................ ...gggnnnnnddddd -- SVE reverse doublewords
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isLowPredicateRegister(id->idReg2())); // ggg
+            assert(isVectorRegister(id->idReg3()));       // nnnnn
             break;
 
         // Scalable, 4 regs, to predicate register.
@@ -10039,9 +10039,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
             break;
 
         case INS_sve_revd:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isPredicateRegister(reg2)); // ggg
-            assert(isVectorRegister(reg3));    // nnnnn
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
             fmt = IF_SVE_CT_3A;
             break;
 
