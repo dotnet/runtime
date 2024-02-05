@@ -10,6 +10,8 @@ using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
@@ -114,6 +116,57 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private sealed class LsdaCache
+        {
+            private sealed class LsdaComparer : IEqualityComparer<INodeWithCodeInfo>
+            {
+                public static readonly LsdaComparer Instance = new LsdaComparer();
+
+                public bool Equals(INodeWithCodeInfo x, INodeWithCodeInfo y)
+                {
+                    Debug.Assert(IsCacheable(x));
+                    Debug.Assert(IsCacheable(y));
+                    ReadOnlySpan<byte> xGc = x.GCInfo;
+                    ReadOnlySpan<byte> yGc = y.GCInfo;
+                    if (!xGc.SequenceEqual(yGc))
+                        return false;
+
+                    ReadOnlySpan<FrameInfo> xFrames = x.FrameInfos;
+                    ReadOnlySpan<FrameInfo> yFrames = y.FrameInfos;
+                    return xFrames.SequenceEqual(yFrames);
+                }
+
+                public int GetHashCode(INodeWithCodeInfo obj)
+                {
+                    Debug.Assert(IsCacheable(obj));
+                    HashCode hash = default;
+                    hash.AddBytes(obj.GCInfo);
+                    foreach (FrameInfo f in obj.FrameInfos)
+                        hash.Add(f.GetHashCode());
+                    return hash.ToHashCode();
+                }
+            }
+
+            private Dictionary<INodeWithCodeInfo, string[]> _lsdas = new Dictionary<INodeWithCodeInfo, string[]>(LsdaComparer.Instance);
+
+            public static bool IsCacheable(INodeWithCodeInfo nodeWithCodeInfo)
+                => nodeWithCodeInfo.EHInfo == null && !MethodAssociatedDataNode.MethodHasAssociatedData((IMethodNode)nodeWithCodeInfo);
+
+            public string[] FindCachedLsda(INodeWithCodeInfo nodeWithCodeInfo)
+            {
+                Debug.Assert(IsCacheable(nodeWithCodeInfo));
+                return _lsdas.GetValueOrDefault(nodeWithCodeInfo);
+            }
+
+            public void AddLsdaToCache(INodeWithCodeInfo nodeWithCodeInfo, string[] symbols)
+            {
+                Debug.Assert(IsCacheable(nodeWithCodeInfo));
+                _lsdas.Add(nodeWithCodeInfo, symbols);
+            }
+        }
+
+        private readonly LsdaCache _lsdaCache = new LsdaCache();
+
         private protected override void EmitUnwindInfo(
             SectionWriter sectionWriter,
             INodeWithCodeInfo nodeWithCodeInfo,
@@ -125,6 +178,8 @@ namespace ILCompiler.ObjectWriter
                 bool useFrameNames = UseFrameNames;
                 SectionWriter lsdaSectionWriter;
 
+                string[] newLsdaSymbols = null;
+                string[] emittedLsdaSymbols = null;
                 if (ShouldShareSymbol((ObjectNode)nodeWithCodeInfo))
                 {
                     lsdaSectionWriter = GetOrCreateSection(LsdaSection, currentSymbolName, $"_lsda0{currentSymbolName}");
@@ -132,6 +187,12 @@ namespace ILCompiler.ObjectWriter
                 else
                 {
                     lsdaSectionWriter = _lsdaSectionWriter;
+                    if (LsdaCache.IsCacheable(nodeWithCodeInfo))
+                    {
+                        emittedLsdaSymbols = _lsdaCache.FindCachedLsda(nodeWithCodeInfo);
+                        if (emittedLsdaSymbols == null)
+                            newLsdaSymbols = new string[frameInfos.Length];
+                    }
                 }
 
                 long mainLsdaOffset = 0;
@@ -143,10 +204,20 @@ namespace ILCompiler.ObjectWriter
                     int end = frameInfo.EndOffset;
                     byte[] blob = frameInfo.BlobData;
 
-                    string lsdaSymbolName = $"_lsda{i}{currentSymbolName}";
-                    string framSymbolName = $"_fram{i}{currentSymbolName}";
+                    string lsdaSymbolName;
+                    if (emittedLsdaSymbols != null)
+                    {
+                        lsdaSymbolName = emittedLsdaSymbols[i];
+                    }
+                    else
+                    {
+                        lsdaSymbolName = $"_lsda{i}{currentSymbolName}";
+                        if (newLsdaSymbols != null)
+                            newLsdaSymbols[i] = lsdaSymbolName;
+                        lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
+                    }
 
-                    lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
+                    string framSymbolName = $"_fram{i}{currentSymbolName}";
                     if (useFrameNames && start != 0)
                     {
                         sectionWriter.EmitSymbolDefinition(framSymbolName, start);
@@ -167,8 +238,12 @@ namespace ILCompiler.ObjectWriter
                         _dwarfEhFrame.AddFde(fde);
                     }
 
-                    EmitLsda(nodeWithCodeInfo, frameInfos, i, _lsdaSectionWriter, ref mainLsdaOffset);
+                    if (emittedLsdaSymbols == null)
+                        EmitLsda(nodeWithCodeInfo, frameInfos, i, _lsdaSectionWriter, ref mainLsdaOffset);
                 }
+
+                if (newLsdaSymbols != null)
+                    _lsdaCache.AddLsdaToCache(nodeWithCodeInfo, newLsdaSymbols);
             }
         }
 
