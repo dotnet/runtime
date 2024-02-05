@@ -153,7 +153,7 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
-    //[OuterLoop("Takes about 15 seconds")]
+    [OuterLoop("Takes about 15 seconds")]
     [PlatformSpecific(TestPlatforms.Linux)]
     public async Task RefreshOcspResponse_FirstInvalidThenValid()
     {
