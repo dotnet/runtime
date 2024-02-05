@@ -1136,11 +1136,6 @@ PhaseStatus Compiler::optInductionVariables()
 {
     JITDUMP("*************** In optInductionVariables()\n");
 
-    if (JitConfig.JitEnableInductionVariableOpts() == 0)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
 #ifdef DEBUG
     static ConfigMethodRange s_range;
     s_range.EnsureInit(JitConfig.JitEnableInductionVariableOptsRange());

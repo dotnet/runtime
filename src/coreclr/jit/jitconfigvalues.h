@@ -695,8 +695,6 @@ CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 // Enable cross-block local assertion prop
 CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossBlockLocalAssertionProp"), 1)
 
-CONFIG_INTEGER(JitEnableInductionVariableOpts, W("JitEnableInductionVariableOpts"), 1)
-
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
