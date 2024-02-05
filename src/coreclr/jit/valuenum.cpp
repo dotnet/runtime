@@ -7561,6 +7561,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (genTypeSize(baseType) != 8)
                     {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
                         arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
                     }
                     else
@@ -7594,6 +7599,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (genTypeSize(baseType) != 8)
                     {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
                         arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
                     }
                     else
@@ -7626,6 +7636,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (genTypeSize(baseType) != 8)
                     {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
                         arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
                     }
                     else
