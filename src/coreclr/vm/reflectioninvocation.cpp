@@ -25,7 +25,7 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
-FCIMPL4(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE) {
+FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
     CONTRACTL {
         FCALL_CHECK;
     }
@@ -52,12 +52,9 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
 
     OBJECTREF rv = NULL; // not protected
 
-    // The caller should have ran the cctor already.
-    CLR_BOOL domainInitialized = TRUE;
-
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     // There can be no GC after this until the Object is returned.
-    rv = InvokeUtil::GetFieldValue(gc.refField->GetField(), fieldType, &gc.target, declaringType, &domainInitialized);
+    rv = InvokeUtil::GetFieldValue(gc.refField->GetField(), fieldType, &gc.target, declaringType, pDomainInitialized);
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(rv);
@@ -161,7 +158,7 @@ FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
 }
 FCIMPLEND
 
-FCIMPL5(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE) {
+FCIMPL6(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
     CONTRACTL {
         FCALL_CHECK;
     }
@@ -191,12 +188,9 @@ FCIMPL5(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
 
     FieldDesc* pFieldDesc = gc.refField->GetField();
 
-    // The caller should have ran the cctor already.
-    CLR_BOOL domainInitialized = TRUE;
-
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
-    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, &domainInitialized);
+    InvokeUtil::SetValidField(fieldType.GetVerifierCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -1304,13 +1298,15 @@ FCIMPL2(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
     }
     else
     {
-        base = pFieldDesc->GetBase();
         CorElementType fieldType = pFieldDesc->GetFieldType();
+
         // Non-primitive value types need to be unboxed to get the base address.
         *isBoxed = (pFieldDesc->GetFieldType() == ELEMENT_TYPE_VALUETYPE) ? TRUE : FALSE;
+
+        base = pFieldDesc->GetBase();
     }
 
-    return pFieldDesc->GetStaticAddressHandle(base);
+    return PTR_VOID(base + pFieldDesc->GetOffset());
 }
 FCIMPLEND
 

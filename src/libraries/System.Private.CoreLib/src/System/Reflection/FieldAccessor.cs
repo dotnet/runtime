@@ -20,18 +20,8 @@ namespace System.Reflection
         internal FieldAccessor(FieldInfo fieldInfo)
         {
             _fieldInfo = (RtFieldInfo)fieldInfo;
-            RuntimeType? declaringType = (RuntimeType?)_fieldInfo.DeclaringType;
 
-            // Call the class constructor if not already.
-            if (declaringType is null)
-            {
-                InvokeModuleConstructor(fieldInfo.Module);
-            }
-            else if (!declaringType.DomainInitialized)
-            {
-                InvokeClassConstructor(fieldInfo);
-                declaringType.DomainInitialized = true;
-            }
+            InitializeClass();
 
             // Cached the method table for performance.
             unsafe
@@ -40,13 +30,14 @@ namespace System.Reflection
             }
 
             // Initialize for the type of field.
+            RuntimeType? declaringType = (RuntimeType?)_fieldInfo.DeclaringType;
             if (declaringType is not null && declaringType.ContainsGenericParameters)
             {
                 _fieldAccessType = FieldAccessorType.NoInvoke;
             }
             else if (!RuntimeFieldHandle.IsFastPathSupported(_fieldInfo))
             {
-                // Currently this is true for [ThreadStatic] cases and for fields added from EnC.
+                // Currently this is true for [ThreadStatic] cases, for fields added from EnC, and for fields on unloadable types.
                 _fieldAccessType = FieldAccessorType.SlowPath;
             }
             else
@@ -168,7 +159,9 @@ namespace System.Reflection
                             VerifyTarget(obj);
                         }
 
-                        ret = RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, (RuntimeType?)_fieldInfo.DeclaringType);
+                        bool domainInitialized = _fieldInfo.m_declaringType.DomainInitialized;
+                        ret = RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, (RuntimeType?)_fieldInfo.DeclaringType, ref domainInitialized);
+                        _fieldInfo.m_declaringType.DomainInitialized = domainInitialized;
                         break;
 
                     case FieldAccessorType.NoInvoke:
@@ -196,7 +189,7 @@ namespace System.Reflection
                     VerifyTarget(obj);
                     CheckValue();
                     Debug.Assert(obj != null);
-                    Unsafe.As<byte, object?>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)) = value;
+                    Volatile.Write(ref Unsafe.As<byte, object?>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)), value);
                     return;
 
                 case FieldAccessorType.StaticReferenceType:
@@ -204,7 +197,7 @@ namespace System.Reflection
                     CheckValue();
                     unsafe
                     {
-                        Unsafe.As<IntPtr, object?>(ref *(IntPtr*)_addressOrOffset) = value;
+                        Volatile.Write(ref Unsafe.As<IntPtr, object?>(ref *(IntPtr*)_addressOrOffset), value);
                     }
                     return;
 
@@ -218,76 +211,67 @@ namespace System.Reflection
                             Volatile.Write(
                                 ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset),
                                 value!.GetRawData());
-
                             return;
 
                         case PrimitiveFieldSize.Size2:
                             Volatile.Write(
                                 ref Unsafe.As<byte, short>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
                                 Unsafe.As<byte, short>(ref value!.GetRawData()));
-
                             return;
 
                         case PrimitiveFieldSize.Size4:
                             Volatile.Write(
                                 ref Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
                                 Unsafe.As<byte, int>(ref value!.GetRawData()));
-
                             return;
 
                         case PrimitiveFieldSize.Size8:
                             Volatile.Write(
                                 ref Unsafe.As<byte, long>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
                                 Unsafe.As<byte, long>(ref value!.GetRawData()));
-
-                            return;
-
-                        default:
-                            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, fieldType, (RuntimeType?)_fieldInfo.DeclaringType);
                             return;
                     }
-
+                    break;
 
                 case FieldAccessorType.StaticValueType:
-                    VerifyInitOnly();
-                    CheckValue();
                     unsafe
                     {
                         switch (_primitiveFieldSize)
                         {
                             case PrimitiveFieldSize.Size1:
+                                VerifyInitOnly();
+                                CheckValue();
                                 Volatile.Write(
                                     ref Unsafe.AsRef<byte>(_addressOrOffset.ToPointer()),
                                     value!.GetRawData());
-
-                                break;
+                                return;
 
                             case PrimitiveFieldSize.Size2:
+                                VerifyInitOnly();
+                                CheckValue();
                                 Volatile.Write(
                                     ref Unsafe.AsRef<short>(_addressOrOffset.ToPointer()),
                                     Unsafe.As<byte, short>(ref value!.GetRawData()));
-
-                                break;
+                                return;
 
                             case PrimitiveFieldSize.Size4:
+                                VerifyInitOnly();
+                                CheckValue();
                                 Volatile.Write(
                                     ref Unsafe.AsRef<int>(_addressOrOffset.ToPointer()),
                                     Unsafe.As<byte, int>(ref value!.GetRawData()));
-
-                                break;
+                                return;
 
                             case PrimitiveFieldSize.Size8:
+                                VerifyInitOnly();
+                                CheckValue();
                                 Volatile.Write(
                                     ref Unsafe.AsRef<long>(_addressOrOffset.ToPointer()),
                                     Unsafe.As<byte, long>(ref value!.GetRawData()));
-                                break;
-
-                            case PrimitiveFieldSize.NotPrimitive:
-                                RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, fieldType, (RuntimeType?)_fieldInfo.DeclaringType);
-                                break;
+                                return;
                         }
 
-                        return;
+                        break;
                     }
 
                 case FieldAccessorType.NoInvoke:
@@ -297,13 +281,19 @@ namespace System.Reflection
                     throw new FieldAccessException();
             }
 
-            if (!IsStatic())
+            if (IsStatic())
+            {
+                VerifyInitOnly();
+            }
+            else
             {
                 VerifyTarget(obj);
             }
 
             CheckValue();
-            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, fieldType, (RuntimeType?)_fieldInfo.DeclaringType);
+            bool domainInitialized = _fieldInfo.m_declaringType.DomainInitialized;
+            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, fieldType, (RuntimeType?)_fieldInfo.DeclaringType, ref domainInitialized);
+            _fieldInfo.m_declaringType.DomainInitialized = domainInitialized;
 
             void CheckValue()
             {
@@ -318,6 +308,28 @@ namespace System.Reflection
                 {
                     fieldType.CheckValue(ref value, binder, culture, invokeAttr);
                 }
+            }
+        }
+
+        private void InitializeClass()
+        {
+            RtFieldInfo fieldInfo = _fieldInfo;
+            RuntimeType declaringType = _fieldInfo.m_declaringType;
+
+            // Call the class constructor if not already.
+            if (!declaringType.DomainInitialized)
+            {
+                if (_fieldInfo.DeclaringType is null)
+                {
+                    InvokeModuleConstructor(fieldInfo.Module);
+                }
+                else
+                {
+                    InvokeClassConstructor(fieldInfo);
+                }
+
+                // A constructor is allowed to set init-only fields, so set this after.
+                declaringType.DomainInitialized = true;
             }
         }
 
@@ -352,9 +364,8 @@ namespace System.Reflection
         internal void VerifyInitOnly()
         {
             Debug.Assert(IsStatic());
-            Debug.Assert(_fieldInfo.DeclaringType == null || ((RuntimeType)_fieldInfo.DeclaringType).DomainInitialized);
 
-            if ((_fieldInfo.Attributes & FieldAttributes.InitOnly) == FieldAttributes.InitOnly)
+            if ((_fieldInfo.Attributes & FieldAttributes.InitOnly) == FieldAttributes.InitOnly && _fieldInfo.m_declaringType.DomainInitialized)
             {
                 ThrowHelperFieldAccessException(_fieldInfo.Name, _fieldInfo.DeclaringType?.FullName);
             }
