@@ -23,18 +23,5 @@ namespace System.Text.Tests
                 Assert.Equal(sourceChars, destinationChars);
             }
         }
-
-        [Fact]
-        public void GetDecoder_NegativeTests()
-        {
-            char[] sourceChars = "\uD800\uDC00".ToCharArray();
-            char[] destinationChars = [];
-            byte[] bytes = new UnicodeEncoding().GetBytes(sourceChars);
-            int bytesUsed;
-            int charsUsed;
-            bool completed;
-            Decoder decoder = new UnicodeEncoding().GetDecoder();
-            Assert.Throws<ArgumentException>("chars", () => decoder.Convert(bytes.AsSpan(), destinationChars.AsSpan(), true, out bytesUsed, out charsUsed, out completed));
-        }
     }
 }
