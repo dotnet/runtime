@@ -772,7 +772,8 @@ enum class CorInfoCallConvExtension
     // New calling conventions supported with the extensible calling convention encoding go here.
     CMemberFunction,
     StdcallMemberFunction,
-    FastcallMemberFunction
+    FastcallMemberFunction,
+    Swift
 };
 
 #ifdef TARGET_X86

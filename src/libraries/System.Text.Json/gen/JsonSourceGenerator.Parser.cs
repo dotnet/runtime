@@ -263,6 +263,7 @@ namespace System.Text.Json.SourceGeneration
                 JsonSourceGenerationMode? generationMode = null;
                 List<TypeRef>? converters = null;
                 JsonSerializerDefaults? defaults = null;
+                bool? allowOutOfOrderMetadataProperties = null;
                 bool? allowTrailingCommas = null;
                 int? defaultBufferSize = null;
                 JsonIgnoreCondition? defaultIgnoreCondition = null;
@@ -293,6 +294,10 @@ namespace System.Text.Json.SourceGeneration
                 {
                     switch (namedArg.Key)
                     {
+                        case nameof(JsonSourceGenerationOptionsAttribute.AllowOutOfOrderMetadataProperties):
+                            allowOutOfOrderMetadataProperties = (bool)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.AllowTrailingCommas):
                             allowTrailingCommas = (bool)namedArg.Value.Value!;
                             break;
@@ -396,6 +401,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     GenerationMode = generationMode,
                     Defaults = defaults,
+                    AllowOutOfOrderMetadataProperties = allowOutOfOrderMetadataProperties,
                     AllowTrailingCommas = allowTrailingCommas,
                     DefaultBufferSize = defaultBufferSize,
                     Converters = converters?.ToImmutableEquatableArray(),

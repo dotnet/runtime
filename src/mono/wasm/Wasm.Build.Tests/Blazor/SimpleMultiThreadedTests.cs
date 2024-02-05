@@ -42,7 +42,6 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     // [InlineData("Debug", true)]
     [InlineData("Release", false)]
     // [InlineData("Release", true)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task BlazorPublishRunTest(string config, bool aot)
     {
         string id = $"blazor_mt_{config}_{GetRandomId()}";

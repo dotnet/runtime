@@ -480,7 +480,7 @@ enum GenTreeFlags : unsigned int
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
 
-    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND -- the target is not on the heap
+    GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND -- the target is not GC-tracked, such as an object on the nongc heap
     GTF_IND_VOLATILE            = 0x40000000, // OperIsIndir() -- the load or store must use volatile semantics (this is a nop on X86)
     GTF_IND_NONFAULTING         = 0x20000000, // OperIsIndir() -- An indir that cannot fault.
     GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND -- the target is on the heap
@@ -503,7 +503,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
-    GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
@@ -556,6 +555,10 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -884,7 +887,7 @@ public:
 
     bool isContainedVecImmed() const
     {
-        return isContained() && OperIs(GT_CNS_VEC);
+        return isContained() && IsCnsVec();
     }
 
     bool isLclField() const
@@ -1486,7 +1489,8 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
-    bool isEvexCompatibleHWIntrinsic();
+    bool isEvexCompatibleHWIntrinsic() const;
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
     {
@@ -1503,7 +1507,12 @@ public:
         return false;
     }
 
-    bool isEvexCompatibleHWIntrinsic()
+    bool isEvexCompatibleHWIntrinsic() const
+    {
+        return false;
+    }
+
+    bool isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
     {
         return false;
     }
@@ -2231,6 +2240,22 @@ public:
         assert(gtOper == GT_CNS_INT);
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
+
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    bool IsEmbMaskOp()
+    {
+        bool result = (gtFlags & GTF_HW_EM_OP) != 0;
+        assert(!result || (gtOper == GT_HWINTRINSIC));
+        return result;
+    }
+
+    void MakeEmbMaskOp()
+    {
+        assert(!IsEmbMaskOp());
+        gtFlags |= GTF_HW_EM_OP;
+    }
+
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
     bool IsCall() const
     {
@@ -4076,7 +4101,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_GUARDED_DEVIRT_CHAIN    = 0x00080000, // this call is a candidate for chained guarded devirtualization
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00100000, // this is a call to an allocator with side effects
     GTF_CALL_M_SUPPRESS_GC_TRANSITION  = 0x00200000, // suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
-    GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x00400000, // this call needs to be transformed into CFG for the dynamic dictionary expansion feature.
+    GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x00400000, // [DEBUG only] this call needs to be transformed into CFG for the dynamic dictionary expansion feature.
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x01000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x02000000, // ldvirtftn on an interface type
@@ -4539,6 +4564,15 @@ public:
 #else
         return isValidFloatArgReg(GetRegNum());
 #endif
+    }
+
+    bool IsMismatchedArgType() const
+    {
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        return isValidIntArgReg(GetRegNum()) && varTypeUsesFloatReg(ArgType);
+#else
+        return false;
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
     void SetByteSize(unsigned byteSize, unsigned byteAlignment, bool isStruct, bool isFloatHfa);
@@ -5528,7 +5562,7 @@ struct GenTreeCall final : public GenTree
             return WellKnownArg::VirtualStubCell;
         }
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
         // For ARM architectures, we always use an indirection cell for R2R calls.
         if (IsR2RRelativeIndir() && !IsDelegateInvoke())
         {
@@ -9060,7 +9094,7 @@ inline bool GenTree::IsVectorCreate() const
 inline bool GenTree::IsVectorAllBitsSet() const
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return AsVecCon()->IsAllBitsSet();
     }
@@ -9078,7 +9112,7 @@ inline bool GenTree::IsVectorAllBitsSet() const
 inline bool GenTree::IsVectorConst()
 {
 #ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
+    if (IsCnsVec())
     {
         return true;
     }

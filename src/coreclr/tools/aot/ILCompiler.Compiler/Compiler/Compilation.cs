@@ -25,7 +25,6 @@ namespace ILCompiler
         protected readonly NodeFactory _nodeFactory;
         protected readonly Logger _logger;
         protected readonly DebugInformationProvider _debugInformationProvider;
-        protected readonly DevirtualizationManager _devirtualizationManager;
         private readonly IInliningPolicy _inliningPolicy;
 
         public NameMangler NameMangler => _nodeFactory.NameMangler;
@@ -44,7 +43,6 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> compilationRoots,
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
-            DevirtualizationManager devirtualizationManager,
             IInliningPolicy inliningPolicy,
             Logger logger)
         {
@@ -52,7 +50,6 @@ namespace ILCompiler
             _nodeFactory = nodeFactory;
             _logger = logger;
             _debugInformationProvider = debugInformationProvider;
-            _devirtualizationManager = devirtualizationManager;
             _inliningPolicy = inliningPolicy;
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
@@ -108,7 +105,7 @@ namespace ILCompiler
 
         public bool CanConstructType(TypeDesc type)
         {
-            return _devirtualizationManager.CanConstructType(type);
+            return NodeFactory.DevirtualizationManager.CanConstructType(type);
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, TypeDesc constrainedType, bool followVirtualDispatch)
@@ -215,22 +212,22 @@ namespace ILCompiler
 
         public bool IsEffectivelySealed(TypeDesc type)
         {
-            return _devirtualizationManager.IsEffectivelySealed(type);
+            return NodeFactory.DevirtualizationManager.IsEffectivelySealed(type);
         }
 
         public TypeDesc[] GetImplementingClasses(TypeDesc type)
         {
-            return _devirtualizationManager.GetImplementingClasses(type);
+            return NodeFactory.DevirtualizationManager.GetImplementingClasses(type);
         }
 
         public bool IsEffectivelySealed(MethodDesc method)
         {
-            return _devirtualizationManager.IsEffectivelySealed(method);
+            return NodeFactory.DevirtualizationManager.IsEffectivelySealed(method);
         }
 
         public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)
         {
-            return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
+            return NodeFactory.DevirtualizationManager.ResolveVirtualMethod(declMethod, implType, out devirtualizationDetail);
         }
 
         public bool NeedsRuntimeLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
@@ -264,7 +261,7 @@ namespace ILCompiler
 
         public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
         {
-            bool canConstructPerWholeProgramAnalysis = _devirtualizationManager == null ? true : _devirtualizationManager.CanConstructType(type);
+            bool canConstructPerWholeProgramAnalysis = NodeFactory.DevirtualizationManager.CanConstructType(type);
             bool creationAllowed = ConstructedEETypeNode.CreationAllowed(type);
             return (canConstructPerWholeProgramAnalysis && creationAllowed)
                 ? ReadyToRunHelperId.TypeHandle

@@ -25,7 +25,8 @@ enum PredicateType
     PREDICATE_MERGE,    // Predicate printed with /m
     PREDICATE_ZERO,     // Predicate printed with /z
     PREDICATE_SIZED,    // Predicate printed with element size
-    PREDICATE_N_SIZED,  // Predicate printed printed as counter with element size
+    PREDICATE_N,        // Predicate printed as counter
+    PREDICATE_N_SIZED,  // Predicate printed as counter with element size
 };
 
 const char* emitSveRegName(regNumber reg);
@@ -39,6 +40,7 @@ void emitDispLargeJmp(
 void emitDispComma();
 void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
+void emitDispElementIndex(ssize_t imm);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
 void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
@@ -59,6 +61,7 @@ void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, b
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
 void emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispVectorLengthSpecifier(instrDesc* id);
@@ -381,6 +384,9 @@ static code_t insEncodeReg_P_2_to_0(regNumber reg);
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
 
+// Return an encoding for the specified predicate type used in '4' position.
+static code_t insEncodePredQualifier_4(bool merge);
+
 // Return an encoding for the specified 'V' register used in '18' thru '16' position.
 static code_t insEncodeReg_V_18_to_16(regNumber reg);
 
@@ -547,6 +553,12 @@ static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
+static code_t insEncodeUimm2_9_to_8(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
+static code_t insEncodeUimm2_20_to_19(ssize_t imm);
+
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 
@@ -613,6 +625,18 @@ static bool isValidSimm4_MultipleOf16(ssize_t value)
 static bool isValidSimm4_MultipleOf32(ssize_t value)
 {
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
+};
+
+// Returns true if 'value' is a legal immediate 1 bit encoding (such as for PEXT).
+static bool isValidImm1(ssize_t value)
+{
+    return (value == 0) || (value == 1);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 2 bit encoding (such as for PEXT).
+static bool isValidUimm2(ssize_t value)
+{
+    return (0 <= value) || (value <= 3);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
@@ -1181,8 +1205,13 @@ void emitIns_R_I_I(instruction ins,
                    insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                        DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_R_R_I(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R_I(instruction     ins,
+                   emitAttr        attr,
+                   regNumber       reg1,
+                   regNumber       reg2,
+                   ssize_t         imm,
+                   insOpts         opt  = INS_OPTS_NONE,
+                   insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 // Checks for a large immediate that needs a second instruction
 void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);

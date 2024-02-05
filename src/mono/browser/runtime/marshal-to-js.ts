@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
@@ -197,7 +197,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
     if (result === null || result === undefined) {
         // this will create new Function for the C# delegate
         result = (arg1_js: any, arg2_js: any, arg3_js: any): any => {
-            mono_assert(!MonoWasmThreads || !result.isDisposed, "Delegate is disposed and should not be invoked anymore.");
+            mono_assert(!WasmEnableThreads || !result.isDisposed, "Delegate is disposed and should not be invoked anymore.");
             // arg numbers are shifted by one, the real first is a gc handle of the callback
             return runtimeHelpers.javaScriptExports.call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
@@ -349,16 +349,17 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         mono_assert(holder, () => `Cannot find Promise for JSHandle ${js_handle}`);
 
         holder.resolve_or_reject(type, js_handle, arg_value);
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads && get_arg_b8(res)) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
             Module._free(args as any);
-            return;
         }
-        set_arg_type(res, MarshalerType.Void);
-        set_arg_type(exc, MarshalerType.None);
+        else {
+            set_arg_type(res, MarshalerType.Void);
+            set_arg_type(exc, MarshalerType.None);
+        }
 
     } catch (ex: any) {
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads) {
             mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
         }
         marshal_exception_to_cs(exc, ex);

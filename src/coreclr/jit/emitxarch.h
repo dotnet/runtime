@@ -106,7 +106,6 @@ unsigned insSSval(unsigned scale);
 
 static bool IsSSEInstruction(instruction ins);
 static bool IsSSEOrAVXInstruction(instruction ins);
-static bool IsAvx512OrPriorInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
@@ -346,14 +345,39 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 //    instOptions - emit options
 void SetEvexBroadcastIfNeeded(instrDesc* id, insOpts instOptions)
 {
-    if ((instOptions & INS_OPTS_b_MASK) == INS_OPTS_EVEX_eb_er_rd)
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) == INS_OPTS_EVEX_eb_er_rd)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
     }
     else
     {
-        assert(instOptions == 0);
+        assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexEmbMaskIfNeeded: set embedded mask if needed.
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_aaa_MASK) != 0)
+    {
+        assert(UseEvexEncoding());
+        id->idSetEvexAaaContext(instOptions);
+
+        if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
+        {
+            id->idSetEvexZContext();
+        }
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
     }
 }
 
