@@ -1102,6 +1102,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isPredicateRegister(id->idReg3())); // MMMM
             break;
 
+        case IF_SVE_CT_3A:                             // ................ ...gggnnnnnddddd -- SVE reverse doublewords
+            assert(isVectorRegister(id->idReg3()));    // ddddd
+            assert(isPredicateRegister(id->idReg2())); // ggg
+            assert(isVectorRegister(id->idReg1()));    // nnnnn
+            break;
+
         // Scalable, 4 regs, to predicate register.
         case IF_SVE_CX_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE integer compare vectors
             elemsize = id->idOpSize();
@@ -10015,6 +10021,13 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(isVectorRegister(reg1));
                 fmt = IF_SVE_CR_3A;
             }
+            break;
+
+        case INS_sve_revd:
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));    // nnnnn
+            fmt = IF_SVE_CT_3A;
             break;
 
         case INS_sve_rbit:
@@ -20051,6 +20064,14 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_CT_3A: // ................ ...gggnnnnnddddd -- SVE reverse doublewords
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());   // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
         case IF_SVE_CV_3B: // ........xx...... ...VVVmmmmmddddd -- SVE vector splice (destructive)
             code = emitInsCodeSve(ins, fmt);
@@ -23244,6 +23265,13 @@ void emitter::emitDispInsHelp(
             emitDispReg(encodingZRtoSP(id->idReg3()), size, false);                             // mmmmm
             break;
 
+        // <Zd>.Q, <Pg>/M, <Zn>.Q
+        case IF_SVE_CT_3A: // ................ ...gggnnnnnddddd -- SVE reverse doublewords
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_Q, true);                            // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), INS_OPTS_SCALABLE_Q, false);                           // nnnnn
+            break;
+
         // <Zd>.<T>, <Pv>, {<Zn1>.<T>, <Zn2>.<T>}
         case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                             // ddddd
@@ -26383,6 +26411,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_CQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE copy general register to vector (predicated)
             result.insLatency    = PERFSCORE_LATENCY_5C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_SVE_CT_3A: // ................ ...gggnnnnnddddd -- SVE reverse doublewords
+            result.insThroughput = PERFSCORE_THROUGHPUT_140C; // @ToDo Currently undocumented.
+            result.insLatency    = PERFSCORE_LATENCY_140C;
             break;
 
         case IF_SVE_CV_3A: // ........xx...... ...VVVnnnnnddddd -- SVE vector splice (destructive)
