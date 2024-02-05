@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // 3) not throwing at all - quite risky
             // deadlock scenarios are:
             // - .Wait for more than 5000ms and deadlock the GC suspend
-            // - .Wait on the Task from HTTP client, on the same thread as the HTTP client needs to resolve the Task/Promise. This could be also chain of promises.
+            // - .Wait on the Task from HTTP client, on the same thread as the HTTP client needs to resolve the Task/Promise. This could be also be a chain of promises.
             // - try to create new pthread when UI thread is blocked and we run out of posix/emscripten pool of loaded workers.
             // Things which lead to it are
             // - Task.Wait, Signal.Wait etc
