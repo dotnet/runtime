@@ -708,7 +708,7 @@ namespace Mono.Linker.Steps
 			var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
 			if (defaultImplementations != null) {
 				foreach (var defaultImplementationInfo in defaultImplementations) {
-					ProcessDefaultImplementation (defaultImplementationInfo.ImplementingType, defaultImplementationInfo.InterfaceImpl);
+					ProcessDefaultImplementation (defaultImplementationInfo.ImplementingType, defaultImplementationInfo.InterfaceImpl, defaultImplementationInfo.DefaultInterfaceMethod);
 				}
 			}
 		}
@@ -722,13 +722,13 @@ namespace Mono.Linker.Steps
 		bool ShouldMarkOverrideForBase (OverrideInformation overrideInformation)
 		{
 			Debug.Assert (Annotations.IsMarked (overrideInformation.Base) || IgnoreScope (overrideInformation.Base.DeclaringType.Scope));
+			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
+				return false;
+
 			if (overrideInformation.IsOverrideOfInterfaceMember) {
 				_interfaceOverrides.Add ((overrideInformation, ScopeStack.CurrentScope));
 				return false;
 			}
-			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
-				return false;
-
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
 				return true;
 
@@ -816,10 +816,14 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		void ProcessDefaultImplementation (TypeDefinition typeWithDefaultImplementedInterfaceMethod, InterfaceImplementation implementation)
+		void ProcessDefaultImplementation (TypeDefinition typeWithDefaultImplementedInterfaceMethod, InterfaceImplementation implementation, MethodDefinition implementationMethod)
 		{
-			if (!Annotations.IsInstantiated (typeWithDefaultImplementedInterfaceMethod))
+			if ((!implementationMethod.IsStatic && !Annotations.IsInstantiated (typeWithDefaultImplementedInterfaceMethod))
+				|| implementationMethod.IsStatic && !Annotations.IsRelevantToVariantCasting(typeWithDefaultImplementedInterfaceMethod))
 				return;
+
+			var origin = ScopeStack.CurrentScope.Origin;
+			MarkMethod(implementationMethod, new DependencyInfo(DependencyKind.Unspecified, implementation), in origin);
 
 			MarkInterfaceImplementation (implementation);
 		}
@@ -2555,11 +2559,6 @@ namespace Mono.Linker.Steps
 
 			if (Annotations.IsMarked (method))
 				return false;
-
-			// If the override is a DIM that provides an implementation for a type that requires the interface, we may need the DIM
-			// Technically we only need it if it's the most derived DIM, but we can overmark slightly here
-			if (Annotations.GetDefaultInterfaceImplementations (@base).Any (dim => dim.DefaultInterfaceMethod == method && Annotations.IsRelevantToVariantCasting (dim.ImplementingType)))
-				return true;
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
