@@ -51,11 +51,13 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
+#if !NATIVEAOT
         protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
 
         protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
 
         public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
+#endif
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.
@@ -125,9 +127,11 @@ namespace System
             return DynamicInvokeImpl(args);
         }
 
+#if !NATIVEAOT
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
+#endif
 
         public MethodInfo Method => GetMethodImpl();
 
