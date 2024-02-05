@@ -773,7 +773,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    NewArrayHolder<WCHAR> wszProfilerList(NULL);
+    CLRConfigStringHolder wszProfilerList(NULL);
 
 #if defined(TARGET_ARM64)
     CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, &wszProfilerList);
@@ -806,23 +806,28 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         return S_OK;
     }
 
-    WCHAR *pOuter = NULL;
-    WCHAR *pInner = NULL;
-    WCHAR *currentSection = NULL;
-    WCHAR *currentPath = NULL;
-    WCHAR *currentGuid = NULL;
+    SString profilerList{wszProfilerList};
 
     HRESULT storedHr = S_OK;
-    // Get each semicolon delimited config
-    currentSection = wcstok_s(wszProfilerList, W(";"), &pOuter);
-    for (;currentSection != NULL; currentSection = wcstok_s(NULL, W(";"), &pOuter))
+    for (SString::Iterator sectionStart = profilerList.Begin(), sectionEnd = profilerList.Begin();
+        profilerList.Find(sectionEnd, W(';'));
+        sectionStart = ++sectionEnd)
     {
-        // Parse this config "path={guid}"
-        currentPath = wcstok_s(currentSection, W("="), &pInner);
-        currentGuid = wcstok_s(NULL, W("="), &pInner);
-
+        SString::Iterator pathEnd = sectionStart;
+        if (!profilerList.Find(pathEnd, W('=')) || pathEnd > sectionEnd)
+        {
+            ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_PATH);
+            storedHr = E_FAIL;
+            continue;
+        }
+        SString::Iterator clsidStart = pathEnd + 1;
+        profilerList.Replace(pathEnd, W('\0'));
+        profilerList.Replace(sectionEnd, W('\0'));
+        
+        SString clsidString{profilerList.GetUnicode(clsidStart)};
+        NewArrayHolder<WCHAR> clsidStringRaw = clsidString.GetCopyOfUnicodeString();
         CLSID clsid;
-        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(currentGuid, &clsid);
+        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidStringRaw, &clsid);
         if (FAILED(hr))
         {
             // ProfilerCLSIDFromString already logged an event if there was a failure
@@ -836,7 +841,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             kStartupLoad,
             &clsid,
             (LPCSTR)clsidUtf8,
-            currentPath,
+            profilerList.GetUnicode(sectionStart),
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
         if (FAILED(hr))
