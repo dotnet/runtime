@@ -99,7 +99,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97830", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/97833", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(GetValue_TestData_WithFunctionPointers))]
         public void GetValueWithFunctionPointers(Type type, string name, object obj, object expected)
@@ -195,7 +194,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97830", TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/97833", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(SetValue_TestData_FunctionPointers))]
         public void SetValueWithFunctionPointers(Type type, string name, object obj, object value, object expected)
