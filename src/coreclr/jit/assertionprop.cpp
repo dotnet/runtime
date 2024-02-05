@@ -4990,7 +4990,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
         return false;
     }
 
-    GCInfo::WriteBarrierForm barrierType;
+    GCInfo::WriteBarrierForm barrierType = GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 
     // First, analyze the value being stored
     if (value->IsIntegralConst(0) || (value->gtVNPair.GetConservative() == ValueNumStore::VNForNull()))
@@ -5003,9 +5003,12 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
         // The value being stored is a handle
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
     }
-    else
+    else if ((indir->gtFlags & GTF_IND_TGT_HEAP) == 0)
     {
         // Next, analyze the address if we haven't already determined the barrier type from the value
+        //
+        // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
+        // that they actually need no barrier? But that comes with a TP regression.
         barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());
     }
 
