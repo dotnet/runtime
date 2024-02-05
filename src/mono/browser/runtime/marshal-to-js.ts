@@ -349,13 +349,14 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         mono_assert(holder, () => `Cannot find Promise for JSHandle ${js_handle}`);
 
         holder.resolve_or_reject(type, js_handle, arg_value);
-        if (WasmEnableThreads) {
+        if (WasmEnableThreads && get_arg_b8(res)) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
             Module._free(args as any);
-            return;
         }
-        set_arg_type(res, MarshalerType.Void);
-        set_arg_type(exc, MarshalerType.None);
+        else {
+            set_arg_type(res, MarshalerType.Void);
+            set_arg_type(exc, MarshalerType.None);
+        }
 
     } catch (ex: any) {
         if (WasmEnableThreads) {

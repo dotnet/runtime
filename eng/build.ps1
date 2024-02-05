@@ -235,10 +235,16 @@ if ($vs) {
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
+  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
   if ($runtimeConfiguration)
   {
-    # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+  }
+
+  # Respect the RuntimeFlavor variable for building inside VS with a different CoreLib and runtime
+  if ($runtimeFlavor)
+  {
+    $env:RUNTIMEFLAVOR=$runtimeFlavor
   }
 
   # Launch Visual Studio with the locally defined environment variables
