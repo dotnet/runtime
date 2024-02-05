@@ -3549,8 +3549,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		}
 
 		cfg->opt &= ~MONO_OPT_LINEARS;
-
-		cfg->opt &= ~MONO_OPT_BRANCH;
 	}
 
 	cfg->after_method_to_ir = TRUE;
@@ -3975,7 +3973,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	if (!cfg->compile_aot)
 		mono_lldb_save_method_info (cfg);
 
-	if (cfg->verbose_level >= 2) {
+	if (cfg->verbose_level >= 2 && !cfg->llvm_only) {
 		char *id =  mono_method_full_name (cfg->method, TRUE);
 		g_print ("\n*** ASM for %s ***\n", id);
 		mono_disassemble_code (cfg, cfg->native_code, cfg->code_len, id + 3);
@@ -4591,6 +4589,10 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 	} else if (!strcmp (klass_name, "Vector2")) {
 		*nelems = 2;
 		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector3")) {
+		// For LLVM SIMD support, Vector3 is treated as a 4-element vector (three elements + zero).
+		*nelems = 4;
+		return MONO_TYPE_R4;
 	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
 		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
 		int size = mono_class_value_size (klass, NULL);
@@ -4602,3 +4604,4 @@ mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
 		return MONO_TYPE_VOID;
 	}
 }
+

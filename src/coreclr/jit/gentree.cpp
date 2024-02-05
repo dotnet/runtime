@@ -4538,20 +4538,21 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     GenTree* base; // This is the base of the address.
     GenTree* idx;  // This is the index.
 
-    if (codeGen->genCreateAddrMode(addr, false /*fold*/, &rev, &base, &idx, &mul, &cns))
-    {
+    unsigned naturalMul = 0;
+#ifdef TARGET_ARM64
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
+    naturalMul = genTypeSize(type);
+#endif
 
-#ifdef TARGET_ARMARCH
-        // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-        //
-        //   *(ulong*)(data + index * 8); - can be optimized
-        //   *(ulong*)(data + index * 7); - can not be optimized
-        //     *(int*)(data + index * 2); - can not be optimized
-        //
-        if ((mul > 0) && (genTypeSize(type) != mul))
-        {
-            return false;
-        }
+    if (codeGen->genCreateAddrMode(addr, false /*fold*/, naturalMul, &rev, &base, &idx, &mul, &cns))
+    {
+#ifdef TARGET_ARM64
+        assert((mul == 0) || (mul == 1) || (mul == naturalMul));
 #endif
 
         // We can form a complex addressing mode, so mark each of the interior
@@ -8583,7 +8584,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 //
 // Arguments:
 //    layout     - The struct layout
-//    addr       - Destionation address
+//    addr       - Destination address
 //    data       - Value to store
 //    indirFlags - Indirection flags
 //
@@ -8596,6 +8597,34 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
     assert(data->IsInitVal() || ClassLayout::AreCompatible(layout, data->GetLayout(this)));
 
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, data, layout);
+    store->gtFlags |= GTF_ASG;
+    gtInitializeIndirNode(store, indirFlags);
+    gtInitializeStoreNode(store, data);
+
+    return store;
+}
+
+//------------------------------------------------------------------------------
+// gtNewStoreDynBlkNode : Create a dynamic block store node.
+//
+// Arguments:
+//    addr        - Destination address
+//    data        - Value to store (init val or indirection representing a location)
+//    dynamicSize - Node that computes number of bytes to store
+//    indirFlags  - Indirection flags
+//
+// Return Value:
+//    The created GT_STORE_DYN_BLK node.
+//
+GenTreeStoreDynBlk* Compiler::gtNewStoreDynBlkNode(GenTree*     addr,
+                                                   GenTree*     data,
+                                                   GenTree*     dynamicSize,
+                                                   GenTreeFlags indirFlags)
+{
+    assert((indirFlags & GTF_IND_INVARIANT) == 0);
+    assert(data->IsInitVal() || data->OperIs(GT_IND));
+
+    GenTreeStoreDynBlk* store = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(addr, data, dynamicSize);
     store->gtFlags |= GTF_ASG;
     gtInitializeIndirNode(store, indirFlags);
     gtInitializeStoreNode(store, data);
@@ -9663,7 +9692,7 @@ DONE:
     assert(copy->gtOper == oper);
 
     copy->gtVNPair = tree->gtVNPair; // A cloned tree gets the original's Value number pair
-    copy->gtFlags |= tree->gtFlags;
+    copy->gtFlags  = tree->gtFlags;
 
 #if defined(DEBUG)
     // Non-node debug flags should be propagated from 'tree' to 'copy'
@@ -10706,7 +10735,7 @@ bool GenTree::Precedes(GenTree* other)
 //
 void GenTree::SetIndirExceptionFlags(Compiler* comp)
 {
-    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG)));
+    assert(OperIsIndirOrArrMetaData() && (OperIsSimple() || OperIs(GT_CMPXCHG, GT_STORE_DYN_BLK)));
 
     if (IndirMayFault(comp))
     {
@@ -10723,9 +10752,15 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
     {
         gtFlags |= gtGetOp2()->gtFlags & GTF_EXCEPT;
     }
-    if (OperIs(GT_CMPXCHG))
+    else if (OperIs(GT_CMPXCHG))
     {
+        gtFlags |= AsCmpXchg()->Data()->gtFlags & GTF_EXCEPT;
         gtFlags |= AsCmpXchg()->Comparand()->gtFlags & GTF_EXCEPT;
+    }
+    else if (OperIs(GT_STORE_DYN_BLK))
+    {
+        gtFlags |= AsStoreDynBlk()->Data()->gtFlags & GTF_EXCEPT;
+        gtFlags |= AsStoreDynBlk()->gtDynamicSize->gtFlags & GTF_EXCEPT;
     }
 }
 
@@ -10809,6 +10844,8 @@ const char* GenTree::gtGetHandleKindString(GenTreeFlags flags)
             return "GTF_ICON_STATIC_ADDR_PTR";
         case GTF_ICON_SECREL_OFFSET:
             return "GTF_ICON_SECREL_OFFSET";
+        case GTF_ICON_TLSGD_OFFSET:
+            return "GTF_ICON_TLSGD_OFFSET";
         default:
             return "ILLEGAL!";
     }
@@ -10912,6 +10949,10 @@ void Compiler::gtDispNodeName(GenTree* tree)
         else if (tree->AsCall()->IsR2RRelativeIndir())
         {
             gtfType = " r2r_ind";
+        }
+        else if (tree->gtFlags & GTF_TLS_GET_ADDR)
+        {
+            gtfType = " _tls_get_addr";
         }
 #endif // FEATURE_READYTORUN
         else if (tree->gtFlags & GTF_CALL_UNMANAGED)
@@ -12040,6 +12081,9 @@ void Compiler::gtDispConst(GenTree* tree)
                             break;
                         case GTF_ICON_SECREL_OFFSET:
                             printf(" relative offset in section");
+                            break;
+                        case GTF_ICON_TLSGD_OFFSET:
+                            printf(" tls global dynamic offset");
                             break;
                         default:
                             printf(" UNKNOWN");
@@ -17877,9 +17921,13 @@ bool GenTree::canBeContained() const
     }
 
     // It is not possible for nodes that do not produce values or that are not containable values to be contained.
-    if (!IsValue() || ((DebugOperKind() & DBK_NOCONTAIN) != 0) || (OperIsHWIntrinsic() && !isContainableHWIntrinsic()))
+    if (!IsValue() || ((DebugOperKind() & DBK_NOCONTAIN) != 0))
     {
         return false;
+    }
+    else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
+    {
+        return isEvexEmbeddedMaskingCompatibleHWIntrinsic();
     }
 
     return true;
@@ -19279,7 +19327,16 @@ FieldSeq* FieldSeqStore::Append(FieldSeq* a, FieldSeq* b)
         return a;
     }
 
-    assert(!"Duplicate field sequences!");
+    // In UB-like code (such as manual IL) we can see an addition of two static field addresses.
+    // Treat that as cancelling out the sequence, since the result will point nowhere.
+    //
+    // It may be possible for the JIT to encounter other types of UB additions, such as due to
+    // complex optimizations, inlining, etc. In release we'll still do the right thing by returning
+    // nullptr here, but the more conservative assert can help avoid JIT bugs
+
+    assert(a->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+    assert(b->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+
     return nullptr;
 }
 
@@ -19612,6 +19669,28 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 
     switch (intrinsicId)
     {
+        case NI_AVX512F_BlendVariableMask:
+        {
+            GenTree* op2 = hwintrinsic->Op(2);
+
+            if (op2->IsEmbMaskOp())
+            {
+                GenTree* op1 = hwintrinsic->Op(1);
+
+                if (op1->isContained())
+                {
+                    assert(op1->IsVectorZero());
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         case NI_AVX512F_Fixup:
         case NI_AVX512F_FixupScalar:
         case NI_AVX512F_VL_Fixup:
@@ -19702,18 +19781,34 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 // Return Value:
 // true if the intrisic node lowering instruction has an EVEX form
 //
-bool GenTree::isEvexCompatibleHWIntrinsic()
+bool GenTree::isEvexCompatibleHWIntrinsic() const
 {
-    assert(gtOper == GT_HWINTRINSIC);
-
-// TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
-// implemented in the register allocator
-#if defined(TARGET_AMD64)
-    return HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
+    // TODO-XARCH-AVX512 remove the ReturnsPerElementMask check once K registers have been properly
+    // implemented in the register allocator
+    return OperIsHWIntrinsic() && HWIntrinsicInfo::HasEvexSemantics(AsHWIntrinsic()->GetHWIntrinsicId()) &&
            !HWIntrinsicInfo::ReturnsPerElementMask(AsHWIntrinsic()->GetHWIntrinsicId());
-#else
+}
+
+//------------------------------------------------------------------------
+// isEvexEmbeddedMaskingCompatibleHWIntrinsic: Checks if the intrinsic is compatible
+// with the EVEX embedded masking form for its intended lowering instruction.
+//
+// Return Value:
+// true if the intrisic node lowering instruction has an EVEX embedded masking
+//
+bool GenTree::isEvexEmbeddedMaskingCompatibleHWIntrinsic() const
+{
+#if defined(TARGET_XARCH)
+    if (OperIsHWIntrinsic())
+    {
+        // TODO-AVX512F-CQ: Expand this to the full set of APIs and make it table driven
+        // using IsEmbMaskingCompatible. For now, however, limit it to some explicit ids
+        // for prototyping purposes.
+        return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_AVX512F_Add);
+    }
+#endif // TARGET_XARCH
+
     return false;
-#endif
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,

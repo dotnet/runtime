@@ -10,6 +10,7 @@ namespace ILCompiler.DependencyAnalysis
         Executable,
         Uninitialized,
         Debug,
+        UnwindData,
     }
 
     /// <summary>

@@ -235,13 +235,6 @@ namespace System
             m_extraFunctionPointerOrData = functionPointer;
         }
 
-        internal void SetClosedStaticFirstParameter(object firstParameter)
-        {
-            // Closed static delegates place a value in m_helperObject that they pass to the target method.
-            Debug.Assert(m_functionPointer == GetThunk(ClosedStaticThunk));
-            m_helperObject = firstParameter;
-        }
-
         // This function is only ever called by the open instance method thunk, and in that case,
         // m_extraFunctionPointerOrData always points to an OpenMethodResolver
         [MethodImpl(MethodImplOptions.NoInlining)]

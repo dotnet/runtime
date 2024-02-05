@@ -159,14 +159,12 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
-                        ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.ResolveVirtualFunction);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
+                            // Not tested
+                            encoder.EmitDebugBreak();
+
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
                             encoder.EmitJMP(factory.ExternSymbol("RhpResolveInterfaceMethod"));
                         }
@@ -185,7 +183,6 @@ namespace ILCompiler.DependencyAnalysis
                                             ((short)(EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize))));
                             encoder.EmitRET();
                         }
-                        */
                     }
                     break;
 

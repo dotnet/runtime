@@ -151,8 +151,13 @@ private:
 
         helperBlock->SetFlags(BBF_BACKWARD_JUMP | BBF_NONE_QUIRK);
 
-        compiler->fgAddRefPred(helperBlock, block);
-        compiler->fgAddRefPred(remainderBlock, helperBlock);
+        FlowEdge* const falseEdge = compiler->fgAddRefPred(helperBlock, block);
+        FlowEdge* const trueEdge  = compiler->fgGetPredForBlock(remainderBlock, block);
+        trueEdge->setLikelihood(HIGH_PROBABILITY / 100.0);
+        falseEdge->setLikelihood((100 - HIGH_PROBABILITY) / 100.0);
+
+        FlowEdge* const newEdge = compiler->fgAddRefPred(remainderBlock, helperBlock);
+        newEdge->setLikelihood(1.0);
 
         // Update weights
         remainderBlock->inheritWeight(block);

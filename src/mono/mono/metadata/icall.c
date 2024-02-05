@@ -2158,6 +2158,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 		case MONO_TYPE_R8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 			isref = FALSE;
 			if (!MONO_HANDLE_IS_NULL (value)) {
 				if (m_class_is_valuetype (mono_handle_class (value)))

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, emscriptenModule, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_debug, mono_log_error, mono_log_info_no_prefix, mono_log_warn, teardown_proxy_console } from "./logging";
 
@@ -13,11 +15,34 @@ export function is_runtime_running() {
 }
 
 export function assert_runtime_running() {
-    mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
-    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}`);
+    if (!is_exited()) {
+        if (WasmEnableThreads && ENVIRONMENT_IS_WORKER) {
+            mono_assert(runtimeHelpers.runtimeReady, "The WebWorker is not attached to the runtime. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+        } else {
+            mono_assert(runtimeHelpers.runtimeReady, ".NET runtime didn't start yet. Please call dotnet.create() first.");
+        }
+    } else {
+        mono_assert(!loaderHelpers.assertAfterExit, () => `.NET runtime already exited with ${loaderHelpers.exitCode} ${loaderHelpers.exitReason}. You can use runtime.runMain() which doesn't exit the runtime.`);
+    }
 }
 
-export function register_exit_handlers() {
+
+export function installUnhandledErrorHandler() {
+    // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
+    if (ENVIRONMENT_IS_WEB) {
+        globalThis.addEventListener("unhandledrejection", unhandledrejection_handler);
+        globalThis.addEventListener("error", error_handler);
+    }
+}
+
+export function uninstallUnhandledErrorHandler() {
+    if (ENVIRONMENT_IS_WEB) {
+        globalThis.removeEventListener("unhandledrejection", unhandledrejection_handler);
+        globalThis.removeEventListener("error", error_handler);
+    }
+}
+
+export function registerEmscriptenExitHandlers() {
     if (!emscriptenModule.onAbort) {
         emscriptenModule.onAbort = onAbort;
     }
@@ -26,7 +51,7 @@ export function register_exit_handlers() {
     }
 }
 
-export function unregister_exit_handlers() {
+function unregisterEmscriptenExitHandlers() {
     if (emscriptenModule.onAbort == onAbort) {
         emscriptenModule.onAbort = undefined;
     }
@@ -34,7 +59,6 @@ export function unregister_exit_handlers() {
         emscriptenModule.onExit = undefined;
     }
 }
-
 function onExit(code: number) {
     mono_exit(code, loaderHelpers.exitReason);
 }
@@ -45,7 +69,8 @@ function onAbort(reason: any) {
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
-    unregister_exit_handlers();
+    unregisterEmscriptenExitHandlers();
+    uninstallUnhandledErrorHandler();
 
     // unify shape of the reason object
     const is_object = reason && typeof reason === "object";
@@ -126,14 +151,21 @@ export function mono_exit(exit_code: number, reason?: any): void {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (runtimeHelpers.runtimeReady && runtimeHelpers.mono_wasm_exit) {
+    if (WasmEnableThreads && ENVIRONMENT_IS_WORKER && runtimeHelpers.runtimeReady && runtimeHelpers.nativeAbort) {
+        // note that the reason is not passed to UI thread
+        runtimeHelpers.runtimeReady = false;
+        runtimeHelpers.nativeAbort(reason);
+        throw reason;
+    }
+
+    if (runtimeHelpers.runtimeReady && runtimeHelpers.nativeExit) {
         runtimeHelpers.runtimeReady = false;
         try {
-            runtimeHelpers.mono_wasm_exit(exit_code);
+            runtimeHelpers.nativeExit(exit_code);
         }
-        catch (err) {
-            if (runtimeHelpers.ExitStatus && !(err instanceof runtimeHelpers.ExitStatus)) {
-                mono_log_warn("mono_wasm_exit failed", err);
+        catch (error: any) {
+            if (runtimeHelpers.ExitStatus && !(error instanceof runtimeHelpers.ExitStatus)) {
+                mono_log_warn("mono_wasm_exit failed: " + error.toString());
             }
         }
     }
@@ -193,7 +225,7 @@ function abort_promises(reason: any) {
 }
 
 function appendElementOnExit(exit_code: number) {
-    if (ENVIRONMENT_IS_WEB && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
+    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
@@ -213,15 +245,19 @@ function logOnExit(exit_code: number, reason: any) {
         if (typeof reason == "string") {
             mono_log(reason);
         }
-        else if (reason.stack && reason.message) {
-            if (runtimeHelpers.stringify_as_error_with_stack) {
-                mono_log(runtimeHelpers.stringify_as_error_with_stack(reason));
-            } else {
-                mono_log(reason.message + "\n" + reason.stack);
-            }
-        }
         else {
-            mono_log(JSON.stringify(reason));
+            if (reason.stack === undefined) {
+                reason.stack = new Error().stack + "";
+            }
+            if (reason.message) {
+                const message = runtimeHelpers.stringify_as_error_with_stack
+                    ? runtimeHelpers.stringify_as_error_with_stack(reason.message + "\n" + reason.stack)
+                    : reason.message + "\n" + reason.stack;
+                mono_log(message);
+            }
+            else {
+                mono_log(JSON.stringify(reason));
+            }
         }
     }
     if (loaderHelpers.config) {
@@ -235,5 +271,31 @@ function logOnExit(exit_code: number, reason: any) {
         else if (loaderHelpers.config.forwardConsoleLogsToWS) {
             teardown_proxy_console();
         }
+    }
+}
+function unhandledrejection_handler(event: any) {
+    fatal_handler(event, event.reason, "rejection");
+}
+
+function error_handler(event: any) {
+    fatal_handler(event, event.error, "error");
+}
+
+function fatal_handler(event: any, reason: any, type: string) {
+    event.preventDefault();
+    try {
+        if (!reason) {
+            reason = new Error("Unhandled " + type);
+        }
+        if (reason.stack === undefined) {
+            reason.stack = new Error().stack;
+        }
+        reason.stack = reason.stack + "";// string conversion (it could be getter)
+        if (!reason.silent) {
+            mono_log_error("Unhandled error:", reason);
+            mono_exit(1, reason);
+        }
+    } catch (err) {
+        // no not re-throw from the fatal handler
     }
 }
