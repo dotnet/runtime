@@ -13,12 +13,26 @@ internal static partial class Interop
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void ReleaseCSOwnedObject(nint jsHandle);
+#if FEATURE_WASM_MANAGED_THREADS
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void ReleaseCSOwnedObjectPost(nint targetNativeTID, nint jsHandle);
+#endif
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSFunction(nint functionHandle, nint data);
+#if FEATURE_WASM_MANAGED_THREADS
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSFunctionSend(nint targetNativeTID, nint functionHandle, nint data);
+#endif
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ResolveOrRejectPromise(nint data);
+#if FEATURE_WASM_MANAGED_THREADS
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void ResolveOrRejectPromisePost(nint targetNativeTID, nint data);
+#endif
 
 #if !ENABLE_JS_INTEROP_BY_VALUE
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -27,7 +41,7 @@ internal static partial class Interop
         public static extern void DeregisterGCRoot(nint handle);
 #endif
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InstallWebWorkerInterop(nint proxyContextGCHandle);
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -35,39 +49,23 @@ internal static partial class Interop
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSImportSync(nint data, nint signature);
-
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void InvokeJSImportAsync(nint data, nint signature);
+        public static extern void InvokeJSImportSyncSend(nint targetNativeTID, nint data, nint signature);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSImportAsyncPost(nint targetNativeTID, nint data, nint signature);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void CancelPromise(nint taskHolderGCHandle);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void CancelPromisePost(nint targetNativeTID, nint taskHolderGCHandle);
 #else
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern unsafe void BindJSImport(void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InvokeJSImport(int importHandle, nint data);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void CancelPromise(nint gcHandle);
 #endif
 
-        #region Legacy
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void InvokeJSWithArgsRef(IntPtr jsHandle, in string method, in object?[] parms, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetObjectPropertyRef(IntPtr jsHandle, in string propertyName, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetObjectPropertyRef(IntPtr jsHandle, in string propertyName, in object? value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetByIndexRef(IntPtr jsHandle, int index, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetByIndexRef(IntPtr jsHandle, int index, in object? value, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetGlobalObjectRef(in string? globalName, out int exceptionalResult, out object result);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TypedArrayToArrayRef(IntPtr jsHandle, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void CreateCSOwnedObjectRef(in string className, in object[] parms, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TypedArrayFromRef(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult, out object result);
-
-        #endregion
 
     }
 }

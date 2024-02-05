@@ -9,6 +9,8 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public static class SslStreamCertificateContextTests
     {
         [Fact]
@@ -27,7 +29,7 @@ namespace System.Net.Security.Tests
                 intermediateAuthorityCount: 1,
                 subjectName: serverName,
                 keySize: 2048,
-                extensions: TestHelper.BuildTlsServerCertExtensions(serverName));
+                extensions: Configuration.Certificates.BuildTlsServerCertExtensions(serverName));
 
             using (responder)
             using (rootAuthority)

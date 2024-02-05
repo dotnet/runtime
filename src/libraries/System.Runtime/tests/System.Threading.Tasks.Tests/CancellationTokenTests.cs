@@ -874,7 +874,6 @@ namespace System.Threading.Tasks.Tests
 
         // Several tests for deriving custom user types from CancellationTokenSource
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94486", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public static void DerivedCancellationTokenSource()
         {
             // Verify that a derived CTS is functional
