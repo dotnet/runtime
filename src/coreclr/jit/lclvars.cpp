@@ -276,7 +276,8 @@ void Compiler::lvaInitTypeRef()
         if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) != 0)
         {
             CORINFO_CLASS_HANDLE refClsHnd = NO_CLASS_HANDLE;
-            if (corInfoType == CORINFO_TYPE_BYREF)
+            // don't run in crossgen to avoid invalid type info
+            if (corInfoType == CORINFO_TYPE_BYREF && !opts.IsReadyToRun())
             {
                 CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->locals, localsSig);
 
@@ -287,6 +288,7 @@ void Compiler::lvaInitTypeRef()
                 }
             }
 
+            // ignore pinned on ref structs
             if ((refClsHnd != NO_CLASS_HANDLE) &&
                 ((info.compCompHnd->getClassAttribs(refClsHnd) & CORINFO_FLG_BYREF_LIKE) != 0))
             {
