@@ -763,8 +763,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     {
                     }
                 }
-                """
-            ;
+                """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation);
