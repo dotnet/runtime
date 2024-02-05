@@ -18,7 +18,7 @@
        implements class IFoo`1<class [System.Runtime]System.Object>,
                   class IFoo`1<valuetype [System.Runtime]System.Int32>
 {
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void .ctor() cil managed
   {
     ldarg.0
@@ -27,69 +27,73 @@
   }
 }
 
-.method public hidebysig static int32 Main() cil managed
+.class public auto ansi abstract sealed beforefieldinit sharedinterfacemethod
+    extends [System.Runtime]System.Object
 {
-  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-      01 00 00 00
-  )
-  .entrypoint
+  .method public hidebysig static int32 Main() cil managed
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .entrypoint
 
-  // Callvirt to a shared interface method
+    // Callvirt to a shared interface method
 
-  newobj instance void Fooer::.ctor()
-  callvirt instance class [System.Runtime]System.Type class IFoo`1<valuetype [System.Runtime]System.Int32>::Frob()
-  ldtoken valuetype [System.Runtime]System.Int32
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-  ceq
-  brtrue UnsharedCallvirtIsGood
+    newobj instance void Fooer::.ctor()
+    callvirt instance class [System.Runtime]System.Type class IFoo`1<valuetype [System.Runtime]System.Int32>::Frob()
+    ldtoken valuetype [System.Runtime]System.Int32
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue UnsharedCallvirtIsGood
 
-  ldc.i4.1
-  ret
+    ldc.i4.1
+    ret
 
-UnsharedCallvirtIsGood:
+  UnsharedCallvirtIsGood:
 
-  // Call to a shared interface
+    // Call to a shared interface
 
-  newobj instance void Fooer::.ctor()
-  call instance class [System.Runtime]System.Type class IFoo`1<valuetype [System.Runtime]System.Int32>::Frob()
-  ldtoken valuetype [System.Runtime]System.Int32
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-  ceq
-  brtrue UnsharedCallIsGood
+    newobj instance void Fooer::.ctor()
+    call instance class [System.Runtime]System.Type class IFoo`1<valuetype [System.Runtime]System.Int32>::Frob()
+    ldtoken valuetype [System.Runtime]System.Int32
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue UnsharedCallIsGood
 
-  ldc.i4.2
-  ret
+    ldc.i4.2
+    ret
 
-UnsharedCallIsGood:
+  UnsharedCallIsGood:
 
-  // Callvirt to an unshared interface method
+    // Callvirt to an unshared interface method
 
-  newobj instance void Fooer::.ctor()
-  callvirt instance class [System.Runtime]System.Type class IFoo`1<class [System.Runtime]System.Object>::Frob()
-  ldtoken class [System.Runtime]System.Object
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-  ceq
-  brtrue SharedCallvirtIsGood
+    newobj instance void Fooer::.ctor()
+    callvirt instance class [System.Runtime]System.Type class IFoo`1<class [System.Runtime]System.Object>::Frob()
+    ldtoken class [System.Runtime]System.Object
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue SharedCallvirtIsGood
 
-  ldc.i4.3
-  ret
+    ldc.i4.3
+    ret
 
-SharedCallvirtIsGood:
+  SharedCallvirtIsGood:
 
-  // Call to an unshared interface method
+    // Call to an unshared interface method
 
-  newobj instance void Fooer::.ctor()
-  call instance class [System.Runtime]System.Type class IFoo`1<class [System.Runtime]System.Object>::Frob()
-  ldtoken class [System.Runtime]System.Object
-  call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
-  ceq
-  brtrue SharedCallIsGood
+    newobj instance void Fooer::.ctor()
+    call instance class [System.Runtime]System.Type class IFoo`1<class [System.Runtime]System.Object>::Frob()
+    ldtoken class [System.Runtime]System.Object
+    call class [System.Runtime]System.Type class [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    ceq
+    brtrue SharedCallIsGood
 
-  ldc.i4.4
-  ret
+    ldc.i4.4
+    ret
 
-SharedCallIsGood:
+  SharedCallIsGood:
 
-  ldc.i4 100
-  ret
+    ldc.i4 100
+    ret
+  }
 }
