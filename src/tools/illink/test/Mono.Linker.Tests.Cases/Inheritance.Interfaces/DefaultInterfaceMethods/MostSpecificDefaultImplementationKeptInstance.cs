@@ -36,7 +36,9 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		[KeptInterface (typeof (IBase))]
 		interface IMiddle : IBase
 		{
+			[Kept]
 			int IBase.Value {
+			[Kept]
 				get => 1;
 			}
 
@@ -68,6 +70,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		[KeptInterface (typeof (IDerived))]
 		[KeptInterface (typeof (IMiddle))]
 		[KeptInterface (typeof (IBase))]
+		[KeptMember(".ctor()")]
 		class UsedAsIBase : IDerived, INotReferenced
 		{
 		}
