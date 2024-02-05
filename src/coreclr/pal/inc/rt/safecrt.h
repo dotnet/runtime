@@ -370,7 +370,7 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tcsncat_s      strncat_s
 #define _tcsset_s       _strset_s
 #define _tcsnset_s      _strnset_s
-#define _tcstok_s       strtok_s
+#define _tcstok_s       strtok_r
 #define _vsntprintf_s   _vsnprintf_s
 
 #elif defined(_UNICODE) || defined(UNICODE)
@@ -1118,87 +1118,10 @@ errno_t __cdecl _wcsnset_s(WCHAR *_Dst, size_t _SizeInWords, WCHAR _Value, size_
 
 #endif
 
-/* strtok_s */
+/* wcstok_s */
 /*
- * strtok_s, wcstok_s ;
  * uses _Context to keep track of the position in the string.
  */
-_SAFECRT__EXTERN_C
-char * __cdecl strtok_s(char *_String, const char *_Control, char **_Context);
-
-#if _SAFECRT_USE_INLINES || _SAFECRT_IMPL
-
-_SAFECRT__INLINE
-char * __cdecl strtok_s(char *_String, const char *_Control, char **_Context)
-{
-    unsigned char *str;
-    const unsigned char *ctl = (const unsigned char *)_Control;
-    unsigned char map[32];
-    int count;
-
-    /* validation section */
-    _SAFECRT__VALIDATE_POINTER_ERROR_RETURN(_Context, EINVAL, nullptr);
-    _SAFECRT__VALIDATE_POINTER_ERROR_RETURN(_Control, EINVAL, nullptr);
-    _SAFECRT__VALIDATE_CONDITION_ERROR_RETURN(_String != nullptr || *_Context != nullptr, EINVAL, nullptr);
-
-    /* Clear control map */
-    for (count = 0; count < 32; count++)
-    {
-        map[count] = 0;
-    }
-
-    /* Set bits in delimiter table */
-    do {
-        map[*ctl >> 3] |= (1 << (*ctl & 7));
-    } while (*ctl++);
-
-    /* If string is nullptr, set str to the saved
-    * pointer (i.e., continue breaking tokens out of the string
-    * from the last strtok call) */
-    if (_String != nullptr)
-    {
-        str = (unsigned char *)_String;
-    }
-    else
-    {
-        str = (unsigned char *)*_Context;
-    }
-
-    /* Find beginning of token (skip over leading delimiters). Note that
-    * there is no token iff this loop sets str to point to the terminal
-    * null (*str == 0) */
-    while ((map[*str >> 3] & (1 << (*str & 7))) && *str != 0)
-    {
-        str++;
-    }
-
-    _String = (char *)str;
-
-    /* Find the end of the token. If it is not the end of the string,
-    * put a null there. */
-    for ( ; *str != 0 ; str++ )
-    {
-        if (map[*str >> 3] & (1 << (*str & 7)))
-        {
-            *str++ = 0;
-            break;
-        }
-    }
-
-    /* Update context */
-    *_Context = (char *)str;
-
-    /* Determine if a token has been found. */
-    if (_String == (char *)str)
-    {
-        return nullptr;
-    }
-    else
-    {
-        return _String;
-    }
-}
-#endif
 
 /* wcstok_s */
 _SAFECRT__EXTERN_C

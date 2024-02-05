@@ -7,7 +7,7 @@
 
 *
 *Purpose:
-*       This file contains the general algorithm for strtok_s and its variants.
+*       This file contains the general algorithm for wcstok_s and its variants.
 *
 ****/
 
