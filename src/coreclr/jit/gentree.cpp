@@ -2482,6 +2482,26 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
     return IsHelperCall(compiler->eeFindHelper(helper));
 }
 
+bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
+{
+    if (IsHelperCall())
+    {
+        return false;
+    }
+
+    switch (compiler->eeGetHelperNum(gtCallMethHnd))
+    {
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
+        case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 //-------------------------------------------------------------------------
 // IsSpecialIntrinsic: Determine if this GT_CALL node is a specific intrinsic.
 //
@@ -2538,6 +2558,12 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
         if (c1->gtCallMethHnd != c2->gtCallMethHnd)
         {
             return false;
+        }
+
+        if (c1->IsHelperCall() && ((c1->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) !=
+                                   (c2->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL)))
+        {
+            return true;
         }
 
 #ifdef FEATURE_READYTORUN
