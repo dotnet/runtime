@@ -724,15 +724,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             // EmitBindCheckForSectionValue produce the following code:
-            // if (!string.IsNullOrEmpty(section.Value) && !section.GetChildren().GetEnumerator().MoveNext()) { continue; }
+            // if (!string.IsNullOrEmpty(section.Value) && !section.GetChildren().Any()) { continue; }
             //
             // If a section possesses a null or empty string value and lacks any children, we bind to the default value of the type.
             // In the case of a non-null or non-empty string value without any section children, binding cannot be performed at that moment,
             // and this section should be skipped.
             private void EmitBindCheckForSectionValue()
             {
-                // We utilize GetEnumerator().MoveNext() instead of employing Linq's Any() since there is no assurance that the System.Linq reference is included.
-                EmitStartBlock($"if (!string.IsNullOrEmpty({Expression.sectionValue}) && !{Identifier.section}.{Identifier.GetChildren}().{Identifier.GetEnumerator}().{Identifier.MoveNext}())");
+                EmitStartBlock($"if (!string.IsNullOrEmpty({Expression.sectionValue}) && !{Identifier.section}.{Identifier.GetChildren}().{Identifier.Any}())");
                 _writer.WriteLine($@"continue;");
                 EmitEndBlock();
             }

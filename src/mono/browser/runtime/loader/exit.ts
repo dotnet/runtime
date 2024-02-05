@@ -274,18 +274,18 @@ function logOnExit(exit_code: number, reason: any) {
     }
 }
 function unhandledrejection_handler(event: any) {
-    fatal_handler(event, event.reason);
+    fatal_handler(event, event.reason, "rejection");
 }
 
 function error_handler(event: any) {
-    fatal_handler(event, event.error);
+    fatal_handler(event, event.error, "error");
 }
 
-function fatal_handler(event: any, reason: any) {
+function fatal_handler(event: any, reason: any, type: string) {
     event.preventDefault();
     try {
         if (!reason) {
-            reason = new Error("Unhandled");
+            reason = new Error("Unhandled " + type);
         }
         if (reason.stack === undefined) {
             reason.stack = new Error().stack;
