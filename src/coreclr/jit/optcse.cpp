@@ -5566,36 +5566,73 @@ void Compiler::optFindCseCandidatesNew()
     m_dfsTree = nullptr;
     m_domTree = nullptr;
 
-#if 0
-
     // Now build the classic candidate sets from what we've found.
     //
-    i = 1;
-    for (CseCandidateState::Def* cse : *cseState.GetCandidates())
+    optCSECandidateCount = 0;
+    for (CseDef* const cse : cseState.GetCandidates())
     {
+        GenTree* const tree = cse->tslTree;
+
+        if (optCSECandidateCount == MAX_CSE_CNT)
+        {
+            JITDUMP("Exceeded the MAX_CSE_CNT, not using tree [%06u]:\n", dspTreeID(tree));
+            continue;
+        }
+
         CSEdsc* const dsc = new (this, CMK_CSE) CSEdsc;
 
-        dsc->csdHashKey        = optKeyForCSE(cse->m_def, &dsc->csdIsSharedConst);
+        assert(FitsIn<signed char>(i));
+        signed char CSEindex = (signed char)++optCSECandidateCount;
+        tree->gtCSEnum       = CSEindex;
+
+        unsigned short useCount  = 0;
+        weight_t       useWeight = 0;
+        for (treeStmtLst* use = cse->tslNext; use != nullptr; use = use->tslNext)
+        {
+            useCount += 1;
+            useWeight += use->tslBlock->getBBWeight(this);
+            use->tslTree->gtCSEnum = CSEindex;
+        }
+
+        size_t key = optKeyForCSE(tree, &dsc->csdIsSharedConst);
+
+        dsc->csdHashKey        = key;
         dsc->csdConstDefValue  = 0;
         dsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
-        dsc->csdIndex          = 0;
+        dsc->csdIndex          = CSEindex;
         dsc->csdLiveAcrossCall = false;
         dsc->csdDefCount       = 1;
-        dsc->csdUseCount       = (unsigned short)cse->m_uses->size();
-        dsc->csdDefWtCnt       = cse->m_block->getBBWeight(this);
-        dsc->csdUseWtCnt       = cse->m_useWeight;
+        dsc->csdUseCount       = useCount;
+        dsc->csdDefWtCnt       = cse->tslBlock->getBBWeight(this);
+        dsc->csdUseWtCnt       = useWeight;
         dsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
         dsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
         dsc->defConservNormVN  = vnStore->VNForNull(); // uninit value
 
-        dsc->csdTree     = cse->m_def;
-        dsc->csdStmt     = nullptr; // ahem
-        dsc->csdBlock    = cse->m_block;
-        dsc->csdTreeList = nullptr;
+        dsc->csdTree     = tree;
+        dsc->csdStmt     = cse->tslStmt;
+        dsc->csdBlock    = cse->tslBlock;
+        dsc->csdTreeList = cse->tslNext;
+        dsc->csdTreeLast = nullptr;
 
-        // need to know block and stmt for all appearances.
-        // Can just build the tree list during finding?
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nCandidate " FMT_CSE ", key=", CSEindex);
+            if (!Compiler::Is_Shared_Const_CSE(key))
+            {
+                vnPrint((unsigned)key, 0);
+            }
+            else
+            {
+                size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(key);
+                printf("K_%p", dspPtr(kVal));
+            }
+
+            printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", cse->tslBlock->bbNum, tree->GetCostEx(),
+                   tree->GetCostSz());
+            gtDispTree(tree);
+        }
+#endif // DEBUG
     }
-
-#endif
 }
