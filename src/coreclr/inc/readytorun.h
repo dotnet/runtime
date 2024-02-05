@@ -17,6 +17,8 @@
 // Keep these in sync with
 //  src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
+// If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
+// and handle pending work.
 #define READYTORUN_MAJOR_VERSION 0x0009
 #define READYTORUN_MINOR_VERSION 0x0001
 
