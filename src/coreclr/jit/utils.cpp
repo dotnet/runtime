@@ -1537,8 +1537,6 @@ void HelperCallProperties::init()
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
-            case CORINFO_HELP_FLTROUND:
-            case CORINFO_HELP_DBLROUND:
 
                 isPure  = true;
                 noThrow = true;

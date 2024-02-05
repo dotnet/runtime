@@ -87,8 +87,6 @@ HELPER(READYTORUN_HELPER_Dbl2ULngOvf,               CORINFO_HELP_DBL2ULNG_OVF,  
 
 HELPER(READYTORUN_HELPER_FltRem,                    CORINFO_HELP_FLTREM,                            )
 HELPER(READYTORUN_HELPER_DblRem,                    CORINFO_HELP_DBLREM,                            )
-HELPER(READYTORUN_HELPER_FltRound,                  CORINFO_HELP_FLTROUND,                          )
-HELPER(READYTORUN_HELPER_DblRound,                  CORINFO_HELP_DBLROUND,                          )
 
 #ifndef TARGET_X86
 HELPER(READYTORUN_HELPER_PersonalityRoutine,        CORINFO_HELP_EE_PERSONALITY_ROUTINE,            OPTIMIZEFORSIZE)

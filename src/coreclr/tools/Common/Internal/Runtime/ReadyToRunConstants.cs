@@ -313,8 +313,6 @@ namespace Internal.ReadyToRunConstants
         // Floating point ops
         DblRem                      = 0xE0,
         FltRem                      = 0xE1,
-        DblRound                    = 0xE2,
-        FltRound                    = 0xE3,
 
         // Personality routines
         PersonalityRoutine          = 0xF0,
