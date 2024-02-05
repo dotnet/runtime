@@ -1,7 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <CompileDependsOn>_CreateILLinkRuntimeRootDescriptorFile;$(CompileDependsOn)</CompileDependsOn>
+    <CompileDependsOn Condition="'$(DesignTimeBuild)' != 'true'">$(CompileDependsOn);_CreateILLinkRuntimeRootDescriptorFile</CompileDependsOn>
   </PropertyGroup>
 
   <PropertyGroup>
