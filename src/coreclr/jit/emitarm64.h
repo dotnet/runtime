@@ -562,6 +562,9 @@ static code_t insEncodeUimm2_11_to_10(ssize_t imm);
 // Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
 static code_t insEncodeUimm2_20_to_19(ssize_t imm);
 
+// Returns the encoding for the immediate value as 1 bit at bit location '22'.
+static code_t insEncodeImm1_22(ssize_t imm);
+
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 
