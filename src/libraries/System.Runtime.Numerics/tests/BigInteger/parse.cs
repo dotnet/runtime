@@ -1168,10 +1168,11 @@ namespace System.Numerics.Tests
         [OuterLoop]
         public static void RunParseToStringTests(CultureInfo culture)
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
             {
                 parseTest.RunParseToStringTests(culture);
-            });
+            }));
         }
 
         [Theory]
@@ -1185,16 +1186,18 @@ namespace System.Numerics.Tests
         [InlineData("123456789\0", 0, 10, "123456789")]
         public static void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
             {
                 parseTest.Parse_Subspan_Success(input, offset, length, expected);
-            });
+            }));
         }
 
         [Fact]
         public static void Parse_EmptySubspan_Fails()
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, parseTest.Parse_EmptySubspan_Fails);
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, parseTest.Parse_EmptySubspan_Fails));
         }
 
         public static IEnumerable<object[]> RegressionIssueRuntime94610_TestData() => parseTest.RegressionIssueRuntime94610_TestData();
@@ -1203,10 +1206,11 @@ namespace System.Numerics.Tests
         [MemberData(nameof(RegressionIssueRuntime94610_TestData))]
         public static void RegressionIssueRuntime94610(string text)
         {
-            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThreshold, 0, () =>
+            BigIntTools.Utils.RunWithFakeThreshold(Number.BigIntegerParseNaiveThresholdInRecursive, 10, () =>
             {
                 parseTest.RegressionIssueRuntime94610(text);
-            });
+            }));
         }
     }
 }
