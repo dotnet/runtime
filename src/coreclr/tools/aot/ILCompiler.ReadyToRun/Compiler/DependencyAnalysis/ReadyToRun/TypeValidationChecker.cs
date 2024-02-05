@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // The runtime has a number of checks in the type loader which it will skip running if the SkipValidation flag is set
             // This function attempts to document all of them, and implement *some* of them.
 
-            // This function performs a portion of the validation skipping that has been found to have some importance, or to serve as 
+            // This function performs a portion of the validation skipping that has been found to have some importance, or to serve as
             // In addition, there are comments about all validation skipping activities that the runtime will perform.
             try
             {
@@ -488,8 +488,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!parameterOfDecl.HasReferenceTypeConstraint)
                         return false;
 
-                if (parameterOfDecl.HasAcceptByRefLikeConstraint)
-                    if (!parameterOfImpl.HasAcceptByRefLikeConstraint)
+                // Constraints that 'allow' must check the impl first
+                if (parameterOfImpl.HasAcceptByRefLikeConstraint)
+                    if (!parameterOfDecl.HasAcceptByRefLikeConstraint)
                         return false;
 
                 HashSet<TypeDesc> constraintsOnDecl = new HashSet<TypeDesc>();
