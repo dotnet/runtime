@@ -504,14 +504,32 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.WriteBarrier_EAX;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EBX:
+                    id = ReadyToRunHelper.WriteBarrier_EBX;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ECX:
                     id = ReadyToRunHelper.WriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EDI:
+                    id = ReadyToRunHelper.WriteBarrier_EDI;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ESI:
+                    id = ReadyToRunHelper.WriteBarrier_ESI;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
                     id = ReadyToRunHelper.CheckedWriteBarrier_EAX;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EBX;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
                     id = ReadyToRunHelper.CheckedWriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EDI;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_ESI;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST:
@@ -1311,9 +1329,27 @@ namespace Internal.JitInterface
             }
             else
             {
-                if (!targetMethod.IsVirtual ||
-                    // Final/sealed has no meaning for interfaces, but lets us devirtualize otherwise
-                    !targetMethod.OwningType.IsInterface && (targetMethod.IsFinal || targetMethod.OwningType.IsSealed()))
+                // We can devirtualize the callvirt if the method is not virtual to begin with
+                bool canDevirt = !targetMethod.IsVirtual;
+
+                // Final/sealed has no meaning for interfaces, but might let us devirtualize otherwise
+                if (!canDevirt && !targetMethod.OwningType.IsInterface)
+                {
+                    // Check if we can devirt per metadata
+                    canDevirt = targetMethod.IsFinal || targetMethod.OwningType.IsSealed();
+
+                    // We might be able to devirt based on whole program view
+                    if (!canDevirt
+                        // Do not devirt if devirtualization would need a generic dictionary entry that we didn't predict
+                        // during scanning (i.e. compiling a shared method body and we need to call another shared body
+                        // with a method generic dictionary argument).
+                        && (!pResult->exactContextNeedsRuntimeLookup || !targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg()))
+                    {
+                        canDevirt = _compilation.IsEffectivelySealed(targetMethod);
+                    }
+                }
+
+                if (canDevirt)
                 {
                     resolvedCallVirt = true;
                     directCall = true;
@@ -1970,20 +2006,22 @@ namespace Internal.JitInterface
             get
             {
                 // struct PInvokeTransitionFrame:
-                // #ifdef _TARGET_ARM_
-                //  m_ChainPointer
-                // #endif
-                //  m_RIP
-                //  m_FramePointer
+                //  m_RIP (1)
+                //  m_FramePointer (1)
                 //  m_pThread
                 //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
-                //  m_PreserverRegs - RSP
+                //  m_PreservedRegs - RSP / R9 (2)
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
+                //
+                // (1) On ARM32/ARM64 the order of m_RIP and m_FramePointer is reverse
+                // (2) R9 is saved for ARM32 because it needs to be preserved for methods with stackalloc
                 int size = 5 * this.PointerSize;
 
                 if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
-                    size += this.PointerSize; // m_ChainPointer
+                {
+                    size += this.PointerSize; // R9 (REG_SAVED_LOCALLOC_SP)
+                }
 
                 return size;
             }
@@ -2139,7 +2177,7 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
-                        if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
+                        if ((MethodBeingCompiled.Context.Target.IsWindows || MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Linux) && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
                         {
                             ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
                             if (index is TypeThreadStaticIndexNode ti)
@@ -2407,6 +2445,7 @@ namespace Internal.JitInterface
             pInfo->tlsIndexObject = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
             pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
+            pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("__tls_get_addr"));
         }
 
 #pragma warning disable CA1822 // Mark members as static

@@ -2184,7 +2184,7 @@ void      mono_link_bblock                  (MonoCompile *cfg, MonoBasicBlock *f
 void      mono_unlink_bblock                (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to);
 gboolean  mono_bblocks_linked               (MonoBasicBlock *bb1, MonoBasicBlock *bb2);
 void      mono_remove_bblock                (MonoCompile *cfg, MonoBasicBlock *bb);
-void      mono_nullify_basic_block          (MonoBasicBlock *bb);
+void      mono_nullify_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb);
 void      mono_merge_basic_blocks           (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *bbn);
 void      mono_optimize_branches            (MonoCompile *cfg);
 
@@ -2998,7 +2998,7 @@ mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 		return TRUE;
 	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
 #ifdef TARGET_ARM64
-	if (size == 8 || size == 16)
+	if (size == 8 || size == 12 || size == 16)
 		return TRUE;
 #else
 	if (size == 16)

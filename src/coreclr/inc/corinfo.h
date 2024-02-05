@@ -772,7 +772,8 @@ enum class CorInfoCallConvExtension
     // New calling conventions supported with the extensible calling convention encoding go here.
     CMemberFunction,
     StdcallMemberFunction,
-    FastcallMemberFunction
+    FastcallMemberFunction,
+    Swift
 };
 
 #ifdef TARGET_X86
@@ -824,13 +825,13 @@ enum CorInfoFlag
 {
 //  CORINFO_FLG_UNUSED                = 0x00000001,
 //  CORINFO_FLG_UNUSED                = 0x00000002,
-    CORINFO_FLG_PROTECTED             = 0x00000004,
+//  CORINFO_FLG_UNUSED                = 0x00000004,
     CORINFO_FLG_STATIC                = 0x00000008,
     CORINFO_FLG_FINAL                 = 0x00000010,
     CORINFO_FLG_SYNCH                 = 0x00000020,
     CORINFO_FLG_VIRTUAL               = 0x00000040,
 //  CORINFO_FLG_UNUSED                = 0x00000080,
-    CORINFO_FLG_NATIVE                = 0x00000100,
+//  CORINFO_FLG_UNUSED                = 0x00000100,
     CORINFO_FLG_INTRINSIC_TYPE        = 0x00000200, // This type is marked by [Intrinsic]
     CORINFO_FLG_ABSTRACT              = 0x00000400,
 
@@ -865,7 +866,7 @@ enum CorInfoFlag
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
     CORINFO_FLG_INDEXABLE_FIELDS      = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
     CORINFO_FLG_BYREF_LIKE            = 0x08000000, // it is byref-like value type
-    CORINFO_FLG_VARIANCE              = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
+//  CORINFO_FLG_UNUSED                = 0x10000000,
     CORINFO_FLG_BEFOREFIELDINIT       = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
     CORINFO_FLG_GENERIC_TYPE_VARIABLE = 0x40000000, // This is really a handle for a variable type
     CORINFO_FLG_UNSAFE_VALUECLASS     = 0x80000000, // Unsafe (C++'s /GS) value type
@@ -978,19 +979,6 @@ enum CorInfoInline
     // failures are negative
     INLINE_FAIL                     = -1,   // Inlining not OK for this case only
     INLINE_NEVER                    = -2,   // This method should never be inlined, regardless of context
-};
-
-enum CorInfoInlineTypeCheck
-{
-    CORINFO_INLINE_TYPECHECK_NONE       = 0x00000000, // It's not okay to compare type's vtable with a native type handle
-    CORINFO_INLINE_TYPECHECK_PASS       = 0x00000001, // It's okay to compare type's vtable with a native type handle
-    CORINFO_INLINE_TYPECHECK_USE_HELPER = 0x00000002, // Use a specialized helper to compare type's vtable with native type handle
-};
-
-enum CorInfoInlineTypeCheckSource
-{
-    CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE = 0x00000000, // Type handle comes from the vtable
-    CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN  = 0x00000001, // Type handle comes from an ldtoken
 };
 
 // If you add more values here, keep it in sync with TailCallTypeMap in ..\vm\ClrEtwAll.man
@@ -1749,6 +1737,7 @@ struct CORINFO_THREAD_STATIC_INFO_NATIVEAOT
     CORINFO_CONST_LOOKUP tlsRootObject;
     CORINFO_CONST_LOOKUP tlsIndexObject;
     CORINFO_CONST_LOOKUP threadStaticBaseSlow;
+    CORINFO_CONST_LOOKUP tlsGetAddrFtnPtr;
 };
 
 //----------------------------------------------------------------------------
@@ -2400,11 +2389,6 @@ public:
     // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) & CORINFO_FLG_VALUECLASS, except faster.
     virtual bool isValueClass(CORINFO_CLASS_HANDLE cls) = 0;
 
-    // Decides how the JIT should do the optimization to inline the check for
-    //     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-    //     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-    virtual CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source) = 0;
-
     // return flags (a bitfield of CorInfoFlags values)
     virtual uint32_t getClassAttribs (
             CORINFO_CLASS_HANDLE    cls
@@ -2732,6 +2716,11 @@ public:
     virtual bool isMoreSpecificType(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2
+            ) = 0;
+
+    // Returns true if a class handle can only describe values of exactly one type.
+    virtual bool isExactType(
+            CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
     // Returns TypeCompareState::Must if cls is known to be an enum.
@@ -3383,6 +3372,7 @@ public:
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
 #define IMAGE_REL_SECREL                0x104
+#define IMAGE_REL_TLSGD                 0x105
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction
