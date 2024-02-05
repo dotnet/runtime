@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
@@ -445,15 +446,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, cts.Token);
         }
 
-        [Theory, MemberData(nameof(GetTargetThreads))]
-        public async Task WaitAssertsOnJSInteropThreads(Executor executor)
+        [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        public async Task WaitAssertsOnJSInteropThreads(Executor executor, NamedCall method)
         {
             var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(Task () =>
             {
                 Exception? exception = null;
                 try {
-                    Task.Delay(10, cts.Token).Wait();
+                    method.Call(cts.Token);
                 } catch (Exception ex) {
                     exception = ex;
                 }
