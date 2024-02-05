@@ -12304,9 +12304,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType, unsig
             if (typeObj != nullptr)
             {
                 m_pComp->setMethodHasFrozenObjects();
-                ValueNum newVN = VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
-                auto     type  = TypeOfVN(newVN);
-                return newVN;
+                return VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
             }
         }
     }
@@ -12577,17 +12575,52 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
     else
     {
+        bool handled = false;
         if (call->TypeGet() == TYP_VOID)
         {
             call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
         }
         else
         {
-            call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
+            // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
+            if (call->IsSpecialIntrinsic(this, NI_System_Type_GetTypeFromHandle))
+            {
+                VNFuncApp bitcastFuncApp;
+                VNFuncApp typeHandleFuncApp;
+                ValueNum  argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
+                if (vnStore->GetVNFunc(argVN, &bitcastFuncApp) && (bitcastFuncApp.m_func == VNF_BitCast))
+                {
+                    ssize_t clsHandle;
+                    if (vnStore->GetVNFunc(bitcastFuncApp.m_args[0], &typeHandleFuncApp) &&
+                        (typeHandleFuncApp.m_func == VNF_TypeHandleToRuntimeTypeHandle) &&
+                        vnStore->IsVNHandle(typeHandleFuncApp.m_args[0]) &&
+                        (vnStore->GetHandleFlags(typeHandleFuncApp.m_args[0]) == GTF_ICON_CLASS_HDL) &&
+                        vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(typeHandleFuncApp.m_args[0]),
+                                                         &clsHandle))
+                    {
+                        CORINFO_OBJECT_HANDLE typeObj =
+                            info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
+                        if (typeObj != nullptr)
+                        {
+                            setMethodHasFrozenObjects();
+                            call->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL));
+                            handled = true;
+                        }
+                    }
+                }
+            }
+
+            if (!handled)
+            {
+                call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
+            }
         }
 
-        // For now, arbitrary side effect on GcHeap/ByrefExposed.
-        fgMutateGcHeap(call DEBUGARG("CALL"));
+        if (!handled)
+        {
+            // For now, arbitrary side effect on GcHeap/ByrefExposed.
+            fgMutateGcHeap(call DEBUGARG("CALL"));
+        }
     }
 
     // If the call generates a definition, because it uses "return buffer", then VN the local

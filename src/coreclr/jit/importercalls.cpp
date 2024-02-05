@@ -3216,6 +3216,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1->gtType = TYP_REF;
                     retNode     = op1;
                 }
+                else if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                {
+                    isSpecial = true;
+                }
                 break;
             }
 
