@@ -350,8 +350,8 @@ namespace Internal.Runtime.CompilerHelpers
             else if (exponent >= 127)
             {
                 // >= 1
-                ulong intBit = 1ul << (127 + 23 - exponent);
-                ulong halfBit = intBit >> 1;
+                uint intBit = 1u << (127 + 23 - exponent);
+                uint halfBit = intBit >> 1;
                 value += (value & (intBit | (halfBit - 1))) != 0 ? halfBit : 0;
                 value &= ~(intBit - 1);
             }
