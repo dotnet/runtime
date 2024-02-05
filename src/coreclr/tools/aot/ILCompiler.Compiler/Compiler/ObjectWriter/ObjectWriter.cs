@@ -346,10 +346,12 @@ namespace ILCompiler.ObjectWriter
             GetOrCreateSection(ObjectNodeSection.TextSection);
             if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
             {
+                GetOrCreateSection(ObjectNodeSection.UnboxingStubWindowsContentSection);
                 GetOrCreateSection(ObjectNodeSection.ManagedCodeWindowsContentSection);
             }
             else
             {
+                GetOrCreateSection(ObjectNodeSection.UnboxingStubUnixContentSection);
                 GetOrCreateSection(ObjectNodeSection.ManagedCodeUnixContentSection);
             }
 
