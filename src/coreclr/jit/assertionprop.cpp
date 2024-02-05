@@ -694,7 +694,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
         // more than 64 assertions.
         // Note this tracks at most only 256 assertions.
         //
-        static const AssertionIndex countFunc[] = {64, 128, 256, 64};
+        static const AssertionIndex countFunc[] = {64, 128, 256, 128, 64};
         static const unsigned       upperBound  = ArrLen(countFunc) - 1;
         const unsigned              codeSize    = info.compILCodeSize / 512;
         optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
@@ -2075,60 +2075,20 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         return NO_ASSERTION_INDEX;
     }
-    GenTree* op1 = relop->gtGetOp1();
-    GenTree* op2 = relop->gtGetOp2();
-
-    ValueNum op1VN   = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN   = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+    GenTree* op2     = relop->gtGetOp2();
     ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
-    bool hasTestAgainstZero =
-        (relop->gtOper == GT_EQ || relop->gtOper == GT_NE) && (op2VN == vnStore->VNZeroForType(op2->TypeGet()));
-
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
-    // Cases where op1 holds the upper bound arithmetic and op2 is 0.
-    // Loop condition like: "i < bnd +/-k == 0"
-    // Assertion: "i < bnd +/- k == 0"
-    if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBoundArith(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_OPER_BND;
-        dsc.op1.vn         = op1VN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
+
     // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
     // Loop condition like: "i < bnd +/-k"
     // Assertion: "i < bnd +/- k != 0"
-    else if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
+    if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
     {
         AssertionDsc dsc;
         dsc.assertionKind  = OAK_NOT_EQUAL;
         dsc.op1.kind       = O1K_BOUND_OPER_BND;
         dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
-    // Cases where op1 holds the upper bound and op2 is 0.
-    // Loop condition like: "i < bnd == 0"
-    // Assertion: "i < bnd == false"
-    else if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBound(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_LOOP_BND;
-        dsc.op1.vn         = op1VN;
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal = 0;
@@ -2178,23 +2138,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
             // after i < bnd so we need to change the assertion edge to "next".
             return AssertionInfo::ForNextEdge(index);
         }
-        return index;
-    }
-    // Cases where op1 holds the condition bound check and op2 is 0.
-    // Loop condition like: "i < 100 == 0"
-    // Assertion: "i < 100 == false"
-    else if (hasTestAgainstZero && vnStore->IsVNConstantBound(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-        dsc.op1.vn         = op1VN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
     // Cases where op1 holds the lhs of the condition op2 holds rhs.
@@ -3910,7 +3853,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
-        if (!curAssertion->IsConstantBound())
+        if (!curAssertion->IsConstantBound() && !curAssertion->IsConstantBoundUnsigned())
         {
             continue;
         }
@@ -3939,12 +3882,26 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
 
-        // "X >= CNS" or "X > CNS" where CNS is >= 0
-        if ((info.constVal >= 0) && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+        if ((info.constVal >= 0))
         {
-            JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-            tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-            return optAssertionProp_Update(tree, tree, stmt);
+            bool isNotNegative = false;
+            if (info.isUnsigned && ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
+            {
+                // (uint)X <= CNS means X is [0..CNS]
+                isNotNegative = true;
+            }
+            else if (!info.isUnsigned && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+            {
+                // X >= CNS means X is [CNS..unknown]
+                isNotNegative = true;
+            }
+
+            if (isNotNegative)
+            {
+                JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+                tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+                return optAssertionProp_Update(tree, tree, stmt);
+            }
         }
     }
     return nullptr;
@@ -4868,7 +4825,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 {
     assert(indir->OperIsIndir());
 
-    if (!(indir->gtFlags & GTF_EXCEPT))
+    if ((indir->gtFlags & GTF_EXCEPT) == 0)
     {
         return false;
     }
