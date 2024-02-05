@@ -2493,7 +2493,7 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 //
 bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
 {
-    if (IsHelperCall())
+    if (!IsHelperCall())
     {
         return false;
     }
