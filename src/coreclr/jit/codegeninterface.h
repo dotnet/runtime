@@ -113,6 +113,7 @@ public:
     // move it to Lower
     virtual bool genCreateAddrMode(GenTree*  addr,
                                    bool      fold,
+                                   unsigned  naturalMul,
                                    bool*     revPtr,
                                    GenTree** rv1Ptr,
                                    GenTree** rv2Ptr,

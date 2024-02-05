@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Runtime.CompilerServices;
 
     [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
@@ -119,6 +120,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
+                if (!string.IsNullOrEmpty(section.Value) && !section.GetChildren().Any())
+                {
+                    continue;
+                }
                 var value = new global::Program.MyClass2();
                 BindCore(section, ref value, defaultValueIfNotFound: false, binderOptions);
                 instance.Add(value);

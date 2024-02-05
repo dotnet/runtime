@@ -1626,7 +1626,8 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
     block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
-    fgAddRefPred(genReturnBB, block);
+    FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
+    newEdge->setLikelihood(1.0);
 
 #ifdef DEBUG
     if (verbose)
@@ -2097,7 +2098,8 @@ private:
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
                     returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
-                    comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    FlowEdge* const newEdge = comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    newEdge->setLikelihood(1.0);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
