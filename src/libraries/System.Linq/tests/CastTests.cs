@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -234,6 +233,55 @@ namespace System.Linq.Tests
             // Don't insist on this behaviour, but check it's correct if it happens
             var en = iterator as IEnumerator<string>;
             Assert.False(en != null && en.MoveNext());
+        }
+
+        [Fact]
+        public void TargetTypeIsSourceType_Nop()
+        {
+            object[] values = new string[] { "hello", "world" };
+            Assert.Same(values, values.Cast<string>());
+        }
+
+        [Fact]
+        public void CastProducesIListFromIList()
+        {
+            object[] values = new object[] { "hello", "world" };
+
+            IList<string> castList = (IList<string>)values.Cast<string>();
+            Assert.NotNull(castList);
+
+            Assert.Equal(2, castList.Count);
+            Assert.Equal("hello", castList[0]);
+            Assert.Equal("world", castList[1]);
+            Assert.True(castList.IsReadOnly);
+            Assert.True(castList.Contains("hello"));
+            Assert.True(castList.Contains("world"));
+            Assert.False(castList.Contains("hello, world"));
+            Assert.Equal(0, castList.IndexOf("hello"));
+            Assert.Equal(1, castList.IndexOf("world"));
+            Assert.Equal(-1, castList.IndexOf("hello, world"));
+
+            Assert.Throws<NotSupportedException>(() => castList.Add("foo"));
+            Assert.Throws<NotSupportedException>(() => castList.Insert(0, "foo"));
+            Assert.Throws<NotSupportedException>(() => castList.Remove("foo"));
+            Assert.Throws<NotSupportedException>(() => castList.RemoveAt(0));
+            Assert.Throws<NotSupportedException>(() => castList.Clear());
+            Assert.Throws<IndexOutOfRangeException>(() => castList[-1]);
+            Assert.Throws<IndexOutOfRangeException>(() => castList[2]);
+            Assert.Throws<ArgumentNullException>(() => castList.CopyTo(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => castList.CopyTo(new string[1], 0));
+
+            IReadOnlyList<string> castReadOnlyList = (IReadOnlyList<string>)castList;
+            Assert.Equal(2, castReadOnlyList.Count);
+            Assert.Equal("hello", castReadOnlyList[0]);
+            Assert.Equal("world", castReadOnlyList[1]);
+        }
+
+        [Fact]
+        public void CastProducesNonIListFromNonIList()
+        {
+            IEnumerable<string> e = new object[] { "hello", "world" }.Select(s => s).Cast<string>();
+            Assert.IsNotAssignableFrom<IList<string>>(e);
         }
     }
 }
