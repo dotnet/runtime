@@ -2033,18 +2033,17 @@ ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
     {
         return res;
     }
-    else
-    {
-        Chunk* const    c                 = GetAllocChunk(TYP_I_IMPL, CEA_Handle);
-        unsigned const  offsetWithinChunk = c->AllocVN();
-        VNHandle* const chunkSlots        = reinterpret_cast<VNHandle*>(c->m_defs);
 
-        chunkSlots[offsetWithinChunk] = handle;
-        res                           = c->m_baseVN + offsetWithinChunk;
+    var_types       type              = handleFlags == GTF_ICON_OBJ_HDL ? TYP_REF : TYP_I_IMPL;
+    Chunk* const    c                 = GetAllocChunk(type, CEA_Handle);
+    unsigned const  offsetWithinChunk = c->AllocVN();
+    VNHandle* const chunkSlots        = reinterpret_cast<VNHandle*>(c->m_defs);
 
-        GetHandleMap()->Set(handle, res);
-        return res;
-    }
+    chunkSlots[offsetWithinChunk] = handle;
+    res                           = c->m_baseVN + offsetWithinChunk;
+
+    GetHandleMap()->Set(handle, res);
+    return res;
 }
 
 ValueNum ValueNumStore::VNZeroForType(var_types typ)
@@ -12281,17 +12280,35 @@ var_types ValueNumStore::DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSiz
 //
 ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size)
 {
-    // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
-    // This ensures we do not end up with pathologically long chains of
-    // bitcasts in physical maps. We could do a similar optimization in
-    // "VNForMapPhysical[Store|Select]"; we presume that's not worth it,
-    // and it is better TP-wise to skip bitcasts "lazily" when doing the
-    // selection, as the scenario where they are expected to be common,
-    // single-field structs, implies short selection chains.
     VNFuncApp srcVNFunc{VNF_COUNT};
-    if (GetVNFunc(srcVN, &srcVNFunc) && (srcVNFunc.m_func == VNF_BitCast))
+    if (GetVNFunc(srcVN, &srcVNFunc))
     {
-        srcVN = srcVNFunc.m_args[0];
+        if (srcVNFunc.m_func == VNF_BitCast)
+        {
+            // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
+            // This ensures we do not end up with pathologically long chains of
+            // bitcasts in physical maps. We could do a similar optimization in
+            // "VNForMapPhysical[Store|Select]"; we presume that's not worth it,
+            // and it is better TP-wise to skip bitcasts "lazily" when doing the
+            // selection, as the scenario where they are expected to be common,
+            // single-field structs, implies short selection chains.
+            srcVN = srcVNFunc.m_args[0];
+        }
+        else if (srcVNFunc.m_func == VNF_TypeHandleToRuntimeTypeHandle && (castToType == TYP_REF) &&
+                 IsVNHandle(srcVNFunc.m_args[0]) && (GetHandleFlags(srcVNFunc.m_args[0]) == GTF_ICON_CLASS_HDL))
+        {
+            // BitCast<TYP_REF>(TypeHandleToRuntimeTypeHandle(clsHandle).m_handle) => frozen RuntimeType handle
+            //
+            CORINFO_CLASS_HANDLE  cls     = (CORINFO_CLASS_HANDLE)ConstantValue<ssize_t>(srcVNFunc.m_args[0]);
+            CORINFO_OBJECT_HANDLE typeObj = m_pComp->info.compCompHnd->getRuntimeTypePointer(cls);
+            if (typeObj != nullptr)
+            {
+                m_pComp->setMethodHasFrozenObjects();
+                ValueNum newVN = VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
+                auto     type  = TypeOfVN(newVN);
+                return newVN;
+            }
+        }
     }
 
     var_types srcType = TypeOfVN(srcVN);

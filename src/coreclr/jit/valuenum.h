@@ -1084,7 +1084,7 @@ private:
         switch (c->m_typ)
         {
             case TYP_REF:
-                assert(0 <= offset && offset <= 1); // Null or exception.
+                assert((offset <= 1) || IsVNObjHandle(vn)); // Null, exception or nongc obj handle
                 FALLTHROUGH;
 
             case TYP_BYREF:
