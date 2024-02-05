@@ -162,11 +162,9 @@ namespace CorUnix
     class CThreadCRTInfo : public CThreadInfoInitializer
     {
     public:
-        CHAR *       strtokContext; // Context for strtok function
         WCHAR *      wcstokContext; // Context for wcstok function
 
         CThreadCRTInfo() :
-            strtokContext(NULL),
             wcstokContext(NULL)
         {
         };
