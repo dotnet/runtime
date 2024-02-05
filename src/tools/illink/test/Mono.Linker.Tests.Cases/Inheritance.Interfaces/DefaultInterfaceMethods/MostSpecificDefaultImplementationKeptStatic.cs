@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 {
 	[TestCaseRequirements (TestRunCharacteristics.SupportsDefaultInterfaceMethods, "Requires support for default interface methods")]
-	class MostSpecificDefaultImplementationKept
+	class MostSpecificDefaultImplementationKeptStatic
 	{
 		[Kept]
 		public static void Main ()
@@ -42,7 +42,13 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 		[KeptInterface (typeof (IBase))]
 		interface IMiddle : IBase
 		{
+			[Kept]
 			static int IBase.Value {
+				[Kept]
+				get => 1;
+			}
+
+			static int IBase.Value2 {
 				get => 1;
 			}
 		}
@@ -56,6 +62,10 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			static int IBase.Value {
 				[Kept]
 				get => 2;
+			}
+
+			static int IBase.Value2 {
+				get => 1;
 			}
 		}
 
