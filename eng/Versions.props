@@ -137,7 +137,6 @@
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
     <SystemTextJsonVersion>9.0.0-alpha.1.24072.1</SystemTextJsonVersion>
-    <SystemReflectionMetadataLoadContextVersion>8.0.0</SystemReflectionMetadataLoadContextVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>

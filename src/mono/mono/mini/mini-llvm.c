@@ -6203,8 +6203,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						/* SIMD value */
 						g_assert (lhs);
 						retval = LLVMBuildBitCast (builder, lhs, ret_type, "");
-						mono_llvm_dump_value (lhs);
-						mono_llvm_dump_type (ret_type);
 					} else {
 						retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
 					}
