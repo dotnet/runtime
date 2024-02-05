@@ -451,10 +451,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 };
-                if (IsJSVHandle(jsHandle))
-                {
-                    ctx.FreeJSVHandle(jsHandle);
-                }
                 if (!skipJS)
                 {
 #if FEATURE_WASM_MANAGED_THREADS
@@ -464,6 +460,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     }
                     else
                     {
+                        if (IsJSVHandle(jsHandle))
+                        {
+                            Environment.FailFast("TODO implement blocking ReleaseCSOwnedObjectSend to make sure the order of FreeJSVHandle is correct.");
+                        }
+
                         // this is async message, we need to call this as the last thing
                         // the same jsHandle would not be re-used until JS side considers it free
                         Interop.Runtime.ReleaseCSOwnedObjectPost(ctx.NativeTID, jsHandle);
@@ -471,6 +472,10 @@ namespace System.Runtime.InteropServices.JavaScript
 #else
                     Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
 #endif
+                }
+                if (IsJSVHandle(jsHandle))
+                {
+                    ctx.FreeJSVHandle(jsHandle);
                 }
             }
         }

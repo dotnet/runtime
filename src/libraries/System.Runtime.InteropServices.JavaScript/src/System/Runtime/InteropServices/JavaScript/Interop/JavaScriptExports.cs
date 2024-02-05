@@ -230,6 +230,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         holder.CallbackReady = new ManualResetEventSlim(false);
                     }
                 }
+
                 if (holder.CallbackReady != null)
                 {
                     var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
@@ -245,7 +246,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
                     }
                 }
-#endif
+
                 lock (ctx)
                 {
                     callback = holder.Callback!;
@@ -257,6 +258,10 @@ namespace System.Runtime.InteropServices.JavaScript
                         ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
                     }
                 }
+#else
+                callback = holder.Callback!;
+                ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
+#endif
 
                 // arg_2, arg_3 are processed by the callback
                 // JSProxyContext.PopOperation() is called by the callback
