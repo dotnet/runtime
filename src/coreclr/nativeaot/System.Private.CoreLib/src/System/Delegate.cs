@@ -40,10 +40,10 @@ namespace System
 
         // New Delegate Implementation
 
-        internal object m_firstParameter;
-        internal object m_helperObject;
-        internal nint m_extraFunctionPointerOrData;
-        internal IntPtr m_functionPointer;
+        private object m_firstParameter;
+        private object m_helperObject;
+        private nint m_extraFunctionPointerOrData;
+        private IntPtr m_functionPointer;
 
         // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
         // Do not change their values without updating the values in the calling convention converter component
@@ -241,11 +241,6 @@ namespace System
             return OpenMethodResolver.ResolveMethod(m_extraFunctionPointerOrData, thisObject);
         }
 
-        public override int GetHashCode()
-        {
-            return GetType().GetHashCode();
-        }
-
         internal bool IsDynamicDelegate()
         {
             if (this.GetThunk(MulticastThunk) == IntPtr.Zero)
@@ -280,14 +275,6 @@ namespace System
         protected virtual MethodInfo GetMethodImpl()
         {
             return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
-        }
-
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            // It is expected that all real uses of the Equals method will hit the MulticastDelegate.Equals logic instead of this
-            // therefore, instead of duplicating the desktop behavior where direct calls to this Equals function do not behave
-            // correctly, we'll just throw here.
-            throw new PlatformNotSupportedException();
         }
 
         public object Target
@@ -673,6 +660,101 @@ namespace System
                     del[i] = invocationList[i];
             }
             return del;
+        }
+
+        private bool InvocationListEquals(MulticastDelegate d)
+        {
+            Delegate[] invocationList = (Delegate[])m_helperObject;
+            if (d.m_extraFunctionPointerOrData != m_extraFunctionPointerOrData)
+                return false;
+
+            int invocationCount = (int)m_extraFunctionPointerOrData;
+            for (int i = 0; i < invocationCount; i++)
+            {
+                Delegate dd = invocationList[i];
+                Delegate[] dInvocationList = (Delegate[])d.m_helperObject;
+                if (!dd.Equals(dInvocationList[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (obj == null)
+                return false;
+            if (object.ReferenceEquals(this, obj))
+                return true;
+            if (!InternalEqualTypes(this, obj))
+                return false;
+
+            // Since this is a MulticastDelegate and we know
+            // the types are the same, obj should also be a
+            // MulticastDelegate
+            Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
+            var d = Unsafe.As<MulticastDelegate>(obj);
+
+            // there are 2 kind of delegate kinds for comparison
+            // 1- Multicast (m_helperObject is Delegate[])
+            // 2- Single-cast delegate, which can be compared with a structural comparison
+
+            IntPtr multicastThunk = GetThunk(MulticastThunk);
+            if (m_functionPointer == multicastThunk)
+            {
+                return d.m_functionPointer == multicastThunk && InvocationListEquals(d);
+            }
+            else
+            {
+                if (!object.ReferenceEquals(m_helperObject, d.m_helperObject) ||
+                    (!FunctionPointerOps.Compare(m_extraFunctionPointerOrData, d.m_extraFunctionPointerOrData)) ||
+                    (!FunctionPointerOps.Compare(m_functionPointer, d.m_functionPointer)))
+                {
+                    return false;
+                }
+
+                // Those delegate kinds with thunks put themselves into the m_firstParameter, so we can't
+                // blindly compare the m_firstParameter fields for equality.
+                if (object.ReferenceEquals(m_firstParameter, this))
+                {
+                    return object.ReferenceEquals(d.m_firstParameter, d);
+                }
+
+                return object.ReferenceEquals(m_firstParameter, d.m_firstParameter);
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            Delegate[]? invocationList = m_helperObject as Delegate[];
+            if (invocationList == null)
+            {
+                return base.GetHashCode();
+            }
+            else
+            {
+                int hash = 0;
+                for (int i = 0; i < (int)m_extraFunctionPointerOrData; i++)
+                {
+                    hash = hash * 33 + invocationList[i].GetHashCode();
+                }
+
+                return hash;
+            }
+        }
+
+        public bool HasSingleTarget => !(m_helperObject is Delegate[]);
+
+        // Used by delegate invocation list enumerator
+        internal Delegate? TryGetAt(int index)
+        {
+            if (!(m_helperObject is Delegate[] invocationList))
+            {
+                return (index == 0) ? this : null;
+            }
+            else
+            {
+                return ((uint)index < (uint)m_extraFunctionPointerOrData) ? invocationList[index] : null;
+            }
         }
     }
 }

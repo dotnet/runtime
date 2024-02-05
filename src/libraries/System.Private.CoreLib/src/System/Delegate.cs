@@ -57,13 +57,13 @@ namespace System
         protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
 
         public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
-#endif
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.
         /// </summary>
         /// <value>true if the <see cref="Delegate"/> has a single invocation target.</value>
         public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
+#endif
 
         /// <summary>
         /// Gets an enumerator for the invocation targets of this delegate.
