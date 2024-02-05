@@ -4956,8 +4956,7 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, Valu
     }
 
     // TODO:
-    // * addr is ByRefLike          - NoBarrier (https://github.com/dotnet/runtime/issues/9512)
-    // * addr is address of a local - NoBarrier
+    // * addr is ByRefLike - NoBarrier (https://github.com/dotnet/runtime/issues/9512)
     //
     return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 }
