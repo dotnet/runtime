@@ -293,7 +293,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
     private List<string> _fileWrites = new();
 
-    private IList<ITaskItem>? _assembliesToCompile;
+    private List<ITaskItem>? _assembliesToCompile;
     private ConcurrentDictionary<string, ITaskItem> compiledAssemblies = new();
     private BuildPropertiesTable? _propertiesTable;
 
@@ -1200,7 +1200,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private void CheckExportSymbolsFile(IList<ITaskItem> assemblies)
+    private void CheckExportSymbolsFile(List<ITaskItem> assemblies)
     {
         if (!EnableUnmanagedCallersOnlyMethodsExport)
             return;
@@ -1215,7 +1215,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, List<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)

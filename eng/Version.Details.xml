@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-alpha.1.24068.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-preview.2.24072.3">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>48829dd3ba47887db7fae2cd5f90cfc255883135</Sha>
+      <Sha>694cd153a9083da273595fabb73818d4e8a49f40</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24067.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -12,78 +12,79 @@
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-alpha.1.24065.1">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-preview.2.24079.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>c14a1d2af9d67eec272ff7d7f3c5bb6b114798fe</Sha>
+      <Sha>c7b4dbc857259968a0892cf94cfa9ae4f2ca53cd</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
     <Dependency Name="System.CommandLine" Version="2.0.0-beta4.23407.1">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>a045dd54a4c44723c215d992288160eb1401bb7f</Sha>
     </Dependency>
+    <!-- Intermediate is necessary for source build. -->
     <Dependency Name="Microsoft.SourceBuild.Intermediate.command-line-api" Version="0.1.440701">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>a045dd54a4c44723c215d992288160eb1401bb7f</Sha>
@@ -92,308 +93,340 @@
     <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.24065.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
       <Sha>b8c2293cd1cbd9d0fe6f32d7b5befbd526b5a175</Sha>
+    </Dependency>
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.4-alpha.24065.1">
+      <Uri>https://github.com/dotnet/cecil</Uri>
+      <Sha>b8c2293cd1cbd9d0fe6f32d7b5befbd526b5a175</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-alpha.1.24065.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-preview.2.24079.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>c14a1d2af9d67eec272ff7d7f3c5bb6b114798fe</Sha>
+      <Sha>c7b4dbc857259968a0892cf94cfa9ae4f2ca53cd</Sha>
+    </Dependency>
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.0-preview.2.24079.1">
+      <Uri>https://github.com/dotnet/emsdk</Uri>
+      <Sha>c7b4dbc857259968a0892cf94cfa9ae4f2ca53cd</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.24059.3">
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="9.0.0-alpha.1.24075.1">
       <Uri>https://github.com/dotnet/source-build-reference-packages</Uri>
-      <Sha>f2c3fed62861b918dfe300f01b497551813a56df</Sha>
+      <Sha>e659f328bf255d3e17e81296117c3aed1d461f2f</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24066.1">
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="9.0.0-alpha.1.24101.1">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>6fc8c1ac45220a4d9b4c59bf2ff187dafcb1da3f</Sha>
+      <Sha>949db2fd23b687c0d545e954943feada8b361ed6</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
+    </Dependency>
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.arcade" Version="9.0.0-beta.24081.4">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
       <SourceBuild RepoName="arcade" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XliffTasks" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.XliffTasks" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenAPI" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenFacades" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.GenFacades" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.XUnitAssert" Version="2.6.7-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.5.3-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.6.7-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Archives" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Archives" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Installers" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Templating" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Workloads" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.SharedFramework.Sdk" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Data.Common.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Data.Common.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Drawing.Common.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Drawing.Common.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Formats.Tar.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Formats.Tar.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.IO.Compression.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.IO.Compression.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.IO.Packaging.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.IO.Packaging.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Net.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Net.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Private.Runtime.UnicodeData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Private.Runtime.UnicodeData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Runtime.TimeZoneData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Runtime.TimeZoneData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Security.Cryptography.X509Certificates.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Text.RegularExpressions.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Text.RegularExpressions.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="System.Windows.Extensions.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Windows.Extensions.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.CilStrip.Sources" Version="9.0.0-beta.24068.1">
+    <Dependency Name="Microsoft.DotNet.CilStrip.Sources" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-arm64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24060.4" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
+    <Dependency Name="runtime.osx-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="16.0.5-alpha.1.24072.3" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>d8bacb4031b1d1e290ab2792e8378560419ee0de</Sha>
+      <Sha>de415871929bf72022c0a34c6d98e34facd56c8f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="9.0.0-alpha.1.24064.3">
+    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6f9d6569684cc17015aa6fc5f9d9a5f7580ade97</Sha>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="9.0.0-alpha.1.24064.3">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6f9d6569684cc17015aa6fc5f9d9a5f7580ade97</Sha>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="9.0.0-alpha.1.24064.3">
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6f9d6569684cc17015aa6fc5f9d9a5f7580ade97</Sha>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="9.0.0-alpha.1.24064.3">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6f9d6569684cc17015aa6fc5f9d9a5f7580ade97</Sha>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="9.0.0-alpha.1.24064.3">
+    <Dependency Name="System.Text.Json" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6f9d6569684cc17015aa6fc5f9d9a5f7580ade97</Sha>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
+    </Dependency>
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.runtime" Version="9.0.0-alpha.1.24072.1">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.24064.3">
+    <Dependency Name="Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>6f9d6569684cc17015aa6fc5f9d9a5f7580ade97</Sha>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.23611.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.24077.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a855ee8bf3e90a5baef9de25ccff5be597390087</Sha>
+      <Sha>f49b5c0db06528a9580686a5b63b0e5b4aba566b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.23611.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.24077.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a855ee8bf3e90a5baef9de25ccff5be597390087</Sha>
+      <Sha>f49b5c0db06528a9580686a5b63b0e5b4aba566b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.23611.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.24077.1">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>a855ee8bf3e90a5baef9de25ccff5be597390087</Sha>
+      <Sha>f49b5c0db06528a9580686a5b63b0e5b4aba566b</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.23607.2">
+    <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.24081.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>3faeb9817f465151aa4bbcdb315f0a6170206760</Sha>
+      <Sha>438a8e2488313fb3aa1b24a741a85c2669ee7e0d</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.24056.4">
+    <Dependency Name="optimization.windows_nt-x64.MIBC.Runtime" Version="1.0.0-prerelease.24071.2">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>7064208ca24e7b40f2437f61e69701fb53d53cfa</Sha>
+      <Sha>1033abb971e48230ea7ca3a21009155e807d99bc</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.24056.4">
+    <Dependency Name="optimization.windows_nt-x86.MIBC.Runtime" Version="1.0.0-prerelease.24071.2">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>7064208ca24e7b40f2437f61e69701fb53d53cfa</Sha>
+      <Sha>1033abb971e48230ea7ca3a21009155e807d99bc</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.24056.4">
+    <Dependency Name="optimization.linux-x64.MIBC.Runtime" Version="1.0.0-prerelease.24071.2">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>7064208ca24e7b40f2437f61e69701fb53d53cfa</Sha>
+      <Sha>1033abb971e48230ea7ca3a21009155e807d99bc</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.24056.4">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="1.0.0-prerelease.24071.2">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>7064208ca24e7b40f2437f61e69701fb53d53cfa</Sha>
+      <Sha>1033abb971e48230ea7ca3a21009155e807d99bc</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24065.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24072.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>a59b2b3e33fdc7d64d298433f6195d92dde7cc76</Sha>
+      <Sha>fe2c1fb118054c09934acc75fde0e7165f5d385f</Sha>
     </Dependency>
-    <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.24068.1">
+    <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.24072.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
-      <Sha>6d74e6e23d77cca399e7efb223e64ae2d4fd9472</Sha>
+      <Sha>a321e366dc8783b4b84127eb50d7feeda6702c0f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.9.0-3.24054.13">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.10.0-1.24069.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>28e49407a6e4744819bd471707259b99964e441c</Sha>
+      <Sha>2fe96bca1092f880e91eea6eb17ea3487d89309a</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.9.0-3.24054.13">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.10.0-1.24069.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>28e49407a6e4744819bd471707259b99964e441c</Sha>
+      <Sha>2fe96bca1092f880e91eea6eb17ea3487d89309a</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.10.0-1.24069.13">
+      <Uri>https://github.com/dotnet/roslyn</Uri>
+      <Sha>2fe96bca1092f880e91eea6eb17ea3487d89309a</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24072.1">
+      <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
+      <Sha>e39798fc8357615ab319c81b20acfb036ef7b513</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24072.1">
+      <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
+      <Sha>e39798fc8357615ab319c81b20acfb036ef7b513</Sha>
+    </Dependency>
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.10.0-1.24069.13">
+      <Uri>https://github.com/dotnet/roslyn</Uri>
+      <Sha>2fe96bca1092f880e91eea6eb17ea3487d89309a</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.9.0-3.24054.13">
-      <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>28e49407a6e4744819bd471707259b99964e441c</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24052.1">
-      <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>8a92037d28baf58560622cb4685ecefdc828c2c8</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0-preview.24052.1">
-      <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>8a92037d28baf58560622cb4685ecefdc828c2c8</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.23551.3">
+    <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-alpha.1.24072.3">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>c518bc5c80dbf7d9944e9489237938f57fe145fd</Sha>
+      <Sha>de4f12b8ab6692b01776d362f4fa609fd3f1154a</Sha>
+    </Dependency>
+    <!-- Intermediate is necessary for source build. -->
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.sdk" Version="9.0.100-alpha.1.24072.3">
+      <Uri>https://github.com/dotnet/sdk</Uri>
+      <Sha>de4f12b8ab6692b01776d362f4fa609fd3f1154a</Sha>
       <SourceBuild RepoName="sdk" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.24056.4">
+    <Dependency Name="optimization.windows_nt-arm64.MIBC.Runtime" Version="1.0.0-prerelease.24071.2">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>7064208ca24e7b40f2437f61e69701fb53d53cfa</Sha>
+      <Sha>1033abb971e48230ea7ca3a21009155e807d99bc</Sha>
     </Dependency>
-    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.24056.4">
+    <Dependency Name="optimization.linux-arm64.MIBC.Runtime" Version="1.0.0-prerelease.24071.2">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>7064208ca24e7b40f2437f61e69701fb53d53cfa</Sha>
+      <Sha>1033abb971e48230ea7ca3a21009155e807d99bc</Sha>
     </Dependency>
     <!-- Necessary for source-build. This allows the package to be retrieved from previously-source-built artifacts
          and flow in as dependencies of the packages produced by runtime. -->
@@ -401,9 +434,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.24061.3">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-alpha.1.24070.3">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>cc07296328b45ea6721d1c17662c3bc59aaff392</Sha>
+      <Sha>f91d4ca399ea4389d04b4700965d207f3a8d5c3b</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>

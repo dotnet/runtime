@@ -564,7 +564,7 @@ register_thread (MonoThreadInfo *info)
 	mono_thread_info_suspend_unlock ();
 
 #ifdef HOST_BROWSER
-	mono_threads_wasm_on_thread_attached ();
+	mono_threads_wasm_on_thread_registered ();
 #endif
 
 	return TRUE;
@@ -649,7 +649,7 @@ unregister_thread (void *arg)
 	mono_thread_info_suspend_unlock ();
 
 #ifdef HOST_BROWSER
-	mono_threads_wasm_on_thread_detached ();
+	mono_threads_wasm_on_thread_unregistered ();
 #endif
 
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);

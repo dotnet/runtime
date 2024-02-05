@@ -368,7 +368,7 @@ inline unsigned Compiler::ehGetIndex(EHblkDsc* ehDsc)
  * Return the EH descriptor for the most nested 'try' region this BasicBlock is a member of
  * (or nullptr if this block is not in a 'try' region).
  */
-inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockTryDsc(const BasicBlock* block)
 {
     if (!block->hasTryIndex())
     {
@@ -382,7 +382,7 @@ inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
  * Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of
  * (or nullptr if this block is not in a filter or handler region).
  */
-inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockHndDsc(const BasicBlock* block)
 {
     if (!block->hasHndIndex())
     {
@@ -572,6 +572,13 @@ static BasicBlockVisit VisitEHSuccs(Compiler* comp, BasicBlock* block, TFunc fun
 template <typename TFunc>
 BasicBlockVisit BasicBlock::VisitEHSuccs(Compiler* comp, TFunc func)
 {
+    // These are "pseudo-blocks" and control never actually flows into them
+    // (codegen directly jumps to its successor after finally calls).
+    if (KindIs(BBJ_CALLFINALLYRET))
+    {
+        return BasicBlockVisit::Continue;
+    }
+
     return ::VisitEHSuccs</* skipJumpDest */ false, TFunc>(comp, this, func);
 }
 
@@ -608,7 +615,8 @@ BasicBlockVisit BasicBlock::VisitAllSuccs(Compiler* comp, TFunc func)
             return ::VisitEHSuccs</* skipJumpDest */ true, TFunc>(comp, this, func);
 
         case BBJ_CALLFINALLYRET:
-            // No exceptions can occur in this paired block; skip its normal EH successors.
+            // These are "pseudo-blocks" and control never actually flows into them
+            // (codegen directly jumps to its successor after finally calls).
             return func(bbTarget);
 
         case BBJ_EHCATCHRET:
@@ -3488,7 +3496,7 @@ inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
  *  the cookie associated with the given basic block.
  */
 
-inline void* emitCodeGetCookie(BasicBlock* block)
+inline void* emitCodeGetCookie(const BasicBlock* block)
 {
     assert(block);
     return block->bbEmitCookie;
@@ -3614,208 +3622,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 
         optAssertionReset(newAssertionCount);
     }
-}
-
-inline void Compiler::LoopDsc::VERIFY_lpIterTree() const
-{
-#ifdef DEBUG
-    assert(lpFlags & LPFLG_ITER);
-
-    // iterTree should be "lcl = lcl <op> const"
-
-    assert(lpIterTree->OperIs(GT_STORE_LCL_VAR));
-
-    const GenTree* value = lpIterTree->AsLclVar()->Data();
-    assert(value->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_RSH, GT_LSH));
-    assert(value->AsOp()->gtOp1->OperGet() == GT_LCL_VAR);
-    assert(value->AsOp()->gtOp1->AsLclVar()->GetLclNum() == lpIterTree->AsLclVar()->GetLclNum());
-    assert(value->AsOp()->gtOp2->OperGet() == GT_CNS_INT);
-#endif
-}
-
-//-----------------------------------------------------------------------------
-
-inline unsigned Compiler::LoopDsc::lpIterVar() const
-{
-    VERIFY_lpIterTree();
-    return lpIterTree->AsLclVar()->GetLclNum();
-}
-
-//-----------------------------------------------------------------------------
-
-inline int Compiler::LoopDsc::lpIterConst() const
-{
-    VERIFY_lpIterTree();
-    GenTree* value = lpIterTree->AsLclVar()->Data();
-    return (int)value->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-}
-
-//-----------------------------------------------------------------------------
-
-inline genTreeOps Compiler::LoopDsc::lpIterOper() const
-{
-    VERIFY_lpIterTree();
-    return lpIterTree->AsLclVar()->Data()->OperGet();
-}
-
-inline var_types Compiler::LoopDsc::lpIterOperType() const
-{
-    VERIFY_lpIterTree();
-
-    var_types type = lpIterTree->TypeGet();
-    assert(genActualType(type) == TYP_INT);
-
-    return type;
-}
-
-inline void Compiler::LoopDsc::VERIFY_lpTestTree() const
-{
-#ifdef DEBUG
-    assert(lpFlags & LPFLG_ITER);
-    assert(lpTestTree);
-
-    genTreeOps oper = lpTestTree->OperGet();
-    assert(GenTree::OperIsCompare(oper));
-
-    GenTree* iterator = nullptr;
-    GenTree* limit    = nullptr;
-    if ((lpTestTree->AsOp()->gtOp2->gtOper == GT_LCL_VAR) &&
-        (lpTestTree->AsOp()->gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0)
-    {
-        iterator = lpTestTree->AsOp()->gtOp2;
-        limit    = lpTestTree->AsOp()->gtOp1;
-    }
-    else if ((lpTestTree->AsOp()->gtOp1->gtOper == GT_LCL_VAR) &&
-             (lpTestTree->AsOp()->gtOp1->gtFlags & GTF_VAR_ITERATOR) != 0)
-    {
-        iterator = lpTestTree->AsOp()->gtOp1;
-        limit    = lpTestTree->AsOp()->gtOp2;
-    }
-    else
-    {
-        // one of the nodes has to be the iterator
-        assert(false);
-    }
-
-    if (lpFlags & LPFLG_CONST_LIMIT)
-    {
-        assert(limit->OperIsConst());
-    }
-    if (lpFlags & LPFLG_VAR_LIMIT)
-    {
-        assert(limit->OperGet() == GT_LCL_VAR);
-    }
-    if (lpFlags & LPFLG_ARRLEN_LIMIT)
-    {
-        assert(limit->OperGet() == GT_ARR_LENGTH);
-    }
-#endif
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpIsReversed() const
-{
-    VERIFY_lpTestTree();
-    return ((lpTestTree->AsOp()->gtOp2->gtOper == GT_LCL_VAR) &&
-            (lpTestTree->AsOp()->gtOp2->gtFlags & GTF_VAR_ITERATOR) != 0);
-}
-
-//-----------------------------------------------------------------------------
-
-inline genTreeOps Compiler::LoopDsc::lpTestOper() const
-{
-    VERIFY_lpTestTree();
-    genTreeOps op = lpTestTree->OperGet();
-    return lpIsReversed() ? GenTree::SwapRelop(op) : op;
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpIsIncreasingLoop() const
-{
-    // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
-    bool isLessThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_LT, GT_LE);
-    return (isLessThanLimitCheck &&
-            (((lpIterOper() == GT_ADD) && (lpIterConst() > 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() < 0))));
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpIsDecreasingLoop() const
-{
-    // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
-    // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
-    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_GT, GT_GE);
-    return (isGreaterThanLimitCheck &&
-            (((lpIterOper() == GT_ADD) && (lpIterConst() < 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() > 0))));
-}
-
-//-----------------------------------------------------------------------------
-
-inline GenTree* Compiler::LoopDsc::lpIterator() const
-{
-    VERIFY_lpTestTree();
-
-    return lpIsReversed() ? lpTestTree->AsOp()->gtOp2 : lpTestTree->AsOp()->gtOp1;
-}
-
-//-----------------------------------------------------------------------------
-
-inline GenTree* Compiler::LoopDsc::lpLimit() const
-{
-    VERIFY_lpTestTree();
-
-    return lpIsReversed() ? lpTestTree->AsOp()->gtOp1 : lpTestTree->AsOp()->gtOp2;
-}
-
-//-----------------------------------------------------------------------------
-
-inline int Compiler::LoopDsc::lpConstLimit() const
-{
-    VERIFY_lpTestTree();
-    assert(lpFlags & LPFLG_CONST_LIMIT);
-
-    GenTree* limit = lpLimit();
-    assert(limit->OperIsConst());
-    return (int)limit->AsIntCon()->gtIconVal;
-}
-
-//-----------------------------------------------------------------------------
-
-inline unsigned Compiler::LoopDsc::lpVarLimit() const
-{
-    VERIFY_lpTestTree();
-    assert(lpFlags & LPFLG_VAR_LIMIT);
-
-    GenTree* limit = lpLimit();
-    assert(limit->OperGet() == GT_LCL_VAR);
-    return limit->AsLclVarCommon()->GetLclNum();
-}
-
-//-----------------------------------------------------------------------------
-
-inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index) const
-{
-    VERIFY_lpTestTree();
-    assert(lpFlags & LPFLG_ARRLEN_LIMIT);
-
-    GenTree* limit = lpLimit();
-    assert(limit->OperGet() == GT_ARR_LENGTH);
-
-    // Check if we have a.length or a[i][j].length
-    if (limit->AsArrLen()->ArrRef()->gtOper == GT_LCL_VAR)
-    {
-        index->arrLcl = limit->AsArrLen()->ArrRef()->AsLclVarCommon()->GetLclNum();
-        index->rank   = 0;
-        return true;
-    }
-    // We have a[i].length, extract a[i] pattern.
-    else if (limit->AsArrLen()->ArrRef()->gtOper == GT_COMMA)
-    {
-        return comp->optReconstructArrIndex(limit->AsArrLen()->ArrRef(), index);
-    }
-    return false;
 }
 
 /*
@@ -5087,27 +4893,40 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 {
-    BasicBlock* top    = m_header;
-    BasicBlock* bottom = m_header;
+    BasicBlock* top           = m_header;
+    unsigned    numLoopBlocks = 0;
     VisitLoopBlocks([&](BasicBlock* block) {
         if (block->bbNum < top->bbNum)
+        {
             top = block;
-        if (block->bbNum > bottom->bbNum)
-            bottom = block;
+        }
+
+        numLoopBlocks++;
         return BasicBlockVisit::Continue;
     });
 
-    BasicBlock* block = top;
-    while (true)
+    INDEBUG(BasicBlock* prev = nullptr);
+    BasicBlock* cur = top;
+    while (numLoopBlocks > 0)
     {
-        if (ContainsBlock(block) && (func(block) == BasicBlockVisit::Abort))
-            return BasicBlockVisit::Abort;
+        // If we run out of blocks the blocks aren't sequential.
+        assert(cur != nullptr);
 
-        if (block == bottom)
-            return BasicBlockVisit::Continue;
+        if (ContainsBlock(cur))
+        {
+            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
 
-        block = block->Next();
+            if (func(cur) == BasicBlockVisit::Abort)
+                return BasicBlockVisit::Abort;
+
+            INDEBUG(prev = cur);
+            numLoopBlocks--;
+        }
+
+        cur = cur->Next();
     }
+
+    return BasicBlockVisit::Continue;
 }
 
 /*****************************************************************************/

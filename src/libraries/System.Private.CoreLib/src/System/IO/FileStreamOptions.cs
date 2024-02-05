@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Strategies;
 using System.Runtime.Versioning;
 
 namespace System.IO
@@ -80,8 +81,7 @@ namespace System.IO
             get => _options;
             set
             {
-                // NOTE: any change to FileOptions enum needs to be matched here in the error validation
-                if (value != FileOptions.None && (value & ~(FileOptions.WriteThrough | FileOptions.Asynchronous | FileOptions.RandomAccess | FileOptions.DeleteOnClose | FileOptions.SequentialScan | FileOptions.Encrypted | (FileOptions)0x20000000 /* NoBuffering */)) != 0)
+                if (FileStreamHelpers.AreInvalid(value))
                 {
                     ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
                 }

@@ -694,7 +694,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
         // more than 64 assertions.
         // Note this tracks at most only 256 assertions.
         //
-        static const AssertionIndex countFunc[] = {64, 128, 256, 64};
+        static const AssertionIndex countFunc[] = {64, 128, 256, 128, 64};
         static const unsigned       upperBound  = ArrLen(countFunc) - 1;
         const unsigned              codeSize    = info.compILCodeSize / 512;
         optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
@@ -2075,60 +2075,20 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         return NO_ASSERTION_INDEX;
     }
-    GenTree* op1 = relop->gtGetOp1();
-    GenTree* op2 = relop->gtGetOp2();
-
-    ValueNum op1VN   = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN   = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+    GenTree* op2     = relop->gtGetOp2();
     ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
-    bool hasTestAgainstZero =
-        (relop->gtOper == GT_EQ || relop->gtOper == GT_NE) && (op2VN == vnStore->VNZeroForType(op2->TypeGet()));
-
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
-    // Cases where op1 holds the upper bound arithmetic and op2 is 0.
-    // Loop condition like: "i < bnd +/-k == 0"
-    // Assertion: "i < bnd +/- k == 0"
-    if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBoundArith(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_OPER_BND;
-        dsc.op1.vn         = op1VN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
+
     // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
     // Loop condition like: "i < bnd +/-k"
     // Assertion: "i < bnd +/- k != 0"
-    else if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
+    if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
     {
         AssertionDsc dsc;
         dsc.assertionKind  = OAK_NOT_EQUAL;
         dsc.op1.kind       = O1K_BOUND_OPER_BND;
         dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
-    // Cases where op1 holds the upper bound and op2 is 0.
-    // Loop condition like: "i < bnd == 0"
-    // Assertion: "i < bnd == false"
-    else if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBound(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_LOOP_BND;
-        dsc.op1.vn         = op1VN;
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal = 0;
@@ -2178,23 +2138,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
             // after i < bnd so we need to change the assertion edge to "next".
             return AssertionInfo::ForNextEdge(index);
         }
-        return index;
-    }
-    // Cases where op1 holds the condition bound check and op2 is 0.
-    // Loop condition like: "i < 100 == 0"
-    // Assertion: "i < 100 == false"
-    else if (hasTestAgainstZero && vnStore->IsVNConstantBound(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-        dsc.op1.vn         = op1VN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
     // Cases where op1 holds the lhs of the condition op2 holds rhs.
@@ -2724,10 +2667,10 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //                          managing side-effects.
 //
 // Arguments:
-//    block -  The block containing the tree.
-//    stmt  -  The statement in the block containing the tree.
-//    tree  -  The tree node whose value is known at compile time.
-//             The tree should have a constant value number.
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The tree node whose value is known at compile time.
+//              The tree should have a constant value number.
 //
 // Return Value:
 //    Returns a potentially new or a transformed tree node.
@@ -2747,7 +2690,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //    the relop will evaluate to "true" or "false" statically, then the side-effects
 //    will be put into new statements, presuming the JTrue will be folded away.
 //
-GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
+GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
     if (tree->OperGet() == GT_JTRUE)
     {
@@ -2995,7 +2938,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
-        if (!optIsProfitableToSubstitute(tree, block, conValTree))
+        if (!optIsProfitableToSubstitute(tree, block, parent, conValTree))
         {
             // Not profitable to substitute
             return nullptr;
@@ -3027,14 +2970,15 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 // optIsProfitableToSubstitute: Checks if value worth substituting to dest
 //
 // Arguments:
-//    dest      - destination to substitute value to
-//    destBlock - Basic block of destination
-//    value     - value we plan to substitute
+//    dest       - destination to substitute value to
+//    destBlock  - Basic block of destination
+//    destParent - Parent of destination
+//    value      - value we plan to substitute
 //
 // Returns:
 //    False if it's likely not profitable to do substitution, True otherwise
 //
-bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* value)
+bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* destParent, GenTree* value)
 {
     // Giving up on these kinds of handles demonstrated size improvements
     if (value->IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_CLASS_HDL))
@@ -3044,14 +2988,161 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 
     // A simple heuristic: If the constant is defined outside of a loop (not far from its head)
     // and is used inside it - don't propagate.
-
+    //
     // TODO: Extend on more kinds of trees
-    if (!value->OperIs(GT_CNS_VEC, GT_CNS_DBL) || !dest->OperIs(GT_LCL_VAR))
+
+    if (!dest->OperIs(GT_LCL_VAR))
     {
         return true;
     }
 
     const GenTreeLclVar* lcl = dest->AsLclVar();
+
+    if (value->IsCnsVec())
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+        // Many hwintrinsics can't benefit from constant prop because they don't support
+        // constant folding nor do they support any specialized encodings. So, we want to
+        // skip constant prop and preserve any user-defined locals in that scenario.
+        //
+        // However, if the local is only referenced once then we want to allow propagation
+        // regardless since we can then contain the only actual usage and save a needless
+        // instruction.
+        //
+        // To determine number of uses, we prefer checking SSA first since it is more exact
+        // and can account for patterns where a local is reassigned later. However, if we
+        // can't find an SSA then we fallback to the naive ref count of the local, noting
+        // that we need to check for greater than 2 since it includes both the def and use.
+
+        bool inspectIntrinsic = false;
+
+        if ((destParent != nullptr) && destParent->OperIsHWIntrinsic())
+        {
+            LclVarDsc* varDsc = lvaGetDesc(lcl);
+
+            if (lcl->HasSsaName())
+            {
+                inspectIntrinsic = varDsc->GetPerSsaData(lcl->GetSsaNum())->GetNumUses() > 1;
+            }
+            else
+            {
+                inspectIntrinsic = varDsc->lvRefCnt() > 2;
+            }
+        }
+
+        if (inspectIntrinsic)
+        {
+            GenTreeHWIntrinsic* parent = destParent->AsHWIntrinsic();
+            GenTreeVecCon*      vecCon = value->AsVecCon();
+
+            NamedIntrinsic intrinsicId  = parent->GetHWIntrinsicId();
+            var_types      simdBaseType = parent->GetSimdBaseType();
+
+            if (!HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
+            {
+                return false;
+            }
+
+            switch (intrinsicId)
+            {
+#if defined(TARGET_ARM64)
+                case NI_Vector64_op_Equality:
+                case NI_Vector64_op_Inequality:
+#endif // TARGET_ARM64
+                case NI_Vector128_op_Equality:
+                case NI_Vector128_op_Inequality:
+#if defined(TARGET_XARCH)
+                case NI_Vector256_op_Equality:
+                case NI_Vector256_op_Inequality:
+                case NI_Vector512_op_Equality:
+                case NI_Vector512_op_Inequality:
+#endif // TARGET_XARCH
+                {
+                    // We can optimize when the constant is zero, but only
+                    // for non floating-point since +0.0 == -0.0
+
+                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+
+#if defined(TARGET_ARM64)
+                case NI_AdvSimd_CompareEqual:
+                case NI_AdvSimd_Arm64_CompareEqual:
+                case NI_AdvSimd_Arm64_CompareEqualScalar:
+                {
+                    // We can optimize when the constant is zero due to a
+                    // specialized encoding for the instruction
+
+                    if (!vecCon->IsZero())
+                    {
+                        return false;
+                    }
+                    break;
+                }
+
+                case NI_AdvSimd_CompareGreaterThan:
+                case NI_AdvSimd_CompareGreaterThanOrEqual:
+                case NI_AdvSimd_Arm64_CompareGreaterThan:
+                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+                case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+                {
+                    // We can optimize when the constant is zero, but only
+                    // for signed types, due to a specialized encoding for
+                    // the instruction
+
+                    if (!vecCon->IsZero() || varTypeIsUnsigned(simdBaseType))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+#endif // TARGET_ARM64
+
+#if defined(TARGET_XARCH)
+                case NI_SSE2_Insert:
+                case NI_SSE41_Insert:
+                case NI_SSE41_X64_Insert:
+                {
+                    // We can optimize for float when the constant is zero
+                    // due to a specialized encoding for the instruction
+
+                    if ((simdBaseType != TYP_FLOAT) || !vecCon->IsZero())
+                    {
+                        return false;
+                    }
+                    break;
+                }
+
+                case NI_AVX512F_CompareEqualMask:
+                case NI_AVX512F_CompareNotEqualMask:
+                {
+                    // We can optimize when the constant is zero, but only
+                    // for non floating-point since +0.0 == -0.0
+
+                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
+                    {
+                        return false;
+                    }
+                    break;
+                }
+#endif // TARGET_XARCH
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
+    }
+    else if (!value->IsCnsFltOrDbl())
+    {
+        return true;
+    }
 
     gtPrepareCost(value);
 
@@ -3762,7 +3853,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
-        if (!curAssertion->IsConstantBound())
+        if (!curAssertion->IsConstantBound() && !curAssertion->IsConstantBoundUnsigned())
         {
             continue;
         }
@@ -3791,12 +3882,26 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
 
-        // "X >= CNS" or "X > CNS" where CNS is >= 0
-        if ((info.constVal >= 0) && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+        if ((info.constVal >= 0))
         {
-            JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-            tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-            return optAssertionProp_Update(tree, tree, stmt);
+            bool isNotNegative = false;
+            if (info.isUnsigned && ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
+            {
+                // (uint)X <= CNS means X is [0..CNS]
+                isNotNegative = true;
+            }
+            else if (!info.isUnsigned && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+            {
+                // X >= CNS means X is [CNS..unknown]
+                isNotNegative = true;
+            }
+
+            if (isNotNegative)
+            {
+                JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+                tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+                return optAssertionProp_Update(tree, tree, stmt);
+            }
         }
     }
     return nullptr;
@@ -4483,7 +4588,11 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 //
 GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    if (optNonNullAssertionProp_Ind(assertions, tree))
+    assert(tree->OperIsIndir());
+
+    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
+    bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
+    if (didNonNullProp || didNonHeapProp)
     {
         return optAssertionProp_Update(tree, tree, stmt);
     }
@@ -4496,12 +4605,12 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 //   based on assertions
 //
 // Arguments:
-//   op - tree to check
+//   op          - tree to check
 //   assertions  - set of live assertions
-//   pVnBased - [out] set to true if value numbers were used
-//   pIndex - [out] the assertion used in the proof
+//   pVnBased    - [out] set to true if value numbers were used
+//   pIndex      - [out] the assertion used in the proof
 //
-// Returns:
+// Return Value:
 //   true if the tree's value will be non-null
 //
 // Notes:
@@ -4551,11 +4660,11 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
 //   be non-null based on assertions
 //
 // Arguments:
-//   op - tree to check
-//   assertions  - set of live assertions
-//   pVnBased - [out] set to true if value numbers were used
+//   op         - tree to check
+//   assertions - set of live assertions
+//   pVnBased   - [out] set to true if value numbers were used
 //
-// Returns:
+// Return Value:
 //   index of assertion, or NO_ASSERTION_INDEX
 //
 AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
@@ -4661,6 +4770,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
     }
     return NO_ASSERTION_INDEX;
 }
+
 /*****************************************************************************
  *
  *  Given a tree consisting of a call and a set of available assertions, we
@@ -4715,7 +4825,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 {
     assert(indir->OperIsIndir());
 
-    if (!(indir->gtFlags & GTF_EXCEPT))
+    if ((indir->gtFlags & GTF_EXCEPT) == 0)
     {
         return false;
     }
@@ -4739,6 +4849,98 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 
         // Set this flag to prevent reordering
         indir->SetHasOrderingSideEffect();
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optAssertionIsNonHeap: see if we can prove a tree's value will be not GC-tracked
+//   based on assertions
+//
+// Arguments:
+//   op         - tree to check
+//   assertions - set of live assertions
+//   pVnBased   - [out] set to true if value numbers were used
+//   pIndex     - [out] the assertion used in the proof
+//
+// Return Value:
+//   true if the tree's value will be not GC-tracked
+//
+// Notes:
+//   Sets "pVnBased" if the assertion is value number based. If no matching
+//    assertions are found from the table, then returns "NO_ASSERTION_INDEX."
+//
+//   If both VN and assertion table yield a matching assertion, "pVnBased"
+//   is only set and the return value is "NO_ASSERTION_INDEX."
+//
+bool Compiler::optAssertionIsNonHeap(GenTree*         op,
+                                     ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
+                                         DEBUGARG(AssertionIndex* pIndex))
+{
+    bool vnBased = (!optLocalAssertionProp && vnStore->IsVNObjHandle(op->gtVNPair.GetConservative()));
+#ifdef DEBUG
+    *pIndex   = NO_ASSERTION_INDEX;
+    *pVnBased = vnBased;
+#endif
+
+    if (vnBased)
+    {
+        return true;
+    }
+
+    if (op->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optNonHeapAssertionProp_Ind: Possibly prove an indirection not GC-tracked.
+//
+// Arguments:
+//    assertions - Active assertions
+//    indir      - The indirection
+//
+// Return Value:
+//    Whether the indirection was found to be not GC-tracked and marked as such.
+//
+bool Compiler::optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
+{
+    assert(indir->OperIsIndir());
+
+    if (!indir->OperIs(GT_STOREIND) || (indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
+    {
+        return false;
+    }
+
+// We like CSE to happen for handles, as the codegen for loading a 64-bit constant can be pretty heavy
+// and this is particularly true on platforms with a fixed-width instruction encoding. However, this
+// pessimizes stores as we can no longer optimize around some object handles that would allow us to
+// bypass the write barrier.
+//
+// In order to handle that, we'll propagate the IND_TGT_NOT_HEAP flag onto the store if the handle is
+// directly or if the underlying value number is an applicable object handle.
+
+#ifdef DEBUG
+    bool           vnBased = false;
+    AssertionIndex index   = NO_ASSERTION_INDEX;
+#endif
+    if (optAssertionIsNonHeap(indir->AsIndir()->Data(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            (vnBased) ? printf("\nVN based non-heap prop in " FMT_BB ":\n", compCurBB->bbNum)
+                      : printf("\nNon-heap prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+            gtDispTree(indir, nullptr, nullptr, true);
+        }
+#endif
+        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
 
         return true;
     }
@@ -5981,9 +6183,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    This function is called as part of a post-order tree walk.
 //
 // Arguments:
-//    tree  - The currently visited tree node.
-//    stmt  - The statement node in which the "tree" is present.
-//    block - The block that contains the statement that contains the tree.
+//    tree   - The currently visited tree node.
+//    stmt   - The statement node in which the "tree" is present.
+//    parent - The parent node of the tree.
+//    block  - The block that contains the statement that contains the tree.
 //
 // Return Value:
 //    Returns the standard visitor walk result.
@@ -5993,7 +6196,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 //    evaluates to constant, then the tree is replaced by its side effects and
 //    the constant node.
 //
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree)
+Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
+                                                          Statement*  stmt,
+                                                          GenTree*    parent,
+                                                          GenTree*    tree)
 {
     // Don't perform const prop on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
@@ -6036,7 +6242,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_INTRINSIC:
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-#endif
+#endif // FEATURE_HW_INTRINSICS
         case GT_ARR_LENGTH:
             break;
 
@@ -6084,7 +6290,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
     }
 
     // Perform the constant propagation
-    GenTree* newTree = optVNConstantPropOnTree(block, tree);
+    GenTree* newTree = optVNConstantPropOnTree(block, parent, tree);
+
     if (newTree == nullptr)
     {
         // Not propagated, keep going.
@@ -6164,7 +6371,7 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, *ppTree);
+    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
 }
 
 /*****************************************************************************

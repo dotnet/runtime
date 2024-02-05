@@ -44,11 +44,14 @@ public class SingleFileTestRunner : XunitTestFramework
         var diagnosticSink = new ConsoleDiagnosticMessageSink();
         var testsFinished = new TaskCompletionSource();
         var testSink = new TestMessageSink();
+
+#pragma warning disable CS0618 // Delegating*Sink types are marked obsolete
         var summarySink = new DelegatingExecutionSummarySink(testSink,
             () => false,
             (completed, summary) => Console.WriteLine($"Tests run: {summary.Total}, Errors: {summary.Errors}, Failures: {summary.Failed}, Skipped: {summary.Skipped}. Time: {TimeSpan.FromSeconds((double)summary.Time).TotalSeconds}s"));
         var resultsXmlAssembly = new XElement("assembly");
         var resultsSink = new DelegatingXmlCreationSink(summarySink, resultsXmlAssembly);
+#pragma warning restore CS0618
 
         testSink.Execution.TestSkippedEvent += args => { Console.WriteLine($"[SKIP] {args.Message.Test.DisplayName}"); };
         testSink.Execution.TestFailedEvent += args => { Console.WriteLine($"[FAIL] {args.Message.Test.DisplayName}{Environment.NewLine}{Xunit.ExceptionUtility.CombineMessages(args.Message)}{Environment.NewLine}{Xunit.ExceptionUtility.CombineStackTraces(args.Message)}"); };

@@ -2380,7 +2380,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
             {
                 BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
             }
-            if (strnlen(strMethodName, MAX_CLASS_NAME) >= MAX_CLASS_NAME)
+            if (IsStrLongerThan(strMethodName,MAX_CLASS_NAME))
             {
                 BuildMethodTableThrowException(BFA_METHOD_NAME_TOO_LONG);
             }

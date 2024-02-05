@@ -1,32 +1,21 @@
 <Project DefaultTargets="UpdateChromeVersion">
 
   <Import Project="..\..\Directory.Build.props" />
-  <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskName="Microsoft.WebAssembly.Build.Tasks.GetChromeVersions" />
+  <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskName="Microsoft.WebAssembly.Build.Tasks.UpdateChromeVersions" />
+  <PropertyGroup>
+    <ChromeVersionsPath>$(RepositoryEngineeringDir)testing\ChromeVersions.props</ChromeVersionsPath>
+  </PropertyGroup>
 
   <Target Name="UpdateChromeVersion">
-    <GetChromeVersions
-                OSIdentifier="linux"
-                OSPrefix="Linux_x64"
+    <UpdateChromeVersions
+                OSIdentifiers="linux;Windows"
+                OSPrefixes="Linux_x64;Win_x64"
                 Channel="$(ChromeChannel)"
                 MaxMajorVersionsToCheck="1"
-                IntermediateOutputPath="$(ArtifactsObjDir)">
-      <Output TaskParameter="ChromeVersion"      PropertyName="linux_ChromeVersion" />
-      <Output TaskParameter="V8Version"          PropertyName="linux_V8Version" />
-      <Output TaskParameter="BranchPosition"     PropertyName="linux_ChromeRevision" />
-      <Output TaskParameter="BaseSnapshotUrl"    PropertyName="linux_ChromeBaseSnapshotUrl" />
-    </GetChromeVersions>
-
-    <GetChromeVersions
-                OSIdentifier="Windows"
-                OSPrefix="Win_x64"
-                Channel="$(ChromeChannel)"
-                MaxMajorVersionsToCheck="1"
-                IntermediateOutputPath="$(ArtifactsObjDir)">
-      <Output TaskParameter="ChromeVersion"      PropertyName="win_ChromeVersion" />
-      <Output TaskParameter="V8Version"          PropertyName="win_V8Version" />
-      <Output TaskParameter="BranchPosition"     PropertyName="win_ChromeRevision" />
-      <Output TaskParameter="BaseSnapshotUrl"    PropertyName="win_ChromeBaseSnapshotUrl" />
-    </GetChromeVersions>
+                IntermediateOutputPath="$(ArtifactsObjDir)"
+                ChromeVersionsPath="$(ChromeVersionsPath)">                
+      <Output TaskParameter="VersionsChanged" PropertyName="VersionsChanged" />
+    </UpdateChromeVersions>
 
     <ItemGroup>
       <!-- ensure newline at the end -->
@@ -34,28 +23,9 @@
       <EnvVarForPR Include="CHROME_WIN_VER=$(win_ChromeVersion)" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_PropsContent>
-&lt;Project&gt;
-  &lt;PropertyGroup&gt;
-      &lt;linux_ChromeVersion&gt;$(linux_ChromeVersion)&lt;/linux_ChromeVersion&gt;
-      &lt;linux_ChromeRevision&gt;$(linux_ChromeRevision)&lt;/linux_ChromeRevision&gt;
-      &lt;linux_ChromeBaseSnapshotUrl&gt;$(linux_ChromeBaseSnapshotUrl)&lt;/linux_ChromeBaseSnapshotUrl&gt;
-      &lt;linux_V8Version&gt;$(linux_V8Version)&lt;/linux_V8Version&gt;
+    <Message Text="No major changes: skipping version props update." Importance="High" Condition="'$(VersionsChanged)' != 'true'"/>
+    <Message Text="Version props got updated" Importance="High" Condition="'$(VersionsChanged)' == 'true'"/>
 
-      &lt;win_ChromeVersion&gt;$(win_ChromeVersion)&lt;/win_ChromeVersion&gt;
-      &lt;win_ChromeRevision&gt;$(win_ChromeRevision)&lt;/win_ChromeRevision&gt;
-      &lt;win_ChromeBaseSnapshotUrl&gt;$(win_ChromeBaseSnapshotUrl)&lt;/win_ChromeBaseSnapshotUrl&gt;
-      &lt;win_V8Version&gt;$(win_V8Version)&lt;/win_V8Version&gt;
-  &lt;/PropertyGroup&gt;
-&lt;/Project&gt;
-      </_PropsContent>
-    </PropertyGroup>
-
-    <Message Text="Writing version props: $(_PropsContent)" Importance="High" />
-    <WriteLinesToFile Lines="$(_PropsContent)" File="$(RepositoryEngineeringDir)testing\ChromeVersions.props" Overwrite="true" />
-
-    <WriteLinesToFile Lines="@(EnvVarForPR)" File="$(RepositoryEngineeringDir)testing\bump-chrome-pr.env" Overwrite="true" />
   </Target>
 
   <Import Project="..\..\Directory.Build.targets" />

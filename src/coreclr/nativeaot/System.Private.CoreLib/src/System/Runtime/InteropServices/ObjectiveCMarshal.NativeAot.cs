@@ -131,7 +131,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
             }
 
-            if (!obj.GetEETypePtr().IsTrackedReferenceWithFinalizer)
+            if (!obj.GetMethodTable()->IsTrackedReferenceWithFinalizer)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
             }

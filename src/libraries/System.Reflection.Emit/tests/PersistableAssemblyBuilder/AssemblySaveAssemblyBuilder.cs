@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
                 aName.CultureInfo = new CultureInfo("en");
                 aName.Flags = AssemblyNameFlags.Retargetable;
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(aName, null, typeof(string), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(aName);
 
                 ab.SetCustomAttribute(new CustomAttributeBuilder(typeof(AssemblyDelaySignAttribute).GetConstructor([typeof(bool)]), [true]));
 
@@ -213,10 +213,12 @@ namespace System.Reflection.Emit.Tests
                 eventb.SetRemoveOnMethod(mbRemove);
                 tbEvents.CreateType();
 
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                CheckAssembly(assemblyFromDisk);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    CheckAssembly(mlc.LoadFromAssemblyPath(file.Path));
+                }
             }
         }
 

@@ -28,6 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "patchpointinfo.h"
+#include "optcse.h" // for cse metrics
 
 /*****************************************************************************/
 
@@ -327,11 +328,9 @@ void CodeGen::genPrepForCompiler()
 // 1. the target of jumps (fall-through flow doesn't require a label),
 // 2. referenced labels such as for "switch" codegen,
 // 3. needed to denote the range of EH regions to the VM.
-// 4. needed to denote the range of code for alignment processing.
 //
 // No labels will be in the IR before now, but future codegen might annotate additional blocks
 // with this flag, such as "switch" codegen, or codegen-created blocks from genCreateTempLabel().
-// Also, the alignment processing code marks BBJ_COND fall-through labels elsewhere.
 //
 // To report exception handling information to the VM, we need the size of the exception
 // handling regions. To compute that, we need to emit labels for the beginning block of
@@ -1690,6 +1689,8 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
         printf("*************** In genGenerateCode()\n");
         compiler->fgDispBasicBlocks(compiler->verboseTrees);
     }
+
+    genWriteBarrierUsed = false;
 #endif
 
     this->codePtr          = codePtr;
@@ -1698,6 +1699,19 @@ void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
     DoPhase(this, PHASE_GENERATE_CODE, &CodeGen::genGenerateMachineCode);
     DoPhase(this, PHASE_EMIT_CODE, &CodeGen::genEmitMachineCode);
     DoPhase(this, PHASE_EMIT_GCEH, &CodeGen::genEmitUnwindDebugGCandEH);
+
+#ifdef DEBUG
+    // For R2R/NAOT not all these helpers are implemented. So don't ask for them.
+    //
+    if (genWriteBarrierUsed && JitConfig.EnableExtraSuperPmiQueries() && !compiler->opts.IsReadyToRun())
+    {
+        void* ignored;
+        for (int i = CORINFO_HELP_ASSIGN_REF; i <= CORINFO_HELP_ASSIGN_STRUCT; i++)
+        {
+            compiler->compGetHelperFtn((CorInfoHelpFunc)i, &ignored);
+        }
+    }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -2013,16 +2027,36 @@ void CodeGen::genEmitMachineCode()
     }
 
 #ifdef DEBUG
-    if (compiler->opts.disAsm || verbose)
+    const bool dspMetrics     = compiler->opts.dspMetrics;
+    const bool dspSummary     = compiler->opts.disAsm || verbose;
+    const bool dspMetricsOnly = dspMetrics && !dspSummary;
+
+    if (dspSummary || dspMetrics)
     {
-        printf("\n; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
+        if (!dspMetricsOnly)
+        {
+            printf("\n");
+        }
+
+        printf("; Total bytes of code %d, prolog size %d, PerfScore %.2f, instruction count %d, allocated bytes for "
                "code %d",
                codeSize, prologSize, compiler->info.compPerfScore, instrCount,
                GetEmitter()->emitTotalHotCodeSize + GetEmitter()->emitTotalColdCodeSize);
 
-        if (JitConfig.JitMetrics() > 0)
+        if (dspMetrics)
         {
-            printf(", num cse %d", compiler->optCSEcount);
+            printf(", num cse %d num cand %d", compiler->optCSEcount, compiler->optCSECandidateCount);
+
+            CSE_HeuristicCommon* const cseHeuristic = compiler->optGetCSEheuristic();
+            if (cseHeuristic != nullptr)
+            {
+                cseHeuristic->DumpMetrics();
+            }
+
+            if (compiler->info.compMethodSuperPMIIndex >= 0)
+            {
+                printf(" spmi index %d", compiler->info.compMethodSuperPMIIndex);
+            }
         }
 
 #if TRACK_LSRA_STATS
@@ -2035,7 +2069,10 @@ void CodeGen::genEmitMachineCode()
         printf(" (MethodHash=%08x) for method %s (%s)\n", compiler->info.compMethodHash(), compiler->info.compFullName,
                compiler->compGetTieringName(true));
 
-        printf("; ============================================================\n\n");
+        if (!dspMetricsOnly)
+        {
+            printf("; ============================================================\n\n");
+        }
         printf(""); // in our logic this causes a flush
     }
 
@@ -2588,7 +2625,6 @@ void CodeGen::genReportEH()
                 }
                 else
                 {
-                    assert(bbLabel->bbEmitCookie != nullptr);
                     hndEnd = compiler->ehCodeOffset(bbLabel);
                 }
 
@@ -2696,6 +2732,8 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 //
 CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf)
 {
+    INDEBUG(genWriteBarrierUsed = true);
+
     switch (wbf)
     {
         case GCInfo::WBF_BarrierChecked:
@@ -4750,7 +4788,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 //    initReg -- scratch register to use if needed
 //    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
 //
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
 #else
 void CodeGen::genEnregisterOSRArgsAndLocals()
@@ -4891,7 +4929,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
 
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         // Patchpoint offset is from top of Tier0 frame
         //
@@ -4923,7 +4961,7 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
         genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
         *pInitRegZeroed = false;
-#endif
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 }
 
@@ -5530,7 +5568,7 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For arm64 OSR, emit a "phantom prolog" to account for the actions taken
     // in the tier0 frame that impact FP and SP on entry to the OSR method.
     //
@@ -5545,7 +5583,7 @@ void CodeGen::genFnProlog()
         // SP is tier0 method's SP.
         compiler->unwindAllocStack(tier0FrameSize);
     }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #ifdef DEBUG
 
@@ -5875,13 +5913,25 @@ void CodeGen::genFnProlog()
     {
         initReg = REG_SCRATCH;
     }
+#elif defined(TARGET_RISCV64)
+    // For RISC-V64 OSR root frames, we may need a scratch register for large
+    // offset addresses. Use a register that won't be allocated.
+    if (isRoot && compiler->opts.IsOSR())
+    {
+        initReg = REG_SCRATCH; // REG_T0
+    }
 #endif
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     // For LoongArch64's OSR root frames, we may need a scratch register for large
     // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
+    //
+    // RISC-V64's OSR root frames are similar to LoongArch64's. In this case
+    // REG_SCRATCH also shouldn't conflict with REG_PINVOKE_FRAME, even if
+    // technically they are the same register - REG_T0.
+    //
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
-#endif
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this
@@ -6192,7 +6242,7 @@ void CodeGen::genFnProlog()
         // Otherwise we'll do some of these fetches twice.
         //
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
 #else
         genEnregisterOSRArgsAndLocals();
@@ -6250,7 +6300,7 @@ void CodeGen::genFnProlog()
         assignIncomingRegisterArgs(&intRegState);
 #else
         assignIncomingRegisterArgs(&intRegState);
-#endif
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 

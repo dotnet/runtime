@@ -274,6 +274,12 @@
   <data name="Arg_CustomAttributeFormatException" xml:space="preserve">
     <value>Binary format of the specified custom attribute was invalid.</value>
   </data>
+  <data name="Arg_CustomAttributeUnknownNamedArgument" xml:space="preserve">
+    <value>Known custom attribute named arg not recognized.</value>
+  </data>
+  <data name="Arg_CustomAttributeDuplicateNamedArgument" xml:space="preserve">
+    <value>Known custom attribute blob has repeated named argument.</value>
+  </data>
   <data name="Arg_DataMisalignedException" xml:space="preserve">
     <value>A datatype misalignment was detected in a load or store instruction.</value>
   </data>
@@ -4288,5 +4294,8 @@
   </data>
   <data name="Reflection_Disabled" xml:space="preserve">
     <value>This operation is not available because the reflection support was disabled at compile time.</value>
+  </data>
+  <data name="NotSupported_AssemblySave" xml:space="preserve">
+    <value>This AssemblyBuilder instance doesn't support saving. Use AssemblyBuilder.DefinePersistedAssembly to create an AssemblyBuilder instance that supports saving.</value>
   </data>
 </root>

@@ -819,7 +819,7 @@ namespace System.Speech.Internal.SrgsCompiler
             bool fLastArcNull = true;
             CfgArc pLastArc = new();
             State currentState = null;
-            IEnumerator<KeyValuePair<int, Rule>> ieFirstArcs = ruleFirstArcs.GetEnumerator();
+            SortedDictionary<int, Rule>.Enumerator ieFirstArcs = ruleFirstArcs.GetEnumerator();
 
             // If no rules, then we have no arcs
             if (ieFirstArcs.MoveNext())

@@ -300,13 +300,6 @@ bool interceptor_ICJI::isValueClass(
     return original_ICorJitInfo->isValueClass(cls);
 }
 
-CorInfoInlineTypeCheck interceptor_ICJI::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    return original_ICorJitInfo->canInlineTypeCheck(cls, source);
-}
-
 uint32_t interceptor_ICJI::getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -574,6 +567,12 @@ bool interceptor_ICJI::isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls2)
 {
     return original_ICorJitInfo->isMoreSpecificType(cls1, cls2);
+}
+
+bool interceptor_ICJI::isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isExactType(cls);
 }
 
 TypeCompareState interceptor_ICJI::isEnum(
