@@ -326,6 +326,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
+                Console.Clear();
                 return Task.CompletedTask;
             }, cts.Token);
         }
