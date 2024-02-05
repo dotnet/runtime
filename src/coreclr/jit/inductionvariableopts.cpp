@@ -5,7 +5,7 @@
 // evolve (scalar evolution analysis) and to do optimizations based on it.
 // Currently the only optimization done is IV widening.
 // The scalar evolution analysis is inspired by "Michael Wolfe. 1992. Beyond
-// induction variables." and also by LLVM's scalar evolution. 
+// induction variables." and also by LLVM's scalar evolution.
 
 #include "jitpch.h"
 
@@ -103,8 +103,7 @@ struct ScevBinop : ScevUnop
 // "Start" and "Step" are guaranteed to be invariant in "Loop".
 struct ScevAddRec : Scev
 {
-    ScevAddRec(var_types type, Scev* start, Scev* step)
-        : Scev(ScevOper::AddRec, type), Start(start), Step(step)
+    ScevAddRec(var_types type, Scev* start, Scev* step) : Scev(ScevOper::AddRec, type), Start(start), Step(step)
     {
     }
 
@@ -1155,13 +1154,13 @@ PhaseStatus Compiler::optInductionVariables()
     bool changed = false;
 
     m_dfsTree = fgComputeDfs();
-    m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     if (optCanonicalizeLoops())
     {
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
-        m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
-        changed = true;
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        changed   = true;
     }
 
 #ifdef TARGET_64BIT
