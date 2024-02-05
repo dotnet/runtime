@@ -2482,6 +2482,15 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
     return IsHelperCall(compiler->eeFindHelper(helper));
 }
 
+//-------------------------------------------------------------------------
+// IsRuntimeLookupHelperCall: Determine if this GT_CALL node represents a runtime lookup helper call.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeGetHelperNum
+//
+// Return Value:
+//     Returns true if this GT_CALL node represents a runtime lookup helper call.
+//
 bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
 {
     if (IsHelperCall())
