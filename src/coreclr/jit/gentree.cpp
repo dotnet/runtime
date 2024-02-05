@@ -4538,20 +4538,21 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     GenTree* base; // This is the base of the address.
     GenTree* idx;  // This is the index.
 
-    if (codeGen->genCreateAddrMode(addr, false /*fold*/, &rev, &base, &idx, &mul, &cns))
-    {
+    unsigned naturalMul = 0;
+#ifdef TARGET_ARM64
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
+    naturalMul = genTypeSize(type);
+#endif
 
-#ifdef TARGET_ARMARCH
-        // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-        //
-        //   *(ulong*)(data + index * 8); - can be optimized
-        //   *(ulong*)(data + index * 7); - can not be optimized
-        //     *(int*)(data + index * 2); - can not be optimized
-        //
-        if ((mul > 0) && (genTypeSize(type) != mul))
-        {
-            return false;
-        }
+    if (codeGen->genCreateAddrMode(addr, false /*fold*/, naturalMul, &rev, &base, &idx, &mul, &cns))
+    {
+#ifdef TARGET_ARM64
+        assert((mul == 0) || (mul == 1) || (mul == naturalMul));
 #endif
 
         // We can form a complex addressing mode, so mark each of the interior
@@ -19326,7 +19327,16 @@ FieldSeq* FieldSeqStore::Append(FieldSeq* a, FieldSeq* b)
         return a;
     }
 
-    assert(!"Duplicate field sequences!");
+    // In UB-like code (such as manual IL) we can see an addition of two static field addresses.
+    // Treat that as cancelling out the sequence, since the result will point nowhere.
+    //
+    // It may be possible for the JIT to encounter other types of UB additions, such as due to
+    // complex optimizations, inlining, etc. In release we'll still do the right thing by returning
+    // nullptr here, but the more conservative assert can help avoid JIT bugs
+
+    assert(a->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+    assert(b->GetKind() == FieldSeq::FieldKind::SimpleStaticKnownAddress);
+
     return nullptr;
 }
 

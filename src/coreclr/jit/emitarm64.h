@@ -40,7 +40,7 @@ void emitDispLargeJmp(
 void emitDispComma();
 void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
-void emitDispElementIndex(ssize_t imm);
+void emitDispElementIndex(const ssize_t imm, const bool addComma);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
 void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
@@ -556,6 +556,9 @@ static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
 static code_t insEncodeUimm2_9_to_8(ssize_t imm);
 
+// Returns the encoding for the immediate value as 2-bits at bit locations '11-10'.
+static code_t insEncodeUimm2_11_to_10(ssize_t imm);
+
 // Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
 static code_t insEncodeUimm2_20_to_19(ssize_t imm);
 
@@ -642,10 +645,16 @@ static bool isValidUimm2(ssize_t value)
     return (0 <= value) || (value <= 3);
 };
 
-// Returns true if 'value' is a legal unsigned immediate 3 bit encoding (such as for MUL).
+// Returns true if 'value' is a legal unsigned immediate 3 bit encoding.
 static bool isValidUimm3(ssize_t value)
 {
-    return (0 <= value) || (value <= 7);
+    return (0 <= value) && (value <= 7);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
+static bool isValidUimm4(ssize_t value)
+{
+    return (0 <= value) && (value <= 15);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
@@ -1241,6 +1250,15 @@ void emitIns_R_R_R_I(instruction ins,
                      ssize_t     imm,
                      insOpts     opt      = INS_OPTS_NONE,
                      emitAttr    attrReg2 = EA_UNKNOWN);
+
+void emitIns_R_R_R_I_I(instruction ins,
+                       emitAttr    attr,
+                       regNumber   reg1,
+                       regNumber   reg2,
+                       regNumber   reg3,
+                       ssize_t     imm1,
+                       ssize_t     imm2,
+                       insOpts     opt);
 
 void emitIns_R_R_R_Ext(instruction ins,
                        emitAttr    attr,
