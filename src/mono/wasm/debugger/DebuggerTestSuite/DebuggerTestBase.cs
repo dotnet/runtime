@@ -222,6 +222,10 @@ namespace DebuggerTests
                 dicScriptsIdToUrl[script_id] = dbgUrl;
                 dicFileToUrl[dbgUrl] = args["url"]?.Value<string>();
             }
+            else if (url.StartsWith("cdp://"))
+            {
+                //ignore them as it's done by the browser and vscode-js-debug
+            }
             else if (!String.IsNullOrEmpty(url))
             {
                 var dbgUrl = args["url"]?.Value<string>();
