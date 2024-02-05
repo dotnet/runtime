@@ -16,6 +16,7 @@ namespace System.Runtime.InteropServices.JavaScript
             public ToManagedCallback? Callback;
             public JSProxyContext ProxyContext;
             public bool IsDisposed;
+            public bool IsCanceling;
 #if FEATURE_WASM_MANAGED_THREADS
             public ManualResetEventSlim? CallbackReady;
 #endif
