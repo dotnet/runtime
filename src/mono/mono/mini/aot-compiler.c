@@ -13067,6 +13067,17 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
 
 		if (!method) {
+			if (mono_error_get_error_code (error) == MONO_ERROR_TYPE_LOAD) {
+				// If we failed to load the method due to a type load failure,
+				// make sure the type isn't a ComImport or WindowsRuntimeImport type.
+				// We'll ignore the COM interop types here, since they're not supported on any flavor of the Mono runtime.
+				guint32 type_token = mono_metadata_typedef_from_method (image, i + 1);
+				guint32 type_flags = mono_metadata_decode_table_row_col (image, MONO_TABLE_TYPEDEF, type_token, MONO_TYPEDEF_FLAGS);
+				if (type_flags & (TYPE_ATTRIBUTE_IMPORT | TYPE_ATTRIBUTE_WINDOWS_RUNTIME)) {
+					mono_error_cleanup (error);
+					continue;
+				}
+			}
 			aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
 			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
 			mono_error_cleanup (error);
