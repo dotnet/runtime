@@ -370,7 +370,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tcsncat_s      strncat_s
 #define _tcsset_s       _strset_s
 #define _tcsnset_s      _strnset_s
-#define _tcstok_s       strtok_r
 #define _vsntprintf_s   _vsnprintf_s
 
 #elif defined(_UNICODE) || defined(UNICODE)
@@ -381,7 +380,6 @@ void __cdecl _invalid_parameter(const WCHAR *_Message, const WCHAR *_FunctionNam
 #define _tcsncat_s      wcsncat_s
 #define _tcsset_s       _wcsset_s
 #define _tcsnset_s      _wcsnset_s
-#define _tcstok_s       wcstok_s
 #define _tmakepath_s    _wmakepath_s
 #define _stprintf_s     swprintf_s
 #define _tscanf_s       wscanf_s
@@ -1116,76 +1114,6 @@ errno_t __cdecl _wcsnset_s(WCHAR *_Dst, size_t _SizeInWords, WCHAR _Value, size_
     return 0;
 }
 
-#endif
-
-/* wcstok_s */
-/*
- * uses _Context to keep track of the position in the string.
- */
-
-/* wcstok_s */
-_SAFECRT__EXTERN_C
-WCHAR * __cdecl wcstok_s(WCHAR *_String, const WCHAR *_Control, WCHAR **_Context);
-
-#if _SAFECRT_USE_INLINES || _SAFECRT_IMPL
-
-_SAFECRT__INLINE
-WCHAR * __cdecl wcstok_s(WCHAR *_String, const WCHAR *_Control, WCHAR **_Context)
-{
-    WCHAR *token;
-    const WCHAR *ctl;
-
-    /* validation section */
-    _SAFECRT__VALIDATE_POINTER_ERROR_RETURN(_Context, EINVAL, nullptr);
-    _SAFECRT__VALIDATE_POINTER_ERROR_RETURN(_Control, EINVAL, nullptr);
-    _SAFECRT__VALIDATE_CONDITION_ERROR_RETURN(_String != nullptr || *_Context != nullptr, EINVAL, nullptr);
-
-    /* If string==nullptr, continue with previous string */
-    if (!_String)
-    {
-        _String = *_Context;
-    }
-
-    /* Find beginning of token (skip over leading delimiters). Note that
-    * there is no token iff this loop sets string to point to the terminal null. */
-    for ( ; *_String != 0 ; _String++)
-    {
-        for (ctl = _Control; *ctl != 0 && *ctl != *_String; ctl++)
-            ;
-        if (*ctl == 0)
-        {
-            break;
-        }
-    }
-
-    token = _String;
-
-    /* Find the end of the token. If it is not the end of the string,
-    * put a null there. */
-    for ( ; *_String != 0 ; _String++)
-    {
-        for (ctl = _Control; *ctl != 0 && *ctl != *_String; ctl++)
-            ;
-        if (*ctl != 0)
-        {
-            *_String++ = 0;
-            break;
-        }
-    }
-
-    /* Update the context */
-    *_Context = _String;
-
-    /* Determine if a token has been found. */
-    if (token == _String)
-    {
-        return nullptr;
-    }
-    else
-    {
-        return token;
-    }
-}
 #endif
 
 #ifndef PAL_STDCPP_COMPAT

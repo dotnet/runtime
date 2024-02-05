@@ -159,17 +159,6 @@ namespace CorUnix
     };
 #endif // HAVE_MACH_EXCEPTIONS
 
-    class CThreadCRTInfo : public CThreadInfoInitializer
-    {
-    public:
-        WCHAR *      wcstokContext; // Context for wcstok function
-
-        CThreadCRTInfo() :
-            wcstokContext(NULL)
-        {
-        };
-    };
-
     class CPalThread
     {
         friend
@@ -328,7 +317,6 @@ namespace CorUnix
         CThreadSynchronizationInfo synchronizationInfo;
         CThreadSuspensionInfo suspensionInfo;
         CThreadApcInfo apcInfo;
-        CThreadCRTInfo crtInfo;
 
         CPalThread()
             :

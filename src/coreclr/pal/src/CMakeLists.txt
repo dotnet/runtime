@@ -193,7 +193,6 @@ set(SOURCES
   safecrt/wcslwr_s.cpp
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
-  safecrt/wcstok_s.cpp
   safecrt/wmakepath_s.cpp
   safecrt/xtoa_s.cpp
   safecrt/xtow_s.cpp
