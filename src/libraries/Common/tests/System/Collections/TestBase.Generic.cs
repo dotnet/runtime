@@ -255,12 +255,13 @@ namespace System.Collections.Tests
             return set;
         }
 
+#if NETCOREAPP
         /// <summary>
         /// Create a HashSet with a specific initial capacity and fill it with a specific number of elements.
         /// </summary>
         protected HashSet<T> CreateHashSetWithCapacity(int count, int capacity)
         {
-            HashSet<T> set = new HashSet<T>(capacity, GetIEqualityComparer());
+            var set = new HashSet<T>(capacity, GetIEqualityComparer());
             int seed = 528;
 
             for (int i = 0; i < count; i++)
@@ -270,6 +271,7 @@ namespace System.Collections.Tests
 
             return set;
         }
+#endif
 
         /// <summary>
         /// Helper function to create an SortedSet fulfilling the given specific parameters. The function will
