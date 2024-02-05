@@ -763,7 +763,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     {
                     }
                 }
-            
                 """
             ;
 
