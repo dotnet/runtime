@@ -104,10 +104,10 @@
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRuntimewinx64Version>9.0.0-preview.2.24079.2</MicrosoftNETCoreAppRuntimewinx64Version>
+    <MicrosoftNETCoreAppRuntimewinx64Version>9.0.0-preview.2.24105.1</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- ILAsm dependencies -->
-    <MicrosoftNETCoreILAsmVersion>9.0.0-preview.2.24079.2</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>9.0.0-preview.2.24105.1</MicrosoftNETCoreILAsmVersion>
     <!-- ObjWriter dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.24072.3</runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion>
     <runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>16.0.5-alpha.1.24072.3</runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion>
@@ -136,12 +136,12 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
-    <SystemTextJsonVersion>9.0.0-preview.2.24079.2</SystemTextJsonVersion>
+    <SystemTextJsonVersion>9.0.0-preview.2.24105.1</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
-    <runtimenativeSystemIOPortsVersion>9.0.0-preview.2.24079.2</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>9.0.0-preview.2.24105.1</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.24080.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.24080.1</SystemComponentModelTypeConverterTestDataVersion>
@@ -215,7 +215,7 @@
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.4-alpha.24102.1</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
-    <MicrosoftDotNetILCompilerVersion>9.0.0-preview.2.24079.2</MicrosoftDotNetILCompilerVersion>
+    <MicrosoftDotNetILCompilerVersion>9.0.0-preview.2.24105.1</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-preview.2.24079.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
