@@ -219,7 +219,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // TODO, refactor into single assert method
             if (Monitor.ThrowOnBlockingWaitOnJSInteropThread)
             {
-                throw new PlatformNotSupportedException("blocking Wait is not supported on the JS interop threads.");
+                throw new PlatformNotSupportedException("Blocking wait is not supported on the JS interop threads.");
             }
 
             using (var signal = new ManualResetEventSlim(false))
