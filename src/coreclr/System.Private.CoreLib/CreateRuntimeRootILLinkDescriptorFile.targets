@@ -47,7 +47,10 @@
                                            RuntimeRootDescriptorFilePath="$(_ILLinkRuntimeRootDescriptorFilePath)" />
   </Target>
 
-  <UsingTask TaskName="CombineLinkerXmlFiles" AssemblyFile="$(ILLinkTasksAssembly)" Condition="'$(ILLinkTasksAssembly)' != ''" />
+  <UsingTask TaskName="CombineLinkerXmlFiles"
+             AssemblyFile="$(ILLinkTasksAssembly)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(ILLinkTasksAssembly)' != ''" />
   <Target Name="_CombineILLinkTrimXmlFilePaths"
           Inputs="@(_ILLinkDescriptorsFilePaths)"
           Outputs="$(_ILLinkDescriptorsIntermediatePath)">
