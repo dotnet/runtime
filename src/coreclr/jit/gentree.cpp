@@ -26458,7 +26458,7 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
 {
 #if defined(TARGET_XARCH)
-    NamedIntrinsic         intrinsicId = GetHWIntrinsicId();
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
 
     if (!HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
     {
@@ -26474,7 +26474,7 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         case NI_AVX512F_MultiplyScalar:
         case NI_AVX512F_SubtractScalar:
         case NI_AVX512F_SqrtScalar:
-        {   
+        {
             return true;
         }
 
@@ -26494,7 +26494,7 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         {
             return numArgs == 3;
         }
-        
+
         case NI_AVX512F_Sqrt:
         case NI_AVX512F_ConvertToInt32:
         case NI_AVX512F_ConvertToUInt32:
@@ -26518,7 +26518,6 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
     return false;
 #endif // TARGET_XARCH
 }
-
 
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless

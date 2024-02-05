@@ -1069,10 +1069,10 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     if (node->OperIsEmbRoundingEnabled())
-    {   
-        size_t numArgs  = node->GetOperandCount();
-        GenTree* lastOp = node->Op(numArgs);
-        uint8_t  mode   = 0xFF;
+    {
+        size_t   numArgs = node->GetOperandCount();
+        GenTree* lastOp  = node->Op(numArgs);
+        uint8_t  mode    = 0xFF;
 
         if (lastOp->IsCnsIntOrI())
         {
@@ -1087,7 +1087,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // Embedded rounding only works for register-to-register operations, so skip containment
             return node->gtNext;
         }
-        
     }
 
     switch (intrinsicId)
