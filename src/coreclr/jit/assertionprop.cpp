@@ -4981,25 +4981,24 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, Valu
 //
 bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir)
 {
-    if (optLocalAssertionProp || !indir->TypeIs(TYP_REF) || ((indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0))
+    const GenTree* value = indir->AsIndir()->Data();
+    const GenTree* addr  = indir->AsIndir()->Addr();
+
+    if (optLocalAssertionProp || !indir->TypeIs(TYP_REF) || !value->TypeIs(TYP_REF) ||
+        ((indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0))
     {
         return false;
     }
 
-    const GenTree* value   = indir->AsIndir()->Data();
-    const GenTree* addr    = indir->AsIndir()->Addr();
-    const ValueNum valueVN = value->gtVNPair.GetConservative();
-    const ValueNum addrVN  = addr->gtVNPair.GetConservative();
-
     GCInfo::WriteBarrierForm barrierType;
 
     // First, analyze the value being stored
-    if (value->IsIntegralConst(0) || valueVN == ValueNumStore::VNForNull())
+    if (value->IsIntegralConst(0) || (value->gtVNPair.GetConservative() == ValueNumStore::VNForNull()))
     {
         // The value being stored is null
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
     }
-    else if (value->IsIconHandle(GTF_ICON_OBJ_HDL) || vnStore->IsVNObjHandle(valueVN))
+    else if (value->IsIconHandle(GTF_ICON_OBJ_HDL) || vnStore->IsVNObjHandle(value->gtVNPair.GetConservative()))
     {
         // The value being stored is a handle
         barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
@@ -5007,7 +5006,7 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
     else
     {
         // Next, analyze the address if we haven't already determined the barrier type from the value
-        barrierType = GetWriteBarrierForm(vnStore, addrVN);
+        barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());
     }
 
     if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
