@@ -1,8 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// This file contains code to analyze how the value of induction variables
+// evolve (scalar evolution analysis) and to do optimizations based on it.
+// Currently the only optimization done is IV widening.
+// The scalar evolution analysis is inspired by "Michael Wolfe. 1992. Beyond
+// induction variables." and also by LLVM's scalar evolution. 
+
 #include "jitpch.h"
 
+// Evolving values are described using a small IR based around the following
+// possible operations. At the core is ScevOper::AddRec, which represents a
+// value that evolves by an add recurrence. In dumps it is described by <loop,
+// start, step> where "loop" is the loop the value is evolving in, "start" is
+// the initial value and "step" is the step by which the value evolves in every
+// iteration.
+//
 enum class ScevOper
 {
     Constant,
@@ -28,8 +41,8 @@ static bool ScevOperIs(ScevOper oper, ScevOper operFirst, Args... operTail)
 
 struct Scev
 {
-    ScevOper  Oper;
-    var_types Type;
+    const ScevOper  Oper;
+    const var_types Type;
 
     Scev(ScevOper oper, var_types type) : Oper(oper), Type(type)
     {
@@ -63,8 +76,8 @@ struct ScevLocal : Scev
     {
     }
 
-    unsigned LclNum;
-    unsigned SsaNum;
+    const unsigned LclNum;
+    const unsigned SsaNum;
 };
 
 struct ScevUnop : Scev
@@ -73,7 +86,7 @@ struct ScevUnop : Scev
     {
     }
 
-    Scev* Op1;
+    Scev* const Op1;
 };
 
 struct ScevBinop : ScevUnop
@@ -82,27 +95,157 @@ struct ScevBinop : ScevUnop
     {
     }
 
-    Scev* Op2;
+    Scev* const Op2;
 };
 
 // Represents a value that evolves by an add recurrence.
 // The value at iteration N is Start + N * Step.
-// "Step" is guaranteed to be invariant in "Loop".
+// "Start" and "Step" are guaranteed to be invariant in "Loop".
 struct ScevAddRec : Scev
 {
-    ScevAddRec(var_types type, FlowGraphNaturalLoop* loop, Scev* start, Scev* step)
-        : Scev(ScevOper::AddRec, type), Loop(loop), Start(start), Step(step)
+    ScevAddRec(var_types type, Scev* start, Scev* step)
+        : Scev(ScevOper::AddRec, type), Start(start), Step(step)
     {
     }
 
-    FlowGraphNaturalLoop* Loop;
-    Scev*                 Start;
-    Scev*                 Step;
+    Scev* const Start;
+    Scev* const Step;
 };
 
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Scev*> ScalarEvolutionMap;
 
-static void DumpScev(Scev* scev)
+// Scalar evolution is analyzed in the context of a single loop, and are
+// computed on-demand by the use of the "Analyze" method on this class, which
+// also maintains a cache.
+class ScalarEvolutionContext
+{
+    Compiler*             m_comp;
+    FlowGraphNaturalLoop* m_loop = nullptr;
+    ScalarEvolutionMap    m_cache;
+
+    Scev* AnalyzeNew(BasicBlock* block, GenTree* tree);
+    Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
+                             Scev*                start,
+                             BasicBlock*          stepDefBlock,
+                             GenTree*             stepDefData);
+    Scev* CreateSimpleInvariantScev(GenTree* tree);
+    Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
+
+public:
+    ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopScalarEvolution))
+    {
+    }
+
+    void DumpScev(Scev* scev);
+
+    //------------------------------------------------------------------------
+    // ResetForLoop: Reset the internal cache in preparation of scalar
+    // evolution analysis inside a new loop.
+    //
+    // Parameters:
+    //    loop - The loop.
+    //
+    void ResetForLoop(FlowGraphNaturalLoop* loop)
+    {
+        m_loop = loop;
+        m_cache.RemoveAll();
+    }
+
+    //------------------------------------------------------------------------
+    // NewConstant: Create a SCEV node that represents a constant.
+    //
+    // Returns:
+    //   The new node.
+    //
+    ScevConstant* NewConstant(var_types type, int64_t value)
+    {
+        ScevConstant* constant = new (m_comp, CMK_LoopScalarEvolution) ScevConstant(type, value);
+        return constant;
+    }
+
+    //------------------------------------------------------------------------
+    // NewLocal: Create a SCEV node that represents an invariant local (i.e. a
+    // use of an SSA def from outside the loop).
+    //
+    // Parameters:
+    //   lclNum - The local
+    //   ssaNum - The SSA number of the def outside the loop that is being used.
+    //
+    // Returns:
+    //   The new node.
+    //
+    ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum)
+    {
+        var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
+        ScevLocal* invariantLocal = new (m_comp, CMK_LoopScalarEvolution) ScevLocal(type, lclNum, ssaNum);
+        return invariantLocal;
+    }
+
+    //------------------------------------------------------------------------
+    // NewExtension: Create a SCEV node that represents a zero or sign extension.
+    //
+    // Parameters:
+    //   oper       - The operation (ScevOper::ZeroExtend or ScevOper::SignExtend)
+    //   targetType - The target type of the extension
+    //   op         - The operand being extended.
+    //
+    // Returns:
+    //   The new node.
+    //
+    ScevUnop* NewExtension(ScevOper oper, var_types targetType, Scev* op)
+    {
+        assert(op != nullptr);
+        ScevUnop* ext = new (m_comp, CMK_LoopScalarEvolution) ScevUnop(oper, targetType, op);
+        return ext;
+    }
+
+    //------------------------------------------------------------------------
+    // NewBinop: Create a SCEV node that represents a binary operation.
+    //
+    // Parameters:
+    //   oper - The operation
+    //   op1  - First operand
+    //   op2  - Second operand
+    //
+    // Returns:
+    //   The new node.
+    //
+    ScevBinop* NewBinop(ScevOper oper, Scev* op1, Scev* op2)
+    {
+        assert((op1 != nullptr) && (op2 != nullptr));
+        ScevBinop* binop = new (m_comp, CMK_LoopScalarEvolution) ScevBinop(oper, op1->Type, op1, op2);
+        return binop;
+    }
+
+    //------------------------------------------------------------------------
+    // NewAddRec: Create a SCEV node that represents a new add recurrence.
+    //
+    // Parameters:
+    //   start - Value of the recurrence at the first iteration
+    //   step  - Step value of the recurrence
+    //
+    // Returns:
+    //   The new node.
+    //
+    ScevAddRec* NewAddRec(Scev* start, Scev* step)
+    {
+        assert((start != nullptr) && (step != nullptr));
+        ScevAddRec* addRec = new (m_comp, CMK_LoopScalarEvolution) ScevAddRec(start->Type, start, step);
+        return addRec;
+    }
+
+    Scev* Analyze(BasicBlock* block, GenTree* tree);
+    Scev* Simplify(Scev* scev);
+};
+
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// DumpScev: Print a scev node to stdout.
+//
+// Parameters:
+//   scev - The scev node.
+//
+void ScalarEvolutionContext::DumpScev(Scev* scev)
 {
     switch (scev->Oper)
     {
@@ -157,7 +300,7 @@ static void DumpScev(Scev* scev)
         case ScevOper::AddRec:
         {
             ScevAddRec* addRec = (ScevAddRec*)scev;
-            printf("<" FMT_LP, addRec->Loop->GetIndex());
+            printf("<" FMT_LP, m_loop->GetIndex());
             printf(", ");
             DumpScev(addRec->Start);
             printf(", ");
@@ -169,70 +312,18 @@ static void DumpScev(Scev* scev)
             unreached();
     }
 }
+#endif
 
-class ScalarEvolutionContext
-{
-    Compiler*             m_comp;
-    FlowGraphNaturalLoop* m_loop = nullptr;
-    ScalarEvolutionMap    m_cache;
-
-    Scev* AnalyzeNew(BasicBlock* block, GenTree* tree);
-    Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
-                             Scev*                start,
-                             BasicBlock*          stepDefBlock,
-                             GenTree*             stepDefData);
-    Scev* CreateSimpleInvariantScev(GenTree* tree);
-    Scev* CreateScevForConstant(GenTreeIntConCommon* tree);
-
-public:
-    ScalarEvolutionContext(Compiler* comp) : m_comp(comp), m_cache(comp->getAllocator(CMK_LoopScalarEvolution))
-    {
-    }
-
-    void ResetForLoop(FlowGraphNaturalLoop* loop)
-    {
-        m_loop = loop;
-        m_cache.RemoveAll();
-    }
-
-    ScevConstant* NewConstant(var_types type, int64_t value)
-    {
-        ScevConstant* constant = new (m_comp, CMK_LoopScalarEvolution) ScevConstant(type, value);
-        return constant;
-    }
-
-    ScevLocal* NewLocal(unsigned lclNum, unsigned ssaNum)
-    {
-        var_types  type           = genActualType(m_comp->lvaGetDesc(lclNum));
-        ScevLocal* invariantLocal = new (m_comp, CMK_LoopScalarEvolution) ScevLocal(type, lclNum, ssaNum);
-        return invariantLocal;
-    }
-
-    ScevUnop* NewExtension(ScevOper oper, var_types targetType, Scev* op)
-    {
-        assert(op != nullptr);
-        ScevUnop* ext = new (m_comp, CMK_LoopScalarEvolution) ScevUnop(oper, targetType, op);
-        return ext;
-    }
-
-    ScevBinop* NewBinop(ScevOper oper, Scev* op1, Scev* op2)
-    {
-        assert((op1 != nullptr) && (op2 != nullptr));
-        ScevBinop* binop = new (m_comp, CMK_LoopScalarEvolution) ScevBinop(oper, op1->Type, op1, op2);
-        return binop;
-    }
-
-    ScevAddRec* NewAddRec(FlowGraphNaturalLoop* loop, Scev* start, Scev* step)
-    {
-        assert((start != nullptr) && (step != nullptr));
-        ScevAddRec* addRec = new (m_comp, CMK_LoopScalarEvolution) ScevAddRec(start->Type, loop, start, step);
-        return addRec;
-    }
-
-    Scev* Analyze(BasicBlock* block, GenTree* tree);
-    Scev* Fold(Scev* scev);
-};
-
+//------------------------------------------------------------------------
+// CreateSimpleInvariantScev: Create a "simple invariant" SCEV node for a tree:
+// either an invariant local use or a constant.
+//
+// Parameters:
+//   tree - The tree
+//
+// Returns:
+//   SCEV node or nullptr if the tree is not a simple invariant.
+//
 Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
 {
     if (tree->OperIs(GT_CNS_INT, GT_CNS_LNG))
@@ -254,6 +345,15 @@ Scev* ScalarEvolutionContext::CreateSimpleInvariantScev(GenTree* tree)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// CreateScevForConstant: Given an integer constant, create a SCEV node for it.
+//
+// Parameters:
+//   tree - The integer constant
+//
+// Returns:
+//   SCEV node or nullptr if the integer constant is not representable (e.g. a handle).
+//
 Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
 {
     if (tree->IsIconHandle() || !tree->TypeIs(TYP_INT, TYP_LONG))
@@ -264,6 +364,18 @@ Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
     return NewConstant(tree->TypeGet(), tree->AsIntConCommon()->IntegralValue());
 }
 
+//------------------------------------------------------------------------
+// AnalyzeNew: Analyze the specified tree in the specified block, without going
+// through the cache.
+//
+// Parameters:
+//   block - Block containing the tree
+//   tree  - Tree node
+//
+// Returns:
+//   SCEV node if the tree was analyzable; otherwise nullptr if the value is
+//   cannot be described.
+//
 Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
 {
     switch (tree->OperGet())
@@ -466,6 +578,20 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
     }
 }
 
+//------------------------------------------------------------------------
+// CreateSimpleAddRec: Create a "simple" add-recurrence. This handles the most
+// common patterns for primary induction variables where we see a store like
+// "i = i + 1".
+//
+// Parameters:
+//   headerStore  - Phi definition of the candidate primary induction variable
+//   enterScev    - SCEV describing start value of the primary induction variable
+//   stepDefBlock - Block containing the def of the step value
+//   stepDefData  - Value of the def of the step value
+//
+// Returns:
+//   SCEV node if this is a simple addrec shape. Otherwise nullptr.
+//
 Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
                                                  Scev*                enterScev,
                                                  BasicBlock*          stepDefBlock,
@@ -500,9 +626,20 @@ Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStor
         return nullptr;
     }
 
-    return NewAddRec(m_loop, enterScev, stepScev);
+    return NewAddRec(enterScev, stepScev);
 }
 
+//------------------------------------------------------------------------
+// Analyze: Analyze the specified tree in the specified block.
+//
+// Parameters:
+//   block - Block containing the tree
+//   tree  - Tree node
+//
+// Returns:
+//   SCEV node if the tree was analyzable; otherwise nullptr if the value is
+//   cannot be described.
+//
 Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
 {
     Scev* result;
@@ -515,8 +652,22 @@ Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
     return result;
 }
 
+//------------------------------------------------------------------------
+// FoldBinop: Fold simple binops.
+//
+// Type parameters:
+//   T - Type that the binop is being evaluated in
+//
+// Parameters:
+//   oper - Binary operation
+//   op1  - First operand
+//   op2  - Second operand
+//
+// Returns:
+//   Folded value.
+//
 template <typename T>
-static T FoldArith(ScevOper oper, T op1, T op2)
+static T FoldBinop(ScevOper oper, T op1, T op2)
 {
     switch (oper)
     {
@@ -531,7 +682,23 @@ static T FoldArith(ScevOper oper, T op1, T op2)
     }
 }
 
-Scev* ScalarEvolutionContext::Fold(Scev* scev)
+//------------------------------------------------------------------------
+// Simplify: Try to simplify a SCEV node by folding and canonicalization.
+//
+// Parameters:
+//   scev - The node
+//
+// Returns:
+//   Simplified node.
+//
+// Remarks:
+//   Canonicalization is done for binops; constants are moved to the right and
+//   addrecs are moved to the left.
+//
+//   Simple unops/binops on constants are folded. Operands are distributed into
+//   add recs whenever possible.
+//
+Scev* ScalarEvolutionContext::Simplify(Scev* scev)
 {
     switch (scev->Oper)
     {
@@ -546,7 +713,7 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
             ScevUnop* unop = (ScevUnop*)scev;
             assert(genTypeSize(unop->Type) >= genTypeSize(unop->Op1->Type));
 
-            Scev* op1 = Fold(unop->Op1);
+            Scev* op1 = Simplify(unop->Op1);
 
             if (unop->Type == op1->Type)
             {
@@ -576,8 +743,8 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
         case ScevOper::Lsh:
         {
             ScevBinop* binop = (ScevBinop*)scev;
-            Scev*      op1   = Fold(binop->Op1);
-            Scev*      op2   = Fold(binop->Op2);
+            Scev*      op1   = Simplify(binop->Op1);
+            Scev*      op2   = Simplify(binop->Op2);
 
             if (binop->OperIs(ScevOper::Add, ScevOper::Mul))
             {
@@ -598,11 +765,11 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
                 // <L, start, step> + x => <L, start + x, step>
                 // <L, start, step> * x => <L, start * x, step * x>
                 ScevAddRec* addRec   = (ScevAddRec*)op1;
-                Scev*       newStart = Fold(NewBinop(binop->Oper, addRec->Start, op2));
+                Scev*       newStart = Simplify(NewBinop(binop->Oper, addRec->Start, op2));
                 Scev*       newStep  = scev->OperIs(ScevOper::Mul, ScevOper::Lsh)
-                                    ? Fold(NewBinop(binop->Oper, addRec->Step, op2))
+                                    ? Simplify(NewBinop(binop->Oper, addRec->Step, op2))
                                     : addRec->Step;
-                return NewAddRec(addRec->Loop, newStart, newStep);
+                return NewAddRec(newStart, newStep);
             }
 
             if (op1->OperIs(ScevOper::Constant) && op2->OperIs(ScevOper::Constant))
@@ -612,13 +779,13 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
                 int64_t       newValue;
                 if (binop->TypeIs(TYP_INT))
                 {
-                    newValue = FoldArith<int32_t>(binop->Oper, static_cast<int32_t>(cns1->Value),
+                    newValue = FoldBinop<int32_t>(binop->Oper, static_cast<int32_t>(cns1->Value),
                                                   static_cast<int32_t>(cns2->Value));
                 }
                 else
                 {
                     assert(binop->TypeIs(TYP_LONG));
-                    newValue = FoldArith<int64_t>(binop->Oper, cns1->Value, cns2->Value);
+                    newValue = FoldBinop<int64_t>(binop->Oper, cns1->Value, cns2->Value);
                 }
 
                 return NewConstant(binop->Type, newValue);
@@ -629,15 +796,38 @@ Scev* ScalarEvolutionContext::Fold(Scev* scev)
         case ScevOper::AddRec:
         {
             ScevAddRec* addRec = (ScevAddRec*)scev;
-            Scev*       start  = Fold(addRec->Start);
-            Scev*       step   = Fold(addRec->Step);
-            return (start == addRec->Start) && (step == addRec->Step) ? addRec : NewAddRec(addRec->Loop, start, step);
+            Scev*       start  = Simplify(addRec->Start);
+            Scev*       step   = Simplify(addRec->Step);
+            return (start == addRec->Start) && (step == addRec->Step) ? addRec : NewAddRec(start, step);
         }
         default:
             unreached();
     }
 }
 
+//------------------------------------------------------------------------
+// optCanSinkWidenedIV: Check to see if we are able to sink a store to the old
+// local into the exits of a loop if we decide to widen.
+//
+// Parameters:
+//   lclNum - The primary induction variable
+//   loop   - The loop
+//
+// Returns:
+//   True if we can sink a store to the old local after widening.
+//
+// Remarks:
+//   This handles the situation where the primary induction variable is used
+//   after the loop. In those cases we need to store the widened local back
+//   into the old one in the exits where the IV variable is live.
+//
+//   We are able to sink when none of the exits are critical blocks, in the
+//   sense that all their predecessors must come from inside the loop.
+//
+//   TODO-CQ: If we canonicalize loop exits we can guarantee this property for
+//   regular exits; that will allow us to always sink except when the loop is
+//   enclosed in a try region whose handler also uses the IV variable.
+//
 bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
@@ -667,6 +857,27 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
     return result == BasicBlockVisit::Continue;
 }
 
+//------------------------------------------------------------------------
+// optIsIVWideningProfitable: Check to see if IV widening is profitable.
+//
+// Parameters:
+//   lclNum - The primary induction variable
+//   addRec - Value of the induction variable
+//   loop   - The loop
+//
+// Returns:
+//   True if IV widening is profitable.
+//
+// Remarks:
+//   IV widening is generally profitable when it allows us to remove casts
+//   inside the loop. However, it may also introduce other reg-reg moves:
+//     1. We may need to store the narrow IV into the wide one in the
+//     preheader. This is necessary when the start value is not constant. If
+//     the start value _is_ constant then we assume that the constant store to
+//     the narrow local will be a DCE'd.
+//     2. We need to store the wide IV back into the narrow one in each of
+//     the exits where the narrow IV is live-in.
+//
 bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, FlowGraphNaturalLoop* loop)
 {
     struct CountZeroExtensionsVisitor : GenTreeVisitor<CountZeroExtensionsVisitor>
@@ -689,21 +900,32 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* parent)
         {
             GenTree* node = *use;
-            if (node->OperIs(GT_CAST))
+            if (!node->OperIs(GT_CAST))
             {
-                GenTreeCast* cast = node->AsCast();
-                if ((cast->gtCastType == TYP_LONG) && cast->IsUnsigned())
-                {
-                    GenTree* op = cast->CastOp();
-                    if (op->OperIs(GT_LCL_VAR) && (op->AsLclVarCommon()->GetLclNum() == m_lclNum))
-                    {
-                        NumExtensions++;
-                        return WALK_SKIP_SUBTREES;
-                    }
-                }
+                return WALK_CONTINUE;
             }
 
-            return WALK_CONTINUE;
+            GenTreeCast* cast = node->AsCast();
+            if ((cast->gtCastType != TYP_LONG) || !cast->IsUnsigned())
+            {
+                return WALK_CONTINUE;
+            }
+
+            GenTree* op = cast->CastOp();
+            if (!op->OperIs(GT_LCL_VAR) || (op->AsLclVarCommon()->GetLclNum() != m_lclNum))
+            {
+                return WALK_CONTINUE;
+            }
+
+            // If this is already the source of a store then it is going to be
+            // free in our backends regardless.
+            if ((parent != nullptr) && parent->OperIs(GT_STORE_LCL_VAR))
+            {
+                return WALK_CONTINUE;
+            }
+
+            NumExtensions++;
+            return WALK_SKIP_SUBTREES;
         }
     };
 
@@ -735,9 +957,8 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
     }
     else
     {
-        // If this is a constant then we are likely going to save the cost of
-        // initializing the narrow local which will balance out initializing
-        // the widened local.
+        // If this is a constant then we make the assumption that we will be
+        // able to DCE the constant initialization of the narrow local.
     }
 
     // Now account for the cost of sinks.
@@ -776,6 +997,18 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
     return false;
 }
 
+//------------------------------------------------------------------------
+// optSinkWidenedIV: Create stores back to the narrow IV in the exits where
+// that is necessary.
+//
+// Parameters:
+//   lclNum    - Narrow version of primary induction variable
+//   newLclNum - Wide version of primary induction variable
+//   loop      - The loop
+//
+// Returns:
+//   True if any store was created in any exit block.
+//
 bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop)
 {
     bool       anySunk = false;
@@ -800,6 +1033,15 @@ bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNa
     return anySunk;
 }
 
+//------------------------------------------------------------------------
+// optReplaceWidenedIV: Replace uses of the narrow IV with the wide IV in the
+// specified statement.
+//
+// Parameters:
+//   lclNum    - Narrow version of primary induction variable
+//   newLclNum - Wide version of primary induction variable
+//   stmt      - The statement to replace uses in.
+//
 void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statement* stmt)
 {
     struct ReplaceVisitor : GenTreeVisitor<ReplaceVisitor>
@@ -962,9 +1204,9 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
-            scev = scevContext.Fold(scev);
+            scev = scevContext.Simplify(scev);
             JITDUMP("  => ");
-            DBEXEC(verbose, DumpScev(scev));
+            DBEXEC(verbose, scevContext.DumpScev(scev));
             JITDUMP("\n");
             if (!scev->OperIs(ScevOper::AddRec))
             {
