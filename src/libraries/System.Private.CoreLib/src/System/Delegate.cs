@@ -127,11 +127,9 @@ namespace System
             return DynamicInvokeImpl(args);
         }
 
-#if !NATIVEAOT
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
-#endif
 
         public MethodInfo Method => GetMethodImpl();
 

@@ -674,12 +674,5 @@ namespace System
             }
             return del;
         }
-
-        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException(SR.Serialization_DelegatesNotSupported);
-        }
     }
 }
