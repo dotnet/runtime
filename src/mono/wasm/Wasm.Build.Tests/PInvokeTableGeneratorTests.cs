@@ -785,8 +785,7 @@ namespace Wasm.Build.Tests
                             // The return value from the pinvoke appears to be correct, but when ia
                             //  is passed in to the pinvoke, it's all zeroes.
                             var iares = InlineArrayTest2(ia);
-                            Console.WriteLine($""ia[1]={ia[1]} &ia={RefAsAddress(ref ia)} &ia[1]={RefAsAddress(ref ia[1])}"");
-                            Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]} &iares={RefAsAddress(ref iares)} &iares[1]={RefAsAddress(ref iares[1])} *&iares[1]=={ReadThroughAddress(ref iares[1])}"");
+                            Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]}"");
                         }
 
                         MyFixedArray fa = new ();
@@ -886,8 +885,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("s (s)=3.14", runOutput);
             Assert.Contains("paires.B=4", runOutput);
             Assert.Contains("iares[0]=32", runOutput);
-            // FIXME
-            // Assert.Contains("iares[1]=2", runOutput);
+            Assert.Contains("iares[1]=2", runOutput);
             Assert.Contains("fares.elements[1]=2", runOutput);
         }
 

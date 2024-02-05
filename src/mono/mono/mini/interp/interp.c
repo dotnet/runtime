@@ -1496,7 +1496,6 @@ retry:
 #ifdef HOST_WASM
 			// This ISSTRUCT check is important, because the type could be an enum
 			if (MONO_TYPE_ISSTRUCT (info->ret_mono_type)) {
-				g_printf ("Putting retval in arg0 for type %s\n", mono_type_get_name (info->ret_mono_type));
 				// The return type was already filtered previously, so if we get here
 				//  we're returning a struct byref instead of as a scalar
 				info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
@@ -1809,29 +1808,6 @@ ves_pinvoke_method (
 #endif
 
 	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
-
-	if (FALSE && (call_info->ret_pinvoke_type >= 7)) {
-		g_printf (
-			"ves_pinvoke_method: ret_pinvoke_type=%d retval=%d iargs=%d fargs=%d ilen=%d flen=%d\n",
-			call_info->ret_pinvoke_type, margs.retval, margs.iargs, margs.fargs, margs.ilen, margs.flen
-		);
-
-		if (margs.ilen > 2)
-			g_printf (
-				"  iargs[0] == %d, iargs[1] == %d, iargs[2] == %d\n",
-				margs.iargs[0], margs.iargs[1], margs.iargs[2]
-			);
-		else if (margs.ilen > 1)
-			g_printf (
-				"  iargs[0] == %d, iargs[1] == %d\n",
-				margs.iargs[0], margs.iargs[1]
-			);
-		else if (margs.ilen > 0)
-			g_printf (
-				"  iargs[0] == %d\n",
-				margs.iargs[0]
-			);
-	}
 
 	if (*gc_transitions) {
 		MONO_ENTER_GC_SAFE;

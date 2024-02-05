@@ -176,9 +176,6 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 		cookie [offset + i] = type_to_c (sig->params [i], NULL);
 	}
 
-	if (is_byref_return)
-		g_printf("cookie=%s\n", cookie);
-
 	void *p = mono_wasm_interp_to_native_callback (cookie);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
