@@ -14,9 +14,6 @@
 
 #ifdef HOST_WASM
 
-gboolean
-mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype);
-
 static char
 type_to_c (MonoType *t)
 {

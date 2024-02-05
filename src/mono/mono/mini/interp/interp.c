@@ -1352,7 +1352,7 @@ typedef struct {
 
 static MonoType *
 filter_type_for_args_from_sig (MonoType *type) {
-#if defined(HOST_WASM) || defined(TARGET_WASM)
+#if defined(HOST_WASM)
 	MonoType *etype;
 	if (MONO_TYPE_ISSTRUCT (type) && mini_wasm_is_scalar_vtype (type, &etype))
 		// FIXME: Does this need to be recursive?
