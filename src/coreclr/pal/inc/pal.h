@@ -4082,6 +4082,7 @@ PALIMPORT char * __cdecl strchr(const char *, int);
 PALIMPORT char * __cdecl strrchr(const char *, int);
 PALIMPORT char * __cdecl strpbrk(const char *, const char *);
 PALIMPORT char * __cdecl strstr(const char *, const char *);
+PALIMPORT char * __cdecl strtok_r(char *, const char *, char **);
 PALIMPORT int __cdecl atoi(const char *);
 PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
