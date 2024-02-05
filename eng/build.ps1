@@ -255,7 +255,7 @@ if ($vs) {
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
-  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations	
+  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
   if ($runtimeConfiguration)
   {
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
