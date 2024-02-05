@@ -397,6 +397,10 @@ enum ReadyToRunHelper
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,
+
+    // These two helpers can be removed with next major version bump
+    // alongside the CORINFO_HELP_FLTROUND/CORINFO_HELP_DBLROUND
+    // counterparts and all related code.
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
