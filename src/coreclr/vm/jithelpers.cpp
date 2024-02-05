@@ -590,12 +590,14 @@ HCIMPLEND
 HCIMPL1_V(UINT32, JIT_Dbl2UInt, double val)
 {
     FCALL_CONTRACT;
-#if defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     double uint_max_plus_1 = (double)UINT32_MAX;
     return (val != val || val <= 0) ? 0 : (val >= uint_max_plus_1) ? UINT32_MAX : (UINT32)val;
-#else //TARGET_AMD64
+
+#else //TARGET_X86 || TARGET_AMD64
     return((UINT32)val);
-#endif //TARGET_AMD64
+
+#endif //TARGET_X86 || TARGET_AMD64
 }
 HCIMPLEND
 

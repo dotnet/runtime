@@ -490,29 +490,29 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 switch (dstType)
                 {
                     case TYP_INT:
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
                         if (!tree->IsSaturatedConversion())
                         {
                             return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2INT, oper);
                         }
-#endif //TARGET_AMD64
+#endif //TARGET_XARCH
                         return nullptr;
 
                     case TYP_UINT:
-#if defined(TARGET_ARM) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM)
                         return nullptr;
 #else  // TARGET_X86
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
 #endif // TARGET_X86
 
                     case TYP_LONG:
-#ifdef TARGET_AMD64
-                        if (tree->IsSaturatedConversion())
+#ifdef TARGET_XARCH
+                        if (!tree->IsSaturatedConversion())
                         {
-                            return nullptr;
+                            return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
                         }
-#endif //TARGET_AMD64
-                        return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
+#endif //TARGET_XARCH
+                        return nullptr;
 
                     case TYP_ULONG:
 #ifdef TARGET_AMD64
