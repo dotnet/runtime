@@ -676,7 +676,7 @@ namespace System.Threading
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
 
-        public static void AssureThreadValidity()
+        public static void AssureBlockingPossible()
         {
             if (ThrowOnBlockingWaitOnJSInteropThread)
             {
@@ -684,14 +684,14 @@ namespace System.Threading
             }
         }
 
-        public static void ForceBlockingWait(Action action)
+        public static void ForceBlockingWait(Action<object?> action, object? state = null)
         {
             var flag = ThrowOnBlockingWaitOnJSInteropThread;
             try
             {
                 ThrowOnBlockingWaitOnJSInteropThread = false;
 
-                action();
+                action(state);
             }
             finally
             {

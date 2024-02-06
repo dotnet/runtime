@@ -286,7 +286,7 @@ namespace System.Threading
         {
             CheckDispose();
 #if FEATURE_WASM_MANAGED_THREADS
-            Thread.AssureThreadValidity();
+            Thread.AssureBlockingPossible();
 #endif
 
             if (millisecondsTimeout < -1)

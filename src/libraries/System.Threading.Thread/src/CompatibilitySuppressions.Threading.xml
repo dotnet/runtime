@@ -22,10 +22,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Threading.Thread.AssureThreadValidity</Target>
+    <Target>M:System.Threading.Thread.AssureBlockingPossible</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Threading.Thread.ForceBlockingWait(System.Action)</Target>
+    <Target>M:System.Threading.Thread.ForceBlockingWait(System.Action{System.Object},System.Object)</Target>
   </Suppression>
 </Suppressions>

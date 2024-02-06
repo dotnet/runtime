@@ -217,7 +217,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            Thread.AssureThreadValidity();
+            Thread.AssureBlockingPossible();
 
             using (var signal = new ManualResetEventSlim(false))
             {

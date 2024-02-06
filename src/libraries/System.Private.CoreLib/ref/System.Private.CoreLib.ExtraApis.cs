@@ -46,8 +46,8 @@ namespace System.Threading
         [ThreadStatic]
         public static bool ThrowOnBlockingWaitOnJSInteropThread;
 
-        public static void AssureThreadValidity() { throw null; }
-        public static void ForceBlockingWait(Action action) { throw null; }
+        public static void AssureBlockingPossible() { throw null; }
+        public static void ForceBlockingWait(Action<object?> action, object? state) { throw null; }
     }
 }
 #endif

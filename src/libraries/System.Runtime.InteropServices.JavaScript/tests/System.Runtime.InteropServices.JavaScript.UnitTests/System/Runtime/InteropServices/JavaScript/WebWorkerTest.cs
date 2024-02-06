@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 jswReady.SetResult();
 
                 // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
-                Thread.ForceBlockingWait(() => blocker.Wait());
+                Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b).Wait(), blocker);
 
                 return never.Task;
             }, cts.Token);

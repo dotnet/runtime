@@ -234,7 +234,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (holder.CallbackReady != null)
                 {
 #pragma warning disable CA1416 // Validate platform compatibility
-                    Thread.ForceBlockingWait(() => holder.CallbackReady?.Wait());
+                    Thread.ForceBlockingWait(static (callbackReady) => ((ManualResetEventSlim)callbackReady!).Wait(), holder.CallbackReady);
 #pragma warning restore CA1416 // Validate platform compatibility
                 }
 
