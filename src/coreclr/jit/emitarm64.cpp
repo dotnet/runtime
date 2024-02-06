@@ -2032,6 +2032,17 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
+        case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
+            elemsize = id->idOpSize();
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isScalableVectorSize(elemsize));
+            assert(isVectorRegister(id->idReg1()));    // ttttt
+            assert(isGeneralRegister(id->idReg2()));   // nnnnn
+            assert(isValidSimm9(emitGetInsSC(id))); // iii
+                                                       // iiiiii
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -8751,6 +8762,28 @@ void emitter::emitIns_R_R_I(instruction     ins,
                 assert(isValidUimm2(imm)); // ii
                 fmt = IF_SVE_DW_2A;
             }
+            break;
+
+        case INS_sve_ldr:
+            assert(insOptsNone(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isScalableVectorSize(size));
+            assert(isVectorRegister(reg1));  // ttttt
+            assert(isGeneralRegister(reg2)); // nnnnn
+            assert(isValidSimm9(imm));    // iii
+                                             // iiiiii
+            fmt = IF_SVE_IE_2A;
+            break;
+
+        case INS_sve_str:
+            assert(insOptsNone(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isScalableVectorSize(size));
+            assert(isVectorRegister(reg1));  // ttttt
+            assert(isGeneralRegister(reg2)); // nnnnn
+            assert(isValidSimm9(imm));    // iii
+                                             // iiiiii
+            fmt = IF_SVE_JH_2A;
             break;
 
         default:
@@ -17564,6 +17597,26 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm)
+{
+    assert(isValidSimm9(imm));
+
+    if (imm < 0)
+    {
+        imm = (imm & 0x1FF);
+    }
+
+    code_t h = (code_t)(imm & 0x1F8) << 13;          // encode high 6-bits at locations '21-16'
+    code_t l = (code_t)((imm & ~0x1F8) & 0x7) << 10; // encode low 3-bits at locations '12-10'
+
+    return (h | l);
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
  */
 
@@ -20796,6 +20849,17 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
+        case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());          // ttttt
+            code |= insEncodeReg_R_9_to_5(id->idReg2());          // nnnnn
+            code |= insEncodeSimm9h9l_21_to_16_and_12_to_10(imm); // iii
+                                                                  // iiiiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         default:
             assert(!"Unexpected format");
             break;
@@ -24011,6 +24075,23 @@ void emitter::emitDispInsHelp(
             printf("]");
             break;
 
+        // <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
+        // <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
+            imm = emitGetInsSC(id);
+            emitDispReg(id->idReg1(), EA_SCALABLE, true); // ttttt
+            printf("[");
+            emitDispReg(id->idReg2(), EA_8BYTE, imm != 0); // nnnnn
+            if (imm != 0)
+            {
+                emitDispImm(imm, true); // iii
+                                        // iiiiii
+                printf("mul vl");
+            }
+            printf("]");
+            break;
+
         default:
             printf("unexpected format %s", emitIfName(id->idInsFmt()));
             assert(!"unexpectedFormat");
@@ -24488,6 +24569,8 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
                 }
                 break;
             case IF_LARGELDC:
+            case IF_SVE_IE_2A:
+            case IF_SVE_JH_2A:
                 isLocalAccess = false;
                 break;
 
@@ -27428,6 +27511,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_JK_4B: // ...........mmmmm ...gggnnnnnttttt -- SVE 64-bit scatter store (scalar plus 64-bit unscaled
                            // offsets)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
+            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            break;
+
+        case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
