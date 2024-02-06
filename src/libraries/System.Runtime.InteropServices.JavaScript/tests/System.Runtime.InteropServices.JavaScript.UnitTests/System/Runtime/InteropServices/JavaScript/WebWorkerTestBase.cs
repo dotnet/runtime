@@ -136,5 +136,39 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 throw;
             }
         }
+
+        public class NamedCall
+        {
+            public string Name { get; set; }
+            public delegate void Method(CancellationToken ct);
+            public Method Call { get; set; }
+
+            override public string ToString() => Name;
+        }
+
+        public static IEnumerable<NamedCall> BlockingCalls = new List<NamedCall>
+        {
+                new NamedCall { Name = "Task.Wait", Call = delegate (CancellationToken ct) { Task.Delay(10, ct).Wait(ct); }},
+                new NamedCall { Name = "Task.WaitAll", Call = delegate (CancellationToken ct) { Task.WaitAll(Task.Delay(10, ct)); }},
+                new NamedCall { Name = "Task.WaitAny", Call = delegate (CancellationToken ct) { Task.WaitAny(Task.Delay(10, ct)); }},
+                new NamedCall { Name = "ManualResetEventSlim.Wait", Call = delegate (CancellationToken ct) {
+                    using var mr = new ManualResetEventSlim(false);
+                    using var cts = new CancellationTokenSource(8);
+                    try {
+                        mr.Wait(cts.Token);
+                    } catch (OperationCanceledException) { /* ignore */ }
+                }},
+        };
+
+        public static IEnumerable<object[]> GetTargetThreadsAndBlockingCalls()
+        {
+            foreach (var type in Enum.GetValues<ExecutorType>())
+            {
+                foreach (var call in BlockingCalls)
+                {
+                    yield return new object[] { new Executor(type), call };
+                }
+            }
+        }
     }
 }

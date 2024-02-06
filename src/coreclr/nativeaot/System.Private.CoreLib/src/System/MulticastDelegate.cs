@@ -404,6 +404,21 @@ namespace System
             return del;
         }
 
+        internal new bool HasSingleTarget => !(m_helperObject is Delegate[]);
+
+        // Used by delegate invocation list enumerator
+        internal Delegate? TryGetAt(int index)
+        {
+            if (!(m_helperObject is Delegate[] invocationList))
+            {
+                return (index == 0) ? this : null;
+            }
+            else
+            {
+                return ((uint)index < (uint)m_extraFunctionPointerOrData) ? invocationList[index] : null;
+            }
+        }
+
         protected override MethodInfo GetMethodImpl()
         {
             return base.GetMethodImpl();

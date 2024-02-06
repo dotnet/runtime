@@ -31,8 +31,14 @@ public:
 
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
-    virtual bool genCreateAddrMode(
-        GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
+    virtual bool genCreateAddrMode(GenTree*  addr,
+                                   bool      fold,
+                                   unsigned  naturalMul,
+                                   bool*     revPtr,
+                                   GenTree** rv1Ptr,
+                                   GenTree** rv2Ptr,
+                                   unsigned* mulPtr,
+                                   ssize_t*  cnsPtr);
 
 #ifdef LATE_DISASM
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs);
