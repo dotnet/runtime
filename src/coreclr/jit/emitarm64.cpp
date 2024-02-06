@@ -13005,6 +13005,58 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 }
 
 // This computes address from the immediate which is relocatable.
+void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
+                           regNumber    ireg, regNumber reg2,
+                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+{
+    assert(EA_IS_RELOC(attr));
+    assert(EA_IS_CNS_TLSGD_RELOC(attr));
+
+    emitAttr      size    = EA_SIZE(attr);
+    insFormat     fmt     = IF_DI_1E;
+    bool          needAdd = false;
+    instrDescJmp* id      = emitNewInstrJmp();
+
+    // adrp
+    id->idIns(INS_adrp);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idOpSize(size);
+    id->idAddr()->iiaAddr = (BYTE*)addr;
+    id->idReg1(ireg);
+    id->idSetIsDspReloc();
+    id->idSetTlsGD();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+
+    // ldr
+    emitIns_R_R_I(INS_ldr, attr, reg2, ireg, (ssize_t)addr);
+
+    // add
+    fmt           = IF_DI_2A;
+    instrDesc* addId = emitNewInstr(attr);
+    assert(id->idIsReloc());
+
+    addId->idIns(INS_add);
+    addId->idInsFmt(fmt);
+    addId->idInsOpt(INS_OPTS_NONE);
+    addId->idOpSize(size);
+    addId->idAddr()->iiaAddr = (BYTE*)addr;
+    addId->idReg1(ireg);
+    addId->idReg2(ireg);
+    addId->idSetTlsGD();
+
+    dispIns(addId);
+    appendToCurIG(addId);
+}
+
+// This computes address from the immediate which is relocatable.
 void emitter::emitIns_R_AI(instruction ins,
                            emitAttr    attr,
                            regNumber   ireg,
@@ -13036,10 +13088,6 @@ void emitter::emitIns_R_AI(instruction ins,
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idReg1(ireg);
     id->idSetIsDspReloc();
-    if (EA_IS_CNS_TLSGD_RELOC(attr))
-    {
-        id->idSetTlsGD();
-    }
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
     id->idDebugOnlyInfo()->idFlags     = gtFlags;
@@ -13063,10 +13111,6 @@ void emitter::emitIns_R_AI(instruction ins,
         id->idAddr()->iiaAddr = (BYTE*)addr;
         id->idReg1(ireg);
         id->idReg2(ireg);
-        if (EA_IS_CNS_TLSGD_RELOC(attr))
-        {
-            id->idSetTlsGD();
-        }
 
         dispIns(id);
         appendToCurIG(id);

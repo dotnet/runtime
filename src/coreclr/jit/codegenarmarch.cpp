@@ -3623,9 +3623,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //
         assert(genIsValidIntReg(target->GetRegNum()));
 
-        bool isTlsHandleTarget = false;
 #ifdef TARGET_ARM64
-        isTlsHandleTarget =
+        bool isTlsHandleTarget =
             compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && target->IsTlsIconHandle();
 
         if (isTlsHandleTarget)
@@ -3642,22 +3641,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // correct in the format the way linker needs. Also, we might end up spilling or
             // reloading a register, which can break the pattern.
             //
-            //      adrp x0, :tlsdesc:tlsRoot   ; R_AARCH64_TLSDESC_ADR_PAGE21
-            //      add  x0, x0, #0             ; R_AARCH64_TLSDESC_ADD_LO12
             //      mrs  x1, tpidr_el0
+            //      adrp x0, :tlsdesc:tlsRoot   ; R_AARCH64_TLSDESC_ADR_PAGE21
             //      ldr  x2, [x0]               ; R_AARCH64_TLSDESC_LD64_LO12
+            //      add  x0, x0, #0             ; R_AARCH64_TLSDESC_ADD_LO12
             //      blr  x2                     ; R_AARCH64_TLSDESC_CALL
             //      add  x0, x1, x0
             // We guaranteed in LSRA that r0, r1 and r2 are assigned to this node.
 
-            // adrp/add
-            instGen_Set_Reg_To_Imm(attr, REG_R0, (ssize_t)methHnd,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(iconNode->gtTargetHandle) DEBUGARG(iconNode->gtFlags));
             // mrs
             emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
 
+            // adrp
             // ldr
-            emitter->emitIns_R_R_I(INS_ldr, attr, target->GetRegNum(), REG_R0, (ssize_t)methHnd);
+            // add
+            emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(), (ssize_t)methHnd
+                                          DEBUGARG(iconNode->gtTargetHandle) DEBUGARG(iconNode->gtFlags));
         }
 #endif
 
@@ -3672,11 +3671,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     target->GetRegNum(),
                     call->IsFastTailCall());
 
+#ifdef TARGET_ARM64
         if (isTlsHandleTarget)
         {
             // add x0, x1, x0
             GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
         }
+#endif
         // clang-format on
     }
     else
