@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseAppHost>false</UseAppHost>
+    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' OR ('$(TargetsUnix)' == 'true' AND '$(TargetsMobile)' != 'true')">false</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test87879.cs" />
+  </ItemGroup>
+</Project>
