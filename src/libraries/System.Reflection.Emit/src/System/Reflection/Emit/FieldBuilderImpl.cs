@@ -76,7 +76,8 @@ namespace System.Reflection.Emit
 
                         if (sourceType != enumBldr._typeBuilder.UnderlyingSystemType &&
                             sourceType != underlyingType &&
-                            sourceType.IsEnum && sourceType.GetEnumUnderlyingType() != underlyingType)
+                            sourceType.IsEnum &&
+                            sourceType.GetEnumUnderlyingType() != underlyingType)
                         {
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                         }

@@ -938,9 +938,8 @@ namespace System.Reflection.Emit
             ThrowIfNotCreated();
 
             List<FieldBuilderImpl> candidates = new List<FieldBuilderImpl>(_fieldDefinitions.Count);
-            for (int i = 0; i < _fieldDefinitions.Count; i++)
+            foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
             {
-                FieldBuilderImpl fieldInfo = _fieldDefinitions[i];
                 BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
                 if ((bindingAttr & fieldFlags) == fieldFlags)
                 {
