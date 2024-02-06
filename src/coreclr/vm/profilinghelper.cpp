@@ -507,11 +507,10 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 //    corresponding CLSID structure.
 //
 // Arguments:
-//    * wszClsid - [in / out] CLSID string to convert. This may also be a progid. This
+//    * wszClsid - [in] CLSID string to convert. This may also be a progid. This
 //        ensures our behavior is backward-compatible with previous CLR versions. I don't
 //        know why previous versions allowed the user to set a progid in the environment,
-//        but well whatever. On [out], this string is normalized in-place (e.g.,
-//        double-quotes around progid are removed).
+//        but well whatever. For back-compatibility, we also strip all double-quotes from the passed in ProgId.
 //    * pClsid - [out] CLSID structure corresponding to wszClsid
 //
 // Return Value:
@@ -523,7 +522,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 
 // static
 HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
-    __inout_z LPWSTR wszClsid,
+    __in_z LPCWSTR wszClsid,
     CLSID * pClsid)
 {
     CONTRACTL
@@ -552,27 +551,15 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
     else
     {
 #ifndef TARGET_UNIX
-        WCHAR *szFrom, *szTo;
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:26000) // "espX thinks there is an overflow here, but there isn't any"
-#endif
-        for (szFrom=szTo=wszClsid;  *szFrom;  )
+        SString progId{wszClsid};
+        for (auto it = progId.Begin(); it != progId.End(); ++it)
         {
-            if (*szFrom == W('"'))
+            while (it != progId.End() && *it == W('"'))
             {
-                ++szFrom;
-                continue;
+                progId.Delete(it, 1);
             }
-            *szTo++ = *szFrom++;
         }
-        *szTo = 0;
-        hr = CLSIDFromProgID(wszClsid, pClsid);
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
-
+        hr = CLSIDFromProgID(progId.GetUnicode(), pClsid);
 #else // !TARGET_UNIX
         // ProgID not supported on TARGET_UNIX
         hr = E_INVALIDARG;
@@ -824,9 +811,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 
         PathString path{profilerList, sectionStart, pathEnd};
         StackSString clsidString{profilerList, clsidStart, sectionEnd};
-        NewArrayHolder<WCHAR> clsidStringRaw = clsidString.GetCopyOfUnicodeString();
         CLSID clsid;
-        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidStringRaw, &clsid);
+        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidString.GetUnicode(), &clsid);
         if (FAILED(hr))
         {
             // ProfilerCLSIDFromString already logged an event if there was a failure
