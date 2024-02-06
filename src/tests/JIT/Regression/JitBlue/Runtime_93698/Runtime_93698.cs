@@ -11,7 +11,7 @@ public static class Runtime_93698
     [Fact]
     public static void TestShiftLeftLogicalOvershift()
     {
-        if (Sse.IsSupported)
+        if (Sse2.IsSupported)
         {
             var result1 = Sse2.ShiftLeftLogical(Vector128.Create(-1, +2, -3, +4), 32);
             Assert.Equal(Vector128<int>.Zero, result1);
@@ -24,7 +24,7 @@ public static class Runtime_93698
     [Fact]
     public static void TestShiftRightLogicalOvershift()
     {
-        if (Sse.IsSupported)
+        if (Sse2.IsSupported)
         {
             var result1 = Sse2.ShiftRightLogical(Vector128.Create(-1, +2, -3, +4), 32);
             Assert.Equal(Vector128<int>.Zero, result1);
@@ -37,7 +37,7 @@ public static class Runtime_93698
     [Fact]
     public static void TestShiftRightArithmeticOvershift()
     {
-        if (Sse.IsSupported)
+        if (Sse2.IsSupported)
         {
             var result1 = Sse2.ShiftRightArithmetic(Vector128.Create(-1, +2, -3, +4), 32);
             Assert.Equal(Vector128.Create(-1, 0, -1, 0), result1);
