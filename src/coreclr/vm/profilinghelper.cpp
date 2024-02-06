@@ -821,10 +821,9 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             continue;
         }
         SString::Iterator clsidStart = pathEnd + 1;
-        profilerList.Replace(pathEnd, W('\0'));
-        profilerList.Replace(sectionEnd, W('\0'));
-        
-        SString clsidString{SString::Literal, profilerList.GetUnicode(clsidStart)};
+
+        PathString path{profilerList, sectionStart, pathEnd};
+        StackSString clsidString{profilerList, clsidStart, sectionEnd};
         NewArrayHolder<WCHAR> clsidStringRaw = clsidString.GetCopyOfUnicodeString();
         CLSID clsid;
         hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidStringRaw, &clsid);
@@ -841,7 +840,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             kStartupLoad,
             &clsid,
             (LPCSTR)clsidUtf8,
-            profilerList.GetUnicode(sectionStart),
+            path.GetUnicode(),
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
         if (FAILED(hr))
