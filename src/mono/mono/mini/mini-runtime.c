@@ -4871,9 +4871,7 @@ mini_init (const char *filename)
 	mono_generic_sharing_init ();
 #endif
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	mono_simd_intrinsics_init ();
-#endif
 
 	register_trampolines (domain);
 
