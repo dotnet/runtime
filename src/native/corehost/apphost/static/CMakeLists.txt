@@ -118,8 +118,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         System.Globalization.Native-Static
         System.IO.Compression.Native-Static
 
-        netintrinsics
-
         kernel32.lib
         advapi32.lib
         ole32.lib
@@ -149,8 +147,6 @@ else()
         System.Net.Security.Native-Static
         System.Native-Static
         System.Security.Cryptography.Native.OpenSsl-Static
-
-        netintrinsics
 
         palrt
         coreclrpal_dac

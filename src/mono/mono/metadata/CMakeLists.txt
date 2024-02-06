@@ -202,7 +202,7 @@ set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
     add_library(metadata_objects_shared OBJECT ${metadata_sources})
     target_compile_definitions(metadata_objects_shared PRIVATE ${metadata_compile_definitions})
-    target_link_libraries(metadata_objects_shared PRIVATE monoapi eglib_api utils_objects_shared netintrinsics)
+    target_link_libraries(metadata_objects_shared PRIVATE monoapi eglib_api utils_objects_shared)
     # note: metadata_objects is an object library, so this doesn't force linking with sgen,
     # it just adds the relevant include directories - which we need even with Boehm
     target_link_libraries(metadata_objects_shared PRIVATE sgen_objects_shared)
@@ -214,7 +214,7 @@ endif()
 
 add_library(metadata_objects OBJECT ${metadata_sources})
 target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
-target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects netintrinsics)
+target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
 target_link_libraries(metadata_objects PRIVATE sgen_objects)

@@ -79,11 +79,6 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
     add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
-#-------------------------------
-# Include shared native libraries
-#-------------------------------
-add_subdirectory(${CLR_SRC_NATIVE_DIR}/netintrinsics netintrinsics)
-
 #-----------------------------------------
 # Add Projects
 #     - project which require platform header not clr's

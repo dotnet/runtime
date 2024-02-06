@@ -14,4 +14,3 @@ endif(CLR_CMAKE_HOST_UNIX)
 
 target_include_directories(clrjit_static PRIVATE ${JIT_SOURCE_DIR})
 target_precompile_headers(clrjit_static PRIVATE [["jitpch.h"]])
-target_link_libraries(clrjit_static PRIVATE netintrinsics)

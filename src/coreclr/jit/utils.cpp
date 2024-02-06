@@ -3258,6 +3258,32 @@ double FloatingPointUtils::normalize(double value)
 #endif
 }
 
+int FloatingPointUtils::ilogb(double value)
+{
+    if (value == 0.0)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogb(value);
+}
+
+int FloatingPointUtils::ilogb(float value)
+{
+    if (value == 0.0f)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogbf(value);
+}
+
 //------------------------------------------------------------------------
 // BitOperations::BitScanReverse: Search the mask data from most significant bit (MSB) to least significant bit
 // (LSB) for a set bit (1).

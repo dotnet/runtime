@@ -25,7 +25,6 @@
 #define __USE_ISOC99
 
 #include <math.h>
-#include <netintrinsics.h>
 
 #include "utils/mono-compiler.h"
 #include "utils/mono-math.h"
@@ -101,7 +100,7 @@ ves_icall_System_Math_Tanh (gdouble x)
 gdouble
 ves_icall_System_Math_Acos (gdouble x)
 {
-	return netintrinsics_acos (x);
+	return acos (x);
 }
 
 gdouble
@@ -113,7 +112,7 @@ ves_icall_System_Math_Acosh (gdouble x)
 gdouble
 ves_icall_System_Math_Asin (gdouble x)
 {
-	return netintrinsics_asin (x);
+	return asin (x);
 }
 
 gdouble
@@ -131,7 +130,7 @@ ves_icall_System_Math_Atan (gdouble x)
 gdouble
 ves_icall_System_Math_Atan2 (gdouble y, gdouble x)
 {
-	return netintrinsics_atan2 (y, x);
+	return atan2 (y, x);
 }
 
 gdouble
@@ -143,25 +142,25 @@ ves_icall_System_Math_Atanh (gdouble x)
 gdouble
 ves_icall_System_Math_Exp (gdouble x)
 {
-	return netintrinsics_exp (x);
+	return exp (x);
 }
 
 gdouble
 ves_icall_System_Math_Log (gdouble x)
 {
-	return netintrinsics_log (x);
+	return log (x);
 }
 
 gdouble
 ves_icall_System_Math_Log10 (gdouble x)
 {
-	return netintrinsics_log10 (x);
+	return log10 (x);
 }
 
 gdouble
 ves_icall_System_Math_Pow (gdouble x, gdouble y)
 {
-	return netintrinsics_pow (x, y);
+	return pow (x, y);
 }
 
 gdouble
@@ -191,7 +190,7 @@ ves_icall_System_Math_FusedMultiplyAdd (gdouble x, gdouble y, gdouble z)
 float
 ves_icall_System_MathF_Acos (float x)
 {
-	return netintrinsics_acosf (x);
+	return acosf (x);
 }
 
 float
@@ -203,7 +202,7 @@ ves_icall_System_MathF_Acosh (float x)
 float
 ves_icall_System_MathF_Asin (float x)
 {
-	return netintrinsics_asinf (x);
+	return asinf (x);
 }
 
 float
@@ -221,7 +220,7 @@ ves_icall_System_MathF_Atan  (float x)
 float
 ves_icall_System_MathF_Atan2 (float x, float y)
 {
-	return netintrinsics_atan2f (x, y);
+	return atan2f (x, y);
 }
 
 float
@@ -257,7 +256,7 @@ ves_icall_System_MathF_Cosh (float x)
 float
 ves_icall_System_MathF_Exp (float x)
 {
-	return netintrinsics_expf (x);
+	return expf (x);
 }
 
 float
@@ -269,19 +268,19 @@ ves_icall_System_MathF_Floor (float x)
 float
 ves_icall_System_MathF_Log (float x)
 {
-	return netintrinsics_logf (x);
+	return logf (x);
 }
 
 float
 ves_icall_System_MathF_Log10 (float x)
 {
-	return netintrinsics_log10f (x);
+	return log10f (x);
 }
 
 float
 ves_icall_System_MathF_Pow (float x, float y)
 {
-	return netintrinsics_powf (x, y);
+	return powf (x, y);
 }
 
 float

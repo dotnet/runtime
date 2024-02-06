@@ -858,6 +858,10 @@ public:
     static float minimumNumber(float val1, float val2);
 
     static double normalize(double x);
+
+    static int ilogb(double x);
+
+    static int ilogb(float f);
 };
 
 class BitOperations

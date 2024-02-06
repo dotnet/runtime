@@ -6,5 +6,4 @@ set(FLOAT_SOURCES
 )
 
 add_library_clr(comfloat_wks OBJECT ${FLOAT_SOURCES})
-target_link_libraries(comfloat_wks PRIVATE netintrinsics)
 add_dependencies(comfloat_wks eventing_headers)

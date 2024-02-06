@@ -337,7 +337,7 @@ endif()
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
 target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api)
-target_link_libraries(mono-ee-interp PUBLIC netintrinsics)
+target_link_libraries(mono-ee-interp PUBLIC)
 target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
@@ -395,18 +395,18 @@ set(monosgen-sources "${mini_sources};${ZLIB_SOURCES}")
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
   add_library(monosgen-objects_shared OBJECT "${monosgen-sources}")
   target_compile_definitions(monosgen-objects_shared PRIVATE -DMONO_DLL_EXPORT)
-  target_link_libraries (monosgen-objects_shared PRIVATE monoapi eglib_api utils_objects_shared sgen_objects_shared metadata_objects_shared netintrinsics)
+  target_link_libraries (monosgen-objects_shared PRIVATE monoapi eglib_api utils_objects_shared sgen_objects_shared metadata_objects_shared)
 endif()
 
 add_library(monosgen-objects OBJECT "${monosgen-sources}")
-target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects netintrinsics)
+target_link_libraries (monosgen-objects PRIVATE monoapi eglib_api utils_objects sgen_objects metadata_objects)
 if(NOT HOST_WIN32)
     target_compile_definitions(monosgen-objects PRIVATE -DMONO_DLL_EXPORT)
 endif()
 
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
-target_link_libraries(monosgen-static PUBLIC netintrinsics)
+target_link_libraries(monosgen-static PUBLIC)
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.
@@ -439,7 +439,7 @@ if(NOT DISABLE_SHARED_LIBS)
   if(HAVE_ICU_SHIM)
     target_link_libraries(monosgen-shared PRIVATE icu_shim_objects)
   endif()
-  target_include_directories (monosgen-shared PRIVATE monoapi netintrinsics)
+  target_include_directories (monosgen-shared PRIVATE monoapi)
   if(TARGET_WIN32)
     # on Windows the import library for the shared mono library will have the same name as the static library,
     # to avoid a conflict we rename the import library with the .import.lib suffix

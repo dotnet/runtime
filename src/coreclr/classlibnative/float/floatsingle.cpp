@@ -5,7 +5,6 @@
 //
 
 #include <common.h>
-#include "netintrinsics.h"
 
 #include "floatsingle.h"
 
@@ -35,7 +34,7 @@
 FCIMPL1_V(float, COMSingle::Acos, float x)
     FCALL_CONTRACT;
 
-    return netintrinsics_acosf(x);
+    return acosf(x);
 FCIMPLEND
 
 /*=====================================Acosh====================================
@@ -53,7 +52,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Asin, float x)
     FCALL_CONTRACT;
 
-    return netintrinsics_asinf(x);
+    return asinf(x);
 FCIMPLEND
 
 /*=====================================Asinh====================================
@@ -89,7 +88,7 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::Atan2, float y, float x)
     FCALL_CONTRACT;
 
-    return netintrinsics_atan2f(y, x);
+    return atan2f(y, x);
 FCIMPLEND
 
 /*====================================Cbrt======================================
@@ -145,7 +144,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Exp, float x)
     FCALL_CONTRACT;
 
-    return netintrinsics_expf(x);
+    return expf(x);
 FCIMPLEND
 
 /*====================================Floor=====================================
@@ -181,7 +180,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Log, float x)
     FCALL_CONTRACT;
 
-    return netintrinsics_logf(x);
+    return logf(x);
 FCIMPLEND
 
 /*=====================================Log2=====================================
@@ -199,7 +198,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Log10, float x)
     FCALL_CONTRACT;
 
-    return netintrinsics_log10f(x);
+    return log10f(x);
 FCIMPLEND
 
 /*=====================================ModF=====================================
@@ -217,7 +216,7 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
 
-    return netintrinsics_powf(x, y);
+    return powf(x, y);
 FCIMPLEND
 
 /*=====================================Sin======================================
