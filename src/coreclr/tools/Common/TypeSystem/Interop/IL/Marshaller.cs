@@ -1086,7 +1086,7 @@ namespace Internal.TypeSystem.Interop
                     codeStream.EmitLdc(1);
                 }
 
-                codeStream.Emit(ILOpcode.conv_ovf_i);
+                codeStream.Emit(ILOpcode.conv_ovf_i4);
             }
         }
 
