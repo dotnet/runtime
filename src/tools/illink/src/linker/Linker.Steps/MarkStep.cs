@@ -65,7 +65,6 @@ namespace Mono.Linker.Steps
 		readonly List<AttributeProviderPair> _ivt_attributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
 		protected List<(TypeDefinition, MarkScopeStack.Scope)> _typesWithInterfaces;
-		protected HashSet<(OverrideInformation, MarkScopeStack.Scope)> _interfaceOverrides;
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
 		protected List<TypeDefinition> _dynamicInterfaceCastableImplementationTypes;
 		protected List<(MethodBody, MarkScopeStack.Scope)> _unreachableBodies;
@@ -226,7 +225,6 @@ namespace Mono.Linker.Steps
 			_ivt_attributes = new List<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
 			_typesWithInterfaces = new List<(TypeDefinition, MarkScopeStack.Scope)> ();
-			_interfaceOverrides = new HashSet<(OverrideInformation, MarkScopeStack.Scope)> ();
 			_dynamicInterfaceCastableImplementationTypesDiscovered = new HashSet<AssemblyDefinition> ();
 			_dynamicInterfaceCastableImplementationTypes = new List<TypeDefinition> ();
 			_unreachableBodies = new List<(MethodBody, MarkScopeStack.Scope)> ();
@@ -573,9 +571,17 @@ namespace Mono.Linker.Steps
 
 		void ProcessVirtualMethods ()
 		{
-			foreach ((MethodDefinition method, MarkScopeStack.Scope scope) in _virtual_methods) {
+			var vms = _virtual_methods.ToArray ();
+			foreach((var method, var scope) in vms) {
 				using (ScopeStack.PushScope (scope))
+				{
 					ProcessVirtualMethod (method);
+					if (method.DeclaringType.IsInterface)
+					{
+
+					}
+				}
+
 			}
 		}
 
@@ -610,19 +616,21 @@ namespace Mono.Linker.Steps
 							continue;
 						foreach (var ov in baseOverrideInformations) {
 							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope))
-								_interfaceOverrides.Add ((ov, ScopeStack.CurrentScope));
+							{
+								_virtual_methods.Add((ov.Base, ScopeStack.CurrentScope));
+							}
 						}
 					}
 				}
 			}
 
-			var interfaceOverrides = _interfaceOverrides.ToArray ();
-			foreach ((var overrideInformation, var scope) in interfaceOverrides) {
-				using (ScopeStack.PushScope (scope)) {
-					if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (overrideInformation))
-						MarkMethod (overrideInformation.Override, new DependencyInfo (DependencyKind.Override, overrideInformation.Base), scope.Origin);
-				}
-			}
+			// var interfaceOverrides = _interfaceOverrides.ToArray ();
+			// foreach ((var overrideInformation, var scope) in interfaceOverrides) {
+			//  using (ScopeStack.PushScope (scope)) {
+			//      if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (overrideInformation))
+			//          MarkMethod (overrideInformation.Override, new DependencyInfo (DependencyKind.Override, overrideInformation.Base), scope.Origin);
+			//  }
+			// }
 		}
 
 		void DiscoverDynamicCastableImplementationInterfaces ()
@@ -709,6 +717,22 @@ namespace Mono.Linker.Steps
 			if (defaultImplementations != null) {
 				foreach (var defaultImplementationInfo in defaultImplementations) {
 					ProcessDefaultImplementation (defaultImplementationInfo.ImplementingType, defaultImplementationInfo.InterfaceImpl, defaultImplementationInfo.DefaultInterfaceMethod);
+
+				}
+			}
+			if (method.DeclaringType.IsInterface)
+			{
+				var overridingMethods = Annotations.GetOverrides(method);
+				foreach(var ov in overridingMethods ?? [])
+				{
+					if(IsInterfaceImplementationMethodNeededByTypeDueToInterface(ov, ov.Override.DeclaringType))
+						MarkMethod(ov.Override, new DependencyInfo(DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
+				}
+				foreach(var diminfo in defaultImplementations ?? [])
+				{
+					var ov = new OverrideInformation(method, diminfo.DefaultInterfaceMethod, Context);
+					if (IsInterfaceImplementationMethodNeededByTypeDueToInterface(ov, diminfo.ImplementingType))
+						MarkMethod(ov.Override, new DependencyInfo(DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -722,13 +746,12 @@ namespace Mono.Linker.Steps
 		bool ShouldMarkOverrideForBase (OverrideInformation overrideInformation)
 		{
 			Debug.Assert (Annotations.IsMarked (overrideInformation.Base) || IgnoreScope (overrideInformation.Base.DeclaringType.Scope));
+			if (overrideInformation.IsOverrideOfInterfaceMember)
+				return false;
+
 			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
 				return false;
 
-			if (overrideInformation.IsOverrideOfInterfaceMember) {
-				_interfaceOverrides.Add ((overrideInformation, ScopeStack.CurrentScope));
-				return false;
-			}
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
 				return true;
 
@@ -822,8 +845,8 @@ namespace Mono.Linker.Steps
 				|| implementationMethod.IsStatic && !Annotations.IsRelevantToVariantCasting(typeWithDefaultImplementedInterfaceMethod))
 				return;
 
-			var origin = ScopeStack.CurrentScope.Origin;
-			MarkMethod(implementationMethod, new DependencyInfo(DependencyKind.Unspecified, implementation), in origin);
+			// var origin = ScopeStack.CurrentScope.Origin;
+			// MarkMethod(implementationMethod, new DependencyInfo(DependencyKind.Unspecified, implementation), in origin);
 
 			MarkInterfaceImplementation (implementation);
 		}
@@ -2549,7 +2572,7 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// Returns true if the override method is required due to the interface that the base method is declared on. See doc at <see href="docs/methods-kept-by-interface.md"/> for explanation of logic.
 		/// </summary>
-		bool IsInterfaceImplementationMethodNeededByTypeDueToInterface (OverrideInformation overrideInformation)
+		bool IsInterfaceImplementationMethodNeededByTypeDueToInterface (OverrideInformation overrideInformation, TypeDefinition typeThatImplsInterface)
 		{
 			var @base = overrideInformation.Base;
 			var method = overrideInformation.Override;
@@ -2574,18 +2597,18 @@ namespace Mono.Linker.Steps
 
 			// If the interface method is abstract, mark the implementation method
 			// The method is needed for valid IL.
-			if (@base.IsAbstract && !@method.DeclaringType.IsInterface)
+			if (@base.IsAbstract)
 				return true;
 
 			// If the method is static and the implementing type is relevant to variant casting, mark the implementation method.
 			// A static method may only be called through a constrained call if the type is relevant to variant casting.
 			if (@base.IsStatic)
-				return Annotations.IsRelevantToVariantCasting (method.DeclaringType)
+				return Annotations.IsRelevantToVariantCasting (typeThatImplsInterface)
 					|| IgnoreScope (@base.DeclaringType.Scope);
 
 			// If the implementing type is marked as instantiated, mark the implementation method.
 			// If the type is not instantiated, do not mark the implementation method
-			return Annotations.IsInstantiated (method.DeclaringType);
+			return Annotations.IsInstantiated (typeThatImplsInterface);
 		}
 
 		static bool IsSpecialSerializationConstructor (MethodDefinition method)
