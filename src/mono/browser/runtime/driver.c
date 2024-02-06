@@ -403,12 +403,6 @@ mono_wasm_parse_runtime_options (int argc, char* argv[])
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_enable_on_demand_gc (int enable)
-{
-	mono_wasm_enable_gc = enable ? 1 : 0;
-}
-
-EMSCRIPTEN_KEEPALIVE void
 mono_wasm_intern_string_ref (MonoString **string)
 {
 	MONO_ENTER_GC_UNSAFE;
@@ -437,18 +431,6 @@ mono_wasm_string_get_data_ref (
 			*outIsInterned = mono_string_instance_is_interned (*string);
 	}
 	MONO_EXIT_GC_UNSAFE;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoType *
-mono_wasm_class_get_type (MonoClass *klass)
-{
-	if (!klass)
-		return NULL;
-	MonoType *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_get_type (klass);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void

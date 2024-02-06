@@ -204,7 +204,12 @@ namespace System
         }
 
         public override int GetHashCode()
-            => ((nuint)_pUnderlyingEEType).GetHashCode();
+        {
+            MethodTable* pEEType = _pUnderlyingEEType;
+            if (pEEType != null)
+                return ((nuint)pEEType).GetHashCode();
+            return RuntimeHelpers.GetHashCode(this);
+        }
 
         public override RuntimeTypeHandle TypeHandle
         {

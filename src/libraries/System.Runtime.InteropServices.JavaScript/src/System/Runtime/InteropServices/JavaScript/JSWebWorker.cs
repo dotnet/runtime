@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 #pragma warning disable CA1416
 
@@ -112,6 +112,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
+                    // JSSynchronizationContext also registers to _cancellationToken
+                    _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
+
                     // receive callback when the cancellation is requested
                     _cancellationRegistration = _cancellationToken.Register(static (o) =>
                     {
@@ -119,9 +122,6 @@ namespace System.Runtime.InteropServices.JavaScript
                         // this could be executing on any thread
                         self.PropagateCompletionAndDispose(Task.FromCanceled<T>(self._cancellationToken));
                     }, this);
-
-                    // JSSynchronizationContext also registers to _cancellationToken
-                    _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
 
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 
@@ -194,6 +194,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     _cancellationRegistration?.Dispose();
                     _cancellationRegistration = null;
+                    _thread?.Join(50);
                 }
 
                 if (_jsSynchronizationContext != null)

@@ -71,8 +71,8 @@ FCIMPL0(VOID, ExceptionNative::PrepareForForeignExceptionRaise)
 
     PTR_ThreadExceptionState pCurTES = GetThread()->GetExceptionState();
 
-	// Set a flag against the TES to indicate this is a foreign exception raise.
-	pCurTES->SetRaisingForeignException();
+    // Set a flag against the TES to indicate this is a foreign exception raise.
+    pCurTES->SetRaisingForeignException();
 }
 FCIMPLEND
 
@@ -795,33 +795,6 @@ extern "C" int QCALLTYPE GCInterface_EndNoGCRegion()
     return retVal;
 }
 
-/*===============================GetGenerationWR================================
-**Action: Returns the generation in which the object pointed to by a WeakReference is found.
-**Returns:
-**Arguments: args->handle -- the OBJECTHANDLE to the object which we're locating.
-**Exceptions: ArgumentException if handle points to an object which is not accessible.
-==============================================================================*/
-FCIMPL1(int, GCInterface::GetGenerationWR, LPVOID handle)
-{
-    FCALL_CONTRACT;
-
-    int iRetVal = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    OBJECTREF temp;
-    temp = ObjectFromHandle((OBJECTHANDLE) handle);
-    if (temp == NULL)
-        COMPlusThrowArgumentNull(W("wo"));
-
-    iRetVal = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(OBJECTREFToObject(temp));
-
-    HELPER_METHOD_FRAME_END();
-
-    return iRetVal;
-}
-FCIMPLEND
-
 FCIMPL0(int, GCInterface::GetLastGCPercentTimeInGC)
 {
     FCALL_CONTRACT;
@@ -1490,6 +1463,22 @@ NOINLINE void GCInterface::GarbageCollectModeAny(int generation)
 
 #include <optsmallperfcritical.h>
 
+FCIMPL2(FC_UINT8_RET,COMInterlocked::Exchange8, UINT8 *location, UINT8 value)
+{
+    FCALL_CONTRACT;
+
+    return (UINT8)InterlockedExchange8((CHAR *) location, (CHAR)value);
+}
+FCIMPLEND
+
+FCIMPL2(FC_INT16_RET,COMInterlocked::Exchange16, INT16 *location, INT16 value)
+{
+    FCALL_CONTRACT;
+
+    return InterlockedExchange16((SHORT *) location, value);
+}
+FCIMPLEND
+
 FCIMPL2(INT32,COMInterlocked::Exchange32, INT32 *location, INT32 value)
 {
     FCALL_CONTRACT;
@@ -1503,6 +1492,22 @@ FCIMPL2_IV(INT64,COMInterlocked::Exchange64, INT64 *location, INT64 value)
     FCALL_CONTRACT;
 
     return InterlockedExchange64((INT64 *) location, value);
+}
+FCIMPLEND
+
+FCIMPL3(FC_UINT8_RET, COMInterlocked::CompareExchange8, UINT8* location, UINT8 value, UINT8 comparand)
+{
+    FCALL_CONTRACT;
+
+    return (UINT8)InterlockedCompareExchange8((CHAR*)location, (CHAR)value, (CHAR)comparand);
+}
+FCIMPLEND
+
+FCIMPL3(FC_INT16_RET, COMInterlocked::CompareExchange16, INT16* location, INT16 value, INT16 comparand)
+{
+    FCALL_CONTRACT;
+
+    return InterlockedCompareExchange16((SHORT*)location, value, comparand);
 }
 FCIMPLEND
 

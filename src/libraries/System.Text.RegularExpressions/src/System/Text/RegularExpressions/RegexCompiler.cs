@@ -2577,8 +2577,41 @@ namespace System.Text.RegularExpressions
                 // technically backtracking, it's appropriate to have a timeout check.
                 EmitTimeoutCheckIfNeeded();
 
-                // Emit the child.
                 RegexNode child = node.Child(0);
+
+                // Ensure we're able to uncapture anything captured by the child.
+                // Note that this differs ever so slightly from the source generator.  The source
+                // generator only defines a local for capturePos if not in a loop (as it calls to a helper
+                // method where the argument acts implicitly as a local), but the compiler
+                // needs to store the popped stack value somewhere so that it can repeatedly compare
+                // that value against Crawlpos, so capturePos is always declared if there are captures.
+                bool isInLoop = false;
+                LocalBuilder? capturePos = analysis.MayContainCapture(child) ? DeclareInt32() : null;
+                if (capturePos is not null)
+                {
+                    // If we're inside a loop, push the current crawl position onto the stack,
+                    // so that each iteration tracks its own value. Otherwise, store it into a local.
+                    isInLoop = analysis.IsInLoop(node);
+                    if (isInLoop)
+                    {
+                        EmitStackResizeIfNeeded(1);
+                        EmitStackPush(() =>
+                        {
+                            // base.Crawlpos();
+                            Ldthis();
+                            Call(s_crawlposMethod);
+                        });
+                    }
+                    else
+                    {
+                        // capturePos = base.Crawlpos();
+                        Ldthis();
+                        Call(s_crawlposMethod);
+                        Stloc(capturePos);
+                    }
+                }
+
+                // Emit the child.
                 if (analysis.MayBacktrack(child))
                 {
                     // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
@@ -2607,6 +2640,20 @@ namespace System.Text.RegularExpressions
                 Stloc(pos);
                 SliceInputSpan();
                 sliceStaticPos = startingTextSpanPos;
+
+                // And uncapture anything if necessary. Negative lookaround captures don't persist beyond the lookaround.
+                if (capturePos is not null)
+                {
+                    if (isInLoop)
+                    {
+                        // capturepos = base.runstack[--stackpos];
+                        EmitStackPop();
+                        Stloc(capturePos);
+                    }
+
+                    // while (base.Crawlpos() > capturepos) base.Uncapture();
+                    EmitUncaptureUntil(capturePos);
+                }
 
                 doneLabel = originalDoneLabel;
             }
@@ -4087,6 +4134,8 @@ namespace System.Text.RegularExpressions
                     // Determine where to branch, either back to the lazy loop body to add an additional iteration,
                     // or to the last backtracking label.
 
+                    Label jumpToDone = DefineLabel();
+
                     if (iterationMayBeEmpty)
                     {
                         // if (sawEmpty != 0)
@@ -4105,7 +4154,7 @@ namespace System.Text.RegularExpressions
                         Ldc(0);
                         Stloc(sawEmpty!);
 
-                        BrFar(doneLabel);
+                        Br(jumpToDone);
                         MarkLabel(sawEmptyZero);
                     }
 
@@ -4114,11 +4163,31 @@ namespace System.Text.RegularExpressions
                         // if (iterationCount >= maxIterations) goto doneLabel;
                         Ldloc(iterationCount);
                         Ldc(maxIterations);
-                        BgeFar(doneLabel);
+                        Bge(jumpToDone);
                     }
 
                     // goto body;
                     BrFar(body);
+
+                    MarkLabel(jumpToDone);
+
+                    // We're backtracking, which could either be to something prior to the lazy loop or to something
+                    // inside of the lazy loop.  If it's to something inside of the lazy loop, then either the loop
+                    // will eventually succeed or we'll eventually end up unwinding back through the iterations all
+                    // the way back to the loop not matching at all, in which case the state we first pushed on at the
+                    // beginning of the !isAtomic section will get popped off. But if here we're instead going to jump
+                    // to something prior to the lazy loop, then we need to pop off that state here.
+                    if (doneLabel == originalDoneLabel)
+                    {
+                        // stackpos -= entriesPerIteration;
+                        Ldloc(stackpos);
+                        Ldc(entriesPerIteration);
+                        Sub();
+                        Stloc(stackpos);
+                    }
+
+                    // goto done;
+                    BrFar(doneLabel);
 
                     doneLabel = backtrack;
                     MarkLabel(skipBacktrack);

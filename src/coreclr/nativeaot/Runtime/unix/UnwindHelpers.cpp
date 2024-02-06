@@ -335,14 +335,14 @@ struct Registers_REGDISPLAY : REGDISPLAY
     inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM; }
 
     bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) { return false; };
+    bool        validFloatRegister(int num) const;
     bool        validVectorRegister(int num) const { return false; };
 
     uint32_t    getRegister(int num) const;
     void        setRegister(int num, uint32_t value, uint32_t location);
 
-    double      getFloatRegister(int num) const {abort();}
-    void        setFloatRegister(int num, double value) {abort();}
+    double      getFloatRegister(int num) const;
+    void        setFloatRegister(int num, double value);
 
     libunwind::v128    getVectorRegister(int num) const {abort();}
     void        setVectorRegister(int num, libunwind::v128 value) {abort();}
@@ -353,6 +353,28 @@ struct Registers_REGDISPLAY : REGDISPLAY
     void        setIP(uint32_t value, uint32_t location) { IP = value; }
     uint32_t    getFP() const         { return *pR11;}
     void        setFP(uint32_t value, uint32_t location) { pR11 = (PTR_UIntNative)location;}
+};
+
+struct ArmUnwindCursor : public libunwind::AbstractUnwindCursor
+{
+  Registers_REGDISPLAY *_registers;
+public:
+  ArmUnwindCursor(Registers_REGDISPLAY *registers) : _registers(registers) {}
+  virtual bool        validReg(int num) { return _registers->validRegister(num); }
+  virtual unw_word_t  getReg(int num) { return _registers->getRegister(num); }
+  virtual void        setReg(int num, unw_word_t value, unw_word_t location) { _registers->setRegister(num, value, location); }
+  virtual unw_word_t  getRegLocation(int num) {abort();}
+  virtual bool        validFloatReg(int num) { return _registers->validFloatRegister(num); }
+  virtual unw_fpreg_t getFloatReg(int num) { return _registers->getFloatRegister(num); }
+  virtual void        setFloatReg(int num, unw_fpreg_t value) { _registers->setFloatRegister(num, value); }
+  virtual int         step(bool stage2 = false) {abort();}
+  virtual void        getInfo(unw_proc_info_t *) {abort();}
+  virtual void        jumpto() {abort();}
+  virtual bool        isSignalFrame() { return false; }
+  virtual bool        getFunctionName(char *buf, size_t len, unw_word_t *off) {abort();}
+  virtual void        setInfoBasedOnIPRegister(bool isReturnAddress = false) {abort();}
+  virtual const char *getRegisterName(int num) {abort();}
+  virtual void        saveVFPAsX() {abort();}
 };
 
 inline bool Registers_REGDISPLAY::validRegister(int num) const {
@@ -369,6 +391,10 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
         return true;
 
     return false;
+}
+
+inline bool Registers_REGDISPLAY::validFloatRegister(int num) const {
+    return num >= UNW_ARM_D0 && num <= UNW_ARM_D31;
 }
 
 inline uint32_t Registers_REGDISPLAY::getRegister(int regNum) const {
@@ -474,6 +500,24 @@ void Registers_REGDISPLAY::setRegister(int num, uint32_t value, uint32_t locatio
         break;
     default:
         PORTABILITY_ASSERT("unsupported arm register");
+    }
+}
+
+double Registers_REGDISPLAY::getFloatRegister(int num) const
+{
+    if (num >= UNW_ARM_D8 && num <= UNW_ARM_D15)
+    {
+        return D[num - UNW_ARM_D8];
+    }
+
+    PORTABILITY_ASSERT("unsupported arm register");
+}
+
+void Registers_REGDISPLAY::setFloatRegister(int num, double value)
+{
+    if (num >= UNW_ARM_D8 && num <= UNW_ARM_D15)
+    {
+        D[num - UNW_ARM_D8] = value;
     }
 }
 
@@ -798,7 +842,14 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs, unw_word_t start_ip, uint32_t fo
     }
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    PORTABILITY_ASSERT("StepFrame");
+    size_t len = 0;
+    size_t off = 0;
+    const uint32_t *ehtp = decode_eht_entry(reinterpret_cast<const uint32_t *>(unwind_info), &off, &len);
+    ArmUnwindCursor unwindCursor((Registers_REGDISPLAY*)regs);
+    if (_Unwind_VRS_Interpret((_Unwind_Context *)&unwindCursor, ehtp, off, len) != _URC_CONTINUE_UNWIND)
+    {
+        return false;
+    }
 #else
     PORTABILITY_ASSERT("StepFrame");
 #endif
@@ -853,7 +904,10 @@ bool UnwindHelpers::GetUnwindProcInfo(PCODE pc, UnwindInfoSections &uwInfoSectio
     }
 
 #elif defined(_LIBUNWIND_ARM_EHABI)
-    PORTABILITY_ASSERT("GetUnwindProcInfo");
+    if (uwInfoSections.arm_section == 0 || !uc.getInfoFromEHABISection(pc, uwInfoSections))
+    {
+        return false;
+    }
 #else
     PORTABILITY_ASSERT("GetUnwindProcInfo");
 #endif

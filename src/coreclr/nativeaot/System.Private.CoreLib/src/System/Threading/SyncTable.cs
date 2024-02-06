@@ -65,7 +65,7 @@ namespace System.Threading
         /// <summary>
         /// Protects all mutable operations on s_entries, s_freeEntryList, s_unusedEntryIndex. Also protects growing the table.
         /// </summary>
-        internal static readonly Lock s_lock = new Lock();
+        internal static readonly Lock s_lock = new Lock(useTrivialWaits: true);
 
         /// <summary>
         /// The dynamically growing array of sync entries.

@@ -4489,8 +4489,7 @@ init_class (MonoClass *klass)
 
 #ifdef TARGET_ARM64
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
-		// FIXME: Support Vector3 https://github.com/dotnet/runtime/issues/81501
-		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
+		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
 	}
 #endif
@@ -4872,9 +4871,7 @@ mini_init (const char *filename)
 	mono_generic_sharing_init ();
 #endif
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	mono_simd_intrinsics_init ();
-#endif
 
 	register_trampolines (domain);
 
