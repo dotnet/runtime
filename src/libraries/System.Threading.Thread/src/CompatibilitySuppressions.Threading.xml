@@ -16,4 +16,16 @@
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Threading.Thread.UnsafeStart(System.Object):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Threading.Thread.ThrowOnBlockingWaitOnJSInteropThread</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.Thread.AssureThreadValidity</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Threading.Thread.ForceBlockingWait(System.Action)</Target>
+  </Suppression>
 </Suppressions>

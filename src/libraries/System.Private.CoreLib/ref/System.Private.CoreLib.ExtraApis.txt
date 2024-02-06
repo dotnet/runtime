@@ -5,4 +5,6 @@ T:System.Runtime.Serialization.DeserializationToken
 M:System.Runtime.Serialization.SerializationInfo.StartDeserialization
 T:System.Diagnostics.DebugProvider
 M:System.Diagnostics.Debug.SetProvider(System.Diagnostics.DebugProvider)
-F:System.Threading.Monitor.ThrowOnBlockingWaitOnJSInteropThread
+M:System.Threading.Thread.AssureThreadValidity
+F:System.Threading.Thread.ThrowOnBlockingWaitOnJSInteropThread
+F:System.Threading.Thread.ForceBlockingWait

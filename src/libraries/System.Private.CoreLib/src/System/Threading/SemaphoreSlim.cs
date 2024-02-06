@@ -285,6 +285,9 @@ namespace System.Threading
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureThreadValidity();
+#endif
 
             if (millisecondsTimeout < -1)
             {
