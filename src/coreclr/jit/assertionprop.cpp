@@ -4591,15 +4591,18 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
     assert(tree->OperIsIndir());
 
     const bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
+    const bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
     GenTree*   newTree        = optExactTypeAssertionProp_Ind(assertions, tree);
     if (newTree != nullptr)
     {
         // Don't run optNonHeapAssertionProp_Ind after it since it no longer has a GT_IND node.
         return optAssertionProp_Update(newTree, tree, stmt);
     }
-
-    const bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
-    return (didNonNullProp | didNonHeapProp) ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
+    if (didNonNullProp | didNonHeapProp)
+    {
+        return optAssertionProp_Update(tree, tree, stmt);
+    }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -4902,6 +4905,56 @@ bool Compiler::optAssertionIsNonHeap(GenTree*         op,
 }
 
 //------------------------------------------------------------------------
+// optAssertionGetExactType: Given a tree, look for an assertion to get the exact type of the tree
+//    Example:
+//
+//    if (o is string)
+//    {
+//        o has O1K_EXACT_TYPE assertion here.
+//    }
+//
+// Arguments:
+//    assertions - Active assertions
+//    tree       - The tree to get the exact type of
+//
+// Return Value:
+//    Exact type handle if an exact type assertion is found, NO_CLASS_HANDLE otherwise.
+//
+CORINFO_CLASS_HANDLE Compiler::optAssertionGetExactType(ASSERT_VALARG_TP assertions, GenTree* tree)
+{
+    if (optLocalAssertionProp || BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return NO_CLASS_HANDLE;
+    }
+
+    const ValueNum  addrVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+        if ((curAssertion->op1.vn == addrVN) && (curAssertion->assertionKind == OAK_EQUAL) &&
+            ((curAssertion->op1.kind == O1K_EXACT_TYPE) || (curAssertion->op1.kind == O1K_SUBTYPE)))
+        {
+            const CORINFO_CLASS_HANDLE objType = (CORINFO_CLASS_HANDLE)curAssertion->op2.lconVal;
+            assert(curAssertion->op2.HasIconFlag());
+            assert(objType != NO_CLASS_HANDLE);
+
+            if ((curAssertion->op1.kind == O1K_SUBTYPE))
+            {
+                if (((info.compCompHnd->getClassAttribs(objType) & CORINFO_FLG_SHAREDINST) != 0) ||
+                    !info.compCompHnd->isExactType(objType))
+                {
+                    continue;
+                }
+            }
+            return objType;
+        }
+    }
+    return NO_CLASS_HANDLE;
+}
+
+//------------------------------------------------------------------------
 // optExactTypeAssertionProp_Ind: Given IND(obj) look for an assertion to get the exact type of obj
 //    and return a node that represents that type handle.
 //
@@ -4914,41 +4967,25 @@ bool Compiler::optAssertionIsNonHeap(GenTree*         op,
 //
 GenTree* Compiler::optExactTypeAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree)
 {
-    if (optLocalAssertionProp || !tree->OperIs(GT_IND) || !tree->TypeIs(TYP_I_IMPL) ||
-        !tree->AsIndir()->Addr()->TypeIs(TYP_REF) || BitVecOps::MayBeUninit(assertions) ||
-        BitVecOps::IsEmpty(apTraits, assertions))
+    if (!tree->OperIs(GT_IND) || !tree->TypeIs(TYP_I_IMPL) || !tree->AsIndir()->Addr()->TypeIs(TYP_REF))
     {
         return nullptr;
     }
 
-    const ValueNum  addrVN = vnStore->VNConservativeNormalValue(tree->AsIndir()->Addr()->gtVNPair);
-    BitVecOps::Iter iter(apTraits, assertions);
-    unsigned        index = 0;
-    while (iter.NextElem(&index))
+    CORINFO_CLASS_HANDLE objType = optAssertionGetExactType(assertions, tree->AsIndir()->Addr());
+    if (objType != NO_CLASS_HANDLE)
     {
-        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
-        if ((curAssertion->op1.kind == O1K_EXACT_TYPE) && (curAssertion->op1.vn == addrVN) &&
-            (curAssertion->assertionKind == OAK_EQUAL))
+        GenTree* newTree = gtNewIconEmbClsHndNode(objType);
+        fgUpdateConstTreeValueNumber(newTree);
+
+        GenTree* sideEffects = nullptr;
+        gtExtractSideEffList(tree, &sideEffects, GTF_SIDE_EFFECT);
+        if (sideEffects != nullptr)
         {
-            const CORINFO_CLASS_HANDLE objType = (CORINFO_CLASS_HANDLE)curAssertion->op2.lconVal;
-            assert(curAssertion->op2.HasIconFlag());
-            assert(objType != NO_CLASS_HANDLE);
-
-            if ((info.compCompHnd->getClassAttribs(objType) & CORINFO_FLG_SHAREDINST) == 0)
-            {
-                GenTree* newTree = gtNewIconEmbClsHndNode(objType);
-                fgUpdateConstTreeValueNumber(newTree);
-
-                GenTree* sideEffects = nullptr;
-                gtExtractSideEffList(tree, &sideEffects, GTF_SIDE_EFFECT);
-                if (sideEffects != nullptr)
-                {
-                    newTree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, newTree);
-                    fgSetTreeSeq(newTree);
-                }
-                return newTree;
-            }
+            newTree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, newTree);
+            fgSetTreeSeq(newTree);
         }
+        return newTree;
     }
     return nullptr;
 }
@@ -5064,6 +5101,8 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             // so then fgLateCastExpansion can skip the null check.
         }
     }
+
+    // TODO: Fold obj.GetType() using optAssertionGetExactType
 
     return nullptr;
 }

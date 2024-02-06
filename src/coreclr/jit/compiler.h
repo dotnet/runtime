@@ -7813,7 +7813,10 @@ public:
     GenTree* optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
+
+    CORINFO_CLASS_HANDLE optAssertionGetExactType(ASSERT_VALARG_TP assertions, GenTree* tree);
     GenTree* optExactTypeAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
+
     bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
 
