@@ -212,19 +212,6 @@ C_FUNC(\Name):
         movt \DestReg, #((\Constant) >> 16)
 .endm
 
-.macro EXPORT_POINTER_TO_ADDRESS Name
-
-1:
-
-        .data
-        .align      4
-C_FUNC(\Name):
-        .word       1b
-        .global     C_FUNC(\Name)
-        .text
-
-.endm
-
 //
 // Macro used from unmanaged helpers called from managed code where the helper does not transition immediately
 // into pre-emptive mode but may cause a GC and thus requires the stack is crawlable. This is typically the

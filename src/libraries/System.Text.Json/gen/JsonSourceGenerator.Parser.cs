@@ -1437,6 +1437,7 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
+                HashSet<string>? memberInitializerNames = null;
                 List<PropertyInitializerGenerationSpec>? propertyInitializers = null;
                 int paramCount = constructorParameters?.Length ?? 0;
 
@@ -1450,6 +1451,18 @@ namespace System.Text.Json.SourceGeneration
 
                     if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
                     {
+                        if (!(memberInitializerNames ??= new()).Add(property.MemberName))
+                        {
+                            // We've already added another member initializer with the same name to our spec list.
+                            // Duplicates can occur here because the provided list of properties includes shadowed members.
+                            // This is because we generate metadata for *all* members, including shadowed or ignored ones,
+                            // since we need to re-run the deduplication algorithm taking run-time configuration into account.
+                            // This is a simple deduplication that keeps the first result for each member name --
+                            // this should be fine since the properties are listed from most derived to least derived order,
+                            // so the second instance of a member name is always shadowed by the first.
+                            continue;
+                        }
+
                         ParameterGenerationSpec? matchingConstructorParameter = GetMatchingConstructorParameter(property, constructorParameters);
 
                         if (property.IsRequired || matchingConstructorParameter is null)
