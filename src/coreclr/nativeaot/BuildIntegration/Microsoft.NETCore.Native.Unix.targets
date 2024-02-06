@@ -43,13 +43,13 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <CrossCompileAbi>gnu</CrossCompileAbi>
       <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-bionic'))">android21</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine'))">musl</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-arm'">gnueabihf</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-bionic-arm'">androideabi21</CrossCompileAbi>
       <CrossCompileAbi Condition="'$(CrossCompileRid)' == 'linux-musl-arm'">musleabihf</CrossCompileAbi>
 
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
 
       <IlcRPath Condition="'$(IlcRPath)' == '' and '$(_IsApplePlatform)' != 'true'">$ORIGIN</IlcRPath>
