@@ -522,7 +522,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #elif defined(TARGET_XARCH)
                         if (tree->IsSaturatedConversion())
                         {
-                            return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
+                            return nullptr;
                         }
 #endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);

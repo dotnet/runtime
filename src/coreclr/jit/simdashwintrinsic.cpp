@@ -1224,17 +1224,17 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // The behavior we want is to saturate negative values to 0.
                         GenTreeVecCon* tbl = gtNewVconNode(simdType);
 
-                        // QNAN: 0b1000: Saturate to Zero
-                        // SNAN: 0b1000: Saturate to Zero
-                        // ZERO: 0b0000
+                        // QNAN: 0b0000:
+                        // SNAN: 0b0000
+                        // ZERO: 0b0000:
                         // +ONE: 0b0000
                         // -INF: 0b0000
                         // +INF: 0b0000
-                        // -VAL: 0b0000
+                        // -VAL: 0b1000: Saturate to Zero
                         // +VAL: 0b0000
-                        for ( int i = 0; i < 8; i++ )
+                        for ( int i = 0; i < 16; i++ )
                         {
-                            tbl->gtSimdVal.i64[i] = 0x00000088;
+                            tbl->gtSimdVal.i32[i] = 0x08000088;
                         }
 
                         // Generate first operand
@@ -1242,31 +1242,17 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         // the output to be in the same xmm register
                         // Hence we clone the first operand
                         GenTree* op2Clone = fgMakeMultiUse(&op1);
-                        // GenTree* op2Clone;
-                        // op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
-                        //                     nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
                         
                         //run vfixupimmsd base on table and no flags reporting
-                        GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
+                        GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
                                                                     NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                        GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT64_MAX)), simdBaseJitType, simdSize);
-                        GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT64_MAX, TYP_LONG), CORINFO_TYPE_LONG, simdSize);
-                        //we will be using the input value twice
-                        GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
-                        //usage 1 --> compare with max value of integer
-                        saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
-                        //cast it
+                        intrinsic = (simdSize == 16) ? NI_AVX512F_VL_ConvertToVector128UInt32WithTruncation
+                                                        : (simdSize == 32) ? NI_AVX512F_VL_ConvertToVector256UInt32WithTruncation
+                                                                        : NI_AVX512F_ConvertToVector512UInt32WithTruncation;
 
-                        NamedIntrinsic intrinsic =    (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
-                                                    : (simdSize == 32) ? NI_AVX512DQ_VL_ConvertToVector256Int64WithTruncation
-                                                    :                    NI_AVX512DQ_ConvertToVector512Int64WithTruncation;
-
-                        GenTree* retNode = gtNewSimdHWIntrinsicNode(retType, saturate_valDup, intrinsic, simdBaseJitType, simdSize);
-
-                        //usage 2 --> use thecompared mask with input value and max value to blend
-                        return gtNewSimdCndSelNode(simdType, saturate_val, max_valDup, retNode, CORINFO_TYPE_LONG, simdSize);
+                        return gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
                     }
 #endif // TARGET_AMD64
                     return nullptr;
