@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
+using ILLink.RoslynAnalyzer.TrimAnalysis;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -214,6 +215,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				new TrimAnalysisFieldAccessPattern (field, fieldReferenceOperation, OwningSymbol, featureContext)
 			);
 
+			ProcessGenericArgumentDataFlow (field, fieldReferenceOperation, featureContext);
+
 			return new FieldValue (field);
 		}
 
@@ -295,6 +298,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				operation,
 				OwningSymbol,
 				featureContext));
+
+			ProcessGenericArgumentDataFlow (calledMethod, operation, featureContext);
 
 			foreach (var argument in arguments) {
 				foreach (var argumentValue in argument.AsEnumerable ()) {
@@ -421,7 +426,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			}
 		}
 
-		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, FeatureContext featureContext)
+		public override MultiValue HandleDelegateCreation (IMethodSymbol method, IOperation operation, in FeatureContext featureContext)
 		{
 			TrimAnalysisPatterns.Add (new TrimAnalysisReflectionAccessPattern (
 				method,
@@ -430,7 +435,42 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				featureContext
 			));
 
+			ProcessGenericArgumentDataFlow (method, operation, featureContext);
+
 			return TopValue;
+		}
+
+		private void ProcessGenericArgumentDataFlow (IMethodSymbol method, IOperation operation, in FeatureContext featureContext)
+		{
+			// We only need to validate static methods and then all generic methods
+			// Instance non-generic methods don't need validation because the creation of the instance
+			// is the place where the validation will happen.
+			if (!method.IsStatic && !method.IsGenericMethod && !method.IsConstructor ())
+				return;
+
+			if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow (method)) {
+				TrimAnalysisPatterns.Add (new TrimAnalysisGenericInstantiationPattern (
+					method,
+					operation,
+					OwningSymbol,
+					featureContext));
+			}
+		}
+
+		private void ProcessGenericArgumentDataFlow (IFieldSymbol field, IOperation operation, in FeatureContext featureContext)
+		{
+			// We only need to validate static field accesses, instance field accesses don't need generic parameter validation
+			// because the create of the instance would do that instead.
+			if (!field.IsStatic)
+				return;
+
+			if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow (field)) {
+				TrimAnalysisPatterns.Add (new TrimAnalysisGenericInstantiationPattern (
+					field,
+					operation,
+					OwningSymbol,
+					featureContext));
+			}
 		}
 
 		static bool TryGetConstantValue (IOperation operation, out MultiValue constValue)

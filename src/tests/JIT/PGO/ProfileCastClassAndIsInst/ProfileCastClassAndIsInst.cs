@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public interface IInterface { }
 public interface IGenericInterface<T> { }
@@ -73,7 +74,8 @@ public class Program
         return EqualityComparer<T>.Default.Equals(t1, t2);
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         var a = new ClassA();
         var b = new ClassB();
@@ -209,6 +211,5 @@ public class Program
 
             Thread.Sleep(20);
         }
-        return 100;
     }
 }

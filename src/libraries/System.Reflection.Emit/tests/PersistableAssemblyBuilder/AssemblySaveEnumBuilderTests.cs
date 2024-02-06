@@ -99,6 +99,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(arrayType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), arrayType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 enumBuilder.CreateType();
                 tb.CreateType();
                 saveMethod.Invoke(ab, new object[] { file.Path });
@@ -139,6 +140,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(byrefType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), byrefType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 eb.CreateType();
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
@@ -168,6 +170,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder mb = tb.DefineMethod("TestMethod", MethodAttributes.Public);
                 mb.SetReturnType(pointerType);
                 mb.SetParameters(new Type[] { typeof(INoMethod), pointerType });
+                mb.GetILGenerator().Emit(OpCodes.Ret);
                 eb.CreateType();
                 tb.CreateType();
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });

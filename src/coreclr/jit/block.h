@@ -584,12 +584,6 @@ public:
         {
             next->bbPrev = this;
         }
-
-        // BBJ_COND convenience: This ensures bbFalseTarget is always consistent with bbNext.
-        // For now, if a BBJ_COND's bbTrueTarget is not taken, we expect to fall through,
-        // so bbFalseTarget must be the next block.
-        // TODO-NoFallThrough: Remove this once we allow bbFalseTarget to diverge from bbNext
-        bbFalseTarget = next;
     }
 
     bool IsFirst() const
@@ -633,35 +627,28 @@ public:
     bool HasTarget() const
     {
         // These block types should always have bbTarget set
-        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_CALLFINALLYRET, BBJ_COND, BBJ_EHCATCHRET, BBJ_EHFILTERRET,
-                      BBJ_LEAVE);
+        return KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_LEAVE);
     }
 
     BasicBlock* GetTarget() const
     {
-        // BBJ_COND should use GetTrueTarget, and BBJ_EHFINALLYRET/BBJ_SWITCH don't use bbTarget
-        assert(!KindIs(BBJ_COND, BBJ_EHFINALLYRET, BBJ_SWITCH));
-
-        // If bbKind indicates this block has a jump, bbTarget cannot be null
-        assert(!HasTarget() || HasInitializedTarget());
+        // Only block kinds that use `bbTarget` can access it, and it must be non-null.
+        assert(HasInitializedTarget());
         return bbTarget;
     }
 
     void SetTarget(BasicBlock* target)
     {
-        // BBJ_COND should use SetTrueTarget, and BBJ_EHFINALLYRET/BBJ_SWITCH don't use bbTarget
-        assert(!KindIs(BBJ_COND, BBJ_EHFINALLYRET, BBJ_SWITCH));
-
         // SetKindAndTarget() nulls target for non-jump kinds,
         // so don't use SetTarget() to null bbTarget without updating bbKind.
         bbTarget = target;
-        assert(!HasTarget() || HasInitializedTarget());
+        assert(HasInitializedTarget());
     }
 
     BasicBlock* GetTrueTarget() const
     {
         assert(KindIs(BBJ_COND));
-        assert(HasInitializedTarget());
+        assert(bbTrueTarget != nullptr);
         return bbTrueTarget;
     }
 
@@ -675,7 +662,7 @@ public:
     bool TrueTargetIs(const BasicBlock* target) const
     {
         assert(KindIs(BBJ_COND));
-        assert(HasInitializedTarget());
+        assert(bbTrueTarget != nullptr);
         assert(target != nullptr);
         return (bbTrueTarget == target);
     }
@@ -707,25 +694,24 @@ public:
         return (bbFalseTarget == target);
     }
 
-    void SetCond(BasicBlock* target)
+    void SetCond(BasicBlock* trueTarget)
     {
-        assert(target != nullptr);
-        bbKind       = BBJ_COND;
-        bbTrueTarget = target;
+        assert(trueTarget != nullptr);
+        bbKind        = BBJ_COND;
+        bbTrueTarget  = trueTarget;
+        bbFalseTarget = bbNext;
     }
 
+    // Set both the block kind and target. This can clear `bbTarget` when setting
+    // block kinds that don't use `bbTarget`.
     void SetKindAndTarget(BBKinds kind, BasicBlock* target = nullptr)
     {
-        // For BBJ_COND/BBJ_EHFINALLYRET/BBJ_SWITCH, use SetCond/SetEhf/SetSwitch
-        assert(kind != BBJ_COND);
-        assert(kind != BBJ_EHFINALLYRET);
-        assert(kind != BBJ_SWITCH);
-
         bbKind   = kind;
         bbTarget = target;
 
-        // If bbKind indicates this block has a jump, bbTarget cannot be null
-        assert(!HasTarget() || HasInitializedTarget());
+        // If bbKind indicates this block has a jump, bbTarget cannot be null.
+        // You shouldn't use this to set a BBJ_COND, BBJ_SWITCH, or BBJ_EHFINALLYRET.
+        assert(HasTarget() ? HasInitializedTarget() : (bbTarget == nullptr));
     }
 
     bool HasInitializedTarget() const
@@ -736,16 +722,12 @@ public:
 
     bool TargetIs(const BasicBlock* target) const
     {
-        // BBJ_COND should use TrueTargetIs, and BBJ_EHFINALLYRET/BBJ_SWITCH don't use bbTarget
-        assert(!KindIs(BBJ_COND, BBJ_EHFINALLYRET, BBJ_SWITCH));
-        assert(HasInitializedTarget());
-        return (bbTarget == target);
+        return (GetTarget() == target);
     }
 
     bool JumpsToNext() const
     {
-        assert(HasInitializedTarget());
-        return (bbTarget == bbNext);
+        return (GetTarget() == bbNext);
     }
 
     BBswtDesc* GetSwitchTargets() const
@@ -896,16 +878,16 @@ public:
     }
 
 #ifdef DEBUG
-    void     dspFlags();               // Print the flags
-    unsigned dspPreds();               // Print the predecessors (bbPreds)
+    void     dspFlags() const;         // Print the flags
+    unsigned dspPreds() const;         // Print the predecessors (bbPreds)
     void dspSuccs(Compiler* compiler); // Print the successors. The 'compiler' argument determines whether EH
                                        // regions are printed: see NumSucc() for details.
-    void dspKind();                    // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
+    void dspKind() const;              // Print the block jump kind (e.g., BBJ_ALWAYS, BBJ_COND, etc.).
 
     // Print a simple basic block header for various output, including a list of predecessors and successors.
     void dspBlockHeader(Compiler* compiler, bool showKind = true, bool showFlags = false, bool showPreds = true);
 
-    const char* dspToString(int blockNumPadding = 0);
+    const char* dspToString(int blockNumPadding = 0) const;
 #endif // DEBUG
 
 #define BB_UNITY_WEIGHT 100.0        // how much a normal execute once block weighs
@@ -1674,8 +1656,11 @@ public:
     static bool CloneBlockState(
         Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum = (unsigned)-1, int varVal = 0);
 
-    // Copy the block kind and targets.
+    // Copy the block kind and targets. The `from` block is untouched.
     void CopyTarget(Compiler* compiler, const BasicBlock* from);
+
+    // Copy the block kind and take memory ownership of the targets.
+    void TransferTarget(BasicBlock* from);
 
     void MakeLIR(GenTree* firstNode, GenTree* lastNode);
     bool IsLIR() const;
@@ -1952,7 +1937,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
 
             // If both fall-through and branch successors are identical, then only include
             // them once in the iteration (this is the same behavior as NumSucc()/GetSucc()).
-            if (block->JumpsToNext())
+            if (block->TrueTargetIs(block->GetFalseTarget()))
             {
                 m_end = &m_succs[1];
             }

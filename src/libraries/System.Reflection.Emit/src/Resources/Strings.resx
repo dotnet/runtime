@@ -136,7 +136,7 @@
     <value>The invoked member is not supported in a dynamic module.</value>
   </data>
   <data name="Argument_InvalidTypeCodeForTypeArgument" xml:space="preserve">
-    <value>The type code may not be used as a type argument of a custom attribute .</value>
+    <value>The type code may not be used as a type argument of a custom attribute.</value>
   </data>
   <data name="NotSupported_UnmanagedTypeOnlyForFields" xml:space="preserve">
     <value> 'UnmanagedType.{0}' named parameter is only valid for fields.</value>
@@ -227,5 +227,38 @@
   </data>
   <data name="Arg_NotGenericMethodDefinition" xml:space="preserve">
     <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
+  </data>
+  <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
+    <value>MethodOverride's body must be from this type.</value>
+  </data>
+  <data name="Argument_GenericParameter" xml:space="preserve">
+    <value>Method must be called on a Type for which Type.IsGenericParameter is false.</value>
+  </data>
+  <data name="Argument_InvalidMethodOverride" xml:space="preserve">
+    <value>Type '{0}' tried to override method '{1}' but does not implement or inherit that method.</value>
+  </data>
+  <data name="Argument_InterfaceNotFound" xml:space="preserve">
+    <value>Interface not found.</value>
+  </data>
+  <data name="Argument_MethodOverriden" xml:space="preserve">
+    <value>Method '{0}' on type '{1}' is overriding a method that has been overridden.</value>
+  </data>
+  <data name="Argument_MustBeInterface" xml:space="preserve">
+    <value>Type passed must be an interface.</value>
+  </data>
+  <data name="TypeLoad_MissingMethod" xml:space="preserve">
+    <value>Abstract method '{0}' in type '{1}' does not have an implementation.</value>
+  </data>
+  <data name="InvalidOperation_BadMethodBody" xml:space="preserve">
+    <value>Method '{0}' cannot have a method body</value>
+  </data>
+  <data name="InvalidOperation_BadTypeAttributesNotAbstract" xml:space="preserve">
+    <value>Type must be declared abstract if any of its methods are abstract.</value>
+  </data>
+  <data name="AmbiguousMatch_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'</value>
+  </data>
+  <data name="InvalidOperation_BadEmptyMethodBody" xml:space="preserve">
+    <value>Method '{0}' does not have a method body.</value>
   </data>
 </root>

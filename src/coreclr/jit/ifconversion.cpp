@@ -549,7 +549,7 @@ void OptIfConversionDsc::IfConvertDump()
 bool OptIfConversionDsc::optIfConvert()
 {
     // Does the block end by branching via a JTRUE after a compare?
-    if (!m_startBlock->KindIs(BBJ_COND) || m_startBlock->NumSucc() != 2)
+    if (!m_startBlock->KindIs(BBJ_COND) || (m_startBlock->NumSucc() != 2))
     {
         return false;
     }
@@ -739,8 +739,7 @@ bool OptIfConversionDsc::optIfConvert()
 
     // Update the flow from the original block.
     m_comp->fgRemoveAllRefPreds(m_startBlock->GetFalseTarget(), m_startBlock);
-    assert(m_startBlock->HasInitializedTarget());
-    m_startBlock->SetKind(BBJ_ALWAYS);
+    m_startBlock->SetKindAndTarget(BBJ_ALWAYS, m_startBlock->GetTrueTarget());
 
 #ifdef DEBUG
     if (m_comp->verbose)

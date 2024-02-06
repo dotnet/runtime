@@ -2060,190 +2060,129 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         assert(varTypeIsFloating(tree->gtOp1));
         assert(varTypeIsFloating(tree->gtOp2));
         assert(tree->gtOper == GT_DIV);
-        // genCodeForBinary(tree);
+
         instruction ins = genGetInsForOper(tree);
         emit->emitIns_R_R_R(ins, emitActualTypeSize(targetType), tree->GetRegNum(), tree->gtOp1->GetRegNum(),
                             tree->gtOp2->GetRegNum());
     }
     else // an integer divide operation
     {
-        GenTree* divisorOp = tree->gtGetOp2();
+        GenTree*  dividendOp  = tree->gtGetOp1();
+        GenTree*  divisorOp   = tree->gtGetOp2();
+        regNumber dividendReg = dividendOp->GetRegNum();
+        regNumber divisorReg  = divisorOp->GetRegNum();
+
         // divisorOp can be immed or reg
+        assert(!dividendOp->isContained() && !dividendOp->isContainedIntOrIImmed());
         assert(!divisorOp->isContained() || divisorOp->isContainedIntOrIImmed());
 
-        if (divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_R0)
+        ExceptionSetFlags exceptions = tree->OperExceptions(compiler);
+        if ((exceptions & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
         {
-            // We unconditionally throw a divide by zero exception
-            genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
-        }
-        else // the divisor is not the constant zero
-        {
-            GenTree* src1     = tree->gtOp1;
-            unsigned typeSize = genTypeSize(genActualType(tree->TypeGet()));
-            emitAttr size     = EA_ATTR(typeSize);
-
-            assert(typeSize >= genTypeSize(genActualType(src1->TypeGet())) &&
-                   typeSize >= genTypeSize(genActualType(divisorOp->TypeGet())));
-
-            // ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-            regNumber   reg1       = src1->GetRegNum();
-            regNumber   divisorReg = divisorOp->GetRegNum();
-            regNumber   tempReg    = REG_NA;
-            instruction ins;
-
-            // Check divisorOp first as we can always allow it to be a contained immediate
-            if (divisorOp->isContainedIntOrIImmed())
+            if (divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_ZERO)
             {
-                ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
-                tempReg          = tree->GetSingleTempReg();
-                divisorReg       = tempReg;
-                emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+                genProduceReg(tree);
+                return;
             }
-            // Only for commutative operations do we check src1 and allow it to be a contained immediate
-            else if (tree->OperIsCommutative())
+            else // the divisor is not the constant zero
             {
-                // src1 can be immed or reg
-                assert(!src1->isContained() || src1->isContainedIntOrIImmed());
+                assert(emitter::isGeneralRegister(divisorReg));
 
-                // Check src1 and allow it to be a contained immediate
-                if (src1->isContainedIntOrIImmed())
-                {
-                    assert(!divisorOp->isContainedIntOrIImmed());
-                    ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
-                    tempReg          = tree->GetSingleTempReg();
-                    reg1             = tempReg;
-                    emit->emitLoadImmediate(EA_PTRSIZE, reg1, intConst);
-                }
+                // Check if the divisor is zero throw a DivideByZeroException
+                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
+            }
+        }
+
+        assert(!divisorOp->IsIntegralConst(0));
+
+        regNumber   tempReg = REG_NA;
+        instruction ins;
+
+        // Check divisorOp first as we can always allow it to be a contained immediate
+        if (divisorOp->isContainedIntOrIImmed())
+        {
+            ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+            if (!emitter::isGeneralRegister(divisorReg))
+            {
+                tempReg    = tree->GetSingleTempReg();
+                divisorReg = tempReg;
+            }
+            emit->emitLoadImmediate(EA_PTRSIZE, divisorReg, intConst);
+        }
+        else
+        {
+            // dividend can only be a reg
+            assert(!dividendOp->isContained());
+            assert(emitter::isGeneralRegister(dividendReg));
+            assert(emitter::isGeneralRegister(divisorReg));
+        }
+
+        emitAttr size = EA_ATTR(genTypeSize(genActualType(tree)));
+        bool     is4  = (size == EA_4BYTE);
+        assert(is4 || (size == EA_8BYTE));
+
+        // check (MinInt / -1) => ArithmeticException
+        if (tree->OperIs(GT_DIV, GT_MOD))
+        {
+            if ((exceptions & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+            {
+                if (tempReg == REG_NA)
+                    tempReg = tree->GetSingleTempReg();
+
+                // Check if the divisor is not -1 branch to 'sdivLabel'
+                emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_ZERO, -1);
+                BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for riscv64.
+                emit->emitIns_J_cond_la(INS_bne, sdivLabel, tempReg, divisorReg);
+
+                // If control flow continues past here the 'divisorReg' is known to be -1
+                regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+
+                // Build MinInt=0x80000000(00000000) in tempReg from -1
+                instruction shiftIns = is4 ? INS_slliw : INS_slli;
+                int         shiftBy  = is4 ? 31 : 63;
+                emit->emitIns_R_R_I(shiftIns, size, tempReg, tempReg, shiftBy);
+
+                // Check whether dividendReg is MinInt or not
+                genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, tempReg, nullptr, dividendReg);
+                genDefineTempLabel(sdivLabel);
+            }
+
+            // Generate the sdiv instruction
+            if (tree->OperIs(GT_DIV))
+            {
+                ins = is4 ? INS_divw : INS_div;
             }
             else
             {
-                // src1 can only be a reg
-                assert(!src1->isContained());
+                ins = is4 ? INS_remw : INS_rem;
             }
+            emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), dividendReg, divisorReg);
+        }
+        else // if (tree->OperIs(GT_UDIV, GT_UMOD))
+        {
+            // Only one possible exception
+            //     (AnyVal /  0) => DivideByZeroException
+            //
+            // Note that division by the constant 0 was already checked for above by the
+            // op2->IsIntegralConst(0) check
 
-            // Generate the require runtime checks for GT_DIV or GT_UDIV
-            if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+            if (!divisorOp->IsCnsIntOrI())
             {
-                // Two possible exceptions:
-                //     (AnyVal /  0) => DivideByZeroException
-                //     (MinInt / -1) => ArithmeticException
-                //
-
-                bool checkDividend = true;
-
-                // Do we have an immediate for the 'divisorOp'?
-                //
-                if (divisorOp->IsCnsIntOrI())
-                {
-                    ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-                    // assert(intConstValue != 0); // already checked above by IsIntegralConst(0)
-                    if (intConstValue != -1)
-                    {
-                        checkDividend = false; // We statically know that the dividend is not -1
-                    }
-                }
-                else // insert check for division by zero
-                {
-                    // Check if the divisor is zero throw a DivideByZeroException
-                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-                }
-
-                ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
-                if (checkDividend && ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None))
-                {
-                    if (tempReg == REG_NA)
-                        tempReg = tree->GetSingleTempReg();
-
-                    // Check if the divisor is not -1 branch to 'sdivLabel'
-                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_R0, -1);
-                    BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for riscv64.
-                    emit->emitIns_J_cond_la(INS_bne, sdivLabel, tempReg, divisorReg);
-
-                    // If control flow continues past here the 'divisorReg' is known to be -1
-                    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
-                    // At this point the divisor is known to be -1
-                    //
-                    // Whether dividendReg is MinInt or not
-                    //
-
-                    emit->emitIns_J_cond_la(INS_beq, sdivLabel, dividendReg, REG_R0);
-
-                    emit->emitIns_R_R_R(size == EA_4BYTE ? INS_addw : INS_add, size, tempReg, dividendReg, dividendReg);
-                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, tempReg);
-                    genDefineTempLabel(sdivLabel);
-                }
-
-                // Generate the sdiv instruction
-                if (size == EA_4BYTE)
-                {
-                    if (tree->OperGet() == GT_DIV)
-                    {
-                        ins = INS_divw;
-                    }
-                    else
-                    {
-                        ins = INS_remw;
-                    }
-                }
-                else
-                {
-                    if (tree->OperGet() == GT_DIV)
-                    {
-                        ins = INS_div;
-                    }
-                    else
-                    {
-                        ins = INS_rem;
-                    }
-                }
-
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), reg1, divisorReg);
+                // divisorOp is not a constant, so it could be zero
+                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
             }
-            else // if (tree->gtOper == GT_UDIV) GT_UMOD
+
+            if (tree->OperIs(GT_UDIV))
             {
-                // Only one possible exception
-                //     (AnyVal /  0) => DivideByZeroException
-                //
-                // Note that division by the constant 0 was already checked for above by the
-                // op2->IsIntegralConst(0) check
-                //
-
-                if (!divisorOp->IsCnsIntOrI())
-                {
-                    // divisorOp is not a constant, so it could be zero
-                    //
-                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-                }
-
-                if (size == EA_4BYTE)
-                {
-                    if (tree->OperGet() == GT_UDIV)
-                    {
-                        ins = INS_divuw;
-                    }
-                    else
-                    {
-                        ins = INS_remuw;
-                    }
-
-                    // TODO-RISCV64: here is just for signed-extension ?
-                    emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, reg1, reg1, 0);
-                    emit->emitIns_R_R_I(INS_slliw, EA_4BYTE, divisorReg, divisorReg, 0);
-                }
-                else
-                {
-                    if (tree->OperGet() == GT_UDIV)
-                    {
-                        ins = INS_divu;
-                    }
-                    else
-                    {
-                        ins = INS_remu;
-                    }
-                }
-
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), reg1, divisorReg);
+                ins = is4 ? INS_divuw : INS_divu;
             }
+            else
+            {
+                ins = is4 ? INS_remuw : INS_remu;
+            }
+            emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), dividendReg, divisorReg);
         }
     }
     genProduceReg(tree);
@@ -5481,7 +5420,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     genConsumeRegs(index);
     genConsumeRegs(length);
 
-    if (genActualType(index->TypeGet()) == TYP_INT)
+    if (genActualType(index) == TYP_INT)
     {
         regNumber tempReg = oper->GetSingleTempReg();
         GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, tempReg, indexReg, 0); // sign-extend
@@ -5489,8 +5428,8 @@ void CodeGen::genRangeCheck(GenTree* oper)
     }
 
 #ifdef DEBUG
-    var_types lengthType = genActualType(length->TypeGet());
-    var_types indexType  = genActualType(index->TypeGet());
+    var_types lengthType = genActualType(length);
+    var_types indexType  = genActualType(index);
     // Bounds checks can only be 32 or 64 bit sized comparisons.
     assert(lengthType == TYP_INT || lengthType == TYP_LONG);
     assert(indexType == TYP_INT || indexType == TYP_LONG);

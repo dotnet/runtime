@@ -754,11 +754,11 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
 }
 
 //----------------------------------------------------------------------------------
-// optCheckIterInLoopTest: Check if iter var is used in loop test.
+// optCheckIterInLoopTest: Check if iteration variable is used in loop test.
 //
 // Arguments:
-//      loopInd - loopIndex
-//      test    - "jtrue" tree or an store of the loop iter termination condition
+//      loopInd - loop index
+//      test    - "jtrue" tree or a store of the loop iteration termination condition
 //      iterVar - loop iteration variable.
 //
 //  Operation:
@@ -2270,6 +2270,7 @@ private:
 
                 // Redirect the Conditional JUMP to go to `oldNext`
                 block->SetTrueTarget(oldNext);
+                block->SetFalseTarget(newNext);
             }
             else
             {
@@ -2861,7 +2862,7 @@ bool Compiler::optCanonicalizeLoopNest(unsigned char loopInd)
 // This method will split the loop top into two or three blocks depending on
 // whether (1) or (3) is non-empty, and redirect the edges accordingly.
 //
-// Loops are canoncalized outer to inner, so inner loops should never see outer loop
+// Loops are canonicalized outer to inner, so inner loops should never see outer loop
 // non-backedges, as the parent loop canonicalization should have handled them.
 //
 bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
@@ -2981,6 +2982,7 @@ bool Compiler::optCanonicalizeLoop(unsigned char loopInd)
 
             fgSetEHRegionForNewLoopHead(newH, t);
 
+            h->SetFalseTarget(newH);
             fgRemoveRefPred(t, h);
             fgAddRefPred(t, newH);
             fgAddRefPred(newH, h);
@@ -3162,6 +3164,7 @@ bool Compiler::optCanonicalizeLoopCore(unsigned char loopInd, LoopCanonicalizati
     {
         BasicBlock* const hj = h->GetTrueTarget();
         assert((hj->bbNum < t->bbNum) || (hj->bbNum > b->bbNum));
+        h->SetFalseTarget(newT);
     }
     else
     {
@@ -4373,15 +4376,19 @@ PhaseStatus Compiler::optUnrollLoops()
                 //
                 BasicBlock* const clonedTop     = blockMap[loop.lpTop];
                 BasicBlock*       clonedTopPrev = clonedTop->Prev();
-                assert(clonedTopPrev->KindIs(BBJ_ALWAYS, BBJ_COND));
 
                 if (clonedTopPrev->KindIs(BBJ_ALWAYS))
                 {
                     assert(!clonedTopPrev->HasInitializedTarget());
                     clonedTopPrev->SetTarget(clonedTop);
                 }
+                else
+                {
+                    assert(clonedTopPrev->KindIs(BBJ_COND));
+                    clonedTopPrev->SetFalseTarget(clonedTop);
+                }
 
-                fgAddRefPred(clonedTop, clonedTop->Prev());
+                fgAddRefPred(clonedTop, clonedTopPrev);
 
                 /* update the new value for the unrolled iterator */
 
@@ -5023,6 +5030,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Update pred info
     //
+    bNewCond->SetFalseTarget(bTop);
     fgAddRefPred(bJoin, bNewCond);
     fgAddRefPred(bTop, bNewCond);
 
@@ -8227,7 +8235,8 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
                 }
                 else
                 {
-                    noway_assert((entry == top) && (predBlock == head) && predBlock->FalseTargetIs(preHead));
+                    noway_assert((entry == top) && (predBlock == head) && predBlock->NextIs(preHead));
+                    predBlock->SetFalseTarget(preHead);
                 }
                 fgRemoveRefPred(entry, predBlock);
                 fgAddRefPred(preHead, predBlock);

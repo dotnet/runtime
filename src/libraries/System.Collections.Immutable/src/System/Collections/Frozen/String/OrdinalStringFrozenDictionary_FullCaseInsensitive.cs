@@ -28,6 +28,6 @@ namespace System.Collections.Frozen
 
         private protected override bool Equals(string? x, string? y) => StringComparer.OrdinalIgnoreCase.Equals(x, y);
         private protected override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan());
-        private protected override bool CheckLengthQuick(string key) => (_lengthFilter & (1UL << (key.Length % 64))) > 0;
+        private protected override bool CheckLengthQuick(string key) => (_lengthFilter & (1UL << (key.Length & 0x3F))) > 0;
     }
 }

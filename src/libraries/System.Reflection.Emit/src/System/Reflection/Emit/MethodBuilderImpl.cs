@@ -24,6 +24,7 @@ namespace System.Reflection.Emit
         private ILGeneratorImpl? _ilGenerator;
         private bool _initLocals;
 
+        internal bool _canBeRuntimeImpl;
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal ParameterBuilderImpl[]? _parameterBuilders;
@@ -70,34 +71,45 @@ namespace System.Reflection.Emit
 
         internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
-        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
-            _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic);
-
-        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
+        public new bool IsConstructor
         {
-            // TODO: find out and handle other SignatureCallingConvention scenarios
-            SignatureCallingConvention convention = SignatureCallingConvention.Default;
-            if ((callingConventions & CallingConventions.HasThis) != 0 ||
-                (callingConventions & CallingConventions.ExplicitThis) != 0)
+            get
             {
-                convention |= SignatureCallingConvention.ThisCall;
+                if ((_attributes & (MethodAttributes.RTSpecialName | MethodAttributes.SpecialName)) != (MethodAttributes.RTSpecialName | MethodAttributes.SpecialName))
+                {
+                    return false;
+                }
+
+                return _name.Equals(ConstructorInfo.ConstructorName) || _name.Equals(ConstructorInfo.TypeConstructorName);
+            }
+        }
+
+        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
+            _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions, _dllImportData), GetGenericArguments().Length, !IsStatic);
+
+        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention, DllImportData? dllImportData = null)
+        {
+            SignatureCallingConvention convention = SignatureCallingConvention.Default;
+
+            if ((callingConvention & CallingConventions.VarArgs) != 0)
+            {
+                convention = SignatureCallingConvention.VarArgs;
             }
 
-            if ((callingConventions & CallingConventions.VarArgs) != 0)
+            if (dllImportData != null)
             {
-                convention |= SignatureCallingConvention.VarArgs;
+                // Set native call signature
+                convention = dllImportData.Flags switch
+                {
+                    MethodImportAttributes.CallingConventionCDecl => SignatureCallingConvention.CDecl,
+                    MethodImportAttributes.CallingConventionStdCall => SignatureCallingConvention.StdCall,
+                    MethodImportAttributes.CallingConventionThisCall => SignatureCallingConvention.ThisCall,
+                    MethodImportAttributes.CallingConventionFastCall => SignatureCallingConvention.FastCall,
+                    _ => SignatureCallingConvention.Unmanaged,
+                };
             }
 
             return convention;
-        }
-
-        internal BindingFlags GetBindingFlags()
-        {
-            BindingFlags bindingFlags = (_attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public ?
-                BindingFlags.Public : BindingFlags.NonPublic;
-            bindingFlags |= (_attributes & MethodAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
-
-            return bindingFlags;
         }
 
         protected override bool InitLocalsCore
@@ -174,11 +186,13 @@ namespace System.Reflection.Emit
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
                     int implValue = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                     _methodImplFlags |= (MethodImplAttributes)implValue;
+                    _canBeRuntimeImpl = true;
                     return;
                 case "System.Runtime.InteropServices.DllImportAttribute":
                     {
                         _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
                         _attributes |= MethodAttributes.PinvokeImpl;
+                        _canBeRuntimeImpl = true;
                         if (preserveSig)
                         {
                             _methodImplFlags |= MethodImplAttributes.PreserveSig;
@@ -203,6 +217,8 @@ namespace System.Reflection.Emit
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             _declaringType.ThrowIfCreated();
+
+            _canBeRuntimeImpl = true;
             _methodImplFlags = attributes;
         }
 

@@ -457,7 +457,7 @@ void BasicBlock::dspBlockILRange() const
 //------------------------------------------------------------------------
 // dspFlags: Print out the block's flags
 //
-void BasicBlock::dspFlags()
+void BasicBlock::dspFlags() const
 {
     static const struct
     {
@@ -524,7 +524,7 @@ void BasicBlock::dspFlags()
  *  Returns the number of characters printed.
  */
 
-unsigned BasicBlock::dspPreds()
+unsigned BasicBlock::dspPreds() const
 {
     unsigned count = 0;
     for (FlowEdge* const pred : PredEdges())
@@ -592,7 +592,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     }
     else
     {
-        for (BasicBlock* const succ : Succs(compiler))
+        for (const BasicBlock* const succ : Succs(compiler))
         {
             printf("%s" FMT_BB, first ? "" : ",", succ->bbNum);
             first = false;
@@ -603,7 +603,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
 // Display a compact representation of the bbKind, that is, where this block branches.
 // This is similar to code in Compiler::fgTableDispBasicBlock(), but doesn't have that code's requirements to align
 // things strictly.
-void BasicBlock::dspKind()
+void BasicBlock::dspKind() const
 {
     switch (bbKind)
     {
@@ -717,7 +717,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
                                 bool      showFlags /*= false*/,
                                 bool      showPreds /*= true*/)
 {
-    printf(FMT_BB " ", bbNum);
+    printf("%s ", dspToString());
     dspBlockILRange();
     if (showKind)
     {
@@ -741,7 +741,7 @@ void BasicBlock::dspBlockHeader(Compiler* compiler,
     printf("\n");
 }
 
-const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */)
+const char* BasicBlock::dspToString(int blockNumPadding /* = 0 */) const
 {
     static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
     static int  nextBufferIndex = 0;
@@ -816,7 +816,9 @@ bool BasicBlock::CloneBlockState(
 }
 
 //------------------------------------------------------------------------
-// CopyTarget: Copy the block kind and targets.
+// CopyTarget: Copy the block kind and targets. The targets in the `from` block remain valid.
+// Use `TransferTarget` to copy the pointer to the target descriptor (e.g., for BBJ_SWITCH/BBJ_EHFINALLYRET)
+// after which the `from` block target is invalid.
 //
 // Arguments:
 //    compiler - Jit compiler instance
@@ -835,9 +837,60 @@ void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
         case BBJ_COND:
             SetCond(from->GetTrueTarget());
             break;
-        default:
+        case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
             CopyFlags(from, BBF_NONE_QUIRK);
+            break;
+        case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
+        case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
+        case BBJ_LEAVE:
+            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            break;
+        default:
+            SetKindAndTarget(from->GetKind()); // Clear the target
+            break;
+    }
+    assert(KindIs(from->GetKind()));
+}
+
+//------------------------------------------------------------------------
+// TransferTarget: Like CopyTarget, but copies the target descriptors for block types which have
+// them (BBJ_SWITCH/BBJ_EHFINALLYRET), that is, take their memory, after which the `from` block
+// target is invalid.
+//
+// Arguments:
+//    from - Block to transfer from
+//
+void BasicBlock::TransferTarget(BasicBlock* from)
+{
+    switch (from->GetKind())
+    {
+        case BBJ_SWITCH:
+            SetSwitch(from->GetSwitchTargets());
+            from->bbSwtTargets = nullptr; // Make sure nobody uses the descriptor after this.
+            break;
+        case BBJ_EHFINALLYRET:
+            SetEhf(from->GetEhfTargets());
+            from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
+            break;
+        case BBJ_COND:
+            SetCond(from->GetTrueTarget());
+            break;
+        case BBJ_ALWAYS:
+            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            CopyFlags(from, BBF_NONE_QUIRK);
+            break;
+        case BBJ_CALLFINALLY:
+        case BBJ_CALLFINALLYRET:
+        case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
+        case BBJ_LEAVE:
+            SetKindAndTarget(from->GetKind(), from->GetTarget());
+            break;
+        default:
+            SetKindAndTarget(from->GetKind()); // Clear the target
             break;
     }
     assert(KindIs(from->GetKind()));
@@ -1070,7 +1123,7 @@ bool BasicBlock::bbFallsThrough() const
             return false;
 
         case BBJ_COND:
-            return NextIs(GetFalseTarget());
+            return true;
 
         case BBJ_CALLFINALLY:
             return !HasFlag(BBF_RETLESS_CALL);
@@ -1472,7 +1525,7 @@ BasicBlock* BasicBlock::New(Compiler* compiler)
 #endif
 
     // TODO-Throughput: The following memset is pretty expensive - do something else?
-    // Note that some fields have to be initialized to 0 (like bbFPStateX87)
+    // Note that some fields have to be initialized to 0.
     memset((void*)block, 0, sizeof(*block));
 
     // scopeInfo needs to be able to differentiate between blocks which
@@ -1574,17 +1627,15 @@ BasicBlock* BasicBlock::New(Compiler* compiler, BBKinds kind, BasicBlock* target
 
 BasicBlock* BasicBlock::New(Compiler* compiler, BBehfDesc* ehfTargets)
 {
-    BasicBlock* block   = BasicBlock::New(compiler);
-    block->bbKind       = BBJ_EHFINALLYRET;
-    block->bbEhfTargets = ehfTargets;
+    BasicBlock* block = BasicBlock::New(compiler);
+    block->SetEhf(ehfTargets);
     return block;
 }
 
 BasicBlock* BasicBlock::New(Compiler* compiler, BBswtDesc* swtTargets)
 {
-    BasicBlock* block   = BasicBlock::New(compiler);
-    block->bbKind       = BBJ_SWITCH;
-    block->bbSwtTargets = swtTargets;
+    BasicBlock* block = BasicBlock::New(compiler);
+    block->SetSwitch(swtTargets);
     return block;
 }
 

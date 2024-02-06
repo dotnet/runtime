@@ -114,7 +114,7 @@ namespace System.Collections.Frozen
                 {
                     if (s.Length < minLength) minLength = s.Length;
                     if (s.Length > maxLength) maxLength = s.Length;
-                    lengthFilter |= (1UL << (s.Length % 64));
+                    lengthFilter |= (1UL << (s.Length & 0x3F));
                 }
                 Debug.Assert(minLength >= 0 && maxLength >= minLength);
 

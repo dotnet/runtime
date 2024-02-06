@@ -2853,7 +2853,10 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable, BOOL rethrow)
     //  a good thing to preserve the stack trace.
     if (!rethrow)
     {
+        Thread *pThread = GetThread();
+        pThread->IncPreventAbort();
         ExceptionPreserveStackTrace(throwable);
+        pThread->DecPreventAbort();
     }
 
     RealCOMPlusThrowWorker(throwable, rethrow);
@@ -3414,20 +3417,6 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
 
     return bRetVal;
 }
-
-void StackTraceInfo::GetLeafFrameInfo(StackTraceElement* pStackTraceElement)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (NULL == m_pStackTrace)
-    {
-        return;
-    }
-    _ASSERTE(NULL != pStackTraceElement);
-
-    *pStackTraceElement = m_pStackTrace[0];
-}
-
 
 void UnwindFrameChain(Thread* pThread, LPVOID pvLimitSP)
 {
@@ -6577,12 +6566,9 @@ void HandleManagedFaultNew(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext
     pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     frame->InitAndLink(pContext);
 
-    CONTEXT ctx = {};
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
-    REGDISPLAY rd;
     Thread *pThread = GetThread();
 
-    ExInfo exInfo(pThread, &ctx, &rd, ExKind::HardwareFault);
+    ExInfo exInfo(pThread, pExceptionRecord, pContext, ExKind::HardwareFault);
 
     DWORD exceptionCode = pExceptionRecord->ExceptionCode;
     if (exceptionCode == STATUS_ACCESS_VIOLATION)
@@ -8673,7 +8659,11 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
     // But if the tracker exists, simply copy the bucket details to the UE Watson Bucket
     // tracker for use by the "WatsonLastChance" path.
     BOOL fDoWeHaveWatsonBuckets = FALSE;
-    if (pExState->GetCurrentExceptionTracker() != NULL)
+    if ((pExState->GetCurrentExceptionTracker() != NULL)
+#ifdef FEATURE_EH_FUNCLETS
+        || (pExState->GetCurrentExInfo() != NULL)
+#endif // FEATURE_EH_FUNCLETS
+    )
     {
         // Check the exception state if we have Watson bucket details
         fDoWeHaveWatsonBuckets = pExState->GetFlags()->GotWatsonBucketDetails();
@@ -10605,7 +10595,7 @@ BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        if (throwable != NULL) MODE_COOPERATIVE; else MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -10924,8 +10914,18 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
     // processing for subsequent frames on the stack since FirstChance notification
     // will be delivered only when the exception is first thrown/rethrown.
     ThreadExceptionState *pCurTES = GetThread()->GetExceptionState();
-    _ASSERTE(pCurTES->GetCurrentExceptionTracker());
-    _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
+#ifdef FEATURE_EH_FUNCLETS
+    if (g_isNewExceptionHandlingEnabled)
+    {
+        _ASSERTE(pCurTES->GetCurrentExInfo());
+        _ASSERTE(!(pCurTES->GetCurrentExInfo()->DeliveredFirstChanceNotification()));
+    }
+    else
+#endif // FEATURE_EH_FUNCLETS
+    {
+        _ASSERTE(pCurTES->GetCurrentExceptionTracker());
+        _ASSERTE(!(pCurTES->GetCurrentExceptionTracker()->DeliveredFirstChanceNotification()));
+    }
     {
         GCX_COOP();
         if (ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(FirstChanceExceptionHandler))
@@ -10941,8 +10941,18 @@ void ExceptionNotifications::DeliverFirstChanceNotification()
 
         }
 
-        // Mark the exception tracker as having delivered the first chance notification
-        pCurTES->GetCurrentExceptionTracker()->SetFirstChanceNotificationStatus(TRUE);
+#ifdef FEATURE_EH_FUNCLETS
+        if (g_isNewExceptionHandlingEnabled)
+        {
+            // Mark the exception info as having delivered the first chance notification
+            pCurTES->GetCurrentExInfo()->SetFirstChanceNotificationStatus(TRUE);
+        }
+        else
+#endif // FEATURE_EH_FUNCLETS
+        {
+            // Mark the exception tracker as having delivered the first chance notification
+            pCurTES->GetCurrentExceptionTracker()->SetFirstChanceNotificationStatus(TRUE);
+        }
     }
 }
 

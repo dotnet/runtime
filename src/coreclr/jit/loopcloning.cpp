@@ -867,9 +867,10 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
             JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->GetTrueTarget()->bbNum);
             comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
 
-            if (insertAfter->bbFallsThrough())
+            if (insertAfter->KindIs(BBJ_COND))
             {
                 JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
+                insertAfter->SetFalseTarget(newBlk);
                 comp->fgAddRefPred(newBlk, insertAfter);
             }
 
@@ -2081,12 +2082,11 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // bottomNext
     BasicBlock* bottom  = loop->GetLexicallyBottomMostBlock();
     BasicBlock* newPred = bottom;
-    if (bottom->bbFallsThrough())
+    if (bottom->KindIs(BBJ_COND))
     {
-        // Once bbFalseTarget can diverge from bbNext, BBJ_COND blocks will "fall through"
-        // only if bbFalseTarget is still the next block
-        assert(!bottom->KindIs(BBJ_COND) || bottom->NextIs(bottom->GetFalseTarget()));
+        // TODO-NoFallThrough: Shouldn't need new BBJ_ALWAYS block once bbFalseTarget can diverge from bbNext
         BasicBlock* bottomNext = bottom->Next();
+        assert(bottom->FalseTargetIs(bottomNext));
         JITDUMP("Create branch around cloned loop\n");
         BasicBlock* bottomRedirBlk = fgNewBBafter(BBJ_ALWAYS, bottom, /*extendRegion*/ true, bottomNext);
         JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", bottomRedirBlk->bbNum, bottom->bbNum);
@@ -2095,6 +2095,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
         // This is in the scope of a surrounding loop, if one exists -- the parent of the loop we're cloning.
         bottomRedirBlk->bbNatLoopNum = ambientLoop;
 
+        bottom->SetFalseTarget(bottomRedirBlk);
         fgAddRefPred(bottomRedirBlk, bottom);
         JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", bottom->bbNum, bottomRedirBlk->bbNum);
         fgReplacePred(bottomNext, bottom, bottomRedirBlk);
@@ -2306,6 +2307,7 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
 
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.
     assert(condLast->NextIs(fastPreheader));
+    condLast->SetFalseTarget(fastPreheader);
     fgAddRefPred(fastPreheader, condLast);
 
     // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to

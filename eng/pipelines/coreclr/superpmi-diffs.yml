@@ -1,10 +1,10 @@
 parameters:
 - name: spmi_jitoptions_base
-  displayName: JIT options (base)
+  displayName: 'JIT options (base): semicolon separated list in format `A=B;C=D` without DOTNET_ prefix, passed to `superpmi.py -base_jit_option`'
   type: string
   default: ' '
 - name: spmi_jitoptions_diff
-  displayName: JIT options (diff)
+  displayName: 'JIT options (diff): semicolon separated list in format `A=B;C=D` without DOTNET_ prefix, passed to `superpmi.py -diff_jit_option`'
   type: string
   default: ' '
 

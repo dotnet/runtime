@@ -80,7 +80,6 @@ public:
     PTR_EXCEPTION_RECORD GetExceptionRecord();
     PTR_CONTEXT          GetContextRecord();
     BOOL                IsExceptionInProgress();
-    void                GetLeafFrameInfo(StackTraceElement* pStackTrace);
 
     ExceptionFlags*     GetFlags();
 

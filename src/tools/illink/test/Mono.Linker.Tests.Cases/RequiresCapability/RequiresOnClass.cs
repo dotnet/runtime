@@ -1175,7 +1175,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL2091")]
 				public class ClassWithWarning : RequiresAll<T>
 				{
-					[ExpectedWarning ("IL2091", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+					[ExpectedWarning ("IL2091")]
 					public ClassWithWarning ()
 					{
 					}

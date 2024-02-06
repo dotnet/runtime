@@ -214,8 +214,7 @@ DWORD ThreadExceptionState::GetExceptionCode()
     }
     _ASSERTE(m_pExInfo);
     {   
-        GCX_COOP();
-        return ((EXCEPTIONREF)m_pExInfo->m_exception)->GetXCode();
+        return m_pExInfo->m_ExceptionCode;
     }
 #else // FEATURE_EH_FUNCLETS
     return m_currentExInfo.m_ExceptionCode;
@@ -256,17 +255,6 @@ BOOL ThreadExceptionState::IsExceptionInProgress()
 
 #if !defined(DACCESS_COMPILE)
 
-void ThreadExceptionState::GetLeafFrameInfo(StackTraceElement* pStackTraceElement)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_EH_FUNCLETS
-    m_pCurrentTracker->m_StackTraceInfo.GetLeafFrameInfo(pStackTraceElement);
-#else
-    m_currentExInfo.m_StackTraceInfo.GetLeafFrameInfo(pStackTraceElement);
-#endif
-}
-
 EXCEPTION_POINTERS* ThreadExceptionState::GetExceptionPointers()
 {
     LIMITED_METHOD_CONTRACT;
@@ -275,6 +263,10 @@ EXCEPTION_POINTERS* ThreadExceptionState::GetExceptionPointers()
     if (m_pCurrentTracker)
     {
         return (EXCEPTION_POINTERS*)&(m_pCurrentTracker->m_ptrs);
+    }
+    else if (m_pExInfo)
+    {
+        return (EXCEPTION_POINTERS*)&(m_pExInfo->m_ptrs);
     }
     else
     {
@@ -309,6 +301,10 @@ PTR_EXCEPTION_RECORD ThreadExceptionState::GetExceptionRecord()
     if (m_pCurrentTracker)
     {
         return m_pCurrentTracker->m_ptrs.ExceptionRecord;
+    }
+    else if (m_pExInfo)
+    {
+        return m_pExInfo->m_ptrs.ExceptionRecord;
     }
     else
     {
@@ -520,6 +516,10 @@ EHClauseInfo* ThreadExceptionState::GetCurrentEHClauseInfo()
     {
         return &(m_pCurrentTracker->m_EHClauseInfo);
     }
+    else if (m_pExInfo)
+    {
+        return &(m_pExInfo->m_EHClauseInfo);
+    }
     else
     {
         _ASSERTE(!"unexpected use of GetCurrentEHClauseInfo() when no exception in flight");
@@ -590,6 +590,14 @@ ThreadExceptionState::EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (head == NULL)
     {
+        PTR_ExInfo exInfo = m_pExInfo;
+        while (exInfo != NULL)
+        {
+            exInfo->EnumMemoryRegions(flags);
+            exInfo.EnumMem();
+            exInfo = exInfo->m_pPrevExInfo;
+        }
+
         return;
     }
 
