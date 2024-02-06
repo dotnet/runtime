@@ -3842,15 +3842,15 @@ void CSE_Heuristic::SortCandidates()
 
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                printf(FMT_CSE ", {$%-3x, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
+                printf(FMT_CSE ", {$%-3x, $%-3x} defCnt=%d useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                       dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdDefCount, dsc->csdUseCount, def, use, cost,
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dspPtr(kVal), dsc->csdUseCount, def, use, cost, dsc->csdLiveAcrossCall ? ", call" : "      ");
+                printf(FMT_CSE ", {K_%p} defCnt=%d useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                       dspPtr(kVal), dsc->csdDefCount, dsc->csdUseCount, def, use, cost, dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
 
             m_pCompiler->gtDispTree(expr, nullptr, nullptr, true);
