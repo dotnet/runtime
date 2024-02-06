@@ -94,7 +94,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="'$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe'" Include="/ENTRY:$(EntryPointSymbol) /NOEXP /NOIMPLIB" />
       <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)NativeAOT.natvis&quot;" />
       <LinkerArg Condition="'$(ControlFlowGuard)' == 'Guard'" Include="/guard:cf" />
-      <LinkerArg Condition="'$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe'" Include="/STACK:0x180000" />
+      <LinkerArg Condition="('$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe') and '$(IlcDefaultStackSize)' == ''" Include="/STACK:0x180000" />
+      <LinkerArg Condition="('$(OutputType)' == 'WinExe' or '$(OutputType)' == 'Exe') and '$(IlcDefaultStackSize)' != ''" Include="/STACK:$(IlcDefaultStackSize)" />
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">
