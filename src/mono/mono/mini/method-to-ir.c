@@ -10192,7 +10192,6 @@ calli_end:
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 					if (sp [0]->opcode == OP_LDADDR && m_class_is_simd_type (klass) && cfg->opt & MONO_OPT_SIMD) {
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
 						if (ins) {
@@ -10200,7 +10199,6 @@ calli_end:
 							goto field_access_end;
 						}
 					}
-#endif
 
 					MonoInst *field_add_inst = sp [0];
 					if (mini_is_gsharedvt_klass (klass)) {
@@ -13108,9 +13106,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	stacktypes [(int)'i'] = STACK_PTR;
 	stacktypes [(int)'l'] = STACK_I8;
 	stacktypes [(int)'f'] = STACK_R8;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	stacktypes [(int)'x'] = STACK_VTYPE;
-#endif
 
 #if SIZEOF_REGISTER == 4
 	/* Create MonoInsts for longs */
