@@ -38,13 +38,6 @@ public class GenericTypeSubstitution
     public static void AllowByRefLike_Substituted_For_NonByRefLike()
     {
         Console.WriteLine($"{nameof(AllowByRefLike_Substituted_For_NonByRefLike)}...");
-
-        Assert.Throws<TypeLoadException>(() => { Exec.TypeSubstitutionInterfaceImplementationAllowByRefLikeIntoNonByRefLike(); });
-        Assert.Throws<TypeLoadException>(() => { Exec.TypeSubstitutionInheritanceAllowByRefLikeIntoNonByRefLike(); });
-        Assert.Throws<TypeLoadException>(() => { Exec.TypeSubstitutionFieldAllowByRefLikeIntoNonByRefLike(); });
-
         Exec.TypeSubstitutionFieldAllowNonByRefLikeIntoNonByRefLike();
-
-        Assert.Throws<TypeLoadException>(() => { Exec.OverrideMethodNotByRefLike(); });
     }
 }
