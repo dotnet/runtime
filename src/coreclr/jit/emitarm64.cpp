@@ -1352,9 +1352,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                     FALLTHROUGH;
                 case INS_sve_fcvtxnt:
                 case INS_sve_bfcvtnt:
-                    assert(isVectorRegister(id->idReg1()));    // ddddd
-                    assert(isPredicateRegister(id->idReg2())); // ggg
-                    assert(isVectorRegister(id->idReg3()));    // nnnnn
+                    assert(isVectorRegister(id->idReg1()));       // ddddd
+                    assert(isLowPredicateRegister(id->idReg2())); // ggg
+                    assert(isVectorRegister(id->idReg3()));       // nnnnn
                     break;
                 default:
                     assert(!"unreachable");
@@ -6577,10 +6577,10 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
  *  destination operand and the second describes the size of the source operand.
  */
 
-/*static*/ std::pair<insOpts, insOpts> emitter::optExpandConversionPair(insOpts opt)
+/*static*/ void emitter::optExpandConversionPair(insOpts opt, insOpts& dst, insOpts& src)
 {
-    insOpts dst = INS_OPTS_NONE;
-    insOpts src = INS_OPTS_NONE;
+    dst = INS_OPTS_NONE;
+    src = INS_OPTS_NONE;
 
     switch (opt)
     {
@@ -6614,8 +6614,7 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     }
 
     assert(dst != INS_OPTS_NONE && src != INS_OPTS_NONE);
-
-    return std::pair<insOpts, insOpts>(dst, src);
+    return;
 }
 
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
@@ -10963,9 +10962,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
             FALLTHROUGH;
         case INS_sve_fcvtxnt:
         case INS_sve_bfcvtnt:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isPredicateRegister(reg2)); // ggg
-            assert(isVectorRegister(reg3));    // nnnnn
+            assert(isVectorRegister(reg1));       // ddddd
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
             fmt = IF_SVE_GQ_3A;
             break;
 
@@ -21366,22 +21365,13 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_GQ_3A: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision odd elements
             code = emitInsCodeSve(ins, fmt);
 
-            switch (ins)
+            if (ins == INS_sve_fcvtnt && id->idInsOpt() == INS_OPTS_D_TO_S)
             {
-                case INS_sve_fcvtnt:
-                    if (id->idInsOpt() == INS_OPTS_S_TO_H)
-                    {
-                        code ^= (1 << 22 | 1 << 17);
-                    }
-                    break;
-                case INS_sve_fcvtlt:
-                    if (id->idInsOpt() == INS_OPTS_H_TO_S)
-                    {
-                        code ^= (1 << 22 | 1 << 17);
-                    }
-                    break;
-                default:
-                    break;
+                code |= (1 << 22 | 1 << 17);
+            }
+            else if (ins == INS_sve_fcvtlt && id->idInsOpt() == INS_OPTS_S_TO_D)
+            {
+                code |= (1 << 22 | 1 << 17);
             }
 
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
@@ -25414,11 +25404,13 @@ void emitter::emitDispInsHelp(
                     break;
             }
 
-            std::pair<insOpts, insOpts> dst_src = optExpandConversionPair(opt);
+            insOpts dst = INS_OPTS_NONE;
+            insOpts src = INS_OPTS_NONE;
+            optExpandConversionPair(opt, dst, src);
 
-            emitDispSveReg(id->idReg1(), dst_src.first, true);                                  // ddddd
+            emitDispSveReg(id->idReg1(), dst, true);                                            // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
-            emitDispSveReg(id->idReg3(), dst_src.second, false);                                // nnnnn
+            emitDispSveReg(id->idReg3(), src, false);                                           // nnnnn
             break;
         }
 

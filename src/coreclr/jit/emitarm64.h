@@ -850,7 +850,7 @@ static bool isValidArrangement(emitAttr datasize, insOpts opt);
 
 // Expands an option that has different size operands (INS_OPTS_*_TO_*) into a pair of scalable options where
 // the first describes the size of the destination operand and the second describes the size of the source operand.
-std::pair<insOpts, insOpts> optExpandConversionPair(insOpts opt);
+static void optExpandConversionPair(insOpts opt, insOpts& dst, insOpts& src);
 
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
 static emitAttr optGetDatasize(insOpts arrangement);
