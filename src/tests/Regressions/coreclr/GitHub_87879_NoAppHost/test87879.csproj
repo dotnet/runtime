@@ -8,6 +8,6 @@
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' OR ('$(TargetsUnix)' == 'true' AND '$(TargetsMobile)' != 'true')">false</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\test87879.cs" />
+    <Compile Include="..\GitHub_87879\test87879.cs" />
   </ItemGroup>
 </Project>
