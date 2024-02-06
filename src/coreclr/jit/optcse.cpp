@@ -474,6 +474,11 @@ size_t Compiler::optKeyForCSE(GenTree* tree, bool* isSharedConst)
     bool enableSharedConstCSE = false;
     int  configValue          = JitConfig.JitConstCSE();
 
+    if (isSharedConst != nullptr)
+    {
+        *isSharedConst = false;
+    }
+
 #if defined(TARGET_ARMARCH)
     // ARMARCH - allow to combine with nearby offsets, when config is not 2 or 4
     if ((configValue != CONST_CSE_ENABLE_ARM_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
@@ -5364,15 +5369,19 @@ void CseCandidateState::Consider(GenTree* tree, Statement* statement, BasicBlock
             ValueNum defLiberalExcSet  = m_compiler->vnStore->VNExceptionSet(def->tslTree->gtVNPair.GetLiberal());
             ValueNum treeLiberalExcSet = m_compiler->vnStore->VNExceptionSet(tree->gtVNPair.GetLiberal());
 
-            if (m_compiler->vnStore->VNExcIsSubset(treeLiberalExcSet, defLiberalExcSet))
+            if (m_compiler->vnStore->VNExcIsSubset(defLiberalExcSet, treeLiberalExcSet))
             {
-                // Exceptions are covered; this tree is a use.
+                // Exceptions are covered by def; this tree is a use.
                 //
                 if (def->tslNext == nullptr)
                 {
                     // This is the first use, so we now have a bona-fide CSE candidate.
                     //
                     JITDUMP("Found CSE! Def is [%06u]\n", m_compiler->dspTreeID(def->tslTree));
+
+                    // Add it to the collection.
+                    //
+                    m_candidates.push_back(def);
                 }
 
                 // Create new use entry
@@ -5387,8 +5396,19 @@ void CseCandidateState::Consider(GenTree* tree, Statement* statement, BasicBlock
                 // Link it in
                 //
                 def->tslNext = newUse;
+
                 return;
             }
+            else
+            {
+                JITDUMP("Potential use [%06u] of def [%06u] - incompatible exceptions\n", m_compiler->dspTreeID(tree),
+                        m_compiler->dspTreeID(def->tslTree));
+            }
+        }
+        else
+        {
+            JITDUMP("Potential use [%06u] of def [%06u] - incompatible types\n", m_compiler->dspTreeID(tree),
+                    m_compiler->dspTreeID(def->tslTree));
         }
 
         // There was an available def, but not one that was compatible.
@@ -5575,7 +5595,11 @@ void Compiler::optValnumCSE_LocateNew(CSE_HeuristicCommon* heuristic)
     //
     optCSECandidateCount = 0;
     optCSEhashSize       = min(MAX_CSE_CNT, cseState.GetCandidates().size());
-    optCSEhash           = new (this, CMK_CSE) CSEdsc*[optCSEhashSize]();
+
+    if (optCSEhashSize > 0)
+    {
+        optCSEhash = new (this, CMK_CSE) CSEdsc*[optCSEhashSize]();
+    }
 
     for (CseDef* const cse : cseState.GetCandidates())
     {
@@ -5592,39 +5616,39 @@ void Compiler::optValnumCSE_LocateNew(CSE_HeuristicCommon* heuristic)
         optCSEhash[optCSECandidateCount] = dsc;
         optDoCSE                         = true;
 
-        assert(FitsIn<signed char>(i));
+        assert(FitsIn<signed char>(optCSECandidateCount + 1));
         signed char CSEindex = (signed char)++optCSECandidateCount;
         tree->gtCSEnum       = CSEindex;
 
-        unsigned short useCount  = 0;
-        weight_t       useWeight = 0;
         for (treeStmtLst* use = cse->tslNext; use != nullptr; use = use->tslNext)
         {
-            useCount += 1;
-            useWeight += use->tslBlock->getBBWeight(this);
             use->tslTree->gtCSEnum = CSEindex;
         }
 
         size_t key = optKeyForCSE(tree, &dsc->csdIsSharedConst);
+        assert(dsc->csdIsSharedConst == Is_Shared_Const_CSE(key));
 
-        dsc->csdHashKey        = key;
-        dsc->csdConstDefValue  = 0;
-        dsc->csdConstDefVN     = vnStore->VNForNull(); // uninit value
-        dsc->csdIndex          = CSEindex;
+        dsc->csdHashKey       = key;
+        dsc->csdConstDefValue = 0;
+        dsc->csdConstDefVN    = vnStore->VNForNull(); // uninit value
+        dsc->csdIndex         = CSEindex;
+
+        // these get set later
         dsc->csdLiveAcrossCall = false;
-        dsc->csdDefCount       = 1;
-        dsc->csdUseCount       = useCount;
-        dsc->csdDefWtCnt       = cse->tslBlock->getBBWeight(this);
-        dsc->csdUseWtCnt       = useWeight;
-        dsc->defExcSetPromise  = vnStore->VNForEmptyExcSet();
-        dsc->defExcSetCurrent  = vnStore->VNForNull(); // uninit value
-        dsc->defConservNormVN  = vnStore->VNForNull(); // uninit value
-        dsc->csdNextInBucket   = nullptr;
-        dsc->csdTree           = tree;
-        dsc->csdStmt           = cse->tslStmt;
-        dsc->csdBlock          = cse->tslBlock;
-        dsc->csdTreeList       = cse->tslNext;
-        dsc->csdTreeLast       = nullptr;
+        dsc->csdDefCount       = 0;
+        dsc->csdUseCount       = 0;
+        dsc->csdDefWtCnt       = 0;
+        dsc->csdUseWtCnt       = 0;
+
+        dsc->defExcSetPromise = vnStore->VNForEmptyExcSet();
+        dsc->defExcSetCurrent = vnStore->VNForNull(); // uninit value
+        dsc->defConservNormVN = vnStore->VNForNull(); // uninit value
+        dsc->csdNextInBucket  = nullptr;
+        dsc->csdTree          = tree;
+        dsc->csdStmt          = cse->tslStmt;
+        dsc->csdBlock         = cse->tslBlock;
+        dsc->csdTreeList      = cse;
+        dsc->csdTreeLast      = nullptr;
 
 #ifdef DEBUG
         if (verbose)
