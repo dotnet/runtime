@@ -2847,6 +2847,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         //
         fgApplyProfileScale();
 
+        // Use heuristics to come up with sensible likelihoods
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+
         return compIsForInlining() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -2951,6 +2954,18 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
             ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
         }
+        else if (!fgPgoHaveWeights)
+        {
+            // If profile data is unusable, use heuristics to set likelihoods.
+            //
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+        }
+    }
+    else
+    {
+        // If profile data is unusable, use heuristics to set likelihoods.
+        //
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
     }
 
 #ifdef DEBUG
