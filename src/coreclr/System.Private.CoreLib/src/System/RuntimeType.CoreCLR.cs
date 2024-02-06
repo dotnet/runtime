@@ -3880,6 +3880,29 @@ namespace System
         }
 
         /// <summary>
+        /// Helper to get instances of uninitialized objects.
+        /// </summary>
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal object GetUninitializedObject()
+        {
+            if (GenericCache is not CreateUninitializedCache cache)
+            {
+                if (GenericCache is ActivatorCache activatorCache)
+                {
+                    cache = activatorCache.GetCreateUninitializedCache(this);
+                }
+                else
+                {
+                    cache = new CreateUninitializedCache(this);
+                    GenericCache = cache;
+                }
+            }
+
+            return cache.CreateUninitializedObject(this);
+        }
+
+        /// <summary>
         /// Helper to invoke the default (parameterless) constructor.
         /// </summary>
         [DebuggerStepThrough]
