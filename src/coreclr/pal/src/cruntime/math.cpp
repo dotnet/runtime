@@ -22,26 +22,6 @@ Abstract:
 
 #include <math.h>
 
-#if HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif  // HAVE_IEEEFP_H
-
-#include <errno.h>
-
-#define PAL_NAN_DBL     sqrt(-1.0)
-#define PAL_POSINF_DBL -log(0.0)
-#define PAL_NEGINF_DBL  log(0.0)
-
-#define IS_DBL_NEGZERO(x)         (((*((INT64*)((void*)&x))) & I64(0xFFFFFFFFFFFFFFFF)) == I64(0x8000000000000000))
-
-#define PAL_NAN_FLT     sqrtf(-1.0f)
-#define PAL_POSINF_FLT -logf(0.0f)
-#define PAL_NEGINF_FLT  logf(0.0f)
-
-#define IS_FLT_NEGZERO(x)         (((*((INT32*)((void*)&x))) & 0xFFFFFFFF) == 0x80000000)
-
-SET_DEFAULT_DEBUG_CHANNEL(CRT);
-
 /*++
 Function:
   _finite
