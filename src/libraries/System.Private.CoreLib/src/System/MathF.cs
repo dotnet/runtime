@@ -358,69 +358,44 @@ namespace System
         public static float Round(float x)
         {
             // ************************************************************************************
-            // IMPORTANT: Do not change this implementation without also updating MathF.Round(float),
+            // IMPORTANT: Do not change this implementation without also updating Math.Round(float),
             //            FloatingPointUtils::round(double), and FloatingPointUtils::round(float)
             // ************************************************************************************
 
-            // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+            // This code is based on `nearbyint` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            uint bits = BitConverter.SingleToUInt32Bits(x);
-            byte biasedExponent = float.ExtractBiasedExponentFromBits(bits);
+            // This represents the boundary at which point we can only represent whole integers
+            const float IntegerBoundary = 8388608.0f; // 2^23
 
-            if (biasedExponent <= 0x7E)
+            if (Abs(x) >= IntegerBoundary)
             {
-                if ((bits << 1) == 0)
-                {
-                    // Exactly +/- zero should return the original value
-                    return x;
-                }
-
-                // Any value less than or equal to 0.5 will always round to exactly zero
-                // and any value greater than 0.5 will always round to exactly one. However,
-                // we need to preserve the original sign for IEEE compliance.
-
-                float result = ((biasedExponent == 0x7E) && (float.ExtractTrailingSignificandFromBits(bits) != 0)) ? 1.0f : 0.0f;
-                return CopySign(result, x);
-            }
-
-            if (biasedExponent >= 0x96)
-            {
-                // Any value greater than or equal to 2^23 cannot have a fractional part,
-                // So it will always round to exactly itself.
-
+                // Values above this boundary don't have a fractional
+                // portion and so we can simply return them as-is.
                 return x;
             }
 
-            // The absolute value should be greater than or equal to 1.0 and less than 2^23
-            Debug.Assert((0x7F <= biasedExponent) && (biasedExponent <= 0x95));
+            // Otherwise, since floating-point takes the inputs, performs
+            // the computation as if to infinite precision and unbounded
+            // range, and then rounds to the nearest representable result
+            // using the current rounding mode, we can rely on this to
+            // cheaply round.
+            //
+            // In particular, .NET doesn't support changing the rounding
+            // mode and defaults to "round to nearest, ties to even", thus
+            // by adding the original value to the IntegerBoundary we get
+            // an exactly represented whole integer that is precisely the
+            // IntegerBoundary greater in magnitude than the answer we want.
+            //
+            // We can then simply remove that offset to get the correct answer,
+            // noting that we also need to copy back the original sign to
+            // correctly handle -0.0
 
-            // Determine the last bit that represents the integral portion of the value
-            // and the bits representing the fractional portion
-
-            uint lastBitMask = 1U << (0x96 - biasedExponent);
-            uint roundBitsMask = lastBitMask - 1;
-
-            // Increment the first fractional bit, which represents the midpoint between
-            // two integral values in the current window.
-
-            bits += lastBitMask >> 1;
-
-            if ((bits & roundBitsMask) == 0)
-            {
-                // If that overflowed and the rest of the fractional bits are zero
-                // then we were exactly x.5 and we want to round to the even result
-
-                bits &= ~lastBitMask;
-            }
-            else
-            {
-                // Otherwise, we just want to strip the fractional bits off, truncating
-                // to the current integer value.
-
-                bits &= ~roundBitsMask;
-            }
-
-            return BitConverter.UInt32BitsToSingle(bits);
+            float temp = CopySign(IntegerBoundary, x);
+            return CopySign((x + temp) - temp, x);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

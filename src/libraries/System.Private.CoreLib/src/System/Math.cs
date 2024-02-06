@@ -1253,65 +1253,40 @@ namespace System
             //            FloatingPointUtils::round(double), and FloatingPointUtils::round(float)
             // ************************************************************************************
 
-            // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+            // This code is based on `nearbyint` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            ulong bits = BitConverter.DoubleToUInt64Bits(a);
-            ushort biasedExponent = double.ExtractBiasedExponentFromBits(bits);
+            // This represents the boundary at which point we can only represent whole integers
+            const double IntegerBoundary = 4503599627370496.0; // 2^52
 
-            if (biasedExponent <= 0x03FE)
+            if (Abs(a) >= IntegerBoundary)
             {
-                if ((bits << 1) == 0)
-                {
-                    // Exactly +/- zero should return the original value
-                    return a;
-                }
-
-                // Any value less than or equal to 0.5 will always round to exactly zero
-                // and any value greater than 0.5 will always round to exactly one. However,
-                // we need to preserve the original sign for IEEE compliance.
-
-                double result = ((biasedExponent == 0x03FE) && (double.ExtractTrailingSignificandFromBits(bits) != 0)) ? 1.0 : 0.0;
-                return CopySign(result, a);
-            }
-
-            if (biasedExponent >= 0x0433)
-            {
-                // Any value greater than or equal to 2^52 cannot have a fractional part,
-                // So it will always round to exactly itself.
-
+                // Values above this boundary don't have a fractional
+                // portion and so we can simply return them as-is.
                 return a;
             }
 
-            // The absolute value should be greater than or equal to 1.0 and less than 2^52
-            Debug.Assert((0x03FF <= biasedExponent) && (biasedExponent <= 0x0432));
+            // Otherwise, since floating-point takes the inputs, performs
+            // the computation as if to infinite precision and unbounded
+            // range, and then rounds to the nearest representable result
+            // using the current rounding mode, we can rely on this to
+            // cheaply round.
+            //
+            // In particular, .NET doesn't support changing the rounding
+            // mode and defaults to "round to nearest, ties to even", thus
+            // by adding the original value to the IntegerBoundary we get
+            // an exactly represented whole integer that is precisely the
+            // IntegerBoundary greater in magnitude than the answer we want.
+            //
+            // We can then simply remove that offset to get the correct answer,
+            // noting that we also need to copy back the original sign to
+            // correctly handle -0.0
 
-            // Determine the last bit that represents the integral portion of the value
-            // and the bits representing the fractional portion
-
-            ulong lastBitMask = 1UL << (0x0433 - biasedExponent);
-            ulong roundBitsMask = lastBitMask - 1;
-
-            // Increment the first fractional bit, which represents the midpoint between
-            // two integral values in the current window.
-
-            bits += lastBitMask >> 1;
-
-            if ((bits & roundBitsMask) == 0)
-            {
-                // If that overflowed and the rest of the fractional bits are zero
-                // then we were exactly x.5 and we want to round to the even result
-
-                bits &= ~lastBitMask;
-            }
-            else
-            {
-                // Otherwise, we just want to strip the fractional bits off, truncating
-                // to the current integer value.
-
-                bits &= ~roundBitsMask;
-            }
-
-            return BitConverter.UInt64BitsToDouble(bits);
+            double temp = CopySign(IntegerBoundary, a);
+            return CopySign((a + temp) - temp, a);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
