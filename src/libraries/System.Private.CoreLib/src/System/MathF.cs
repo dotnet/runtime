@@ -53,7 +53,7 @@ namespace System
         {
             uint bits = BitConverter.SingleToUInt32Bits(x);
 
-            if (!float.IsFinite(bits))
+            if (!float.IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity

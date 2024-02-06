@@ -239,7 +239,7 @@ namespace System
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(x);
 
-            if (!double.IsFinite(bits))
+            if (!double.IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
