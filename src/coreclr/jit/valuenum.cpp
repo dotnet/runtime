@@ -13000,6 +13000,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
                 CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
                 if (typeObj != nullptr)
                 {
+                    setMethodHasFrozenObjects();
                     ValueNum typeObjVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
                     call->gtVNPair.SetBoth(vnStore->VNForBitCast(typeObjVN, TYP_STRUCT, genTypeSize(TYP_REF)));
                     return false;
