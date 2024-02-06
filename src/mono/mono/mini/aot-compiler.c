@@ -9153,114 +9153,6 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 }
 
 static gboolean
-can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
-{
-	if (m_class_get_type_token (klass))
-		return TRUE;
-	if ((m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR))
-		return TRUE;
-	if (m_class_get_rank (klass))
-		return can_encode_class (acfg, m_class_get_element_class (klass));
-	return FALSE;
-}
-
-static gboolean
-can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
-{
-	if (method->wrapper_type) {
-		switch (method->wrapper_type) {
-		case MONO_WRAPPER_NONE:
-		case MONO_WRAPPER_STELEMREF:
-		case MONO_WRAPPER_ALLOC:
-		case MONO_WRAPPER_OTHER:
-		case MONO_WRAPPER_WRITE_BARRIER:
-		case MONO_WRAPPER_DELEGATE_INVOKE:
-		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-		case MONO_WRAPPER_DELEGATE_END_INVOKE:
-		case MONO_WRAPPER_SYNCHRONIZED:
-		case MONO_WRAPPER_MANAGED_TO_NATIVE:
-			break;
-		case MONO_WRAPPER_MANAGED_TO_MANAGED:
-		case MONO_WRAPPER_NATIVE_TO_MANAGED:
-		case MONO_WRAPPER_CASTCLASS:
-		case MONO_WRAPPER_RUNTIME_INVOKE: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
-			if (info)
-				return TRUE;
-			else
-				return FALSE;
-			break;
-		}
-		default:
-			printf ("Skip: %s\n", mono_method_full_name (method, TRUE));
-			return FALSE;
-		}
-	} else {
-		if (!method->token) {
-			/* The method is part of a constructed type like Int[,].Set (). */
-			if (!g_hash_table_lookup (acfg->token_info_hash, method)) {
-				if (m_class_get_rank (method->klass))
-					return TRUE;
-				return FALSE;
-			}
-		}
-	}
-	return TRUE;
-}
-
-static gboolean
-can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
-{
-	switch (patch_info->type) {
-	case MONO_PATCH_INFO_METHOD:
-	case MONO_PATCH_INFO_METHOD_FTNDESC:
-	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
-	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
-		MonoMethod *method = patch_info->data.method;
-
-		return can_encode_method (acfg, method);
-	}
-	case MONO_PATCH_INFO_VTABLE:
-	case MONO_PATCH_INFO_CLASS:
-	case MONO_PATCH_INFO_IID:
-	case MONO_PATCH_INFO_ADJUSTED_IID:
-		if (!can_encode_class (acfg, patch_info->data.klass)) {
-			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
-			return FALSE;
-		}
-		break;
-	case MONO_PATCH_INFO_DELEGATE_INFO: {
-		if (!can_encode_class (acfg, patch_info->data.del_tramp->klass)) {
-			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
-			return FALSE;
-		}
-		break;
-	}
-	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
-		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
-
-		if (entry->in_mrgctx) {
-			if (!can_encode_method (acfg, entry->d.method))
-				return FALSE;
-		} else {
-			if (!can_encode_class (acfg, entry->d.klass))
-				return FALSE;
-		}
-		if (!can_encode_patch (acfg, entry->data))
-			return FALSE;
-		break;
-	}
-	default:
-		break;
-	}
-
-	return TRUE;
-}
-
-static gboolean
 is_concrete_type (MonoType *t)
 {
 	MonoClass *klass;
@@ -9693,23 +9585,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		acfg->stats.method_categories [METHOD_CAT_WRAPPER] ++;
 	else
 		acfg->stats.method_categories [METHOD_CAT_NORMAL] ++;
-
-	/*
-	 * Check for methods/klasses we can't encode.
-	 */
-	skip = FALSE;
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (!can_encode_patch (acfg, patch_info))
-			skip = TRUE;
-	}
-
-	if (skip) {
-		if (acfg->aot_opts.print_skipped_methods)
-			printf ("Skip (patches): %s\n", mono_method_get_full_name (method));
-		acfg->stats.ocount++;
-		mono_acfg_unlock (acfg);
-		return;
-	}
 
 	if (!cfg->compile_llvm)
 		acfg->has_jitted_code = TRUE;
@@ -10679,9 +10554,6 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 
 	ji->type = type;
 	ji->data.target = data;
-
-	if (!can_encode_patch (llvm_acfg, ji))
-		return NULL;
 
 	if (llvm_acfg->aot_opts.direct_icalls) {
 		if (type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {

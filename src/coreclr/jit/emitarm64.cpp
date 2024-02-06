@@ -23306,7 +23306,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmm
-            emitDispElementIndex(emitGetInsSC(id));              // iii
+            emitDispElementIndex(emitGetInsSC(id), false);       // iii
             break;
 
         // <Pd>.B, <Pg>/Z, <Pn>.B, <Pm>.B

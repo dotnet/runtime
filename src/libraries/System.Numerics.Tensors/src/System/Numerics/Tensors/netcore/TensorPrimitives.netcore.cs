@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
@@ -15286,13 +15287,160 @@ namespace System.Numerics.Tensors
             }
         }
 
-        /// <summary>T.Round</summary>
-        internal readonly struct RoundOperator<T>(int digits, MidpointRounding mode) : IStatefulUnaryOperator<T> where T : IFloatingPoint<T>
+        /// <summary>T.Round(x)</summary>
+        internal readonly struct RoundToEvenOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
+        {
+            // This code is based on `nearbyint` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public static T Invoke(T x) => T.Round(x);
+
+            private const float SingleBoundary = 8388608.0f; // 2^23
+            private const double DoubleBoundary = 4503599627370496.0; // 2^52
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                Vector128<T> boundary = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector128<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector128.ConditionalSelect(Vector128.GreaterThan(Vector128.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                Vector256<T> boundary = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector256<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector256.ConditionalSelect(Vector256.GreaterThan(Vector256.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                Vector512<T> boundary = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector512<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector512.ConditionalSelect(Vector512.GreaterThan(Vector512.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+            }
+        }
+
+        /// <summary>T.Round(x, MidpointRounding.AwayFromZero)</summary>
+        internal readonly struct RoundAwayFromZeroOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
+        {
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public static T Invoke(T x) => T.Round(x, MidpointRounding.AwayFromZero);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    if (AdvSimd.IsSupported)
+                    {
+                        return AdvSimd.RoundAwayFromZero(x.AsSingle()).As<float, T>();
+                    }
+
+                    return TruncateOperator<float>.Invoke(x.AsSingle() + CopySignOperator<float>.Invoke(Vector128.Create(0.49999997f), x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.RoundAwayFromZero(x.AsDouble()).As<double, T>();
+                    }
+
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return TruncateOperator<double>.Invoke(x.AsDouble() + CopySignOperator<double>.Invoke(Vector128.Create(0.49999999999999994), x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return TruncateOperator<float>.Invoke(x.AsSingle() + CopySignOperator<float>.Invoke(Vector256.Create(0.49999997f), x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return TruncateOperator<double>.Invoke(x.AsDouble() + CopySignOperator<double>.Invoke(Vector256.Create(0.49999999999999994), x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return TruncateOperator<float>.Invoke(x.AsSingle() + CopySignOperator<float>.Invoke(Vector512.Create(0.49999997f), x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return TruncateOperator<double>.Invoke(x.AsDouble() + CopySignOperator<double>.Invoke(Vector512.Create(0.49999999999999994), x.AsDouble())).As<double, T>();
+                }
+            }
+        }
+
+        /// <summary>(T.Round(x * power10, digits, mode)) / power10</summary>
+        internal readonly struct MultiplyRoundDivideOperator<T, TDelegatedRound> : IStatefulUnaryOperator<T>
+            where T : IFloatingPoint<T>
+            where TDelegatedRound : IUnaryOperator<T, T>
+        {
+            private readonly T _factor;
+
+            public MultiplyRoundDivideOperator(T factor)
+            {
+                Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
+                _factor = factor;
+            }
+
+            public static bool Vectorizable => true;
+
+            private const float Single_RoundLimit = 1e8f;
+            private const double Double_RoundLimit = 1e16d;
+
+            public T Invoke(T x)
+            {
+                T limit = typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit);
+                return T.Abs(x) < limit ?
+                    TDelegatedRound.Invoke(x * _factor) / _factor :
+                    x;
+            }
+
+            public Vector128<T> Invoke(Vector128<T> x)
+            {
+                Vector128<T> limit = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
+                return Vector128.ConditionalSelect(Vector128.LessThan(Vector128.Abs(x), limit),
+                    TDelegatedRound.Invoke(x * _factor) / _factor,
+                    x);
+            }
+
+            public Vector256<T> Invoke(Vector256<T> x)
+            {
+                Vector256<T> limit = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
+                return Vector256.ConditionalSelect(Vector256.LessThan(Vector256.Abs(x), limit),
+                    TDelegatedRound.Invoke(x * _factor) / _factor,
+                    x);
+            }
+
+            public Vector512<T> Invoke(Vector512<T> x)
+            {
+                Vector512<T> limit = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
+                return Vector512.ConditionalSelect(Vector512.LessThan(Vector512.Abs(x), limit),
+                    TDelegatedRound.Invoke(x * _factor) / _factor,
+                    x);
+            }
+        }
+
+        /// <summary>T.Round(x, digits, mode)</summary>
+        internal readonly struct RoundFallbackOperator<T>(int digits, MidpointRounding mode) : IStatefulUnaryOperator<T>
+            where T : IFloatingPoint<T>
         {
             private readonly int _digits = digits;
             private readonly MidpointRounding _mode = mode;
 
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => false;
 
             public T Invoke(T x) => T.Round(x, _digits, _mode);
 
@@ -16015,7 +16163,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>
         /// <remarks>The input and output type must be of the same size if vectorization is desired.</remarks>
-        private interface IUnaryOperator<TInput, TOutput>
+        internal interface IUnaryOperator<TInput, TOutput>
         {
             static abstract bool Vectorizable { get; }
             static abstract TOutput Invoke(TInput x);
