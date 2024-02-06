@@ -147,7 +147,7 @@ steps:
 
 # Remove the embed assemblies from source
   - script: |
-      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False
+      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False /p:ForceNet8Current=true
       mv ./src/Core/tests/Benchmarks.Droid/bin/Release/${{parameters.framework}}-android/android-arm64/com.microsoft.maui.benchmarks-Signed.apk ./MonoBenchmarksDroid.apk
     displayName:  Build BDN Android App
     workingDirectory: $(Build.SourcesDirectory)/maui
