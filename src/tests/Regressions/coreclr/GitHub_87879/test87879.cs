@@ -16,7 +16,7 @@ public class test87879
         //determine the expected available stack size 1.5MB, minus a little bit (384kB) for overhead.
         var expectedSize = 0x180000 - 0x60000;
 
-        //allocate 4MB, minus a little bit (512kB) for overhead
+        //allocate on the stack as specified above
         Span<byte> bytes = stackalloc byte[expectedSize];
         Consume(bytes);
         Console.WriteLine("Main thread succeeded.");
