@@ -768,5 +768,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
+
+#if ROSLYN4_4_OR_GREATER && NETCOREAPP
+        [Fact]
+        public void ShadowedMemberInitializers()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public record Base
+                {
+                    public string Value { get; init; }
+                }
+                public record Derived : Base
+                {
+                    public new string Value { get; init; }
+                }
+
+                [JsonSerializable(typeof(Derived))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.CSharp11));
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+#endif
     }
 }
