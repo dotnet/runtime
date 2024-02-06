@@ -63,7 +63,6 @@ extends:
           - linux_arm
           - linux_arm64
           - linux_musl_x64
-          - linux_musl_arm
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
