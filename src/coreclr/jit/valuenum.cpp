@@ -12599,6 +12599,9 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
             }
         }
         break;
+
+        default:
+            break;
     }
     return false;
 }
