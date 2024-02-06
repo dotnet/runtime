@@ -1529,7 +1529,32 @@ namespace System
         public static Half Ieee754Remainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
-        public static int ILogB(Half x) => MathF.ILogB((float)x);
+        public static int ILogB(Half x)
+        {
+            // This code is based on `ilogbf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (!IsNormal(x)) // x is zero, subnormal, infinity, or NaN
+            {
+                if (IsZero(x))
+                {
+                    return int.MinValue;
+                }
+
+                if (!IsFinite(x)) // infinity or NaN
+                {
+                    return int.MaxValue;
+                }
+
+                Debug.Assert(IsSubnormal(x));
+                return MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - BiasedExponentLength);
+            }
+
+            return x.Exponent;
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
         public static Half Lerp(Half value1, Half value2, Half amount) => (Half)float.Lerp((float)value1, (float)value2, (float)amount);

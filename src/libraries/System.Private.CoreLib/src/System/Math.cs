@@ -44,10 +44,6 @@ namespace System
 
         private const double SCALEB_C3 = 9007199254740992; // 0x1p53
 
-        private const int ILogB_NaN = 0x7FFFFFFF;
-
-        private const int ILogB_Zero = (-1 - 0x7FFFFFFF);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -822,34 +818,29 @@ namespace System
 
         public static int ILogB(double x)
         {
-            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogb.c
+            // This code is based on `ilogb` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            if (double.IsNaN(x))
+            if (!double.IsNormal(x)) // x is zero, subnormal, infinity, or NaN
             {
-                return ILogB_NaN;
-            }
-
-            ulong i = BitConverter.DoubleToUInt64Bits(x);
-            int e = (int)((i >> 52) & 0x7FF);
-
-            if (e == 0)
-            {
-                i <<= 12;
-                if (i == 0)
+                if (double.IsZero(x))
                 {
-                    return ILogB_Zero;
+                    return int.MinValue;
                 }
 
-                for (e = -0x3FF; (i >> 63) == 0; e--, i <<= 1) ;
-                return e;
+                if (!double.IsFinite(x)) // infinity or NaN
+                {
+                    return int.MaxValue;
+                }
+
+                Debug.Assert(double.IsSubnormal(x));
+                return double.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - 11);
             }
 
-            if (e == 0x7FF)
-            {
-                return (i << 12) != 0 ? ILogB_Zero : int.MaxValue;
-            }
-
-            return e - 0x3FF;
+            return x.Exponent;
         }
 
         public static double Log(double a, double newBase)

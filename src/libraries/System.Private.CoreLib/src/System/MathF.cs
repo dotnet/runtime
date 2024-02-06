@@ -41,10 +41,6 @@ namespace System
 
         private const float SCALEB_C3 = 16777216f; // 0x1p24f
 
-        private const int ILogB_NaN = 0x7fffffff;
-
-        private const int ILogB_Zero = (-1 - 0x7fffffff);
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
@@ -185,34 +181,29 @@ namespace System
 
         public static int ILogB(float x)
         {
-            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogbf.c
+            // This code is based on `ilogbf` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            if (float.IsNaN(x))
+            if (!float.IsNormal(x)) // x is zero, subnormal, infinity, or NaN
             {
-                return ILogB_NaN;
-            }
-
-            uint i = BitConverter.SingleToUInt32Bits(x);
-            int e = (int)((i >> 23) & 0xFF);
-
-            if (e == 0)
-            {
-                i <<= 9;
-                if (i == 0)
+                if (float.IsZero(x))
                 {
-                    return ILogB_Zero;
+                    return int.MinValue;
                 }
 
-                for (e = -0x7F; (i >> 31) == 0; e--, i <<= 1) ;
-                return e;
+                if (!float.IsFinite(x)) // infinity or NaN
+                {
+                    return int.MaxValue;
+                }
+
+                Debug.Assert(float.IsSubnormal(x));
+                return float.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - float.BiasedExponentLength);
             }
 
-            if (e == 0xFF)
-            {
-                return i << 9 != 0 ? ILogB_Zero : int.MaxValue;
-            }
-
-            return e - 0x7F;
+            return x.Exponent;
         }
 
         public static float Log(float x, float y)
