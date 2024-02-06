@@ -2744,13 +2744,16 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				ins->klass = klass;
 			}
 			return ins;
-		}
-		// FIXME: These don't work since Vector2/Vector3 are not handled as SIMD
-#if 0
 		} else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
-			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, args [1]->dreg, args [2]->dreg);
+			int sreg = args [1]->dreg;
+			if (COMPILE_LLVM (cfg)) {
+				ins = emit_simd_ins (cfg, klass, OP_XWIDEN, args [1]->dreg, -1);
+				sreg = ins->dreg;
+			}
+
+			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, sreg, args [2]->dreg);
 			ins->inst_c0 = 2;
 			ins->dreg = dreg;
 			return ins;
@@ -2765,6 +2768,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			/* Vector4 (Vector2, float, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 			int sreg = args [1]->dreg;
+			if (COMPILE_LLVM (cfg)) {
+				ins = emit_simd_ins (cfg, klass, OP_XWIDEN, args [1]->dreg, -1);
+				sreg = ins->dreg;
+			}
+
 			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, sreg, args [2]->dreg);
 			ins->inst_c0 = 2;
 			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, ins->dreg, args [3]->dreg);
@@ -2774,7 +2782,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		} else {
 			g_assert_not_reached ();
 		}
-#endif
 		break;
 	case SN_get_Item: {
 		// GetElement is marked as Intrinsic, but handling this in get_Item leads to better code
