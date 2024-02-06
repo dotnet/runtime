@@ -707,7 +707,7 @@ void emitLclVarAddr::initLclVarAddr(int varNum, unsigned offset)
 }
 
 // Returns the variable to access. Note that it returns a negative number for compiler spill temps.
-int emitLclVarAddr::lvaVarNum() const
+int emitLclVarAddr::lvaVarNum()
 {
     switch (_lvaTag)
     {
@@ -721,7 +721,7 @@ int emitLclVarAddr::lvaVarNum() const
     }
 }
 
-unsigned emitLclVarAddr::lvaOffset() const // returns the offset into the variable to access
+unsigned emitLclVarAddr::lvaOffset() // returns the offset into the variable to access
 {
     switch (_lvaTag)
     {
@@ -9777,7 +9777,7 @@ void emitter::emitRemoveLastInstruction()
  *  emitGetInsSC: Get the instruction's constant value.
  */
 
-cnsval_ssize_t emitter::emitGetInsSC(const instrDesc* id) const
+cnsval_ssize_t emitter::emitGetInsSC(instrDesc* id)
 {
 #ifdef TARGET_ARM // should it be TARGET_ARMARCH? Why do we need this? Note that on ARM64 we store scaled immediates
                   // for some formats
