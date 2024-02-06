@@ -6135,14 +6135,28 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     ssize_t  offset = 0;
     bool     rev    = false;
 
+    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
+
+    unsigned naturalMul = 0;
+#ifdef TARGET_ARM64
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
+    naturalMul = genTypeSize(targetType);
+#endif
+
     // Find out if an addressing mode can be constructed
-    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,     // address
-                                                       true,     // fold
-                                                       &rev,     // reverse ops
-                                                       &base,    // base addr
-                                                       &index,   // index val
-                                                       &scale,   // scaling
-                                                       &offset); // displacement
+    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,       // address
+                                                       true,       // fold
+                                                       naturalMul, // natural multiplier
+                                                       &rev,       // reverse ops
+                                                       &base,      // base addr
+                                                       &index,     // index val
+                                                       &scale,     // scaling
+                                                       &offset);   // displacement
 
 #ifdef TARGET_ARM64
     if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile())
@@ -6155,21 +6169,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         {
             return false;
         }
-    }
-#endif
-
-    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
-
-#ifdef TARGET_ARMARCH
-    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-    //
-    //   *(ulong*)(data + index * 8); - can be optimized
-    //   *(ulong*)(data + index * 7); - can not be optimized
-    //     *(int*)(data + index * 2); - can not be optimized
-    //
-    if ((scale > 0) && (genTypeSize(targetType) != scale))
-    {
-        return false;
     }
 #endif
 

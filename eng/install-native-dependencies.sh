@@ -11,7 +11,7 @@ set -e
 os="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
 
 if [ -z "$os" ]; then
-    . "$(dirname "$0")"/native/init-os-and-arch.sh
+    . "$(dirname "$0")"/common/native/init-os-and-arch.sh
 fi
 
 case "$os" in

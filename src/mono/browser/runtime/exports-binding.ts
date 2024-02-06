@@ -18,7 +18,7 @@ import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
 import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pipe_early_startup_callback } from "./diagnostics";
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
-import { mono_log_warn, mono_wasm_trace_logger } from "./logging";
+import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
 import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
 import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
@@ -28,6 +28,7 @@ import { mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_inte
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
 import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
+import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 
@@ -84,12 +85,14 @@ export const mono_wasm_imports = [
     mono_wasm_browser_entropy,
 
     // corebindings.c
+    mono_wasm_console_clear,
     mono_wasm_release_cs_owned_object,
     mono_wasm_bind_js_import,
     mono_wasm_invoke_js_function,
     mono_wasm_invoke_js_import,
     mono_wasm_bind_cs_function,
     mono_wasm_resolve_or_reject_promise,
+    mono_wasm_cancel_promise,
     mono_wasm_change_case_invariant,
     mono_wasm_change_case,
     mono_wasm_compare_string,

@@ -152,15 +152,15 @@ namespace System.Text.Json.Serialization
                     }
 
                     resolver.PushReferenceForCycleDetection(value);
-                    // WriteStack reuses root-level stackframes for its children as a performance optimization;
+                    // WriteStack reuses root-level stack frames for its children as a performance optimization;
                     // we want to avoid writing any data for the root-level object to avoid corrupting the stack.
                     // This is fine since popping the root object at the end of serialization is not essential.
                     state.Current.IsPushedReferenceForCycleDetection = state.CurrentDepth > 0;
                     break;
 
                 case ReferenceHandlingStrategy.Preserve:
-                    bool canHaveIdMetata = polymorphicConverter?.CanHaveMetadata ?? CanHaveMetadata;
-                    if (canHaveIdMetata && JsonSerializer.TryGetReferenceForValue(value, ref state, writer))
+                    bool canHaveIdMetadata = polymorphicConverter?.CanHaveMetadata ?? CanHaveMetadata;
+                    if (canHaveIdMetadata && JsonSerializer.TryGetReferenceForValue(value, ref state, writer))
                     {
                         // We found a repeating reference and wrote the relevant metadata; serialization complete.
                         return true;

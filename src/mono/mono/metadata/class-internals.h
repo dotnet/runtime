@@ -26,7 +26,6 @@
 
 extern gboolean mono_print_vtable;
 extern gboolean mono_align_small_structs;
-extern gint32 mono_simd_register_size;
 
 typedef struct _MonoMethodWrapper MonoMethodWrapper;
 typedef struct _MonoMethodInflated MonoMethodInflated;

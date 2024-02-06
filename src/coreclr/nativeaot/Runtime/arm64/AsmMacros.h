@@ -173,25 +173,6 @@ MovInstr SETS "movk"
         ldr  w$RegNum, [x$RegNum, $Name]
     MEND
 
-
-;; -----------------------------------------------------------------------------
-;;
-;; Macro to export a pointer to an address inside a stub as a 64-bit variable
-;;
-    MACRO
-        EXPORT_POINTER_TO_ADDRESS $Name
-        LCLS CodeLbl
-CodeLbl SETS "$Name":CC:"Lbl"
-$CodeLbl
-        AREA | .rdata | , ALIGN = 8, DATA, READONLY
-$Name
-        DCQ         $CodeLbl
-        EXPORT      $Name
-        TEXTAREA
-        ROUT
-
-    MEND
-
 ;; -----------------------------------------------------------------------------
 ;;
 ;; Macro for indicating an alternate entry point into a function.
