@@ -3902,6 +3902,7 @@ static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
+	{ "Sve", MONO_CPU_ARM64_SVE, unsupported, sizeof (unsupported) },
 };
 
 static MonoInst*

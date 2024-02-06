@@ -2927,6 +2927,7 @@ typedef enum {
 	MONO_CPU_ARM64_NEON   = 1 << 4,
 	MONO_CPU_ARM64_RDM    = 1 << 5,
 	MONO_CPU_ARM64_DP     = 1 << 6,
+	MONO_CPU_ARM64_SVE    = 1 << 7,
 #endif
 } MonoCPUFeatures;
 
