@@ -1242,7 +1242,7 @@ namespace System.Net
                     response);
             }
 
-            _sendRequestMessage.Dispose();
+            _sendRequestMessage?.Dispose();
 
             if (_disposeRequired)
             {
