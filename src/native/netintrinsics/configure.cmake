@@ -7,7 +7,7 @@ elseif(CLR_CMAKE_TARGET_SUNOS)
   set(CMAKE_REQUIRED_INCLUDES /opt/local/include)
 endif()
 
-check_include_files(ieeefp.h HAVE_IEEEFP_H)
+check_include_file(ieeefp.h HAVE_IEEEFP_H)
 
 set(CMAKE_REQUIRED_LIBRARIES m)
 check_c_source_runs("
