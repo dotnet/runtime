@@ -3734,17 +3734,11 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             DebugStackTrace::DebugStackTraceElement const& currentElement = stackFramesData.pElements[index];
             DacExceptionCallStackData& currentFrame = dacStackFrames[index];
 
-            Module* pModule = currentElement.pFunc->GetModule();
-            BaseDomain* pBaseDomain = currentElement.pFunc->GetAssembly()->GetDomain();
-
-            AppDomain* pDomain = NULL;
-            DomainAssembly* pDomainAssembly = NULL;
-
-            pDomain = pBaseDomain->AsAppDomain();
-
+            AppDomain* pDomain = AppDomain::GetCurrentDomain();
             _ASSERTE(pDomain != NULL);
 
-            pDomainAssembly = pModule->GetDomainAssembly();
+            Module* pModule = currentElement.pFunc->GetModule();
+            DomainAssembly* pDomainAssembly = pModule->GetDomainAssembly();
             _ASSERTE(pDomainAssembly != NULL);
 
             currentFrame.vmAppDomain.SetHostPtr(pDomain);
@@ -7044,21 +7038,11 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
 
     PTR_Object obj(TO_TADDR(addr));
     MethodTable *mt = obj->GetMethodTable();
-
     PTR_Module module = mt->GetModule();
-    PTR_Assembly assembly = module->GetAssembly();
-    BaseDomain *baseDomain = assembly->GetDomain();
 
-    if (baseDomain->IsAppDomain())
-    {
-        pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(baseDomain->AsAppDomain()));
-        pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
-        pDomainAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainAssembly()));
-    }
-    else
-    {
-        return false;
-    }
+    pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain()));
+    pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
+    pDomainAssembly->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainAssembly()));
 
     return true;
 }

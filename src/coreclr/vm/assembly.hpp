@@ -110,9 +110,6 @@ public:
     //-----------------------------------------------------------------------------------------
     CHECK CheckActivated();
 
-    // Returns the parent domain if it is not the system area. Returns NULL if it is the
-    // system domain
-    PTR_AppDomain GetDomain();
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
 #ifdef LOGGING
@@ -412,9 +409,6 @@ private:
 public:
     void UpdateCachedFriendAssemblyInfo();
 private:
-
-
-    PTR_AppDomain         m_pDomain;        // Parent Domain
     PTR_ClassLoader       m_pClassLoader;   // Single Loader
 
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point

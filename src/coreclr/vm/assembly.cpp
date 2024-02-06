@@ -118,7 +118,6 @@ void Assembly::Initialize()
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
 Assembly::Assembly(AppDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
-    m_pDomain(pDomain),
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
     m_pModule(NULL),
@@ -139,6 +138,7 @@ Assembly::Assembly(AppDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembly
     m_fTerminated(FALSE)
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(pDomain == AppDomain::GetCurrentDomain());
 }
 
 // This name needs to stay in sync with AssemblyBuilder.ManifestModuleName
@@ -165,8 +165,8 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         if (!IsCollectible())
         {
             // pLoaderAllocator will only be non-null for reflection emit assemblies
-            _ASSERTE((pLoaderAllocator == NULL) || (pLoaderAllocator == GetDomain()->AsAppDomain()->GetLoaderAllocator()));
-            m_pLoaderAllocator = GetDomain()->AsAppDomain()->GetLoaderAllocator();
+            _ASSERTE((pLoaderAllocator == NULL) || (pLoaderAllocator == AppDomain::GetCurrentDomain()->GetLoaderAllocator()));
+            m_pLoaderAllocator = AppDomain::GetCurrentDomain()->GetLoaderAllocator();
         }
         else
         {
@@ -328,6 +328,7 @@ Assembly * Assembly::Create(
 {
     STANDARD_VM_CONTRACT;
 
+    _ASSERTE(pDomain == AppDomain::GetCurrentDomain());
     NewHolder<Assembly> pAssembly (new Assembly(pDomain, pPEAssembly, debuggerFlags, fIsCollectible));
 
 #ifdef PROFILING_SUPPORTED
@@ -600,16 +601,6 @@ PTR_LoaderHeap Assembly::GetStubHeap()
     WRAPPER_NO_CONTRACT;
 
     return GetLoaderAllocator()->GetStubHeap();
-}
-
-
-PTR_AppDomain Assembly::GetDomain()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    _ASSERTE(m_pDomain);
-    return (m_pDomain);
 }
 
 Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
@@ -1926,10 +1917,6 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
     else
     {
-        if (m_pDomain.IsValid())
-        {
-            m_pDomain->EnumMemoryRegions(flags, true);
-        }
         if (m_pClassLoader.IsValid())
         {
             m_pClassLoader->EnumMemoryRegions(flags);

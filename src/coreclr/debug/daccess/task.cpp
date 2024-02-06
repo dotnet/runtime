@@ -2497,8 +2497,7 @@ ClrDataModule::GetFlags(
         }
 
         PTR_Assembly pAssembly = m_module->GetAssembly();
-        PTR_AppDomain pAppDomain = pAssembly->GetDomain();
-        if (pAssembly == pAppDomain->GetRootAssembly())
+        if (pAssembly == AppDomain::GetCurrentDomain()->GetRootAssembly())
         {
             (*flags) |= CLRDATA_MODULE_IS_MAIN_MODULE;
         }

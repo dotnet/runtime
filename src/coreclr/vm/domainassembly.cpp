@@ -61,6 +61,8 @@ DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, Load
     pPEAssembly->ValidateForExecution();
 
     SetupDebuggingConfig();
+
+    _ASSERTE(pDomain == AppDomain::GetCurrentDomain());
 }
 
 DomainAssembly::~DomainAssembly()
@@ -711,8 +713,8 @@ void DomainAssembly::Begin()
     STANDARD_VM_CONTRACT;
 
     {
-        AppDomain::LoadLockHolder lock(m_pDomain);
-        m_pDomain->AddAssembly(this);
+        AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
+        AppDomain::GetCurrentDomain()->AddAssembly(this);
     }
     // Make it possible to find this DomainAssembly object from associated BINDER_SPACE::Assembly.
     RegisterWithHostAssembly();

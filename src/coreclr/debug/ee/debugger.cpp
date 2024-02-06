@@ -6268,10 +6268,8 @@ void Debugger::SendEnCUpdateEvent(DebuggerIPCEventType eventType,
     event->EnCUpdate.classMetadataToken = classToken;
 
     _ASSERTE(pModule);
-    // we don't support shared assemblies, so must have an appdomain
-    _ASSERTE(pModule->GetDomain()->IsAppDomain());
 
-    DebuggerModule * pDModule = LookupOrCreateModule(pModule, pModule->GetDomain()->AsAppDomain());
+    DebuggerModule * pDModule = LookupOrCreateModule(pModule, AppDomain::GetCurrentDomain());
     event->EnCUpdate.vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
 
     m_pRCThread->SendIPCEvent();
@@ -12937,7 +12935,7 @@ HRESULT Debugger::UpdateFunction(MethodDesc* pMD, SIZE_T encVersion)
         bp = new (interopsafe) DebuggerEnCBreakpoint( offset,
                                                       pJitInfo,
                                                       DebuggerEnCBreakpoint::REMAP_PENDING,
-                                                     (AppDomain *)pModule->GetDomain());
+                                                      AppDomain::GetCurrentDomain());
 
         _ASSERTE(bp != NULL);
     }
@@ -13098,7 +13096,7 @@ HRESULT Debugger::RemapComplete(MethodDesc* pMD, TADDR addr, SIZE_T nativeOffset
     bp = new (interopsafe, nothrow) DebuggerEnCBreakpoint( nativeOffset,
                                                            pJitInfo,
                                                            DebuggerEnCBreakpoint::REMAP_COMPLETE,
-                                       (AppDomain *)pMD->GetModule()->GetDomain());
+                                                           AppDomain::GetCurrentDomain());
     if (bp == NULL)
     {
         _ASSERTE(!"Debugger doesn't handle OOM");

@@ -1980,14 +1980,6 @@ ClassLoader *Module::GetClassLoader()
     return m_pAssembly->GetLoader();
 }
 
-PTR_AppDomain Module::GetDomain()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    _ASSERTE(m_pAssembly != NULL);
-    return m_pAssembly->GetDomain();
-}
-
 #ifndef DACCESS_COMPILE
 
 void Module::StartUnload()
@@ -2462,7 +2454,6 @@ ILStubCache* Module::GetILStubCache()
     CONTRACTL_END;
 
     // Use per-LoaderAllocator cache for modules
-    BaseDomain *pDomain = GetDomain();
     if (!IsSystem())
         return GetLoaderAllocator()->GetILStubCache();
 

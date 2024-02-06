@@ -4071,7 +4071,7 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     BOOL bIsReadyToRun = pAssembly->GetPEAssembly()->IsReadyToRun();
 
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
-    ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
+    ULONGLONG ullDomainId = (ULONGLONG)AppDomain::GetCurrentDomain();
     ULONGLONG ullBindingID = 0;
     ULONG ulAssemblyFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicAssembly : 0) |
                              (bIsCollectibleAssembly ? ETW::LoaderLog::LoaderStructs::CollectibleAssembly : 0) |
@@ -5523,11 +5523,8 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart))
         {
-            if(pAssembly->GetDomain()->IsAppDomain())
-            {
-                Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
-                ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
-            }
+            Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
+            ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
         }
 
         // DC End or Unload events for Assembly

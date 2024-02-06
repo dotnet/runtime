@@ -336,11 +336,10 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     {
         // Generics are involved so we need to search for all related MethodDescs.
         Module* module = pMethod->GetLoaderModule();
-        AppDomain* appDomain = module->GetDomain()->AsAppDomain();
         mdMethodDef tkMethod = pMethod->GetMemberDef();
 
         LoadedMethodDescIterator it(
-            appDomain,
+            AppDomain::GetCurrentDomain(),
             module,
             tkMethod,
             AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));

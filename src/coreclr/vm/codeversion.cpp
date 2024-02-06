@@ -1991,12 +1991,10 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     // It's impossible to get to any other kind of domain from the profiling API
     Module* pModule = pMD->GetModule();
     mdMethodDef methodDef = pMD->GetMemberDef();
-    BaseDomain * pBaseDomainFromModule = pModule->GetDomain();
-    _ASSERTE(pBaseDomainFromModule->IsAppDomain());
 
     // Module is unshared, so just use the module's domain to find instantiations.
     hr = EnumerateDomainClosedMethodDescs(
-        pBaseDomainFromModule->AsAppDomain(),
+        AppDomain::GetCurrentDomain(),
         pModule,
         methodDef,
         pClosedMethodDescs,
