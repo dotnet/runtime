@@ -827,6 +827,10 @@ static insOpts optMakeArrangement(emitAttr datasize, emitAttr elemsize);
 //    For the given 'datasize' and 'opt' returns true if it specifies a valid vector register arrangement
 static bool isValidArrangement(emitAttr datasize, insOpts opt);
 
+// Expands an option that has different size operands (INS_OPTS_*_TO_*) into a pair of scalable options where
+// the first describes the size of the destination operand and the second describes the size of the source operand.
+std::pair<insOpts, insOpts> optExpandConversionPair(insOpts opt);
+
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
 static emitAttr optGetDatasize(insOpts arrangement);
 
@@ -1133,6 +1137,11 @@ inline static bool insOpts64BitExtend(insOpts opt)
 inline static bool insOptsAnyArrangement(insOpts opt)
 {
     return ((opt >= INS_OPTS_8B) && (opt <= INS_OPTS_2D));
+}
+
+inline static bool insOptsConvertFloatStepwise(insOpts opt)
+{
+    return (opt == INS_OPTS_H_TO_S || opt == INS_OPTS_S_TO_H || opt == INS_OPTS_D_TO_S || opt == INS_OPTS_S_TO_D);
 }
 
 inline static bool insOptsConvertFloatToFloat(insOpts opt)

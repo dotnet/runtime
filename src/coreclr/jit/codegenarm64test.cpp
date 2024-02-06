@@ -5035,6 +5035,18 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_R(INS_sve_nmatch, EA_SCALABLE, REG_P0, REG_P7, REG_V11, REG_V31,
                                 INS_OPTS_SCALABLE_H); // NMATCH  <Pd>.<T>, <Pg>/Z, <Zn>.<T>, <Zm>.<T>
 
+    // IF_SVE_GQ_3A
+    theEmitter->emitIns_R_R_R(INS_sve_bfcvtnt, EA_SCALABLE, REG_V3, REG_P0, REG_V4); // BFCVTNT <Zd>.H, <Pg>/M, <Zn>.S
+    theEmitter->emitIns_R_R_R(INS_sve_fcvtlt, EA_SCALABLE, REG_V0, REG_P7, REG_V1,
+                              INS_OPTS_S_TO_D); // FCVTLT  <Zd>.D, <Pg>/M, <Zn>.S
+    theEmitter->emitIns_R_R_R(INS_sve_fcvtlt, EA_SCALABLE, REG_V14, REG_P7, REG_V20,
+                              INS_OPTS_H_TO_S); // FCVTLT  <Zd>.S, <Pg>/M, <Zn>.H
+    theEmitter->emitIns_R_R_R(INS_sve_fcvtnt, EA_SCALABLE, REG_V18, REG_P3, REG_V9,
+                              INS_OPTS_S_TO_H); // FCVTNT  <Zd>.H, <Pg>/M, <Zn>.S
+    theEmitter->emitIns_R_R_R(INS_sve_fcvtnt, EA_SCALABLE, REG_V12, REG_P3, REG_V5,
+                              INS_OPTS_D_TO_S);                                      // FCVTNT  <Zd>.S, <Pg>/M, <Zn>.D
+    theEmitter->emitIns_R_R_R(INS_sve_fcvtxnt, EA_SCALABLE, REG_V1, REG_P2, REG_V3); // FCVTXNT <Zd>.S, <Pg>/M, <Zn>.D
+
     // IF_SVE_GR_3A
     theEmitter->emitIns_R_R_R(INS_sve_faddp, EA_SCALABLE, REG_V16, REG_P3, REG_V19,
                               INS_OPTS_SCALABLE_H); // FADDP   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>

@@ -1343,6 +1343,25 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg4()));       // mmmmm
             break;
 
+        case IF_SVE_GQ_3A: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision odd elements
+            switch (id->idIns())
+            {
+                case INS_sve_fcvtnt:
+                case INS_sve_fcvtlt:
+                    assert(insOptsConvertFloatStepwise(id->idInsOpt()));
+                    FALLTHROUGH;
+                case INS_sve_fcvtxnt:
+                case INS_sve_bfcvtnt:
+                    assert(isVectorRegister(id->idReg1()));    // ddddd
+                    assert(isPredicateRegister(id->idReg2())); // ggg
+                    assert(isVectorRegister(id->idReg3()));    // nnnnn
+                    break;
+                default:
+                    assert(!"unreachable");
+                    break;
+            }
+            break;
+
         case IF_SVE_HT_4A: // ........xx.mmmmm ...gggnnnnn.DDDD -- SVE floating-point compare vectors
             elemsize = id->idOpSize();
             assert(isScalableVectorSize(elemsize));
@@ -6477,6 +6496,54 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     return registerListSize;
 }
 
+/*****************************************************************************
+ *
+ *  Expands an option that has different size operands (INS_OPTS_*_TO_*) into
+ *  a pair of scalable options where the first describes the size of the
+ *  destination operand and the second describes the size of the source operand.
+ */
+
+/*static*/ std::pair<insOpts, insOpts> emitter::optExpandConversionPair(insOpts opt)
+{
+    insOpts dst = INS_OPTS_NONE;
+    insOpts src = INS_OPTS_NONE;
+
+    switch (opt)
+    {
+        case INS_OPTS_H_TO_S:
+            dst = INS_OPTS_SCALABLE_S;
+            src = INS_OPTS_SCALABLE_H;
+            break;
+        case INS_OPTS_S_TO_H:
+            dst = INS_OPTS_SCALABLE_H;
+            src = INS_OPTS_SCALABLE_S;
+            break;
+        case INS_OPTS_S_TO_D:
+            dst = INS_OPTS_SCALABLE_D;
+            src = INS_OPTS_SCALABLE_S;
+            break;
+        case INS_OPTS_D_TO_S:
+            dst = INS_OPTS_SCALABLE_S;
+            src = INS_OPTS_SCALABLE_D;
+            break;
+        case INS_OPTS_H_TO_D:
+            dst = INS_OPTS_SCALABLE_D;
+            src = INS_OPTS_SCALABLE_H;
+            break;
+        case INS_OPTS_D_TO_H:
+            dst = INS_OPTS_SCALABLE_H;
+            src = INS_OPTS_SCALABLE_D;
+            break;
+        default:
+            noway_assert(!"unreachable");
+            break;
+    }
+
+    assert(dst != INS_OPTS_NONE && src != INS_OPTS_NONE);
+
+    return std::pair<insOpts, insOpts>(dst, src);
+}
+
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
 //  asserts and returns EA_UNKNOWN if an invalid 'arrangement' value is passed
 //
@@ -10728,6 +10795,18 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(insOptsScalableStandard(opt));
             assert(insScalableOptsNone(sopt));
             fmt = IF_SVE_EU_3A;
+            break;
+
+        case INS_sve_fcvtnt:
+        case INS_sve_fcvtlt:
+            assert(insOptsConvertFloatStepwise(opt));
+            FALLTHROUGH;
+        case INS_sve_fcvtxnt:
+        case INS_sve_bfcvtnt:
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));    // nnnnn
+            fmt = IF_SVE_GQ_3A;
             break;
 
         case INS_sve_faddp:
@@ -21061,6 +21140,33 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_GQ_3A: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision odd elements
+            code = emitInsCodeSve(ins, fmt);
+
+            switch (ins)
+            {
+                case INS_sve_fcvtnt:
+                    if (id->idInsOpt() == INS_OPTS_S_TO_H)
+                    {
+                        code ^= (1 << 22 | 1 << 17);
+                    }
+                    break;
+                case INS_sve_fcvtlt:
+                    if (id->idInsOpt() == INS_OPTS_H_TO_S)
+                    {
+                        code ^= (1 << 22 | 1 << 17);
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());   // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         // Scalable to general register.
         case IF_SVE_CO_3A: // ........xx...... ...gggmmmmmddddd -- SVE conditionally extract element to general register
         case IF_SVE_CS_3A: // ........xx...... ...gggnnnnnddddd -- SVE extract element to general register
@@ -24983,6 +25089,35 @@ void emitter::emitDispInsHelp(
             break;
         }
 
+        // <Zd>.H, <Pg>/M, <Zn>.S
+        // <Zd>.S, <Pg>/M, <Zn>.D
+        // <Zd>.D, <Pg>/M, <Zn>.S
+        // <Zd>.S, <Pg>/M, <Zn>.H
+        case IF_SVE_GQ_3A: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision odd elements
+        {
+            insOpts opt = id->idInsOpt();
+
+            switch (ins)
+            {
+                // These cases have only one combination of operands so the option may be omitted.
+                case INS_sve_fcvtxnt:
+                    opt = INS_OPTS_D_TO_S;
+                    break;
+                case INS_sve_bfcvtnt:
+                    opt = INS_OPTS_S_TO_H;
+                    break;
+                default:
+                    break;
+            }
+
+            std::pair<insOpts, insOpts> dst_src = optExpandConversionPair(opt);
+
+            emitDispSveReg(id->idReg1(), dst_src.first, true);                                  // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
+            emitDispSveReg(id->idReg3(), dst_src.second, false);                                // nnnnn
+            break;
+        }
+
         // { <Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]
         // Some of these formats may allow changing the element size instead of using 'D' for all instructions.
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
@@ -28090,6 +28225,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EQ_3A: // ........xx...... ...gggnnnnnddddd -- SVE2 integer pairwise add and accumulate long
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+
+        case IF_SVE_GQ_3A: // ................ ...gggnnnnnddddd -- SVE floating-point convert precision odd elements
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency    = PERFSCORE_LATENCY_3C;
             break;
 
         // Floating point arithmetic
