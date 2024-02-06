@@ -292,7 +292,7 @@ InitializeDefaultStackSize()
     // Match Windows stack size
     if (g_defaultStackSize == 0)
     {
-        g_defaultStackSize = 4096 * 1024;
+        g_defaultStackSize = 1536 * 1024;
     }
 #endif
 
@@ -301,7 +301,7 @@ InitializeDefaultStackSize()
     {
         // Set the default minimum stack size for MUSL to the same value as we
         // use on Windows.
-        g_defaultStackSize = 4096 * 1024;
+        g_defaultStackSize = 1536 * 1024;
     }
 #endif // ENSURE_PRIMARY_STACK_SIZE
 }

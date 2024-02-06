@@ -49,8 +49,8 @@ extern "C" DLL_EXPORT void InvokeCallbackOnNewThread(PFNACTION1 callback)
     int st = pthread_attr_init(&attr);
     AbortIfFail(st);
 
-    // set stack size to 4.0MB
-    st = pthread_attr_setstacksize(&attr, 0x400000);
+    // set stack size to 1.5MB
+    st = pthread_attr_setstacksize(&attr, 0x180000);
     AbortIfFail(st);
 
     pthread_t t;

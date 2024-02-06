@@ -237,7 +237,7 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
     // Match Windows stack size
     if (stackSize == 0)
     {
-        stackSize = 4096 * 1024;
+        stackSize = 1536 * 1024;
     }
 #endif
 

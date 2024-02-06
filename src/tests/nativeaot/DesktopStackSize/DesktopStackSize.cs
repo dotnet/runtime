@@ -12,8 +12,8 @@ namespace DesktopStackSize
 		[SkipLocalsInit]
 		static int Main()
 		{
-			//determine the expected available stack size (4MB or 1MB), minus a little bit (384kB) for overhead.
-			var expectedSize = (IntPtr.Size == 8 ? 0x4_00000 : 0x1_00000) - 0x60000;
+			//determine the expected available stack size 1.5MB, minus a little bit (384kB) for overhead.
+			var expectedSize = 0x180000 - 0x60000;
 
 			//allocate 4MB, minus a little bit (512kB) for overhead
 			Span<byte> bytes = stackalloc byte[expectedSize];
