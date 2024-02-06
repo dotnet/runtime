@@ -75,7 +75,6 @@ public class WorkloadRequiredTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ false)]
     [MemberData(nameof(InvariantGlobalizationTestData), parameters: /*publish*/ true)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task WorkloadNotRequiredForInvariantGlobalization(string config, bool invariant, bool publish)
     {
         string id = $"props_req_workload_{(publish ? "publish" : "build")}_{GetRandomId()}";

@@ -2998,7 +2998,7 @@ mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 		return TRUE;
 	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
 #ifdef TARGET_ARM64
-	if (size == 8 || size == 16)
+	if (size == 8 || size == 12 || size == 16)
 		return TRUE;
 #else
 	if (size == 16)
