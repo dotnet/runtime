@@ -40,7 +40,7 @@ void emitDispLargeJmp(
 void emitDispComma();
 void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
-void emitDispElementIndex(ssize_t imm);
+void emitDispElementIndex(const ssize_t imm, const bool addComma);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
 void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
@@ -131,6 +131,9 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 
 //  Emit the 32-bit Arm64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
+
+// Append the machine code corresponding to the given SVE instruction descriptor.
+BYTE* emitOutput_InstrSve(BYTE* dst, instrDesc* id);
 
 // A helper method to return the natural scale for an EA 'size'
 static unsigned NaturalScale_helper(emitAttr size);
@@ -514,23 +517,28 @@ static int insGetSveReg1ListSize(instruction ins);
 static PredicateType insGetPredicateType(insFormat fmt, int regpos = 0);
 
 // Returns true if the SVE instruction has a LSL addr.
-// This is for formats that have [<Xn|SP>, <Xm>, LSL #N]
+// This is for formats that have [<Xn|SP>, <Xm>, LSL #N], [<Xn|SP>{, <Xm>, LSL #N}]
 static bool insSveIsLslN(instruction ins, insFormat fmt);
 
 // Returns true if the SVE instruction has a <mod> addr.
 // This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N]
 static bool insSveIsModN(instruction ins, insFormat fmt);
 
-// Returns 0, 1, 2 or 3 depending on the instruction and format.
-// This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+// Returns 0, 1, 2, 3 or 4 depending on the instruction and format.
+// This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N],
+// [<Xn|SP>{, <Xm>, LSL #N}]
 static int insSveGetLslOrModN(instruction ins, insFormat fmt);
 
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);
 
-// Returns the encoding to select the 1/2/4/8/16 byte elemsize for an Arm64 Sve vector instruction
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // for the 'dtype' field.
 static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code);
+
+// Returns the encoding to select the 4/8/16 byte elemsize for the Arm64 Sve vector instruction 'ld1w'
+// for the 'dtype' field.
+static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, emitAttr size, code_t code);
 
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
@@ -555,6 +563,15 @@ static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
 static code_t insEncodeUimm2_9_to_8(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '11-10'.
+static code_t insEncodeUimm2_11_to_10(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
+static code_t insEncodeUimm2_20_to_19(ssize_t imm);
+
+// Returns the encoding for the immediate value as 1 bit at bit location '22'.
+static code_t insEncodeImm1_22(ssize_t imm);
 
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
@@ -634,6 +651,18 @@ static bool isValidImm1(ssize_t value)
 static bool isValidUimm2(ssize_t value)
 {
     return (0 <= value) || (value <= 3);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 3 bit encoding.
+static bool isValidUimm3(ssize_t value)
+{
+    return (0 <= value) && (value <= 7);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
+static bool isValidUimm4(ssize_t value)
+{
+    return (0 <= value) && (value <= 15);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
@@ -1085,6 +1114,12 @@ inline static bool insOptsScalableWordsOrQuadwords(insOpts opt)
     return (insOptsScalableWords(opt) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
+inline static bool insOptsScalableDoubleWordsOrQuadword(insOpts opt)
+{
+    // `opt` is a double-word or quad-word.
+    return ((opt == INS_OPTS_SCALABLE_D) || (opt == INS_OPTS_SCALABLE_Q));
+}
+
 inline static bool insOptsScalableAtLeastHalf(insOpts opt)
 {
     // `opt` is any of the half and above scalable types.
@@ -1230,6 +1265,15 @@ void emitIns_R_R_R_I(instruction ins,
                      insOpts     opt      = INS_OPTS_NONE,
                      emitAttr    attrReg2 = EA_UNKNOWN);
 
+void emitIns_R_R_R_I_I(instruction ins,
+                       emitAttr    attr,
+                       regNumber   reg1,
+                       regNumber   reg2,
+                       regNumber   reg3,
+                       ssize_t     imm1,
+                       ssize_t     imm2,
+                       insOpts     opt);
+
 void emitIns_R_R_R_Ext(instruction ins,
                        emitAttr    attr,
                        regNumber   reg1,
@@ -1249,6 +1293,15 @@ void emitIns_R_R_R_R(instruction     ins,
                      regNumber       reg4,
                      insOpts         opt  = INS_OPTS_NONE,
                      insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitInsSve_R_R_R_R(instruction     ins,
+                        emitAttr        attr,
+                        regNumber       reg1,
+                        regNumber       reg2,
+                        regNumber       reg3,
+                        regNumber       reg4,
+                        insOpts         opt  = INS_OPTS_NONE,
+                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 

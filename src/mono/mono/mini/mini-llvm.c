@@ -474,12 +474,12 @@ ovr_tag_from_mono_vector_class (MonoClass *klass)
 	llvm_ovr_tag_t ret = 0;
 	switch (size) {
 	case 8: ret |= INTRIN_vector64; break;
+	case 12: ret |= INTRIN_vector128; break;
 	case 16: ret |= INTRIN_vector128; break;
 	}
 
 	const char *class_name = m_class_get_name (klass);
-	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
-		// FIXME: Support Vector3
+	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector3", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
 		return ret | INTRIN_float32;
 	}
 
@@ -512,6 +512,7 @@ ovr_tag_from_llvm_type (LLVMTypeRef type)
 		unsigned int bits = mono_llvm_get_prim_size_bits (type);
 		switch (bits) {
 		case 64: ret |= INTRIN_vector64; break;
+		case 96: ret |= INTRIN_vector128; break;
 		case 128: ret |= INTRIN_vector128; break;
 		default: g_assert_not_reached ();
 		}
@@ -2357,8 +2358,7 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 	}
 
 	callee_name = mono_aot_get_plt_symbol (type, data);
-	if (!callee_name)
-		return NULL;
+	g_assert (callee_name);
 
 	if (ctx->cfg->compile_aot)
 		/* Add a patch so referenced wrappers can be compiled in full aot mode */
@@ -4193,9 +4193,18 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeByRef:
 		case LLVMArgAsFpArgs:
 		{
-			if (mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
-				/* Treat these as normal values */
-				ctx->values [reg] = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
+			MonoClass *klass = mono_class_from_mono_type_internal (ainfo->type);
+			if (mini_class_is_simd (ctx->cfg, klass)) {
+				LLVMValueRef loadedVector = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
+
+				if (mono_class_value_size (klass, NULL) == 12) {
+					LLVMValueRef zero = LLVMConstReal (LLVMFloatType (), 0.0);
+					LLVMValueRef index = LLVMConstInt (LLVMInt32Type (), 3, 0);
+					loadedVector = LLVMBuildInsertElement (builder, loadedVector, zero, index, "insert_zero");
+				}
+
+				ctx->values [reg] = loadedVector;
+			}
 			break;
 		}
 		default:
@@ -4562,10 +4571,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		} else {
 			if (cfg->compile_aot) {
 				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_METHOD, call->method);
-				if (!callee) {
-					set_failure (ctx, "can't encode patch");
-					return;
-				}
 			} else if (cfg->method == call->method) {
 				callee = ctx->lmethod;
 			} else {
@@ -4617,10 +4622,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (jit_icall_id) {
 			if (cfg->compile_aot) {
 				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (jit_icall_id));
-				if (!callee) {
-					set_failure (ctx, "can't encode patch");
-					return;
-				}
 			} else {
 				callee = get_jit_callee (ctx, "", llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (jit_icall_id));
 			}
@@ -4629,13 +4630,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				callee = NULL;
 				if (cfg->abs_patches) {
 					MonoJumpInfo *abs_ji = (MonoJumpInfo*)g_hash_table_lookup (cfg->abs_patches, call->fptr);
-					if (abs_ji) {
+					if (abs_ji)
 						callee = get_callee (ctx, llvm_sig, abs_ji->type, abs_ji->data.target);
-						if (!callee) {
-							set_failure (ctx, "can't encode patch");
-							return;
-						}
-					}
 				}
 				if (!callee) {
 					set_failure (ctx, "aot");
@@ -6226,13 +6222,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (ctx->lmethod_type);
 				LLVMValueRef retval, elem;
-				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+
+				MonoClass *klass=  mono_class_from_mono_type_internal (sig->ret);
+				gboolean is_simd = mini_class_is_simd (ctx->cfg, klass);
 
 				if (is_simd) {
 					retval = LLVMConstNull(ret_type);
 
 					if (lhs) {
-						int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
+						// Vector3: ret_type is Vector3, lhs is Vector3 represented as a Vector4 (three elements + zero). We need to extract only the first 3 elements from lhs.
+						int len = mono_class_value_size (klass, NULL) == 12 ? 3 : LLVMGetVectorSize (LLVMTypeOf (lhs));  
+						
 						for (int i = 0; i < len; i++) {
 							elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
 							retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
@@ -7087,10 +7087,7 @@ MONO_RESTORE_WARNING
 			gboolean is_volatile = (ins->flags & MONO_INST_VOLATILE) != 0;
 			gboolean is_unaligned = (ins->flags & MONO_INST_UNALIGNED) != 0;
 
-			if (!values [ins->inst_destbasereg]) {
-				set_failure (ctx, "inst_destbasereg");
-				break;
-			}
+			g_assert (values [ins->inst_destbasereg]);
 
 			t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -7647,10 +7644,7 @@ MONO_RESTORE_WARNING
 			BarrierKind barrier = (BarrierKind) ins->backend.memory_barrier_kind;
 			LLVMValueRef index, addr, value, base;
 
-			if (!values [ins->inst_destbasereg]) {
-			    set_failure (ctx, "inst_destbasereg");
-				break;
-			}
+			g_assert (values [ins->inst_destbasereg]);
 
 			t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -7842,11 +7836,7 @@ MONO_RESTORE_WARNING
 		case OP_VZERO: {
 			MonoClass *klass = ins->klass;
 
-			if (!klass) {
-				// FIXME:
-				set_failure (ctx, "!klass");
-				break;
-			}
+			g_assert (klass);
 
 			if (!addresses [ins->dreg]) {
 				LLVMTypeRef etype = type_to_llvm_type (ctx, m_class_get_byval_arg (klass));
@@ -7867,11 +7857,7 @@ MONO_RESTORE_WARNING
 			gboolean done = FALSE;
 			gboolean is_volatile = FALSE;
 
-			if (!klass) {
-				// FIXME:
-				set_failure (ctx, "!klass");
-				break;
-			}
+			g_assert (klass);
 
 			if (mini_is_gsharedvt_klass (klass)) {
 				// FIXME:
@@ -8332,6 +8318,11 @@ MONO_RESTORE_WARNING
 
 			src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, t, src, "", FALSE, 1);
+			if (mono_class_value_size (ins->klass, NULL) == 12) {
+        				LLVMValueRef zero = LLVMConstReal (LLVMFloatType (), 0.0);
+        				LLVMValueRef index = LLVMConstInt (LLVMInt32Type (), 3, 0);
+        				values [ins->dreg] = LLVMBuildInsertElement (builder, values [ins->dreg], zero, index, "insert_zero");
+    		}
 			break;
 		}
 		case OP_STOREX_MEMBASE: {

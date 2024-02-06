@@ -17,6 +17,8 @@
 // Keep these in sync with
 //  src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
+// If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
+// and handle pending work.
 #define READYTORUN_MAJOR_VERSION 0x0009
 #define READYTORUN_MINOR_VERSION 0x0001
 
@@ -397,6 +399,10 @@ enum ReadyToRunHelper
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,
+
+    // These two helpers can be removed once MINIMUM_READYTORUN_MAJOR_VERSION is 10+
+    // alongside the CORINFO_HELP_FLTROUND/CORINFO_HELP_DBLROUND
+    // counterparts and all related code.
     READYTORUN_HELPER_DblRound                  = 0xE2,
     READYTORUN_HELPER_FltRound                  = 0xE3,
 
