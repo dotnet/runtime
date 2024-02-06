@@ -60,8 +60,10 @@ extends:
           - osx_x64
           - osx_arm64
           - linux_x64
+          - linux_arm
           - linux_arm64
           - linux_musl_x64
+          - linux_musl_arm
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
@@ -162,6 +164,7 @@ extends:
           platforms:
           - windows_x64
           - linux_x64
+          - linux_arm
           variables:
           - name: timeoutPerTestInMinutes
             value: 60
