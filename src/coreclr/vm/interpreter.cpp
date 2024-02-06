@@ -11728,7 +11728,7 @@ static const char* CorInfoTypeNames[] = {
 };
 
 // Also see Compiler::lookupNamedIntrinsic
-InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd)
+Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd)
 {
     InterpreterNamedIntrinsics result = NI_Illegal;
 
@@ -11773,7 +11773,7 @@ InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HAN
 
 // Simple version of getMethodName which supports IL Stubs such as IL_STUB_PInvoke additionally.
 // Also see getMethodNameFromMetadata and printMethodName in corinfo.h
-const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName, const char **enclosingClassName)
+const char* Interpreter::getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName, const char **enclosingClassName)
 {
     MethodDesc *pMD = GetMethod(hnd);
     if (pMD->IsILStub())
@@ -11801,7 +11801,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     const char* returnType = NULL;
 
     const char* className;
-    const char* methodName = getMethodName(info, hnd, &className);
+    const char* methodName = Interpreter::getMethodName(info, hnd, &className);
     if (clsName != NULL)
     {
         *clsName = className;

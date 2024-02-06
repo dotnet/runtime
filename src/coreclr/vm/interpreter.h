@@ -537,17 +537,7 @@ struct CachedItem
     }
 };
 
-// Also see namedintrinsiclist.h
-enum InterpreterNamedIntrinsics : unsigned short
-{
-    NI_Illegal = 0,
-    NI_System_StubHelpers_GetStubContext,
-    NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
-};
 
-InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
-
-const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName = NULL);
 
 // The per-InterpMethodInfo cache may map generic instantiation information to the
@@ -923,6 +913,16 @@ public:
     OBJECTREF* GetAddressOfSecurityObject() { return &m_securityObject; }
 
     void*      GetParamTypeArg() { return m_genericsCtxtArg; }
+
+    // Also see namedintrinsiclist.h
+    enum InterpreterNamedIntrinsics : unsigned short
+    {
+        NI_Illegal = 0,
+        NI_System_StubHelpers_GetStubContext,
+        NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
+    };
+    static InterpreterNamedIntrinsics getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd);
+    static const char* getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName = NULL, const char **enclosingClassName = NULL);
 
 private:
     // Architecture-dependent helpers.
