@@ -3159,6 +3159,9 @@ public:
     GenTree* gtNewSimdCreateScalarUnsafeNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+    GenTree* gtNewSimdCreateSequenceNode(
+        var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize);
+
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
@@ -3173,6 +3176,8 @@ public:
                                      GenTree*    op2,
                                      CorInfoType simdBaseJitType,
                                      unsigned    simdSize);
+
+    GenTree* gtNewSimdGetIndicesNode(var_types type, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdGetLowerNode(var_types   type,
                                    GenTree*    op1,
@@ -7771,6 +7776,8 @@ public:
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool optAssertionIsNonNull(GenTree*         op,
                                ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
+    bool optAssertionIsNonHeap(GenTree*         op,
+                               ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1);
@@ -7807,6 +7814,7 @@ public:
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
+    bool optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
 
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
