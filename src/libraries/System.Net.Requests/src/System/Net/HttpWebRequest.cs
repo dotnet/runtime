@@ -1214,13 +1214,13 @@ namespace System.Net
                 {
                     if (async)
                     {
-                        await _requestStream!.FlushAsync().ConfigureAwait(false);
+                        await _requestStream.FlushAsync().ConfigureAwait(false);
                     }
                     else
                     {
-                        _requestStream!.Flush();
+                        _requestStream.Flush();
                     }
-                    _requestStream!.EndWriteOnStreamBuffer();
+                    _requestStream.EndWriteOnStreamBuffer();
                 }
             }
             catch (ObjectDisposedException)
@@ -1228,7 +1228,7 @@ namespace System.Net
                 // If the request stream was disposed, don't do anything.
             }
 
-            HttpResponseMessage responseMessage = await _sendRequestTask!.ConfigureAwait(false);
+            HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
 
             HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
 
@@ -1242,7 +1242,7 @@ namespace System.Net
                     response);
             }
 
-            _sendRequestMessage?.Dispose();
+            _sendRequestMessage.Dispose();
 
             if (_disposeRequired)
             {

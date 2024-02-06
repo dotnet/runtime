@@ -2105,7 +2105,7 @@ namespace System.Net.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
-                    const int size = 1048576 * 2;
+                    int size = text.Length * 128 * 1024;
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.ContentType = "application/text";
                     request.ContentLength = size;

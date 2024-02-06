@@ -77,8 +77,8 @@ namespace System.Net
 
             if (_isBuffered && _buffer!.Length > 0)
             {
-                Task task = _streamBuffer.WriteAsync(_buffer!.GetBuffer().AsMemory(0, (int) _buffer!.Length), cancellationToken).AsTask();
-                _buffer!.SetLength(0);
+                Task task = _streamBuffer.WriteAsync(_buffer.GetBuffer().AsMemory(0, (int) _buffer.Length), cancellationToken).AsTask();
+                _buffer.SetLength(0);
                 return task;
             }
 
@@ -130,7 +130,7 @@ namespace System.Net
             }
             else
             {
-                _streamBuffer!.Write(new(buffer, offset, count));
+                _streamBuffer.Write(new(buffer, offset, count));
             }
         }
 
@@ -139,14 +139,14 @@ namespace System.Net
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
             return _isBuffered ? _buffer!.WriteAsync(buffer, offset, count, cancellationToken) :
-                _streamBuffer!.WriteAsync(new(buffer, offset, count), cancellationToken).AsTask();
+                _streamBuffer.WriteAsync(new(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             return _isBuffered ? _buffer!.WriteAsync(buffer, cancellationToken) :
-                _streamBuffer!.WriteAsync(buffer, cancellationToken);
+                _streamBuffer.WriteAsync(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
@@ -154,7 +154,7 @@ namespace System.Net
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
             return _isBuffered ? _buffer!.BeginWrite(buffer, offset, count, asyncCallback, asyncState) :
-                TaskToAsyncResult.Begin(_streamBuffer!.WriteAsync(new(buffer, offset, count)).AsTask(), asyncCallback, asyncState);
+                TaskToAsyncResult.Begin(_streamBuffer.WriteAsync(new(buffer, offset, count)).AsTask(), asyncCallback, asyncState);
         }
 
         public void EndWriteOnStreamBuffer()
