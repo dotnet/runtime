@@ -24101,7 +24101,8 @@ void emitter::emitDispInsHelp(
                            // offsets)
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);            // ggg
-            emitDispSveModAddr(ins, id->idReg3(), id->idReg4(), id->idInsOpt(), fmt);                      // nnnnn                                                                                                          // mmmmm
+            emitDispSveModAddr(ins, id->idReg3(), id->idReg4(), id->idInsOpt(), fmt);                      // nnnnn
+                                                                                                           // mmmmm
             break;
 
         // {<Zt>.<T>}, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
