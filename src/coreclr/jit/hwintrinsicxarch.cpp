@@ -1450,7 +1450,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
-                CorInfoType fieldType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
                 var_types simdType = getSIMDTypeForSize(simdSize);
                 // Generate the control table for VFIXUPIMMSD
@@ -1538,9 +1537,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // The logic is that first and second operand are basically the same because we want 
                 // the output to be in the same xmm register
                 // Hence we clone the first operand
-                GenTree* op2Clone;
-                op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
-                                    nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+                GenTree* op2Clone = fgMakeMultiUse(&op1);
                 
                 //run vfixupimmsd base on table and no flags reporting
                 GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
@@ -1591,9 +1588,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // The logic is that first and second operand are basically the same because we want 
                 // the output to be in the same xmm register
                 // Hence we clone the first operand
-                GenTree* op2Clone;
-                op1 = impCloneExpr(op1, &op2Clone, CHECK_SPILL_ALL,
-                                    nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+                GenTree* op2Clone = fgMakeMultiUse(&op1);
                 
                 //run vfixupimmsd base on table and no flags reporting
                 GenTree* retNode1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
@@ -1604,7 +1599,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                                 : NI_AVX512DQ_ConvertToVector512UInt64WithTruncation;
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, retNode1, intrinsic, simdBaseJitType, simdSize);
-                // retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
 #endif // TARGET_AMD64
             break;
@@ -1620,7 +1614,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
                 op1     = impSIMDPopStack();
-                CorInfoType fieldType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
                 var_types simdType = getSIMDTypeForSize(simdSize);
                 // Generate the control table for VFIXUPIMMSD

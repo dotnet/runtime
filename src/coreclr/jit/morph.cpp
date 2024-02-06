@@ -357,9 +357,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     // The logic is that first and second operand are basically the same because we want 
                     // the output to be in the same xmm register
                     // Hence we clone the first operand
-                    GenTree* op2Clone;
-                    oper = impCloneExpr(oper, &op2Clone, CHECK_SPILL_ALL,
-                                        nullptr DEBUGARG("Cloning double for Dbl2Ulng conversion"));
+                    GenTree* op2Clone = fgMakeMultiUse(&oper);
                     
                     //run vfixupimmsd base on table and no flags reporting
                     GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, oper, op2Clone, tbl, gtNewIconNode(0),
@@ -501,9 +499,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     case TYP_UINT:
 #if defined(TARGET_ARM)
                         return nullptr;
-#else  // TARGET_X86
+#elif defined(TARGET_XARCH)
+                        if (tree->IsSaturatedConversion())
+                        {
+                            return nullptr;
+                        }
+#endif
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
-#endif // TARGET_X86
 
                     case TYP_LONG:
 #ifdef TARGET_XARCH
