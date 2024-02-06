@@ -187,7 +187,7 @@ namespace ILCompiler.ObjectWriter
                 else
                 {
                     lsdaSectionWriter = _lsdaSectionWriter;
-                    if (LsdaCache.IsCacheable(nodeWithCodeInfo))
+                    if (LsdaCache.IsCacheable(nodeWithCodeInfo) && !useFrameNames)
                     {
                         emittedLsdaSymbols = _lsdaCache.FindCachedLsda(nodeWithCodeInfo);
                         if (emittedLsdaSymbols == null)
@@ -215,6 +215,7 @@ namespace ILCompiler.ObjectWriter
                         if (newLsdaSymbols != null)
                             newLsdaSymbols[i] = lsdaSymbolName;
                         lsdaSectionWriter.EmitSymbolDefinition(lsdaSymbolName);
+                        EmitLsda(nodeWithCodeInfo, frameInfos, i, _lsdaSectionWriter, ref mainLsdaOffset);
                     }
 
                     string framSymbolName = $"_fram{i}{currentSymbolName}";
@@ -237,9 +238,6 @@ namespace ILCompiler.ObjectWriter
                             personalitySymbolName: null);
                         _dwarfEhFrame.AddFde(fde);
                     }
-
-                    if (emittedLsdaSymbols == null)
-                        EmitLsda(nodeWithCodeInfo, frameInfos, i, _lsdaSectionWriter, ref mainLsdaOffset);
                 }
 
                 if (newLsdaSymbols != null)
