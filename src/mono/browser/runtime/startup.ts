@@ -387,6 +387,7 @@ async function mono_wasm_init_threads() {
     monoThreadInfo.threadPrefix = threadPrefix;
     monoThreadInfo.threadName = "UI Thread";
     monoThreadInfo.isUI = true;
+    monoThreadInfo.isAttached = true;
     loaderHelpers.set_thread_prefix(threadPrefix);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
