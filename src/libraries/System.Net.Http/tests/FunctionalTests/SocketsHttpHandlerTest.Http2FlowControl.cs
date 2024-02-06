@@ -133,7 +133,7 @@ namespace System.Net.Http.Functional.Tests
                     TimeSpan.FromMilliseconds(30),
                     TimeSpan.Zero,
                     2 * 1024 * 1024,
-                    null);
+                    maxWindowForPingStopValidation: MaxWindow);
 
                 Assert.True(maxCredit <= MaxWindow);
             }
@@ -186,19 +186,34 @@ namespace System.Net.Http.Functional.Tests
             RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
 
+        [OuterLoop("Runs long")]
+        [Fact]
+        public async Task LongRunningSlowServerStream_NoInvalidPingsAreSent()
+        {
+            // A scenario similar to https://github.com/grpc/grpc-dotnet/issues/2361.
+            // We need to send a small amount of data so the connection window is not consumed and no "standard" WINDOW_UPDATEs are sent and
+            // we also need to do it very slowly to cover some RTT PINGs after the initial burst.
+            // This scenario should trigger the "forced WINDOW_UPDATE" logic in the implementation, ensuring that no more than 4 PINGs are sent without a WINDOW_UPDATE.
+            await TestClientWindowScalingAsync(
+                TimeSpan.FromMilliseconds(500),
+                TimeSpan.FromMilliseconds(500),
+                1024,
+                _output,
+                dataPerFrame: 32);
+        }
+
         private static async Task<int> TestClientWindowScalingAsync(
             TimeSpan networkDelay,
             TimeSpan slowBandwidthSimDelay,
             int bytesToDownload,
             ITestOutputHelper output = null,
-            int maxWindowForPingStopValidation = int.MaxValue, // set to actual maximum to test if we stop sending PING when window reached maximum
-            Action<SocketsHttpHandler> configureHandler = null)
+            int dataPerFrame = 16384,
+            int maxWindowForPingStopValidation = 16 * 1024 * 1024) // set to actual maximum to test if we stop sending PING when window reached maximum
         {
             TimeSpan timeout = TimeSpan.FromSeconds(30);
             CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout);
 
             HttpClientHandler handler = CreateHttpClientHandler(HttpVersion20.Value);
-            configureHandler?.Invoke(GetUnderlyingSocketsHttpHandler(handler));
 
             using Http2LoopbackServer server = Http2LoopbackServer.CreateServer(NoAutoPingResponseHttp2Options);
             using HttpClient client = new HttpClient(handler, true);
@@ -230,13 +245,13 @@ namespace System.Net.Http.Functional.Tests
             using SemaphoreSlim writeSemaphore = new SemaphoreSlim(1);
             int remainingBytes = bytesToDownload;
 
-            bool pingReceivedAfterReachingMaxWindow = false;
+            string unexpectedPingReason = null;
             bool unexpectedFrameReceived = false;
             CancellationTokenSource stopFrameProcessingCts = new CancellationTokenSource();
             
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stopFrameProcessingCts.Token, timeoutCts.Token);
             Task processFramesTask = ProcessIncomingFramesAsync(linkedCts.Token);
-            byte[] buffer = new byte[16384];
+            byte[] buffer = new byte[dataPerFrame];
 
             while (remainingBytes > 0)
             {
@@ -264,7 +279,7 @@ namespace System.Net.Http.Functional.Tests
 
             int dataReceived = (await response.Content.ReadAsByteArrayAsync()).Length;
             Assert.Equal(bytesToDownload, dataReceived);
-            Assert.False(pingReceivedAfterReachingMaxWindow, "Server received a PING after reaching max window");
+            Assert.Null(unexpectedPingReason);
             Assert.False(unexpectedFrameReceived, "Server received an unexpected frame, see test output for more details.");
 
             return maxCredit;
@@ -275,6 +290,7 @@ namespace System.Net.Http.Functional.Tests
                 // We should not receive any more RTT PING's after this point
                 int maxWindowCreditThreshold = (int) (0.9 * maxWindowForPingStopValidation);
                 output?.WriteLine($"maxWindowCreditThreshold: {maxWindowCreditThreshold} maxWindowForPingStopValidation: {maxWindowForPingStopValidation}");
+                int pingsWithoutWindowUpdate = 0;
 
                 try
                 {
@@ -289,10 +305,18 @@ namespace System.Net.Http.Functional.Tests
 
                             output?.WriteLine($"Received PING ({pingFrame.Data})");
 
+                            pingsWithoutWindowUpdate++;
                             if (maxCredit > maxWindowCreditThreshold)
                             {
-                                output?.WriteLine("PING was unexpected");
-                                Volatile.Write(ref pingReceivedAfterReachingMaxWindow, true);
+                                Volatile.Write(ref unexpectedPingReason, "The server received a PING after reaching max window");
+                                output?.WriteLine($"PING was unexpected: {unexpectedPingReason}");
+                            }
+
+                            // Exceeding this limit may trigger a GOAWAY on some servers. See implementation comments for more details.
+                            if (pingsWithoutWindowUpdate > 4)
+                            {
+                                Volatile.Write(ref unexpectedPingReason, $"The server received {pingsWithoutWindowUpdate} PINGs without receiving a WINDOW_UPDATE");
+                                output?.WriteLine($"PING was unexpected: {unexpectedPingReason}");
                             }
 
                             await writeSemaphore.WaitAsync(cancellationToken);
@@ -301,6 +325,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                         else if (frame is WindowUpdateFrame windowUpdateFrame)
                         {
+                            pingsWithoutWindowUpdate = 0;
                             // Ignore connection window:
                             if (windowUpdateFrame.StreamId != streamId) continue;
 
