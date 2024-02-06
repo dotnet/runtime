@@ -280,7 +280,7 @@ namespace System
         public static bool IsNormal(Half value)
         {
             uint bits = value._value;
-            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
+            return (ushort)((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -296,7 +296,7 @@ namespace System
         public static bool IsSubnormal(Half value)
         {
             uint bits = value._value;
-            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+            return (ushort)((bits & ~SignMask) - 1) < MaxTrailingSignificand;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
