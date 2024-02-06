@@ -4219,6 +4219,9 @@ PALIMPORT double __cdecl modf(double, double*);
 PALIMPORT double __cdecl pow(double, double);
 PALIMPORT double __cdecl sin(double);
 PALIMPORT void __cdecl sincos(double, double*, double*);
+#ifdef __APPLE__
+PALIMPORT void __cdecl __sincos(double, double*, double*);
+#endif
 PALIMPORT double __cdecl sinh(double);
 PALIMPORT double __cdecl sqrt(double);
 PALIMPORT double __cdecl tan(double);
@@ -4252,6 +4255,9 @@ PALIMPORT float __cdecl modff(float, float*);
 PALIMPORT float __cdecl powf(float, float);
 PALIMPORT float __cdecl sinf(float);
 PALIMPORT void __cdecl sincosf(float, float*, float*);
+#ifdef __APPLE__
+PALIMPORT void __cdecl __sincosf(float, float*, float*);
+#endif
 PALIMPORT float __cdecl sinhf(float);
 PALIMPORT float __cdecl sqrtf(float);
 PALIMPORT float __cdecl tanf(float);
