@@ -289,7 +289,8 @@ namespace System.Reflection.Emit.Tests
             Assert.True(stringToken > 0);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/98013", TestRuntimes.Mono)]
         public static void GetArrayMethodTest()
         {
             using (TempFile file = TempFile.Create())

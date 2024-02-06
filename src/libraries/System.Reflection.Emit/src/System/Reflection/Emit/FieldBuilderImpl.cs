@@ -76,6 +76,7 @@ namespace System.Reflection.Emit
 
                         if (sourceType != enumBldr._typeBuilder.UnderlyingSystemType &&
                             sourceType != underlyingType &&
+                            // If the source type is an enum, should not throw when the underlying types match
                             sourceType.IsEnum &&
                             sourceType.GetEnumUnderlyingType() != underlyingType)
                         {
