@@ -32,7 +32,7 @@
 
 #include <errno.h>
 
-#if defined(_POSIX_VERSION) && !defined (HOST_WASM)
+#if defined(_POSIX_VERSION) && !defined (USE_WASM_BACKEND)
 
 #include <pthread.h>
 
@@ -127,11 +127,13 @@ mono_threads_platform_yield (void)
 	return sched_yield () == 0;
 }
 
+#ifndef USE_PTHREAD_WASM_BACKEND
 void
 mono_threads_platform_exit (gsize exit_code)
 {
 	pthread_exit ((gpointer) exit_code);
 }
+#endif
 
 gboolean
 mono_thread_platform_external_eventloop_keepalive_check (void)
@@ -142,7 +144,7 @@ mono_thread_platform_external_eventloop_keepalive_check (void)
 	return FALSE;
 }
 
-#if HOST_FUCHSIA
+#if defined(HOST_FUCHSIA) || !defined(HAVE_GETRLIMIT)
 int
 mono_thread_info_get_system_max_stack_size (void)
 {

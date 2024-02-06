@@ -13,3 +13,16 @@ get_wasm_heap_base:
   .functype get_wasm_heap_base () -> (i32)
   global.get __heap_base@GOT
   end_function
+
+.globl get_wasm_stack_low
+.globl get_wasm_stack_high
+
+get_wasm_stack_low:
+  .functype get_wasm_stack_low () -> (i32)
+  global.get __stack_low@GOT
+  end_function
+
+get_wasm_stack_high:
+  .functype get_wasm_stack_high () -> (i32)
+  global.get __stack_high@GOT
+  end_function

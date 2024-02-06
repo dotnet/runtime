@@ -121,7 +121,7 @@ int64_t SystemNative_GetBootTimeTicks(void)
 
 double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
-#if defined(HAVE_GETRUSAGE) && !defined(HOST_BROWSER)
+#if defined(HAVE_GETRUSAGE)
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
 

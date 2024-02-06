@@ -59,6 +59,7 @@
   <PropertyGroup>
     <MonoThreadSuspend Condition="'$(TargetswatchOS)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
     <MonoThreadSuspend Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
+    <MonoThreadSuspend Condition="'$(TargetsWasi)' == 'true' and '$(WasmEnableThreads)' == 'true' and '$(MonoThreadSuspend)' == ''">coop</MonoThreadSuspend>
     <!-- wasm isn't really preemptive, but we don't want safepoints -->
     <MonoThreadSuspend Condition="( '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' ) and '$(MonoThreadSuspend)' == ''">preemptive</MonoThreadSuspend>
     <!-- all other platforms -->
@@ -602,7 +603,8 @@
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoSkipInitCompiler)' == 'true' and '$(HostOS)' != 'windows'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true'">$(_MonoCMakeConfigureCommand) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot -DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_PATH)share/cmake/wasi-sdk.cmake -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true' and '$(WasmEnableThreads)' != 'true'">$(_MonoCMakeConfigureCommand) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot -DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_PATH)share/cmake/wasi-sdk.cmake -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true' and '$(WasmEnableThreads)' == 'true'">$(_MonoCMakeConfigureCommand) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot -DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_PATH)share/cmake/wasi-sdk-pthread.cmake -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
@@ -724,7 +726,8 @@
     <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
       <MonoAotAbi Condition="'$(TargetsBrowser)' == 'true'">wasm32-unknown-none</MonoAotAbi>
-      <MonoAotAbi Condition="'$(TargetsWasi)' == 'true'">wasm32-unknown-wasi</MonoAotAbi>
+      <MonoAotAbi Condition="'$(TargetsWasi)' == 'true' and $(WasmEnableThreads) != 'true'">wasm32-unknown-wasi</MonoAotAbi>
+      <MonoAotAbi Condition="'$(TargetsWasi)' == 'true' and $(WasmEnableThreads) == 'true'">wasm32-unknown-wasi-threads</MonoAotAbi>
       <MonoAotOffsetsFile>$(MonoObjCrossDir)offsets-wasm32-unknown-none.h</MonoAotOffsetsFile>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.dylib</MonoLibClang>
       <MonoLibClang Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(MonoLLVMDir)/$(BuildArchitecture)/lib/libclang.so</MonoLibClang>

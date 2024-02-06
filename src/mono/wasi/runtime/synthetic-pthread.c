@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include "wasm-config.h"
+
+#ifdef DISABLE_THREADS
 
 #define SYNTHETIC_PTHREAD_KEYS_MAX 32
 
@@ -60,3 +63,5 @@ int pthread_cond_destroy(int a) { return 0; }
 int pthread_mutex_init(int a, int b) { return 0; }
 int pthread_mutex_destroy(int a) { return 0; }
 int pthread_cond_timedwait(int a, int b, int c) { return 0; }
+
+#endif

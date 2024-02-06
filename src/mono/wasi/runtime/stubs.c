@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include "wasm-config.h"
+
+#ifdef DISABLE_THREADS
 
 // These are symbols that are never used at runtime, or at least don't need to do anything for prototype apps
 
@@ -14,11 +17,13 @@ int sem_timedwait (int *sem, void *abs_timeout) { assert(0); return 0; }
 
 int __errno_location() { return 0; }
 
+void syslog(int pri, const char *fmt, int ignored) { assert (0); }
+
+#endif
+
+int mono_thread_state_init_from_handle (int *tctx, int *info, void *sigctx) { assert(0); return 0; }
+void mono_runtime_setup_stat_profiler () { assert(0); }
+
 void mono_log_close_syslog (void) { assert(0); }
 void mono_log_open_syslog (const char *a, void *b) { assert(0); }
 void mono_log_write_syslog (const char *a, int b, int c, const char *d) { assert(0); }
-
-void mono_runtime_setup_stat_profiler () { assert(0); }
-int mono_thread_state_init_from_handle (int *tctx, int *info, void *sigctx) { assert(0); return 0; }
-
-void syslog(int pri, const char *fmt, int ignored) { assert (0); }

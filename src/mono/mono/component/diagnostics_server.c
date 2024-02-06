@@ -7,7 +7,7 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 #include <eventpipe/ds-server.h>
-#if defined (HOST_WASM) && !defined(HOST_WASI)
+#if defined(HOST_BROWSER)
 #include <eventpipe/ep-ipc-stream.h>
 #include <mono/component/event_pipe-wasm.h>
 #include <mono/utils/mono-coop-semaphore.h>
@@ -19,7 +19,7 @@
 static bool
 diagnostics_server_available (void);
 
-#if !defined (HOST_WASM) || defined (DISABLE_THREADS)
+#if !defined(HOST_BROWSER) || defined (DISABLE_THREADS)
 static MonoComponentDiagnosticsServer fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &diagnostics_server_available },
 	&ds_server_init,
@@ -350,7 +350,7 @@ wasm_ipc_stream_close (void *self)
 	return r == 0;
 }
 
-#endif /* !defined (HOST_WASM) || defined (DISABLE_THREADS) */
+#endif /* !defined (HOST_BROWSER) || defined (DISABLE_THREADS) */
 
 static bool
 diagnostics_server_available (void)
