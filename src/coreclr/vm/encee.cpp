@@ -1153,7 +1153,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     EnCAddedField *pEntry = new EnCAddedField;
     pEntry->m_pFieldDesc = pFD;
 
-    AppDomain *pDomain = (AppDomain*) pFD->GetApproxEnclosingMethodTable()->GetDomain();
+    AppDomain *pDomain = AppDomain::GetCurrentDomain();
 
     // We need to associate the contents of the new field with the object it is attached to
     // in a way that mimics the lifetime behavior of a normal field reference.  Specifically,
@@ -1461,7 +1461,7 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
     }
     CONTRACTL_END;
 
-    AppDomain *pDomain = (AppDomain*) pFD->GetApproxEnclosingMethodTable()->GetDomain();
+    AppDomain *pDomain = AppDomain::GetCurrentDomain();
 
     // Compute the size of the fieldData entry
     size_t fieldSize;

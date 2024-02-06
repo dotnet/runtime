@@ -4629,7 +4629,6 @@ UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_typeIDMap.GetTypeID(pMT, true);
@@ -4642,7 +4641,6 @@ UINT32 BaseDomain::LookupTypeID(PTR_MethodTable pMT)
     CONTRACTL {
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_typeIDMap.LookupTypeID(pMT);
@@ -4669,7 +4667,6 @@ UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_NonGCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);
@@ -4694,7 +4691,6 @@ UINT32 BaseDomain::GetGCThreadStaticTypeIndex(PTR_MethodTable pMT)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
     return m_GCThreadStaticBlockTypeIDMap.GetTypeID(pMT, false);

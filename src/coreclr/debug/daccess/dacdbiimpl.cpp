@@ -3559,16 +3559,15 @@ HRESULT DacDbiInterfaceImpl::GetDelegateTargetObject(
         {
             PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
             ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
-            ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(pRemoteTargetObj->GetGCSafeMethodTable()->GetDomain()->AsAppDomain()));
             break;
         }
 
         default:
             ppTargetObj->SetDacTargetPtr(NULL);
-            ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(pDelObj->GetGCSafeMethodTable()->GetDomain()->AsAppDomain()));
             break;
     }
 
+    ppTargetAppDomain->SetDacTargetPtr(dac_cast<TADDR>(AppDomain::GetCurrentDomain()));
     return hr;
 }
 

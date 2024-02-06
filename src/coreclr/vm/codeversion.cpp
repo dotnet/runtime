@@ -1520,7 +1520,7 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
     CONTRACTL_END;
     _ASSERTE(!IsLockOwnedByCurrentThread());
     HRESULT hr = S_OK;
-    
+
 #if DEBUG
     for (DWORD i = 0; i < cActiveVersions; i++)
     {
@@ -2036,15 +2036,7 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
 
     HRESULT hr;
 
-    BaseDomain * pDomainContainingGenericDefinition = pModuleContainingMethodDef->GetDomain();
-
-#ifdef _DEBUG
-    // If the generic definition is not loaded domain-neutral, then all its
-    // instantiations will also be non-domain-neutral and loaded into the same
-    // domain as the generic definition.  So the caller may only pass the
-    // domain containing the generic definition as pAppDomainToSearch
-    _ASSERTE(pDomainContainingGenericDefinition == pAppDomainToSearch);
-#endif //_DEBUG
+    _ASSERTE(AppDomain::GetCurrentDomain() == pAppDomainToSearch);
 
     // these are the default flags which won't actually be used in shared mode other than
     // asserting they were specified with their default values
@@ -2078,12 +2070,6 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
             }
             continue;
         }
-
-#ifdef _DEBUG
-        // Method's instantiation must be defined in the AD we're iterating over (pAppDomainToSearch, which, as
-        // asserted above, must be the same domain as the generic's definition)
-        _ASSERTE(pLoadedMD->GetDomain() == pAppDomainToSearch);
-#endif // _DEBUG
 
         MethodDesc ** ppMD = pClosedMethodDescs->Append();
         if (ppMD == NULL)

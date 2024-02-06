@@ -456,13 +456,6 @@ public:
     // The assembly that defined this type (== GetModule()->GetAssembly())
     Assembly * GetAssembly() const;
 
-    // GetDomain on an instantiated type, e.g. C<ty1,ty2> returns the SharedDomain if all the
-    // constituent parts of the type are SharedDomain (i.e. domain-neutral),
-    // and returns an AppDomain if any of the parts are from an AppDomain,
-    // i.e. are domain-bound.  If any of the parts are domain-bound
-    // then they will all belong to the same domain.
-    PTR_AppDomain GetDomain() const;
-
     PTR_LoaderAllocator GetLoaderAllocator() const;
 
     // Get the class token, assuming the type handle represents a named type,

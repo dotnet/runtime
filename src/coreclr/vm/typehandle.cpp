@@ -274,17 +274,6 @@ PTR_Module TypeHandle::GetLoaderModule() const
         return AsMethodTable()->GetLoaderModule();
 }
 
-PTR_AppDomain TypeHandle::GetDomain() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->GetDomain();
-    else
-        return AsMethodTable()->GetDomain();
-
-}
-
 PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
 {
     STATIC_CONTRACT_NOTHROW;

@@ -205,21 +205,6 @@ CHECK MethodDesc::CheckActivated()
     CHECK_OK;
 }
 
-//*******************************************************************************
-AppDomain *MethodDesc::GetDomain()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return AppDomain::GetCurrentDomain();
-}
-
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
