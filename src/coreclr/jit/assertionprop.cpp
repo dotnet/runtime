@@ -4970,6 +4970,12 @@ GenTree* Compiler::optExactTypeAssertionProp_Ind(ASSERT_VALARG_TP assertions, Ge
         return nullptr;
     }
 
+    if (opts.IsReadyToRun())
+    {
+        // TODO:
+        return nullptr;
+    }
+
     CORINFO_CLASS_HANDLE objType = optAssertionGetExactType(assertions, tree->AsIndir()->Addr());
     if (objType != NO_CLASS_HANDLE)
     {
