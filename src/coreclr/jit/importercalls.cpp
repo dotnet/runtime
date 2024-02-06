@@ -6884,7 +6884,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     switch (intrinsicName)
     {
         case NI_System_Math_Abs:
-        case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
 
