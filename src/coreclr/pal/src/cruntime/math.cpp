@@ -56,25 +56,6 @@ int __cdecl _finite(double x)
 
 /*++
 Function:
-  _isnan
-
-See MSDN doc
---*/
-int __cdecl _isnan(double x)
-{
-    int ret;
-    PERF_ENTRY(_isnan);
-    ENTRY("_isnan (x=%f)\n", x);
-
-    ret = isnan(x);
-
-    LOGEXIT("_isnan returns int %d\n", ret);
-    PERF_EXIT(_isnan);
-    return ret;
-}
-
-/*++
-Function:
   _copysign
 
 See MSDN doc
@@ -119,25 +100,6 @@ int __cdecl _finitef(float x)
 
     LOGEXIT("_finitef returns int %d\n", ret);
     PERF_EXIT(_finitef);
-    return ret;
-}
-
-/*++
-Function:
-  _isnanf
-
-See MSDN doc
---*/
-int __cdecl _isnanf(float x)
-{
-    int ret;
-    PERF_ENTRY(_isnanf);
-    ENTRY("_isnanf (x=%f)\n", x);
-
-    ret = isnan(x);
-
-    LOGEXIT("_isnanf returns int %d\n", ret);
-    PERF_EXIT(_isnanf);
     return ret;
 }
 

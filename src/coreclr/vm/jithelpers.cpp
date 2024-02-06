@@ -674,6 +674,17 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 }
 HCIMPLEND
 
+#ifndef TARGET_WINDOWS
+namespace
+{
+    bool isnan(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
+    }
+}
+#endif
+
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;
@@ -694,7 +705,7 @@ HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
         UINT32 NaN = CLR_NAN_32;
         return *(float *)(&NaN);
     }
-    else if (!_finite(divisor) && !_isnan(divisor))
+    else if (!_finite(divisor) && !isnan(divisor))
     {
         return dividend;
     }
@@ -727,7 +738,7 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
         UINT64 NaN = CLR_NAN_64;
         return *(double *)(&NaN);
     }
-    else if (!_finite(divisor) && !_isnan(divisor))
+    else if (!_finite(divisor) && !isnan(divisor))
     {
         return dividend;
     }

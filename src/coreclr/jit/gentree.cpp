@@ -16038,7 +16038,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // For unordered operations (i.e. the GTF_RELOP_NAN_UN flag is set)
             // the result is always true - return 1.
 
-            if (_isnan(d1) || _isnan(d2))
+            if (FloatingPointUtils::isNaN(d1) || FloatingPointUtils::isNaN(d2))
             {
                 JITDUMP("Double operator(s) is NaN\n");
 

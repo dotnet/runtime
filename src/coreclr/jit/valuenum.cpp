@@ -18,17 +18,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "valuenum.h"
 #include "ssaconfig.h"
 
-// Windows x86 and Windows ARM/ARM64 may not define _isnanf() but they do define _isnan().
-// We will redirect the macros to these other functions if the macro is not defined for the
-// platform. This has the side effect of a possible implicit upcasting for arguments passed.
-#if (defined(HOST_X86) || defined(HOST_ARM) || defined(HOST_ARM64)) && !defined(HOST_UNIX)
-
-#if !defined(_isnanf)
-#define _isnanf _isnan
-#endif
-
-#endif // (defined(HOST_X86) || defined(HOST_ARM) || defined(HOST_ARM64)) && !defined(HOST_UNIX)
-
 // We need to use target-specific NaN values when statically compute expressions.
 // Otherwise, cross crossgen (e.g. x86_arm) would have different binary outputs
 // from native crossgen (i.e. arm_arm) when the NaN got "embedded" into code.
@@ -186,11 +175,11 @@ TFp FpMul(TFp value1, TFp value2)
     // If [value1] is infinity and [value2] is zero
     //   the result is NaN.
 
-    if (value1 == 0 && !_finite(value2) && !_isnan(value2))
+    if (value1 == 0 && !_finite(value2) && !FloatingPointUtils::isNaN(value2))
     {
         return TFpTraits::NaN();
     }
-    if (!_finite(value1) && !_isnan(value1) && value2 == 0)
+    if (!_finite(value1) && !FloatingPointUtils::isNaN(value1) && value2 == 0)
     {
         return TFpTraits::NaN();
     }
@@ -224,7 +213,7 @@ TFp FpDiv(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-    else if (!_finite(dividend) && !_isnan(dividend) && !_finite(divisor) && !_isnan(divisor))
+    else if (!_finite(dividend) && !FloatingPointUtils::isNaN(dividend) && !_finite(divisor) && !FloatingPointUtils::isNaN(divisor))
     {
         return TFpTraits::NaN();
     }
@@ -247,7 +236,7 @@ TFp FpRem(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-    else if (!_finite(divisor) && !_isnan(divisor))
+    else if (!_finite(divisor) && !FloatingPointUtils::isNaN(divisor))
     {
         return dividend;
     }
@@ -817,7 +806,7 @@ int ValueNumStore::EvalComparison<double>(VNFunc vnf, double v0, double v1)
     // Here we handle specialized double comparisons.
 
     // We must check for a NaN argument as they they need special handling
-    bool hasNanArg = (_isnan(v0) || _isnan(v1));
+    bool hasNanArg = (FloatingPointUtils::isNaN(v0) || FloatingPointUtils::isNaN(v1));
 
     if (vnf < VNF_Boundary)
     {
@@ -881,7 +870,7 @@ int ValueNumStore::EvalComparison<float>(VNFunc vnf, float v0, float v1)
     // Here we handle specialized float comparisons.
 
     // We must check for a NaN argument as they they need special handling
-    bool hasNanArg = (_isnanf(v0) || _isnanf(v1));
+    bool hasNanArg = (FloatingPointUtils::isNaN(v0) || FloatingPointUtils::isNaN(v1));
 
     if (vnf < VNF_Boundary)
     {
