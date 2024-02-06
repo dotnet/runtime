@@ -30,6 +30,7 @@
 //
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 
@@ -112,6 +113,7 @@ namespace Mono.Linker
 
 		public void AddDefaultInterfaceImplementation (MethodDefinition @base, TypeDefinition implementingType, (InterfaceImplementation, MethodDefinition) matchingInterfaceImplementation)
 		{
+			Debug.Assert(@base.DeclaringType.IsInterface);
 			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
 				implementations = new List<(TypeDefinition, InterfaceImplementation, MethodDefinition)> ();
 				default_interface_implementations.Add (@base, implementations);

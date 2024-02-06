@@ -447,22 +447,23 @@ namespace Mono.Linker
 		}
 
 		/// <summary>
-		/// Returns a list of all known methods that override <paramref name="method"/>. The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
+		/// Returns a list of all known methods that override <paramref name="method"/>.
+		/// The list may be incomplete if other overrides exist in assemblies that haven't been processed by TypeMapInfo yet
 		/// </summary>
 		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			return TypeMapInfo.GetOverrides (method);
 		}
 
-		public IEnumerable<(TypeDefinition ImplementingType, InterfaceImplementation InterfaceImpl, MethodDefinition DefaultInterfaceMethod)> GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<(TypeDefinition ImplementingType, InterfaceImplementation InterfaceImpl, MethodDefinition DefaultInterfaceMethod)>? GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
-			return TypeMapInfo.GetDefaultInterfaceImplementations (method) ?? [];
+			return TypeMapInfo.GetDefaultInterfaceImplementations (method);
 		}
 
 		/// <summary>
 		/// Returns all base methods that <paramref name="method"/> overrides.
 		/// This includes methods on <paramref name="method"/>'s declaring type's base type (but not methods higher up in the type hierarchy),
-		/// methods on an interface that <paramref name="method"/>'s delcaring type implements,
+		/// methods on an interface that <paramref name="method"/>'s declaring type implements,
 		/// and methods an interface implemented by a derived type of <paramref name="method"/>'s declaring type if the derived type uses <paramref name="method"/> as the implementing method.
 		/// The list may be incomplete if there are derived types in assemblies that havent been processed yet that use <paramref name="method"/> to implement an interface.
 		/// </summary>

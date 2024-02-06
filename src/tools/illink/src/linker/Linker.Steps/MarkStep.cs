@@ -572,16 +572,10 @@ namespace Mono.Linker.Steps
 		void ProcessVirtualMethods ()
 		{
 			var vms = _virtual_methods.ToArray ();
-			foreach((var method, var scope) in vms) {
-				using (ScopeStack.PushScope (scope))
-				{
+			foreach ((var method, var scope) in vms) {
+				using (ScopeStack.PushScope (scope)) {
 					ProcessVirtualMethod (method);
-					if (method.DeclaringType.IsInterface)
-					{
-
-					}
 				}
-
 			}
 		}
 
@@ -609,28 +603,19 @@ namespace Mono.Linker.Steps
 						!unusedInterfacesOptimizationEnabled) {
 						MarkInterfaceImplementations (type);
 					}
-					// OverrideInformation for interfaces in PreservedScope aren't added yet
+					// Interfaces in PreservedScope should have their methods added to _virtual_methods so that they are properly processed
 					foreach (var method in type.Methods) {
-						var baseOverrideInformations = Annotations.GetBaseMethods (method);
-						if (baseOverrideInformations is null)
+						var baseMethods = Annotations.GetBaseMethods (method);
+						if (baseMethods is null)
 							continue;
-						foreach (var ov in baseOverrideInformations) {
-							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope))
-							{
-								_virtual_methods.Add((ov.Base, ScopeStack.CurrentScope));
+						foreach (var ov in baseMethods) {
+							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope)) {
+								_virtual_methods.Add ((ov.Base, ScopeStack.CurrentScope));
 							}
 						}
 					}
 				}
 			}
-
-			// var interfaceOverrides = _interfaceOverrides.ToArray ();
-			// foreach ((var overrideInformation, var scope) in interfaceOverrides) {
-			//  using (ScopeStack.PushScope (scope)) {
-			//      if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (overrideInformation))
-			//          MarkMethod (overrideInformation.Override, new DependencyInfo (DependencyKind.Override, overrideInformation.Base), scope.Origin);
-			//  }
-			// }
 		}
 
 		void DiscoverDynamicCastableImplementationInterfaces ()
@@ -713,26 +698,23 @@ namespace Mono.Linker.Steps
 		{
 			Annotations.EnqueueVirtualMethod (method);
 
-			var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
-			if (defaultImplementations != null) {
-				foreach (var defaultImplementationInfo in defaultImplementations) {
-					ProcessDefaultImplementation (defaultImplementationInfo.ImplementingType, defaultImplementationInfo.InterfaceImpl, defaultImplementationInfo.DefaultInterfaceMethod);
+			if (method.DeclaringType.IsInterface) {
+				var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
+				if (defaultImplementations is not null) {
+					foreach (var dimInfo in defaultImplementations) {
+						ProcessDefaultImplementation (dimInfo.ImplementingType, dimInfo.InterfaceImpl, dimInfo.DefaultInterfaceMethod);
 
+						var ov = new OverrideInformation (method, dimInfo.DefaultInterfaceMethod, Context);
+						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, dimInfo.ImplementingType))
+							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
+					}
 				}
-			}
-			if (method.DeclaringType.IsInterface)
-			{
-				var overridingMethods = Annotations.GetOverrides(method);
-				foreach(var ov in overridingMethods ?? [])
-				{
-					if(IsInterfaceImplementationMethodNeededByTypeDueToInterface(ov, ov.Override.DeclaringType))
-						MarkMethod(ov.Override, new DependencyInfo(DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
-				}
-				foreach(var diminfo in defaultImplementations ?? [])
-				{
-					var ov = new OverrideInformation(method, diminfo.DefaultInterfaceMethod, Context);
-					if (IsInterfaceImplementationMethodNeededByTypeDueToInterface(ov, diminfo.ImplementingType))
-						MarkMethod(ov.Override, new DependencyInfo(DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
+				var overridingMethods = Annotations.GetOverrides (method);
+				if (overridingMethods is not null) {
+					foreach (var ov in overridingMethods ?? []) {
+						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, ov.Override.DeclaringType))
+							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
+					}
 				}
 			}
 		}
@@ -842,11 +824,8 @@ namespace Mono.Linker.Steps
 		void ProcessDefaultImplementation (TypeDefinition typeWithDefaultImplementedInterfaceMethod, InterfaceImplementation implementation, MethodDefinition implementationMethod)
 		{
 			if ((!implementationMethod.IsStatic && !Annotations.IsInstantiated (typeWithDefaultImplementedInterfaceMethod))
-				|| implementationMethod.IsStatic && !Annotations.IsRelevantToVariantCasting(typeWithDefaultImplementedInterfaceMethod))
+				|| implementationMethod.IsStatic && !Annotations.IsRelevantToVariantCasting (typeWithDefaultImplementedInterfaceMethod))
 				return;
-
-			// var origin = ScopeStack.CurrentScope.Origin;
-			// MarkMethod(implementationMethod, new DependencyInfo(DependencyKind.Unspecified, implementation), in origin);
 
 			MarkInterfaceImplementation (implementation);
 		}
