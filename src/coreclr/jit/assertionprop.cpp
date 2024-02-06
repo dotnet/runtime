@@ -4590,14 +4590,16 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 {
     assert(tree->OperIsIndir());
 
-    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
-    bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
-    if (didNonNullProp || didNonHeapProp)
+    const bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
+    GenTree*   newTree        = optExactTypeAssertionProp_Ind(assertions, tree);
+    if (newTree != nullptr)
     {
-        return optAssertionProp_Update(tree, tree, stmt);
+        // Don't run optNonHeapAssertionProp_Ind after it since it no longer has a GT_IND node.
+        return optAssertionProp_Update(newTree, tree, stmt);
     }
 
-    return nullptr;
+    const bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
+    return (didNonNullProp | didNonHeapProp) ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -4897,6 +4899,58 @@ bool Compiler::optAssertionIsNonHeap(GenTree*         op,
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// optExactTypeAssertionProp_Ind: Given IND(obj) look for an assertion to get the exact type of obj
+//    and return a node that represents that type handle.
+//
+// Arguments:
+//    assertions - Active assertions
+//    indir      - The indirection
+//
+// Return Value:
+//    A node representing the type handle if an exact type assertion is found, nullptr otherwise.
+//
+GenTree* Compiler::optExactTypeAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree)
+{
+    if (optLocalAssertionProp || !tree->OperIs(GT_IND) || !tree->TypeIs(TYP_I_IMPL) ||
+        !tree->AsIndir()->Addr()->TypeIs(TYP_REF) || BitVecOps::MayBeUninit(assertions) ||
+        BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return nullptr;
+    }
+
+    const ValueNum  addrVN = vnStore->VNConservativeNormalValue(tree->AsIndir()->Addr()->gtVNPair);
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+        if ((curAssertion->op1.kind == O1K_EXACT_TYPE) && (curAssertion->op1.vn == addrVN) &&
+            (curAssertion->assertionKind == OAK_EQUAL))
+        {
+            const CORINFO_CLASS_HANDLE objType = (CORINFO_CLASS_HANDLE)curAssertion->op2.lconVal;
+            assert(curAssertion->op2.HasIconFlag());
+            assert(objType != NO_CLASS_HANDLE);
+
+            if ((info.compCompHnd->getClassAttribs(objType) & CORINFO_FLG_SHAREDINST) == 0)
+            {
+                GenTree* newTree = gtNewIconEmbClsHndNode(objType);
+                fgUpdateConstTreeValueNumber(newTree);
+
+                GenTree* sideEffects = nullptr;
+                gtExtractSideEffList(tree, &sideEffects, GTF_SIDE_EFFECT);
+                if (sideEffects != nullptr)
+                {
+                    newTree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, newTree);
+                    fgSetTreeSeq(newTree);
+                }
+                return newTree;
+            }
+        }
+    }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -6333,7 +6387,10 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
     }
     else if (tree->OperIsIndir())
     {
-        newTree = optAssertionProp_Ind(empty, tree, stmt);
+        // Do NonHeap propagation along the way since it's cheap
+        const bool didNonNullProp = optNonNullAssertionProp_Ind(empty, tree);
+        const bool didNonHeapProp = optNonHeapAssertionProp_Ind(empty, tree);
+        newTree                   = (didNonNullProp || didNonHeapProp) ? tree : nullptr;
     }
     if (newTree)
     {
