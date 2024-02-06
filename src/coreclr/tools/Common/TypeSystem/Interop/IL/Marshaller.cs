@@ -1085,6 +1085,8 @@ namespace Internal.TypeSystem.Interop
                     // if neither sizeConst or sizeParamIndex are specified, default to 1
                     codeStream.EmitLdc(1);
                 }
+
+                codeStream.Emit(ILOpcode.conv_i);
             }
         }
 
