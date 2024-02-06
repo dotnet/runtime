@@ -975,6 +975,8 @@ endif()
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
 
+add_subdirectory(${CLR_SRC_NATIVE_DIR}/netintrinsics netintrinsics)
+
 if(NOT DISABLE_LIBS)
   set(INSTALL_MONO_API 1)
 endif()

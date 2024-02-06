@@ -7,6 +7,7 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-math.h>
 #include <math.h>
+#include <netintrinsics.h>
 
 #ifndef DISABLE_JIT
 
@@ -1864,13 +1865,13 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					result = fabs (source);
 					break;
 				case OP_ACOS:
-					result = acos (source);
+					result = netintrinsics_acos (source);
 					break;
 				case OP_ACOSH:
 					result = acosh (source);
 					break;
 				case OP_ASIN:
-					result = asin (source);
+					result = netintrinsics_asin (source);
 					break;
 				case OP_ASINH:
 					result= asinh (source);
