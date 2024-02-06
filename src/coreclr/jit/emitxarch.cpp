@@ -6594,8 +6594,7 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
         id->idSetEvexbContext(instOptions);
     }
 
-    // UNATIVE_OFFSET sz = emitInsSizeRR(id);
-    UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
+    UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
 
     dispIns(id);
