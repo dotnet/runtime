@@ -728,10 +728,9 @@ namespace Mono.Linker.Steps
 		bool ShouldMarkOverrideForBase (OverrideInformation overrideInformation)
 		{
 			Debug.Assert (Annotations.IsMarked (overrideInformation.Base) || IgnoreScope (overrideInformation.Base.DeclaringType.Scope));
-			if (overrideInformation.IsOverrideOfInterfaceMember)
-				return false;
-
 			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
+				return false;
+			if (overrideInformation.IsOverrideOfInterfaceMember)
 				return false;
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
@@ -3766,7 +3765,8 @@ namespace Mono.Linker.Steps
 					ScopeStack.UpdateCurrentScopeInstructionOffset (instruction.Offset);
 					if (markForReflectionAccess) {
 						MarkMethodVisibleToReflection (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
-					} else {
+					}
+					else {
 						MarkMethod (methodReference, new DependencyInfo (dependencyKind, method), ScopeStack.CurrentScope.Origin);
 					}
 					break;
