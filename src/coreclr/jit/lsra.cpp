@@ -8875,6 +8875,16 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
             terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
         }
+        if (op2->OperIs(GT_COPY))
+        {
+            GenTree* srcOp2 = op2->gtGetOp1();
+            consumedRegs |= genRegMask(srcOp2->GetRegNum());
+        }
+        else if (op2->IsLocal())
+        {
+            GenTreeLclVarCommon* lcl = op2->AsLclVarCommon();
+            terminatorNodeLclVarDsc2 = &compiler->lvaTable[lcl->GetLclNum()];
+        }
     }
     // Next, if this blocks ends with a JCMP/JTEST/JTRUE, we have to make sure:
     // 1. Not to copy into the register that JCMP/JTEST/JTRUE uses
