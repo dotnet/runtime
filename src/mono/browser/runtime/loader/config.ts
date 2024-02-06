@@ -192,6 +192,10 @@ export function normalizeConfig() {
         // ActiveIssue https://github.com/dotnet/runtime/issues/75602
         config.pthreadPoolSize = 7;
     }
+    if (WasmEnableThreads && config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] === undefined) {
+        config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] = "5000";
+    }
+
 
     // Default values (when WasmDebugLevel is not set)
     // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
@@ -200,9 +204,10 @@ export function normalizeConfig() {
     // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
     config.debugLevel = hasDebuggingEnabled(config) ? config.debugLevel : 0;
 
-    if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
+    if (BuildConfiguration === "Debug" && config.diagnosticTracing === undefined) {
         config.diagnosticTracing = true;
     }
+
     if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;

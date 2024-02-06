@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
+import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -26,7 +26,7 @@ import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
-import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
+import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads/worker";
 import { mono_wasm_main_thread_ptr, mono_wasm_pthread_ptr } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8 } from "./memory";
@@ -383,8 +383,11 @@ export function postRunWorker() {
 async function mono_wasm_init_threads() {
     if (!WasmEnableThreads) return;
 
-    const threadName = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
-    loaderHelpers.mono_set_thread_name(threadName);
+    const threadPrefix = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
+    monoThreadInfo.threadPrefix = threadPrefix;
+    monoThreadInfo.threadName = "UI Thread";
+    monoThreadInfo.isUI = true;
+    loaderHelpers.set_thread_prefix(threadPrefix);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
 }
@@ -513,10 +516,10 @@ async function instantiate_wasm_module(
 async function ensureUsedWasmFeatures() {
     runtimeHelpers.featureWasmSimd = await loaderHelpers.simd();
     runtimeHelpers.featureWasmEh = await loaderHelpers.exceptions();
-    if (linkerWasmEnableSIMD) {
+    if (runtimeHelpers.emscriptenBuildOptions.linkerWasmEnableSIMD) {
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
-    if (linkerWasmEnableEH) {
+    if (runtimeHelpers.emscriptenBuildOptions.linkerWasmEnableEH) {
         mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
 }

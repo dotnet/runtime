@@ -15,7 +15,7 @@ const RUN_AOT_COMPILATION = process.env.RUN_AOT_COMPILATION === "1";
 var methodIndexByName = undefined;
 var gitHash = undefined;
 
-function setup(linkerSetup) {
+function setup(emscriptenBuildOptions) {
     // USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
     #if USE_PTHREADS
     const modulePThread = PThread;
@@ -43,8 +43,7 @@ function setup(linkerSetup) {
         updateMemoryViews,
         getMemory: () => { return wasmMemory; },
         getWasmIndirectFunctionTable: () => { return wasmTable; },
-        ...linkerSetup
-    });
+    }, emscriptenBuildOptions);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
@@ -88,7 +87,8 @@ function injectDependencies() {
         `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
         `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
         `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
-        `gitHash: "${gitHash}", ` +
+        `linkerUseThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
+        `moduleGitHash: "${gitHash}", ` +
         `});`;
 
     autoAddDeps(DotnetSupportLib, "$DOTNET");
@@ -96,4 +96,4 @@ function injectDependencies() {
 }
 
 
-// var methodIndexByName wil be appended below by the MSBuild in browser.proj
+// var methodIndexByName wil be appended below by the MSBuild in browser.proj via exports-linker.ts

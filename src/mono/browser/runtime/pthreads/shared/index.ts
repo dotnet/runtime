@@ -63,16 +63,28 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function update_thread_info(): void {
-    loaderHelpers.mono_set_thread_name(monoThreadInfo.threadName!);
+    const threadType = monoThreadInfo.isUI ? "main"
+        : !monoThreadInfo.isAttached ? "emsc"
+            : monoThreadInfo.isTimer ? "timr"
+                : monoThreadInfo.isLongRunning ? "long"
+                    : monoThreadInfo.isThreadPoolGate ? "gate"
+                        : monoThreadInfo.isDebugger ? "dbgr"
+                            : monoThreadInfo.isThreadPoolWorker ? "pool"
+                                : monoThreadInfo.isExternalEventLoop ? "jsww"
+                                    : monoThreadInfo.isBackground ? "back"
+                                        : "norm";
+    monoThreadInfo.threadPrefix = `0x${monoThreadInfo.pthreadId.toString(16).padStart(8, "0")}-${threadType}`;
+
+    loaderHelpers.set_thread_prefix(monoThreadInfo.threadPrefix!);
     if (!loaderHelpers.config.forwardConsoleLogsToWS) {
-        mono_set_thread_name(monoThreadInfo.threadName!);
+        mono_set_thread_name(monoThreadInfo.threadPrefix!);
     }
 
     (globalThis as any).monoThreadInfo = monoThreadInfo;
     if (WasmEnableThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         monoThreadInfo.updateCount++;
         try {
-            (globalThis as any).monoThreadInfoFn = new Function(`//# sourceURL=https://${monoThreadInfo.updateCount}WorkerInfo${monoThreadInfo.isAttached ? monoThreadInfo.threadName : ""}/\r\nconsole.log("${JSON.stringify(monoThreadInfo)}");`);
+            (globalThis as any).monoThreadInfoFn = new Function(`//# sourceURL=https://${monoThreadInfo.updateCount}WorkerInfo${monoThreadInfo.isAttached ? monoThreadInfo.threadPrefix : ""}/\r\nconsole.log("${JSON.stringify(monoThreadInfo)}");`);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;
