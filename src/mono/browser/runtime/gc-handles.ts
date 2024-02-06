@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
@@ -167,7 +167,7 @@ export function assert_not_disposed(result: any): GCHandle {
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
-    if (loaderHelpers.is_exited()) {
+    if (!loaderHelpers.is_runtime_running()) {
         // We're shutting down, so don't bother doing anything else.
         return;
     }
@@ -187,7 +187,7 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
 }
 
 export function assertNoProxies(): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     mono_assert(_js_owned_object_table.size === 0, "There should be no proxies on this thread.");
     mono_assert(_cs_owned_objects_by_js_handle.length === 1, "There should be no proxies on this thread.");
     mono_assert(_cs_owned_objects_by_jsv_handle.length === 1, "There should be no proxies on this thread.");

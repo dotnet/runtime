@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type {
     MonoAssembly, MonoClass,
@@ -15,7 +15,7 @@ import { mono_assert } from "./globals";
 
 type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
-const threading_cwraps: SigLine[] = MonoWasmThreads ? [
+const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     // MONO.diagnostics
     [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
     [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],

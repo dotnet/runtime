@@ -463,11 +463,14 @@ bool Compiler::optExtractInitTestIncr(
         // If we are rebuilding the loops, we would already have the pre-header block introduced
         // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
         // little harder for the possible loop initialization statement.
-        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(header) && (initBlock->countOfInEdges() == 1) &&
-            !initBlock->IsFirst() && initBlock->Prev()->bbFallsThrough())
+        if (initBlock->KindIs(BBJ_ALWAYS) && initBlock->TargetIs(header))
         {
-            initBlock = initBlock->Prev();
-            phdrStmt  = initBlock->firstStmt();
+            BasicBlock* uniquePred = initBlock->GetUniquePred(this);
+            if (uniquePred != nullptr)
+            {
+                initBlock = uniquePred;
+                phdrStmt  = initBlock->firstStmt();
+            }
         }
     }
 
@@ -1724,7 +1727,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
             JITDUMP("Redirecting " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", entering->bbNum,
                     loop->GetHeader()->bbNum, entering->bbNum, target->bbNum);
             assert(!entering->KindIs(BBJ_COND)); // Ensured by canonicalization
-            fgReplaceJumpTarget(entering, target, loop->GetHeader());
+            fgReplaceJumpTarget(entering, loop->GetHeader(), target);
         }
     }
 }
@@ -2152,11 +2155,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             GenTree* clonedCompareTree   = clonedTree->AsOp()->gtOp1;
             assert(originalCompareTree->OperIsCompare());
             assert(clonedCompareTree->OperIsCompare());
-
-            // Flag compare and cloned copy so later we know this loop
-            // has a proper zero trip test.
-            originalCompareTree->gtFlags |= GTF_RELOP_ZTT;
-            clonedCompareTree->gtFlags |= GTF_RELOP_ZTT;
 
             // The original test branches to remain in the loop.  The
             // new cloned test will branch to avoid the loop.  So the
@@ -2671,12 +2669,7 @@ void Compiler::optFindLoops()
 {
     m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-    if (optCompactLoops())
-    {
-        fgInvalidateDfsTree();
-        m_dfsTree = fgComputeDfs();
-        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-    }
+    optCompactLoops();
 
     if (optCanonicalizeLoops())
     {
@@ -2727,18 +2720,12 @@ bool Compiler::optCanonicalizeLoops()
 //-----------------------------------------------------------------------------
 // optCompactLoops: Compact loops to make their loop blocks lexical if possible.
 //
-// Returns:
-//   True if the flow graph was changed.
-//
-bool Compiler::optCompactLoops()
+void Compiler::optCompactLoops()
 {
-    bool changed = false;
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
-        changed |= optCompactLoop(loop);
+        optCompactLoop(loop);
     }
-
-    return changed;
 }
 
 //-----------------------------------------------------------------------------
@@ -2747,18 +2734,14 @@ bool Compiler::optCompactLoops()
 // Parameters:
 //   loop - The loop
 //
-// Returns:
-//   True if the flow graph was changed.
-//
-bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
+void Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
 {
     BasicBlock* insertionPoint = nullptr;
 
     BasicBlock* top           = loop->GetLexicallyTopMostBlock();
     unsigned    numLoopBlocks = loop->NumLoopBlocks();
 
-    BasicBlock* cur              = top;
-    bool        changedFlowGraph = false;
+    BasicBlock* cur = top;
     while (numLoopBlocks > 0)
     {
         if (loop->ContainsBlock(cur))
@@ -2813,19 +2796,11 @@ bool Compiler::optCompactLoop(FlowGraphNaturalLoop* loop)
         fgMoveBlocksAfter(cur, lastNonLoopBlock, insertionPoint);
         ehUpdateLastBlocks(insertionPoint, lastNonLoopBlock);
 
-        // Apply any adjustments needed for fallthrough at the boundaries of the moved region.
-        changedFlowGraph |= optLoopCompactionFixupFallThrough(insertionPoint, cur);
-        changedFlowGraph |= optLoopCompactionFixupFallThrough(lastNonLoopBlock, moveBefore);
-        // Also apply any adjustments needed where the blocks were snipped out of the loop.
-        changedFlowGraph |= optLoopCompactionFixupFallThrough(previous, nextLoopBlock);
-
         // Update insertionPoint for the next insertion.
         insertionPoint = lastNonLoopBlock;
 
         cur = nextLoopBlock;
     }
-
-    return changedFlowGraph;
 }
 
 //-----------------------------------------------------------------------------
@@ -2928,95 +2903,6 @@ BasicBlock* Compiler::optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNatural
 }
 
 //-----------------------------------------------------------------------------
-// optLoopCompactionFixupFallThrough: Fix up fallthrough introduced due to
-// moving a range of blocks.
-//
-// Parameters:
-//   block   - Block that may have fallthrough
-//   newNext - The new block that was the fallthrough block
-//
-// Returns:
-//   True if the flow graph was changed by this function.
-//
-bool Compiler::optLoopCompactionFixupFallThrough(BasicBlock* block, BasicBlock* newNext)
-{
-    assert(block->NextIs(newNext));
-    bool changed = false;
-
-    if (block->KindIs(BBJ_COND) && block->TrueTargetIs(newNext))
-    {
-        // Reverse the jump condition
-        GenTree* test = block->lastNode();
-        noway_assert(test->OperIsConditionalJump());
-
-        if (test->OperGet() == GT_JTRUE)
-        {
-            GenTree* cond = gtReverseCond(test->AsOp()->gtOp1);
-            assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.
-            test->AsOp()->gtOp1 = cond;
-        }
-        else
-        {
-            gtReverseCond(test);
-        }
-
-        // Redirect the Conditional JUMP to go to `oldNext`
-        block->SetTrueTarget(block->GetFalseTarget());
-        block->SetFalseTarget(newNext);
-        changed = true;
-    }
-    else if (block->KindIs(BBJ_ALWAYS) && block->TargetIs(newNext))
-    {
-        // If block is newNext's only predecessor, move the IR from block to newNext,
-        // but keep the now-empty block around.
-        //
-        // We move the IR because loop recognition has a very limited search capability and
-        // won't walk from one block's statements to another, even if the blocks form
-        // a linear chain. So this IR move enhances counted loop recognition.
-        //
-        // The logic here is essentially echoing fgCompactBlocks... but we don't call
-        // that here because we don't want to delete block and do the necessary updates
-        // to all the other data in flight, and we'd also prefer that newNext be the
-        // survivor, not block.
-        //
-        if ((newNext->bbRefs == 1) && fgCanCompactBlocks(block, newNext))
-        {
-            JITDUMP("Moving stmts from " FMT_BB " to " FMT_BB "\n", block->bbNum, newNext->bbNum);
-            Statement* stmtList1 = block->firstStmt();
-            Statement* stmtList2 = newNext->firstStmt();
-
-            // Is there anything to move?
-            //
-            if (stmtList1 != nullptr)
-            {
-                // Append newNext stmts to block's stmts.
-                //
-                if (stmtList2 != nullptr)
-                {
-                    Statement* stmtLast1 = block->lastStmt();
-                    Statement* stmtLast2 = newNext->lastStmt();
-
-                    stmtLast1->SetNextStmt(stmtList2);
-                    stmtList2->SetPrevStmt(stmtLast1);
-                    stmtList1->SetPrevStmt(stmtLast2);
-                }
-
-                // Move block's stmts to newNext
-                //
-                newNext->bbStmtList = stmtList1;
-                block->bbStmtList   = nullptr;
-
-                // Update newNext's block flags
-                //
-                newNext->CopyFlags(block, BBF_COMPACT_UPD);
-            }
-        }
-    }
-
-    return changed;
-}
-
-//-----------------------------------------------------------------------------
 // optCreatePreheader: Create (or find) a preheader for a natural loop.
 //
 // Parameters:
@@ -3081,7 +2967,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         JITDUMP("Entry edge " FMT_BB " -> " FMT_BB " becomes " FMT_BB " -> " FMT_BB "\n", enterBlock->bbNum,
                 header->bbNum, enterBlock->bbNum, preheader->bbNum);
 
-        fgReplaceJumpTarget(enterBlock, preheader, header);
+        fgReplaceJumpTarget(enterBlock, header, preheader);
     }
 
     optSetPreheaderWeight(loop, preheader);
@@ -3099,94 +2985,122 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 //
 void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader)
 {
-    if (loop->EntryEdges().size() == 1)
+    if (loop->EntryEdges().size() == 0)
     {
-        // TODO-Quirk: If we have just one entry block then get the weight from there.
-        // This doesn't really make sense for BBJ_COND, but it's what old loop
-        // finding used to do.
+        return;
+    }
 
-        BasicBlock* prevEntering = loop->EntryEdge(0)->getSourceBlock();
-        preheader->inheritWeight(prevEntering);
-        preheader->RemoveFlags(BBF_PROF_WEIGHT);
+    // The preheader is only considered to have profile weights when all the
+    // following conditions are true:
+    // - The loop header has a profile weight
+    // - All entering blocks have a profile weight
+    // - The successors of all entering blocks have a profile weight (so that
+    //   we can trust the computed taken/not taken ratio)
+    //
+    bool     hasProfWeight   = fgIsUsingProfileWeights();
+    weight_t preheaderWeight = BB_ZERO_WEIGHT;
 
-        if (!fgIsUsingProfileWeights() || !prevEntering->KindIs(BBJ_COND))
+    for (FlowEdge* entryEdge : loop->EntryEdges())
+    {
+        BasicBlock* prevEntering = entryEdge->getSourceBlock();
+
+        hasProfWeight &= prevEntering->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY;
+
+        if (!fgIsUsingProfileWeights() || !prevEntering->HasFlag(BBF_PROF_WEIGHT) ||
+            !loop->GetHeader()->HasFlag(BBF_PROF_WEIGHT) || prevEntering->KindIs(BBJ_ALWAYS))
         {
-            return;
+            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
+            continue;
         }
 
-        if ((prevEntering->bbWeight == BB_ZERO_WEIGHT) || (loop->GetHeader()->bbWeight == BB_ZERO_WEIGHT))
-        {
-            preheader->bbWeight = BB_ZERO_WEIGHT;
-            preheader->SetFlags(BBF_RUN_RARELY);
-            return;
-        }
+        bool succsHaveProfileWeights = true;
+        bool useEdgeWeights          = fgHaveValidEdgeWeights;
 
-        // Allow for either the fall-through or branch to target entry.
-        BasicBlock* skipLoopBlock;
-        if (prevEntering->FalseTargetIs(preheader))
-        {
-            skipLoopBlock = prevEntering->GetTrueTarget();
-        }
-        else
-        {
-            skipLoopBlock = prevEntering->GetFalseTarget();
-        }
-        assert(skipLoopBlock != loop->GetHeader());
-
-        bool allValidProfileWeights = (prevEntering->hasProfileWeight() && skipLoopBlock->hasProfileWeight() &&
-                                       loop->GetHeader()->hasProfileWeight());
-
-        if (!allValidProfileWeights)
-        {
-            return;
-        }
-
-        weight_t loopEnteredCount = 0;
-        weight_t loopSkippedCount = 0;
-        bool     useEdgeWeights   = fgHaveValidEdgeWeights;
+        weight_t loopEnterCount = 0;
+        weight_t loopSkipCount  = 0;
 
         if (useEdgeWeights)
         {
-            const FlowEdge* edgeToEntry    = fgGetPredForBlock(preheader, prevEntering);
-            const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, prevEntering);
-            assert(edgeToEntry != nullptr);
-            assert(edgeToSkipLoop != nullptr);
+            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
+                FlowEdge* edge       = fgGetPredForBlock(succ, prevEntering);
+                weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
 
-            loopEnteredCount = (edgeToEntry->edgeWeightMin() + edgeToEntry->edgeWeightMax()) / 2.0;
-            loopSkippedCount = (edgeToSkipLoop->edgeWeightMin() + edgeToSkipLoop->edgeWeightMax()) / 2.0;
+                if (succ == preheader)
+                {
+                    loopEnterCount += edgeWeight;
+                }
+                else
+                {
+                    succsHaveProfileWeights &= succ->hasProfileWeight();
+                    loopSkipCount += edgeWeight;
+                }
+                return BasicBlockVisit::Continue;
+            });
 
             // Watch out for cases where edge weights were not properly maintained
             // so that it appears no profile flow enters the loop.
             //
-            useEdgeWeights = !fgProfileWeightsConsistent(loopEnteredCount, BB_ZERO_WEIGHT);
+            useEdgeWeights = !fgProfileWeightsConsistent(loopEnterCount, BB_ZERO_WEIGHT);
         }
 
         if (!useEdgeWeights)
         {
-            loopEnteredCount = loop->GetHeader()->bbWeight;
-            loopSkippedCount = skipLoopBlock->bbWeight;
+            loopEnterCount = 0;
+            loopSkipCount  = 0;
+
+            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
+                if (succ == preheader)
+                {
+                    loopEnterCount += succ->bbWeight;
+                }
+                else
+                {
+                    succsHaveProfileWeights &= succ->hasProfileWeight();
+                    loopSkipCount += succ->bbWeight;
+                }
+
+                return BasicBlockVisit::Continue;
+            });
         }
 
-        weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
+        if (!succsHaveProfileWeights)
+        {
+            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
+            hasProfWeight = false;
+            continue;
+        }
+
+        weight_t loopTakenRatio = loopEnterCount / (loopEnterCount + loopSkipCount);
 
         JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
-                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
-                loopSkippedCount, loopTakenRatio);
+                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnterCount,
+                loopSkipCount, loopTakenRatio);
 
-        // Calculate a good approximation of the preheader's block weight
-        weight_t preheaderWeight = (prevEntering->bbWeight * loopTakenRatio);
-        preheader->setBBProfileWeight(preheaderWeight);
-        assert(!preheader->isRunRarely());
+        weight_t enterContribution = prevEntering->bbWeight * loopTakenRatio;
+        preheaderWeight += enterContribution;
 
-        // Normalize edge weights
+        // Normalize prevEntering -> preheader edge
         FlowEdge* const edgeToPreheader = fgGetPredForBlock(preheader, prevEntering);
         assert(edgeToPreheader != nullptr);
-        edgeToPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, preheader);
+        edgeToPreheader->setEdgeWeights(enterContribution, enterContribution, preheader);
+    }
 
-        FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
-        edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
+    preheader->bbWeight = preheaderWeight;
+    if (hasProfWeight)
+    {
+        preheader->SetFlags(BBF_PROF_WEIGHT);
+    }
+
+    if (preheaderWeight == BB_ZERO_WEIGHT)
+    {
+        preheader->SetFlags(BBF_RUN_RARELY);
         return;
     }
+
+    // Normalize preheader -> header weight
+    FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
+    assert(edgeFromPreheader != nullptr);
+    edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
 }
 
 /*****************************************************************************

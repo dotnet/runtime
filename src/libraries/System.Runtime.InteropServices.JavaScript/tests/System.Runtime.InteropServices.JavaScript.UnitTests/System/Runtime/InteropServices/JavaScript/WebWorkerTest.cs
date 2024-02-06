@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
 using Xunit;
@@ -74,6 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             ManualResetEventSlim blocker = new ManualResetEventSlim(false);
             TaskCompletionSource never = new TaskCompletionSource();
+            TaskCompletionSource canceled = new TaskCompletionSource();
             SynchronizationContext capturedSynchronizationContext = null;
             TaskCompletionSource jswReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource sendReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -83,8 +85,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 capturedSynchronizationContext = SynchronizationContext.Current;
                 jswReady.SetResult();
 
-                // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
-                blocker.Wait();
+                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
+                try
+                {
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
+                    
+                    // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
+                    blocker.Wait();
+                }
+                finally
+                {
+                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
+                }
 
                 return never.Task;
             }, cts.Token);
@@ -95,38 +107,59 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var shouldNotHitSend = false;
             var shouldNotHitPost = false;
             var hitAfterPost = false;
+            var hitAfterSend = false;
 
             var canceledSend = Task.Run(() =>
             {
-                // this will be blocked until blocker.Set()
                 sendReady.SetResult();
-                capturedSynchronizationContext.Send(_ =>
+                // this will be blocked until blocker.Set()
+                try
                 {
-                    // then it should get canceled and not executed
-                    shouldNotHitSend = true;
-                }, null);
-                return Task.CompletedTask;
+                    capturedSynchronizationContext.Send(_ =>
+                    {
+                        // then it should get canceled and not executed
+                        shouldNotHitSend = true;
+                    }, null);
+                }
+                catch (Exception ex)
+                {
+                    return Task.FromException(ex);
+                }
+                hitAfterSend = true;
+                return Task.FromException(new Exception("Should be unreachable"));
             });
 
             var canceledPost = Task.Run(() =>
             {
-                postReady.SetResult();
-                capturedSynchronizationContext.Post(_ =>
+                try
                 {
-                    // then it should get canceled and not executed
-                    shouldNotHitPost = true;
-                }, null);
+                    capturedSynchronizationContext.Post(_ =>
+                    {
+                        // then it should get canceled and not executed
+                        shouldNotHitPost = true;
+                    }, null);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Unexpected exception " + ex);
+                    postReady.SetException(ex);
+                    return Task.FromException(ex);
+                }
                 hitAfterPost = true;
+                postReady.SetResult();
                 return Task.CompletedTask;
             });
 
             // make sure that jobs got the chance to enqueue
-            await sendReady.Task;
             await postReady.Task;
-            await Task.Delay(100);
+            await sendReady.Task;
+            await Task.Delay(200); // make sure that 
 
             // this could should be delivered immediately
             cts.Cancel();
+
+            // now we release helpers to use capturedSynchronizationContext
+            canceled.SetResult();
 
             // this will unblock the current pending work item
             blocker.Set();
@@ -137,6 +170,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.False(shouldNotHitSend);
             Assert.False(shouldNotHitPost);
             Assert.True(hitAfterPost);
+            Assert.False(hitAfterSend);
         }
 
         [Fact]
@@ -293,6 +327,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await executor.Execute(() =>
             {
                 Console.WriteLine("C# Hello from ManagedThreadId: " + Environment.CurrentManagedThreadId);
+                Console.Clear();
                 return Task.CompletedTask;
             }, cts.Token);
         }
@@ -408,6 +443,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Task.Delay(10, cts.Token).ConfigureAwait(true);
 
                 executor.AssertAwaitCapturedContext();
+            }, cts.Token);
+        }
+
+        [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
+        public async Task WaitAssertsOnJSInteropThreads(Executor executor, NamedCall method)
+        {
+            var cts = CreateTestCaseTimeoutSource();
+            await executor.Execute(Task () =>
+            {
+                Exception? exception = null;
+                try {
+                    method.Call(cts.Token);
+                } catch (Exception ex) {
+                    exception = ex;
+                }
+
+                executor.AssertBlockingWait(exception);
+
+                return Task.CompletedTask;
             }, cts.Token);
         }
 

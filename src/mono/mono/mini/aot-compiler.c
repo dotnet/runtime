@@ -3751,7 +3751,7 @@ static void
 encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
-	guint8 flags = 0;
+	guint32 flags = 0;
 	int i;
 
 	/* Similar to the metadata encoding */
@@ -3759,14 +3759,18 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 		flags |= 0x10;
 	if (sig->hasthis)
 		flags |= 0x20;
-	if (sig->explicit_this)
-		flags |= 0x40;
 	if (sig->pinvoke)
+		flags |= 0x40;
+	if (sig->explicit_this)
 		flags |= 0x80;
+	if (sig->ext_callconv)
+		flags |= 0x100;
 	flags |= (sig->call_convention & 0x0F);
 
-	*p = flags;
-	++p;
+	encode_value (flags, p, &p);
+	if (sig->ext_callconv)
+		encode_value (sig->ext_callconv, p, &p);
+
 	if (sig->generic_param_count)
 		encode_value (sig->generic_param_count, p, &p);
 	encode_value (sig->param_count, p, &p);
@@ -5529,7 +5533,7 @@ MONO_RESTORE_WARNING
 
 	if (acfg->aot_opts.export_symbols_outfile) {
 		char *export_symbols_out = g_string_free (export_symbols, FALSE);
-		FILE* export_symbols_outfile = fopen (acfg->aot_opts.export_symbols_outfile, "w");
+		FILE* export_symbols_outfile = g_fopen (acfg->aot_opts.export_symbols_outfile, "w");
 		if (!export_symbols_outfile) {
 			fprintf (stderr, "Unable to open specified export_symbols_outfile '%s' to append symbols '%s': %s\n", acfg->aot_opts.export_symbols_outfile, export_symbols_out, strerror (errno));
 			g_free (export_symbols_out);
@@ -9153,114 +9157,6 @@ add_token_info_hash (gpointer key, gpointer value, gpointer user_data)
 }
 
 static gboolean
-can_encode_class (MonoAotCompile *acfg, MonoClass *klass)
-{
-	if (m_class_get_type_token (klass))
-		return TRUE;
-	if ((m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_PTR) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR))
-		return TRUE;
-	if (m_class_get_rank (klass))
-		return can_encode_class (acfg, m_class_get_element_class (klass));
-	return FALSE;
-}
-
-static gboolean
-can_encode_method (MonoAotCompile *acfg, MonoMethod *method)
-{
-	if (method->wrapper_type) {
-		switch (method->wrapper_type) {
-		case MONO_WRAPPER_NONE:
-		case MONO_WRAPPER_STELEMREF:
-		case MONO_WRAPPER_ALLOC:
-		case MONO_WRAPPER_OTHER:
-		case MONO_WRAPPER_WRITE_BARRIER:
-		case MONO_WRAPPER_DELEGATE_INVOKE:
-		case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-		case MONO_WRAPPER_DELEGATE_END_INVOKE:
-		case MONO_WRAPPER_SYNCHRONIZED:
-		case MONO_WRAPPER_MANAGED_TO_NATIVE:
-			break;
-		case MONO_WRAPPER_MANAGED_TO_MANAGED:
-		case MONO_WRAPPER_NATIVE_TO_MANAGED:
-		case MONO_WRAPPER_CASTCLASS:
-		case MONO_WRAPPER_RUNTIME_INVOKE: {
-			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
-			if (info)
-				return TRUE;
-			else
-				return FALSE;
-			break;
-		}
-		default:
-			printf ("Skip: %s\n", mono_method_full_name (method, TRUE));
-			return FALSE;
-		}
-	} else {
-		if (!method->token) {
-			/* The method is part of a constructed type like Int[,].Set (). */
-			if (!g_hash_table_lookup (acfg->token_info_hash, method)) {
-				if (m_class_get_rank (method->klass))
-					return TRUE;
-				return FALSE;
-			}
-		}
-	}
-	return TRUE;
-}
-
-static gboolean
-can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
-{
-	switch (patch_info->type) {
-	case MONO_PATCH_INFO_METHOD:
-	case MONO_PATCH_INFO_METHOD_FTNDESC:
-	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
-	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
-		MonoMethod *method = patch_info->data.method;
-
-		return can_encode_method (acfg, method);
-	}
-	case MONO_PATCH_INFO_VTABLE:
-	case MONO_PATCH_INFO_CLASS:
-	case MONO_PATCH_INFO_IID:
-	case MONO_PATCH_INFO_ADJUSTED_IID:
-		if (!can_encode_class (acfg, patch_info->data.klass)) {
-			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
-			return FALSE;
-		}
-		break;
-	case MONO_PATCH_INFO_DELEGATE_INFO: {
-		if (!can_encode_class (acfg, patch_info->data.del_tramp->klass)) {
-			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
-			return FALSE;
-		}
-		break;
-	}
-	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
-		MonoJumpInfoRgctxEntry *entry = patch_info->data.rgctx_entry;
-
-		if (entry->in_mrgctx) {
-			if (!can_encode_method (acfg, entry->d.method))
-				return FALSE;
-		} else {
-			if (!can_encode_class (acfg, entry->d.klass))
-				return FALSE;
-		}
-		if (!can_encode_patch (acfg, entry->data))
-			return FALSE;
-		break;
-	}
-	default:
-		break;
-	}
-
-	return TRUE;
-}
-
-static gboolean
 is_concrete_type (MonoType *t)
 {
 	MonoClass *klass;
@@ -9693,23 +9589,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		acfg->stats.method_categories [METHOD_CAT_WRAPPER] ++;
 	else
 		acfg->stats.method_categories [METHOD_CAT_NORMAL] ++;
-
-	/*
-	 * Check for methods/klasses we can't encode.
-	 */
-	skip = FALSE;
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (!can_encode_patch (acfg, patch_info))
-			skip = TRUE;
-	}
-
-	if (skip) {
-		if (acfg->aot_opts.print_skipped_methods)
-			printf ("Skip (patches): %s\n", mono_method_get_full_name (method));
-		acfg->stats.ocount++;
-		mono_acfg_unlock (acfg);
-		return;
-	}
 
 	if (!cfg->compile_llvm)
 		acfg->has_jitted_code = TRUE;
@@ -10679,9 +10558,6 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 
 	ji->type = type;
 	ji->data.target = data;
-
-	if (!can_encode_patch (llvm_acfg, ji))
-		return NULL;
 
 	if (llvm_acfg->aot_opts.direct_icalls) {
 		if (type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
@@ -13446,11 +13322,11 @@ compile_asm (MonoAotCompile *acfg)
 	}
 #endif
 
-	if (0 != rename (tmp_outfile_name, outfile_name)) {
+	if (0 != g_rename (tmp_outfile_name, outfile_name)) {
 		if (G_FILE_ERROR_EXIST == g_file_error_from_errno (errno)) {
 			/* Since we are rebuilding the module we need to be able to replace any old copies. Remove old file and retry rename operation. */
-			unlink (outfile_name);
-			rename (tmp_outfile_name, outfile_name);
+			g_unlink (outfile_name);
+			g_rename (tmp_outfile_name, outfile_name);
 		}
 	}
 
@@ -13463,7 +13339,7 @@ compile_asm (MonoAotCompile *acfg)
 #endif
 
 	if (!acfg->aot_opts.save_temps)
-		unlink (objfile);
+		g_unlink (objfile);
 
 	g_free (tmp_outfile_name);
 	g_free (outfile_name);
@@ -13472,7 +13348,7 @@ compile_asm (MonoAotCompile *acfg)
 	if (acfg->aot_opts.save_temps)
 		aot_printf (acfg, "Retained input file.\n");
 	else
-		unlink (acfg->tmpfname);
+		g_unlink (acfg->tmpfname);
 
 	return 0;
 }
@@ -13520,7 +13396,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 	int version;
 	char magic [32];
 
-	infile = fopen (filename, "rb");
+	infile = g_fopen (filename, "rb");
 	if (!infile) {
 		fprintf (stderr, "Unable to open file '%s': %s.\n", filename, strerror (errno));
 		exit (1);
@@ -14538,7 +14414,7 @@ static void aot_dump (MonoAotCompile *acfg)
 	mono_json_writer_object_end (&writer);
 
 	dumpname = g_strdup_printf ("%s.json", g_path_get_basename (acfg->image->name));
-	dumpfile = fopen (dumpname, "w+");
+	dumpfile = g_fopen (dumpname, "w+");
 	g_free (dumpname);
 
 	fprintf (dumpfile, "%s", writer.text->str);
@@ -14947,7 +14823,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.logfile) {
-		acfg->logfile = fopen (acfg->aot_opts.logfile, "a+");
+		acfg->logfile = g_fopen (acfg->aot_opts.logfile, "a+");
 	}
 
 	if (acfg->aot_opts.trimming_eligible_methods_outfile && acfg->dedup_phase != DEDUP_COLLECT) {
@@ -14961,7 +14837,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	}
 
 	if (acfg->aot_opts.data_outfile) {
-		acfg->data_outfile = fopen (acfg->aot_opts.data_outfile, "w+");
+		acfg->data_outfile = g_fopen (acfg->aot_opts.data_outfile, "w+");
 		if (!acfg->data_outfile) {
 			aot_printerrf (acfg, "Unable to create file '%s': %s\n", acfg->aot_opts.data_outfile, strerror (errno));
 			return 1;
@@ -15124,7 +15000,7 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_EAGER_LOAD);
 
 	if (acfg->aot_opts.instances_logfile_path) {
-		acfg->instances_logfile = fopen (acfg->aot_opts.instances_logfile_path, "w");
+		acfg->instances_logfile = g_fopen (acfg->aot_opts.instances_logfile_path, "w");
 		if (!acfg->instances_logfile) {
 			aot_printerrf (acfg, "Unable to create logfile: '%s'.\n", acfg->aot_opts.instances_logfile_path);
 			return 1;
@@ -15387,7 +15263,7 @@ create_depfile (MonoAotCompile *acfg)
 	// FIXME: Support other configurations
 	g_assert (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only && acfg->aot_opts.llvm_outfile);
 
-	depfile = fopen (acfg->aot_opts.depfile, "w");
+	depfile = g_fopen (acfg->aot_opts.depfile, "w");
 	g_assert (depfile);
 
 	int ntargets = 1;
@@ -15459,14 +15335,14 @@ emit_aot_image (MonoAotCompile *acfg)
 			acfg->tmpfname = g_strdup_printf ("%s", acfg->aot_opts.outfile);
 		else
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
-		acfg->fp = fopen (acfg->tmpfname, "w+");
+		acfg->fp = g_fopen (acfg->tmpfname, "w+");
 	} else {
 		if (strcmp (acfg->aot_opts.temp_path, "") == 0) {
 			acfg->fp = fdopen (g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL), "w+");
 		} else {
 			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", (const char*)NULL);
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
-			acfg->fp = fopen (acfg->tmpfname, "w+");
+			acfg->fp = g_fopen (acfg->tmpfname, "w+");
 		}
 	}
 	if (acfg->fp == 0 && !acfg->aot_opts.llvm_only) {
