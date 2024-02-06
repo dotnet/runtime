@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -38,6 +37,7 @@ namespace System
 
         internal const ushort BiasedExponentMask = 0x7C00;
         internal const int BiasedExponentShift = 10;
+        internal const int BiasedExponentLength = 5;
         internal const byte ShiftedBiasedExponentMask = BiasedExponentMask >> BiasedExponentShift;
 
         internal const ushort TrailingSignificandMask = 0x03FF;
@@ -77,6 +77,8 @@ namespace System
 
         private const ushort PositiveOneBits = 0x3C00;
         private const ushort NegativeOneBits = 0xBC00;
+
+        private const ushort SmallestNormalBits = 0x0400;
 
         private const ushort EBits = 0x4170;
         private const ushort PiBits = 0x4248;
@@ -227,59 +229,81 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(Half value)
         {
-            return StripSign(value) < PositiveInfinityBits;
+            uint bits = value._value;
+            return (~bits & PositiveInfinityBits) != 0;
         }
 
         /// <summary>Determines whether the specified value is infinite.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(Half value)
         {
-            return StripSign(value) == PositiveInfinityBits;
+            uint bits = value._value;
+            return (bits & ~SignMask) == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNaN(Half value)
         {
-            return StripSign(value) > PositiveInfinityBits;
+            uint bits = value._value;
+            return (bits & ~SignMask) > PositiveInfinityBits;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaNOrZero(Half value)
+        {
+            uint bits = value._value;
+            return ((bits - 1) & ~SignMask) >= PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegative(Half value)
         {
             return (short)(value._value) < 0;
         }
 
         /// <summary>Determines whether the specified value is negative infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNegativeInfinity(Half value)
         {
             return value._value == NegativeInfinityBits;
         }
 
-        /// <summary>Determines whether the specified value is normal.</summary>
-        // This is probably not worth inlining, it has branches and should be rarely called
+        /// <summary>Determines whether the specified value is normal (finite, but not zero or subnormal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNormal(Half value)
         {
-            uint absValue = StripSign(value);
-            return (absValue < PositiveInfinityBits)    // is finite
-                && (absValue != 0)                      // is not zero
-                && ((absValue & BiasedExponentMask) != 0);    // is not subnormal (has a non-zero exponent)
+            uint bits = value._value;
+            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsPositiveInfinity(Half value)
         {
             return value._value == PositiveInfinityBits;
         }
 
-        /// <summary>Determines whether the specified value is subnormal.</summary>
-        // This is probably not worth inlining, it has branches and should be rarely called
+        /// <summary>Determines whether the specified value is subnormal (finite, but not zero or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSubnormal(Half value)
         {
-            uint absValue = StripSign(value);
-            return (absValue < PositiveInfinityBits)    // is finite
-                && (absValue != 0)                      // is not zero
-                && ((absValue & BiasedExponentMask) == 0);    // is subnormal (has a zero exponent)
+            uint bits = value._value;
+            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsZero(Half value)
+        {
+            uint bits = value._value;
+            return (bits & ~SignMask) == 0;
         }
 
         /// <summary>
@@ -395,17 +419,7 @@ namespace System
             // IEEE defines that positive and negative zero are equal, this gives us a quick equality check
             // for two values by or'ing the private bits together and stripping the sign. They are both zero,
             // and therefore equivalent, if the resulting value is still zero.
-            return (ushort)((left._value | right._value) & ~SignMask) == 0;
-        }
-
-        private static bool IsNaNOrZero(Half value)
-        {
-            return ((value._value - 1) & ~SignMask) >= PositiveInfinityBits;
-        }
-
-        private static uint StripSign(Half value)
-        {
-            return (ushort)(value._value & ~SignMask);
+            return ((left._value | right._value) & ~SignMask) == 0;
         }
 
         /// <summary>
@@ -475,12 +489,15 @@ namespace System
         /// </summary>
         public override int GetHashCode()
         {
+            uint bits = _value;
+
             if (IsNaNOrZero(this))
             {
-                // All NaNs should have the same hash code, as should both Zeros.
-                return _value & PositiveInfinityBits;
+                // Ensure that all NaNs and both zeros have the same hash code
+                bits &= PositiveInfinityBits;
             }
-            return _value;
+
+            return (int)bits;
         }
 
         /// <summary>
@@ -592,7 +609,7 @@ namespace System
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(long value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.IntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         public static explicit operator Half(nint value) => (Half)(float)value;
@@ -781,7 +798,7 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator Half(ulong value) => (Half)(float)value;
 
-        /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to its nearest representable half-precision floating-point value.</summary>
+        /// <summary>Explicitly converts a <see cref="nuint" /> value to its nearest representable half-precision floating-point value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable half-precision floating-point value.</returns>
         [CLSCompliant(false)]
@@ -1775,7 +1792,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<Half>.IsZero(Half value) => (value == Zero);
+        static bool INumberBase<Half>.IsZero(Half value) => IsZero(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);

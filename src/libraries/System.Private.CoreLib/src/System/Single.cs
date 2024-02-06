@@ -84,6 +84,7 @@ namespace System
 
         internal const uint BiasedExponentMask = 0x7F80_0000;
         internal const int BiasedExponentShift = 23;
+        internal const int BiasedExponentLength = 8;
         internal const byte ShiftedBiasedExponentMask = (byte)(BiasedExponentMask >> BiasedExponentShift);
 
         internal const uint TrailingSignificandMask = 0x007F_FFFF;
@@ -105,8 +106,9 @@ namespace System
         internal const int TrailingSignificandLength = 23;
         internal const int SignificandLength = TrailingSignificandLength + 1;
 
-        internal const int PositiveInfinityBits = 0x7F80_0000;
-        internal const int SmallestNormalBits = 0x0080_0000;
+        internal const uint PositiveInfinityBits = 0x7F80_0000;
+        internal const uint NegativeInfinityBits = 0xFF80_0000;
+        internal const uint SmallestNormalBits = 0x0080_0000;
 
         internal byte BiasedExponent
         {
@@ -153,12 +155,13 @@ namespace System
         }
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            return (bits & 0x7FFFFFFF) < 0x7F800000;
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return (~bits & PositiveInfinityBits) != 0;
         }
 
         /// <summary>Determines whether the specified value is infinite.</summary>
@@ -166,8 +169,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsInfinity(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            return (bits & 0x7FFFFFFF) == 0x7F800000;
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return (bits & ~SignMask) == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
@@ -181,6 +184,14 @@ namespace System
 #pragma warning disable CS1718
             return f != f;
 #pragma warning restore CS1718
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsNaNOrZero(float f)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return ((bits - 1) & ~SignMask) >= PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
@@ -199,14 +210,14 @@ namespace System
             return f == NegativeInfinity;
         }
 
-        /// <summary>Determines whether the specified value is normal.</summary>
+        /// <summary>Determines whether the specified value is normal (finite, but not zero or subnormal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not subnormal, and not zero.</remarks>
         [NonVersionable]
-        // This is probably not worth inlining, it has branches and should be rarely called
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsNormal(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            bits &= 0x7FFFFFFF;
-            return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -217,14 +228,21 @@ namespace System
             return f == PositiveInfinity;
         }
 
-        /// <summary>Determines whether the specified value is subnormal.</summary>
+        /// <summary>Determines whether the specified value is subnormal (finite, but not zero or normal).</summary>
+        /// <remarks>This effectively checks the value is not NaN, not infinite, not normal, and not zero.</remarks>
         [NonVersionable]
-        // This is probably not worth inlining, it has branches and should be rarely called
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool IsSubnormal(float f)
         {
-            int bits = BitConverter.SingleToInt32Bits(f);
-            bits &= 0x7FFFFFFF;
-            return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) == 0);
+            uint bits = BitConverter.SingleToUInt32Bits(f);
+            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsZero(float f)
+        {
+            return f == 0;
         }
 
         // Compares this object to another object, returning an integer that
@@ -322,16 +340,15 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            int bits = Unsafe.As<float, int>(ref Unsafe.AsRef(in m_value));
+            uint bits = BitConverter.SingleToUInt32Bits(m_value);
 
-            // Optimized check for IsNan() || IsZero()
-            if (((bits - 1) & 0x7FFFFFFF) >= 0x7F800000)
+            if (IsNaNOrZero(m_value))
             {
                 // Ensure that all NaNs and both zeros have the same hash code
-                bits &= 0x7F800000;
+                bits &= PositiveInfinityBits;
             }
 
-            return bits;
+            return (int)bits;
         }
 
         public override string ToString()
@@ -1100,7 +1117,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
-        static bool INumberBase<float>.IsZero(float value) => (value == 0);
+        static bool INumberBase<float>.IsZero(float value) => IsZero(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         [Intrinsic]
