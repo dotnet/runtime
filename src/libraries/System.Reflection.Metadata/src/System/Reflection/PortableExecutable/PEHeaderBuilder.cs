@@ -59,10 +59,10 @@ namespace System.Reflection.PortableExecutable
             Subsystem subsystem = Subsystem.WindowsCui,
             DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible | DllCharacteristics.NoSeh | DllCharacteristics.TerminalServerAware,
             Characteristics imageCharacteristics = Characteristics.Dll,
-            ulong sizeOfStackReserve = 0,
-            ulong sizeOfStackCommit = 0,
-            ulong sizeOfHeapReserve = 0,
-            ulong sizeOfHeapCommit = 0)
+            ulong sizeOfStackReserve = 0x00100000,
+            ulong sizeOfStackCommit = 0x1000,
+            ulong sizeOfHeapReserve = 0x00100000,
+            ulong sizeOfHeapCommit = 0x1000)
         {
             if (fileAlignment < 512 || fileAlignment > 64 * 1024 || BitArithmetic.CountBits(fileAlignment) != 1)
             {
@@ -89,10 +89,10 @@ namespace System.Reflection.PortableExecutable
             Subsystem = subsystem;
             DllCharacteristics = dllCharacteristics;
             ImageCharacteristics = imageCharacteristics;
-            SizeOfStackReserve = sizeOfStackReserve == 0 ? (Is32Bit ? 0x1000u : 0x4000u) : sizeOfStackReserve;
-            SizeOfStackCommit = sizeOfStackCommit == 0 ? (Is32Bit ? 0x1000000u : 0x4000000u) : sizeOfStackCommit;
-            SizeOfHeapReserve = sizeOfHeapReserve == 0 ? 0x100000u : sizeOfHeapReserve;
-            SizeOfHeapCommit = sizeOfHeapCommit == 0 ? (Is32Bit ? 0x1000u : 0x2000u) : sizeOfHeapCommit;
+            SizeOfStackReserve = sizeOfStackReserve;
+            SizeOfStackCommit = sizeOfStackCommit;
+            SizeOfHeapReserve = sizeOfHeapReserve;
+            SizeOfHeapCommit = sizeOfHeapCommit;
         }
 
         public static PEHeaderBuilder CreateExecutableHeader()
@@ -105,7 +105,7 @@ namespace System.Reflection.PortableExecutable
             return new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
         }
 
-        internal bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64 && Machine != Machine.Arm64 && Machine != (Machine)0x5064; /* TODO: update with RiscV64 */
+        internal bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64 && Machine != Machine.Arm64;
 
         internal int ComputeSizeOfPEHeaders(int sectionCount) =>
             PEBuilder.DosHeaderSize +

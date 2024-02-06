@@ -3293,9 +3293,6 @@ namespace System.Reflection.PortableExecutable
         Arm64 = (ushort)43620,
         LoongArch32 = (ushort)25138,
         LoongArch64 = (ushort)25188,
-        RiscV32 = (ushort)20530,
-        RiscV64 = (ushort)20580,
-        RiscV128 = (ushort)20776,
     }
     public partial class ManagedPEBuilder : System.Reflection.PortableExecutable.PEBuilder
     {
@@ -3400,7 +3397,7 @@ namespace System.Reflection.PortableExecutable
     }
     public sealed partial class PEHeaderBuilder
     {
-        public PEHeaderBuilder(System.Reflection.PortableExecutable.Machine machine = System.Reflection.PortableExecutable.Machine.Unknown, int sectionAlignment = 8192, int fileAlignment = 512, ulong imageBase = (ulong)4194304, byte majorLinkerVersion = (byte)48, byte minorLinkerVersion = (byte)0, ushort majorOperatingSystemVersion = (ushort)4, ushort minorOperatingSystemVersion = (ushort)0, ushort majorImageVersion = (ushort)0, ushort minorImageVersion = (ushort)0, ushort majorSubsystemVersion = (ushort)4, ushort minorSubsystemVersion = (ushort)0, System.Reflection.PortableExecutable.Subsystem subsystem = System.Reflection.PortableExecutable.Subsystem.WindowsCui, System.Reflection.PortableExecutable.DllCharacteristics dllCharacteristics = System.Reflection.PortableExecutable.DllCharacteristics.DynamicBase | System.Reflection.PortableExecutable.DllCharacteristics.NoSeh | System.Reflection.PortableExecutable.DllCharacteristics.NxCompatible | System.Reflection.PortableExecutable.DllCharacteristics.TerminalServerAware, System.Reflection.PortableExecutable.Characteristics imageCharacteristics = System.Reflection.PortableExecutable.Characteristics.Dll, ulong sizeOfStackReserve = (ulong)0, ulong sizeOfStackCommit = (ulong)0, ulong sizeOfHeapReserve = (ulong)0, ulong sizeOfHeapCommit = (ulong)0) { }
+        public PEHeaderBuilder(System.Reflection.PortableExecutable.Machine machine = System.Reflection.PortableExecutable.Machine.Unknown, int sectionAlignment = 8192, int fileAlignment = 512, ulong imageBase = (ulong)4194304, byte majorLinkerVersion = (byte)48, byte minorLinkerVersion = (byte)0, ushort majorOperatingSystemVersion = (ushort)4, ushort minorOperatingSystemVersion = (ushort)0, ushort majorImageVersion = (ushort)0, ushort minorImageVersion = (ushort)0, ushort majorSubsystemVersion = (ushort)4, ushort minorSubsystemVersion = (ushort)0, System.Reflection.PortableExecutable.Subsystem subsystem = System.Reflection.PortableExecutable.Subsystem.WindowsCui, System.Reflection.PortableExecutable.DllCharacteristics dllCharacteristics = System.Reflection.PortableExecutable.DllCharacteristics.DynamicBase | System.Reflection.PortableExecutable.DllCharacteristics.NoSeh | System.Reflection.PortableExecutable.DllCharacteristics.NxCompatible | System.Reflection.PortableExecutable.DllCharacteristics.TerminalServerAware, System.Reflection.PortableExecutable.Characteristics imageCharacteristics = System.Reflection.PortableExecutable.Characteristics.Dll, ulong sizeOfStackReserve = (ulong)1048576, ulong sizeOfStackCommit = (ulong)4096, ulong sizeOfHeapReserve = (ulong)1048576, ulong sizeOfHeapCommit = (ulong)4096) { }
         public System.Reflection.PortableExecutable.DllCharacteristics DllCharacteristics { get { throw null; } }
         public int FileAlignment { get { throw null; } }
         public ulong ImageBase { get { throw null; } }
