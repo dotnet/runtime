@@ -4538,20 +4538,21 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     GenTree* base; // This is the base of the address.
     GenTree* idx;  // This is the index.
 
-    if (codeGen->genCreateAddrMode(addr, false /*fold*/, &rev, &base, &idx, &mul, &cns))
-    {
+    unsigned naturalMul = 0;
+#ifdef TARGET_ARM64
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
+    naturalMul = genTypeSize(type);
+#endif
 
-#ifdef TARGET_ARMARCH
-        // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-        //
-        //   *(ulong*)(data + index * 8); - can be optimized
-        //   *(ulong*)(data + index * 7); - can not be optimized
-        //     *(int*)(data + index * 2); - can not be optimized
-        //
-        if ((mul > 0) && (genTypeSize(type) != mul))
-        {
-            return false;
-        }
+    if (codeGen->genCreateAddrMode(addr, false /*fold*/, naturalMul, &rev, &base, &idx, &mul, &cns))
+    {
+#ifdef TARGET_ARM64
+        assert((mul == 0) || (mul == 1) || (mul == naturalMul));
 #endif
 
         // We can form a complex addressing mode, so mark each of the interior
@@ -22639,6 +22640,197 @@ GenTree* Compiler::gtNewSimdCreateScalarUnsafeNode(var_types   type,
     return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseJitType, simdSize);
 }
 
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdCreateSequenceNode: Creates a new simd CreateSequence node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    op1                 - The starting value
+//    op2                 - The step value
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created CreateSequence node
+//
+GenTree* Compiler::gtNewSimdCreateSequenceNode(
+    var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    // This effectively doees: (Indices * op2) + Create(op1)
+    //
+    // When both op2 and op1 are constant we can fully fold this to a constant. Additionally,
+    // if only op2 is a constant we can simplify the computation by a lot. However, if only op1
+    // is constant than there isn't any real optimization we can do and we need the full computation.
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    GenTree* result    = nullptr;
+    bool     isPartial = true;
+
+    if (op2->OperIsConst())
+    {
+        GenTreeVecCon* vcon       = gtNewVconNode(type);
+        uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                uint8_t start = 0;
+
+                if (op1->OperIsConst())
+                {
+                    assert(op1->IsIntegralConst());
+                    start     = static_cast<uint8_t>(op1->AsIntConCommon()->IntegralValue());
+                    isPartial = false;
+                }
+
+                assert(op2->IsIntegralConst());
+                uint8_t step = static_cast<uint8_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdLength; index++)
+                {
+                    vcon->gtSimdVal.u8[index] = static_cast<uint8_t>((index * step) + start);
+                }
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                uint16_t start = 0;
+
+                if (op1->OperIsConst())
+                {
+                    assert(op1->IsIntegralConst());
+                    start     = static_cast<uint16_t>(op1->AsIntConCommon()->IntegralValue());
+                    isPartial = false;
+                }
+
+                assert(op2->IsIntegralConst());
+                uint16_t step = static_cast<uint16_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdLength; index++)
+                {
+                    vcon->gtSimdVal.u16[index] = static_cast<uint16_t>((index * step) + start);
+                }
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                uint32_t start = 0;
+
+                if (op1->OperIsConst())
+                {
+                    assert(op1->IsIntegralConst());
+                    start     = static_cast<uint32_t>(op1->AsIntConCommon()->IntegralValue());
+                    isPartial = false;
+                }
+
+                assert(op2->IsIntegralConst());
+                uint32_t step = static_cast<uint32_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdLength; index++)
+                {
+                    vcon->gtSimdVal.u32[index] = static_cast<uint32_t>((index * step) + start);
+                }
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                uint64_t start = 0;
+
+                if (op1->OperIsConst())
+                {
+                    assert(op1->IsIntegralConst());
+                    start     = static_cast<uint64_t>(op1->AsIntConCommon()->IntegralValue());
+                    isPartial = false;
+                }
+
+                assert(op2->IsIntegralConst());
+                uint64_t step = static_cast<uint64_t>(op2->AsIntConCommon()->IntegralValue());
+
+                for (uint32_t index = 0; index < simdLength; index++)
+                {
+                    vcon->gtSimdVal.u64[index] = static_cast<uint64_t>((index * step) + start);
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                float start = 0;
+
+                if (op1->OperIsConst())
+                {
+                    assert(op1->IsCnsFltOrDbl());
+                    start     = static_cast<float>(op1->AsDblCon()->DconValue());
+                    isPartial = false;
+                }
+
+                assert(op2->IsCnsFltOrDbl());
+                float step = static_cast<float>(op2->AsDblCon()->DconValue());
+
+                for (uint32_t index = 0; index < simdLength; index++)
+                {
+                    vcon->gtSimdVal.f32[index] = static_cast<float>((index * step) + start);
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                double start = 0;
+
+                if (op1->OperIsConst())
+                {
+                    assert(op1->IsCnsFltOrDbl());
+                    start     = static_cast<double>(op1->AsDblCon()->DconValue());
+                    isPartial = false;
+                }
+
+                assert(op2->IsCnsFltOrDbl());
+                double step = static_cast<double>(op2->AsDblCon()->DconValue());
+
+                for (uint32_t index = 0; index < simdLength; index++)
+                {
+                    vcon->gtSimdVal.f64[index] = static_cast<double>((index * step) + start);
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        result = vcon;
+    }
+    else
+    {
+        GenTree* indices = gtNewSimdGetIndicesNode(type, simdBaseJitType, simdSize);
+        result           = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseJitType, simdSize);
+    }
+
+    if (isPartial)
+    {
+        GenTree* start = gtNewSimdCreateBroadcastNode(type, op1, simdBaseJitType, simdSize);
+        result         = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseJitType, simdSize);
+    }
+
+    return result;
+}
+
 GenTree* Compiler::gtNewSimdDotProdNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
@@ -22819,6 +23011,97 @@ GenTree* Compiler::gtNewSimdGetElementNode(
     }
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::gtNewSimdGetIndicesNode: Creates a new simd get_Indices node
+//
+//  Arguments:
+//    type                - The return type of SIMD node being created
+//    simdBaseJitType     - The base JIT type of SIMD type of the intrinsic
+//    simdSize            - The size of the SIMD type of the intrinsic
+//
+// Returns:
+//    The created get_Indices node
+//
+GenTree* Compiler::gtNewSimdGetIndicesNode(var_types type, CorInfoType simdBaseJitType, unsigned simdSize)
+{
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    GenTreeVecCon* indices    = gtNewVconNode(type);
+    uint32_t       simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            for (uint32_t index = 0; index < simdLength; index++)
+            {
+                indices->gtSimdVal.u8[index] = static_cast<uint8_t>(index);
+            }
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            for (uint32_t index = 0; index < simdLength; index++)
+            {
+                indices->gtSimdVal.u16[index] = static_cast<uint16_t>(index);
+            }
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            for (uint32_t index = 0; index < simdLength; index++)
+            {
+                indices->gtSimdVal.u32[index] = static_cast<uint32_t>(index);
+            }
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            for (uint32_t index = 0; index < simdLength; index++)
+            {
+                indices->gtSimdVal.u64[index] = static_cast<uint64_t>(index);
+            }
+            break;
+        }
+
+        case TYP_FLOAT:
+        {
+            for (uint32_t index = 0; index < simdLength; index++)
+            {
+                indices->gtSimdVal.f32[index] = static_cast<float>(index);
+            }
+            break;
+        }
+
+        case TYP_DOUBLE:
+        {
+            for (uint32_t index = 0; index < simdLength; index++)
+            {
+                indices->gtSimdVal.f64[index] = static_cast<double>(index);
+            }
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return indices;
 }
 
 GenTree* Compiler::gtNewSimdGetLowerNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)

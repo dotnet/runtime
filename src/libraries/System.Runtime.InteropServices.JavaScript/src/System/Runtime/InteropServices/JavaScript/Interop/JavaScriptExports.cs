@@ -14,6 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     // this maps to src\mono\browser\runtime\managed-exports.ts
     // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
+    // TODO: all the calls here should be running on deputy or TP in MT, not in UI thread
     internal static unsafe partial class JavaScriptExports
     {
         // the marshaled signature is:
@@ -180,6 +181,9 @@ namespace System.Runtime.InteropServices.JavaScript
             {
 #if FEATURE_WASM_MANAGED_THREADS
                 // when we arrive here, we are on the thread which owns the proxies
+                // if we need to dispatch the call to another thread in the future
+                // we may need to consider how to solve blocking of the synchronous call
+                // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
                 arg_exc.AssertCurrentThreadContext();
 #endif
 
@@ -205,6 +209,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void CompleteTask(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
+            ref JSMarshalerArgument arg_res = ref arguments_buffer[1]; // initialized by caller in alloc_stack_frame()
             ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
             // arg_2 set by caller when this is SetException call
             // arg_3 set by caller when this is SetResult call
@@ -214,33 +219,49 @@ namespace System.Runtime.InteropServices.JavaScript
                 // when we arrive here, we are on the thread which owns the proxies
                 var ctx = arg_exc.AssertCurrentThreadContext();
                 var holder = ctx.GetPromiseHolder(arg_1.slot.GCHandle);
+                ToManagedCallback callback;
 
 #if FEATURE_WASM_MANAGED_THREADS
                 lock (ctx)
                 {
+                    // this means that CompleteTask is called before the ToManaged(out Task? value)
                     if (holder.Callback == null)
                     {
                         holder.CallbackReady = new ManualResetEventSlim(false);
                     }
                 }
+
                 if (holder.CallbackReady != null)
                 {
                     var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
                     try
                     {
                         Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
-    #pragma warning disable CA1416 // Validate platform compatibility
+#pragma warning disable CA1416 // Validate platform compatibility
                         holder.CallbackReady?.Wait();
-    #pragma warning restore CA1416 // Validate platform compatibility
+#pragma warning restore CA1416 // Validate platform compatibility
                     }
                     finally
                     {
                         Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
                     }
                 }
-#endif
-                var callback = holder.Callback!;
+
+                lock (ctx)
+                {
+                    callback = holder.Callback!;
+                    // if Interop.Runtime.CancelPromisePost is in flight, we can't free the GCHandle, because it's needed in JS
+                    var isOutOfOrderCancellation = holder.IsCanceling && arg_res.slot.Type != MarshalerType.Discard;
+                    // FIXME: when it happens we are leaking GCHandle + holder
+                    if (!isOutOfOrderCancellation)
+                    {
+                        ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
+                    }
+                }
+#else
+                callback = holder.Callback!;
                 ctx.ReleasePromiseHolder(arg_1.slot.GCHandle);
+#endif
 
                 // arg_2, arg_3 are processed by the callback
                 // JSProxyContext.PopOperation() is called by the callback
