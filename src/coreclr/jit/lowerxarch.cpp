@@ -6511,8 +6511,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 //
 // Arguments:
-//     tree  -  a binary-op tree node that is either commutative
-//              or a compare oper.
+//     op1  - The first operand of the binary operation to consider
+//     op2  - The second operand of the binary operation to consider
 //
 // Returns:
 //     Returns op1 or op2 of tree node that is preferred for
