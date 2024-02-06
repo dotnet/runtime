@@ -6586,7 +6586,7 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* op1, GenTree* op2)
 
                 if (v1->lvTracked && v2->lvTracked)
                 {
-                    if (v1->lvRefCntWtd() > v2->lvRefCntWtd())
+                    if (v1->lvRefCntWtd() >= v2->lvRefCntWtd())
                     {
                         preferredOp = op2;
                     }
