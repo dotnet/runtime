@@ -2843,12 +2843,12 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             JITDUMP("BBOPT not set\n");
         }
 
+        // Use heuristics to come up with sensible likelihoods
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoodsOnly);
+
         // Scale the "synthetic" block weights.
         //
         fgApplyProfileScale();
-
-        // Use heuristics to come up with sensible likelihoods
-        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
 
         return compIsForInlining() ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
@@ -2958,14 +2958,14 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         {
             // If profile data is unusable, use heuristics to set likelihoods.
             //
-            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoodsOnly);
         }
     }
     else
     {
         // If profile data is unusable, use heuristics to set likelihoods.
         //
-        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoods);
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoodsOnly);
     }
 
 #ifdef DEBUG

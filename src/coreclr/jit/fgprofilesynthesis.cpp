@@ -39,6 +39,10 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     //
     switch (option)
     {
+        case ProfileSynthesisOption::AssignLikelihoodsOnly:
+            AssignLikelihoods();
+            return; // Nothing left to do
+
         case ProfileSynthesisOption::AssignLikelihoods:
             AssignLikelihoods();
             break;
