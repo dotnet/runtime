@@ -12546,6 +12546,63 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
                                                    // not care.
 }
 
+//--------------------------------------------------------------------------------
+// fgValueNumberSpecialIntrinsic: Value number a special intrinsic
+//
+// Arguments:
+//    call - The call node with the special intrinsic flag set
+//
+// Return Value:
+//    true if the intrinsic was handled, false otherwise (needs to be handled just like a regular call)
+//
+bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
+{
+    assert(call->IsSpecialIntrinsic());
+
+    switch (lookupNamedIntrinsic(call->gtCallMethHnd))
+    {
+        case NI_System_Type_GetTypeFromHandle:
+        {
+            // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
+            // This is a NativeAOT specific since RuntimeTypeHandle has a different layout in NativeAOT.
+            // On CoreCLR, it's just a thin wrapper over RuntimeType object.
+            assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+
+            VNFuncApp bitcastFuncApp;
+            ValueNum  argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
+            if (!vnStore->GetVNFunc(argVN, &bitcastFuncApp) || (bitcastFuncApp.m_func != VNF_BitCast))
+            {
+                break;
+            }
+
+            VNFuncApp typeHandleFuncApp;
+            if (!vnStore->GetVNFunc(bitcastFuncApp.m_args[0], &typeHandleFuncApp) ||
+                (typeHandleFuncApp.m_func != VNF_TypeHandleToRuntimeTypeHandle) ||
+                !vnStore->IsVNTypeHandle(typeHandleFuncApp.m_args[0]))
+            {
+                break;
+            }
+
+            ValueNum clsVN = typeHandleFuncApp.m_args[0];
+            ssize_t  clsHandle;
+            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle))
+            {
+                break;
+            }
+
+            CORINFO_OBJECT_HANDLE obj = info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
+            if (obj != nullptr)
+            {
+                setMethodHasFrozenObjects();
+                call->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)obj, GTF_ICON_OBJ_HDL));
+                return true;
+            }
+        }
+        break;
+    }
+    return false;
+}
+
 void Compiler::fgValueNumberCall(GenTreeCall* call)
 {
     if (call->gtCallType == CT_HELPER)
@@ -12560,52 +12617,17 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
     else
     {
-        bool handled = false;
-        if (call->TypeGet() == TYP_VOID)
+        if (call->TypeIs(TYP_VOID))
         {
             call->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
+
+            // For now, arbitrary side effect on GcHeap/ByrefExposed.
+            fgMutateGcHeap(call DEBUGARG("CALL"));
         }
-        else
+        else if (!call->IsSpecialIntrinsic() || !fgValueNumberSpecialIntrinsic(call))
         {
-            // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
-            if (call->IsSpecialIntrinsic(this, NI_System_Type_GetTypeFromHandle))
-            {
-                VNFuncApp bitcastFuncApp;
-                VNFuncApp typeHandleFuncApp;
-                ValueNum  argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
-                if (vnStore->GetVNFunc(argVN, &bitcastFuncApp) && (bitcastFuncApp.m_func == VNF_BitCast))
-                {
-                    ssize_t clsHandle;
-                    if (vnStore->GetVNFunc(bitcastFuncApp.m_args[0], &typeHandleFuncApp) &&
-                        (typeHandleFuncApp.m_func == VNF_TypeHandleToRuntimeTypeHandle) &&
-                        vnStore->IsVNHandle(typeHandleFuncApp.m_args[0]) &&
-                        (vnStore->GetHandleFlags(typeHandleFuncApp.m_args[0]) == GTF_ICON_CLASS_HDL) &&
-                        vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(typeHandleFuncApp.m_args[0]),
-                                                         &clsHandle))
-                    {
-                        CORINFO_OBJECT_HANDLE typeObj =
-                            info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
-                        if (typeObj != nullptr)
-                        {
-                            if (ISMETHOD("GetIntType"))
-                                fgDispBasicBlocks(true);
+            call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
 
-                            setMethodHasFrozenObjects();
-                            call->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL));
-                            handled = true;
-                        }
-                    }
-                }
-            }
-
-            if (!handled)
-            {
-                call->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
-            }
-        }
-
-        if (!handled)
-        {
             // For now, arbitrary side effect on GcHeap/ByrefExposed.
             fgMutateGcHeap(call DEBUGARG("CALL"));
         }
@@ -12996,7 +13018,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
             const ValueNum argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
             if (!opts.IsReadyToRun() && vnStore->IsVNTypeHandle(argVN))
             {
-                CORINFO_CLASS_HANDLE  cls = (CORINFO_CLASS_HANDLE)vnStore->ConstantValue<ssize_t>(argVN);
+                CORINFO_CLASS_HANDLE  cls     = (CORINFO_CLASS_HANDLE)vnStore->ConstantValue<ssize_t>(argVN);
                 CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
                 if (typeObj != nullptr)
                 {

@@ -5607,6 +5607,9 @@ public:
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
+    // Does value-numbering for a special intrinsic call.
+    bool fgValueNumberSpecialIntrinsic(GenTreeCall* call);
+
     // Does value-numbering for a helper representing a cast operation.
     void fgValueNumberCastHelper(GenTreeCall* call);
 
