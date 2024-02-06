@@ -243,45 +243,102 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void CastProducesIListFromIList()
+        public void CastProducesIReadOnlyCollectionFromICollection()
         {
             object[] values = new object[] { "hello", "world" };
 
-            IList<string> castList = (IList<string>)values.Cast<string>();
+            IReadOnlyCollection<string> castList = (IReadOnlyCollection<string>)values.Cast<string>();
             Assert.NotNull(castList);
-
             Assert.Equal(2, castList.Count);
-            Assert.Equal("hello", castList[0]);
-            Assert.Equal("world", castList[1]);
-            Assert.True(castList.IsReadOnly);
-            Assert.True(castList.Contains("hello"));
-            Assert.True(castList.Contains("world"));
-            Assert.False(castList.Contains("hello, world"));
-            Assert.Equal(0, castList.IndexOf("hello"));
-            Assert.Equal(1, castList.IndexOf("world"));
-            Assert.Equal(-1, castList.IndexOf("hello, world"));
-
-            Assert.Throws<NotSupportedException>(() => castList.Add("foo"));
-            Assert.Throws<NotSupportedException>(() => castList.Insert(0, "foo"));
-            Assert.Throws<NotSupportedException>(() => castList.Remove("foo"));
-            Assert.Throws<NotSupportedException>(() => castList.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => castList.Clear());
-            Assert.Throws<IndexOutOfRangeException>(() => castList[-1]);
-            Assert.Throws<IndexOutOfRangeException>(() => castList[2]);
-            Assert.Throws<ArgumentNullException>(() => castList.CopyTo(null, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => castList.CopyTo(new string[1], 0));
-
-            IReadOnlyList<string> castReadOnlyList = (IReadOnlyList<string>)castList;
-            Assert.Equal(2, castReadOnlyList.Count);
-            Assert.Equal("hello", castReadOnlyList[0]);
-            Assert.Equal("world", castReadOnlyList[1]);
         }
 
         [Fact]
-        public void CastProducesNonIListFromNonIList()
+        public void CastOnMultidimensionalArraySucceeds()
         {
-            IEnumerable<string> e = new object[] { "hello", "world" }.Select(s => s).Cast<string>();
-            Assert.IsNotAssignableFrom<IList<string>>(e);
+            Array array = Array.CreateInstance(typeof(int), 2, 3);
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    array.SetValue(i * 3 + j, i, j);
+                }
+            }
+
+            int[] result = array.Cast<int>().ToArray();
+            for (int i = 0; i < 6; i++)
+            {
+                Assert.Equal(i, result[i]);
+            }
+        }
+
+        [Fact]
+        public void CastCountReturnsExpectedLength()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal(2, objects.Cast<string>().Count());
+        }
+
+        [Fact]
+        public void CastFirstReturnsFirstElement()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal("hello", objects.Cast<string>().First());
+        }
+
+        [Fact]
+        public void CastFirstOnEmptySequenceThrows()
+        {
+            object[] objects = Array.Empty<object>();
+            Assert.Throws<InvalidOperationException>(() => objects.Cast<string>().First());
+        }
+
+        [Fact]
+        public void CastLastReturnsLastElement()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal("world", objects.Cast<string>().Last());
+        }
+
+        [Fact]
+        public void CastElementAtReturnsExpectedElement()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Equal("world", objects.Cast<string>().ElementAt(1));
+        }
+
+        [Fact]
+        public void CastElementAtOutOfRangeThrows()
+        {
+            object[] objects = new object[] { "hello", "world" };
+            Assert.Throws<ArgumentOutOfRangeException>(() => objects.Cast<string>().ElementAt(2));
+        }
+
+        [Fact]
+        public void CastLastOnEmptySequenceThrows()
+        {
+            object[] objects = Array.Empty<object>();
+            Assert.Throws<InvalidOperationException>(() => objects.Cast<string>().Last());
+        }
+
+        [Fact]
+        public void CastSelectProcessesEachElement()
+        {
+            object[] objects = new object[] { "hello", "world!" };
+            Assert.Equal(new[] { 5, 6 }, objects.Cast<string>().Select(s => s.Length));
+        }
+
+        [Fact]
+        public void CastSkipSkipsElements()
+        {
+            object[] objects = new object[] { "hello", "there", "world" };
+            Assert.Equal(new[] { "world" }, objects.Cast<string>().Skip(2));
+        }
+
+        [Fact]
+        public void CastTakeTakesElements()
+        {
+            object[] objects = new object[] { "hello", "there", "world" };
+            Assert.Equal(new[] { "hello", "there" }, objects.Cast<string>().Take(2));
         }
     }
 }

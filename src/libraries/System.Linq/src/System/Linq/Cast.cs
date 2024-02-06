@@ -46,9 +46,9 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IList list)
+            if (source is ICollection collection)
             {
-                return new CastIListIterator<TResult>(list);
+                return new CastICollectionIterator<TResult>(collection);
             }
 
             return CastIterator<TResult>(source);
@@ -63,12 +63,14 @@ namespace System.Linq
         }
 
         [DebuggerDisplay("Count = {Count}")]
-        private sealed partial class CastIListIterator<TResult>(IList source) : Iterator<TResult>, IList<TResult>, IReadOnlyList<TResult>
+        private sealed partial class CastICollectionIterator<TResult>(ICollection source) : Iterator<TResult>, IReadOnlyCollection<TResult>
         {
-            private readonly IList _source = source;
+            private readonly ICollection _source = source;
             private IEnumerator? _enumerator;
 
-            public override Iterator<TResult> Clone() => new CastIListIterator<TResult>(_source);
+            public int Count => _source.Count;
+
+            public override Iterator<TResult> Clone() => new CastICollectionIterator<TResult>(_source);
 
             public override bool MoveNext()
             {
@@ -104,47 +106,6 @@ namespace System.Linq
 
                 base.Dispose();
             }
-
-            public int Count => _source.Count;
-
-            public bool IsReadOnly => true;
-
-            public int IndexOf(TResult item) => _source.IndexOf(item);
-
-            public bool Contains(TResult item) => _source.Contains(item);
-
-            public void CopyTo(TResult[] array, int arrayIndex)
-            {
-                ArgumentNullException.ThrowIfNull(array);
-
-                IList source = _source;
-                int count = source.Count;
-
-                if (arrayIndex < 0 || arrayIndex > array.Length - count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-                }
-
-                for (int i = 0; i < count; i++)
-                {
-                    array[arrayIndex + i] = (TResult)source[i]!;
-                }
-            }
-
-            public TResult this[int index]
-            {
-                get => (TResult)_source[index]!;
-                set => throw new NotSupportedException();
-            }
-
-            public void Add(TResult item) => throw new NotSupportedException();
-            public void Clear() => throw new NotSupportedException();
-            public void Insert(int index, TResult item) => throw new NotSupportedException();
-            public bool Remove(TResult item) => throw new NotSupportedException();
-            public void RemoveAt(int index) => throw new NotSupportedException();
-
-            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
-                new SelectIListIterator<TResult, TResult2>(this, selector);
         }
     }
 }
