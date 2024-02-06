@@ -4940,15 +4940,13 @@ CORINFO_CLASS_HANDLE Compiler::optAssertionGetExactType(ASSERT_VALARG_TP asserti
             assert(curAssertion->op2.HasIconFlag());
             assert(objType != NO_CLASS_HANDLE);
 
-            if (curAssertion->op1.kind == O1K_SUBTYPE)
+            if (curAssertion->op1.kind != O1K_SUBTYPE || info.compCompHnd->isExactType(objType))
             {
-                if (((info.compCompHnd->getClassAttribs(objType) & CORINFO_FLG_SHAREDINST) != 0) ||
-                    !info.compCompHnd->isExactType(objType))
+                if ((info.compCompHnd->getClassAttribs(objType) & CORINFO_FLG_SHAREDINST) == 0)
                 {
-                    continue;
+                    return objType;
                 }
             }
-            return objType;
         }
     }
     return NO_CLASS_HANDLE;
