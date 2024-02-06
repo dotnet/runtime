@@ -359,7 +359,10 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
-	mono_jit_cleanup (root_domain);
+	if (exit_code == 0)
+	{
+		mono_jit_cleanup (root_domain);
+	}
 	fflush (stdout);
 	fflush (stderr);
 	emscripten_force_exit (exit_code);
