@@ -13004,11 +13004,14 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
     NYI("emitIns_R_AR");
 }
 
-// This computes address from the immediate which is relocatable.
-void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
-                           regNumber    ireg, regNumber reg2,
-                           ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+// This generates code to populate the access for TLS on linux
+void emitter::emitIns_Adrp_Ldr_Add(emitAttr  attr,
+                                   regNumber reg1,
+                                   regNumber reg2,
+                                   ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
+    assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    assert(TargetOS::IsUnix);
     assert(EA_IS_RELOC(attr));
     assert(EA_IS_CNS_TLSGD_RELOC(attr));
 
@@ -13023,7 +13026,7 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
     id->idInsOpt(INS_OPTS_NONE);
     id->idOpSize(size);
     id->idAddr()->iiaAddr = (BYTE*)addr;
-    id->idReg1(ireg);
+    id->idReg1(reg1);
     id->idSetIsDspReloc();
     id->idSetTlsGD();
 
@@ -13036,10 +13039,10 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
     appendToCurIG(id);
 
     // ldr
-    emitIns_R_R_I(INS_ldr, attr, reg2, ireg, (ssize_t)addr);
+    emitIns_R_R_I(INS_ldr, attr, reg2, reg1, (ssize_t)addr);
 
     // add
-    fmt           = IF_DI_2A;
+    fmt              = IF_DI_2A;
     instrDesc* addId = emitNewInstr(attr);
     assert(id->idIsReloc());
 
@@ -13048,8 +13051,8 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
     addId->idInsOpt(INS_OPTS_NONE);
     addId->idOpSize(size);
     addId->idAddr()->iiaAddr = (BYTE*)addr;
-    addId->idReg1(ireg);
-    addId->idReg2(ireg);
+    addId->idReg1(reg1);
+    addId->idReg2(reg1);
     addId->idSetTlsGD();
 
     dispIns(addId);

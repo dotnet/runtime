@@ -3655,8 +3655,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // adrp
             // ldr
             // add
-            emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(), (ssize_t)methHnd
-                                          DEBUGARG(iconNode->gtTargetHandle) DEBUGARG(iconNode->gtFlags));
+            emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
+                                          (ssize_t)methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                              DEBUGARG(iconNode->gtFlags));
         }
 #endif
 
