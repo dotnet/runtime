@@ -22,6 +22,8 @@ Abstract:
 
 #include <math.h>
 
+SET_DEFAULT_DEBUG_CHANNEL(CRT);
+
 /*++
 Function:
   _finite
