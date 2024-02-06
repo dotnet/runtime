@@ -523,6 +523,7 @@ add_custom_target(jit_exports DEPENDS ${JIT_EXPORTS_FILE})
 
 set(JIT_LINK_LIBRARIES
    utilcodestaticnohost
+   netintrinsics
 )
 
 set(JIT_ARCH_LINK_LIBRARIES

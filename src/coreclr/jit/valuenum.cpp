@@ -8266,7 +8266,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Acos:
-                    res = acos(arg0Val);
+                    res = netintrinsics_acos(arg0Val);
                     break;
 
                 case NI_System_Math_Acosh:
@@ -8274,7 +8274,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Asin:
-                    res = asin(arg0Val);
+                    res = netintrinsics_asin(arg0Val);
                     break;
 
                 case NI_System_Math_Asinh:
@@ -8306,7 +8306,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Exp:
-                    res = exp(arg0Val);
+                    res = netintrinsics_exp(arg0Val);
                     break;
 
                 case NI_System_Math_Floor:
@@ -8314,7 +8314,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Log:
-                    res = log(arg0Val);
+                    res = netintrinsics_log(arg0Val);
                     break;
 
                 case NI_System_Math_Log2:
@@ -8322,7 +8322,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Log10:
-                    res = log10(arg0Val);
+                    res = netintrinsics_log10(arg0Val);
                     break;
 
                 case NI_System_Math_Sin:
@@ -8374,7 +8374,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Acos:
-                    res = acosf(arg0Val);
+                    res = netintrinsics_acosf(arg0Val);
                     break;
 
                 case NI_System_Math_Acosh:
@@ -8382,7 +8382,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Asin:
-                    res = asinf(arg0Val);
+                    res = netintrinsics_asinf(arg0Val);
                     break;
 
                 case NI_System_Math_Asinh:
@@ -8414,7 +8414,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Exp:
-                    res = expf(arg0Val);
+                    res = netintrinsics_expf(arg0Val);
                     break;
 
                 case NI_System_Math_Floor:
@@ -8422,7 +8422,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Log:
-                    res = logf(arg0Val);
+                    res = netintrinsics_logf(arg0Val);
                     break;
 
                 case NI_System_Math_Log2:
@@ -8430,7 +8430,7 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     break;
 
                 case NI_System_Math_Log10:
-                    res = log10f(arg0Val);
+                    res = netintrinsics_log10f(arg0Val);
                     break;
 
                 case NI_System_Math_Sin:
@@ -8480,14 +8480,14 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
                     case TYP_DOUBLE:
                     {
                         double arg0Val = GetConstantDouble(arg0VN);
-                        res            = ilogb(arg0Val);
+                        res            = netintrinsics_ilogb(arg0Val);
                         break;
                     }
 
                     case TYP_FLOAT:
                     {
                         float arg0Val = GetConstantSingle(arg0VN);
-                        res           = ilogbf(arg0Val);
+                        res           = netintrinsics_ilogbf(arg0Val);
                         break;
                     }
 
@@ -8652,7 +8652,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = atan2(arg0Val, arg1Val);
+                    res            = netintrinsics_atan2(arg0Val, arg1Val);
                     break;
                 }
 
@@ -8668,7 +8668,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = pow(arg0Val, arg1Val);
+                    res            = netintrinsics_pow(arg0Val, arg1Val);
                     break;
                 }
 
@@ -8757,7 +8757,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = atan2f(arg0Val, arg1Val);
+                    res           = netintrinsics_atan2f(arg0Val, arg1Val);
                     break;
                 }
 
@@ -8837,7 +8837,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = powf(arg0Val, arg1Val);
+                    res           = netintrinsics_powf(arg0Val, arg1Val);
                     break;
                 }
 

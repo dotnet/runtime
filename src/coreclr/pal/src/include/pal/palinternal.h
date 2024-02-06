@@ -229,6 +229,24 @@ function_name() to call the system's implementation
 #define tanf DUMMY_tanf
 #define tanhf DUMMY_tanhf
 #define truncf DUMMY_truncf
+#define acos DUMMMY_acos
+#define asin DUMMMY_asin
+#define atan2 DUMMMY_atan2
+#define exp DUMMMY_exp
+#define ilogb DUMMMY_ilogb
+#define log DUMMMY_log
+#define log10 DUMMMY_log10
+#define pow DUMMMY_pow
+#define sincos DUMMMY_sincos
+#define acosf DUMMMY_acosf
+#define asinf DUMMMY_asinf
+#define atan2f DUMMMY_atan2f
+#define expf DUMMMY_expf
+#define ilogbf DUMMMY_ilogbf
+#define logf DUMMMY_logf
+#define log10f DUMMMY_log10f
+#define powf DUMMMY_powf
+#define sincosf DUMMMY_sincosf
 #define remove DUMMY_remove
 #define printf DUMMY_printf
 #define vprintf DUMMY_vprintf
@@ -490,6 +508,24 @@ function_name() to call the system's implementation
 #undef tanf
 #undef tanhf
 #undef truncf
+#undef acos 
+#undef asin 
+#undef atan2 
+#undef exp 
+#undef ilogb 
+#undef log 
+#undef log10 
+#undef pow 
+#undef sincos 
+#undef acosf 
+#undef asinf 
+#undef atan2f 
+#undef expf 
+#undef ilogbf 
+#undef logf 
+#undef log10f 
+#undef powf 
+#undef sincosf 
 #undef rand
 #undef srand
 #undef errno

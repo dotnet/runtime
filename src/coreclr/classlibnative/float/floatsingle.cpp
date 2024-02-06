@@ -5,6 +5,7 @@
 //
 
 #include <common.h>
+#include "netintrinsics.h"
 
 #include "floatsingle.h"
 
@@ -34,7 +35,7 @@
 FCIMPL1_V(float, COMSingle::Acos, float x)
     FCALL_CONTRACT;
 
-    return acosf(x);
+    return netintrinsics_acosf(x);
 FCIMPLEND
 
 /*=====================================Acosh====================================
@@ -52,7 +53,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Asin, float x)
     FCALL_CONTRACT;
 
-    return asinf(x);
+    return netintrinsics_asinf(x);
 FCIMPLEND
 
 /*=====================================Asinh====================================
@@ -88,7 +89,7 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::Atan2, float y, float x)
     FCALL_CONTRACT;
 
-    return atan2f(y, x);
+    return netintrinsics_atan2f(y, x);
 FCIMPLEND
 
 /*====================================Cbrt======================================
@@ -144,7 +145,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Exp, float x)
     FCALL_CONTRACT;
 
-    return expf(x);
+    return netintrinsics_expf(x);
 FCIMPLEND
 
 /*====================================Floor=====================================
@@ -180,7 +181,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Log, float x)
     FCALL_CONTRACT;
 
-    return logf(x);
+    return netintrinsics_logf(x);
 FCIMPLEND
 
 /*=====================================Log2=====================================
@@ -198,7 +199,7 @@ FCIMPLEND
 FCIMPL1_V(float, COMSingle::Log10, float x)
     FCALL_CONTRACT;
 
-    return log10f(x);
+    return netintrinsics_log10f(x);
 FCIMPLEND
 
 /*=====================================ModF=====================================
@@ -216,7 +217,7 @@ FCIMPLEND
 FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
 
-    return powf(x, y);
+    return netintrinsics_powf(x, y);
 FCIMPLEND
 
 /*=====================================Sin======================================
@@ -237,6 +238,8 @@ FCIMPL3_VII(void, COMSingle::SinCos, float x, float* pSin, float* pCos)
 #ifdef _MSC_VER
     *pSin = sinf(x);
     *pCos = cosf(x);
+#elif defined(__APPLE__)
+    __sincosf(x, pSin, pCos);
 #else
     sincosf(x, pSin, pCos);
 #endif

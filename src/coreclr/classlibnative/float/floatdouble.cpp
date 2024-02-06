@@ -5,6 +5,7 @@
 //
 
 #include <common.h>
+#include "netintrinsics.h"
 
 #include "floatdouble.h"
 
@@ -48,7 +49,7 @@
 FCIMPL1_V(double, COMDouble::Acos, double x)
     FCALL_CONTRACT;
 
-    return acos(x);
+    return netintrinsics_acos(x);
 FCIMPLEND
 
 /*=====================================Acosh====================================
@@ -66,7 +67,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Asin, double x)
     FCALL_CONTRACT;
 
-    return asin(x);
+    return netintrinsics_asin(x);
 FCIMPLEND
 
 /*=====================================Asinh====================================
@@ -102,7 +103,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::Atan2, double y, double x)
     FCALL_CONTRACT;
 
-    return atan2(y, x);
+    return netintrinsics_atan2(y, x);
 FCIMPLEND
 
 /*====================================Cbrt======================================
@@ -158,7 +159,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Exp, double x)
     FCALL_CONTRACT;
 
-    return exp(x);
+    return netintrinsics_exp(x);
 FCIMPLEND
 
 #if defined(_MSC_VER) && defined(TARGET_X86)
@@ -205,7 +206,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log, double x)
     FCALL_CONTRACT;
 
-    return log(x);
+    return netintrinsics_log(x);
 FCIMPLEND
 
 /*=====================================Log2=====================================
@@ -223,7 +224,7 @@ FCIMPLEND
 FCIMPL1_V(double, COMDouble::Log10, double x)
     FCALL_CONTRACT;
 
-    return log10(x);
+    return netintrinsics_log10(x);
 FCIMPLEND
 
 /*=====================================ModF=====================================
@@ -241,7 +242,7 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::Pow, double x, double y)
     FCALL_CONTRACT;
 
-    return pow(x, y);
+    return netintrinsics_pow(x, y);
 FCIMPLEND
 
 /*=====================================Sin======================================
@@ -262,6 +263,8 @@ FCIMPL3_VII(void, COMDouble::SinCos, double x, double* pSin, double* pCos)
 #ifdef _MSC_VER
     *pSin = sin(x);
     *pCos = cos(x);
+#elif defined(__APPLE__)
+    __sincos(x, pSin, pCos);
 #else
     sincos(x, pSin, pCos);
 #endif
