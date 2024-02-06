@@ -4973,9 +4973,7 @@ GenTree* Compiler::optExactTypeAssertionProp_Ind(ASSERT_VALARG_TP assertions, Ge
     CORINFO_CLASS_HANDLE objType = optAssertionGetExactType(assertions, tree->AsIndir()->Addr());
     if (objType != NO_CLASS_HANDLE)
     {
-        GenTree* newTree = gtNewIconEmbClsHndNode(objType);
-        fgUpdateConstTreeValueNumber(newTree);
-
+        GenTree* newTree     = gtNewIconEmbClsHndNode(objType);
         GenTree* sideEffects = nullptr;
         gtExtractSideEffList(tree, &sideEffects, GTF_SIDE_EFFECT);
         if (sideEffects != nullptr)
