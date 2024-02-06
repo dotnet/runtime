@@ -106,8 +106,16 @@ namespace System
         internal const int TrailingSignificandLength = 23;
         internal const int SignificandLength = TrailingSignificandLength + 1;
 
+        // Constants representing the private bit-representation for various default values
+
+        internal const uint PositiveZeroBits = 0x0000_0000;
+        internal const uint NegativeZeroBits = 0x8000_0000;
+
+        internal const uint EpsilonBits = 0x0000_0001;
+
         internal const uint PositiveInfinityBits = 0x7F80_0000;
         internal const uint NegativeInfinityBits = 0xFF80_0000;
+
         internal const uint SmallestNormalBits = 0x0080_0000;
 
         internal byte BiasedExponent
@@ -253,39 +261,38 @@ namespace System
         //
         public int CompareTo(object? value)
         {
-            if (value == null)
+            if (value is not float other)
             {
-                return 1;
+                return (value is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeSingle);
             }
-
-            if (value is float f)
-            {
-                if (m_value < f) return -1;
-                if (m_value > f) return 1;
-                if (m_value == f) return 0;
-
-                // At least one of the values is NaN.
-                if (IsNaN(m_value))
-                    return IsNaN(f) ? 0 : -1;
-                else // f is NaN.
-                    return 1;
-            }
-
-            throw new ArgumentException(SR.Arg_MustBeSingle);
+            return CompareTo(other);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(float value)
         {
-            if (m_value < value) return -1;
-            if (m_value > value) return 1;
-            if (m_value == value) return 0;
+            if (m_value < value)
+            {
+                return -1;
+            }
 
-            // At least one of the values is NaN.
-            if (IsNaN(m_value))
-                return IsNaN(value) ? 0 : -1;
-            else // f is NaN.
+            if (m_value > value)
+            {
                 return 1;
+            }
+
+            if (m_value == value)
+            {
+                return 0;
+            }
+
+            if (IsNaN(m_value))
+            {
+                return IsNaN(value) ? 0 : -1;
+            }
+
+            Debug.Assert(IsNaN(value));
+            return 1;
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
@@ -314,17 +321,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is float))
-            {
-                return false;
-            }
-            float temp = ((float)obj).m_value;
-            if (temp == m_value)
-            {
-                return true;
-            }
-
-            return IsNaN(temp) && IsNaN(m_value);
+            return (obj is float other) && Equals(other);
         }
 
         public bool Equals(float obj)
@@ -333,7 +330,6 @@ namespace System
             {
                 return true;
             }
-
             return IsNaN(obj) && IsNaN(m_value);
         }
 

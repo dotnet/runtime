@@ -106,8 +106,16 @@ namespace System
         internal const int TrailingSignificandLength = 52;
         internal const int SignificandLength = TrailingSignificandLength + 1;
 
+        // Constants representing the private bit-representation for various default values
+
+        internal const ulong PositiveZeroBits = 0x0000_0000_0000_0000;
+        internal const ulong NegativeZeroBits = 0x8000_0000_0000_0000;
+
+        internal const ulong EpsilonBits = 0x0000_0000_0000_0001;
+
         internal const ulong PositiveInfinityBits = 0x7FF0_0000_0000_0000;
         internal const ulong NegativeInfinityBits = 0xFFF0_0000_0000_0000;
+
         internal const ulong SmallestNormalBits = 0x0010_0000_0000_0000;
 
         internal ushort BiasedExponent
@@ -254,56 +262,45 @@ namespace System
         //
         public int CompareTo(object? value)
         {
-            if (value == null)
+            if (value is not double other)
             {
-                return 1;
+                return (value is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeDouble);
             }
-
-            if (value is double d)
-            {
-                if (m_value < d) return -1;
-                if (m_value > d) return 1;
-                if (m_value == d) return 0;
-
-                // At least one of the values is NaN.
-                if (IsNaN(m_value))
-                    return IsNaN(d) ? 0 : -1;
-                else
-                    return 1;
-            }
-
-            throw new ArgumentException(SR.Arg_MustBeDouble);
+            return CompareTo(other);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(double value)
         {
-            if (m_value < value) return -1;
-            if (m_value > value) return 1;
-            if (m_value == value) return 0;
+            if (m_value < value)
+            {
+                return -1;
+            }
 
-            // At least one of the values is NaN.
-            if (IsNaN(m_value))
-                return IsNaN(value) ? 0 : -1;
-            else
+            if (m_value > value)
+            {
                 return 1;
+            }
+
+            if (m_value == value)
+            {
+                return 0;
+            }
+
+            if (IsNaN(m_value))
+            {
+                return IsNaN(value) ? 0 : -1;
+            }
+
+            Debug.Assert(IsNaN(value));
+            return 1;
         }
 
         // True if obj is another Double with the same value as the current instance.  This is
         // a method of object equality, that only returns true if obj is also a double.
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is double))
-            {
-                return false;
-            }
-            double temp = ((double)obj).m_value;
-            // This code below is written this way for performance reasons i.e the != and == check is intentional.
-            if (temp == m_value)
-            {
-                return true;
-            }
-            return IsNaN(temp) && IsNaN(m_value);
+            return (obj is double other) && Equals(other);
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />

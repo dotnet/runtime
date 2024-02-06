@@ -429,11 +429,11 @@ namespace System
         /// <exception cref="ArgumentException">Thrown when <paramref name="obj"/> is not of type <see cref="Half"/>.</exception>
         public int CompareTo(object? obj)
         {
-            if (!(obj is Half))
+            if (obj is not Half other)
             {
                 return (obj is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeHalf);
             }
-            return CompareTo((Half)(obj));
+            return CompareTo(other);
         }
 
         /// <summary>
@@ -1245,29 +1245,25 @@ namespace System
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator &(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) & BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value & right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator |(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) | BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value | right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ^(Half left, Half right)
         {
-            ushort bits = (ushort)(BitConverter.HalfToUInt16Bits(left) ^ BitConverter.HalfToUInt16Bits(right));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(left._value ^ right._value));
         }
 
         /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
         static Half IBitwiseOperators<Half, Half, Half>.operator ~(Half value)
         {
-            ushort bits = (ushort)(~BitConverter.HalfToUInt16Bits(value));
-            return BitConverter.UInt16BitsToHalf(bits);
+            return new Half((ushort)(~value._value));
         }
 
         //
@@ -1473,9 +1469,9 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
         public static Half BitDecrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
@@ -1492,16 +1488,23 @@ namespace System
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            bits += (ushort)(((short)bits < 0) ? +1 : -1);
-            return new Half(bits);
+            if (IsNegative(x))
+            {
+                bits += 1;
+            }
+            else
+            {
+                bits -= 1;
+            }
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
         public static Half BitIncrement(Half x)
         {
-            ushort bits = x._value;
+            uint bits = x._value;
 
-            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            if (!IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns MinValue
@@ -1518,8 +1521,15 @@ namespace System
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            bits += (ushort)(((short)bits < 0) ? -1 : +1);
-            return new Half(bits);
+            if (IsNegative(x))
+            {
+                bits -= 1;
+            }
+            else
+            {
+                bits += 1;
+            }
+            return new Half((ushort)bits);
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
@@ -1656,7 +1666,17 @@ namespace System
         public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static Half CopySign(Half value, Half sign) => (Half)MathF.CopySign((float)value, (float)sign);
+        public static Half CopySign(Half value, Half sign)
+        {
+            // This method is required to work for all inputs,
+            // including NaN, so we operate on the raw bits.
+            uint xbits = value._value;
+            uint ybits = sign._value;
+
+            // Remove the sign from x, and remove everything but the sign from y
+            // Then, simply OR them to get the correct sign
+            return new Half((ushort)((xbits & ~SignMask) | (ybits & SignMask)));
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
@@ -1709,7 +1729,24 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(Half value) => MathF.Sign((float)value);
+        public static int Sign(Half value)
+        {
+            if (IsNaN(value))
+            {
+                throw new ArithmeticException(SR.Arithmetic_NaN);
+            }
+
+            if (IsZero(value))
+            {
+                return 0;
+            }
+            else if (IsNegative(value))
+            {
+                return -1;
+            }
+
+            return +1;
+        }
 
         //
         // INumberBase
@@ -1725,7 +1762,7 @@ namespace System
         public static Half Zero => new Half(PositiveZeroBits);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
-        public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
+        public static Half Abs(Half value) => new Half((ushort)(value._value & ~SignMask));
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

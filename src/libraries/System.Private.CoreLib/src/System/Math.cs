@@ -237,17 +237,17 @@ namespace System
 
         public static double BitDecrement(double x)
         {
-            long bits = BitConverter.DoubleToInt64Bits(x);
+            ulong bits = BitConverter.DoubleToUInt64Bits(x);
 
-            if (((bits >> 32) & 0x7FF00000) >= 0x7FF00000)
+            if (!double.IsFinite(bits))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
-                // +Infinity returns double.MaxValue
-                return (bits == 0x7FF00000_00000000) ? double.MaxValue : x;
+                // +Infinity returns MaxValue
+                return (bits == double.PositiveInfinityBits) ? double.MaxValue : x;
             }
 
-            if (bits == 0x00000000_00000000)
+            if (bits == double.PositiveZeroBits)
             {
                 // +0.0 returns -double.Epsilon
                 return -double.Epsilon;
@@ -256,33 +256,47 @@ namespace System
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            bits += ((bits < 0) ? +1 : -1);
-            return BitConverter.Int64BitsToDouble(bits);
+            if (double.IsNegative(x))
+            {
+                bits += 1;
+            }
+            else
+            {
+                bits -= 1;
+            }
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         public static double BitIncrement(double x)
         {
-            long bits = BitConverter.DoubleToInt64Bits(x);
+            ulong bits = BitConverter.DoubleToUInt64Bits(x);
 
-            if (((bits >> 32) & 0x7FF00000) >= 0x7FF00000)
+            if (!double.IsFinite(x))
             {
                 // NaN returns NaN
-                // -Infinity returns double.MinValue
+                // -Infinity returns MinValue
                 // +Infinity returns +Infinity
-                return (bits == unchecked((long)(0xFFF00000_00000000))) ? double.MinValue : x;
+                return (bits == double.NegativeInfinityBits) ? double.MinValue : x;
             }
 
-            if (bits == unchecked((long)(0x80000000_00000000)))
+            if (bits == double.NegativeZeroBits)
             {
-                // -0.0 returns double.Epsilon
+                // -0.0 returns Epsilon
                 return double.Epsilon;
             }
 
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            bits += ((bits < 0) ? -1 : +1);
-            return BitConverter.Int64BitsToDouble(bits);
+            if (double.IsNegative(x))
+            {
+                bits -= 1;
+            }
+            else
+            {
+                bits += 1;
+            }
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -299,19 +313,14 @@ namespace System
 
             static double SoftwareFallback(double x, double y)
             {
-                const long signMask = 1L << 63;
-
                 // This method is required to work for all inputs,
                 // including NaN, so we operate on the raw bits.
-                long xbits = BitConverter.DoubleToInt64Bits(x);
-                long ybits = BitConverter.DoubleToInt64Bits(y);
+                ulong xbits = BitConverter.DoubleToUInt64Bits(x);
+                ulong ybits = BitConverter.DoubleToUInt64Bits(y);
 
                 // Remove the sign from x, and remove everything but the sign from y
-                xbits &= ~signMask;
-                ybits &= signMask;
-
-                // Simply OR them to get the correct sign
-                return BitConverter.Int64BitsToDouble(xbits | ybits);
+                // Then, simply OR them to get the correct sign
+                return BitConverter.UInt64BitsToDouble((xbits & ~double.SignMask) | (ybits & double.SignMask));
             }
         }
 
@@ -837,7 +846,7 @@ namespace System
                 }
 
                 Debug.Assert(double.IsSubnormal(x));
-                return double.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - 11);
+                return double.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
             }
 
             return x.Exponent;

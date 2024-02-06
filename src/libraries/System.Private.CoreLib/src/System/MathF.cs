@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -50,17 +51,17 @@ namespace System
 
         public static float BitDecrement(float x)
         {
-            int bits = BitConverter.SingleToInt32Bits(x);
+            uint bits = BitConverter.SingleToUInt32Bits(x);
 
-            if ((bits & 0x7F800000) >= 0x7F800000)
+            if (!float.IsFinite(bits))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
-                // +Infinity returns float.MaxValue
-                return (bits == 0x7F800000) ? float.MaxValue : x;
+                // +Infinity returns MaxValue
+                return (bits == float.PositiveInfinityBits) ? float.MaxValue : x;
             }
 
-            if (bits == 0x00000000)
+            if (bits == float.PositiveZeroBits)
             {
                 // +0.0 returns -float.Epsilon
                 return -float.Epsilon;
@@ -69,33 +70,47 @@ namespace System
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            bits += ((bits < 0) ? +1 : -1);
-            return BitConverter.Int32BitsToSingle(bits);
+            if (float.IsNegative(x))
+            {
+                bits += 1;
+            }
+            else
+            {
+                bits -= 1;
+            }
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         public static float BitIncrement(float x)
         {
-            int bits = BitConverter.SingleToInt32Bits(x);
+            uint bits = BitConverter.SingleToUInt32Bits(x);
 
-            if ((bits & 0x7F800000) >= 0x7F800000)
+            if (!float.IsFinite(x))
             {
                 // NaN returns NaN
-                // -Infinity returns float.MinValue
+                // -Infinity returns MinValue
                 // +Infinity returns +Infinity
-                return (bits == unchecked((int)(0xFF800000))) ? float.MinValue : x;
+                return (bits == float.NegativeInfinityBits) ? float.MinValue : x;
             }
 
-            if (bits == unchecked((int)(0x80000000)))
+            if (bits == float.NegativeZeroBits)
             {
-                // -0.0 returns float.Epsilon
+                // -0.0 returns Epsilon
                 return float.Epsilon;
             }
 
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            bits += ((bits < 0) ? -1 : +1);
-            return BitConverter.Int32BitsToSingle(bits);
+            if (float.IsNegative(x))
+            {
+                bits -= 1;
+            }
+            else
+            {
+                bits += 1;
+            }
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -112,19 +127,14 @@ namespace System
 
             static float SoftwareFallback(float x, float y)
             {
-                const int signMask = 1 << 31;
-
                 // This method is required to work for all inputs,
                 // including NaN, so we operate on the raw bits.
-                int xbits = BitConverter.SingleToInt32Bits(x);
-                int ybits = BitConverter.SingleToInt32Bits(y);
+                uint xbits = BitConverter.SingleToUInt32Bits(x);
+                uint ybits = BitConverter.SingleToUInt32Bits(y);
 
                 // Remove the sign from x, and remove everything but the sign from y
-                xbits &= ~signMask;
-                ybits &= signMask;
-
-                // Simply OR them to get the correct sign
-                return BitConverter.Int32BitsToSingle(xbits | ybits);
+                // Then, simply OR them to get the correct sign
+                return BitConverter.UInt32BitsToSingle((xbits & ~float.SignMask) | (ybits & float.SignMask));
             }
         }
 
@@ -353,7 +363,7 @@ namespace System
             //            FloatingPointUtils::round(double), and FloatingPointUtils::round(float)
             // ************************************************************************************
 
-            // This code is based on `nearbyint` from amd/aocl-libm-ose
+            // This code is based on `nearbyintf` from amd/aocl-libm-ose
             // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
             //
             // Licensed under the BSD 3-Clause "New" or "Revised" License
