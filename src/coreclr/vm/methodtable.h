@@ -627,7 +627,7 @@ public:
     // and returns an AppDomain if any of the parts are from an AppDomain,
     // i.e. are domain-bound.  Note that if any of the parts are domain-bound
     // then they will all belong to the same domain.
-    PTR_BaseDomain GetDomain();
+    PTR_AppDomain GetDomain();
 
     // For regular, non-constructed types, GetLoaderModule() == GetModule()
     // For constructed types (e.g. int[], Dict<int[], C>) the hash table through which a type

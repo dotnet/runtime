@@ -206,7 +206,7 @@ CHECK MethodDesc::CheckActivated()
 }
 
 //*******************************************************************************
-BaseDomain *MethodDesc::GetDomain()
+AppDomain *MethodDesc::GetDomain()
 {
     CONTRACTL
     {
@@ -2994,7 +2994,7 @@ bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsIn
 #ifndef FEATURE_CODE_VERSIONING
     #error Tiered compilation requires code versioning
 #endif
-    return 
+    return
         // Policy
         g_pConfig->TieredCompilation() &&
 

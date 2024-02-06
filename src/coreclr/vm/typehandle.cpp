@@ -274,7 +274,7 @@ PTR_Module TypeHandle::GetLoaderModule() const
         return AsMethodTable()->GetLoaderModule();
 }
 
-PTR_BaseDomain TypeHandle::GetDomain() const
+PTR_AppDomain TypeHandle::GetDomain() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 

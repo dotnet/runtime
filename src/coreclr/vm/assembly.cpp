@@ -117,7 +117,7 @@ void Assembly::Initialize()
 // It cannot do any allocations or operations that might fail. Those operations should be done
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
-Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
+Assembly::Assembly(AppDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
     m_pDomain(pDomain),
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
@@ -319,7 +319,7 @@ void Assembly::Terminate( BOOL signalProfiler )
 }
 
 Assembly * Assembly::Create(
-    BaseDomain *                 pDomain,
+    AppDomain *                  pDomain,
     PEAssembly *                 pPEAssembly,
     DebuggerAssemblyControlFlags debuggerFlags,
     BOOL                         fIsCollectible,
@@ -603,7 +603,7 @@ PTR_LoaderHeap Assembly::GetStubHeap()
 }
 
 
-PTR_BaseDomain Assembly::GetDomain()
+PTR_AppDomain Assembly::GetDomain()
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -611,17 +611,6 @@ PTR_BaseDomain Assembly::GetDomain()
     _ASSERTE(m_pDomain);
     return (m_pDomain);
 }
-
-#ifndef DACCESS_COMPILE
-
-void Assembly::SetParent(BaseDomain* pParent)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pDomain = pParent;
-}
-
-#endif // !DACCCESS_COMPILE
 
 Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                                            Loader::LoadFlag loadFlag,

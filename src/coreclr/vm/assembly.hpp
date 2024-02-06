@@ -54,14 +54,15 @@ class Assembly
     friend class AssemblyNameNative;
     friend class ClrDataAccess;
 
-public:
-    Assembly(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
+private:
+    Assembly(AppDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible);
     void Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
 
+public:
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
-    static Assembly *Create(BaseDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static Assembly *Create(AppDomain *pDomain, PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
@@ -95,18 +96,6 @@ public:
         return m_pClassLoader;
     }
 
-    //****************************************************************************************
-    //
-    // Get the domain the assembly lives in.
-    PTR_BaseDomain Parent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDomain;
-    }
-
-    // Sets the assemblies domain.
-    void SetParent(BaseDomain* pParent);
-
     //-----------------------------------------------------------------------------------------
     // EnsureActive ensures that the assembly is properly prepped in the current app domain
     // for active uses like code execution, static field access, and instance allocation
@@ -123,7 +112,7 @@ public:
 
     // Returns the parent domain if it is not the system area. Returns NULL if it is the
     // system domain
-    PTR_BaseDomain GetDomain();
+    PTR_AppDomain GetDomain();
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
 #ifdef LOGGING
@@ -425,7 +414,7 @@ public:
 private:
 
 
-    PTR_BaseDomain        m_pDomain;        // Parent Domain
+    PTR_AppDomain         m_pDomain;        // Parent Domain
     PTR_ClassLoader       m_pClassLoader;   // Single Loader
 
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point

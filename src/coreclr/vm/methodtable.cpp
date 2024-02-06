@@ -473,10 +473,10 @@ WORD MethodTable::GetNumMethods()
 }
 
 //==========================================================================================
-PTR_BaseDomain MethodTable::GetDomain()
+PTR_AppDomain MethodTable::GetDomain()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
+    return AppDomain::GetCurrentDomain();
 }
 
 //==========================================================================================

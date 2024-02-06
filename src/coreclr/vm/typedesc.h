@@ -159,7 +159,7 @@ public:
     // and returns an AppDomain if any of the parts are from an AppDomain,
     // i.e. are domain-bound.  If any of the parts are domain-bound
     // then they will all belong to the same domain.
-    PTR_BaseDomain GetDomain();
+    PTR_AppDomain GetDomain();
 
     PTR_LoaderAllocator GetLoaderAllocator()
     {

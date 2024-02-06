@@ -1980,7 +1980,7 @@ ClassLoader *Module::GetClassLoader()
     return m_pAssembly->GetLoader();
 }
 
-PTR_BaseDomain Module::GetDomain()
+PTR_AppDomain Module::GetDomain()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -2416,8 +2416,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     if (CORDebuggerAttached())
     {
         AppDomain *pDomain = AppDomain::GetCurrentDomain();
-        if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
-                                                pDomain->ContainsAssembly(m_pAssembly)))
+        if (pDomain->IsDebuggerAttached() && pDomain->ContainsAssembly(m_pAssembly))
         {
             g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
         }

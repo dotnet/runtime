@@ -129,7 +129,7 @@ BOOL TypeDesc::ContainsGenericVariables(BOOL methodOnly)
 }
 
 
-PTR_BaseDomain TypeDesc::GetDomain()
+PTR_AppDomain TypeDesc::GetDomain()
 {
     CONTRACTL
     {
@@ -140,7 +140,7 @@ PTR_BaseDomain TypeDesc::GetDomain()
     }
     CONTRACTL_END
 
-    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
+    return AppDomain::GetCurrentDomain();
 }
 
 PTR_Module TypeDesc::GetModule() {
