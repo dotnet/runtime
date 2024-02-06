@@ -7717,11 +7717,6 @@ GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags i
         iconNode->gtTargetHandle = (size_t)value;
     }
 #endif
-
-    if (iconFlags == GTF_ICON_OBJ_HDL)
-    {
-        handleNode->gtType = TYP_REF;
-    }
     return handleNode;
 }
 

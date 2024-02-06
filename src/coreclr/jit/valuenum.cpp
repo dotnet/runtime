@@ -2034,7 +2034,7 @@ ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
         return res;
     }
 
-    var_types       type              = handleFlags == GTF_ICON_OBJ_HDL ? TYP_REF : TYP_I_IMPL;
+    var_types       type              = Compiler::gtGetTypeForIconFlags(handleFlags);
     Chunk* const    c                 = GetAllocChunk(type, CEA_Handle);
     unsigned const  offsetWithinChunk = c->AllocVN();
     VNHandle* const chunkSlots        = reinterpret_cast<VNHandle*>(c->m_defs);
@@ -6116,6 +6116,11 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 bool ValueNumStore::IsVNObjHandle(ValueNum vn)
 {
     return IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_OBJ_HDL);
+}
+
+bool ValueNumStore::IsVNTypeHandle(ValueNum vn)
+{
+    return IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_CLASS_HDL);
 }
 
 //------------------------------------------------------------------------
@@ -12276,33 +12281,17 @@ var_types ValueNumStore::DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSiz
 //
 ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size)
 {
+    // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
+    // This ensures we do not end up with pathologically long chains of
+    // bitcasts in physical maps. We could do a similar optimization in
+    // "VNForMapPhysical[Store|Select]"; we presume that's not worth it,
+    // and it is better TP-wise to skip bitcasts "lazily" when doing the
+    // selection, as the scenario where they are expected to be common,
+    // single-field structs, implies short selection chains.
     VNFuncApp srcVNFunc{VNF_COUNT};
-    if (GetVNFunc(srcVN, &srcVNFunc))
+    if (GetVNFunc(srcVN, &srcVNFunc) && (srcVNFunc.m_func == VNF_BitCast))
     {
-        if (srcVNFunc.m_func == VNF_BitCast)
-        {
-            // BitCast<type one>(BitCast<type two>(x)) => BitCast<type one>(x).
-            // This ensures we do not end up with pathologically long chains of
-            // bitcasts in physical maps. We could do a similar optimization in
-            // "VNForMapPhysical[Store|Select]"; we presume that's not worth it,
-            // and it is better TP-wise to skip bitcasts "lazily" when doing the
-            // selection, as the scenario where they are expected to be common,
-            // single-field structs, implies short selection chains.
-            srcVN = srcVNFunc.m_args[0];
-        }
-        else if (srcVNFunc.m_func == VNF_TypeHandleToRuntimeTypeHandle && (castToType == TYP_REF) &&
-                 IsVNHandle(srcVNFunc.m_args[0]) && (GetHandleFlags(srcVNFunc.m_args[0]) == GTF_ICON_CLASS_HDL))
-        {
-            // BitCast<TYP_REF>(TypeHandleToRuntimeTypeHandle(clsHandle).m_handle) => frozen RuntimeType handle
-            //
-            CORINFO_CLASS_HANDLE  cls     = (CORINFO_CLASS_HANDLE)ConstantValue<ssize_t>(srcVNFunc.m_args[0]);
-            CORINFO_OBJECT_HANDLE typeObj = m_pComp->info.compCompHnd->getRuntimeTypePointer(cls);
-            if (typeObj != nullptr)
-            {
-                m_pComp->setMethodHasFrozenObjects();
-                return VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
-            }
-        }
+        srcVN = srcVNFunc.m_args[0];
     }
 
     var_types srcType = TypeOfVN(srcVN);
@@ -12598,6 +12587,9 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
                             info.compCompHnd->getRuntimeTypePointer((CORINFO_CLASS_HANDLE)clsHandle);
                         if (typeObj != nullptr)
                         {
+                            if (ISMETHOD("GetIntType"))
+                                fgDispBasicBlocks(true);
+
                             setMethodHasFrozenObjects();
                             call->gtVNPair.SetBoth(vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL));
                             handled = true;
@@ -12996,6 +12988,25 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
         case CORINFO_HELP_DBL2ULNG_OVF:
             fgValueNumberCastHelper(call);
             return false;
+
+        case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
+        {
+            // In CoreCLR, RuntimeTypeHandle is just a wrapper around RuntimeType object, so we can
+            // just number it as BitCast<TYP_STRUCT>(nonGcRuntimeTypeObj);
+            const ValueNum argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
+            if (!opts.IsReadyToRun() && vnStore->IsVNTypeHandle(argVN))
+            {
+                CORINFO_CLASS_HANDLE  cls = (CORINFO_CLASS_HANDLE)vnStore->ConstantValue<ssize_t>(argVN);
+                CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
+                if (typeObj != nullptr)
+                {
+                    ValueNum typeObjVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
+                    call->gtVNPair.SetBoth(vnStore->VNForBitCast(typeObjVN, TYP_STRUCT, genTypeSize(TYP_REF)));
+                    return false;
+                }
+            }
+        }
+        break;
 
         default:
             break;

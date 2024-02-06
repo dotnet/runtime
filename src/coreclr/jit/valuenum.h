@@ -1028,6 +1028,9 @@ public:
     // Returns true iff the VN represents an object handle constant.
     bool IsVNObjHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a Type handle constant.
+    bool IsVNTypeHandle(ValueNum vn);
+
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 

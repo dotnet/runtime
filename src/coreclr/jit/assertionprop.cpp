@@ -2812,7 +2812,8 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, G
                 }
                 else
                 {
-                    conValTree = gtNewIconEmbHndNode((void*)value, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                    assert(vnStore->IsVNObjHandle(vnCns));
+                    conValTree = gtNewIconHandleNode(value, GTF_ICON_OBJ_HDL);
                 }
             }
         }
