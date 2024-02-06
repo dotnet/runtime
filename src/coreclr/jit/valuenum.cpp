@@ -7518,6 +7518,31 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftLeftLogical:
 #endif
             {
+#ifdef TARGET_XARCH
+                if (TypeOfVN(arg1VN) == TYP_SIMD16)
+                {
+                    // The xarch shift instructions support taking the shift amount as
+                    // a simd16, in which case they take the shift amount from the lower
+                    // 64-bits.
+
+                    uint64_t shiftAmount = GetConstantSimd16(arg1VN).u64[0];
+
+                    if (genTypeSize(baseType) != 8)
+                    {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
+                        arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
+                    }
+                    else
+                    {
+                        arg1VN = VNForLongCon(static_cast<int64_t>(shiftAmount));
+                    }
+                }
+#endif // TARGET_XARCH
+
                 return EvaluateBinarySimd(this, GT_LSH, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
@@ -7531,6 +7556,31 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftRightArithmetic:
 #endif
             {
+#ifdef TARGET_XARCH
+                if (TypeOfVN(arg1VN) == TYP_SIMD16)
+                {
+                    // The xarch shift instructions support taking the shift amount as
+                    // a simd16, in which case they take the shift amount from the lower
+                    // 64-bits.
+
+                    uint64_t shiftAmount = GetConstantSimd16(arg1VN).u64[0];
+
+                    if (genTypeSize(baseType) != 8)
+                    {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
+                        arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
+                    }
+                    else
+                    {
+                        arg1VN = VNForLongCon(static_cast<int64_t>(shiftAmount));
+                    }
+                }
+#endif // TARGET_XARCH
+
                 return EvaluateBinarySimd(this, GT_RSH, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
@@ -7543,6 +7593,31 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_AVX512BW_ShiftRightLogical:
 #endif
             {
+#ifdef TARGET_XARCH
+                if (TypeOfVN(arg1VN) == TYP_SIMD16)
+                {
+                    // The xarch shift instructions support taking the shift amount as
+                    // a simd16, in which case they take the shift amount from the lower
+                    // 64-bits.
+
+                    uint64_t shiftAmount = GetConstantSimd16(arg1VN).u64[0];
+
+                    if (genTypeSize(baseType) != 8)
+                    {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
+                        arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
+                    }
+                    else
+                    {
+                        arg1VN = VNForLongCon(static_cast<int64_t>(shiftAmount));
+                    }
+                }
+#endif // TARGET_XARCH
+
                 return EvaluateBinarySimd(this, GT_RSZ, /* scalar */ false, type, baseType, arg0VN, arg1VN);
             }
 
