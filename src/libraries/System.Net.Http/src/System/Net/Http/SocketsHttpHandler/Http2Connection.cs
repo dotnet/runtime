@@ -1794,7 +1794,9 @@ namespace System.Net.Http
 
         private bool ForceSendConnectionWindowUpdate()
         {
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)}={_pendingWindowUpdate}");
             if (_pendingWindowUpdate == 0) return false;
+
             LogExceptions(SendWindowUpdateAsync(0, _pendingWindowUpdate));
             _pendingWindowUpdate = 0;
             return true;
