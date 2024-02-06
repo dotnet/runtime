@@ -847,12 +847,12 @@ namespace System.Runtime
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "acos")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_acos")]
         internal static extern double acos(double x);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "acosf")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_acosf")]
         internal static extern float acosf(float x);
 
         [Intrinsic]
@@ -867,12 +867,12 @@ namespace System.Runtime
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "asin")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_asin")]
         internal static extern double asin(double x);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "asinf")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_asinf")]
         internal static extern float asinf(float x);
 
         [Intrinsic]
@@ -897,12 +897,12 @@ namespace System.Runtime
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atan2")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_atan2")]
         internal static extern double atan2(double y, double x);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atan2f")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_atan2f")]
         internal static extern float atan2f(float y, float x);
 
         [Intrinsic]
@@ -957,12 +957,12 @@ namespace System.Runtime
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "exp")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_exp")]
         internal static extern double exp(double x);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "expf")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_expf")]
         internal static extern float expf(float x);
 
         [Intrinsic]
@@ -977,12 +977,12 @@ namespace System.Runtime
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_log")]
         internal static extern double log(double x);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "logf")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_logf")]
         internal static extern float logf(float x);
 
         [Intrinsic]
@@ -997,22 +997,22 @@ namespace System.Runtime
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log10")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_log10")]
         internal static extern double log10(double x);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log10f")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_log10f")]
         internal static extern float log10f(float x);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "pow")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_pow")]
         internal static extern double pow(double x, double y);
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "powf")]
+        [RuntimeImport(RuntimeLibrary, "netintrinsics_powf")]
         internal static extern float powf(float x, float y);
 
         [Intrinsic]
