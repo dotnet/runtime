@@ -297,7 +297,7 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
+    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
 }
 
 //------------------------------------------------------------------------

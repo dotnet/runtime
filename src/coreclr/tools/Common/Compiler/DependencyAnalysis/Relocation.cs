@@ -55,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
 
         // Linux arm32
         IMAGE_REL_ARM_PREL31                 = 0x10D,
+        IMAGE_REL_ARM_JUMP24                 = 0x10E,
 
         //
         // Relocations for R2R image production
@@ -163,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         // Returns whether the offset fits into bl instruction
         //*****************************************************************************
-        private static bool FitsInThumb2BlRel24(int imm24)
+        public static bool FitsInThumb2BlRel24(int imm24)
         {
             return ((imm24 << 7) >> 7) == imm24;
         }

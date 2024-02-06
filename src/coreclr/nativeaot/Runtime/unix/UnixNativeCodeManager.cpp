@@ -532,11 +532,15 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
 // MOV SP, R4
 #define MOV_SP_R4 0x46A5
 
+// MOV R9, SP
+#define MOV_R9_SP 0x46E9
+
     uint16_t* pInstr = (uint16_t*)pvAddress;
     uint32_t instr = *pInstr;
 
     if ((instr & SUB_SP_IMM_MASK) == SUB_SP_IMM_BITS ||
-        (instr & PUSH_MASK) == PUSH_BITS)
+        (instr & PUSH_MASK) == PUSH_BITS ||
+        instr == MOV_R9_SP)
     {
         return 1;
     }

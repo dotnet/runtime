@@ -41,6 +41,11 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.AllowOutOfOrderMetadataProperties"/> when set.
+        /// </summary>
+        public bool AllowOutOfOrderMetadataProperties { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.AllowTrailingCommas"/> when set.
         /// </summary>
         public bool AllowTrailingCommas { get; set; }

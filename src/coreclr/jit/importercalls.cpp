@@ -5758,10 +5758,10 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// pickGDV: Use profile information to pick a GDV candidate for a call site.
+// pickGDV: Use profile information to pick a GDV/cast type candidate for a call site.
 //
 // Arguments:
-//    call            - the call
+//    call            - the call (either virtual or cast helper)
 //    ilOffset        - exact IL offset of the call
 //    isInterface     - whether or not the call target is defined on an interface
 //    classGuesses    - [out] the classes to guess for (mutually exclusive with methodGuess)
@@ -5782,7 +5782,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     const int               maxLikelyClasses = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned                numberOfClasses = 0;
-    if (call->IsVirtualStub() || call->IsVirtualVtable())
+    if (call->IsVirtualStub() || call->IsVirtualVtable() || call->IsHelperCall())
     {
         numberOfClasses =
             getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
@@ -5800,6 +5800,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     //
     if (!opts.IsReadyToRun() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
     {
+        assert(!call->IsHelperCall());
         numberOfMethods =
             getLikelyMethods(likelyMethods, maxLikelyMethods, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
@@ -5891,6 +5892,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         }
         else
         {
+            assert(!call->IsHelperCall());
             methodGuesses[0] = (CORINFO_METHOD_HANDLE)likelyMethods[index - numberOfClasses].handle;
             likelihoods[0]   = 100;
             *candidatesCount = 1;
@@ -5921,12 +5923,40 @@ void Compiler::pickGDV(GenTreeCall*           call,
         if (maxNumberOfGuesses == 1)
         {
             // We're allowed to make only a single guess - it means we want to work only with dominating types
-            likelihoodThreshold = isInterface ? 25 : 30;
+            if (call->IsHelperCall())
+            {
+                // Casts. Most casts aren't too expensive
+                likelihoodThreshold = 50;
+            }
+            else if (isInterface)
+            {
+                // interface calls
+                likelihoodThreshold = 25;
+            }
+            else
+            {
+                // virtual calls
+                likelihoodThreshold = 30;
+            }
         }
         else if (maxNumberOfGuesses == 2)
         {
             // Two guesses - slightly relax the thresholds
-            likelihoodThreshold = isInterface ? 15 : 20;
+            if (call->IsHelperCall())
+            {
+                // Casts. Most casts aren't too expensive
+                likelihoodThreshold = 40;
+            }
+            else if (isInterface)
+            {
+                // interface calls
+                likelihoodThreshold = 15;
+            }
+            else
+            {
+                // virtual calls
+                likelihoodThreshold = 20;
+            }
         }
         else
         {
@@ -6854,7 +6884,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     switch (intrinsicName)
     {
         case NI_System_Math_Abs:
-        case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
 

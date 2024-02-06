@@ -335,14 +335,14 @@ struct Registers_REGDISPLAY : REGDISPLAY
     inline static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM; }
 
     bool        validRegister(int num) const;
-    bool        validFloatRegister(int num) { return false; };
+    bool        validFloatRegister(int num) const;
     bool        validVectorRegister(int num) const { return false; };
 
     uint32_t    getRegister(int num) const;
     void        setRegister(int num, uint32_t value, uint32_t location);
 
-    double      getFloatRegister(int num) const {abort();}
-    void        setFloatRegister(int num, double value) {abort();}
+    double      getFloatRegister(int num) const;
+    void        setFloatRegister(int num, double value);
 
     libunwind::v128    getVectorRegister(int num) const {abort();}
     void        setVectorRegister(int num, libunwind::v128 value) {abort();}
@@ -391,6 +391,10 @@ inline bool Registers_REGDISPLAY::validRegister(int num) const {
         return true;
 
     return false;
+}
+
+inline bool Registers_REGDISPLAY::validFloatRegister(int num) const {
+    return num >= UNW_ARM_D0 && num <= UNW_ARM_D31;
 }
 
 inline uint32_t Registers_REGDISPLAY::getRegister(int regNum) const {
@@ -496,6 +500,24 @@ void Registers_REGDISPLAY::setRegister(int num, uint32_t value, uint32_t locatio
         break;
     default:
         PORTABILITY_ASSERT("unsupported arm register");
+    }
+}
+
+double Registers_REGDISPLAY::getFloatRegister(int num) const
+{
+    if (num >= UNW_ARM_D8 && num <= UNW_ARM_D15)
+    {
+        return D[num - UNW_ARM_D8];
+    }
+
+    PORTABILITY_ASSERT("unsupported arm register");
+}
+
+void Registers_REGDISPLAY::setFloatRegister(int num, double value)
+{
+    if (num >= UNW_ARM_D8 && num <= UNW_ARM_D15)
+    {
+        D[num - UNW_ARM_D8] = value;
     }
 }
 

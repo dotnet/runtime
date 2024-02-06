@@ -353,6 +353,7 @@ namespace System.Text.Json.Serialization.Tests
 
             static IEnumerable<(PropertyInfo, object)> GetPropertiesWithSettersAndNonDefaultValues()
             {
+                yield return (GetProp(nameof(JsonSerializerOptions.AllowOutOfOrderMetadataProperties)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.AllowTrailingCommas)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultBufferSize)), 42);
                 yield return (GetProp(nameof(JsonSerializerOptions.Encoder)), JavaScriptEncoder.UnsafeRelaxedJsonEscaping);

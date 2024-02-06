@@ -6083,7 +6083,7 @@ void Interpreter::NewObj()
     else if ((clsFlags & CORINFO_FLG_VAROBJSIZE) && !(clsFlags & CORINFO_FLG_ARRAY))
     {
         // For a VAROBJSIZE class (currently == String), pass NULL as this to "pseudo-constructor."
-        void* specialFlagArg = reinterpret_cast<void*>(0x1);  // Special value for "thisArg" argument of "DoCallWork": push NULL that's not on op stack.
+        void* specialFlagArg = reinterpret_cast<void*>(0x1);  // Special value for "thisArg" argument of "DoCallWork": pushing NULL that's not on op stack is unnecessary.(#62936)
         DoCallWork(/*virtCall*/false, specialFlagArg, &methTok, &callInfo);  // pushes result automatically
     }
     else
@@ -9220,6 +9220,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         sigInfo.numArgs = sigInfoFull.numArgs;
         sigInfo.callConv = sigInfoFull.callConv;
         sigInfo.retType = sigInfoFull.retType;
+        sigInfo.fHasThis = CORINFO_SIG_INFO_SMALL::ComputeHasThis(methToCall);
     }
 
     // Point A in our cycle count.
@@ -9402,6 +9403,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         sigInfo.numArgs = sig.numArgs;
         sigInfo.callConv = sig.callConv;
         sigInfo.retType = sig.retType;
+        MethodDesc* pCallSiteMD = reinterpret_cast<MethodDesc*>(m_methInfo->m_method);
+        sigInfo.fHasThis = CORINFO_SIG_INFO_SMALL::ComputeHasThis(pCallSiteMD);
         // Adding 'this' pointer because, numArgs doesn't include the this pointer.
         totalSigArgs = sigInfo.numArgs + sigInfo.hasThis();
 
@@ -9473,8 +9476,16 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     unsigned totalArgsOnILStack = totalSigArgs;
     if (m_callThisArg != NULL)
     {
-        _ASSERTE(totalArgsOnILStack > 0);
-        totalArgsOnILStack--;
+        if (size_t(m_callThisArg) == 0x1)
+        {
+            // For string constructors, it is not necessary to pass NULL as "thisArg" to "pseudo-constructor." (#62936)
+            _ASSERTE(!sigInfo.hasThis());
+        }
+        else
+        {
+            _ASSERTE(totalArgsOnILStack > 0);
+            totalArgsOnILStack--;
+        }
     }
 
 #if defined(FEATURE_HFA)
@@ -9681,7 +9692,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             {
                 TypeHandle th = ms.GetLastTypeHandleThrowing(ClassLoader::LoadTypes);
                 CONSISTENCY_CHECK(th.CheckFullyLoaded());
-                CONSISTENCY_CHECK(th.IsRestored());
             }
         }
     }
@@ -9691,16 +9701,10 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     if (sigInfo.hasThis())
     {
+        _ASSERTE(size_t(m_callThisArg) != 0x1); // Ensure m_callThisArg is not a Special "thisArg" argument for String constructors.
         if (m_callThisArg != NULL)
         {
-            if (size_t(m_callThisArg) == 0x1)
-            {
-                args[curArgSlot] = NULL;
-            }
-            else
-            {
-                args[curArgSlot] = PtrToArgSlot(m_callThisArg);
-            }
+            args[curArgSlot] = PtrToArgSlot(m_callThisArg);
             argTypes[curArgSlot] = InterpreterType(CORINFO_TYPE_BYREF);
         }
         else
@@ -9856,6 +9860,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             sigInfo.numArgs = sigInfoFull.numArgs;
             sigInfo.callConv = sigInfoFull.callConv;
             sigInfo.retType = sigInfoFull.retType;
+            sigInfo.fHasThis = CORINFO_SIG_INFO_SMALL::ComputeHasThis(methToCall);
         }
 
         if (sigInfo.hasTypeArg())

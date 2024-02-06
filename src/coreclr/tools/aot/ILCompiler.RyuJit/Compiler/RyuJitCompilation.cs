@@ -38,7 +38,6 @@ namespace ILCompiler
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
-            DevirtualizationManager devirtualizationManager,
             IInliningPolicy inliningPolicy,
             InstructionSetSupport instructionSetSupport,
             ProfileDataManager profileDataManager,
@@ -46,7 +45,7 @@ namespace ILCompiler
             ReadOnlyFieldPolicy readOnlyFieldPolicy,
             RyuJitCompilationOptions options,
             int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, inliningPolicy, logger)
         {
             _compilationOptions = options;
             InstructionSetSupport = instructionSetSupport;
@@ -73,8 +72,7 @@ namespace ILCompiler
             // information proving that it isn't, give RyuJIT the constructed symbol even
             // though we just need the unconstructed one.
             // https://github.com/dotnet/runtimelab/issues/1128
-            bool canPotentiallyConstruct = _devirtualizationManager == null
-                ? true : _devirtualizationManager.CanConstructType(type);
+            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanConstructType(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.MaximallyConstructableType(type);
 
@@ -83,8 +81,7 @@ namespace ILCompiler
 
         public FrozenRuntimeTypeNode NecessaryRuntimeTypeIfPossible(TypeDesc type)
         {
-            bool canPotentiallyConstruct = _devirtualizationManager == null
-                ? true : _devirtualizationManager.CanConstructType(type);
+            bool canPotentiallyConstruct = NodeFactory.DevirtualizationManager.CanConstructType(type);
             if (canPotentiallyConstruct)
                 return _nodeFactory.SerializedMaximallyConstructableRuntimeTypeObject(type);
 
