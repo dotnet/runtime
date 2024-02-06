@@ -6947,27 +6947,59 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_R(INS_sve_st1b, EA_SCALABLE, REG_V6, REG_P3, REG_R0, REG_V4,
                                 INS_OPTS_SCALABLE_D); // ST1B    {<Zt>.D }, <Pg>, [<Xn|SP>, <Zm>.D]
 
-    // IF_SVE_IE_2A
-    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 0); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 33);   // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+    // IF_SVE_ID_2A
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, 0); // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, 76);   // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL
                                                                                // VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, -173); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, -25);  // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL
                                                                                // VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, -256); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, -256); // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL
                                                                                // VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 255);  // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_P1, REG_R5, 255);  // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL
                                                                                // VL}]
 
+    // IF_SVE_JG_2A
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, 0); // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, 221);  // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL
+                                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, -117); // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL
+                                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, -256); // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL
+                                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_P3, REG_R1, 255);  // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL
+                                                                               // VL}] 
+
+    // IF_SVE_IE_2A
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 0, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 33, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, -173, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, -256, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_ldr, EA_SCALABLE, REG_V3, REG_R4, 255, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
+
     // IF_SVE_JH_2A
-    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 0); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 71);   // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
-                                                                               // VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, -165); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
-                                                                               // VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, -256); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
-                                                                               // VL}]
-    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 255);  // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
-                                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 0, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 71, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, -165, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, -256, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
+    theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 255, INS_OPTS_NONE,
+                              INS_SCALABLE_OPTS_UNPREDICATED); // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL
+                                                               // VL}]
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

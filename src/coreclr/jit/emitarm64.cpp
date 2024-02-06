@@ -2032,15 +2032,26 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
+        case IF_SVE_ID_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE load predicate register
+        case IF_SVE_JG_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE store predicate register
+            elemsize = id->idOpSize();
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isScalableVectorSize(elemsize));
+            assert(isPredicateRegister(id->idReg1())); // TTTT
+            assert(isGeneralRegister(id->idReg2()));   // nnnnn
+            assert(isValidSimm9(emitGetInsSC(id)));    // iii
+                                                       // iiiiii
+            break;
+
         case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             elemsize = id->idOpSize();
             assert(insOptsNone(id->idInsOpt()));
             assert(isScalableVectorSize(elemsize));
-            assert(isVectorRegister(id->idReg1()));    // ttttt
-            assert(isGeneralRegister(id->idReg2()));   // nnnnn
-            assert(isValidSimm9(emitGetInsSC(id))); // iii
-                                                       // iiiiii
+            assert(isVectorRegister(id->idReg1()));  // ttttt
+            assert(isGeneralRegister(id->idReg2())); // nnnnn
+            assert(isValidSimm9(emitGetInsSC(id)));  // iii
+                                                     // iiiiii
             break;
 
         default:
@@ -8766,24 +8777,42 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
         case INS_sve_ldr:
             assert(insOptsNone(opt));
-            assert(insScalableOptsNone(sopt));
             assert(isScalableVectorSize(size));
-            assert(isVectorRegister(reg1));  // ttttt
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm9(imm));    // iii
+            assert(isValidSimm9(imm));       // iii
                                              // iiiiii
-            fmt = IF_SVE_IE_2A;
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg1));
+                fmt = IF_SVE_IE_2A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isPredicateRegister(reg1));
+                fmt = IF_SVE_ID_2A;
+            }
             break;
 
         case INS_sve_str:
             assert(insOptsNone(opt));
-            assert(insScalableOptsNone(sopt));
             assert(isScalableVectorSize(size));
-            assert(isVectorRegister(reg1));  // ttttt
             assert(isGeneralRegister(reg2)); // nnnnn
-            assert(isValidSimm9(imm));    // iii
+            assert(isValidSimm9(imm));       // iii
                                              // iiiiii
-            fmt = IF_SVE_JH_2A;
+
+            if (sopt == INS_SCALABLE_OPTS_UNPREDICATED)
+            {
+                assert(isVectorRegister(reg1));
+                fmt = IF_SVE_JH_2A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                assert(isPredicateRegister(reg1));
+                fmt = IF_SVE_JG_2A;
+            }
             break;
 
         default:
@@ -16449,6 +16478,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
             assert((regpos == 2) || (regpos == 3));
             return ((regpos == 2) ? PREDICATE_NONE : PREDICATE_SIZED);
 
+        case IF_SVE_ID_2A:
+        case IF_SVE_JG_2A:
+            return PREDICATE_NONE;
+
         default:
             break;
     }
@@ -20849,6 +20882,17 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_ID_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE load predicate register
+        case IF_SVE_JG_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE store predicate register
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1());          // TTTT
+            code |= insEncodeReg_R_9_to_5(id->idReg2());          // nnnnn
+            code |= insEncodeSimm9h9l_21_to_16_and_12_to_10(imm); // iii
+                                                                  // iiiiii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             imm  = emitGetInsSC(id);
@@ -21241,6 +21285,22 @@ void emitter::emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2
                 assert(!"Invalid instruction");
                 break;
         }
+    }
+    printf("]");
+}
+
+/*****************************************************************************
+ *
+ *  Prints the encoding for format [<Xn|SP>{, #<imm>, MUL VL}]
+ */
+void emitter::emitDispSveImmMulVl(regNumber reg1, ssize_t imm)
+{
+    printf("[");
+    emitDispReg(reg1, EA_8BYTE, imm != 0);
+    if (imm != 0)
+    {
+        emitDispImm(imm, true);
+        printf("mul vl");
     }
     printf("]");
 }
@@ -24041,8 +24101,7 @@ void emitter::emitDispInsHelp(
                            // offsets)
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);            // ggg
-            emitDispSveModAddr(ins, id->idReg3(), id->idReg4(), id->idInsOpt(), fmt);                      // nnnnn
-                                                                                                           // mmmmm
+            emitDispSveModAddr(ins, id->idReg3(), id->idReg4(), id->idInsOpt(), fmt);                      // nnnnn                                                                                                          // mmmmm
             break;
 
         // {<Zt>.<T>}, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -24050,14 +24109,7 @@ void emitter::emitDispInsHelp(
             imm = emitGetInsSC(id);
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);            // ggg
-            printf("[");
-            emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
-            if (imm != 0)
-            {
-                emitDispImm(emitGetInsSC(id), true); // iiii
-                printf("mul vl");
-            }
-            printf("]");
+            emitDispSveImmMulVl(id->idReg3(), imm);
             break;
 
         // {<Zt>.<T>}, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -24065,14 +24117,16 @@ void emitter::emitDispInsHelp(
             imm = emitGetInsSC(id);
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(ins), id->idInsOpt(), true); // ttttt
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);            // ggg
-            printf("[");
-            emitDispReg(id->idReg3(), EA_8BYTE, imm != 0); // nnnnn
-            if (imm != 0)
-            {
-                emitDispImm(emitGetInsSC(id), true); // iiii
-                printf("mul vl");
-            }
-            printf("]");
+            emitDispSveImmMulVl(id->idReg3(), imm);
+            break;
+
+        // <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_ID_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE load predicate register
+        // <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_JG_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE store predicate register
+            imm = emitGetInsSC(id);
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), true); // TTTT
+            emitDispSveImmMulVl(id->idReg2(), imm);
             break;
 
         // <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]
@@ -24081,15 +24135,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             imm = emitGetInsSC(id);
             emitDispReg(id->idReg1(), EA_SCALABLE, true); // ttttt
-            printf("[");
-            emitDispReg(id->idReg2(), EA_8BYTE, imm != 0); // nnnnn
-            if (imm != 0)
-            {
-                emitDispImm(imm, true); // iii
-                                        // iiiiii
-                printf("mul vl");
-            }
-            printf("]");
+            emitDispSveImmMulVl(id->idReg2(), imm);
             break;
 
         default:
@@ -24569,6 +24615,8 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
                 }
                 break;
             case IF_LARGELDC:
+            case IF_SVE_ID_2A:
+            case IF_SVE_JG_2A:
             case IF_SVE_IE_2A:
             case IF_SVE_JH_2A:
                 isLocalAccess = false;
@@ -27514,11 +27562,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
+        case IF_SVE_ID_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE load predicate register
         case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
             result.insThroughput = PERFSCORE_THROUGHPUT_3C;
             result.insLatency    = PERFSCORE_LATENCY_6C;
             break;
 
+        case IF_SVE_JG_2A: // ..........iiiiii ...iiinnnnn.TTTT -- SVE store predicate register
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
