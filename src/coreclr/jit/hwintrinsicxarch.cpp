@@ -1729,6 +1729,55 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_CreateSequence:
+        case NI_Vector256_CreateSequence:
+        case NI_Vector512_CreateSequence:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!impStackTop(1).val->OperIsConst() || !impStackTop(0).val->OperIsConst())
+            {
+                // One of the operands isn't constant, so we need to do a computation in the form of:
+                //     (Indices * op2) + op1
+
+                if (simdSize == 32)
+                {
+                    if (varTypeIsIntegral(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        // We can't deal with TYP_SIMD32 for integral types if the compiler doesn't support AVX2
+                        break;
+                    }
+                }
+
+                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+                {
+                    // When op2 is a constant, we can skip the multiplication allowing us to always
+                    // generate better code. However, if it isn't then we need to fallback in the
+                    // cases where multiplication isn't supported.
+
+                    if ((simdSize != 64) && !compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                    {
+                        // TODO-XARCH-CQ: We should support long/ulong multiplication
+                        break;
+                    }
+
+#if defined(TARGET_X86)
+                    // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
+                    break;
+#endif // TARGET_X86
+                }
+            }
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdCreateSequenceNode(retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector128_Divide:
         case NI_Vector256_Divide:
         case NI_Vector512_Divide:
@@ -2019,6 +2068,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 0);
             retNode = gtNewAllBitsSetConNode(retType);
+            break;
+        }
+
+        case NI_Vector128_get_Indices:
+        case NI_Vector256_get_Indices:
+        case NI_Vector512_get_Indices:
+        {
+            assert(sig->numArgs == 0);
+            retNode = gtNewSimdGetIndicesNode(retType, simdBaseJitType, simdSize);
             break;
         }
 

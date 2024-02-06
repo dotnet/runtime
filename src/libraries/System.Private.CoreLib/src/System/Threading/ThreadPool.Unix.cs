@@ -16,7 +16,7 @@ namespace System.Threading
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", "DOTNET_ThreadPool_EnableWorkerTracking");
 #endif
 
-#if !(TARGET_BROWSER && FEATURE_WASM_THREADS)
+#if !(TARGET_BROWSER && FEATURE_WASM_MANAGED_THREADS)
         // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
         // the runtime may use the thread for processing other work.
         internal static bool YieldFromDispatchLoop => false;
