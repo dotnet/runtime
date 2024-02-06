@@ -26,7 +26,6 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory, TestCategory("no-workload")]
     [InlineData("Debug")]
     [InlineData("Release")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task DefaultTemplate_WithoutWorkload(string config)
     {
         string id = $"blz_no_workload_{config}_{GetRandomId()}_{s_unicodeChar}";
@@ -178,7 +177,6 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory]
     [InlineData("", true)] // Default case
     [InlineData("false", false)] // the other case
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
     {
         string config = "Release";

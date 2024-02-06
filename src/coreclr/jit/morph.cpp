@@ -8868,23 +8868,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         case GT_RUNTIMELOOKUP:
             return fgMorphTree(op1);
 
-#ifdef TARGET_ARM
-        case GT_INTRINSIC:
-            if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round)
-            {
-                switch (tree->TypeGet())
-                {
-                    case TYP_DOUBLE:
-                        return fgMorphIntoHelperCall(tree, CORINFO_HELP_DBLROUND, true /* morphArgs */, op1);
-                    case TYP_FLOAT:
-                        return fgMorphIntoHelperCall(tree, CORINFO_HELP_FLTROUND, true /* morphArgs */, op1);
-                    default:
-                        unreached();
-                }
-            }
-            break;
-#endif
-
         case GT_COMMA:
             if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
             {
@@ -13869,7 +13852,7 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                     // Yes, pred assertions are available.
                     // If the pred is (a non-degenerate) BBJ_COND, fetch the appropriate out set.
                     //
-                    ASSERT_TP  assertionsOut     = pred->bbAssertionOut;
+                    ASSERT_TP  assertionsOut;
                     const bool useCondAssertions = pred->KindIs(BBJ_COND) && (pred->NumSucc() == 2);
 
                     if (useCondAssertions)
@@ -13885,6 +13868,10 @@ void Compiler::fgMorphBlock(BasicBlock* block)
                             JITDUMP("Using `if false` assertions from pred " FMT_BB "\n", pred->bbNum);
                             assertionsOut = pred->bbAssertionOutIfFalse;
                         }
+                    }
+                    else
+                    {
+                        assertionsOut = pred->bbAssertionOut;
                     }
 
                     // If this is the first pred, copy (or share, when block is the only successor).
