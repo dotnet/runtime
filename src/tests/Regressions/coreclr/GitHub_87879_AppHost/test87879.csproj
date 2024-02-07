@@ -5,7 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseAppHost>true</UseAppHost>
     <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR ('$(TargetsUnix)' == 'true' AND '$(TargetsMobile)' != 'true')">false</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">false</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\GitHub_87879\test87879.cs" />
