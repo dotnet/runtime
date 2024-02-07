@@ -6,11 +6,9 @@ Not a full Android experience is available - it's only possible to publish for t
 
 The minimum API level is 21 at the time of writing the document, but search for AndroidApiLevelMin in this repo for more up-to-date information.
 
-NOTE: There's an existing issue that puts the minimum Android version where things work to Android 10: https://github.com/dotnet/runtime/issues/92196
-
 To build for Bionic:
 
-* Ensure you have [Android NDK](https://developer.android.com/ndk/downloads) for your system downloaded and extracted somewhere. We build and test with NDK r23c but anything newer should also work. Double check with the NDK version referenced [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-android.md), which might be more up-to-date than this document.
+* Ensure you have [Android NDK](https://developer.android.com/ndk/downloads) for your system downloaded and extracted somewhere. We build and test with NDK r23c but anything newer should also work. Newer releases of the NDK might require a workaround (#92272). Double check with the NDK version referenced [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-android.md), which might be more up-to-date than this document.
 * Update your PATH to include `{NDK_ROOT}\toolchains\llvm\prebuilt\{OS_ARCH}\bin`. Replace `{NDK_ROOT}` with the path where you extracted the NDK, and replace `{OS_ARCH}` with your host OS and architecture (e.g. windows-x86_64 or linux-x86_64). Make sure this entry is first in your path - we need to make sure that running `clang` will execute `clang` from this directory.
 * You can either create a new project or use an existing project. For this guide, let's create a new one:
   ```sh
