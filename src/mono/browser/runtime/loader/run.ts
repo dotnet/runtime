@@ -126,6 +126,19 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
+    withDumpThreadsOnNonZeroExit(): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                dumpThreadsOnNonZeroExit: true
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
     withAssertAfterExit(): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
