@@ -185,6 +185,9 @@ enum HWIntrinsicFlag : unsigned int
     // this output can be used as a per-element mask
     HW_Flag_ReturnsPerElementMask = 0x10000,
 
+    // The intrinsic uses a mask in arg1 to select elements present in the result
+    HW_Flag_MaskedOperation = 0x20000,
+
 #else
 #error Unsupported platform
 #endif
@@ -878,6 +881,11 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Scalable) != 0;
     }
 
+    static bool IsMaskedOperation(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaskedOperation) != 0;
+    }
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)

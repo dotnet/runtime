@@ -1523,6 +1523,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount++;
             }
         }
+        else if (HWIntrinsicInfo::IsMaskedOperation(intrin.id))
+        {
+            regMaskTP srcCandidates = RBM_NONE;
+            switch (intrin.id)
+            {
+                case NI_Sve_LoadVector:
+                    srcCandidates = RBM_LOWMASK;
+                    break;
+
+                default:
+                    noway_assert(!"Not a supported masked operation");
+            }
+            srcCount += BuildOperandUses(intrin.op1, srcCandidates);
+        }
         else if (intrinsicTree->OperIsMemoryLoadOrStore())
         {
             srcCount += BuildAddrUses(intrin.op1);
