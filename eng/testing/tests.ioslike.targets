@@ -134,6 +134,11 @@
       <_ApplePropertyNames Include="_NetCoreAppToolCurrent" />
       <_ApplePropertyNames Include="ShouldILStrip" />
 
+      <_ApplePropertyNames Include="DebuggerSupport" />
+      <_ApplePropertyNames Include="MetadataUpdaterSupport" />
+      <_ApplePropertyNames Include="EventSourceSupport" />
+      <_ApplePropertyNames Include="JsonSerializerIsReflectionEnabledByDefault" />
+
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
         Name="%(_ApplePropertyNames.Identity)"

@@ -52,5 +52,6 @@
     <!-- R2R testing does not tolerate the combination of a regular project reference and a content reference. -->
     <!-- This is a bug in the SDK tracked here: https://github.com/dotnet/sdk/issues/30718 -->
     <PublishReadyToRunExclude Include="System.Diagnostics.FileVersionInfo.TestAssembly.dll" />
+    <TrimmerRootAssembly Include="System.Diagnostics.FileVersionInfo.TestAssembly" />
   </ItemGroup>
 </Project>
