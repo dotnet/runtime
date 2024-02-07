@@ -4298,4 +4298,7 @@
   <data name="NotSupported_AssemblySave" xml:space="preserve">
     <value>This AssemblyBuilder instance doesn't support saving. Use AssemblyBuilder.DefinePersistedAssembly to create an AssemblyBuilder instance that supports saving.</value>
   </data>
+  <data name="WasmThreads_BlockingWaitNotSupportedOnJSInterop" xml:space="preserve">
+    <value>Blocking wait is not supported on the JS interop threads.</value>
+  </data>
 </root>

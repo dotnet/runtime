@@ -2,11 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System.Threading;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Tests
 {
     public static partial class BitStackTests
     {
+
+#if NETCOREAPP
+        [ModuleInitializer]
+        internal static void M()
+        {
+            Thread t = new Thread(Logger);
+            t.IsBackground = true;
+            t.Start();
+
+            void Logger()
+            {
+                for (;;)
+                {
+                    var gcInfo = GC.GetGCMemoryInfo();
+                    Console.WriteLine($"Index                {gcInfo.Index}");
+                    Console.WriteLine($"TotalAvailableMemory {gcInfo.TotalAvailableMemoryBytes/1024}");
+                    Console.WriteLine($"MemoryLoadBytes      {gcInfo.MemoryLoadBytes/1024}");
+                    Console.WriteLine($"HeapSizeBytes        {gcInfo.HeapSizeBytes/1024}");
+                    Console.WriteLine($"Workingset           {Environment.WorkingSet/1024}");
+                    Console.WriteLine();
+
+                    Thread.Sleep(300);
+                }
+            }
+        }
+#endif
+
         private static readonly Random s_random = new Random(42);
 
         [Fact]

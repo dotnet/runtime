@@ -7544,7 +7544,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				method->dynamic case; for other wrapper types assume the code knows
 				what its doing and added its own GC transitions */
 
-				gboolean skip_gc_trans = fsig->suppress_gc_transition;
+				gboolean skip_gc_trans = mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION);
 				if (!skip_gc_trans) {
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
@@ -11173,6 +11173,13 @@ field_access_end:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
+
+#ifndef MONO_ARCH_HAVE_SWIFTCALL
+			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+				// Swift calling convention is not supported on this platform.
+				emit_not_supported_failure (cfg);
+			}
+#endif
 
 			CHECK_STACK (jit_icall_info->sig->param_count);
 			sp -= jit_icall_info->sig->param_count;

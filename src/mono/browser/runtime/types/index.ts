@@ -579,6 +579,9 @@ export type RuntimeAPI = {
         productVersion: string,
         gitHash: string,
         buildConfiguration: string,
+        wasmEnableThreads: boolean,
+        wasmEnableSIMD: boolean,
+        wasmEnableExceptionHandling: boolean,
     }
 } & APIType
 
