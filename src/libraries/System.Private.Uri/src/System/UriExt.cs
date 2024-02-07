@@ -4,6 +4,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -583,7 +585,7 @@ namespace System
 
             var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
 
-            // This may throw for very large inputs. ¯\_(ツ)_/¯
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
             vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
 
             UriHelper.UnescapeString(
@@ -618,11 +620,25 @@ namespace System
                 return false;
             }
 
-            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
+            scoped ValueStringBuilder vsb;
 
-            // This may throw for very large inputs. ¯\_(ツ)_/¯
-            vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
+            // If the input and destination buffers overlap, we must take care not to overwrite parts of the input before we've processed it.
+            // If the buffers start at the same location, we can still use the destination as the output length is strictly <= input length.
+            bool overlapped = charsToUnescape.Overlaps(destination) &&
+                !Unsafe.AreSame(ref MemoryMarshal.GetReference(charsToUnescape), ref MemoryMarshal.GetReference(destination));
 
+            if (overlapped)
+            {
+                vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
+            }
+            else
+            {
+                vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToUnescape));
+            }
+
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
             UriHelper.UnescapeString(
                 charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
                 c_DummyChar, c_DummyChar, c_DummyChar,
@@ -635,9 +651,19 @@ namespace System
             if (destination.Length >= newLength)
             {
                 charsToUnescape.Slice(0, indexOfFirstToUnescape).CopyTo(destination);
-                vsb.AsSpan().CopyTo(destination.Slice(indexOfFirstToUnescape));
 
-                vsb.Dispose();
+                if (overlapped)
+                {
+                    vsb.AsSpan().CopyTo(destination.Slice(indexOfFirstToUnescape));
+                    vsb.Dispose();
+                }
+                else
+                {
+                    // We are expecting the builder not to grow if the original span was large enough.
+                    // This means that we MUST NOT over allocate anywhere in UnescapeString (e.g. append and then decrease the length).
+                    Debug.Assert(vsb.RawChars.Overlaps(destination));
+                }
+
                 charsWritten = newLength;
                 return true;
             }

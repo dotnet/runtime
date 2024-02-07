@@ -135,10 +135,21 @@ namespace System
                 return true;
             }
 
-            var vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
+            scoped ValueStringBuilder vsb;
 
-            // This may throw for very large inputs. ¯\_(ツ)_/¯
-            vsb.EnsureCapacity(charsToEscape.Length - indexOfFirstToEscape);
+            // If the input and destination buffers overlap, we must take care not to overwrite parts of the input before we've processed it.
+            bool overlapped = charsToEscape.Overlaps(destination);
+
+            if (overlapped)
+            {
+                vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
+                vsb.EnsureCapacity(charsToEscape.Length);
+            }
+            else
+            {
+                vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToEscape));
+            }
 
             EscapeStringToBuilder(charsToEscape.Slice(indexOfFirstToEscape), ref vsb, Unreserved, checkExistingEscaped: false);
 
@@ -148,9 +159,19 @@ namespace System
             if (destination.Length >= newLength)
             {
                 charsToEscape.Slice(0, indexOfFirstToEscape).CopyTo(destination);
-                vsb.AsSpan().CopyTo(destination.Slice(indexOfFirstToEscape));
 
-                vsb.Dispose();
+                if (overlapped)
+                {
+                    vsb.AsSpan().CopyTo(destination.Slice(indexOfFirstToEscape));
+                    vsb.Dispose();
+                }
+                else
+                {
+                    // We are expecting the builder not to grow if the original span was large enough.
+                    // This means that we MUST NOT over allocate anywhere in EscapeStringToBuilder (e.g. append and then decrease the length).
+                    Debug.Assert(vsb.RawChars.Overlaps(destination));
+                }
+
                 charsWritten = newLength;
                 return true;
             }
@@ -183,8 +204,8 @@ namespace System
             // escape the rest, and concat the result with the characters we skipped above.
             var vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
 
-            // This may throw for very large inputs. ¯\_(ツ)_/¯
-            vsb.EnsureCapacity(charsToEscape.Length - indexOfFirstToEscape);
+            // We may throw for very large inputs (when growing the ValueStringBuilder).
+            vsb.EnsureCapacity(charsToEscape.Length);
 
             EscapeStringToBuilder(charsToEscape.Slice(indexOfFirstToEscape), ref vsb, noEscape, checkExistingEscaped);
 
