@@ -2431,6 +2431,56 @@
         <ExcludeList Include = "$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected/**">
             <Issue>Reflection.Emit is not supported on fullaot</Issue>
         </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmpind_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmp_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_nz_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_gc_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_inst_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_value_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_virt_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail_zeroinit/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/pinvoke/tail_pinvoke/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/25params/25paramMixed_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfault_jmp_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmpind_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Invoke/SEH/catchfinally_jmp_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_nz_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_array_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_gc_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_inst_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_value_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/tailcall/deep_virt_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper4_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumper5_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/VT/callconv/jumps2_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Regressions/coreclr/16354/notimplemented/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/perffix/primitivevt/callconv3_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/perffix/primitivevt/callconv3_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/Vector3Interop_r.**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/Vector3Interop_ro.**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1.2-M01/b13452/b13452/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b353858/b353858/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/misc/tailjump_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/compilerservices/UnsafeAccessors/UnsafeAccessorsTests/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/TieredCompilation/TieredVtableMethodTests/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/baseservices/varargs/varargsupport/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/Comparer_get_Default.**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_80731/Runtime_80731/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case03/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case04/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test13/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/Statics/Misc/LiteralStatic/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/CustomAttributes/DynamicObjects/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'minifullaot' or '$(TargetsAppleMobile)' == 'true')">
