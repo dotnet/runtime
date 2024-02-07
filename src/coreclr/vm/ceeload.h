@@ -1514,7 +1514,7 @@ public:
         return &m_FixupCrst;
     }
 
-    void                AllocateRegularStaticHandles(AppDomain* pDomainMT);
+    void                AllocateRegularStaticHandles();
 
     void                FreeModuleIndex();
 

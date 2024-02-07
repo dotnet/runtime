@@ -1641,7 +1641,7 @@ void Module::FreeModuleIndex(ModuleIndex index)
 }
 
 
-void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
+void Module::AllocateRegularStaticHandles()
 {
     CONTRACTL
     {
@@ -1659,7 +1659,7 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointerAddress() != NULL);
     if (this->m_dwMaxGCRegularStaticHandles > 0)
     {
-        pDomain->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
+        AppDomain::GetCurrentDomain()->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
                                                pModuleData->GetPrecomputedGCStaticsBasePointerAddress());
 
         // We should throw if we fail to allocate and never hit this assert
@@ -1770,7 +1770,7 @@ void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
     // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
     // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
     if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL && !GetAssembly()->IsCollectible())
-        AllocateRegularStaticHandles(AppDomain::GetCurrentDomain());
+        AllocateRegularStaticHandles();
 }
 
 OBJECTREF Module::GetExposedObject()

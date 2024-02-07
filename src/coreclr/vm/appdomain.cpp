@@ -1323,7 +1323,7 @@ void SystemDomain::LoadBaseSystemClasses()
         g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
 
         // We have delayed allocation of CoreLib's static handles until we load the object class
-        CoreLibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
+        CoreLibBinder::GetModule()->AllocateRegularStaticHandles();
 
         // Boolean has to be loaded first to break cycle in IComparisonOperations and IEqualityOperators
         CoreLibBinder::LoadPrimitiveType(ELEMENT_TYPE_BOOLEAN);
@@ -2741,7 +2741,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(this, pPEAssembly, pLoaderAllocator);
+        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
 
         LoadLockHolder lock(this);
 

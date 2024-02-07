@@ -28,7 +28,7 @@
 #endif // FEATURE_PERFMAP
 
 #ifndef DACCESS_COMPILE
-DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
+DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
     m_pAssembly(NULL),
     m_pPEAssembly(pPEAssembly),
     m_pModule(NULL),
@@ -60,8 +60,6 @@ DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, Load
     pPEAssembly->ValidateForExecution();
 
     SetupDebuggingConfig();
-
-    _ASSERTE(pDomain == AppDomain::GetCurrentDomain());
 }
 
 DomainAssembly::~DomainAssembly()
@@ -773,7 +771,7 @@ void DomainAssembly::Allocate()
         //! the Assembly holder must destruct before the AllocMemTracker declared above.
         NewHolder<Assembly> assemblyHolder(NULL);
 
-        assemblyHolder = pAssembly = Assembly::Create(AppDomain::GetCurrentDomain(), GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
+        assemblyHolder = pAssembly = Assembly::Create(GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
         assemblyHolder->SetIsTenured();
 
         pamTracker->SuppressRelease();

@@ -117,7 +117,7 @@ void Assembly::Initialize()
 // It cannot do any allocations or operations that might fail. Those operations should be done
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
-Assembly::Assembly(AppDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
+Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
     m_pModule(NULL),
@@ -138,7 +138,6 @@ Assembly::Assembly(AppDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembly
     m_fTerminated(FALSE)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(pDomain == AppDomain::GetCurrentDomain());
 }
 
 // This name needs to stay in sync with AssemblyBuilder.ManifestModuleName
@@ -319,7 +318,6 @@ void Assembly::Terminate( BOOL signalProfiler )
 }
 
 Assembly * Assembly::Create(
-    AppDomain *                  pDomain,
     PEAssembly *                 pPEAssembly,
     DebuggerAssemblyControlFlags debuggerFlags,
     BOOL                         fIsCollectible,
@@ -328,8 +326,7 @@ Assembly * Assembly::Create(
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(pDomain == AppDomain::GetCurrentDomain());
-    NewHolder<Assembly> pAssembly (new Assembly(pDomain, pPEAssembly, debuggerFlags, fIsCollectible));
+    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, debuggerFlags, fIsCollectible));
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -435,7 +432,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         pPEAssembly->SetFallbackBinder(pBinder);
     }
 
-    AppDomain* pDomain = GetAppDomain();
+    AppDomain* pDomain = ::GetAppDomain();
 
     NewHolder<DomainAssembly> pDomainAssembly;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
@@ -481,7 +478,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         }
 
         // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pDomain, pPEAssembly, pLoaderAllocator);
+        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
         if (pDomainAssembly->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -499,7 +496,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         {
             GCX_PREEMP();
             // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
-            pAssem = Assembly::Create(pDomain, pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
+            pAssem = Assembly::Create(pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetModule();
 
