@@ -6363,21 +6363,17 @@ bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 bool ValueNumStore::IsVNConstantBoundUnsigned(ValueNum vn)
 {
     VNFuncApp funcApp;
-    if ((vn != NoVN) && GetVNFunc(vn, &funcApp))
+    if (GetVNFunc(vn, &funcApp))
     {
-        const bool op1IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[0]);
-        const bool op2IsPositiveConst = IsVNPositiveInt32Constant(funcApp.m_args[1]);
-        if (!op1IsPositiveConst && op2IsPositiveConst)
+        switch (funcApp.m_func)
         {
-            // (uint)index < CNS
-            // (uint)index >= CNS
-            return (funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN);
-        }
-        else if (op1IsPositiveConst && !op2IsPositiveConst)
-        {
-            // CNS > (uint)index
-            // CNS <= (uint)index
-            return (funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN);
+            case VNF_LT_UN:
+            case VNF_LE_UN:
+            case VNF_GE_UN:
+            case VNF_GT_UN:
+                return IsVNPositiveInt32Constant(funcApp.m_args[0]) != IsVNPositiveInt32Constant(funcApp.m_args[1]);
+            default:
+                break;
         }
     }
     return false;
@@ -7405,6 +7401,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_And:
             case NI_AVX_And:
             case NI_AVX2_And:
+            case NI_AVX512F_And:
+            case NI_AVX512DQ_And:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_AND, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7420,6 +7418,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_AndNot:
             case NI_AVX_AndNot:
             case NI_AVX2_AndNot:
+            case NI_AVX512F_AndNot:
+            case NI_AVX512DQ_AndNot:
             {
                 // xarch does: ~arg0VN & arg1VN
                 return EvaluateBinarySimd(this, GT_AND_NOT, /* scalar */ false, type, baseType, arg1VN, arg0VN);
@@ -7472,6 +7472,18 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             }
 #endif
 
+#ifdef TARGET_XARCH
+            case NI_AVX512F_Multiply:
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    // We don't support this for integrals since it returns a different size than the input
+                    break;
+                }
+                FALLTHROUGH;
+            }
+#endif // TARGET_XARCH
+
 #ifdef TARGET_ARM64
             case NI_AdvSimd_Multiply:
             case NI_AdvSimd_Arm64_Multiply:
@@ -7482,6 +7494,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE41_MultiplyLow:
             case NI_AVX_Multiply:
             case NI_AVX2_MultiplyLow:
+            case NI_AVX512F_MultiplyLow:
+            case NI_AVX512BW_MultiplyLow:
+            case NI_AVX512DQ_MultiplyLow:
+            case NI_AVX512DQ_VL_MultiplyLow:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_MUL, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7504,6 +7520,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Or:
             case NI_AVX_Or:
             case NI_AVX2_Or:
+            case NI_AVX512F_Or:
+            case NI_AVX512DQ_Or:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_OR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7543,6 +7561,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (genTypeSize(baseType) != 8)
                     {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
                         arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
                     }
                     else
@@ -7576,6 +7599,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (genTypeSize(baseType) != 8)
                     {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
                         arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
                     }
                     else
@@ -7608,6 +7636,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
                     if (genTypeSize(baseType) != 8)
                     {
+                        if (shiftAmount > INT_MAX)
+                        {
+                            // Ensure we don't lose track the the amount is an overshift
+                            shiftAmount = -1;
+                        }
                         arg1VN = VNForIntCon(static_cast<int32_t>(shiftAmount));
                     }
                     else
@@ -7669,6 +7702,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Xor:
             case NI_AVX_Xor:
             case NI_AVX2_Xor:
+            case NI_AVX512F_Xor:
+            case NI_AVX512DQ_Xor:
 #endif
             {
                 return EvaluateBinarySimd(this, GT_XOR, /* scalar */ false, type, baseType, arg0VN, arg1VN);
@@ -7717,6 +7752,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_And:
             case NI_AVX_And:
             case NI_AVX2_And:
+            case NI_AVX512F_And:
+            case NI_AVX512DQ_And:
 #endif
             {
                 // Handle `x & 0 == 0` and `0 & x == 0`
@@ -7744,6 +7781,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_AndNot:
             case NI_AVX_AndNot:
             case NI_AVX2_AndNot:
+            case NI_AVX512F_AndNot:
+            case NI_AVX512DQ_AndNot:
             {
 #ifdef TARGET_ARM64
                 if (cnsVN == arg0VN)
@@ -7837,6 +7876,18 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             }
 #endif
 
+#ifdef TARGET_XARCH
+            case NI_AVX512F_Multiply:
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    // We don't support this for integrals since it returns a different size than the input
+                    break;
+                }
+                FALLTHROUGH;
+            }
+#endif // TARGET_XARCH
+
 #ifdef TARGET_ARM64
             case NI_AdvSimd_Multiply:
             case NI_AdvSimd_Arm64_Multiply:
@@ -7847,7 +7898,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE41_MultiplyLow:
             case NI_AVX_Multiply:
             case NI_AVX2_MultiplyLow:
-            case NI_AVX512F_Multiply:
             case NI_AVX512F_MultiplyLow:
             case NI_AVX512BW_MultiplyLow:
             case NI_AVX512DQ_MultiplyLow:
@@ -7893,6 +7943,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Or:
             case NI_AVX_Or:
             case NI_AVX2_Or:
+            case NI_AVX512F_Or:
+            case NI_AVX512DQ_Or:
 #endif
             {
                 // Handle `x | 0 == x` and `0 | x == x`
@@ -7980,6 +8032,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Xor:
             case NI_AVX_Xor:
             case NI_AVX2_Xor:
+            case NI_AVX512F_Xor:
+            case NI_AVX512DQ_Xor:
 #endif
             {
                 // Handle `x | 0 == x` and `0 | x == x`
@@ -8007,6 +8061,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_And:
             case NI_AVX_And:
             case NI_AVX2_And:
+            case NI_AVX512F_And:
+            case NI_AVX512DQ_And:
 #endif
             {
                 // Handle `x & x == x`
@@ -8020,6 +8076,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_AndNot:
             case NI_AVX_AndNot:
             case NI_AVX2_AndNot:
+            case NI_AVX512F_AndNot:
+            case NI_AVX512DQ_AndNot:
             {
                 // Handle `x & ~x == 0`
                 return VNZeroForType(type);
@@ -8033,6 +8091,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Or:
             case NI_AVX_Or:
             case NI_AVX2_Or:
+            case NI_AVX512F_Or:
+            case NI_AVX512DQ_Or:
 #endif
             {
                 // Handle `x | x == x`
@@ -8068,6 +8128,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             case NI_SSE2_Xor:
             case NI_AVX_Xor:
             case NI_AVX2_Xor:
+            case NI_AVX512F_Xor:
+            case NI_AVX512DQ_Xor:
 #endif
             {
                 // Handle `x ^ x == 0`
@@ -8144,7 +8206,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
 {
     if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
     {
-
         switch (ni)
         {
             case NI_Vector128_WithElement:
@@ -8170,6 +8231,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(var_types      type,
 
                 return EvaluateSimdFloatWithElement(this, type, arg0VN, index, value);
             }
+
             default:
             {
                 break;
@@ -12667,12 +12729,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_DBLREM:
             vnf = VNFunc(GT_MOD);
             break;
-        case CORINFO_HELP_FLTROUND:
-            vnf = VNF_FltRound;
-            break; // Is this the right thing?
-        case CORINFO_HELP_DBLROUND:
-            vnf = VNF_DblRound;
-            break; // Is this the right thing?
 
         // These allocation operations probably require some augmentation -- perhaps allocSiteId,
         // something about array length...

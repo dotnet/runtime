@@ -171,7 +171,7 @@ private:
     // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
     // Thus they cannot have any parameters or return anything.
     //
-    typedef void HijackFunc();
+    typedef void FASTCALL HijackFunc();
 
     void HijackReturnAddress(PAL_LIMITED_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);
     void HijackReturnAddress(NATIVE_CONTEXT* pSuspendCtx, HijackFunc* pfnHijackFunction);

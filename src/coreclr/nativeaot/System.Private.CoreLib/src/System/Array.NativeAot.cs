@@ -1115,9 +1115,8 @@ namespace System
 
     //
     // Note: the declared base type and interface list also determines what Reflection returns from TypeInfo.BaseType and TypeInfo.ImplementedInterfaces for array types.
-    // This also means the class must be declared "public" so that the framework can reflect on it.
     //
-    public class Array<T> : Array, IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyList<T>
+    internal class Array<T> : Array, IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyList<T>
     {
         // Prevent the C# compiler from generating a public default constructor
         private Array() { }

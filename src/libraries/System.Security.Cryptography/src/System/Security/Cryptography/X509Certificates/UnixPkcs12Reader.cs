@@ -206,10 +206,10 @@ namespace System.Security.Cryptography.X509Certificates
             _allowDoubleBind = !ephemeralSpecified;
 
             bool hasRef = false;
-            password.DangerousAddRef(ref hasRef);
 
             try
             {
+                password.DangerousAddRef(ref hasRef);
                 ReadOnlySpan<char> passwordChars = password.DangerousGetSpan();
 
                 if (_pfxAsn.MacData.HasValue)
@@ -254,7 +254,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
             finally
             {
-                password.DangerousRelease();
+                if (hasRef)
+                {
+                    password.DangerousRelease();
+                }
             }
         }
 

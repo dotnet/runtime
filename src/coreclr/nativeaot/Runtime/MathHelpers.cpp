@@ -9,27 +9,18 @@
 // Floating point and 64-bit integer math helpers.
 //
 
-FORCEINLINE int64_t FastDbl2Lng(double val)
-{
-#ifdef TARGET_X86
-    return HCCALL1_V(JIT_Dbl2Lng, val);
-#else
-    return((__int64) val);
-#endif
-}
-
 EXTERN_C NATIVEAOT_API uint64_t REDHAWK_CALLCONV RhpDbl2ULng(double val)
 {
     const double two63  = 2147483648.0 * 4294967296.0;
     uint64_t ret;
     if (val < two63)
     {
-        ret = FastDbl2Lng(val);
+        ret = (int64_t)(val);
     }
     else
     {
         // subtract 0x8000000000000000, do the convert then add it back again
-        ret = FastDbl2Lng(val - two63) + I64(0x8000000000000000);
+        ret = (int64_t)(val - two63) + I64(0x8000000000000000);
     }
     return ret;
 }
@@ -85,16 +76,6 @@ EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double
     }
     // else...
     return(fmod(dividend,divisor));
-}
-
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRound(double value)
-{
-    return round(value);
-}
-
-EXTERN_C NATIVEAOT_API float REDHAWK_CALLCONV RhpFltRound(float value)
-{
-    return roundf(value);
 }
 
 #ifdef HOST_ARM
