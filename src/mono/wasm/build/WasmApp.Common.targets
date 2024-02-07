@@ -495,7 +495,7 @@
                         ('$(RunAOTCompilationAfterBuild)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true') and
                         '$(_IsToolchainMissing)' == 'true'"
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
- 
+
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(WasmSingleFileBundle)' == 'true'"
            Text="Building single-file requires a native build." />
 
