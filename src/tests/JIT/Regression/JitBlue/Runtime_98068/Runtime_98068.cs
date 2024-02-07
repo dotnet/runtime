@@ -9,7 +9,7 @@ using Xunit;
 public static class Runtime_98068
 {
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMax()
     {
         // Double
@@ -34,7 +34,7 @@ public static class Runtime_98068
     }
 
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMaxMagnitude()
     {
         // Double
@@ -59,7 +59,7 @@ public static class Runtime_98068
     }
 
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMaxMagnitudeNumber()
     {
         // Double
@@ -84,7 +84,7 @@ public static class Runtime_98068
     }
 
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMaxNumber()
     {
         // Double
@@ -109,7 +109,7 @@ public static class Runtime_98068
     }
 
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMin()
     {
         // Double
@@ -134,7 +134,7 @@ public static class Runtime_98068
     }
 
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMinMagnitude()
     {
         // Double
@@ -159,7 +159,7 @@ public static class Runtime_98068
     }
 
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMinMagnitudeNumber()
     {
         // Double
@@ -184,7 +184,7 @@ public static class Runtime_98068
     }
 
     [Fact]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static void TestMinNumber()
     {
         // Double
@@ -212,7 +212,7 @@ public static class Runtime_98068
     // Max.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Max(double left, double right)
     {
         return double.Max(left, right);
@@ -224,19 +224,19 @@ public static class Runtime_98068
         return double.Max(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Max_Value_NaN(double value)
     {
         return double.Max(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Max_Value_NegZero(double value)
     {
         return double.Max(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Max_Value_Zero(double value)
     {
         return double.Max(value, +0.0);
@@ -246,7 +246,7 @@ public static class Runtime_98068
     // Max.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Max(float left, float right)
     {
         return float.Max(left, right);
@@ -258,19 +258,19 @@ public static class Runtime_98068
         return float.Max(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Max_Value_NaN(float value)
     {
         return float.Max(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Max_Value_NegZero(float value)
     {
         return float.Max(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Max_Value_Zero(float value)
     {
         return float.Max(value, +0.0f);
@@ -280,7 +280,7 @@ public static class Runtime_98068
     // MaxMagnitude.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitude(double left, double right)
     {
         return double.MaxMagnitude(left, right);
@@ -292,19 +292,19 @@ public static class Runtime_98068
         return double.MaxMagnitude(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitude_Value_NaN(double value)
     {
         return double.MaxMagnitude(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitude_Value_NegZero(double value)
     {
         return double.MaxMagnitude(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitude_Value_Zero(double value)
     {
         return double.MaxMagnitude(value, +0.0);
@@ -314,7 +314,7 @@ public static class Runtime_98068
     // MaxMagnitude.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitude(float left, float right)
     {
         return float.MaxMagnitude(left, right);
@@ -326,19 +326,19 @@ public static class Runtime_98068
         return float.MaxMagnitude(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitude_Value_NaN(float value)
     {
         return float.MaxMagnitude(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitude_Value_NegZero(float value)
     {
         return float.MaxMagnitude(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitude_Value_Zero(float value)
     {
         return float.MaxMagnitude(value, +0.0f);
@@ -348,7 +348,7 @@ public static class Runtime_98068
     // MaxMagnitudeNumber.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitudeNumber(double left, double right)
     {
         return double.MaxMagnitudeNumber(left, right);
@@ -360,19 +360,19 @@ public static class Runtime_98068
         return double.MaxMagnitudeNumber(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitudeNumber_Value_NaN(double value)
     {
         return double.MaxMagnitudeNumber(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitudeNumber_Value_NegZero(double value)
     {
         return double.MaxMagnitudeNumber(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxMagnitudeNumber_Value_Zero(double value)
     {
         return double.MaxMagnitudeNumber(value, +0.0);
@@ -382,7 +382,7 @@ public static class Runtime_98068
     // MaxMagnitudeNumber.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitudeNumber(float left, float right)
     {
         return float.MaxMagnitudeNumber(left, right);
@@ -394,19 +394,19 @@ public static class Runtime_98068
         return float.MaxMagnitudeNumber(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitudeNumber_Value_NaN(float value)
     {
         return float.MaxMagnitudeNumber(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitudeNumber_Value_NegZero(float value)
     {
         return float.MaxMagnitudeNumber(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxMagnitudeNumber_Value_Zero(float value)
     {
         return float.MaxMagnitudeNumber(value, +0.0f);
@@ -416,7 +416,7 @@ public static class Runtime_98068
     // MaxNumber.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxNumber(double left, double right)
     {
         return double.MaxNumber(left, right);
@@ -428,19 +428,19 @@ public static class Runtime_98068
         return double.MaxNumber(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxNumber_Value_NaN(double value)
     {
         return double.MaxNumber(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxNumber_Value_NegZero(double value)
     {
         return double.MaxNumber(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MaxNumber_Value_Zero(double value)
     {
         return double.MaxNumber(value, +0.0);
@@ -450,7 +450,7 @@ public static class Runtime_98068
     // MaxNumber.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxNumber(float left, float right)
     {
         return float.MaxNumber(left, right);
@@ -462,19 +462,19 @@ public static class Runtime_98068
         return float.MaxNumber(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxNumber_Value_NaN(float value)
     {
         return float.MaxNumber(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxNumber_Value_NegZero(float value)
     {
         return float.MaxNumber(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MaxNumber_Value_Zero(float value)
     {
         return float.MaxNumber(value, +0.0f);
@@ -484,7 +484,7 @@ public static class Runtime_98068
     // Min.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Min(double left, double right)
     {
         return double.Min(left, right);
@@ -496,19 +496,19 @@ public static class Runtime_98068
         return double.Min(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Min_Value_NaN(double value)
     {
         return double.Min(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Min_Value_NegZero(double value)
     {
         return double.Min(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double Min_Value_Zero(double value)
     {
         return double.Min(value, +0.0);
@@ -518,7 +518,7 @@ public static class Runtime_98068
     // Min.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Min(float left, float right)
     {
         return float.Min(left, right);
@@ -530,19 +530,19 @@ public static class Runtime_98068
         return float.Min(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Min_Value_NaN(float value)
     {
         return float.Min(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Min_Value_NegZero(float value)
     {
         return float.Min(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float Min_Value_Zero(float value)
     {
         return float.Min(value, +0.0f);
@@ -552,7 +552,7 @@ public static class Runtime_98068
     // MinMagnitude.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitude(double left, double right)
     {
         return double.MinMagnitude(left, right);
@@ -564,19 +564,19 @@ public static class Runtime_98068
         return double.MinMagnitude(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitude_Value_NaN(double value)
     {
         return double.MinMagnitude(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitude_Value_NegZero(double value)
     {
         return double.MinMagnitude(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitude_Value_Zero(double value)
     {
         return double.MinMagnitude(value, +0.0);
@@ -586,7 +586,7 @@ public static class Runtime_98068
     // MinMagnitude.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitude(float left, float right)
     {
         return float.MinMagnitude(left, right);
@@ -598,19 +598,19 @@ public static class Runtime_98068
         return float.MinMagnitude(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitude_Value_NaN(float value)
     {
         return float.MinMagnitude(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitude_Value_NegZero(float value)
     {
         return float.MinMagnitude(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitude_Value_Zero(float value)
     {
         return float.MinMagnitude(value, +0.0f);
@@ -620,7 +620,7 @@ public static class Runtime_98068
     // MinMagnitudeNumber.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitudeNumber(double left, double right)
     {
         return double.MinMagnitudeNumber(left, right);
@@ -632,19 +632,19 @@ public static class Runtime_98068
         return double.MinMagnitudeNumber(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitudeNumber_Value_NaN(double value)
     {
         return double.MinMagnitudeNumber(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitudeNumber_Value_NegZero(double value)
     {
         return double.MinMagnitudeNumber(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinMagnitudeNumber_Value_Zero(double value)
     {
         return double.MinMagnitudeNumber(value, +0.0);
@@ -654,7 +654,7 @@ public static class Runtime_98068
     // MinMagnitudeNumber.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitudeNumber(float left, float right)
     {
         return float.MinMagnitudeNumber(left, right);
@@ -666,19 +666,19 @@ public static class Runtime_98068
         return float.MinMagnitudeNumber(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitudeNumber_Value_NaN(float value)
     {
         return float.MinMagnitudeNumber(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitudeNumber_Value_NegZero(float value)
     {
         return float.MinMagnitudeNumber(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinMagnitudeNumber_Value_Zero(float value)
     {
         return float.MinMagnitudeNumber(value, +0.0f);
@@ -688,7 +688,7 @@ public static class Runtime_98068
     // MinNumber.Double
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinNumber(double left, double right)
     {
         return double.MinNumber(left, right);
@@ -700,19 +700,19 @@ public static class Runtime_98068
         return double.MinNumber(value, +1.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinNumber_Value_NaN(double value)
     {
         return double.MinNumber(value, double.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinNumber_Value_NegZero(double value)
     {
         return double.MinNumber(value, -0.0);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static double MinNumber_Value_Zero(double value)
     {
         return double.MinNumber(value, +0.0);
@@ -722,7 +722,7 @@ public static class Runtime_98068
     // MinNumber.Single
     //
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinNumber(float left, float right)
     {
         return float.MinNumber(left, right);
@@ -734,19 +734,19 @@ public static class Runtime_98068
         return float.MinNumber(value, +1.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinNumber_Value_NaN(float value)
     {
         return float.MinNumber(value, float.NaN);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinNumber_Value_NegZero(float value)
     {
         return float.MinNumber(value, -0.0f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static float MinNumber_Value_Zero(float value)
     {
         return float.MinNumber(value, +0.0f);
