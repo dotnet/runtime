@@ -3162,8 +3162,8 @@ bool Compiler::optCanonicalizeExits(FlowGraphNaturalLoop* loop)
 }
 
 //-----------------------------------------------------------------------------
-// optCanonicalizeExit: Canonicalize a single exit block
-// they have only loop predecessors.
+// optCanonicalizeExit: Canonicalize a single exit block to have only loop
+// predecessors.
 //
 // Parameters:
 //   loop - The loop
