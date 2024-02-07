@@ -2744,7 +2744,10 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				ins->klass = klass;
 			}
 			return ins;
-		} else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
+		} 
+// FIXME: Support Vector2 and Vector3 for WASM
+#ifndef TARGET_WASM 
+		else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 			MonoInst* vec_ins = args [1];
@@ -2774,6 +2777,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			ins->dreg = dreg;
 			return ins;
 		}
+#endif
 		break;
 	case SN_get_Item: {
 		// GetElement is marked as Intrinsic, but handling this in get_Item leads to better code
@@ -3916,6 +3920,7 @@ static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
+	{ "Sve", MONO_CPU_ARM64_SVE, unsupported, sizeof (unsupported) },
 };
 
 static MonoInst*
