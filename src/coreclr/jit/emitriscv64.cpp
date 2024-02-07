@@ -2928,7 +2928,7 @@ BYTE* emitter::emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instructio
     const unsigned offset = static_cast<unsigned>(dataOffs + immediate);
     assert(offset < emitDataSize());
 
-    *ins           = id->idIns();
+    *ins                 = id->idIns();
     const regNumber reg1 = id->idReg1();
 
     if (id->idIsReloc())
@@ -2978,8 +2978,8 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     insGroup* targetInsGroup = static_cast<insGroup*>(emitCodeGetCookie(id->idAddr()->iiaBBlabel));
     id->idAddr()->iiaIGlabel = targetInsGroup;
 
-    const regNumber reg1 = id->idReg1();
-    const ssize_t igOffs = targetInsGroup->igOffs;
+    const regNumber reg1   = id->idReg1();
+    const ssize_t   igOffs = targetInsGroup->igOffs;
 
     if (id->idIsReloc())
     {
