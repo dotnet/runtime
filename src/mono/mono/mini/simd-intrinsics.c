@@ -2745,7 +2745,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			}
 			return ins;
 		} 
-#ifndef TARGET_WASM
+// FIXME: Support Vector2 and Vector3 for WASM
+#ifndef TARGET_WASM 
 		else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
