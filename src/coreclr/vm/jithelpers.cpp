@@ -685,7 +685,7 @@ namespace
     bool isfinite(float val)
     {
         UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-        return (bits & 0x7FFFFFFFU) >= 0x7F800000U;
+        return (bits & 0x7FFFFFFFU) < 0x7F800000U;
     }
 }
 #endif

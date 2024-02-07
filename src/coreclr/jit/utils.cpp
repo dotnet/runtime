@@ -2641,7 +2641,7 @@ bool FloatingPointUtils::isAllBitsSet(double val)
 bool FloatingPointUtils::isFinite(float val)
 {
     UINT32 bits = *reinterpret_cast<UINT32*>(&val);
-    return (bits & 0x7FFFFFFFU) >= 0x7F800000U;
+    return (bits & 0x7FFFFFFFU) < 0x7F800000U;
 }
 
 //------------------------------------------------------------------------
@@ -2657,7 +2657,7 @@ bool FloatingPointUtils::isFinite(float val)
 bool FloatingPointUtils::isFinite(double val)
 {
     UINT64 bits = *reinterpret_cast<UINT64*>(&val);
-    return (bits & 0x7FFFFFFFFFFFFFFFULL) >= 0x7FF0000000000000ULL;
+    return (bits & 0x7FFFFFFFFFFFFFFFULL) < 0x7FF0000000000000ULL;
 }
 
 //------------------------------------------------------------------------
