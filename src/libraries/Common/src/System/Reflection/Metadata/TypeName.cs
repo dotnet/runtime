@@ -35,6 +35,7 @@ namespace System.Reflection.Metadata
             UnderlyingType = underlyingType;
             ContainingType = containingType;
             _genericArguments = genericTypeArguments;
+            TotalComplexity = GetTotalComplexity(underlyingType, containingType, genericTypeArguments);
         }
 
         /// <summary>
@@ -51,6 +52,15 @@ namespace System.Reflection.Metadata
         /// created from a fully-qualified name.
         /// </summary>
         public AssemblyName? AssemblyName { get; } // TODO: AssemblyName is mutable, are we fine with that? Does it not offer too much?
+
+        /// <summary>
+        /// If this type is a nested type (see <see cref="IsNestedType"/>), gets
+        /// the containing type. If this type is not a nested type, returns null.
+        /// </summary>
+        /// <remarks>
+        /// For example, given "Namespace.Containing+Nested", unwraps the outermost type and returns "Namespace.Containing".
+        /// </remarks>
+        public TypeName? ContainingType { get; }
 
         /// <summary>
         /// Returns true if this type represents any kind of array, regardless of the array's
@@ -110,19 +120,39 @@ namespace System.Reflection.Metadata
         public bool IsVariableBoundArrayType => _rankOrModifier > 1;
 
         /// <summary>
-        /// If this type is a nested type (see <see cref="IsNestedType"/>), gets
-        /// the containing type. If this type is not a nested type, returns null.
-        /// </summary>
-        /// <remarks>
-        /// For example, given "Namespace.Containing+Nested", unwraps the outermost type and returns "Namespace.Containing".
-        /// </remarks>
-        public TypeName? ContainingType { get; }
-
-        /// <summary>
-        /// The name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
-        /// Nested types are represented with a '+'; e.g., "MyNamespace.MyType+NestedType".
+        /// The name of this type, without the namespace and the assembly name; e.g., "Int32".
+        /// Nested types are represented without a '+'; e.g., "MyNamespace.MyType+NestedType" is just "NestedType".
         /// </summary>
         public string Name { get; }
+
+        /// <summary>
+        /// Represents the total amount of work that needs to be performed to fully inspect
+        /// this instance, including any generic arguments or underlying types.
+        /// </summary>
+        /// <remarks>
+        /// <para>There's not really a parallel concept to this in reflection. Think of it
+        /// as the total number of <see cref="TypeName"/> instances that would be created if
+        /// you were to totally deconstruct this instance and visit each intermediate <see cref="TypeName"/>
+        /// that occurs as part of deconstruction.</para>
+        /// <para>"int" and "Person" each have complexities of 1 because they're standalone types.</para>
+        /// <para>"int[]" has a complexity of 2 because to fully inspect it involves inspecting the
+        /// array type itself, <em>plus</em> unwrapping the underlying type ("int") and inspecting that.</para>
+        /// <para>
+        /// "Dictionary&lt;string, List&lt;int[][]&gt;&gt;" has complexity 8 because fully visiting it
+        /// involves inspecting 8 <see cref="TypeName"/> instances total:
+        /// <list type="bullet">
+        /// <item>Dictionary&lt;string, List&lt;int[][]&gt;&gt; (the original type)</item>
+        /// <item>Dictionary`2 (the generic type definition)</item>
+        /// <item>string (a type argument of Dictionary)</item>
+        /// <item>List&lt;int[][]&gt; (a type argument of Dictionary)</item>
+        /// <item>List`1 (the generic type definition)</item>
+        /// <item>int[][] (a type argument of List)</item>
+        /// <item>int[] (the underlying type of int[][])</item>
+        /// <item>int (the underlying type of int[])</item>
+        /// </list>
+        /// </para>
+        /// </remarks>
+        public int TotalComplexity { get; }
 
         /// <summary>
         /// If this type is not an elemental type (see <see cref="IsElementalType"/>), gets
@@ -168,5 +198,35 @@ namespace System.Reflection.Metadata
             => _genericArguments is not null
                 ? (TypeName[])_genericArguments.Clone() // we return a copy on purpose, to not allow for mutations. TODO: consider returning a ROS
                 : Array.Empty<TypeName>(); // TODO: should we throw (Levi's parser throws InvalidOperationException in such case), Type.GetGenericArguments just returns an empty array
+
+        private static int GetTotalComplexity(TypeName? underlyingType, TypeName? containingType, TypeName[]? genericTypeArguments)
+        {
+            int result = 1;
+
+            if (underlyingType is not null)
+            {
+                result = checked(result + underlyingType.TotalComplexity);
+            }
+
+            if (containingType is not null)
+            {
+                result = checked(result + containingType.TotalComplexity);
+            }
+
+            if (genericTypeArguments is not null)
+            {
+                // New total complexity will be the sum of the cumulative args' complexity + 2:
+                // - one for the generic type definition "MyGeneric`x"
+                // - one for the constructed type definition "MyGeneric`x[[...]]"
+                // - and the cumulative complexity of all the arguments
+                result = checked(result + 1);
+                foreach (TypeName genericArgument in genericTypeArguments)
+                {
+                    result = checked(result + genericArgument.TotalComplexity);
+                }
+            }
+
+            return result;
+        }
     }
 }

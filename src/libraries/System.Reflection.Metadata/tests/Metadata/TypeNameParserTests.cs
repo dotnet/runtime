@@ -209,6 +209,50 @@ namespace System.Reflection.Metadata.Tests
             Assert.Null(underlyingType.UnderlyingType);
         }
 
+        public static IEnumerable<object[]> GetAdditionalConstructedTypeData()
+        {
+            yield return new object[] { typeof(Dictionary<List<int[]>[,], List<int?[][][,]>>[]), 16 };
+
+            // "Dictionary<List<int[]>[,], List<int?[][][,]>>[]" breaks down to complexity 16 like so:
+            //
+            // 01: Dictionary<List<int[]>[,], List<int?[][][,]>>[]
+            // 02: `- Dictionary<List<int[]>[,], List<int?[][][,]>>
+            // 03:    +- Dictionary`2
+            // 04:    +- List<int[]>[,]
+            // 05:    |  `- List<int[]>
+            // 06:    |     +- List`1
+            // 07:    |     `- int[]
+            // 08:    |        `- int
+            // 09:    `- List<int?[][][,]>
+            // 10:       +- List`1
+            // 11:       `- int?[][][,]
+            // 12:          `- int?[][]
+            // 13:             `- int?[]
+            // 14:                `- int?
+            // 15:                   +- Nullable`1
+            // 16:                   `- int
+
+            yield return new object[] { typeof(int[]).MakePointerType().MakeByRefType(), 4 }; // int[]*&
+            yield return new object[] { typeof(long).MakeArrayType(31), 2 }; // long[,,,,,,,...]
+            yield return new object[] { typeof(long).Assembly.GetType("System.Int64[*]"), 2 }; // long[*]
+        }
+
+        [Theory]
+        [InlineData(typeof(TypeName), 1)]
+        [InlineData(typeof(TypeNameParserTests), 1)]
+        [InlineData(typeof(object), 1)]
+        [InlineData(typeof(Assert), 1)] // xunit
+        [InlineData(typeof(int[]), 2)]
+        [InlineData(typeof(int[,][]), 3)]
+        [InlineData(typeof(Nullable<>), 1)] // open generic type treated as elemental
+        [MemberData(nameof(GetAdditionalConstructedTypeData))]
+        public void TotalComplexityReturnsExpectedValue(Type type, int expectedComplexity)
+        {
+            TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
+
+            Assert.Equal(expectedComplexity, parsed.TotalComplexity);
+        }
+
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(int?))]

@@ -2423,6 +2423,7 @@ namespace System.Reflection.Metadata
         public bool IsUnmanagedPointerType { get { throw null; } }
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
+        public int TotalComplexity { get; }
         public System.Reflection.Metadata.TypeName? UnderlyingType { get { throw null; } }
         public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
