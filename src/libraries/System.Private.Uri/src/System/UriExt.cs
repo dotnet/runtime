@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -552,28 +552,99 @@ namespace System
             return true;
         }
 
+        /// <summary>Converts a string to its unescaped representation.</summary>
+        /// <param name="stringToUnescape">The string to unescape.</param>
+        /// <returns>The unescaped representation of <paramref name="stringToUnescape"/>.</returns>
         public static string UnescapeDataString(string stringToUnescape)
         {
             ArgumentNullException.ThrowIfNull(stringToUnescape);
 
-            if (stringToUnescape.Length == 0)
-                return string.Empty;
+            return UnescapeDataString(stringToUnescape, stringToUnescape);
+        }
 
-            int position = stringToUnescape.IndexOf('%');
-            if (position == -1)
-                return stringToUnescape;
+        /// <summary>Converts a span to its unescaped representation.</summary>
+        /// <param name="charsToUnescape">The span to unescape.</param>
+        /// <returns>The unescaped representation of <paramref name="charsToUnescape"/>.</returns>
+        public static string UnescapeDataString(ReadOnlySpan<char> charsToUnescape)
+        {
+            return UnescapeDataString(charsToUnescape, backingString: null);
+        }
+
+        private static string UnescapeDataString(ReadOnlySpan<char> charsToUnescape, string? backingString = null)
+        {
+            Debug.Assert(backingString is null || backingString.Length == charsToUnescape.Length);
+
+            int indexOfFirstToUnescape = charsToUnescape.IndexOf('%');
+            if (indexOfFirstToUnescape < 0)
+            {
+                // Nothing to unescape, just return the original value.
+                return backingString ?? charsToUnescape.ToString();
+            }
 
             var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-            vsb.EnsureCapacity(stringToUnescape.Length);
 
-            vsb.Append(stringToUnescape.AsSpan(0, position));
+            // This may throw for very large inputs. ¯\_(ツ)_/¯
+            vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
+
             UriHelper.UnescapeString(
-                stringToUnescape, position, stringToUnescape.Length, ref vsb,
+                charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
                 c_DummyChar, c_DummyChar, c_DummyChar,
                 UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
                 syntax: null, isQuery: false);
 
-            return vsb.ToString();
+            string result = string.Concat(charsToUnescape.Slice(0, indexOfFirstToUnescape), vsb.AsSpan());
+            vsb.Dispose();
+            return result;
+        }
+
+        /// <summary>Attempts to convert a span to its unescaped representation.</summary>
+        /// <param name="charsToUnescape">The span to unescape.</param>
+        /// <param name="destination">The output span that contains the unescaped result of the operation.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars that were written into <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if the <paramref name="destination"/> was large enough to hold the entire result; otherwise, <see langword="false"/>.</returns>
+        public static bool TryUnescapeDataString(ReadOnlySpan<char> charsToUnescape, Span<char> destination, out int charsWritten)
+        {
+            int indexOfFirstToUnescape = charsToUnescape.IndexOf('%');
+            if (indexOfFirstToUnescape < 0)
+            {
+                // Nothing to unescape, just copy the original chars.
+                if (charsToUnescape.TryCopyTo(destination))
+                {
+                    charsWritten = charsToUnescape.Length;
+                    return true;
+                }
+
+                charsWritten = 0;
+                return false;
+            }
+
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+
+            // This may throw for very large inputs. ¯\_(ツ)_/¯
+            vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
+
+            UriHelper.UnescapeString(
+                charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
+                c_DummyChar, c_DummyChar, c_DummyChar,
+                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
+                syntax: null, isQuery: false);
+
+            int newLength = indexOfFirstToUnescape + vsb.Length;
+            Debug.Assert(newLength <= charsToUnescape.Length);
+
+            if (destination.Length >= newLength)
+            {
+                charsToUnescape.Slice(0, indexOfFirstToUnescape).CopyTo(destination);
+                vsb.AsSpan().CopyTo(destination.Slice(indexOfFirstToUnescape));
+
+                vsb.Dispose();
+                charsWritten = newLength;
+                return true;
+            }
+
+            vsb.Dispose();
+            charsWritten = 0;
+            return false;
         }
 
         // Where stringToEscape is intended to be a completely unescaped URI string.
@@ -584,8 +655,26 @@ namespace System
 
         // Where stringToEscape is intended to be URI data, but not an entire URI.
         // This method will escape any character that is not an unreserved character, including percent signs.
+
+        /// <summary>Converts a string to its escaped representation.</summary>
+        /// <param name="stringToEscape">The string to escape.</param>
+        /// <returns>The escaped representation of <paramref name="stringToEscape"/>.</returns>
         public static string EscapeDataString(string stringToEscape) =>
             UriHelper.EscapeString(stringToEscape, checkExistingEscaped: false, UriHelper.Unreserved);
+
+        /// <summary>Converts a span to its escaped representation.</summary>
+        /// <param name="charsToEscape">The span to escape.</param>
+        /// <returns>The escaped representation of <paramref name="charsToEscape"/>.</returns>
+        public static string EscapeDataString(ReadOnlySpan<char> charsToEscape) =>
+            UriHelper.EscapeString(charsToEscape, checkExistingEscaped: false, UriHelper.Unreserved, backingString: null);
+
+        /// <summary>Attempts to convert a span to its escaped representation.</summary>
+        /// <param name="charsToEscape">The span to escape.</param>
+        /// <param name="destination">The output span that contains the escaped result of the operation.</param>
+        /// <param name="charsWritten">When this method returns, contains the number of chars that were written into <paramref name="destination"/>.</param>
+        /// <returns><see langword="true"/> if the <paramref name="destination"/> was large enough to hold the entire result; otherwise, <see langword="false"/>.</returns>
+        public static bool TryEscapeDataString(ReadOnlySpan<char> charsToEscape, Span<char> destination, out int charsWritten) =>
+            UriHelper.TryEscapeDataString(charsToEscape, destination, out charsWritten);
 
         //
         // Cleans up the specified component according to Iri rules
