@@ -62,6 +62,7 @@ public class SimpleWasmTestRunner : WasmApplicationEntryPoint
                 case "-verbosity":
                     minimumLogLevel = Enum.Parse<MinimumLogLevel>(args[i + 1]);
                     i++;
+                    break;
                 default:
                     throw new ArgumentException($"Invalid argument '{option}'.");
             }
