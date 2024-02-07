@@ -32,3 +32,4 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
     }
+}
