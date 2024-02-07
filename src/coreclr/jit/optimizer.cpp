@@ -3175,6 +3175,11 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 {
     assert(!loop->ContainsBlock(exit));
 
+    if (bbIsHandlerBeg(exit))
+    {
+        return false;
+    }
+
     bool allLoopPreds = true;
     for (BasicBlock* pred : exit->PredBlocks())
     {
@@ -3195,11 +3200,13 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 
     BasicBlock* newExit;
 
+#if FEATURE_EH_CALLFINALLY_THUNKS
     if (exit->KindIs(BBJ_CALLFINALLY))
     {
         // Branches to a BBJ_CALLFINALLY _must_ come from inside its associated
-        // try region. First try to see if the lexically bottom most block is
-        // part of the try; if so, inserting after that is a good choice.
+        // try region, and when we have callfinally thunks the BBJ_CALLFINALLY
+        // is outside it. First try to see if the lexically bottom most block
+        // is part of the try; if so, inserting after that is a good choice.
         BasicBlock* finallyBlock = exit->GetTarget();
         assert(finallyBlock->hasHndIndex());
         BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
@@ -3215,6 +3222,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
     else
+#endif
     {
         newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false, exit);
         newExit->SetFlags(BBF_NONE_QUIRK);

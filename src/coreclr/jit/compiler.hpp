@@ -4970,8 +4970,8 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 }
 
 //------------------------------------------------------------------------------
-// FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit blocks that are outside
-// the loop but that may have regular predecessors inside the loop.
+// FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit non-handler blocks that
+// are outside the loop but that may have regular predecessors inside the loop.
 //
 // Type parameters:
 //   TFunc - Callback functor type
@@ -4981,8 +4981,16 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 //   BasicBlockVisit.
 //
 // Returns:
-//    BasicBlockVisit that indicated whether the visit was aborted by the
-//    callback or whether all blocks were visited.
+//   BasicBlockVisit that indicated whether the visit was aborted by the
+//   callback or whether all blocks were visited.
+//
+// Remarks:
+//   Note that no handler begins are visited by this function, even if they
+//   have regular predecessors inside the loop (for example, finally handlers
+//   can have regular BBJ_CALLFINALLY predecessors inside the loop). This
+//   choice is motivated by the fact that such handlers will also show up as
+//   exceptional exit blocks that must always be handled specially by client
+//   code regardless.
 //
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
@@ -4996,7 +5004,8 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     {
         BasicBlockVisit result = edge->getSourceBlock()->VisitRegularSuccs(comp, [&](BasicBlock* succ) {
             assert(m_dfsTree->Contains(succ));
-            if (!ContainsBlock(succ) && BitVecOps::TryAddElemD(&traits, visited, succ->bbPostorderNum) &&
+            if (!comp->bbIsHandlerBeg(succ) && !ContainsBlock(succ) &&
+                BitVecOps::TryAddElemD(&traits, visited, succ->bbPostorderNum) &&
                 (func(succ) == BasicBlockVisit::Abort))
             {
                 return BasicBlockVisit::Abort;

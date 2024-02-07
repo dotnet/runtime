@@ -4974,9 +4974,10 @@ public:
     FlowGraphDominatorTree* m_domTree;
     BlockReachabilitySets* m_reachabilitySets;
 
-    // Do we require loops to be in canonical form?
+    // Do we require loops to be in canonical form? The canonical form ensures that:
     // 1. All loops have preheaders (single entry blocks that always enter the loop)
-    // 2. All regular loop exits have only loop predecessors 
+    // 2. All loop exits where bbIsHandlerBeg(exit) is false have only loop predecessors.
+    //
     bool optLoopsCanonical;
     unsigned optNumNaturalLoopsFound; // Number of natural loops found in the loop finding phase
 
