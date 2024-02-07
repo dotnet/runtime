@@ -827,6 +827,12 @@ namespace System.StubHelpers
 
         internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
+            // COMPAT: We never pass null to CleanUpManagedData.
+            if (pManagedHome is null)
+            {
+                return;
+            }
+
             marshaler.CleanUpManagedData(pManagedHome);
         }
 #pragma warning restore IDE0060
