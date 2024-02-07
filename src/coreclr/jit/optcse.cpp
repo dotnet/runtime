@@ -394,7 +394,7 @@ void CSEdsc::ComputeNumLocals(Compiler* compiler)
                 }
             }
 
-            if (m_count > MAX_LOCALS)
+            if (m_count >= MAX_LOCALS)
             {
                 return Compiler::fgWalkResult::WALK_ABORT;
             }
