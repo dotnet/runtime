@@ -95,14 +95,14 @@ namespace System.Reflection
                     nestedTypeNames[--nestingDepth] = current.Name;
                     current = current.ContainingType;
                 }
-                string nonNestedParentName = current!.Name;
+                string nonNestedParentName = current!.FullName;
 
                 Type? type = GetType(nonNestedParentName, nestedTypeNames, typeName.AssemblyName);
                 return Make(type, typeName);
             }
             else if (typeName.UnderlyingType is null)
             {
-                Type? type = GetType(typeName.Name, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName);
+                Type? type = GetType(typeName.FullName, nestedTypeNames: ReadOnlySpan<string>.Empty, typeName.AssemblyName);
 
                 return Make(type, typeName);
             }

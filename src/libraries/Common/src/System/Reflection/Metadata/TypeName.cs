@@ -3,10 +3,12 @@
 
 #nullable enable
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
+    [DebuggerDisplay("{AssemblyQualifiedName}")]
 #if SYSTEM_PRIVATE_CORELIB
     internal
 #else
@@ -24,12 +26,15 @@ namespace System.Reflection.Metadata
         private readonly TypeName[]? _genericArguments;
         private string? _assemblyQualifiedName;
 
-        internal TypeName(string name, AssemblyName? assemblyName, int rankOrModifier,
+        internal TypeName(string name, string fullName,
+            AssemblyName? assemblyName,
+            int rankOrModifier = default,
             TypeName? underlyingType = default,
             TypeName? containingType = default,
             TypeName[]? genericTypeArguments = default)
         {
             Name = name;
+            FullName = fullName;
             AssemblyName = assemblyName;
             _rankOrModifier = rankOrModifier;
             UnderlyingType = underlyingType;
@@ -42,10 +47,10 @@ namespace System.Reflection.Metadata
         /// The assembly-qualified name of the type; e.g., "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089".
         /// </summary>
         /// <remarks>
-        /// If <see cref="AssemblyName"/> is null, simply returns <see cref="Name"/>.
+        /// If <see cref="AssemblyName"/> is null, simply returns <see cref="FullName"/>.
         /// </remarks>
         public string AssemblyQualifiedName
-            => _assemblyQualifiedName ??= AssemblyName is null ? Name : $"{Name}, {AssemblyName.FullName}";
+            => _assemblyQualifiedName ??= AssemblyName is null ? FullName : $"{FullName}, {AssemblyName.FullName}";
 
         /// <summary>
         /// The assembly which contains this type, or null if this <see cref="TypeName"/> was not
@@ -61,6 +66,22 @@ namespace System.Reflection.Metadata
         /// For example, given "Namespace.Containing+Nested", unwraps the outermost type and returns "Namespace.Containing".
         /// </remarks>
         public TypeName? ContainingType { get; }
+
+        /// <summary>
+        /// The full name of this type, including namespace, but without the assembly name; e.g., "System.Int32".
+        /// Nested types are represented with a '+'; e.g., "MyNamespace.MyType+NestedType".
+        /// </summary>
+        /// <remarks>
+        /// <para>For constructed generic types, the type arguments will be listed using their fully qualified
+        /// names. For example, given "List&lt;int&gt;", the <see cref="FullName"/> property will return
+        /// "System.Collections.Generic.List`1[[System.Int32, mscorlib, ...]]".</para>
+        /// <para>For open generic types, the convention is to use a backtick ("`") followed by
+        /// the arity of the generic type. For example, given "Dictionary&lt;,&gt;", the <see cref="FullName"/>
+        /// property will return "System.Collections.Generic.Dictionary`2". Given "Dictionary&lt;,&gt;.Enumerator",
+        /// the <see cref="FullName"/> property will return "System.Collections.Generic.Dictionary`2+Enumerator".
+        /// See ECMA-335, Sec. I.10.7.2 (Type names and arity encoding) for more information.</para>
+        /// </remarks>
+        public string FullName { get; }
 
         /// <summary>
         /// Returns true if this type represents any kind of array, regardless of the array's
@@ -88,7 +109,7 @@ namespace System.Reflection.Metadata
         /// This is because determining whether a type truly is a generic type requires loading the type
         /// and performing a runtime check.</para>
         /// </remarks>
-        public bool IsElementalType => UnderlyingType is null && !IsConstructedGenericType;
+        public bool IsElementalType => UnderlyingType is null;
 
         /// <summary>
         /// Returns true if this is a managed pointer type (e.g., "ref int").
@@ -111,7 +132,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this type represents an unmanaged pointer (e.g., "int*" or "void*").
         /// Unmanaged pointer types are often just called pointers (<seealso cref="Type.IsPointer"/>)
         /// </summary>
-        public bool IsUnmanagedPointerType => _rankOrModifier == Pointer;// name inconsistent with Type.IsPointer
+        public bool IsUnmanagedPointerType => _rankOrModifier == Pointer; // name inconsistent with Type.IsPointer
 
         /// <summary>
         /// Returns true if this type represents a variable-bound array; that is, an array of rank greater
@@ -219,7 +240,6 @@ namespace System.Reflection.Metadata
                 // - one for the generic type definition "MyGeneric`x"
                 // - one for the constructed type definition "MyGeneric`x[[...]]"
                 // - and the cumulative complexity of all the arguments
-                result = checked(result + 1);
                 foreach (TypeName genericArgument in genericTypeArguments)
                 {
                     result = checked(result + genericArgument.TotalComplexity);

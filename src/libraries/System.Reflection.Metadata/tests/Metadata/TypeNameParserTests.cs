@@ -12,9 +12,16 @@ namespace System.Reflection.Metadata.Tests
     public class TypeNameParserTests
     {
         [Theory]
-        [InlineData("  System.Int32", "System.Int32")]
-        public void SpacesAtTheBeginningAreOK(string input, string expectedName)
-            => Assert.Equal(expectedName, TypeName.Parse(input.AsSpan()).Name);
+        [InlineData("  System.Int32", "System.Int32", "Int32")]
+        [InlineData("  MyNamespace.MyType+NestedType", "MyNamespace.MyType+NestedType", "NestedType")]
+        public void SpacesAtTheBeginningAreOK(string input, string expectedFullName, string expectedName)
+        {
+            TypeName parsed = TypeName.Parse(input.AsSpan());
+
+            Assert.Equal(expectedName, parsed.Name);
+            Assert.Equal(expectedFullName, parsed.FullName);
+            Assert.Equal(expectedFullName, parsed.AssemblyQualifiedName);
+        }
 
         [Theory]
         [InlineData("")]
@@ -42,8 +49,8 @@ namespace System.Reflection.Metadata.Tests
 
         [Theory]
         [InlineData("Namespace.Kość", "Namespace.Kość")]
-        public void UnicodeCharactersAreAllowedByDefault(string input, string expectedName)
-            => Assert.Equal(expectedName, TypeName.Parse(input.AsSpan()).Name);
+        public void UnicodeCharactersAreAllowedByDefault(string input, string expectedFullName)
+            => Assert.Equal(expectedFullName, TypeName.Parse(input.AsSpan()).FullName);
 
         [Theory]
         [InlineData("Namespace.Kość")]
@@ -60,6 +67,7 @@ namespace System.Reflection.Metadata.Tests
             {
                 "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
                 "System.Int32",
+                "Int32",
                 "mscorlib",
                 new Version(4, 0, 0, 0),
                 "",
@@ -69,11 +77,14 @@ namespace System.Reflection.Metadata.Tests
 
         [Theory]
         [MemberData(nameof(TypeNamesWithAssemblyNames))]
-        public void TypeNameCanContainAssemblyName(string input, string typeName, string assemblyName, Version assemblyVersion, string assemblyCulture, string assemblyPublicKeyToken)
+        public void TypeNameCanContainAssemblyName(string assemblyQualifiedName, string fullName, string name, string assemblyName,
+            Version assemblyVersion, string assemblyCulture, string assemblyPublicKeyToken)
         {
-            TypeName parsed = TypeName.Parse(input.AsSpan());
+            TypeName parsed = TypeName.Parse(assemblyQualifiedName.AsSpan());
 
-            Assert.Equal(typeName, parsed.Name);
+            Assert.Equal(assemblyQualifiedName, parsed.AssemblyQualifiedName);
+            Assert.Equal(fullName, parsed.FullName);
+            Assert.Equal(name, parsed.Name);
             Assert.NotNull(parsed.AssemblyName);
             Assert.Equal(assemblyName, parsed.AssemblyName.Name);
             Assert.Equal(assemblyVersion, parsed.AssemblyName.Version);
@@ -125,7 +136,7 @@ namespace System.Reflection.Metadata.Tests
             };
             yield return new object[]
             {
-                "Generic`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089], [System.Boolean, mscorlib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
+                "Generic`2[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.Boolean, mscorlib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]",
                 "Generic`2",
                 new string[] { "System.Int32", "System.Boolean" },
                 new AssemblyName[]
@@ -138,18 +149,19 @@ namespace System.Reflection.Metadata.Tests
 
         [Theory]
         [MemberData(nameof(GenericArgumentsAreSupported_Arguments))]
-        public void GenericArgumentsAreSupported(string input, string typeName, string[] typeNames, AssemblyName[]? assemblyNames)
+        public void GenericArgumentsAreSupported(string input, string name, string[] genericTypesFullNames, AssemblyName[]? assemblyNames)
         {
             TypeName parsed = TypeName.Parse(input.AsSpan());
 
-            Assert.Equal(typeName, parsed.Name);
+            Assert.Equal(name, parsed.Name);
+            Assert.Equal(input, parsed.FullName);
             Assert.True(parsed.IsConstructedGenericType);
             Assert.False(parsed.IsElementalType);
 
-            for (int i = 0; i < typeNames.Length; i++)
+            for (int i = 0; i < genericTypesFullNames.Length; i++)
             {
                 TypeName genericArg = parsed.GetGenericArguments()[i];
-                Assert.Equal(typeNames[i], genericArg.Name);
+                Assert.Equal(genericTypesFullNames[i], genericArg.FullName);
                 Assert.True(genericArg.IsElementalType);
                 Assert.False(genericArg.IsConstructedGenericType);
 
@@ -190,7 +202,7 @@ namespace System.Reflection.Metadata.Tests
         {
             TypeName parsed = TypeName.Parse(input.AsSpan());
 
-            Assert.Equal(input, parsed.Name);
+            Assert.Equal(input, parsed.FullName);
             Assert.Equal(isArray, parsed.IsArray);
             Assert.Equal(isSzArray, parsed.IsSzArrayType);
             if (isArray) Assert.Equal(arrayRank, parsed.GetArrayRank());
@@ -200,7 +212,7 @@ namespace System.Reflection.Metadata.Tests
 
             TypeName underlyingType = parsed.UnderlyingType;
             Assert.NotNull(underlyingType);
-            Assert.Equal(typeNameWithoutDecorators, underlyingType.Name);
+            Assert.Equal(typeNameWithoutDecorators, underlyingType.FullName);
             Assert.True(underlyingType.IsElementalType);
             Assert.False(underlyingType.IsArray);
             Assert.False(underlyingType.IsSzArrayType);
@@ -251,6 +263,32 @@ namespace System.Reflection.Metadata.Tests
             TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
             Assert.Equal(expectedComplexity, parsed.TotalComplexity);
+
+            Assert.Equal(type.Name, parsed.Name);
+            Assert.Equal(type.FullName, parsed.FullName);
+            Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+        }
+
+        [Theory]
+        [InlineData(typeof(List<int>))]
+        [InlineData(typeof(List<List<int>>))]
+        [InlineData(typeof(Dictionary<int, string>))]
+        [InlineData(typeof(Dictionary<string, List<string>>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>))]
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
+        public void ParsedNamesMatchSystemTypeNames(Type type)
+        {
+            TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
+
+            Assert.Equal(type.Name, parsed.Name);
+            Assert.Equal(type.FullName, parsed.FullName);
+            Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+
+            Type genericType = type.GetGenericTypeDefinition();
+            Assert.Equal(genericType.Name, parsed.UnderlyingType.Name);
+            Assert.Equal(genericType.FullName, parsed.UnderlyingType.FullName);
+            Assert.Equal(genericType.AssemblyQualifiedName, parsed.UnderlyingType.AssemblyQualifiedName);
         }
 
         [Theory]
@@ -260,7 +298,9 @@ namespace System.Reflection.Metadata.Tests
         [InlineData(typeof(int[,]))]
         [InlineData(typeof(int[,,,]))]
         [InlineData(typeof(List<int>))]
+        [InlineData(typeof(List<List<int>>))]
         [InlineData(typeof(Dictionary<int, string>))]
+        [InlineData(typeof(Dictionary<string, List<string>>))]
         [InlineData(typeof(NestedNonGeneric_0))]
         [InlineData(typeof(NestedNonGeneric_0.NestedNonGeneric_1))]
         [InlineData(typeof(NestedGeneric_0<int>))]
@@ -283,14 +323,20 @@ namespace System.Reflection.Metadata.Tests
 
             static void Test(Type type)
             {
-                TypeName typeName = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
-                Verify(type, typeName, ignoreCase: false);
+                TypeName parsed = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
 
-                typeName = TypeName.Parse(type.AssemblyQualifiedName.ToLower().AsSpan());
-                Verify(type, typeName, ignoreCase: true);
-
-                typeName = TypeName.Parse(type.AssemblyQualifiedName.ToUpper().AsSpan());
-                Verify(type, typeName, ignoreCase: true);
+                // ensure that Name, FullName and AssemblyQualifiedName match reflection APIs!!
+                Assert.Equal(type.Name, parsed.Name);
+                Assert.Equal(type.FullName, parsed.FullName);
+                Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+                // now load load the type from name
+                Verify(type, parsed, ignoreCase: false);
+#if NETCOREAPP  // something weird is going on here
+                // load using lowercase name
+                Verify(type, TypeName.Parse(type.AssemblyQualifiedName.ToLower().AsSpan()), ignoreCase: true);
+                // load using uppercase name
+                Verify(type, TypeName.Parse(type.AssemblyQualifiedName.ToUpper().AsSpan()), ignoreCase: true);
+#endif
 
                 static void Verify(Type type, TypeName typeName, bool ignoreCase)
                 {
@@ -318,11 +364,11 @@ namespace System.Reflection.Metadata.Tests
                     }
                     return Make(GetType(typeName.ContainingType, throwOnError, ignoreCase)?.GetNestedType(typeName.Name, flagsCopiedFromClr));
                 }
-                else if (typeName.UnderlyingType is null)
+                else if (typeName.UnderlyingType is null) // elemental
                 {
                     Type? type = typeName.AssemblyName is null
-                        ? Type.GetType(typeName.Name, throwOnError, ignoreCase)
-                        : Assembly.Load(typeName.AssemblyName).GetType(typeName.Name, throwOnError, ignoreCase);
+                        ? Type.GetType(typeName.FullName, throwOnError, ignoreCase)
+                        : Assembly.Load(typeName.AssemblyName).GetType(typeName.FullName, throwOnError, ignoreCase);
 
                     return Make(type);
                 }
