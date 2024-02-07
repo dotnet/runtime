@@ -6,7 +6,6 @@
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
-
     <IsSourceProject>false</IsSourceProject>
     <IsPackable>true</IsPackable>
     <!-- TODO: Enable after AvoidRestoreCycleOnSelfReference hack is removed. -->
@@ -19,8 +18,8 @@
 
     <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
     <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
-    <ServicingVersion>11</ServicingVersion>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>12</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
