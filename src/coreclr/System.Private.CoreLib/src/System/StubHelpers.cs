@@ -802,7 +802,7 @@ namespace System.StubHelpers
             return marshaler!;
         }
 
-        internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
         }
@@ -825,7 +825,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static void ClearManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static void ClearManaged(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             marshaler.CleanUpManagedData(pManagedHome);
         }
