@@ -1223,6 +1223,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
         public static void LongContinuationChain_ContinueWith_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
