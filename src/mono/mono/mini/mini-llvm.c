@@ -662,13 +662,14 @@ static LLVMTypeRef
 simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 {
 	const char *klass_name = m_class_get_name (klass);
-	if (!strcmp (klass_name, "ValueTuple`2")) {
-		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+	if (strstr (klass_name, "ValueTuple") != NULL) {
+		MonoGenericInst *classInst = mono_class_get_generic_class (klass)->context.class_inst;
+		MonoType *etype = classInst->type_argv [0];
 		if (etype->type != MONO_TYPE_GENERICINST)
 			g_assert_not_reached ();
 		MonoClass *eklass = etype->data.generic_class->cached_class;
 		LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
-		return LLVMArrayType (ltype, 2);
+		return LLVMArrayType (ltype, classInst->type_argc);
 	}
 	g_assert_not_reached ();
 }
@@ -11619,17 +11620,20 @@ MONO_RESTORE_WARNING
 		}
 		case OP_ARM64_LDM: {
 			const char *oname = "arm64_ldm";
+			LLVMTypeRef ret_t;
 			if (!addresses [ins->dreg]) {
-				LLVMTypeRef etype = type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass));
-				addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname), etype);
+				ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+				addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname), ret_t);
+			} else {
+				ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
 			}
-			LLVMTypeRef ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (ret_t);
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
 			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, oname);
 			int len = LLVMGetVectorSize (ret_t);
-			LLVMValueRef retval = LLVMGetUndef (ret_t), elem;
+			LLVMValueRef elem;
+			LLVMValueRef retval = LLVMGetUndef (ret_t);
 			for (int i = 0; i < len; i++) {
 				elem = LLVMBuildExtractValue (builder, result,  i, "extract_elem");
 				retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val");
