@@ -3838,11 +3838,6 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
                                                         bool*            isKnownNonZero,
                                                         bool*            isKnownNonNegative)
 {
-    if (optLocalAssertionProp || BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
-    {
-        return;
-    }
-
     *isKnownNonZero     = false;
     *isKnownNonNegative = false;
 
@@ -3851,20 +3846,18 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
         return;
     }
 
-    // First, check properties without using assertions.
+    // First, check simple properties without assertions.
+    *isKnownNonNegative = tree->IsNeverNegative(this);
+    *isKnownNonZero     = tree->IsNeverZero();
 
-    if (tree->IsNeverNegative(this))
-    {
-        *isKnownNonNegative = true;
-    }
-    if (tree->IsNeverZero())
-    {
-        *isKnownNonZero = true;
-    }
-
-    if (*isKnownNonNegative && *isKnownNonZero)
+    if (*isKnownNonZero && *isKnownNonNegative)
     {
         // TP: We already have both properties, no need to check assertions.
+        return;
+    }
+
+    if (optLocalAssertionProp || BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
         return;
     }
 
@@ -3957,40 +3950,36 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
 //
 GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
 {
-    bool dividendIsNotZero;
-    bool dividendIsNotNegative;
-    bool divisorIsNotZero;
-    bool divisorIsNotNegative;
-    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp1(), &dividendIsNotZero, &dividendIsNotNegative);
-    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp2(), &divisorIsNotZero, &divisorIsNotNegative);
+    bool op1IsNotZero;
+    bool op2IsNotZero;
+    bool op1IsNotNegative;
+    bool op2IsNotNegative;
+    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp1(), &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp2(), &op2IsNotZero, &op2IsNotNegative);
 
     bool changed = false;
-    if (divisorIsNotNegative && dividendIsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
+    if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
     {
         JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
         tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
         changed = true;
     }
 
-    if (divisorIsNotZero)
+    if (op2IsNotZero)
     {
         JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
         changed = true;
     }
 
-    if (dividendIsNotNegative || divisorIsNotNegative)
+    if (op1IsNotNegative || op2IsNotNegative)
     {
         JITDUMP("DIV/MOD is proven to never overflow...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
         changed = true;
     }
 
-    if (changed)
-    {
-        return optAssertionProp_Update(tree, tree, stmt);
-    }
-    return nullptr;
+    return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
 }
 
 //------------------------------------------------------------------------
