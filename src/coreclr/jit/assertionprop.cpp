@@ -2805,7 +2805,16 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, G
         {
             if (tree->TypeGet() == TYP_REF)
             {
-                conValTree = gtNewIconNode(vnStore->ConstantValue<size_t>(vnCns), TYP_REF);
+                const size_t value = vnStore->ConstantValue<size_t>(vnCns);
+                if (value == 0)
+                {
+                    conValTree = gtNewNull();
+                }
+                else
+                {
+                    assert(vnStore->IsVNObjHandle(vnCns));
+                    conValTree = gtNewIconHandleNode(value, GTF_ICON_OBJ_HDL);
+                }
             }
         }
         break;
@@ -5004,10 +5013,16 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
                 return optAssertionProp_Update(arg1, call, stmt);
             }
 
-            // TODO-InlineCast: check optAssertionIsNonNull for the object argument and replace
-            // the helper with its nonnull version, e.g.:
-            // CORINFO_HELP_ISINSTANCEOFANY -> CORINFO_HELP_ISINSTANCEOFANY_NONNULL
-            // so then fgLateCastExpansion can skip the null check.
+            // Leave a hint for fgLateCastExpansion that obj is never null.
+            INDEBUG(AssertionIndex nonNullIdx = NO_ASSERTION_INDEX);
+            INDEBUG(bool vnBased = false);
+            // GTF_CALL_M_CAST_CAN_BE_EXPANDED check is to improve TP
+            if (((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0) &&
+                optAssertionIsNonNull(arg1, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
+            {
+                call->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
+                return optAssertionProp_Update(call, call, stmt);
+            }
         }
     }
 

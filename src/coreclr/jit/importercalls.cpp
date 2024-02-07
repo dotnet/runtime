@@ -3216,6 +3216,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1->gtType = TYP_REF;
                     retNode     = op1;
                 }
+                else if (GetRuntimeHandleUnderlyingType() == TYP_I_IMPL)
+                {
+                    // We'll try to expand it later.
+                    isSpecial = true;
+                }
                 break;
             }
 
