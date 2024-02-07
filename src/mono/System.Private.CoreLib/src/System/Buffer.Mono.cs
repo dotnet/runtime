@@ -14,30 +14,6 @@ namespace System
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint len, IntPtr type_handle);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void Memmove<T>(ref T destination, ref T source, nuint elementCount)
-        {
-            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-#pragma warning disable 8500 // sizeof of managed types
-                // Blittable memmove
-                Memmove(
-                    ref Unsafe.As<T, byte>(ref destination),
-                    ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)sizeof(T));
-#pragma warning restore 8500
-            }
-            else if (elementCount > 0)
-            {
-                // Non-blittable memmove
-                BulkMoveWithWriteBarrier(
-                    ref Unsafe.As<T, byte>(ref destination),
-                    ref Unsafe.As<T, byte>(ref source),
-                    elementCount,
-                    typeof(T).TypeHandle.Value);
-            }
-        }
+        private static extern void __BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint len, IntPtr type_handle);
     }
 }

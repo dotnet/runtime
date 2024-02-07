@@ -958,9 +958,17 @@ void
 ves_icall_System_Buffer_BulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t len, MonoType *type)
 {
 	if (MONO_TYPE_IS_REFERENCE (type))
-		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)len);
+	{
+		g_assert ((len % sizeof (gpointer)) == 0);
+		mono_gc_wbarrier_arrayref_copy_internal (destination, source, (guint)(len / sizeof (gpointer))); 
+	}
 	else
-		mono_gc_wbarrier_value_copy_internal (destination, source, (guint)len, mono_class_from_mono_type_internal (type));
+	{
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		int size = mono_class_value_size (klass, NULL);
+		g_assert ((len % size) == 0);
+		mono_gc_wbarrier_value_copy_internal (destination, source, (guint)(len / size), klass);
+	}
 }
 
 void

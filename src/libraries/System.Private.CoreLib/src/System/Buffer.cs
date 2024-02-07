@@ -360,12 +360,24 @@ namespace System
             }
         }
 
-#if !MONO // Mono BulkMoveWithWriteBarrier is in terms of elements (not bytes) and takes a type handle.
+        private static void ___BulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint len, IntPtr typeHandle)
+        {
+#if MONO
+            __BulkMoveWithWriteBarrier(ref dmem, ref smem, len, typeHandle);
+#else
+            __BulkMoveWithWriteBarrier(ref dmem, ref smem, len);
+#endif
+        }
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void Memmove<T>(ref T destination, ref T source, nuint elementCount)
         {
+#if MONO
+            IntPtr typeHandle = typeof(T).TypeHandle.Value;
+#else
+            IntPtr typeHandle = IntPtr.Zero;
+#endif
 #pragma warning disable 8500 // sizeof of managed types
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
@@ -381,7 +393,8 @@ namespace System
                 BulkMoveWithWriteBarrier(
                     ref Unsafe.As<T, byte>(ref destination),
                     ref Unsafe.As<T, byte>(ref source),
-                    elementCount * (nuint)sizeof(T));
+                    elementCount * (nuint)sizeof(T),
+                    typeHandle);
             }
 #pragma warning restore 8500
         }
@@ -393,18 +406,18 @@ namespace System
         private const uint BulkMoveWithWriteBarrierChunk = 0x4000;
 #endif
 
-        internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
+        internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount, IntPtr typeHandle)
         {
             if (byteCount <= BulkMoveWithWriteBarrierChunk)
-                __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+                ___BulkMoveWithWriteBarrier(ref destination, ref source, byteCount, typeHandle);
             else
-                _BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+                _BulkMoveWithWriteBarrier(ref destination, ref source, byteCount, typeHandle);
         }
 
 #pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         // Non-inlinable wrapper around the loop for copying large blocks in chunks
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void _BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
+        private static void _BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount, IntPtr typeHandle)
         {
             Debug.Assert(byteCount > BulkMoveWithWriteBarrierChunk);
 
@@ -418,7 +431,7 @@ namespace System
                 do
                 {
                     byteCount -= BulkMoveWithWriteBarrierChunk;
-                    __BulkMoveWithWriteBarrier(ref destination, ref source, BulkMoveWithWriteBarrierChunk);
+                    ___BulkMoveWithWriteBarrier(ref destination, ref source, BulkMoveWithWriteBarrierChunk, typeHandle);
                     destination = ref Unsafe.AddByteOffset(ref destination, BulkMoveWithWriteBarrierChunk);
                     source = ref Unsafe.AddByteOffset(ref source, BulkMoveWithWriteBarrierChunk);
                 }
@@ -430,14 +443,12 @@ namespace System
                 do
                 {
                     byteCount -= BulkMoveWithWriteBarrierChunk;
-                    __BulkMoveWithWriteBarrier(ref Unsafe.AddByteOffset(ref destination, byteCount), ref Unsafe.AddByteOffset(ref source, byteCount), BulkMoveWithWriteBarrierChunk);
+                    ___BulkMoveWithWriteBarrier(ref Unsafe.AddByteOffset(ref destination, byteCount), ref Unsafe.AddByteOffset(ref source, byteCount), BulkMoveWithWriteBarrierChunk, typeHandle);
                 }
                 while (byteCount > BulkMoveWithWriteBarrierChunk);
             }
-            __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+            ___BulkMoveWithWriteBarrier(ref destination, ref source, byteCount, typeHandle);
         }
 #pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
-
-#endif // !MONO
     }
 }
