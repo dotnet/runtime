@@ -27,6 +27,8 @@
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs"
@@ -902,6 +904,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainEventSource.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainProcessor.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509Encoder.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\SafeLocalAllocWithClearOnDisposeHandle.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixChainVerifier.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
@@ -1633,8 +1636,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeCertStoreHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeChainEngineHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeChainEngineHandle.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeUnicodeStringHandle.cs"

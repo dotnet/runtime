@@ -25,6 +25,7 @@ namespace System.Security.Cryptography.X509Certificates
         private CertAndKey[]? _certs;
         private int _certCount;
         private PointerMemoryManager<byte>? _tmpManager;
+        private SafeLocalAllocWithClearOnDisposeHandle _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.InvalidHandle;
         private bool _allowDoubleBind;
 
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
@@ -40,13 +41,10 @@ namespace System.Security.Cryptography.X509Certificates
                 // Windows compatibility: Ignore trailing data.
                 ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
 
-                unsafe
-                {
-                    IntPtr tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
-                    Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
-                    encodedData.CopyTo(tmpSpan);
-                    _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
-                }
+                _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.Create(encodedData.Length);
+                _tmpManager = _tmpMemoryHandle.GetMemoryManager();
+                Span<byte> tmpSpan = _tmpManager.GetSpan();
+                encodedData.CopyTo(tmpSpan);
 
                 ReadOnlyMemory<byte> tmpMemory = _tmpManager.Memory;
                 reader = new AsnValueReader(tmpMemory.Span, AsnEncodingRules.BER);
@@ -112,26 +110,10 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Dispose()
         {
-            // Generally, having a MemoryManager cleaned up in a Dispose is a bad practice.
-            // In this case, the UnixPkcs12Reader is only ever created in a using statement,
-            // never accessed by a second thread, and there isn't a manual call to Dispose
-            // mixed in anywhere.
-            if (_tmpManager != null)
-            {
-                unsafe
-                {
-                    Span<byte> tmp = _tmpManager.GetSpan();
-                    CryptographicOperations.ZeroMemory(tmp);
-
-                    fixed (byte* ptr = tmp)
-                    {
-                        Marshal.FreeHGlobal((IntPtr)ptr);
-                    }
-                }
-
-                ((IDisposable)_tmpManager).Dispose();
-                _tmpManager = null;
-            }
+            _tmpMemoryHandle.Dispose();
+            _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.InvalidHandle;
+            ((IDisposable?)_tmpManager)?.Dispose();
+            _tmpManager = null;
 
             ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
             CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
