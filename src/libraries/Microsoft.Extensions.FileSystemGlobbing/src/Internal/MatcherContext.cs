@@ -17,8 +17,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
     public class MatcherContext
     {
         private readonly DirectoryInfoBase _root;
-        private readonly List<IPatternContext> _includePatternContexts;
-        private readonly List<IPatternContext> _excludePatternContexts;
+        private readonly IPatternContext[] _includePatternContexts;
+        private readonly IPatternContext[] _excludePatternContexts;
         private readonly List<FilePatternMatch> _files;
 
         private readonly HashSet<string> _declaredLiteralFolderSegmentInString;
@@ -39,8 +39,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             _files = new List<FilePatternMatch>();
             _comparisonType = comparison;
 
-            _includePatternContexts = includePatterns.Select(pattern => pattern.CreatePatternContextForInclude()).ToList();
-            _excludePatternContexts = excludePatterns.Select(pattern => pattern.CreatePatternContextForExclude()).ToList();
+            _includePatternContexts = includePatterns.Select(pattern => pattern.CreatePatternContextForInclude()).ToArray();
+            _excludePatternContexts = excludePatterns.Select(pattern => pattern.CreatePatternContextForExclude()).ToArray();
 
             _declaredLiteralFolderSegmentInString = new HashSet<string>(StringComparisonHelper.GetStringComparer(comparison));
         }
