@@ -337,7 +337,6 @@ endif()
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
 target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api)
-target_link_libraries(mono-ee-interp PUBLIC)
 target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
@@ -406,7 +405,6 @@ endif()
 
 add_library(monosgen-static STATIC $<TARGET_OBJECTS:eglib_objects> $<TARGET_OBJECTS:utils_objects> $<TARGET_OBJECTS:sgen_objects> $<TARGET_OBJECTS:metadata_objects> $<TARGET_OBJECTS:monosgen-objects>)
 set_target_properties(monosgen-static PROPERTIES OUTPUT_NAME ${MONO_LIB_NAME})
-target_link_libraries(monosgen-static PUBLIC)
 
 if(DISABLE_COMPONENTS OR AOT_COMPONENTS)
   # add component fallback stubs into static mono library when components have been disabled.
