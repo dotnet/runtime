@@ -222,14 +222,14 @@ typedef unsigned __int64 regMaskTP;
 // 32 registers for these categories, it is suffice to have it
 // "unsigned".
 //
-// We will add a "//TODO: regMaskAnyOne" through out the code
+// We will add a "//TODO: regMaskOnlyOne" through out the code
 // that we know that the existing `regMaskTP` contains data that
-// can be represented by `regMaskAnyOne`. In other words, at
+// can be represented by `regMaskOnlyOne`. In other words, at
 // those places, we never pass both gpr and vector registers
 // together as part of `regMaskTP`. This will be eventually
 // converted to "unsigned"
-#define regMaskAnyOne regMaskTP
-#define regMaskAll regMaskTP
+#define regMaskOnlyOne regMaskTP
+#define regMaskAny regMaskTP
 #else
 // x86 and arm
 typedef unsigned       regMaskTP;
