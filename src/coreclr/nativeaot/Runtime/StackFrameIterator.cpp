@@ -37,46 +37,28 @@
 #if !defined(USE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 
 #if defined(FEATURE_DYNAMIC_CODE)
-EXTERN_C void * RhpUniversalTransition();
-GPTR_IMPL_INIT(PTR_VOID, g_RhpUniversalTransitionAddr, (void**)&RhpUniversalTransition);
-
-EXTERN_C PTR_VOID PointerToReturnFromUniversalTransition;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, PointerToReturnFromUniversalTransition);
-
-EXTERN_C PTR_VOID PointerToReturnFromUniversalTransition_DebugStepTailCall;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransition_DebugStepTailCallAddr, PointerToReturnFromUniversalTransition_DebugStepTailCall);
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransition;
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransition_DebugStepTailCall;
 #endif
 
 #ifdef TARGET_X86
-EXTERN_C void * PointerToRhpCallFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFunclet2Addr, PointerToRhpCallFunclet2);
+EXTERN_C CODE_LOCATION RhpCallFunclet2;
 #endif
-EXTERN_C void * PointerToRhpCallCatchFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallCatchFunclet2Addr, PointerToRhpCallCatchFunclet2);
-EXTERN_C void * PointerToRhpCallFinallyFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFinallyFunclet2Addr, PointerToRhpCallFinallyFunclet2);
-EXTERN_C void * PointerToRhpCallFilterFunclet2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFilterFunclet2Addr, PointerToRhpCallFilterFunclet2);
-EXTERN_C void * PointerToRhpThrowEx2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowEx2Addr, PointerToRhpThrowEx2);
-EXTERN_C void * PointerToRhpThrowHwEx2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpThrowHwEx2Addr, PointerToRhpThrowHwEx2);
-EXTERN_C void * PointerToRhpRethrow2;
-GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
+EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
+EXTERN_C CODE_LOCATION RhpCallFinallyFunclet2;
+EXTERN_C CODE_LOCATION RhpCallFilterFunclet2;
+EXTERN_C CODE_LOCATION RhpThrowEx2;
+EXTERN_C CODE_LOCATION RhpThrowHwEx2;
+EXTERN_C CODE_LOCATION RhpRethrow2;
 #endif // !defined(USE_PORTABLE_HELPERS)
 
 // Addresses of functions in the DAC won't match their runtime counterparts so we
 // assign them to globals. However it is more performant in the runtime to compare
 // against immediates than to fetch the global. This macro hides the difference.
-//
-// We use a special code path for the return address from thunks as
-// having the return address public confuses today DIA stackwalker. Before we can
-// ingest the updated DIA, we're instead exposing a global void * variable
-// holding the return address.
 #ifdef DACCESS_COMPILE
 #define EQUALS_RETURN_ADDRESS(x, func_name) ((x) == g_ ## func_name ## Addr)
 #else
-#define EQUALS_RETURN_ADDRESS(x, func_name) (((x)) == (PTR_VOID)PCODEToPINSTR((PCODE)PointerTo ## func_name))
+#define EQUALS_RETURN_ADDRESS(x, func_name) ((x) == &func_name)
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -186,7 +168,6 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #ifdef TARGET_ARM
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
-    m_RegDisplay.pR11 = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_ChainPointer);
 
     if (pFrame->m_Flags & PTFF_SAVE_R4)  { m_RegDisplay.pR4 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R5)  { m_RegDisplay.pR5 = pPreservedRegsCursor++; }
@@ -632,6 +613,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR9 = (PTR_UIntNative)PTR_TO_REG(pCtx, R9);
     m_RegDisplay.pR10 = (PTR_UIntNative)PTR_TO_REG(pCtx, R10);
     m_RegDisplay.pR11 = (PTR_UIntNative)PTR_TO_REG(pCtx, R11);
+    m_RegDisplay.pR12 = (PTR_UIntNative)PTR_TO_REG(pCtx, R12);
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_TO_REG(pCtx, Lr);
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");

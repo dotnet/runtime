@@ -480,8 +480,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
 
-    pMT->GetAuxiliaryDataForWrite()->SetIsRestoredForBuildMethodTable();
-
     RETURN(TypeHandle(pMT));
 } // ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation
 

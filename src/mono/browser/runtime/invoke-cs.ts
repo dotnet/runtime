@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
@@ -131,11 +131,11 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
 function bind_fn_0V(closure: BindingClosure) {
     const method = closure.method;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_0V() {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
-        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2);
@@ -152,11 +152,11 @@ function bind_fn_1V(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1V(arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
-        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -176,11 +176,11 @@ function bind_fn_1R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
-        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -203,11 +203,11 @@ function bind_fn_1RA(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
-        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -236,11 +236,11 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
-        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(4);
@@ -265,11 +265,11 @@ function bind_fn_2RA(closure: BindingClosure) {
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
-        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(4);
@@ -300,11 +300,11 @@ function bind_fn(closure: BindingClosure) {
     const method = closure.method;
     const fqn = closure.fqn;
     const is_async = closure.is_async;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
-        mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+        mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(2 + args_count);
@@ -435,7 +435,7 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
                 }
             }
         } else {
-            mono_assert(!MonoWasmThreads, () => `JSExport with multi-threading enabled is not supported with assembly ${assembly} as it was generated with the .NET 7 SDK`);
+            mono_assert(!WasmEnableThreads, () => `JSExport with multi-threading enabled is not supported with assembly ${assembly} as it was generated with the .NET 7 SDK`);
             // this needs to stay here for compatibility with assemblies generated in Net7
             // it doesn't have the __GeneratedInitializer class
             cwraps.mono_wasm_runtime_run_module_cctor(asm);
