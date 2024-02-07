@@ -32,6 +32,7 @@
     <ShortStack Condition="'$(TargetOS)' == 'tvossimulator'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'maccatalyst'">true</ShortStack>
     <ShortStack Condition="'$(TargetOS)' == 'android'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'linux-bionic'">true</ShortStack>
   </PropertyGroup>
 
   <Target Name="GetRuntimeSourceBuildCommandConfiguration"
