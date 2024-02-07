@@ -27,6 +27,5 @@ namespace System.Runtime.Intrinsics.Arm
 
             public static new bool IsSupported { get => IsSupported; }
         }
-
     }
 }

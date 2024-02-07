@@ -14,19 +14,21 @@ namespace System.Runtime.Intrinsics.Arm
     [Intrinsic]
     [CLSCompliant(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
-    public abstract class Sve : AdvSimd
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    abstract class Sve : AdvSimd
     {
         internal Sve() { }
 
-        public static new bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { [Intrinsic] get { return false; } }
 
-        [Intrinsic]
         public new abstract class Arm64 : AdvSimd.Arm64
         {
             internal Arm64() { }
 
-            public static new bool IsSupported { get => IsSupported; }
+            public static new bool IsSupported { [Intrinsic] get { return false; } }
         }
-
     }
-}
