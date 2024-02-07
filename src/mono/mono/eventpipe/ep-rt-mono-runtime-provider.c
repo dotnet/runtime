@@ -187,7 +187,7 @@ typedef struct _AssemblyEventData AssemblyEventData;
 typedef enum {
 	TYPE_FLAGS_DELEGATE = 0x1,
 	TYPE_FLAGS_FINALIZABLE = 0x2,
-	TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
+	// unused = 0x4,
 	TYPE_FLAGS_ARRAY = 0x8,
 
 	TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,

@@ -5345,6 +5345,11 @@ MonoObjectHandle
 mono_object_new_handle (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	
+	if (MONO_CLASS_IS_IMPORT(klass)) {
+		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
+		return NULL;
+	}
 
 	MonoVTable* const vtable = mono_class_vtable_checked (klass, error);
 
@@ -5412,6 +5417,11 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
+
+	if (MONO_CLASS_IS_IMPORT(vtable->klass)) {
+		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
+		return NULL;
+	}
 
 	return mono_object_new_alloc_specific_checked (vtable, error);
 }

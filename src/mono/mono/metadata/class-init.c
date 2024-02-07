@@ -564,11 +564,6 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		}
 	}
 
-	if (MONO_CLASS_IS_IMPORT (klass)) {
-		mono_class_set_failure_and_error (klass, error, "Built-in COM interop is not supported on the Mono runtime.");
-		goto parent_failure;
-	}
-
 	mono_class_setup_parent (klass, parent);
 
 	/* uses ->valuetype, which is initialized by mono_class_setup_parent above */
