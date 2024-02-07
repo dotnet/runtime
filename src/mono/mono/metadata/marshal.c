@@ -3526,11 +3526,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	g_assertf (mono_method_signature_internal (method)->pinvoke, "%s flags:%X iflags:%X param_count:%X",
 		method->name, method->flags, method->iflags, mono_method_signature_internal (method)->param_count);
 
-	if (MONO_CLASS_IS_IMPORT (method->klass)) {
-		mono_error_set_generic_error (emitted_error, "System", "PlatformNotSupportedException", "Built-in COM interop is not supported on Mono");
-		goto emit_exception_for_error;
-	}
-
 	if (aot) {
 		if (check_exceptions)
 			cache_ptr = &mono_method_get_wrapper_cache (method)->native_wrapper_aot_check_cache;
@@ -3548,6 +3543,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	if ((res = mono_marshal_find_in_cache (cache, method)))
 		return res;
 
+	if (MONO_CLASS_IS_IMPORT (method->klass)) {
+		mono_error_set_generic_error (emitted_error, "System", "PlatformNotSupportedException", "Built-in COM interop is not supported on Mono");
+		goto emit_exception_for_error;
+	}
+
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 		guint32 icall_flags = 0;
 		if (mono_lookup_internal_call_full_with_flags (method, FALSE, &icall_flags)) {
@@ -3555,8 +3555,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				check_exceptions = FALSE;
 		}
 	}
-
-	g_assert (!MONO_CLASS_IS_IMPORT (method->klass));
 
 	sig = mono_method_signature_internal (method);
 
