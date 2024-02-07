@@ -9,7 +9,7 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Negative.cs" />
+    <Compile Include="ValidateNegative.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />

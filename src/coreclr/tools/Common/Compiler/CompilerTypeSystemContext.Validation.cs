@@ -368,16 +368,6 @@ namespace ILCompiler
                     ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                 }
 
-                // Validate fields meet the constraints of the enclosing type.
-                foreach (FieldDesc field in defType.GetFields())
-                {
-                    if (!field.FieldType.IsCanonicalSubtype(CanonicalFormKind.Any)
-                        && !field.FieldType.CheckConstraints())
-                    {
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, field.FieldType);
-                    }
-                }
-
                 // Check the type doesn't have bogus MethodImpls or overrides and we can get the finalizer.
                 defType.GetFinalizer();
             }
