@@ -24454,10 +24454,18 @@ void emitter::emitDispInsHelp(
         // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
         case IF_SVE_HM_2A: // ........xx...... ...ggg....iddddd -- SVE floating-point arithmetic with immediate
                            // (predicated)
+            imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-            emitDispFloatImm(emitGetInsSC(id));
+            if (imm != 0)
+            {
+                emitDispFloatImm(imm);
+            }
+            else
+            {
+                emitDispFloatZero();
+            }
             break;
 
         // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
