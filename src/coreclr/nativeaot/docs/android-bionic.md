@@ -8,7 +8,7 @@ The minimum API level is 21 at the time of writing the document, but search for 
 
 To build for Bionic:
 
-* Ensure you have [Android NDK](https://developer.android.com/ndk/downloads) for your system downloaded and extracted somewhere. We build and test with NDK r23c but anything newer should also work. Newer releases of the NDK might require a workaround (https://github.com/dotnet/runtime/issues/92272). Double check with the NDK version referenced [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-android.md), which might be more up-to-date than this document.
+* Ensure you have [Android NDK](https://developer.android.com/ndk/downloads) for your system downloaded and extracted somewhere. We build and test with NDK r23c but anything newer should also work. Double check with the NDK version referenced [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-android.md), which might be more up-to-date than this document.
 * Update your PATH to include `{NDK_ROOT}\toolchains\llvm\prebuilt\{OS_ARCH}\bin`. Replace `{NDK_ROOT}` with the path where you extracted the NDK, and replace `{OS_ARCH}` with your host OS and architecture (e.g. windows-x86_64 or linux-x86_64). Make sure this entry is first in your path - we need to make sure that running `clang` will execute `clang` from this directory.
 * You can either create a new project or use an existing project. For this guide, let's create a new one:
   ```sh
@@ -26,6 +26,17 @@ To build for Bionic:
 Command line apps are not very interesting for Android. The more interesting scenario are shared libraries that can be called into from Java/Kotlin through JNI. This is very similar to building shared libraries in other languages like C/C++/Rust. `PublishAot` allows building shared libraries that are callable from non-.NET languages. See https://learn.microsoft.com/dotnet/core/deploying/native-aot/interop#native-exports.
 
 For an example of a Native AOT shared library invoked through JNI from Java see https://github.com/josephmoresena/NativeAOT-AndroidHelloJniLib.
+
+## Known issues
+
+If you hit `error : version script assignment of 'V1.0' to symbol '_init' failed: symbol not defined` - this is a known issue https://github.com/dotnet/runtime/issues/92272, you can add following lines to your csproj to work around:
+
+```xml
+<ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-bionic'">
+  <LinkerArg Include="-Wl,--defsym,_init=__libc_init" />
+  <LinkerArg Include="-Wl,--defsym,_fini=__libc_fini" />
+</ItemGroup>
+```
 
 ## Libssl dependency
 
