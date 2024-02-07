@@ -211,7 +211,27 @@ enum _regMask_enum : unsigned
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
+#define regMaskGpr regMaskTP
+#define regMaskFloat regMaskTP
+#define regMaskPredicate regMaskTP
+
+// We should replace `regMaskTP` with `regMaskTP_Any` and that
+// tells that it represents group of registers of "any one"
+// of "gpr" or "vector" or "predicate" category
+// Since for all the platforms that we support, there are less than
+// 32 registers for these categories, it is suffice to have it
+// "unsigned".
+//
+// We will add a "//TODO: regMaskAnyOne" through out the code
+// that we know that the existing `regMaskTP` contains data that
+// can be represented by `regMaskAnyOne`. In other words, at
+// those places, we never pass both gpr and vector registers
+// together as part of `regMaskTP`. This will be eventually
+// converted to "unsigned"
+#define regMaskAnyOne regMaskTP
+#define regMaskAll regMaskTP
 #else
+// x86 and arm
 typedef unsigned       regMaskTP;
 #endif
 
