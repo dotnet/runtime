@@ -41,6 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // Windows compatibility: Ignore trailing data.
                 ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
 
+                // We use unmanaged buffer to avoid GC compaction clones of the private key material
                 _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.Create(encodedData.Length);
                 _tmpManager = _tmpMemoryHandle.GetMemoryManager();
                 Span<byte> tmpSpan = _tmpManager.GetSpan();
