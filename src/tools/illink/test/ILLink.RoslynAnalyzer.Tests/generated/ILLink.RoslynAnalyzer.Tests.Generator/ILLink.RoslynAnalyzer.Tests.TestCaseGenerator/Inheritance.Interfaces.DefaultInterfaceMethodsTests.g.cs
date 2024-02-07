@@ -46,12 +46,6 @@ namespace ILLink.RoslynAnalyzer.Tests.Inheritance.Interfaces
 		}
 
 		[Fact]
-		public Task StaticDefaultInterfaceMethodOnDerivedInterface ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task StaticDefaultInterfaceMethodOnStruct ()
 		{
 			return RunTest (allowMissingWarnings: true);

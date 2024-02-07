@@ -11,7 +11,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			M (new UsedAsIBase());
 		}
 
-
 		[Kept]
 		static int M (IBase ibase)
 		{
