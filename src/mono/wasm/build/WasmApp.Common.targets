@@ -502,6 +502,7 @@
     <ItemGroup>
       <_BoolPropertiesThatTriggerRelinking Include="InvariantTimezone" DefaultValueInRuntimePack="false" />
       <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
+      <_BoolPropertiesThatTriggerRelinking Include="WasmSingleFileBundle" DefaultValueInRuntimePack="false" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -516,7 +517,6 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
     </PropertyGroup>
 
     <!-- When Publishing -->
@@ -524,7 +524,6 @@
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
