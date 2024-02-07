@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../../globals";
-import { mono_log_debug, mono_set_thread_name } from "../../logging";
+import { mono_log_debug, set_thread_prefix } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
 import { GCHandle, GCHandleNull, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
@@ -77,7 +77,7 @@ export function update_thread_info(): void {
 
     loaderHelpers.set_thread_prefix(monoThreadInfo.threadPrefix!);
     if (!loaderHelpers.config.forwardConsoleLogsToWS) {
-        mono_set_thread_name(monoThreadInfo.threadPrefix!);
+        set_thread_prefix(monoThreadInfo.threadPrefix!);
     }
 
     (globalThis as any).monoThreadInfo = monoThreadInfo;
