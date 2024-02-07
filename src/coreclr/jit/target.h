@@ -211,16 +211,10 @@ enum _regMask_enum : unsigned
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
-#define regMaskGpr regMaskTP
-#define regMaskFloat regMaskTP
-#define regMaskPredicate regMaskTP
+typedef unsigned __int64 regMaskGpr;
+typedef unsigned __int64 regMaskFloat;
+typedef unsigned __int64 regMaskPredicate;
 
-// We should replace `regMaskTP` with `regMaskTP_Any` and that
-// tells that it represents group of registers of "any one"
-// of "gpr" or "vector" or "predicate" category
-// Since for all the platforms that we support, there are less than
-// 32 registers for these categories, it is suffice to have it
-// "unsigned".
 //
 // We will add a "//TODO: regMaskOnlyOne" through out the code
 // that we know that the existing `regMaskTP` contains data that
@@ -228,11 +222,23 @@ typedef unsigned __int64 regMaskTP;
 // those places, we never pass both gpr and vector registers
 // together as part of `regMaskTP`. This will be eventually
 // converted to "unsigned"
-#define regMaskOnlyOne regMaskTP
-#define regMaskAny regMaskTP
+typedef unsigned __int64 regMaskOnlyOne;
+
+// `regMaskAny` tells that the mask can contain any of the gpr/vector
+// registers. Once we identify all the places with `regMaskOnlyOne`,
+// `regMaskFloat`, `regMaskGpr`, we will revisit `regMaskAny` and try
+// to either:
+// 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
+// 2. Have a data structure like struct to pass all these together
+typedef unsigned __int64 regMaskAny;
 #else
 // x86 and arm
 typedef unsigned       regMaskTP;
+#define regMaskGpr regMaskTP
+#define regMaskFloat regMaskTP
+#define regMaskPredicate regMaskTP
+#define regMaskOnlyOne regMaskTP
+#define regMaskAny regMaskTP
 #endif
 
 #if REGMASK_BITS == 8
