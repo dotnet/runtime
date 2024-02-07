@@ -902,7 +902,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pRbp = SP++;
 #elif defined(TARGET_ARM)
 
-    PTR_UInt64 d = (PTR_UInt64)(m_RegDisplay.SP);
+    PTR_uint64_t d = (PTR_uint64_t)(m_RegDisplay.SP);
 
     for (int i = 0; i < 8; i++)
     {
@@ -938,7 +938,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR11 = SP++;
 
 #elif defined(TARGET_ARM64)
-    PTR_UInt64 d = (PTR_UInt64)(m_RegDisplay.SP);
+    PTR_uint64_t d = (PTR_uint64_t)(m_RegDisplay.SP);
 
     for (int i = 0; i < 8; i++)
     {
