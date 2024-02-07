@@ -488,10 +488,10 @@ namespace Internal.Runtime.CompilerHelpers
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "This API will be called from compiler generated code only.")]
-        internal static int AsAnyGetNativeSize(object o)
+        internal static unsafe int AsAnyGetNativeSize(object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -504,10 +504,10 @@ namespace Internal.Runtime.CompilerHelpers
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "This API will be called from compiler generated code only.")]
-        internal static void AsAnyMarshalManagedToNative(object o, IntPtr address)
+        internal static unsafe void AsAnyMarshalManagedToNative(object o, IntPtr address)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -517,10 +517,10 @@ namespace Internal.Runtime.CompilerHelpers
             Marshal.StructureToPtr(o, address, fDeleteOld: false);
         }
 
-        internal static void AsAnyMarshalNativeToManaged(IntPtr address, object o)
+        internal static unsafe void AsAnyMarshalNativeToManaged(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -532,10 +532,10 @@ namespace Internal.Runtime.CompilerHelpers
 
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "This API will be called from compiler generated code only.")]
-        internal static void AsAnyCleanupNative(IntPtr address, object o)
+        internal static unsafe void AsAnyCleanupNative(IntPtr address, object o)
         {
             // Array, string and StringBuilder are not implemented.
-            if (o.GetEETypePtr().IsArray ||
+            if (o.GetMethodTable()->IsArray ||
                 o is string ||
                 o is StringBuilder)
             {
@@ -591,7 +591,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(pMarshallerType.ToEETypePtr(), EETypePtr.EETypePtrOf<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(pMarshallerType.ToMethodTable(), MethodTable.Of<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }
@@ -602,7 +602,7 @@ namespace Internal.Runtime.CompilerHelpers
                 throw new ApplicationException();
             }
 
-            if (!RuntimeImports.AreTypesAssignable(marshaller.GetEETypePtr(), EETypePtr.EETypePtrOf<ICustomMarshaler>()))
+            if (!RuntimeImports.AreTypesAssignable(marshaller.GetMethodTable(), MethodTable.Of<ICustomMarshaler>()))
             {
                 throw new ApplicationException();
             }
@@ -615,7 +615,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             public IntPtr Handle;
             public IntPtr ModuleName;
-            public EETypePtr CallingAssemblyType;
+            public MethodTable* CallingAssemblyType;
             public uint DllImportSearchPathAndCookie;
         }
 

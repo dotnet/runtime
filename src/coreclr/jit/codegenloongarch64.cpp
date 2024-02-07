@@ -4330,6 +4330,13 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     assert(regs != 0);
 
     emit->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs); // 5-bits;
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //---------------------------------------------------------------------
@@ -4884,6 +4891,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             assert(jcc->gtCondition.Is(GenCondition::EQ, GenCondition::NE));
             instruction ins = jcc->gtCondition.Is(GenCondition::EQ) ? INS_bceqz : INS_bcnez;
             emit->emitIns_J(ins, tgtBlock, (int)1 /* cc */);
+
+            if (compiler->compCurBB->KindIs(BBJ_COND))
+            {
+                // If we cannot fall into the false target, emit a jump to it
+                BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+                if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+                {
+                    inst_JMP(EJ_jmp, falseTarget);
+                }
+            }
         }
         break;
 
@@ -7649,6 +7666,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
+            assert(add->acdUsed);
             assert(excpRaisingBlock == add->acdDstBlk);
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());
@@ -7661,6 +7679,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
             Compiler::AddCodeDsc* add =
                 compiler->fgFindExcptnTarget(codeKind, compiler->bbThrowIndex(compiler->compCurBB));
             PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
             assert(add->acdStkLvlInit || isFramePointerUsed());

@@ -1,9 +1,8 @@
 <linker>
   <assembly fullname="System.Reflection.Emit">
     <type fullname="System.Reflection.Emit.AssemblyBuilderImpl">
-      <!-- Internal API used by tests only. -->
-      <method name="DefinePersistedAssembly" />
-      <method name="Save" />
+      <!-- Internal API called through Reflection by another assembly. -->
+      <method name=".ctor" />
     </type>
   </assembly>
 </linker>

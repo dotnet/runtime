@@ -29,7 +29,13 @@ namespace System.Text.Json
         public JsonPropertyDictionary(bool caseInsensitive, int capacity)
         {
             _stringComparer = caseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-            _propertyList = new List<KeyValuePair<string, T>>(capacity);
+
+            if (capacity > ListToDictionaryThreshold)
+            {
+                _propertyDictionary = new(capacity, _stringComparer);
+            }
+
+            _propertyList = new(capacity);
         }
 
         // Enable direct access to the List for performance reasons.

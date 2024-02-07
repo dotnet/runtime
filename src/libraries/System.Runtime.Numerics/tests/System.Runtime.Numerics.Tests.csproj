@@ -10,7 +10,6 @@
     <Compile Include="BigInteger\BigIntegerToStringTests.cs" />
     <Compile Include="BigInteger\BigInteger.AddTests.cs" />
     <Compile Include="BigInteger\BigInteger.SubtractTests.cs" />
-    <Compile Include="BigInteger\BigNumberTools.cs" />
     <Compile Include="BigInteger\BigIntTools.cs" />
     <Compile Include="BigInteger\cast_from.cs" />
     <Compile Include="BigInteger\cast_to.cs" />

@@ -139,15 +139,24 @@ namespace ILCompiler.DependencyAnalysis.ARM
 
         // movw  reg, [reloc] & 0x0000FFFF
         // movt  reg, [reloc] & 0xFFFF0000
+        // add   reg, pc
         // reg range: [0..12, LR]
         public void EmitMOV(Register destination, ISymbolNode symbol)
         {
             Debug.Assert(destination >= Register.R0 && (destination <= Register.R12 || destination == TargetRegister.LR));
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_MOV32);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL); // 12-byte offset is part of the relocation
             Builder.EmitShort(unchecked((short)0xf240));
             Builder.EmitShort((short)((byte)destination << 8));
             Builder.EmitShort(unchecked((short)0xf2c0));
             Builder.EmitShort((short)((byte)destination << 8));
+            if (destination <= Register.R7)
+            {
+                Builder.EmitShort(unchecked((short)(0x4478u + (byte)destination)));
+            }
+            else
+            {
+                Builder.EmitShort(unchecked((short)(0x44f0u + (byte)destination)));
+            }
         }
 
         // b.w symbol
@@ -205,6 +214,15 @@ namespace ILCompiler.DependencyAnalysis.ARM
         public void EmitRETIfEqual()
         {
             EmitBNE(4);
+            EmitRET();
+        }
+
+        // beq label(+4): ret(2) + next(2)
+        // bx lr
+        // label: ...
+        public void EmitRETIfNotEqual()
+        {
+            EmitBEQ(4);
             EmitRET();
         }
     }

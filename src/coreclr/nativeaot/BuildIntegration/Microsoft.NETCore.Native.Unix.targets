@@ -39,9 +39,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' != 'true'">aarch64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' == 'true'">arm64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">arm</CrossCompileArch>
+
+      <CrossCompileAbi>gnu</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.EndsWith('-arm'))">gnueabihf</CrossCompileAbi>
 
       <TargetTriple />
-      <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and $(CrossCompileRid.StartsWith('linux-bionic'))">$(CrossCompileArch)-linux-android21</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
@@ -136,6 +140,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <StaticICULibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
       <StaticICULibs Include="-licuio -licutu -licui18n -licuuc -licudata -lstdc++" />
       <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(StaticOpenSslLinking)' != 'true' and Exists('$(IlcSdkPath)nonportable.txt')">
+      <NativeSystemLibrary Include="ssl" />
+      <NativeSystemLibrary Include="crypto" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">

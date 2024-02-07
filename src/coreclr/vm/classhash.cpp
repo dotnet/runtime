@@ -9,6 +9,7 @@
 #include "common.h"
 #include "classhash.h"
 #include "dacenumerablehash.inl"
+#include "fstring.h"
 #include "classhash.inl"
 
 PTR_EEClassHashEntry EEClassHashEntry::GetEncloser()

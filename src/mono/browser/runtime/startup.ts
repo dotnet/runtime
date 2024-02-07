@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
-import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, linkerWasmEnableSIMD, linkerWasmEnableEH, ENVIRONMENT_IS_WORKER } from "./globals";
+import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -23,20 +22,17 @@ import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { checkMemorySnapshotSize, getMemorySnapshot, storeMemorySnapshot } from "./snapshot";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
-import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_name } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
 import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
-import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents } from "./pthreads/worker";
-import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
+import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads/worker";
+import { mono_wasm_main_thread_ptr, mono_wasm_pthread_ptr } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
-
-// legacy
-import { init_legacy_exports } from "./net6-legacy/corebindings";
-import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
-import { BINDING, MONO } from "./net6-legacy/globals";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
+import { runtimeList } from "./exports";
+import { nativeAbort, nativeExit } from "./run";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -126,6 +122,7 @@ async function instantiateWasmWorker(
     imports: WebAssembly.Imports,
     successCallback: InstantiateWasmSuccessCallback
 ): Promise<void> {
+    if (!WasmEnableThreads) return;
     // wait for the config to arrive by message from the main thread
     await loaderHelpers.afterConfigLoaded.promise;
 
@@ -172,7 +169,7 @@ function preInit(userPreInit: (() => void)[]) {
 }
 
 async function preInitWorkerAsync() {
-    mono_log_debug("worker initializing essential C exports and APIs");
+    if (!WasmEnableThreads) return;
     const mark = startMeasure();
     try {
         mono_log_debug("preInitWorker");
@@ -180,19 +177,35 @@ async function preInitWorkerAsync() {
         mono_wasm_pre_init_essential(true);
         await ensureUsedWasmFeatures();
         await init_polyfills_async();
+        if (loaderHelpers.config.exitOnUnhandledError) {
+            loaderHelpers.installUnhandledErrorHandler();
+        }
         runtimeHelpers.afterPreInit.promise_control.resolve();
+        exportedRuntimeAPI.runtimeId = loaderHelpers.config.runtimeId!;
+        runtimeList.registerRuntime(exportedRuntimeAPI);
         endMeasure(mark, MeasuredBlock.preInitWorker);
     } catch (err) {
-        mono_log_error("user preInitWorker() failed", err);
+        mono_log_error("preInitWorker() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
 }
 
+// runs for each re-attached worker
 export function preRunWorker() {
-    // signal next stage
-    runtimeHelpers.runtimeReady = true;
-    runtimeHelpers.afterPreRun.promise_control.resolve();
+    if (!WasmEnableThreads) return;
+    const mark = startMeasure();
+    try {
+        jiterpreter_allocate_tables(); // this will return quickly if already allocated
+        runtimeHelpers.runtimeReady = true;
+        // signal next stage
+        runtimeHelpers.afterPreRun.promise_control.resolve();
+        endMeasure(mark, MeasuredBlock.preRunWorker);
+    } catch (err) {
+        mono_log_error("preRunWorker() failed", err);
+        loaderHelpers.mono_exit(1, err);
+        throw err;
+    }
 }
 
 async function preRunAsync(userPreRun: (() => void)[]) {
@@ -207,7 +220,7 @@ async function preRunAsync(userPreRun: (() => void)[]) {
         userPreRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.preRun);
     } catch (err) {
-        mono_log_error("user callback preRun() failed", err);
+        mono_log_error("preRunAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
@@ -222,14 +235,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         await runtimeHelpers.afterPreRun.promise;
         mono_log_debug("onRuntimeInitialized");
 
-        runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
-        runtimeHelpers.abort = (reason: any) => {
-            loaderHelpers.exitReason = reason;
-            if (!loaderHelpers.is_exited()) {
-                cwraps.mono_wasm_abort();
-            }
-            throw reason;
-        };
+        runtimeHelpers.nativeExit = nativeExit;
+        runtimeHelpers.nativeAbort = nativeAbort;
 
         const mark = startMeasure();
         // signal this stage, this will allow pending assets to allocate memory
@@ -239,7 +246,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         // Threads early are not supported with memory snapshot. See below how we enable them later.
         // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
-        if (MonoWasmThreads && !runtimeHelpers.config.startupMemoryCache) {
+        if (WasmEnableThreads && !runtimeHelpers.config.startupMemoryCache) {
             await mono_wasm_init_threads();
         }
 
@@ -263,7 +270,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         if (!ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
         }
-        runtimeHelpers.runtimeReady = true;
 
         if (runtimeHelpers.config.virtualWorkingDirectory) {
             const FS = Module.FS;
@@ -276,19 +282,21 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             FS.chdir(cwd);
         }
 
-        if (MonoWasmThreads && runtimeHelpers.config.startupMemoryCache) {
+        if (WasmEnableThreads && runtimeHelpers.config.startupMemoryCache) {
             await mono_wasm_init_threads();
         }
 
         bindings_init();
         jiterpreter_allocate_tables();
-        runtimeHelpers.runtimeReady = true;
 
         if (ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
         }
 
-        if (MonoWasmThreads) {
+        runtimeHelpers.runtimeReady = true;
+        runtimeList.registerRuntime(exportedRuntimeAPI);
+
+        if (WasmEnableThreads) {
             runtimeHelpers.javaScriptExports.install_main_synchronization_context();
         }
 
@@ -333,7 +341,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         Module["FS_createPath"]("/", "usr", true, true);
         Module["FS_createPath"]("/", "usr/share", true, true);
 
-        if (MonoWasmThreads) {
+        if (WasmEnableThreads) {
             tcwraps.mono_wasm_init_finalizer_thread();
         }
 
@@ -341,7 +349,7 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         userpostRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.postRun);
     } catch (err) {
-        mono_log_error("user callback posRun() failed", err);
+        mono_log_error("postRunAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
@@ -349,20 +357,38 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     runtimeHelpers.afterPostRun.promise_control.resolve();
 }
 
+// runs for each re-detached worker
 export function postRunWorker() {
-    assertNoProxies();
-    // signal next stage
-    runtimeHelpers.runtimeReady = false;
-    runtimeHelpers.afterPreRun = createPromiseController<void>();
+    if (!WasmEnableThreads) return;
+    const mark = startMeasure();
+    try {
+        if (runtimeHelpers.proxy_context_gc_handle) {
+            const pthread_ptr = mono_wasm_pthread_ptr();
+            mono_log_warn(`JSSynchronizationContext is still installed on worker 0x${pthread_ptr.toString(16)}.`);
+        } else {
+            assertNoProxies();
+        }
+
+        // signal next stage
+        runtimeHelpers.runtimeReady = false;
+        runtimeHelpers.afterPreRun = createPromiseController<void>();
+        endMeasure(mark, MeasuredBlock.postRunWorker);
+    } catch (err) {
+        mono_log_error("postRunWorker() failed", err);
+        loaderHelpers.mono_exit(1, err);
+        throw err;
+    }
 }
 
 async function mono_wasm_init_threads() {
-    if (!MonoWasmThreads) {
-        return;
-    }
-    const threadName = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
-    mono_set_thread_name(threadName);
-    loaderHelpers.mono_set_thread_name(threadName);
+    if (!WasmEnableThreads) return;
+
+    const threadPrefix = `0x${mono_wasm_main_thread_ptr().toString(16)}-main`;
+    monoThreadInfo.threadPrefix = threadPrefix;
+    monoThreadInfo.threadName = "UI Thread";
+    monoThreadInfo.isUI = true;
+    monoThreadInfo.isAttached = true;
+    loaderHelpers.set_thread_prefix(threadPrefix);
     await instantiateWasmPThreadWorkerPool();
     await mono_wasm_init_diagnostics();
 }
@@ -374,18 +400,17 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     mono_log_debug("mono_wasm_pre_init_essential");
 
     if (loaderHelpers.gitHash !== runtimeHelpers.gitHash) {
-        mono_log_warn("The version of dotnet.runtime.js is different from the version of dotnet.js!");
+        mono_log_warn(`The version of dotnet.runtime.js ${runtimeHelpers.gitHash} is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
     }
-    if (loaderHelpers.gitHash !== runtimeHelpers.moduleGitHash) {
-        mono_log_warn("The version of dotnet.native.js is different from the version of dotnet.js!");
+    if (loaderHelpers.gitHash !== runtimeHelpers.emscriptenBuildOptions.gitHash) {
+        mono_log_warn(`The version of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.gitHash}  is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
+    }
+    if (WasmEnableThreads !== runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads) {
+        mono_log_warn(`The threads of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads} is different from the version of dotnet.runtime.js ${WasmEnableThreads}!`);
     }
 
     init_c_exports();
     cwraps_internal(INTERNAL);
-    if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
-        cwraps_mono_api(MONO);
-        cwraps_binding_api(BINDING);
-    }
     // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
     // emscripten - on a worker since we don't have any other dependencies that causes run() to get
     // called too soon; and then it will get called a second time when dotnet.native.js calls it directly.
@@ -399,7 +424,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     mono_log_debug("mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
         preAllocatePThreadWorkerPool(runtimeHelpers.config.pthreadPoolSize!);
     }
 
@@ -409,24 +434,6 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
     mono_log_debug("mono_wasm_after_user_runtime_initialized");
     try {
-        if (!Module.disableDotnet6Compatibility && Module.exports) {
-            // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
-            // Useful to export IDBFS or other similar types generally exposed as
-            // global types when emscripten is not modularized.
-            const globalThisAny = globalThis as any;
-            for (let i = 0; i < Module.exports.length; ++i) {
-                const exportName = Module.exports[i];
-                const exportValue = (<any>Module)[exportName];
-
-                if (exportValue != undefined) {
-                    globalThisAny[exportName] = exportValue;
-                }
-                else {
-                    mono_log_warn(`The exported symbol ${exportName} could not be found in the emscripten module`);
-                }
-            }
-        }
-
         mono_log_debug("Initializing mono runtime");
 
         if (Module.onDotnetReady) {
@@ -513,10 +520,10 @@ async function instantiate_wasm_module(
 async function ensureUsedWasmFeatures() {
     runtimeHelpers.featureWasmSimd = await loaderHelpers.simd();
     runtimeHelpers.featureWasmEh = await loaderHelpers.exceptions();
-    if (linkerWasmEnableSIMD) {
+    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
-    if (linkerWasmEnableEH) {
+    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
         mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
 }
@@ -606,9 +613,6 @@ export function bindings_init(): void {
         const mark = startMeasure();
         strings_init();
         init_managed_exports();
-        if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop && !ENVIRONMENT_IS_PTHREAD) {
-            init_legacy_exports();
-        }
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
@@ -664,6 +668,8 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 2. Emscripten does not run any event but preInit in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
 export async function configureWorkerStartup(module: DotnetModuleInternal): Promise<void> {
+    if (!WasmEnableThreads) return;
+
     initWorkerThreadEvents();
     currentWorkerThreadEvents.addEventListener(dotnetPthreadCreated, () => {
         // mono_log_debug("pthread created 0x" + ev.pthread_self.pthreadId.toString(16));

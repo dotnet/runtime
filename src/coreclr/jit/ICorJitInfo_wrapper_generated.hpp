@@ -406,16 +406,6 @@ bool WrapICorJitInfo::isValueClass(
     return temp;
 }
 
-CorInfoInlineTypeCheck WrapICorJitInfo::canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source)
-{
-    API_ENTER(canInlineTypeCheck);
-    CorInfoInlineTypeCheck temp = wrapHnd->canInlineTypeCheck(cls, source);
-    API_LEAVE(canInlineTypeCheck);
-    return temp;
-}
-
 uint32_t WrapICorJitInfo::getClassAttribs(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -802,6 +792,15 @@ bool WrapICorJitInfo::isMoreSpecificType(
     return temp;
 }
 
+bool WrapICorJitInfo::isExactType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isExactType);
+    bool temp = wrapHnd->isExactType(cls);
+    API_LEAVE(isExactType);
+    return temp;
+}
+
 TypeCompareState WrapICorJitInfo::isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType)
@@ -948,6 +947,14 @@ void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
     API_ENTER(getThreadLocalStaticBlocksInfo);
     wrapHnd->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
     API_LEAVE(getThreadLocalStaticBlocksInfo);
+}
+
+void WrapICorJitInfo::getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+{
+    API_ENTER(getThreadLocalStaticInfo_NativeAOT);
+    wrapHnd->getThreadLocalStaticInfo_NativeAOT(pInfo);
+    API_LEAVE(getThreadLocalStaticInfo_NativeAOT);
 }
 
 bool WrapICorJitInfo::isFieldStatic(

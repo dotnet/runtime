@@ -709,7 +709,7 @@
     <HelixPreCommand Include="export __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
-    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
+    <HelixPreCommand Include="export __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="cat $__TestEnv" />
 
     <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />

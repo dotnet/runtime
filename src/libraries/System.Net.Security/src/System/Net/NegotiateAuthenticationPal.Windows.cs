@@ -566,7 +566,7 @@ namespace System.Net
                     bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPIAuth, _securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_SIZES, ref sizes);
                     Debug.Assert(success);
 
-                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbSecurityTrailer);
+                    Span<byte> signatureBuffer = signature.GetSpan(sizes.cbMaxSignature);
 
                     fixed (byte* messagePtr = message)
                     fixed (byte* signaturePtr = signatureBuffer)
@@ -577,7 +577,7 @@ namespace System.Net
                         Interop.SspiCli.SecBuffer* dataBuffer = &unmanagedBuffer[1];
                         tokenBuffer->BufferType = SecurityBufferType.SECBUFFER_TOKEN;
                         tokenBuffer->pvBuffer = (IntPtr)signaturePtr;
-                        tokenBuffer->cbBuffer = sizes.cbSecurityTrailer;
+                        tokenBuffer->cbBuffer = sizes.cbMaxSignature;
                         dataBuffer->BufferType = SecurityBufferType.SECBUFFER_DATA;
                         dataBuffer->pvBuffer = (IntPtr)messagePtr;
                         dataBuffer->cbBuffer = message.Length;
@@ -597,7 +597,7 @@ namespace System.Net
                             throw new Win32Exception(errorCode);
                         }
 
-                        signature.Advance(signatureBuffer.Length);
+                        signature.Advance(tokenBuffer->cbBuffer);
                     }
                 }
                 finally

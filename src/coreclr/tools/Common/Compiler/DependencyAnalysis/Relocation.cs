@@ -53,6 +53,10 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12    = 0x10B,
         IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC = 0x10C,
 
+        // Linux arm32
+        IMAGE_REL_ARM_PREL31                 = 0x10D,
+        IMAGE_REL_ARM_JUMP24                 = 0x10E,
+
         //
         // Relocations for R2R image production
         //
@@ -154,13 +158,13 @@ namespace ILCompiler.DependencyAnalysis
                 ((Opcode1 <<  1)        & 0x0000FFE);
 
             // Sign-extend and return
-            return (int)((ret << 7) >> 7);
+            return (int)(ret << 7) >> 7;
         }
 
         //*****************************************************************************
         // Returns whether the offset fits into bl instruction
         //*****************************************************************************
-        private static bool FitsInThumb2BlRel24(uint imm24)
+        public static bool FitsInThumb2BlRel24(int imm24)
         {
             return ((imm24 << 7) >> 7) == imm24;
         }
@@ -168,7 +172,7 @@ namespace ILCompiler.DependencyAnalysis
         //*****************************************************************************
         //  Deposit the 24-bit rel offset into bl instruction
         //*****************************************************************************
-        private static unsafe void PutThumb2BlRel24(ushort* p, uint imm24)
+        private static unsafe void PutThumb2BlRel24(ushort* p, int imm24)
         {
             // Verify that we got a valid offset
             Debug.Assert(FitsInThumb2BlRel24(imm24));
@@ -182,17 +186,17 @@ namespace ILCompiler.DependencyAnalysis
             Opcode0 &= 0xF800;
             Opcode1 &= 0xD000;
 
-            uint S  =  (imm24 & 0x1000000) >> 24;
-            uint J1 = ((imm24 & 0x0800000) >> 23) ^ S ^ 1;
-            uint J2 = ((imm24 & 0x0400000) >> 22) ^ S ^ 1;
+            uint S  =  ((uint)imm24 & 0x1000000) >> 24;
+            uint J1 = (((uint)imm24 & 0x0800000) >> 23) ^ S ^ 1;
+            uint J2 = (((uint)imm24 & 0x0400000) >> 22) ^ S ^ 1;
 
-            Opcode0 |=  ((imm24 & 0x03FF000) >> 12) | (S << 10);
-            Opcode1 |=  ((imm24 & 0x0000FFE) >>  1) | (J1 << 13) | (J2 << 11);
+            Opcode0 |=  (((uint)imm24 & 0x03FF000) >> 12) | (S << 10);
+            Opcode1 |=  (((uint)imm24 & 0x0000FFE) >>  1) | (J1 << 13) | (J2 << 11);
 
             p[0] = (ushort)Opcode0;
             p[1] = (ushort)Opcode1;
 
-            Debug.Assert((uint)GetThumb2BlRel24(p) == imm24);
+            Debug.Assert(GetThumb2BlRel24(p) == imm24);
         }
 
         //*****************************************************************************
@@ -420,9 +424,11 @@ namespace ILCompiler.DependencyAnalysis
             // first get the high 20 bits,
             int imm = (int)((auipcInstr & 0xfffff000));
             // then get the low 12 bits,
-            uint addiInstr = *(pCode + 1);
-            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
-            imm += ((int)(addiInstr)) >> 20;
+            uint nextInstr = *(pCode + 1);
+            Debug.Assert((nextInstr & 0x707f) == 0x00000013 ||
+                         (nextInstr & 0x707f) == 0x00000067 ||
+                         (nextInstr & 0x707f) == 0x00003003);
+            imm += ((int)(nextInstr)) >> 20;
 
             return imm;
         }
@@ -434,6 +440,10 @@ namespace ILCompiler.DependencyAnalysis
         //  case:EA_PTR_DSP_RELOC
         //   auipc  reg, off-hi-20bits
         //   ld     reg, reg, off-lo-12bits
+        //  case:
+        // INS_OPTS_C
+        //   auipc  reg, off-hi-20bits
+        //   jalr   reg, reg, off-lo-12bits
         private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
@@ -446,10 +456,12 @@ namespace ILCompiler.DependencyAnalysis
             auipcInstr |= (uint)((imm32 + 0x800) & 0xfffff000);
             *pCode = auipcInstr;
 
-            uint addiInstr = *(pCode + 1);
-            Debug.Assert((addiInstr & 0x707f) == 0x00000013);
-            addiInstr |= (uint)((doff & 0xfff) << 20);
-            *(pCode + 1) = addiInstr;
+            uint nextInstr = *(pCode + 1);
+            Debug.Assert((nextInstr & 0x707f) == 0x00000013 ||
+                         (nextInstr & 0x707f) == 0x00000067 ||
+                         (nextInstr & 0x707f) == 0x00003003);
+            nextInstr |= (uint)((doff & 0xfff) << 20);
+            *(pCode + 1) = nextInstr;
 
             Debug.Assert(GetRiscV64PC(pCode) == imm32);
         }
@@ -485,7 +497,7 @@ namespace ILCompiler.DependencyAnalysis
                     PutThumb2Mov32((ushort*)location, (uint)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
-                    PutThumb2BlRel24((ushort*)location, (uint)value);
+                    PutThumb2BlRel24((ushort*)location, (int)value);
                     break;
                 case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
                     PutArm64Rel28((uint*)location, value);

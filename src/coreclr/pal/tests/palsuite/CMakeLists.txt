@@ -198,7 +198,6 @@ add_executable_clr(paltests
   c_runtime/strstr/test1/test1.cpp
   c_runtime/strtod/test1/test1.cpp
   c_runtime/strtod/test2/test2.cpp
-  c_runtime/strtok/test1/test1.cpp
   c_runtime/strtoul/test1/test1.cpp
   c_runtime/tan/test1/test1.cpp
   c_runtime/tanf/test1/test1.cpp

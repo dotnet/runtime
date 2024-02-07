@@ -457,21 +457,24 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	 * on this cond var.
 	 */
 
+	HANDLE_FUNCTION_ENTER ();
+
 retry_top:
+	(void)0; // appease C compiler; label must preceed a statement not a var declaration
+
+	gboolean ret = FALSE;
+
 	mono_type_initialization_lock ();
 	/* double check... */
 	if (vtable->initialized) {
 		mono_type_initialization_unlock ();
-		return TRUE;
+		goto return_true;
 	}
 
 	gboolean do_initialization = FALSE;
 	TypeInitializationLock *lock = NULL;
 	gboolean pending_tae = FALSE;
 
-	gboolean ret = FALSE;
-
-	HANDLE_FUNCTION_ENTER ();
 
 	if (vtable->init_failed) {
 		/* The type initialization already failed once, rethrow the same exception */
@@ -614,8 +617,8 @@ retry_top:
 		if (!lock->done) {
 			int timeout_ms = 500;
 			int wait_result = mono_coop_cond_timedwait (&lock->cond, &lock->mutex, timeout_ms);
-			if (wait_result == -1) {
-				/* timed out - go around again from the beginning.  If we got here
+			if (wait_result == -1 || (wait_result == 0 && !lock->done)) {
+				/* timed out or spurious wakeup - go around again from the beginning.  If we got here
 				 * from the "is_blocked = FALSE" case, above (another thread was
 				 * blocked on the current thread, but on a lock that was already
 				 * done but it didn't get to wake up yet), then it might still be
@@ -646,7 +649,7 @@ retry_top:
 					g_hash_table_remove (type_initialization_hash, vtable);
 				mono_type_initialization_unlock ();
 				goto retry_top;
-			} else if (wait_result == 0) {
+			} else if (wait_result == 0 && lock->done) {
 				/* Success: we were signaled that the other thread is done.  Proceed */
 			} else {
 				g_assert_not_reached ();
@@ -2986,7 +2989,7 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 	} else
 		dest = (char*)obj + m_field_get_offset (field);
 
-	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
+	mono_copy_value (field->type, dest, value, value && (field->type->type == MONO_TYPE_PTR || field->type->type == MONO_TYPE_FNPTR));
 }
 
 /**
@@ -3019,7 +3022,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 		return;
 
 	dest = mono_static_field_get_addr (vt, field);
-	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
+	mono_copy_value (field->type, dest, value, value && (field->type->type == MONO_TYPE_PTR || field->type->type == MONO_TYPE_FNPTR));
 }
 
 gpointer
@@ -3231,6 +3234,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
 	gboolean is_ptr = FALSE;
+	gboolean is_fnptr = FALSE;
 
 	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL);
 
@@ -3268,6 +3272,9 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		break;
 	case MONO_TYPE_PTR:
 		is_ptr = TRUE;
+		break;
+	case MONO_TYPE_FNPTR:
+		is_fnptr = TRUE;
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
@@ -3339,6 +3346,12 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		goto_if_nok (error, return_null);
 
 		goto exit;
+	}
+
+	if (G_UNLIKELY (is_fnptr)) {
+		// CoreCLR behavior: returns an IntPtr value if we're getting a function pointer field.
+		// Does not return a System.Reflection.Pointer value in this case
+		type = mono_get_int_type ();
 	}
 
 	/* boxed value type */

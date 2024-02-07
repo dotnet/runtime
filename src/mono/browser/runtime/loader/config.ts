@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
@@ -188,9 +188,14 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
-    if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
-        // ActiveIssue https://github.com/dotnet/runtime/issues/91538
-        config.pthreadPoolSize = 5;
+    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolSize)) {
+        // ActiveIssue https://github.com/dotnet/runtime/issues/75602
+        config.pthreadPoolSize = 7;
+    }
+
+    // this is how long the Mono GC will try to wait for all threads to be suspended before it gives up and aborts the process
+    if (WasmEnableThreads && config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] === undefined) {
+        config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] = "5000";
     }
 
     // Default values (when WasmDebugLevel is not set)
@@ -200,9 +205,10 @@ export function normalizeConfig() {
     // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
     config.debugLevel = hasDebuggingEnabled(config) ? config.debugLevel : 0;
 
-    if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
+    if (BuildConfiguration === "Debug" && config.diagnosticTracing === undefined) {
         config.diagnosticTracing = true;
     }
+
     if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;

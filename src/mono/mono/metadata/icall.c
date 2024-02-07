@@ -2158,6 +2158,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 		case MONO_TYPE_R8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 			isref = FALSE;
 			if (!MONO_HANDLE_IS_NULL (value)) {
 				if (m_class_is_valuetype (mono_handle_class (value)))
@@ -2812,7 +2813,7 @@ ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCall
 	MonoType *type = type_handle.type;
 	g_assert (type->type == MONO_TYPE_FNPTR);
 	// FIXME: Once we address: https://github.com/dotnet/runtime/issues/90308 this should not be needed anymore
-	return GUINT_TO_INT8 (type->data.method->suppress_gc_transition ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
+	return GUINT_TO_INT8 (mono_method_signature_has_ext_callconv (type->data.method, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION) ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
 }
 
 MonoBoolean

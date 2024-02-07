@@ -37,7 +37,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
-    RefPosition* nextRefPosition;
+    RefPosition* nextRefPosition = nullptr;
     assert(refPosition->needsConsecutive);
     nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
     assert((nextRefPosition == nullptr) || nextRefPosition->needsConsecutive);

@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial void Log(string message);
 
         [JSImport("delay", "InlineTestHelper")]
-        public static partial Task Delay(int ms);
+        public static partial Task JSDelay(int ms);
 
         [JSImport("getTid", "WebWorkerTestHelper")]
         public static partial int GetTid();
@@ -52,30 +52,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return JSHost.ImportAsync("InlineTestHelper", es6DataUrl);
         }
 
-        #region Execute
-
-        public static Task RunOnNewThread(Func<Task> job)
-        {
-            TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var t = new Thread(() =>
-            {
-                try
-                {
-                    var task = job();
-                    task.Wait();
-                    tcs.SetResult();
-                }
-                catch (Exception ex)
-                {
-                    tcs.SetException(ex);
-                }
-            });
-            t.Start();
-            return tcs.Task;
-        }
-
-        #endregion
-
         #region Setup
 
         [ThreadStatic]
@@ -101,7 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
             else
             {
-                await Delay(1).ConfigureAwait(false);
+                await JSDelay(1).ConfigureAwait(false);
             }
         }
 
@@ -175,25 +151,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Type = type;
         }
 
-        public Task Execute(Func<Task> job)
+        public Task Execute(Func<Task> job, CancellationToken cancellationToken)
         {
             Task wrapExecute()
             {
                 ExecutorTID = Environment.CurrentManagedThreadId;
                 ExecutorSynchronizationContext = SynchronizationContext.Current ?? MainSynchronizationContext;
+                AssertTargetThread();
                 return job();
             }
 
             switch (Type)
             {
                 case ExecutorType.Main:
-                    return RunOnTargetAsync(MainSynchronizationContext, wrapExecute);
+                    return RunOnTargetAsync(MainSynchronizationContext, wrapExecute, cancellationToken);
                 case ExecutorType.ThreadPool:
-                    return Task.Run(wrapExecute);
+                    return RunOnThreadPool(wrapExecute, cancellationToken);
                 case ExecutorType.NewThread:
-                    return WebWorkerTestHelper.RunOnNewThread(wrapExecute);
+                    return RunOnNewThread(wrapExecute, cancellationToken);
                 case ExecutorType.JSWebWorker:
-                    return JSWebWorker.RunAsync(wrapExecute);
+                    return JSWebWorker.RunAsync(wrapExecute, cancellationToken);
                 default:
                     throw new InvalidOperationException();
             }
@@ -234,15 +211,37 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     Assert.False(Thread.CurrentThread.IsThreadPoolThread);
                     break;
                 case ExecutorType.NewThread:
-                    // the actual new thread is now blocked in .Wait() and so this is running on TP
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                    Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
-                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    // sometimes this is TP and some times newThread, why ?
+                    if (Thread.CurrentThread.IsThreadPoolThread)
+                    {
+                        Assert.NotEqual(ExecutorTID, Environment.CurrentManagedThreadId);
+                    }
+                    else
+                    {
+                        Assert.Equal(ExecutorTID, Environment.CurrentManagedThreadId);
+                    }
                     break;
                 case ExecutorType.ThreadPool:
                     // it could migrate to any TP thread
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                    break;
+            }
+        }
+
+        public void AssertBlockingWait(Exception? exception)
+        {
+            switch (Type)
+            {
+                case ExecutorType.Main:
+                case ExecutorType.JSWebWorker:
+                    Assert.NotNull(exception);
+                    Assert.IsType<PlatformNotSupportedException>(exception);
+                    break;
+                case ExecutorType.NewThread:
+                case ExecutorType.ThreadPool:
+                    Assert.Null(exception);
                     break;
             }
         }
@@ -279,11 +278,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public override string ToString() => Type.ToString();
 
         // make sure we stay on the executor
-        public async Task StickyAwait(Task task)
+        public async Task StickyAwait(Task task, CancellationToken cancellationToken)
         {
             if (Type == ExecutorType.NewThread)
             {
-                task.Wait();
+                task.Wait(cancellationToken);
             }
             else
             {
@@ -292,19 +291,102 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             AssertTargetThread();
         }
 
-        public static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job)
+        public static Task RunOnThreadPool(Func<Task> job, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource done = new TaskCompletionSource();
+            var reg = cancellationToken.Register(() =>
+            {
+                done.TrySetException(new OperationCanceledException(cancellationToken));
+            });
+            Task.Run(job, cancellationToken).ContinueWith(result =>
+            {
+                if (result.IsFaulted)
+                {
+                    if (result.Exception is AggregateException ag && ag.InnerException != null)
+                    {
+                        done.TrySetException(ag.InnerException);
+                    }
+                    else
+                    {
+                        done.TrySetException(result.Exception);
+                    }
+                }
+                else if (result.IsCanceled)
+                {
+                    done.TrySetCanceled(cancellationToken);
+                }
+                else
+                {
+                    done.TrySetResult();
+                }
+            }, TaskContinuationOptions.ExecuteSynchronously);
+            return done.Task;
+        }
+
+        public static Task RunOnNewThread(Func<Task> job, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var thread = new Thread(() =>
+            {
+                CancellationTokenRegistration? reg = null;
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        tcs.TrySetException(new OperationCanceledException(cancellationToken));
+                        return;
+                    }
+                    reg = cancellationToken.Register(() =>
+                    {
+                        tcs.TrySetException(new OperationCanceledException(cancellationToken));
+                    });
+                    var task = job();
+                    task.Wait(cancellationToken);
+                    tcs.TrySetResult();
+                }
+                catch (Exception ex)
+                {
+                    if(ex is AggregateException agg)
+                    {
+                        tcs.TrySetException(agg.InnerException);
+                    }
+                    else
+                    {
+                        tcs.TrySetException(ex);
+                    }
+                }
+                finally
+                {
+                    reg?.Dispose();
+                }
+            });
+            thread.Start();
+            tcs.Task.ContinueWith((t) => { thread.Join(); }, cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
+            return tcs.Task;
+        }
+
+        public static Task RunOnTargetAsync(SynchronizationContext ctx, Func<Task> job, CancellationToken cancellationToken)
         {
             TaskCompletionSource tcs = new TaskCompletionSource();
             ctx.Post(async _ =>
             {
+                CancellationTokenRegistration? reg = null;
                 try
                 {
+                    reg = cancellationToken.Register(() =>
+                    {
+                        tcs.TrySetException(new OperationCanceledException(cancellationToken));
+                    });
                     await job().ConfigureAwait(true);
-                    tcs.SetResult();
+                    tcs.TrySetResult();
                 }
                 catch (Exception ex)
                 {
-                    tcs.SetException(ex);
+                    tcs.TrySetException(ex);
+                }
+                finally
+                {
+                    reg?.Dispose();
                 }
             }, null);
             return tcs.Task;

@@ -153,6 +153,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.InterfaceImplementationInterfaceType,
 			DependencyKind.Ldtoken,
 			DependencyKind.ModifierType,
+			DependencyKind.NestedType,
 			DependencyKind.InstructionTypeRef,
 			DependencyKind.ParameterType,
 			DependencyKind.ReferencedBySpecialAttribute,
@@ -373,7 +374,7 @@ namespace Mono.Linker.Steps
 					MarkEntireType (nested, new DependencyInfo (DependencyKind.NestedType, type));
 			}
 
-			Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
+			MarkTypeVisibleToReflection (type, type, reason, ScopeStack.CurrentScope.Origin);
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkTypeSpecialCustomAttributes (type);
 
@@ -386,26 +387,27 @@ namespace Mono.Linker.Steps
 
 			if (type.HasFields) {
 				foreach (FieldDefinition field in type.Fields) {
-					MarkField (field, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					MarkFieldVisibleToReflection (field, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
-					Annotations.SetAction (method, MethodAction.ForceParse);
-					MarkMethod (method, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
+						Annotations.SetAction (method, MethodAction.ForceParse);
+					MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasProperties) {
 				foreach (var property in type.Properties) {
-					MarkProperty (property, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkPropertyVisibleToReflection (property, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEvent (ev, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -1422,6 +1424,8 @@ namespace Mono.Linker.Steps
 					MarkEntireAssembly (assembly);
 				}
 				return;
+			} else if (Annotations.IsRootAssembly (assembly)) {
+				MarkEntireAssembly (assembly);
 			}
 
 			ProcessModuleType (assembly);
@@ -2033,7 +2037,9 @@ namespace Mono.Linker.Steps
 				// will call MarkType on the attribute type itself).
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type))
+				// Also don't warn when the type is marked due to an assembly being rooted.
+				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
+					reason.Kind is not DependencyKind.TypeInAssembly)
 					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
 			}
 

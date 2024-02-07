@@ -425,8 +425,12 @@ if (CLR_CMAKE_HOST_UNIX)
     message("Detected SunOS amd64")
   elseif(CLR_CMAKE_HOST_HAIKU)
     message("Detected Haiku x86_64")
-  endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
-endif(CLR_CMAKE_HOST_UNIX)
+  elseif(CLR_CMAKE_HOST_BROWSER)
+    add_definitions(-DHOST_BROWSER)
+  endif()
+elseif(CLR_CMAKE_HOST_WASI)
+  add_definitions(-DHOST_WASI)
+endif()
 
 if (CLR_CMAKE_HOST_WIN32)
   add_definitions(-DHOST_WINDOWS)
@@ -705,9 +709,6 @@ if(CLR_CMAKE_TARGET_UNIX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   elseif(CLR_CMAKE_TARGET_LINUX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
-    if(CLR_CMAKE_TARGET_BROWSER)
-      add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_BROWSER>)
-    endif()
     if(CLR_CMAKE_TARGET_LINUX_MUSL)
         add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX_MUSL>)
     endif()
@@ -720,6 +721,9 @@ if(CLR_CMAKE_TARGET_UNIX)
     endif()
   elseif(CLR_CMAKE_TARGET_HAIKU)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_HAIKU>)
+  endif()
+  if(CLR_CMAKE_TARGET_BROWSER)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_BROWSER>)
   endif()
 elseif(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
@@ -767,9 +771,6 @@ if (MSVC)
   # Compile options for targeting windows
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/nologo>) # Suppress Startup Banner
-  # /W3 is added by default by CMake, so remove it
-  string(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "/W3" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
   # [[! Microsoft.Security.SystemsADM.10086 !]] - SDL required warnings
   # set default warning level to 4 but allow targets to override it.
@@ -783,9 +784,7 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GS>) # Explicitly enable the buffer security checks
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/fp:precise>) # Enable precise floating point
 
-  # disable C++ RTTI
-  # /GR is added by default by CMake, so remove it manually.
-  string(REPLACE "/GR " " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  # Disable C++ RTTI
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>) # use full pathnames in diagnostics

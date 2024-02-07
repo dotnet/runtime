@@ -8,13 +8,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 namespace System.Runtime
 {
     // Initialize the cache eagerly to avoid null checks.
     [EagerStaticClassConstruction]
-    public static class TypeLoaderExports
+    internal static class TypeLoaderExports
     {
         //
         // Generic lookup cache
@@ -106,7 +107,7 @@ namespace System.Runtime
         {
             Value v = CacheMiss((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot),
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
+                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle((MethodTable*)context), *(RuntimeMethodHandle*)&signature));
 
             return v._result;
         }
@@ -171,26 +172,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Call(System.IntPtr pfn, object arg)
             => ((delegate*<object, void>)pfn)(arg);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Call<T>(System.IntPtr pfn, IntPtr arg1, IntPtr arg2)
-            => ((delegate*<IntPtr, IntPtr, T>)pfn)(arg1, arg2);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Call<T>(System.IntPtr pfn, IntPtr arg1, IntPtr arg2, object arg3, out IntPtr arg4)
-            => ((delegate*<IntPtr, IntPtr, object, out IntPtr, T>)pfn)(arg1, arg2, arg3, out arg4);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Call(System.IntPtr pfn, IntPtr arg1, object arg2)
-            => ((delegate*<IntPtr, object, void>)pfn)(arg1, arg2);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Call<T>(System.IntPtr pfn, object arg1, IntPtr arg2)
-            => ((delegate*<object, IntPtr, T>)pfn)(arg1, arg2);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Call<T>(IntPtr pfn, string[] arg0)
-            => ((delegate*<string[], T>)pfn)(arg0);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref byte Call(IntPtr pfn, void* arg1, ref byte arg2, ref byte arg3, void* arg4)

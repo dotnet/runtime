@@ -52,7 +52,7 @@ namespace System.Globalization.Tests
                         VerifyConformanceInvariant(NormalizationForm.FormD, part0, part1, part2, part3, part4);
 
                         // Mobile / Browser ICU doesn't support FormKC and FormKD
-                        if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsHybridGlobalizationOnOSX)
+                        if (PlatformDetection.IsNotUsingLimitedCultures || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                         {
                             // Form KC
                             VerifyConformanceInvariant(NormalizationForm.FormKC, part0, part1, part2, part3, part4);

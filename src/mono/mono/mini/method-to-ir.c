@@ -1362,7 +1362,7 @@ mono_create_rgctx_var (MonoCompile *cfg)
 	if (!cfg->rgctx_var) {
 		cfg->rgctx_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* force the var to be stack allocated */
-		if (!cfg->llvm_only)
+		if (!COMPILE_LLVM (cfg))
 			cfg->rgctx_var->flags |= MONO_INST_VOLATILE;
 		if (cfg->verbose_level > 2) {
 			printf ("\trgctx : ");
@@ -2519,7 +2519,7 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 			g_assert (method->is_inflated && mono_method_get_context (method)->method_inst);
 		*/
 
-		if (cfg->llvm_only) {
+		if (COMPILE_LLVM (cfg)) {
 			mrgctx_var = mono_get_mrgctx_var (cfg);
 		} else {
 			/* Volatile */
@@ -6793,7 +6793,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		args [0] = mono_get_mrgctx_var (cfg);
 
 		if (COMPILE_LLVM (cfg) || cfg->backend->have_init_mrgctx) {
-			if (cfg->compile_aot)
+			if (COMPILE_LLVM (cfg))
+				/* OP_INIT_MRGCTX emits it itself */
+				EMIT_NEW_PCONST (cfg, args [1], NULL);
+			else if (cfg->compile_aot)
 				args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GSHARED_METHOD_INFO, info);
 			else
 				EMIT_NEW_PCONST (cfg, args [1], info);
@@ -7058,11 +7061,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 		} else {
 			if ((tblock = cfg->cil_offset_to_bb [ip - cfg->cil_start]) && (tblock != cfg->cbb)) {
-				link_bblock (cfg, cfg->cbb, tblock);
 				if (sp != stack_start) {
+					link_bblock (cfg, cfg->cbb, tblock);
 					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
+				} else {
+					if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_NOT_REACHED))
+						link_bblock (cfg, cfg->cbb, tblock);
 				}
 				cfg->cbb->next_bb = tblock;
 				cfg->cbb = tblock;
@@ -7538,7 +7544,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				method->dynamic case; for other wrapper types assume the code knows
 				what its doing and added its own GC transitions */
 
-				gboolean skip_gc_trans = fsig->suppress_gc_transition;
+				gboolean skip_gc_trans = mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION);
 				if (!skip_gc_trans) {
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
@@ -10186,7 +10192,6 @@ calli_end:
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 					if (sp [0]->opcode == OP_LDADDR && m_class_is_simd_type (klass) && cfg->opt & MONO_OPT_SIMD) {
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
 						if (ins) {
@@ -10194,7 +10199,6 @@ calli_end:
 							goto field_access_end;
 						}
 					}
-#endif
 
 					MonoInst *field_add_inst = sp [0];
 					if (mini_is_gsharedvt_klass (klass)) {
@@ -11169,6 +11173,13 @@ field_access_end:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
+
+#ifndef MONO_ARCH_HAVE_SWIFTCALL
+			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+				// Swift calling convention is not supported on this platform.
+				emit_not_supported_failure (cfg);
+			}
+#endif
 
 			CHECK_STACK (jit_icall_info->sig->param_count);
 			sp -= jit_icall_info->sig->param_count;
@@ -13102,9 +13113,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	stacktypes [(int)'i'] = STACK_PTR;
 	stacktypes [(int)'l'] = STACK_I8;
 	stacktypes [(int)'f'] = STACK_R8;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	stacktypes [(int)'x'] = STACK_VTYPE;
-#endif
 
 #if SIZEOF_REGISTER == 4
 	/* Create MonoInsts for longs */

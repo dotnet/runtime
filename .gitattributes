@@ -77,5 +77,4 @@ src/tests/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/revcomp-
 src/tests/JIT/Performance/CodeQuality/BenchmarksGame/reverse-complement/revcomp-input25000.txt text eol=lf
 src/tests/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input.txt text eol=lf
 src/tests/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/knucleotide-input-big.txt text eol=lf
-src/mono/wasm/runtime/dotnet.d.ts text eol=lf
-src/mono/wasm/runtime/dotnet-legacy.d.ts text eol=lf
+src/mono/browser/runtime/dotnet.d.ts text eol=lf

@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
+using System.Buffers;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
@@ -17,47 +17,53 @@ namespace System.Net.Http
         [JSImport("INTERNAL.http_wasm_supports_streaming_response")]
         public static partial bool SupportsStreamingResponse();
 
-        [JSImport("INTERNAL.http_wasm_create_abort_controler")]
-        public static partial JSObject CreateAbortController();
+        [JSImport("INTERNAL.http_wasm_create_controller")]
+        public static partial JSObject CreateController();
 
         [JSImport("INTERNAL.http_wasm_abort_request")]
         public static partial void AbortRequest(
-            JSObject abortController);
+            JSObject httpController);
 
         [JSImport("INTERNAL.http_wasm_abort_response")]
         public static partial void AbortResponse(
-            JSObject fetchResponse);
-
-        [JSImport("INTERNAL.http_wasm_create_transform_stream")]
-        public static partial JSObject CreateTransformStream();
+            JSObject httpController);
 
         [JSImport("INTERNAL.http_wasm_transform_stream_write")]
         public static partial Task TransformStreamWrite(
-            JSObject transformStream,
+            JSObject httpController,
             IntPtr bufferPtr,
             int bufferLength);
 
+        public static unsafe Task TransformStreamWriteUnsafe(JSObject httpController, ReadOnlyMemory<byte> buffer, Buffers.MemoryHandle handle)
+            => TransformStreamWrite(httpController, (nint)handle.Pointer, buffer.Length);
+
         [JSImport("INTERNAL.http_wasm_transform_stream_close")]
         public static partial Task TransformStreamClose(
-            JSObject transformStream);
-
-        [JSImport("INTERNAL.http_wasm_transform_stream_abort")]
-        public static partial void TransformStreamAbort(
-            JSObject transformStream);
+            JSObject httpController);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_names")]
         private static partial string[] _GetResponseHeaderNames(
-            JSObject fetchResponse);
+            JSObject httpController);
 
         [JSImport("INTERNAL.http_wasm_get_response_header_values")]
         private static partial string[] _GetResponseHeaderValues(
-            JSObject fetchResponse);
+            JSObject httpController);
 
-        public static void GetResponseHeaders(JSObject fetchResponse, HttpHeaders resposeHeaders, HttpHeaders contentHeaders)
+        [JSImport("INTERNAL.http_wasm_get_response_status")]
+        public static partial int GetResponseStatus(
+            JSObject httpController);
+
+        [JSImport("INTERNAL.http_wasm_get_response_type")]
+        public static partial string GetResponseType(
+            JSObject httpController);
+
+        public static void GetResponseHeaders(JSObject httpController, HttpHeaders resposeHeaders, HttpHeaders contentHeaders)
         {
-            string[] headerNames = _GetResponseHeaderNames(fetchResponse);
-            string[] headerValues = _GetResponseHeaderValues(fetchResponse);
+            string[] headerNames = _GetResponseHeaderNames(httpController);
+            string[] headerValues = _GetResponseHeaderValues(httpController);
 
+            // Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
+            // CORS will only allow access to certain headers on browser.
             for (int i = 0; i < headerNames.Length; i++)
             {
                 if (!resposeHeaders.TryAddWithoutValidation(headerNames[i], headerValues[i]))
@@ -67,43 +73,38 @@ namespace System.Net.Http
             }
         }
 
-
         [JSImport("INTERNAL.http_wasm_fetch")]
-        public static partial Task<JSObject> Fetch(
+        public static partial Task Fetch(
+            JSObject httpController,
             string uri,
             string[] headerNames,
             string[] headerValues,
             string[] optionNames,
-            [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
-            JSObject abortControler);
+            [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
         [JSImport("INTERNAL.http_wasm_fetch_stream")]
-        public static partial Task<JSObject> Fetch(
+        public static partial Task FetchStream(
+            JSObject httpController,
             string uri,
             string[] headerNames,
             string[] headerValues,
             string[] optionNames,
-            [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
-            JSObject abortControler,
-            JSObject transformStream);
+            [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues);
 
         [JSImport("INTERNAL.http_wasm_fetch_bytes")]
-        private static partial Task<JSObject> FetchBytes(
+        private static partial Task FetchBytes(
+            JSObject httpController,
             string uri,
             string[] headerNames,
             string[] headerValues,
             string[] optionNames,
             [JSMarshalAs<JSType.Array<JSType.Any>>] object?[] optionValues,
-            JSObject abortControler,
             IntPtr bodyPtr,
             int bodyLength);
 
-        public static unsafe Task<JSObject> Fetch(string uri, string[] headerNames, string[] headerValues, string[] optionNames, object?[] optionValues, JSObject abortControler, byte[] body)
+        public static unsafe Task FetchBytes(JSObject httpController, string uri, string[] headerNames, string[] headerValues, string[] optionNames, object?[] optionValues, MemoryHandle pinBuffer, int bodyLength)
         {
-            fixed (byte* ptr = body)
-            {
-                return FetchBytes(uri, headerNames, headerValues, optionNames, optionValues, abortControler, (IntPtr)ptr, body.Length);
-            }
+            return FetchBytes(httpController, uri, headerNames, headerValues, optionNames, optionValues, (IntPtr)pinBuffer.Pointer, bodyLength);
         }
 
         [JSImport("INTERNAL.http_wasm_get_streamed_response_bytes")]
@@ -111,6 +112,10 @@ namespace System.Net.Http
             JSObject fetchResponse,
             IntPtr bufferPtr,
             int bufferLength);
+
+        public static unsafe Task<int> GetStreamedResponseBytesUnsafe(JSObject jsController, Memory<byte> buffer, MemoryHandle handle)
+            => GetStreamedResponseBytes(jsController, (IntPtr)handle.Pointer, buffer.Length);
+
 
         [JSImport("INTERNAL.http_wasm_get_response_length")]
         public static partial Task<int> GetResponseLength(
@@ -122,8 +127,10 @@ namespace System.Net.Http
             [JSMarshalAs<JSType.MemoryView>] Span<byte> buffer);
 
 
-        public static async ValueTask CancelationHelper(Task promise, CancellationToken cancellationToken, JSObject? fetchResponse = null)
+        public static async Task CancellationHelper(Task promise, CancellationToken cancellationToken, JSObject jsController)
         {
+            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+
             if (promise.IsCompletedSuccessfully)
             {
                 return;
@@ -132,46 +139,41 @@ namespace System.Net.Http
             {
                 using (var operationRegistration = cancellationToken.Register(static s =>
                 {
-                    (Task _promise, JSObject? _fetchResponse) = ((Task, JSObject?))s!;
-                    CancelablePromise.CancelPromise(_promise, static (JSObject? __fetchResponse) =>
+                    (Task _promise, JSObject _jsController) = ((Task, JSObject))s!;
+                    CancelablePromise.CancelPromise(_promise);
+                    if (!_jsController.IsDisposed)
                     {
-                        if (__fetchResponse != null)
-                        {
-                            AbortResponse(__fetchResponse);
-                        }
-                    }, _fetchResponse);
-                }, (promise, fetchResponse)))
+                        AbortResponse(_jsController);
+                    }
+                }, (promise, jsController)))
                 {
                     await promise.ConfigureAwait(true);
                 }
             }
             catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
             {
-                throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                Http.CancellationHelper.ThrowIfCancellationRequested(oce, cancellationToken);
             }
             catch (JSException jse)
             {
                 if (jse.Message.StartsWith("AbortError", StringComparison.Ordinal))
                 {
-                    throw CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
+                    throw Http.CancellationHelper.CreateOperationCanceledException(jse, CancellationToken.None);
                 }
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    throw CancellationHelper.CreateOperationCanceledException(jse, cancellationToken);
-                }
+                Http.CancellationHelper.ThrowIfCancellationRequested(jse, cancellationToken);
                 throw new HttpRequestException(jse.Message, jse);
             }
         }
 
-        public static async ValueTask<T> CancelationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject? fetchResponse = null)
+        public static async Task<T> CancellationHelper<T>(Task<T> promise, CancellationToken cancellationToken, JSObject jsController)
         {
+            Http.CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             if (promise.IsCompletedSuccessfully)
             {
                 return promise.Result;
             }
-            await CancelationHelper((Task)promise, cancellationToken, fetchResponse).ConfigureAwait(true);
-            return await promise.ConfigureAwait(true);
+            await CancellationHelper((Task)promise, cancellationToken, jsController).ConfigureAwait(false);
+            return promise.Result;
         }
     }
-
 }

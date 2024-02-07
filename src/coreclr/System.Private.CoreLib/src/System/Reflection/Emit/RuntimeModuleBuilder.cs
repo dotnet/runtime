@@ -829,7 +829,7 @@ namespace System.Reflection.Emit
                 if (_hasGlobalBeenCreated)
                 {
                     // cannot create globals twice
-                    throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
+                    throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
                 }
                 _globalTypeBuilder.CreateType();
                 _hasGlobalBeenCreated = true;

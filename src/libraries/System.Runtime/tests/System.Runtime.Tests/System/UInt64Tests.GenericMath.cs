@@ -1646,6 +1646,7 @@ namespace System.Tests
             Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateSaturating<Int128>(Int128.MaxValue));
             Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateSaturating<Int128>(Int128.MinValue));
             Assert.Equal((ulong)0x0000_0000_0000_0000, NumberBaseHelper<ulong>.CreateSaturating<Int128>(Int128.NegativeOne));
+            Assert.Equal((ulong)0xFFFF_FFFF_FFFF_FFFF, NumberBaseHelper<ulong>.CreateSaturating<Int128>((Int128)ulong.MaxValue + (Int128)10L));
         }
 
         [Fact]

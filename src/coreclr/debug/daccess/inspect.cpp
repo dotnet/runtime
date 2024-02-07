@@ -64,9 +64,7 @@ InitFieldIter(DeepFieldDescIterator* fieldIter,
         includeParents = true;
     }
 
-    if (typeHandle.IsNull() ||
-        !typeHandle.GetMethodTable() ||
-        !typeHandle.IsRestored())
+    if (typeHandle.IsNull() || !typeHandle.GetMethodTable())
     {
         return E_INVALIDARG;
     }
@@ -1049,8 +1047,8 @@ ClrDataValue::GetString(
             {
                 *strLen = static_cast<ULONG32>(u16_strlen(msgStr) + 1);
             }
-            
-            status = u16_strcpy_s(str, bufLen, msgStr) != NULL ? S_OK : S_FALSE;
+            status = StringCchCopy(str, bufLen, msgStr) == S_OK ?
+                S_OK : S_FALSE;
         }
         else
         {
@@ -2683,8 +2681,7 @@ ClrDataTypeDefinition::NewFromModule(ClrDataAccess* dac,
     // If the type isn't loaded a metadata-query
     // TypeDefinition is produced.
     TypeHandle typeHandle = module->LookupTypeDef(token);
-    if (!typeHandle.IsNull() &&
-        !typeHandle.IsRestored())
+    if (!typeHandle.IsNull())
     {
         // The type isn't fully usable so just go with metadata.
         typeHandle = TypeHandle();
@@ -3799,8 +3796,7 @@ ClrDataTypeInstance::NewFromModule(ClrDataAccess* dac,
                                    IXCLRDataTypeInstance** pubTypeInst)
 {
     TypeHandle typeHandle = module->LookupTypeDef(token);
-    if (typeHandle.IsNull() ||
-        !typeHandle.IsRestored())
+    if (typeHandle.IsNull())
     {
         return E_INVALIDARG;
     }

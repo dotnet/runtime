@@ -2103,11 +2103,8 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
 
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pNDirectTarget));
                 pcsEmit->EmitADD();
-
-                pcsEmit->EmitLDIND_I();
-
                 pcsEmit->EmitLDIND_I();
             }
 #ifdef FEATURE_COMINTEROP
@@ -3169,7 +3166,6 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
     return S_FALSE;
 }
-
 
 // Either MD or signature & module must be given.
 /*static*/
@@ -4260,7 +4256,8 @@ static void CreateNDirectStubAccessMetadata(
     {
         if (unmgdCallConv == CorInfoCallConvExtension::Managed ||
             unmgdCallConv == CorInfoCallConvExtension::Fastcall ||
-            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
+            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction ||
+            unmgdCallConv == CorInfoCallConvExtension::Swift)
         {
             COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
@@ -5786,8 +5783,7 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    NDirectWriteableData* pWriteableData = GetWriteableData();
-    pWriteableData->m_pNDirectTarget = pTarget;
+    ndirect.m_pNDirectTarget = pTarget;
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)

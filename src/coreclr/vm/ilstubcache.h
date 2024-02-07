@@ -31,6 +31,8 @@ public:
     BYTE    m_rgbBlobData[1];
 };
 
+class LoaderAllocator;
+
 //
 // This class caches MethodDesc's for dynamically generated IL stubs, it is not
 // persisted in NGEN images.
@@ -42,9 +44,9 @@ public:
     //---------------------------------------------------------
     // Constructor
     //---------------------------------------------------------
-    ILStubCache(LoaderHeap* heap = NULL);
+    ILStubCache(LoaderAllocator* pAllocator = NULL);
 
-    void Init(LoaderHeap* pHeap);
+    void Init(LoaderAllocator* pAllocator);
 
     MethodDesc* GetStubMethodDesc(
         MethodDesc *pTargetMD,
@@ -118,7 +120,7 @@ private: // Inner classes
 
 private:
     Crst            m_crst;
-    LoaderHeap*     m_heap;
+    LoaderAllocator*m_pAllocator;
     MethodTable*    m_pStubMT;
     SHash<ILStubCacheTraits> m_hashMap;
 };

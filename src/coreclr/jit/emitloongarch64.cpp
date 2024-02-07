@@ -4039,6 +4039,17 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             {
                 printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
             }
+            else if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                if (offs16 < 0)
+                {
+                    printf("-%d ins\n", -offs16 >> 2);
+                }
+                else
+                {
+                    printf("+%d ins\n", offs16 >> 2);
+                }
+            }
             else
             {
                 printf("%s, %s, 0x%llx\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
@@ -4049,7 +4060,22 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             tmp = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             tmp >>= 9;
-            printf("%s, 0x%llx\n", RegNames[regj], (int64_t)insAdr + tmp);
+            if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                tmp >>= 2;
+                if (tmp < 0)
+                {
+                    printf("%s, -%d ins\n", RegNames[regj], tmp);
+                }
+                else
+                {
+                    printf("%s, +%d ins\n", RegNames[regj], tmp);
+                }
+            }
+            else
+            {
+                printf("%s, 0x%llx\n", RegNames[regj], (int64_t)insAdr + tmp);
+            }
             return;
         }
         case DF_G_B0:
@@ -4062,6 +4088,18 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 const char* methodName;
                 methodName = emitComp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);
                 printf("# %s\n", methodName);
+            }
+            else if (INS_OPTS_NONE == id->idInsOpt())
+            {
+                tmp >>= 2;
+                if (tmp < 0)
+                {
+                    printf("-%d ins\n", tmp);
+                }
+                else
+                {
+                    printf("+%d ins\n", tmp);
+                }
             }
             else
             {

@@ -38,7 +38,7 @@ public unsafe class Validate
         });
     }
 
-    [InlineArray(0x20000000)]
+    [InlineArray(16777216)]
     private struct TooLarge
     {
         public long field;

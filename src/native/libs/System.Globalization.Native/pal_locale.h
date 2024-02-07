@@ -16,7 +16,7 @@ PALEXPORT int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
-#if (defined(__APPLE__) && (TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS))
+#if defined(APPLE_HYBRID_GLOBALIZATION)
 
 PALEXPORT const char* GlobalizationNative_GetDefaultLocaleNameNative(void);
 

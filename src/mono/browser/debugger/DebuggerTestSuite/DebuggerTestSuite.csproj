@@ -16,6 +16,9 @@
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <RunSettingsFilePath Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(OutputPath).runsettings</RunSettingsFilePath>
     <RunSettingsFilePath Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsObjDir)vscode\.runsettings</RunSettingsFilePath>
+
+    <!-- Serilog.Extensions.Logging.File brings in NS1.x dependencies -->
+    <FlagNetStandard1XDependencies>false</FlagNetStandard1XDependencies>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
@@ -50,7 +53,7 @@
             target ensures that the correct tfm is used.
     -->
     <ProjectReference Include="..\tests\debugger-test\debugger-test.csproj"
-                      AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration)"
+                      AdditionalProperties="RuntimeConfiguration=$(RuntimeConfiguration);TasksConfiguration=$(RuntimeConfiguration)"
                       ReferenceOutputAssembly="false"
                       Private="false"
                       SkipGetTargetFrameworkProperties="true"

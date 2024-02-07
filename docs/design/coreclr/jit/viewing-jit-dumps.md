@@ -244,6 +244,7 @@ E.g., `DOTNET_JitDisasm=Main`, `DOTNET_JitDisasm=Main Test1 Test2`, `DOTNET_JitD
 * `DOTNET_JitDisasmDiffable`={1 or 0} - set to 1 to make the generated code "diff-able", namely, replace pointer values in the output with
 the same well-known, identical values, so they textually compare identically.
 * `DOTNET_JitDisasmWithAlignmentBoundaries`={1 or 0} - set to 1 to display alignment boundaries in the generated code.
+* `DOTNET_JitDisasmOnlyOptimized`={1 or 0} - set to 1 to hide disasm for unoptimized code
 * `DOTNET_JitDisasmWithCodeBytes`={1 or 0} - set to 1 to display the actual code bytes in addition to textual disassembly. (Don't use
 if `DOTNET_JitDisasmDiffable=1`.)
 * `DOTNET_JitStdOutFile`={file name} - if not set, all JIT output goes to standard output. If set, it is the name of a file to which JIT output

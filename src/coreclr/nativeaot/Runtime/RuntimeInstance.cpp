@@ -65,16 +65,21 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
 
 COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))
 {
-    return dac_cast<uint8_t *>(GetRuntimeInstance()->FindMethodStartAddress(dac_cast<PTR_VOID>(codeAddr)));
+    uint8_t *startAddress = dac_cast<uint8_t *>(GetRuntimeInstance()->FindMethodStartAddress(dac_cast<PTR_VOID>(codeAddr)));
+#if TARGET_ARM
+    return startAddress + 1; // Set the Thumb bit
+#else
+    return startAddress;
+#endif
 }
 
-PTR_UInt8 RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
+PTR_uint8_t RuntimeInstance::FindMethodStartAddress(PTR_VOID ControlPC)
 {
     ICodeManager * pCodeManager = GetCodeManagerForAddress(ControlPC);
     MethodInfo methodInfo;
     if (pCodeManager != NULL && pCodeManager->FindMethodInfo(ControlPC, &methodInfo))
     {
-        return (PTR_UInt8)pCodeManager->GetMethodStartAddress(&methodInfo);
+        return (PTR_uint8_t)pCodeManager->GetMethodStartAddress(&methodInfo);
     }
 
     return NULL;
@@ -134,18 +139,18 @@ void * RuntimeInstance::GetClasslibFunctionFromCodeAddress(PTR_VOID address, Cla
 
 #endif // DACCESS_COMPILE
 
-PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
+PTR_uint8_t RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
 {
     ICodeManager * pCodeManager = GetCodeManagerForAddress(ControlPC);
     if (pCodeManager != NULL)
     {
-        PTR_UInt8 pData = (PTR_UInt8)pCodeManager->GetAssociatedData(ControlPC);
+        PTR_uint8_t pData = (PTR_uint8_t)pCodeManager->GetAssociatedData(ControlPC);
         if (pData != NULL)
         {
             uint8_t flags = *pData++;
 
             if ((flags & (uint8_t)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
-                return pData + *dac_cast<PTR_Int32>(pData);
+                return pData + *dac_cast<PTR_int32_t>(pData);
         }
     }
 

@@ -773,7 +773,7 @@ build_address_taken_bitset (TransformData *td, InterpBasicBlock *bb, guint32 bit
 	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (ins->opcode == MINT_LDLOCA_S) {
 			InterpMethod *imethod = td->rtm;
-			InterpLocal *loc = &td->locals[ins->sregs[0]];
+			InterpVar *loc = &td->vars [ins->sregs[0]];
 
 			// Allocate on demand so if a method contains no ldlocas we don't allocate the bitset
 			if (!imethod->address_taken_bits)

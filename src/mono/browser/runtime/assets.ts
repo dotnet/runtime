@@ -10,6 +10,7 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { AssetEntryInternal } from "./types/internal";
 import { AssetEntry } from "./types";
 import { VoidPtr } from "./types/emscripten";
+import { setSegmentationRulesFromJson } from "./hybrid-globalization/grapheme-segmenter";
 
 // this need to be run only after onRuntimeInitialized event, when the memory is ready
 export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array): void {
@@ -25,6 +26,7 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
         case "dotnetwasm":
         case "js-module-threads":
         case "symbols":
+        case "segmentation-rules":
             // do nothing
             break;
         case "resource":
@@ -101,6 +103,16 @@ export async function instantiate_symbols_asset(pendingAsset: AssetEntryInternal
         parseSymbolMapFile(text);
     } catch (error: any) {
         mono_log_info(`Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
+    }
+}
+
+export async function instantiate_segmentation_rules_asset(pendingAsset: AssetEntryInternal): Promise<void> {
+    try {
+        const response = await pendingAsset.pendingDownloadInternal!.response;
+        const json = await response.json();
+        setSegmentationRulesFromJson(json);
+    } catch (error: any) {
+        mono_log_info(`Error loading static json asset ${pendingAsset.name}: ${JSON.stringify(error)}`);
     }
 }
 

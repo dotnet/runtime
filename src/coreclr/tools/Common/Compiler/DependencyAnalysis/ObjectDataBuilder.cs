@@ -306,6 +306,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                 case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
                 case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
@@ -320,7 +321,6 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR:
 
-                //TODO: consider removal of IMAGE_REL_RISCV64_JALR from runtime too
                 case RelocType.IMAGE_REL_BASED_RISCV64_PC:
                     Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because

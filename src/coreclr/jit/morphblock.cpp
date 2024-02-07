@@ -71,7 +71,7 @@ protected:
 //    tree - A store tree that performs block initialization.
 //
 // Return Value:
-//    A possibly modified tree to perform the initializetion.
+//    A possibly modified tree to perform the initialization.
 //
 // static
 GenTree* MorphInitBlockHelper::MorphInitBlock(Compiler* comp, GenTree* tree)

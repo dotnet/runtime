@@ -8,6 +8,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
@@ -20,8 +21,7 @@ namespace System.Runtime.InteropServices
     /// This PInvokeMarshal class should provide full public Marshal
     /// implementation for all things related to P/Invoke marshalling
     /// </summary>
-    [CLSCompliant(false)]
-    public partial class PInvokeMarshal
+    internal static partial class PInvokeMarshal
     {
         [ThreadStatic]
         internal static int t_lastError;
@@ -46,13 +46,13 @@ namespace System.Runtime.InteropServices
         /// Return the stub to the pinvoke marshalling stub
         /// </summary>
         /// <param name="del">The delegate</param>
-        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
+        public static unsafe IntPtr GetFunctionPointerForDelegate(Delegate del)
         {
             if (del == null)
                 return IntPtr.Zero;
 
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly
-            if (del.GetEETypePtr().IsGeneric)
+            if (del.GetMethodTable()->IsGeneric)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, "delegate");
 #pragma warning restore CA2208
 
@@ -136,7 +136,10 @@ namespace System.Runtime.InteropServices
                         thunkData->Handle = GCHandle.Alloc(del, GCHandleType.Weak);
 
                         // if it is an open static delegate get the function pointer
-                        thunkData->FunctionPtr = del.GetRawFunctionPointerForOpenStaticDelegate();
+                        if (del.IsOpenStatic)
+                            thunkData->FunctionPtr = del.GetFunctionPointer(out RuntimeTypeHandle _, out bool _, out bool _);
+                        else
+                            thunkData->FunctionPtr = default;
                     }
                 }
             }
@@ -163,7 +166,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private static PInvokeDelegateThunk AllocateThunk(Delegate del)
+        private static unsafe PInvokeDelegateThunk AllocateThunk(Delegate del)
         {
             if (s_thunkPoolHeap == null)
             {
@@ -181,9 +184,9 @@ namespace System.Runtime.InteropServices
             //
             //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
             //
-            bool openStaticDelegate = del.GetRawFunctionPointerForOpenStaticDelegate() != IntPtr.Zero;
+            bool openStaticDelegate = del.IsOpenStatic;
 
-            IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(del.GetTypeHandle(), openStaticDelegate);
+            IntPtr pTarget = RuntimeInteropData.GetDelegateMarshallingStub(new RuntimeTypeHandle(del.GetMethodTable()), openStaticDelegate);
             Debug.Assert(pTarget != IntPtr.Zero);
 
             RuntimeAugments.SetThunkData(s_thunkPoolHeap, delegateThunk.Thunk, delegateThunk.ContextData, pTarget);
@@ -234,7 +237,7 @@ namespace System.Runtime.InteropServices
             // NativeFunctionPointerWrapper derived class
             //
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly
-            if (delegateType.ToEETypePtr().BaseType != EETypePtr.EETypePtrOf<MulticastDelegate>())
+            if (delegateType.ToMethodTable()->BaseType != MethodTable.Of<MulticastDelegate>())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, "t");
 #pragma warning restore CA2208
 
