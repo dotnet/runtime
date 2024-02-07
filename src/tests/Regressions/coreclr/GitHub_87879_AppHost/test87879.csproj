@@ -6,6 +6,7 @@
     <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">false</CLRTestTargetUnsupported>
     <DisableProjectBuild>$(CLRTestTargetUnsupported)</DisableProjectBuild>
+    <DefineConstants>$(DefineConstants);INTENTIONALLY_FAIL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\GitHub_87879\test87879.cs" />

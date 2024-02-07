@@ -15,6 +15,11 @@ public class test87879
     {
         //determine the expected available stack size 1.5MB, minus a little bit (384kB) for overhead.
         var expectedSize = 0x180000 - 0x60000;
+#if INTENTIONALLY_FAIL
+        Console.WriteLine(System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName);
+        object o = null;
+        o.ToString();
+#endif
 
         //allocate on the stack as specified above
         Span<byte> bytes = stackalloc byte[expectedSize];
