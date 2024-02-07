@@ -81,7 +81,6 @@
         Split large components into separate packages.
       -->
       <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*$(ArchiveExtension)" Category="runtime" />
-
       <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.DotNet.ILCompiler.*.nupkg" Category="ILCompiler" />
 
       <IntermediateNupkgArtifactFile
@@ -91,6 +90,15 @@
         <IntermediateNupkgArtifactFile
         Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*$(ArchiveExtension)"
         Category="Crossgen2Archive" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+      <!-- Include installers when in product VMR builds. These are not necessary when building the repo-only build as we don't
+           need them in downstream source-only PR legs. We could include them, but it may bump us over the package size limit. -->
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.msi" />
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.deb" />
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.rpm" />
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.pkg" />
     </ItemGroup>
   </Target>
 
