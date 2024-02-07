@@ -509,6 +509,18 @@ static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+// Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
+// This specifically encode the field 'rot' at bit location '16'.
+static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
+
+// Returns the encoding to select the constant values 0, 90, 180 or 270 for an Arm64 SVE vector instruction
+// This specifically encode the field 'rot' at bit locations '14-13'.
+static code_t insEncodeSveImm0_or_90_or_180_or_270_rot(ssize_t imm);
+
+// Returns the encoding to select the constant float values 0, 0.5, 1.0 or 2.0 for an Arm64 SVE vector instruction
+// This specifically encode the field 'i1' at bit location '5'.
+static code_t insEncodeSveFloatImmZero_to_Two(double immDbl);
+
 // Returns the first register list size for the given SVE instruction.
 static int insGetSveReg1ListSize(instruction ins);
 
@@ -1245,6 +1257,9 @@ void emitIns_R_R_I(instruction     ins,
                    insOpts         opt  = INS_OPTS_NONE,
                    insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
+void emitIns_R_R_F(
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt = INS_OPTS_NONE);
+
 // Checks for a large immediate that needs a second instruction
 void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);
 
@@ -1302,6 +1317,15 @@ void emitInsSve_R_R_R_R(instruction     ins,
                         regNumber       reg4,
                         insOpts         opt  = INS_OPTS_NONE,
                         insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitIns_R_R_R_R_I(instruction     ins,
+                       emitAttr        attr,
+                       regNumber       reg1,
+                       regNumber       reg2,
+                       regNumber       reg3,
+                       regNumber       reg4,
+                       ssize_t         imm,
+                       insOpts         opt  = INS_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
