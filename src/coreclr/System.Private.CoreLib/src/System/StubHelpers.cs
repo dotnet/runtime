@@ -687,7 +687,7 @@ namespace System.StubHelpers
             Array arr = (Array)pManagedHome;
             MarshalerState* pState = (MarshalerState*)pMarshalState;
 
-            if ((uint)arr.Length < pState->m_cElements)
+            if (arr is not null && (uint)arr.Length < pState->m_cElements)
             {
                 throw new ArgumentException(SR.Argument_WrongSizeArrayInNativeStruct);
             }
