@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 
@@ -37,8 +36,7 @@ namespace System.Reflection
         public static TypeDesc ResolveType(ModuleDesc module, string name, bool throwIfNotFound,
             Func<ModuleDesc, string, MetadataType> canonResolver)
         {
-            var parsed = Metadata.TypeNameParser.Parse(name.AsSpan(), throwOnError: false);
-            if (parsed is null)
+            if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed))
             {
                 ThrowHelper.ThrowTypeLoadException(name, module);
             }

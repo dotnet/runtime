@@ -79,9 +79,7 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            var parsed = Metadata.TypeNameParser.Parse(typeName,
-               allowFullyQualifiedName: true, // let it get parsed, but throw when topLevelAssembly was specified
-               throwOnError: throwOnError);
+            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
 
             if (parsed is null)
             {
@@ -112,7 +110,7 @@ namespace System.Reflection
 
             RuntimeAssembly requestingAssembly = scope.GetRuntimeAssembly();
 
-            var parsed = Metadata.TypeNameParser.Parse(typeName, allowFullyQualifiedName: true, throwOnError: true)!;
+            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: true)!;
             RuntimeType? type = (RuntimeType?)new TypeNameParser()
             {
                 _throwOnError = true,
@@ -142,10 +140,7 @@ namespace System.Reflection
                 return null;
             }
 
-            var parsed = Metadata.TypeNameParser.Parse(typeName,
-               allowFullyQualifiedName: true,
-               throwOnError: throwOnError);
-
+            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
             if (parsed is null)
             {
                 return null;

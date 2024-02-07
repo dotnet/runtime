@@ -14,6 +14,8 @@ namespace System.Reflection.Metadata
     {
         private int _maxRecursiveDepth = int.MaxValue;
 
+        public bool AllowFullyQualifiedName { get; set; } = true;
+
         public int MaxRecursiveDepth
         {
             get => _maxRecursiveDepth;

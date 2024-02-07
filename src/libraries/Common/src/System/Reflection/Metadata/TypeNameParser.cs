@@ -14,12 +14,7 @@ using System.Text;
 namespace System.Reflection.Metadata
 {
     // TODO: add proper debugger display stuff
-#if SYSTEM_PRIVATE_CORELIB
-    internal
-#else
-    public
-#endif
-    ref struct TypeNameParser
+    internal ref struct TypeNameParser
     {
         private const string EndOfTypeNameDelimiters = "[]&*,+";
 #if NET8_0_OR_GREATER
@@ -37,7 +32,7 @@ namespace System.Reflection.Metadata
             _parseOptions = options ?? _defaults;
         }
 
-        public static TypeName? Parse(ReadOnlySpan<char> typeName, bool allowFullyQualifiedName = true, bool throwOnError = true, TypeNameParserOptions? options = default)
+        internal static TypeName? Parse(ReadOnlySpan<char> typeName, bool throwOnError, TypeNameParserOptions? options = default)
         {
             ReadOnlySpan<char> trimmedName = TrimStart(typeName); // whitespaces at beginning are always OK
             if (trimmedName.IsEmpty)
@@ -48,7 +43,7 @@ namespace System.Reflection.Metadata
 
             int recursiveDepth = 0;
             TypeNameParser parser = new(trimmedName, throwOnError, options);
-            TypeName? parsedName = parser.ParseNextTypeName(allowFullyQualifiedName, ref recursiveDepth);
+            TypeName? parsedName = parser.ParseNextTypeName(parser._parseOptions.AllowFullyQualifiedName, ref recursiveDepth);
 
             if (parsedName is not null && parser._inputString.IsEmpty) // unconsumed input == error
             {

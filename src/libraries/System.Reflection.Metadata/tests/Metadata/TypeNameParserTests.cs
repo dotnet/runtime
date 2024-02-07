@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata.Tests
         [Theory]
         [InlineData("  System.Int32", "System.Int32")]
         public void SpacesAtTheBeginningAreOK(string input, string expectedName)
-            => Assert.Equal(expectedName, TypeNameParser.Parse(input.AsSpan()).Name);
+            => Assert.Equal(expectedName, TypeName.Parse(input.AsSpan()).Name);
 
         [Theory]
         [InlineData("")]
@@ -22,9 +22,9 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("    ")]
         public void EmptyStringsAreNotAllowed(string input)
         {
-            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan(), throwOnError: true));
+            Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
 
-            Assert.Null(TypeNameParser.Parse(input.AsSpan(), throwOnError: false));
+            Assert.False(TypeName.TryParse(input.AsSpan(), out _));
         }
 
         [Theory]
@@ -35,23 +35,23 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("ExtraComma, , System.Runtime")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
-            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan(), throwOnError: true));
+            Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
 
-            Assert.Null(TypeNameParser.Parse(input.AsSpan(), throwOnError: false));
+            Assert.False(TypeName.TryParse(input.AsSpan(), out _));
         }
 
         [Theory]
         [InlineData("Namespace.Kość", "Namespace.Kość")]
         public void UnicodeCharactersAreAllowedByDefault(string input, string expectedName)
-            => Assert.Equal(expectedName, TypeNameParser.Parse(input.AsSpan()).Name);
+            => Assert.Equal(expectedName, TypeName.Parse(input.AsSpan()).Name);
 
         [Theory]
         [InlineData("Namespace.Kość")]
         public void UsersCanCustomizeIdentifierValidation(string input)
         {
-            Assert.Throws<ArgumentException>(() => TypeNameParser.Parse(input.AsSpan(), true, throwOnError: true, new NonAsciiNotAllowed()));
+            Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan(), new NonAsciiNotAllowed()));
 
-            Assert.Null(TypeNameParser.Parse(input.AsSpan(), true, throwOnError: false, new NonAsciiNotAllowed()));
+            Assert.False(TypeName.TryParse(input.AsSpan(), out _, new NonAsciiNotAllowed()));
         }
 
         public static IEnumerable<object[]> TypeNamesWithAssemblyNames()
@@ -71,7 +71,7 @@ namespace System.Reflection.Metadata.Tests
         [MemberData(nameof(TypeNamesWithAssemblyNames))]
         public void TypeNameCanContainAssemblyName(string input, string typeName, string assemblyName, Version assemblyVersion, string assemblyCulture, string assemblyPublicKeyToken)
         {
-            TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
+            TypeName parsed = TypeName.Parse(input.AsSpan());
 
             Assert.Equal(typeName, parsed.Name);
             Assert.NotNull(parsed.AssemblyName);
@@ -140,7 +140,7 @@ namespace System.Reflection.Metadata.Tests
         [MemberData(nameof(GenericArgumentsAreSupported_Arguments))]
         public void GenericArgumentsAreSupported(string input, string typeName, string[] typeNames, AssemblyName[]? assemblyNames)
         {
-            TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
+            TypeName parsed = TypeName.Parse(input.AsSpan());
 
             Assert.Equal(typeName, parsed.Name);
             Assert.True(parsed.IsConstructedGenericType);
@@ -188,7 +188,7 @@ namespace System.Reflection.Metadata.Tests
         [MemberData(nameof(DecoratorsAreSupported_Arguments))]
         public void DecoratorsAreSupported(string input, string typeNameWithoutDecorators, bool isArray, bool isSzArray, int arrayRank, bool isByRef, bool isPointer)
         {
-            TypeName parsed = TypeNameParser.Parse(input.AsSpan(), allowFullyQualifiedName: true);
+            TypeName parsed = TypeName.Parse(input.AsSpan());
 
             Assert.Equal(input, parsed.Name);
             Assert.Equal(isArray, parsed.IsArray);
@@ -239,13 +239,13 @@ namespace System.Reflection.Metadata.Tests
 
             static void Test(Type type)
             {
-                TypeName typeName = TypeNameParser.Parse(type.AssemblyQualifiedName.AsSpan(), allowFullyQualifiedName: true);
+                TypeName typeName = TypeName.Parse(type.AssemblyQualifiedName.AsSpan());
                 Verify(type, typeName, ignoreCase: false);
 
-                typeName = TypeNameParser.Parse(type.AssemblyQualifiedName.ToLower().AsSpan(), allowFullyQualifiedName: true);
+                typeName = TypeName.Parse(type.AssemblyQualifiedName.ToLower().AsSpan());
                 Verify(type, typeName, ignoreCase: true);
 
-                typeName = TypeNameParser.Parse(type.AssemblyQualifiedName.ToUpper().AsSpan(), allowFullyQualifiedName: true);
+                typeName = TypeName.Parse(type.AssemblyQualifiedName.ToUpper().AsSpan());
                 Verify(type, typeName, ignoreCase: true);
 
                 static void Verify(Type type, TypeName typeName, bool ignoreCase)

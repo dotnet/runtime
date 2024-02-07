@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using Internal.TypeSystem;
 
 namespace System.Reflection
@@ -16,11 +17,10 @@ namespace System.Reflection
         public static TypeDesc ResolveType(string name, ModuleDesc callingModule,
             TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
         {
-            var parsed = Metadata.TypeNameParser.Parse(name, throwOnError: false);
-            if (parsed is null) // TODO adsitnik: verify that this is desired
+            if (!TypeName.TryParse(name, out TypeName parsed))
             {
                 typeWasNotFoundInAssemblyNorBaseLibrary = true;
-                return null;
+                return null; // TODO adsitnik: verify that this is desired
             }
 
             var parser = new TypeNameParser()

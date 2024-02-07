@@ -51,7 +51,7 @@ namespace System.Reflection
                 return null;
             }
 
-            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError: throwOnError);
+            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
             if (parsed is null)
             {
                 return null;
@@ -74,9 +74,7 @@ namespace System.Reflection
             bool ignoreCase,
             Assembly topLevelAssembly)
         {
-            var parsed = Metadata.TypeNameParser.Parse(typeName,
-               allowFullyQualifiedName: true, // let it get parsed, but throw when topLevelAssembly was specified
-               throwOnError: throwOnError);
+            var parsed = Metadata.TypeNameParser.Parse(typeName, throwOnError);
 
             if (parsed is null)
             {

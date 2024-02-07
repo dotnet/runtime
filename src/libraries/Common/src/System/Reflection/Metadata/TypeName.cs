@@ -3,6 +3,8 @@
 
 #nullable enable
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Reflection.Metadata
 {
 #if SYSTEM_PRIVATE_CORELIB
@@ -131,6 +133,19 @@ namespace System.Reflection.Metadata
         /// Given "Dictionary&lt;string, int&gt;", returns the generic type definition "Dictionary&lt;,&gt;".
         /// </remarks>
         public TypeName? UnderlyingType { get; }
+
+        public static TypeName Parse(ReadOnlySpan<char> typeName, TypeNameParserOptions? options = default)
+            => TypeNameParser.Parse(typeName, throwOnError: true, options)!;
+
+        public static bool TryParse(ReadOnlySpan<char> typeName,
+#if !INTERNAL_NULLABLE_ANNOTATIONS // remove along with the define from ILVerification.csproj when SystemReflectionMetadataVersion points to new version with the new types
+            [NotNullWhen(true)]
+#endif
+        out TypeName? result, TypeNameParserOptions? options = default)
+        {
+            result = TypeNameParser.Parse(typeName, throwOnError: false, options);
+            return result is not null;
+        }
 
         public int GetArrayRank()
             => _rankOrModifier switch

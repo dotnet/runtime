@@ -2424,18 +2424,15 @@ namespace System.Reflection.Metadata
         public bool IsVariableBoundArrayType { get { throw null; } }
         public string Name { get { throw null; } }
         public System.Reflection.Metadata.TypeName? UnderlyingType { get { throw null; } }
+        public static System.Reflection.Metadata.TypeName Parse(System.ReadOnlySpan<char> typeName, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> typeName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Reflection.Metadata.TypeName? result, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
         public int GetArrayRank() { throw null; }
         public System.Reflection.Metadata.TypeName[] GetGenericArguments() { throw null; }
-    }
-    public ref partial struct TypeNameParser
-    {
-        private object _dummy;
-        private int _dummyPrimitive;
-        public static System.Reflection.Metadata.TypeName? Parse(System.ReadOnlySpan<char> typeName, bool allowFullyQualifiedName = true, bool throwOnError = true, System.Reflection.Metadata.TypeNameParserOptions? options = null) { throw null; }
     }
     public partial class TypeNameParserOptions
     {
         public TypeNameParserOptions() { }
+        public bool AllowFullyQualifiedName { get { throw null; } set { } }
         public int MaxRecursiveDepth { get { throw null; } set { } }
         public virtual bool ValidateIdentifier(System.ReadOnlySpan<char> candidate, bool throwOnError) { throw null; }
     }
