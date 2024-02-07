@@ -11619,6 +11619,10 @@ MONO_RESTORE_WARNING
 		}
 		case OP_ARM64_LDM: {
 			const char *oname = "arm64_ldm";
+			if (!addresses [ins->dreg]) {
+				LLVMTypeRef etype = type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass));
+				addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname), etype);
+			}
 			LLVMTypeRef ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (ret_t);
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
