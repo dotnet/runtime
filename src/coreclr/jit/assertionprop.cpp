@@ -3825,7 +3825,7 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp_IntegralRangeProperties: Obtains range properties for an integral tree
+// optAssertionProp_RangeProperties: Obtains range properties for an arbitrary tree
 //
 // Arguments:
 //    assertions         - set of live assertions
@@ -3833,16 +3833,17 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 //    isKnownNonZero     - [OUT] set to true if the tree is known to be non-zero
 //    isKnownNonNegative - [OUT] set to true if the tree is known to be non-negative
 //
-void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP assertions,
-                                                        GenTree*         tree,
-                                                        bool*            isKnownNonZero,
-                                                        bool*            isKnownNonNegative)
+void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
+                                                GenTree*         tree,
+                                                bool*            isKnownNonZero,
+                                                bool*            isKnownNonNegative)
 {
     *isKnownNonZero     = false;
     *isKnownNonNegative = false;
 
     if (!varTypeIsIntegral(tree))
     {
+        // We only support integral types for now.
         return;
     }
 
@@ -3950,12 +3951,15 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
 //
 GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
 {
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
     bool op1IsNotZero;
     bool op2IsNotZero;
     bool op1IsNotNegative;
     bool op2IsNotNegative;
-    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp1(), &op1IsNotZero, &op1IsNotNegative);
-    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp2(), &op2IsNotZero, &op2IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op1, &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op2, &op2IsNotZero, &op2IsNotNegative);
 
     bool changed = false;
     if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))

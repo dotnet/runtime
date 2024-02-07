@@ -7824,10 +7824,10 @@ public:
     bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
     bool optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
 
-    void optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP assertions,
-                                                  GenTree*         tree,
-                                                  bool*            isKnownNonZero,
-                                                  bool*            isKnownNonNegative);
+    void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
+                                          GenTree*         tree,
+                                          bool*            isKnownNonZero,
+                                          bool*            isKnownNonNegative);
 
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
