@@ -233,7 +233,7 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
     error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     assert(error == 0);
 
-#if defined(HOST_OSX) || defined(HOST_MACCATALYST)
+#ifdef HOST_APPLE
     // Match Windows stack size
     if (stackSize == 0)
     {

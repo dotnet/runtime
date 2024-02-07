@@ -288,7 +288,7 @@ InitializeDefaultStackSize()
         }
     }
 
-#if defined(HOST_OSX) || defined(HOST_MACCATALYST)
+#ifdef HOST_APPLE
     // Match Windows stack size
     if (g_defaultStackSize == 0)
     {
