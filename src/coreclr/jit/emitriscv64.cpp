@@ -2887,7 +2887,7 @@ BYTE* emitter::emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t im
     if (id->idReg2())
     {
         // special for INT64_MAX or UINT32_MAX
-        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, NBitMask<12>());
+        dst += emitOutput_ITypeInstr(dst, INS_addi, reg1, REG_R0, NBitMask(12));
         const ssize_t shiftValue = (immediate == INT64_MAX) ? 1 : 32;
         dst += emitOutput_ITypeInstr(dst, INS_srli, reg1, reg1, shiftValue);
     }
@@ -2946,11 +2946,10 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned
     const regNumber rsvdReg = codeGen->rsGetRsvdReg();
     dst += emitOutput_UTypeInstr(dst, INS_auipc, rsvdReg, UpperNBitsOfWordSignExtend<20>(immediate));
 
-    const instruction lastIns = *ins;
+    instruction lastIns = *ins;
 
     if (*ins == INS_jal)
     {
-        assert(isGeneralRegister(reg1));
         *ins = lastIns = INS_addi;
     }
     dst += emitOutput_ITypeInstr(dst, lastIns, reg1, rsvdReg, LowerNBitsOfWord<12>(immediate));
