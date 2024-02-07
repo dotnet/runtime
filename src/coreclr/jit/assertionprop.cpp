@@ -3841,9 +3841,9 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     *isKnownNonZero     = false;
     *isKnownNonNegative = false;
 
-    if (!varTypeIsIntegral(tree))
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::MayBeUninit(assertions) ||
+        BitVecOps::IsEmpty(apTraits, assertions))
     {
-        // We only support integral types for now.
         return;
     }
 
@@ -3854,11 +3854,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
     if (*isKnownNonZero && *isKnownNonNegative)
     {
         // TP: We already have both properties, no need to check assertions.
-        return;
-    }
-
-    if (optLocalAssertionProp || BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
-    {
         return;
     }
 
