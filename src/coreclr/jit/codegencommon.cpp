@@ -625,7 +625,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 // Return Value:
 //   Mask of register kills -- registers whose values are no longer guaranteed to be the same.
 //
-regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
+regMaskAny Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
