@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
