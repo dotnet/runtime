@@ -3527,14 +3527,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		method->name, method->flags, method->iflags, mono_method_signature_internal (method)->param_count);
 
 	if (MONO_CLASS_IS_IMPORT (method->klass)) {
-		/* The COM code is not AOT compatible, it calls mono_custom_attrs_get_attr_checked () */
-		if (aot)
-			return method;
-#ifndef DISABLE_COM
-		return mono_cominterop_get_native_wrapper (method);
-#else
-		g_assert_not_reached ();
-#endif
+		mono_error_set_generic_error (emitted_error, "System", "PlatformNotSupportedException", "Built-in COM interop is not supported on Mono");
+		goto emit_exception_for_error;
 	}
 
 	if (aot) {
