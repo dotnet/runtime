@@ -13,7 +13,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData(LoggerColorBehavior.Default)]
         [InlineData(LoggerColorBehavior.Enabled)]
         [InlineData(LoggerColorBehavior.Disabled)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97382", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public void Log_WritingScopes_LogsWithCorrectColorsWhenColorEnabled(LoggerColorBehavior colorBehavior)
         {
             // Arrange
