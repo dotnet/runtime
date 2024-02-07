@@ -10876,10 +10876,10 @@ void Interpreter::DoGetIsSupported()
 void Interpreter::DoGetArrayDataReference()
 {
     CONTRACTL {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        } CONTRACTL_END;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
     _ASSERTE(m_curStackHt > 0);
     unsigned ind = m_curStackHt - 1;
