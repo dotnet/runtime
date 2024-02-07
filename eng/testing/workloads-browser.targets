@@ -41,7 +41,7 @@
     </ItemGroup>
   </Target>
 
-  <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
+  <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,
        build the other nugets with the *same runtime* but different names.
   -->
   <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
