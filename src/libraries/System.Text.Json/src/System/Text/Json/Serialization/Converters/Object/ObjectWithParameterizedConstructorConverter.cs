@@ -299,7 +299,16 @@ namespace System.Text.Json.Serialization.Converters
                 // Read method would have thrown if otherwise.
                 Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
-                if (TryLookupConstructorParameter(ref state, ref reader, options, out JsonParameterInfo? jsonParameterInfo))
+                ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
+                if (isAlreadyReadMetadataProperty)
+                {
+                    Debug.Assert(options.AllowOutOfOrderMetadataProperties);
+                    reader.SkipWithVerify();
+                    state.Current.EndProperty();
+                    continue;
+                }
+
+                if (TryLookupConstructorParameter(unescapedPropertyName, ref state, ref reader, options, out JsonParameterInfo? jsonParameterInfo))
                 {
                     // Set the property value.
                     reader.ReadWithVerify();
@@ -326,9 +335,8 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                     JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
-                        obj: null!,
+                        obj: null,
                         unescapedPropertyName,
                         ref state,
                         options,
@@ -367,9 +375,7 @@ namespace System.Text.Json.Serialization.Converters
                             state.Current.JsonPropertyNameAsString);
                     }
 
-                    bool success = reader.TrySkip();
-                    Debug.Assert(success, "Serializer should guarantee sufficient read-ahead has been done.");
-
+                    reader.SkipWithVerify();
                     state.Current.EndProperty();
                 }
             }
@@ -406,7 +412,17 @@ namespace System.Text.Json.Serialization.Converters
                     // Read method would have thrown if otherwise.
                     Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
+                    if (isAlreadyReadMetadataProperty)
+                    {
+                        Debug.Assert(options.AllowOutOfOrderMetadataProperties);
+                        reader.SkipWithVerify();
+                        state.Current.EndProperty();
+                        continue;
+                    }
+
                     if (TryLookupConstructorParameter(
+                        unescapedPropertyName,
                         ref state,
                         ref reader,
                         options,
@@ -416,7 +432,6 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
                         jsonPropertyInfo = JsonSerializer.LookupProperty(
                             obj: null!,
                             unescapedPropertyName,
@@ -595,14 +610,13 @@ namespace System.Text.Json.Serialization.Converters
         /// Lookup the constructor parameter given its name in the reader.
         /// </summary>
         protected virtual bool TryLookupConstructorParameter(
+            scoped ReadOnlySpan<byte> unescapedPropertyName,
             scoped ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
             [NotNullWhen(true)] out JsonParameterInfo? jsonParameterInfo)
         {
             Debug.Assert(state.Current.JsonTypeInfo.Kind == JsonTypeInfoKind.Object);
-
-            ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
 
             jsonParameterInfo = state.Current.JsonTypeInfo.GetParameter(
                 unescapedPropertyName,

@@ -2986,7 +2986,7 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
 	} else
 		dest = (char*)obj + m_field_get_offset (field);
 
-	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
+	mono_copy_value (field->type, dest, value, value && (field->type->type == MONO_TYPE_PTR || field->type->type == MONO_TYPE_FNPTR));
 }
 
 /**
@@ -3019,7 +3019,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 		return;
 
 	dest = mono_static_field_get_addr (vt, field);
-	mono_copy_value (field->type, dest, value, value && field->type->type == MONO_TYPE_PTR);
+	mono_copy_value (field->type, dest, value, value && (field->type->type == MONO_TYPE_PTR || field->type->type == MONO_TYPE_FNPTR));
 }
 
 gpointer
@@ -3231,6 +3231,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 	gboolean is_ref = FALSE;
 	gboolean is_literal = FALSE;
 	gboolean is_ptr = FALSE;
+	gboolean is_fnptr = FALSE;
 
 	MonoStringHandle string_handle = MONO_HANDLE_NEW (MonoString, NULL);
 
@@ -3268,6 +3269,9 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		break;
 	case MONO_TYPE_PTR:
 		is_ptr = TRUE;
+		break;
+	case MONO_TYPE_FNPTR:
+		is_fnptr = TRUE;
 		break;
 	default:
 		g_error ("type 0x%x not handled in "
@@ -3339,6 +3343,12 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		goto_if_nok (error, return_null);
 
 		goto exit;
+	}
+
+	if (G_UNLIKELY (is_fnptr)) {
+		// CoreCLR behavior: returns an IntPtr value if we're getting a function pointer field.
+		// Does not return a System.Reflection.Pointer value in this case
+		type = mono_get_int_type ();
 	}
 
 	/* boxed value type */

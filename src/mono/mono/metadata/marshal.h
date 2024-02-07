@@ -739,4 +739,7 @@ mono_mb_create (MonoMethodBuilder *mb, MonoMethodSignature *sig,
 IlgenCallbacksToMono*
 mono_marshal_get_mono_callbacks_for_ilgen (void);
 
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_self)
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (swift_error)
+
 #endif /* __MONO_MARSHAL_H__ */

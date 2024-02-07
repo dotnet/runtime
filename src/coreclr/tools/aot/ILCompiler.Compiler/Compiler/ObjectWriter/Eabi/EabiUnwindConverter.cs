@@ -252,13 +252,14 @@ namespace ILCompiler.ObjectWriter
 
                     // Pop VFP double precision registers D[16+ssss]-D[16+ssss+cccc] saved (as if) by VPUSH
                     // 11001000 sssscccc
-                    uint mask = (pendingVPopMask >> 16);
+                    uint mask = pendingVPopMask >> 16;
                     while (mask > 0)
                     {
                         int leadingZeros = BitOperations.LeadingZeroCount(mask);
                         int bitRunLength = BitOperations.LeadingZeroCount(~(mask << leadingZeros));
+                        leadingZeros -= 16; // Using uint but working only with low 16 bits
                         unwindData[unwindDataOffset++] = 0xc8;
-                        unwindData[unwindDataOffset++] = (byte)(((15 - leadingZeros) << 8) | bitRunLength);
+                        unwindData[unwindDataOffset++] = (byte)(((16 - leadingZeros - bitRunLength) << 4) | (bitRunLength - 1));
                         mask &= (uint)(1u << (16 - leadingZeros - bitRunLength)) - 1u;
                     }
 
@@ -269,8 +270,9 @@ namespace ILCompiler.ObjectWriter
                     {
                         int leadingZeros = BitOperations.LeadingZeroCount(mask);
                         int bitRunLength = BitOperations.LeadingZeroCount(~(mask << leadingZeros));
+                        leadingZeros -= 16; // Using uint but working only with low 16 bits
                         unwindData[unwindDataOffset++] = 0xc9;
-                        unwindData[unwindDataOffset++] = (byte)(((15 - leadingZeros) << 8) | bitRunLength);
+                        unwindData[unwindDataOffset++] = (byte)(((16 - leadingZeros - bitRunLength) << 4) | (bitRunLength - 1));
                         mask &= (uint)(1u << (16 - leadingZeros - bitRunLength)) - 1u;
                     }
 

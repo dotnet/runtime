@@ -414,11 +414,12 @@ struct CORINFO_SIG_INFO_SMALL
     unsigned                numArgs : 16;
     CorInfoCallConv         callConv: 8;
     CorInfoType             retType : 8;
+    bool                    fHasThis;
 
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
-    bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
+    bool                hasThis()           { return fHasThis; }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    bool                hasImplicitThis()   { return ((callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS); }
+    bool                hasImplicitThis()   { return hasThis() && !hasExplicitThis(); }
     unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
@@ -429,9 +430,16 @@ struct CORINFO_SIG_INFO_SMALL
         return retTypeClass == csis.retTypeClass
             && numArgs == csis.numArgs
             && callConv == csis.callConv
-            && retType == csis.retType;
+            && retType == csis.retType
+            && fHasThis == csis.fHasThis;
     }
 #endif // _DEBUG
+
+    static bool ComputeHasThis(MethodDesc* pMD)
+    {
+        MetaSig sig(pMD);
+        return ArgIterator(&sig, pMD).HasThis();
+    }
 };
 
 struct CallSiteCacheData

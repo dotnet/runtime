@@ -187,6 +187,13 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             block->bbLastPred = flow;
         }
 
+        // Copy likelihood from old edge, if any.
+        //
+        if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
+        {
+            flow->setLikelihood(oldEdge->getLikelihood());
+        }
+
         if (fgHaveValidEdgeWeights)
         {
             // We are creating an edge from blockPred to block

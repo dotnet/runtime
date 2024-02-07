@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import { PThreadSelf } from "./index";
 
 export const dotnetPthreadCreated = "dotnet:pthread:created" as const;
@@ -29,7 +29,7 @@ export interface WorkerThreadEventTarget extends EventTarget {
 }
 
 let WorkerThreadEventClassConstructor: new (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent;
-export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent = !MonoWasmThreads
+export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent = !WasmEnableThreads
     ? (() => { throw new Error("threads support disabled"); })
     : ((type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => {
         if (!WorkerThreadEventClassConstructor) WorkerThreadEventClassConstructor = class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {

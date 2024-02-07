@@ -255,6 +255,24 @@ namespace System.Collections.Tests
             return set;
         }
 
+#if NETCOREAPP
+        /// <summary>
+        /// Create a HashSet with a specific initial capacity and fill it with a specific number of elements.
+        /// </summary>
+        protected HashSet<T> CreateHashSetWithCapacity(int count, int capacity)
+        {
+            var set = new HashSet<T>(capacity, GetIEqualityComparer());
+            int seed = 528;
+
+            for (int i = 0; i < count; i++)
+            {
+                while (!set.Add(CreateT(seed++)));
+            }
+
+            return set;
+        }
+#endif
+
         /// <summary>
         /// Helper function to create an SortedSet fulfilling the given specific parameters. The function will
         /// create an SortedSet using the Comparer constructor and then add values

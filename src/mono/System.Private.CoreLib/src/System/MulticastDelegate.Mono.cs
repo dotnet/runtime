@@ -10,20 +10,9 @@ using System.Runtime.Serialization;
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    public abstract class MulticastDelegate : Delegate
+    public abstract partial class MulticastDelegate : Delegate
     {
         private Delegate[]? delegates;
-
-        [RequiresUnreferencedCode("The target method might be removed")]
-        protected MulticastDelegate(object target, string method)
-            : base(target, method)
-        {
-        }
-
-        protected MulticastDelegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
-            : base(target, method)
-        {
-        }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -48,20 +37,6 @@ namespace System
                 } while (++i < len);
                 return r;
             }
-        }
-
-        // Some high-performance applications use this internal property
-        // to avoid using a slow path to determine if there is more than one handler
-        // This brings an API that we removed in f410e545e2db0e0dc338673a6b10a5cfd2d3340f
-        // which some users depeneded on
-        //
-        // This is an example of code that used this:
-        // https://gist.github.com/migueldeicaza/cd99938c2a4372e7e5d5
-        //
-        // Do not remove this API
-        internal bool HasSingleTarget
-        {
-            get { return delegates == null; }
         }
 
         // <remarks>
@@ -125,6 +100,24 @@ namespace System
                 return (Delegate[])delegates.Clone();
             else
                 return new Delegate[1] { this };
+        }
+
+        internal new bool HasSingleTarget
+        {
+            get { return delegates == null || delegates.Length == 1; }
+        }
+
+        // Used by delegate invocation list enumerator
+        internal Delegate? TryGetAt(int index)
+        {
+            if (delegates == null)
+            {
+                return (index == 0) ? this : null;
+            }
+            else
+            {
+                return ((uint)index < (uint)delegates.Length) ? delegates[index] : null;
+            }
         }
 
         // <summary>
@@ -269,22 +262,6 @@ namespace System
 
                 return ret;
             }
-        }
-
-        public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
-        {
-            if (d1 == null)
-                return d2 == null;
-
-            return d1.Equals(d2);
-        }
-
-        public static bool operator !=(MulticastDelegate? d1, MulticastDelegate? d2)
-        {
-            if (d1 == null)
-                return d2 != null;
-
-            return !d1.Equals(d2);
         }
 
         internal override object? GetTarget()
