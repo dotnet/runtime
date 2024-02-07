@@ -6791,7 +6791,6 @@ public:
 
     void optFindLoops();
     bool optCanonicalizeLoops();
-    void optFindAndCanonicalizeLoops();
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
