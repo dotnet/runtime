@@ -56,25 +56,6 @@ int __cdecl _finite(double x)
 
 /*++
 Function:
-  _copysign
-
-See MSDN doc
---*/
-double __cdecl _copysign(double x, double y)
-{
-    double ret;
-    PERF_ENTRY(_copysign);
-    ENTRY("_copysign (x=%f, y=%f)\n", x, y);
-
-    ret = copysign(x, y);
-
-    LOGEXIT("_copysign returns double %f\n", ret);
-    PERF_EXIT(_copysign);
-    return ret;
-}
-
-/*++
-Function:
   _finitef
 
 Determines whether given single-precision floating point value is finite.
@@ -100,24 +81,5 @@ int __cdecl _finitef(float x)
 
     LOGEXIT("_finitef returns int %d\n", ret);
     PERF_EXIT(_finitef);
-    return ret;
-}
-
-/*++
-Function:
-  _copysignf
-
-See MSDN doc
---*/
-float __cdecl _copysignf(float x, float y)
-{
-    float ret;
-    PERF_ENTRY(_copysignf);
-    ENTRY("_copysignf (x=%f, y=%f)\n", x, y);
-
-    ret = copysign(x, y);
-
-    LOGEXIT("_copysignf returns float %f\n", ret);
-    PERF_EXIT(_copysignf);
     return ret;
 }

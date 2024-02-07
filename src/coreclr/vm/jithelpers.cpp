@@ -533,12 +533,12 @@ ftype BankersRound(ftype value)
             return integerPart;
 
         // Else return the nearest even integer
-        return (ftype)_copysign(ceil(fabs(value+0.5)),
+        return (ftype)copysign(ceil(fabs(value+0.5)),
                          value);
     }
 
     // Otherwise round to closest
-    return (ftype)_copysign(floor(fabs(value)+0.5),
+    return (ftype)copysign(floor(fabs(value)+0.5),
                      value);
 }
 

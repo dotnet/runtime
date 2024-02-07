@@ -247,6 +247,8 @@ function_name() to call the system's implementation
 #define log10f DUMMMY_log10f
 #define powf DUMMMY_powf
 #define sincosf DUMMMY_sincosf
+#define copysign DUMMY_copysign
+#define copysignf DUMMY_copysignf
 #define remove DUMMY_remove
 #define printf DUMMY_printf
 #define vprintf DUMMY_vprintf
@@ -474,6 +476,7 @@ function_name() to call the system's implementation
 #undef pow
 #undef sin
 #undef sincos
+#undef copysign
 #undef sinh
 #undef sqrt
 #undef tan
@@ -503,6 +506,7 @@ function_name() to call the system's implementation
 #undef powf
 #undef sinf
 #undef sincosf
+#undef copysignf
 #undef sinhf
 #undef sqrtf
 #undef tanf

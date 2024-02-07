@@ -4193,7 +4193,7 @@ PALIMPORT long long __cdecl llabs(long long);
 #ifndef PAL_STDCPP_COMPAT
 
 PALIMPORT int __cdecl _finite(double);
-PALIMPORT double __cdecl _copysign(double, double);
+PALIMPORT double __cdecl copysign(double, double);
 PALIMPORT double __cdecl acos(double);
 PALIMPORT double __cdecl acosh(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl asin(double);
@@ -4228,7 +4228,7 @@ PALIMPORT double __cdecl tanh(double);
 PALIMPORT double __cdecl trunc(double);
 
 PALIMPORT int __cdecl _finitef(float);
-PALIMPORT float __cdecl _copysignf(float, float);
+PALIMPORT float __cdecl copysignf(float, float);
 PALIMPORT float __cdecl acosf(float);
 PALIMPORT float __cdecl acoshf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl asinf(float);

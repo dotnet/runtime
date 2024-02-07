@@ -2391,7 +2391,7 @@ double FloatingPointUtils::round(double x)
         // we need to preserve the original sign for IEEE compliance.
 
         double result = ((exponent == 0x03FE) && ((bits & UI64(0x000FFFFFFFFFFFFF)) != 0)) ? 1.0 : 0.0;
-        return _copysign(result, x);
+        return copysign(result, x);
     }
 
     if (exponent >= 0x0433)
@@ -2434,18 +2434,6 @@ double FloatingPointUtils::round(double x)
     return *reinterpret_cast<double*>(&bits);
 }
 
-// Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
-// We will redirect the macro to this other functions if the macro is not defined for the platform.
-// This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
-// downcasting for the _copysign() call.
-#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
-
-#if !defined(_copysignf)
-#define _copysignf (float)_copysign
-#endif
-
-#endif
-
 // Rounds a single-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
 float FloatingPointUtils::round(float x)
@@ -2473,7 +2461,7 @@ float FloatingPointUtils::round(float x)
         // we need to preserve the original sign for IEEE compliance.
 
         float result = ((exponent == 0x7E) && ((bits & 0x007FFFFF) != 0)) ? 1.0f : 0.0f;
-        return _copysignf(result, x);
+        return copysignf(result, x);
     }
 
     if (exponent >= 0x96)
