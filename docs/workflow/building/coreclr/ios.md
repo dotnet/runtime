@@ -9,7 +9,7 @@ Build requirements are the same as for building native CoreCLR on macOS. iPhone 
 Build the runtime pack and tools with
 
 ```
-./build.sh clr+clr.nativeaotlibs+libs+packs -os [iossimulator/tvossimulator/maccatalyst] -arch [x64/arm64] -cross
+./build.sh clr+clr.runtime+libs+packs -os [iossimulator/tvossimulator/maccatalyst] -arch [x64/arm64] -cross -c Release
 ```
 
 ## Running the sample iOS app
