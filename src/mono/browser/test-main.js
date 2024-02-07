@@ -254,6 +254,7 @@ function configureRuntime(dotnet, runArgs) {
         .withElementOnExit()
         .withInteropCleanupOnExit()
         .withAssertAfterExit()
+        .withDumpThreadsOnNonZeroExit()
         .withConfig({
             loadAllSatelliteResources: true
         });
@@ -272,6 +273,12 @@ function configureRuntime(dotnet, runArgs) {
             })
         }
     }
+
+    // dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+    // dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
+    // dotnet.withEnvironmentVariable("MONO_GC_DEBUG", "9")
+    // dotnet.withEnvironmentVariable("DOTNET_DebugWriteToStdErr", "1")
+
     if (ENVIRONMENT_IS_WEB) {
         if (runArgs.memorySnapshot)
             dotnet.withStartupMemoryCache(true);
@@ -306,6 +313,7 @@ async function dry_run(runArgs) {
             virtualWorkingDirectory: undefined,
             pthreadPoolSize: 0,
             interopCleanupOnExit: false,
+            dumpThreadsOnNonZeroExit: false,
             // this just means to not continue startup after the snapshot is taken.
             // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true

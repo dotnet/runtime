@@ -117,7 +117,6 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
     m_HijackedReturnValueKind = GCRK_Unknown;
     m_pConservativeStackRangeLowerBound = NULL;
     m_pConservativeStackRangeUpperBound = NULL;
-    m_ShouldSkipRegularGcReporting = false;
     m_pendingFuncletFramePointer = NULL;
     m_pNextExInfo = pThreadToWalk->GetCurExInfo();
     m_pPreviousTransitionFrame = NULL;
@@ -1592,8 +1591,6 @@ void StackFrameIterator::PrepareToYieldFrame()
         m_ControlPC = AdjustReturnAddressBackward(m_ControlPC);
     }
 
-    m_ShouldSkipRegularGcReporting = false;
-
     // Each time a managed frame is yielded, configure the iterator to explicitly indicate
     // whether or not unwinding to the current frame has revealed a stack range that must be
     // conservatively reported by the GC.
@@ -1844,11 +1841,6 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 #endif // TARGET_X86
     return InManagedCode;
 #endif // defined(USE_PORTABLE_HELPERS)
-}
-
-bool StackFrameIterator::ShouldSkipRegularGcReporting()
-{
-    return m_ShouldSkipRegularGcReporting;
 }
 
 #ifndef DACCESS_COMPILE

@@ -2805,7 +2805,16 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, G
         {
             if (tree->TypeGet() == TYP_REF)
             {
-                conValTree = gtNewIconNode(vnStore->ConstantValue<size_t>(vnCns), TYP_REF);
+                const size_t value = vnStore->ConstantValue<size_t>(vnCns);
+                if (value == 0)
+                {
+                    conValTree = gtNewNull();
+                }
+                else
+                {
+                    assert(vnStore->IsVNObjHandle(vnCns));
+                    conValTree = gtNewIconHandleNode(value, GTF_ICON_OBJ_HDL);
+                }
             }
         }
         break;
