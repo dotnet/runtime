@@ -284,77 +284,71 @@
   <Target Name="BuildMonoiOSApp">
     <PropertyGroup>
       <IntermediateOutputPath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)'))</IntermediateOutputPath>
-      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
-      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
-      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
-      <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
-      <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
-      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
-      <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
+      <AssemblyName>$([System.String]::Copy('$(_CMDDIR)').Replace("$(__TestBinDir)/","").Replace('/','_').Replace(".sh",""))</AssemblyName>
+      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(AssemblyName)</BuildDir>
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
+      <AppleTestRunnerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleTestRunner', '$(Configuration)', '$(NetCoreAppCurrent)'))</AppleTestRunnerDir>
     </PropertyGroup>
 
     <PropertyGroup>
-      <AssemblyName>$(Category)</AssemblyName>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iossimulator'" >iossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'maccatalyst'" >maccatalyst</RuntimePackOSSuffix>
-
-      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture)/$(Configuration)/runtimes/$(TargetOS)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
 
       <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
     </PropertyGroup>
     <ItemGroup>
       <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
+      <AllTestScripts Include="$(_CMDDIR)" />
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;" />
-      <EntryPoints Include="testdir-%(TestDlls.Filename)/%(TestDlls.Filename).dll" />
-      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
-        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
-      </ExtraDlls>
+      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)" />
       <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
+      <RunnerFilesToPublish Include="$(AppleTestRunnerDir)*" />
     </ItemGroup>
 
     <RemoveDir Directories="$(BundleDir)" />
     <RemoveDir Directories="$(BuildDir)" />
-
     <MakeDir Directories="$(BuildDir)" />
-    <MakeDir Directories="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+    <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
-    <Copy
-        SourceFiles="@(RuntimePackNativeLibs)"
-        DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="@(RuntimePackLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
+        SourceFiles="@(RuntimePackNativeLibs)"
         DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="%(TestDlls.Identity)"
-        DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+        DestinationFolder="$(BuildDir)" />
     <Copy
         SourceFiles="%(ExtraDlls.Identity)"
         DestinationFolder="$(BuildDir)" />
-
-    <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
+    <Copy
+        SourceFiles="%(RunnerFilesToPublish.Identity)"
+        DestinationFolder="$(BuildDir)"  Condition="'$(IncludesTestRunner)' == 'true'"/>
 
     <PropertyGroup>
       <PublishDir>$(BuildDir)/</PublishDir>
       <TestProjectName>$(AssemblyName)</TestProjectName>
       <IgnoreForCI Condition="@(TestDlls->Count()) == 0">true</IgnoreForCI>
       <UseRuntimeComponents>true</UseRuntimeComponents>
-      <IncludesTestRunner>false</IncludesTestRunner>
     </PropertyGroup>
 
-    <UpdateRunScriptToHandleMultipleEntryPoints EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
+    <!-- Xunit tests -->
+    <PropertyGroup Condition="'$(BuildTestsOnHelix)' == 'true' and '$(IncludesTestRunner)' == 'true'">
+      <EntryPointsCommand>@(TestDlls->'testlib:%(Filename).dll')</EntryPointsCommand>
+      <EntryPointsCommand>$([MSBuild]::Escape($(EntryPointsCommand)).Replace(';', ' '))</EntryPointsCommand>
+      <RunScriptCommand>$(RunScriptCommand) $(EntryPointsCommand)</RunScriptCommand>
+    </PropertyGroup>
+    <!-- Legacy tests -->
+    <UpdateRunScriptToHandleMultipleEntryPoints EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(AssemblyName)" Condition="'$(BuildTestsOnHelix)' == 'true' and '$(IncludesTestRunner)' != 'true'">
       <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />
     </UpdateRunScriptToHandleMultipleEntryPoints>
   </Target>
@@ -474,7 +468,33 @@
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
-      <RunProj Include="$(MSBuildProjectFile)">
+      <OutOfProcessTestPaths Separator="$([System.String]::Copy('%(OutOfProcessTestPaths.Identity)').IndexOfAny('\\/', $(XunitTestBinBase.Length)))" />
+      <OutOfProcessTestPaths SecondSeparator="$([System.String]::Copy('%(OutOfProcessTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(OutOfProcessTestPaths.Separator), 1))))" />
+      <OutOfProcessTestPaths ThirdSeparator="$([System.String]::Copy('%(OutOfProcessTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(OutOfProcessTestPaths.SecondSeparator), 1))))" />
+      <OutOfProcessTestPaths Separator="%(OutOfProcessTestPaths.SecondSeparator)" Condition="'%(OutOfProcessTestPaths.SecondSeparator)' != '-1'" />
+      <OutOfProcessTestGroupsWithDup Include="$([System.String]::Copy('%(OutOfProcessTestPaths.Identity)').Substring(0, %(OutOfProcessTestPaths.Separator)))" />
+    </ItemGroup>
+
+    <RemoveDuplicates Inputs="@(OutOfProcessTestGroupsWithDup)">
+      <Output
+          TaskParameter="Filtered"
+          ItemName="OutOfProcessTestGroups"/>
+    </RemoveDuplicates>
+
+    <ItemGroup>
+      <AllTestScripts Condition="'@(TestDirectories)' != ''" Include="%(TestDirectories.Identity)" >
+        <IncludesTestRunner>false</IncludesTestRunner>
+      </AllTestScripts>
+      <AllTestScripts Condition="'@(MergedRunnableTestPaths)' != ''" Include="%(MergedRunnableTestPaths.Identity)" >
+        <IncludesTestRunner>true</IncludesTestRunner>
+      </AllTestScripts>
+      <AllTestScripts Condition="'@(OutOfProcessTestGroups)' != ''" Include="%(OutOfProcessTestGroups.Identity)" >
+        <IncludesTestRunner>true</IncludesTestRunner>
+      </AllTestScripts>
+      <RunProj Include="$(MSBuildProjectFile)" Condition="'$(TestBuildMode)' != 'nativeaot'">
+        <Properties>_CMDDIR=%(AllTestScripts.Identity);IncludesTestRunner=%(AllTestScripts.IncludesTestRunner)</Properties>
+      </RunProj>
+      <RunProj Include="$(MSBuildProjectFile)" Condition="'$(TestBuildMode)' == 'nativeaot'">
         <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
       </RunProj>
     </ItemGroup>
@@ -482,7 +502,7 @@
       Projects="@(RunProj)"
       Targets="BuildMonoiOSApp"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
+      Condition="'@(AllTestScripts)' != '' and '$(TestBuildMode)' != 'nativeaot'"
     />
 
     <MSBuild
@@ -502,7 +522,7 @@
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
-      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != '' and '$(TargetsAppleMobile)' != 'true'" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
       <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
       <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
@@ -515,7 +535,6 @@
     </PropertyGroup>
     <ItemGroup>
       <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);@(OutOfProcessTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
-      <LegacyRunnableTestPaths Condition="'$(TargetsAppleMobile)' == 'true'" Include="@(MergedRunnableTestPaths)" />
     </ItemGroup>
   </Target>
 

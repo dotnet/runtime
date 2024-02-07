@@ -55,7 +55,7 @@
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <ShouldILStrip Condition="'$(IncludesTestRunner)' != 'true'">true</ShouldILStrip>
+      <ShouldILStrip>true</ShouldILStrip>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IncludesTestRunner)' == 'true'">AppleTestRunner.dll</MainLibraryFileName>
     
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
