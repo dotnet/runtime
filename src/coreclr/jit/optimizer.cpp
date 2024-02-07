@@ -3210,7 +3210,8 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         else
         {
             // Otherwise just do the heavy-handed thing and insert it anywhere in the right region.
-            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, exit, false, false, true);
+            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, exit, /* putInFilter */ false,
+                                      /* runRarely */ false, /* insertAtEnd */ true);
         }
     }
     else
