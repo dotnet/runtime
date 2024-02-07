@@ -3433,7 +3433,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskTP killMask = RBM_CALLEE_TRASH;
+    regMaskAny killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
@@ -3576,7 +3576,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     if (call->IsFastTailCall())
     {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
+        regMaskAny trashedByEpilog = RBM_CALLEE_SAVED;
 
         // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
@@ -3834,7 +3834,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
-        regMaskTP tempMask = genRegMask(varDsc->GetRegNum());
+        regMaskAny tempMask = genRegMask(varDsc->GetRegNum());
         regSet.RemoveMaskVars(tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
         if (compiler->lvaIsGCTracked(varDsc))
@@ -3850,7 +3850,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif
 
     // Next move any un-enregistered register arguments back to their register.
-    regMaskTP fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
+    regMaskGpr fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
     unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
@@ -4082,14 +4082,14 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         assert(compiler->info.compIsVarArgs);
         assert(firstArgVarNum != BAD_VAR_NUM);
 
-        regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
+        regMaskGpr remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
         if (remainingIntArgMask != RBM_NONE)
         {
             GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
                 regNumber argReg     = intArgRegs[argNum];
-                regMaskTP argRegMask = genRegMask(argReg);
+                regMaskGpr argRegMask = genRegMask(argReg);
 
                 if ((remainingIntArgMask & argRegMask) != 0)
                 {
@@ -4898,7 +4898,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskAny rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -5053,8 +5053,8 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
-    regMaskTP maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
+    regMaskFloat maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
+    regMaskGpr maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
 
 #ifdef DEBUG
     if (verbose)
