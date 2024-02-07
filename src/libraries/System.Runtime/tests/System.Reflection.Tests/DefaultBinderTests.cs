@@ -108,6 +108,17 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void InvokeWithIncorrectTargetTypeThrowsCorrectException()
+        {
+            Type t = typeof(Sample);
+            object incorrectInstance = Activator.CreateInstance(t);
+            MethodInvoker invoker = MethodInvoker.Create(typeof(Test).GetMethod(nameof(Test.TestMethod)));
+
+            TargetException ex = Assert.Throws<TargetException>(() => invoker.Invoke(obj: incorrectInstance, "NotAnInt"));
+            Assert.Equal("Object of type Test does not match target type Sample.", ex.Message);
+        }
+
+        [Fact]
         public static void InvokeWithNamedParameters1st2ndTest()
         {
             Type t = typeof(Sample);

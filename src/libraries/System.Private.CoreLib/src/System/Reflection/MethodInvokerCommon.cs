@@ -96,7 +96,7 @@ namespace System.Reflection
 
             if (!method.DeclaringType!.IsInstanceOfType(target))
             {
-                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                throw new TargetException(SR.Format(SR.RFLCT_Targ_ITargMismatch_WithType, method.DeclaringType.Name, target.GetType().Name));
             }
         }
 
