@@ -7061,11 +7061,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 		} else {
 			if ((tblock = cfg->cil_offset_to_bb [ip - cfg->cil_start]) && (tblock != cfg->cbb)) {
-				link_bblock (cfg, cfg->cbb, tblock);
 				if (sp != stack_start) {
+					link_bblock (cfg, cfg->cbb, tblock);
 					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
+				} else {
+					if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_NOT_REACHED))
+						link_bblock (cfg, cfg->cbb, tblock);
 				}
 				cfg->cbb->next_bb = tblock;
 				cfg->cbb = tblock;
@@ -10189,7 +10192,6 @@ calli_end:
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 					if (sp [0]->opcode == OP_LDADDR && m_class_is_simd_type (klass) && cfg->opt & MONO_OPT_SIMD) {
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
 						if (ins) {
@@ -10197,7 +10199,6 @@ calli_end:
 							goto field_access_end;
 						}
 					}
-#endif
 
 					MonoInst *field_add_inst = sp [0];
 					if (mini_is_gsharedvt_klass (klass)) {
@@ -13105,9 +13106,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	stacktypes [(int)'i'] = STACK_PTR;
 	stacktypes [(int)'l'] = STACK_I8;
 	stacktypes [(int)'f'] = STACK_R8;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	stacktypes [(int)'x'] = STACK_VTYPE;
-#endif
 
 #if SIZEOF_REGISTER == 4
 	/* Create MonoInsts for longs */

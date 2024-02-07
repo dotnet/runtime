@@ -1,6 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace System.Numerics.Tensors
 {
     /// <summary>Performs primitive tensor operations over spans of memory.</summary>
@@ -488,6 +492,249 @@ namespace System.Numerics.Tensors
             where T : IFloatingPoint<T> =>
             InvokeSpanIntoSpan<T, CeilingOperator<T>>(x, destination);
 
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, converting each <typeparamref name="TFrom"/>
+        /// value to a <typeparamref name="TTo"/> value.
+        /// </summary>
+        /// <param name="source">The source span from which to copy values.</param>
+        /// <param name="destination">The destination span into which the converted values should be written.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = TTo.CreateChecked(<paramref name="source"/>[i])</c>.
+        /// </para>
+        /// </remarks>
+        public static void ConvertChecked<TFrom, TTo>(ReadOnlySpan<TFrom> source, Span<TTo> destination)
+            where TFrom : INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            if (!TryConvertUniversal(source, destination))
+            {
+                InvokeSpanIntoSpan<TFrom, TTo, ConvertCheckedFallbackOperator<TFrom, TTo>>(source, destination);
+            }
+        }
+
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, converting each <typeparamref name="TFrom"/>
+        /// value to a <typeparamref name="TTo"/> value.
+        /// </summary>
+        /// <param name="source">The source span from which to copy values.</param>
+        /// <param name="destination">The destination span into which the converted values should be written.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = TTo.CreateSaturating(<paramref name="source"/>[i])</c>.
+        /// </para>
+        /// </remarks>
+        public static void ConvertSaturating<TFrom, TTo>(ReadOnlySpan<TFrom> source, Span<TTo> destination)
+            where TFrom : INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            if (!TryConvertUniversal(source, destination))
+            {
+                InvokeSpanIntoSpan<TFrom, TTo, ConvertSaturatingFallbackOperator<TFrom, TTo>>(source, destination);
+            }
+        }
+
+        /// <summary>
+        /// Copies <paramref name="source"/> to <paramref name="destination"/>, converting each <typeparamref name="TFrom"/>
+        /// value to a <typeparamref name="TTo"/> value.
+        /// </summary>
+        /// <param name="source">The source span from which to copy values.</param>
+        /// <param name="destination">The destination span into which the converted values should be written.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = TTo.CreateTruncating(<paramref name="source"/>[i])</c>.
+        /// </para>
+        /// </remarks>
+        public static void ConvertTruncating<TFrom, TTo>(ReadOnlySpan<TFrom> source, Span<TTo> destination)
+            where TFrom : INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            if (TryConvertUniversal(source, destination))
+            {
+                return;
+            }
+
+            if (((typeof(TFrom) == typeof(byte) || typeof(TFrom) == typeof(sbyte)) && (typeof(TTo) == typeof(byte) || typeof(TTo) == typeof(sbyte))) ||
+                ((typeof(TFrom) == typeof(ushort) || typeof(TFrom) == typeof(short)) && (typeof(TTo) == typeof(ushort) || typeof(TTo) == typeof(short))) ||
+                ((IsUInt32Like<TFrom>() || IsInt32Like<TFrom>()) && (IsUInt32Like<TTo>() || IsInt32Like<TTo>())) ||
+                ((IsUInt64Like<TFrom>() || IsInt64Like<TFrom>()) && (IsUInt64Like<TTo>() || IsInt64Like<TTo>())))
+            {
+                source.CopyTo(Rename<TTo, TFrom>(destination));
+                return;
+            }
+
+            if (typeof(TFrom) == typeof(float) && IsUInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan<float, uint, ConvertSingleToUInt32>(Rename<TFrom, float>(source), Rename<TTo, uint>(destination));
+                return;
+            }
+
+            if (typeof(TFrom) == typeof(float) && IsInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan<float, int, ConvertSingleToInt32>(Rename<TFrom, float>(source), Rename<TTo, int>(destination));
+                return;
+            }
+
+            if (typeof(TFrom) == typeof(double) && IsUInt64Like<TTo>())
+            {
+                InvokeSpanIntoSpan<double, ulong, ConvertDoubleToUInt64>(Rename<TFrom, double>(source), Rename<TTo, ulong>(destination));
+                return;
+            }
+
+            if (typeof(TFrom) == typeof(double) && IsInt64Like<TTo>())
+            {
+                InvokeSpanIntoSpan<double, long, ConvertDoubleToInt64>(Rename<TFrom, double>(source), Rename<TTo, long>(destination));
+                return;
+            }
+
+            if (typeof(TFrom) == typeof(ushort) && typeof(TTo) == typeof(byte))
+            {
+                InvokeSpanIntoSpan_2to1<ushort, byte, NarrowUInt16ToByteOperator>(Rename<TFrom, ushort>(source), Rename<TTo, byte>(destination));
+                return;
+            }
+
+            if (typeof(TFrom) == typeof(short) && typeof(TTo) == typeof(sbyte))
+            {
+                InvokeSpanIntoSpan_2to1<short, sbyte, NarrowInt16ToSByteOperator>(Rename<TFrom, short>(source), Rename<TTo, sbyte>(destination));
+                return;
+            }
+
+            if (IsUInt32Like<TFrom>() && typeof(TTo) == typeof(ushort))
+            {
+                InvokeSpanIntoSpan_2to1<uint, ushort, NarrowUInt32ToUInt16Operator>(Rename<TFrom, uint>(source), Rename<TTo, ushort>(destination));
+                return;
+            }
+
+            if (IsInt32Like<TFrom>() && typeof(TTo) == typeof(short))
+            {
+                InvokeSpanIntoSpan_2to1<int, short, NarrowInt32ToInt16Operator>(Rename<TFrom, int>(source), Rename<TTo, short>(destination));
+                return;
+            }
+
+            if (IsUInt64Like<TFrom>() && IsUInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan_2to1<ulong, uint, NarrowUInt64ToUInt32Operator>(Rename<TFrom, ulong>(source), Rename<TTo, uint>(destination));
+                return;
+            }
+
+            if (IsInt64Like<TFrom>() && IsInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan_2to1<long, int, NarrowInt64ToInt32Operator>(Rename<TFrom, long>(source), Rename<TTo, int>(destination));
+                return;
+            }
+
+            InvokeSpanIntoSpan<TFrom, TTo, ConvertTruncatingFallbackOperator<TFrom, TTo>>(source, destination);
+        }
+
+        /// <summary>Performs conversions that are the same regardless of checked, truncating, or saturation.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // at most one of the branches will be kept
+        private static bool TryConvertUniversal<TFrom, TTo>(ReadOnlySpan<TFrom> source, Span<TTo> destination)
+            where TFrom : INumberBase<TFrom>
+            where TTo : INumberBase<TTo>
+        {
+            if (typeof(TFrom) == typeof(TTo))
+            {
+                if (source.Length > destination.Length)
+                {
+                    ThrowHelper.ThrowArgument_DestinationTooShort();
+                }
+
+                ValidateInputOutputSpanNonOverlapping(source, Rename<TTo, TFrom>(destination));
+
+                source.CopyTo(Rename<TTo, TFrom>(destination));
+                return true;
+            }
+
+            if (IsInt32Like<TFrom>() && typeof(TTo) == typeof(float))
+            {
+                InvokeSpanIntoSpan<int, float, ConvertInt32ToSingle>(Rename<TFrom, int>(source), Rename<TTo, float>(destination));
+                return true;
+            }
+
+            if (IsUInt32Like<TFrom>() && typeof(TTo) == typeof(float))
+            {
+                InvokeSpanIntoSpan<uint, float, ConvertUInt32ToSingle>(Rename<TFrom, uint>(source), Rename<TTo, float>(destination));
+                return true;
+            }
+
+            if (IsInt64Like<TFrom>() && typeof(TTo) == typeof(double))
+            {
+                InvokeSpanIntoSpan<long, double, ConvertInt64ToDouble>(Rename<TFrom, long>(source), Rename<TTo, double>(destination));
+                return true;
+            }
+
+            if (IsUInt64Like<TFrom>() && typeof(TTo) == typeof(double))
+            {
+                InvokeSpanIntoSpan<ulong, double, ConvertUInt64ToDouble>(Rename<TFrom, ulong>(source), Rename<TTo, double>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(Half))
+            {
+                InvokeSpanIntoSpan_2to1<float, ushort, NarrowSingleToHalfAsUInt16Operator>(Rename<TFrom, float>(source), Rename<TTo, ushort>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(Half) && typeof(TTo) == typeof(float))
+            {
+                InvokeSpanIntoSpan_1to2<short, float, WidenHalfAsInt16ToSingleOperator>(Rename<TFrom, short>(source), Rename<TTo, float>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(float) && typeof(TTo) == typeof(double))
+            {
+                InvokeSpanIntoSpan_1to2<float, double, WidenSingleToDoubleOperator>(Rename<TFrom, float>(source), Rename<TTo, double>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(double) && typeof(TTo) == typeof(float))
+            {
+                InvokeSpanIntoSpan_2to1<double, float, NarrowDoubleToSingleOperator>(Rename<TFrom, double>(source), Rename<TTo, float>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(byte) && typeof(TTo) == typeof(ushort))
+            {
+                InvokeSpanIntoSpan_1to2<byte, ushort, WidenByteToUInt16Operator>(Rename<TFrom, byte>(source), Rename<TTo, ushort>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(sbyte) && typeof(TTo) == typeof(short))
+            {
+                InvokeSpanIntoSpan_1to2<sbyte, short, WidenSByteToInt16Operator>(Rename<TFrom, sbyte>(source), Rename<TTo, short>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(ushort) && IsUInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan_1to2<ushort, uint, WidenUInt16ToUInt32Operator>(Rename<TFrom, ushort>(source), Rename<TTo, uint>(destination));
+                return true;
+            }
+
+            if (typeof(TFrom) == typeof(short) && IsInt32Like<TTo>())
+            {
+                InvokeSpanIntoSpan_1to2<short, int, WidenInt16ToInt32Operator>(Rename<TFrom, short>(source), Rename<TTo, int>(destination));
+                return true;
+            }
+
+            if (IsUInt32Like<TTo>() && IsUInt64Like<TTo>())
+            {
+                InvokeSpanIntoSpan_1to2<uint, ulong, WidenUInt32ToUInt64Operator>(Rename<TFrom, uint>(source), Rename<TTo, ulong>(destination));
+                return true;
+            }
+
+            if (IsInt32Like<TFrom>() && IsInt64Like<TTo>())
+            {
+                InvokeSpanIntoSpan_1to2<int, long, WidenInt32ToInt64Operator>(Rename<TFrom, int>(source), Rename<TTo, long>(destination));
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>Computes the element-wise result of copying the sign from one number to another number in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="sign">The second tensor, represented as a span.</param>
@@ -963,15 +1210,14 @@ namespace System.Numerics.Tensors
         public static void ILogB<T>(ReadOnlySpan<T> x, Span<int> destination)
             where T : IFloatingPointIeee754<T>
         {
-            if (x.Length > destination.Length)
+            if (typeof(T) == typeof(double))
             {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
+                // Special-case double as the only vectorizable floating-point type whose size != sizeof(int).
+                InvokeSpanIntoSpan_2to1<double, int, ILogBDoubleOperator>(Rename<T, double>(x), destination);
             }
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
+            else
             {
-                destination[i] = T.ILogB(x[i]);
+                InvokeSpanIntoSpan<T, int, ILogBOperator<T>>(x, destination);
             }
         }
 
@@ -2015,21 +2261,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RootN<T>(ReadOnlySpan<T> x, int n, Span<T> destination)
-            where T : IRootFunctions<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RootN(x[i], n);
-            }
-        }
+            where T : IRootFunctions<T> =>
+            InvokeSpanIntoSpan(x, new RootNOperator<T>(n), destination);
 
         /// <summary>Computes the element-wise rotation left of numbers in the specified tensor by the specified rotation amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2043,21 +2276,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RotateLeft<T>(ReadOnlySpan<T> x, int rotateAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RotateLeft(x[i], rotateAmount);
-            }
-        }
+            where T : IBinaryInteger<T> =>
+            InvokeSpanIntoSpan(x, new RotateLeftOperator<T>(rotateAmount), destination);
 
         /// <summary>Computes the element-wise rotation right of numbers in the specified tensor by the specified rotation amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2071,21 +2291,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RotateRight<T>(ReadOnlySpan<T> x, int rotateAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RotateRight(x[i], rotateAmount);
-            }
-        }
+            where T : IBinaryInteger<T> =>
+            InvokeSpanIntoSpan(x, new RotateRightOperator<T>(rotateAmount), destination);
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2099,7 +2306,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Round<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPoint<T> =>
-            Round(x, digits: 0, MidpointRounding.ToEven, destination);
+            InvokeSpanIntoSpan<T, RoundToEvenOperator<T>>(x, destination);
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2113,8 +2320,34 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Round<T>(ReadOnlySpan<T> x, MidpointRounding mode, Span<T> destination)
-            where T : IFloatingPoint<T> =>
-            Round(x, digits: 0, mode, destination);
+            where T : IFloatingPoint<T>
+        {
+            switch (mode)
+            {
+                case MidpointRounding.ToEven:
+                    Round(x, destination);
+                    return;
+
+                case MidpointRounding.AwayFromZero:
+                    InvokeSpanIntoSpan<T, RoundAwayFromZeroOperator<T>>(x, destination);
+                    break;
+
+                case MidpointRounding.ToZero:
+                    Truncate(x, destination);
+                    return;
+
+                case MidpointRounding.ToNegativeInfinity:
+                    Floor(x, destination);
+                    return;
+
+                case MidpointRounding.ToPositiveInfinity:
+                    Ceiling(x, destination);
+                    return;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
+            }
+        }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2149,42 +2382,62 @@ namespace System.Numerics.Tensors
         {
             if (digits == 0)
             {
-                switch (mode)
+                Round(x, mode, destination);
+            }
+
+            ReadOnlySpan<T> roundPower10;
+            if (typeof(T) == typeof(float))
+            {
+                ReadOnlySpan<float> roundPower10Single = [1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f];
+                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<float, T>(ref MemoryMarshal.GetReference(roundPower10Single)), roundPower10Single.Length);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                Debug.Assert(typeof(T) == typeof(double));
+                ReadOnlySpan<double> roundPower10Double = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
+                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<double, T>(ref MemoryMarshal.GetReference(roundPower10Double)), roundPower10Double.Length);
+            }
+            else
+            {
+                if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
                 {
-                    case MidpointRounding.ToZero:
-                        Truncate(x, destination);
-                        return;
-
-                    case MidpointRounding.ToNegativeInfinity:
-                        Floor(x, destination);
-                        return;
-
-                    case MidpointRounding.ToPositiveInfinity:
-                        Ceiling(x, destination);
-                        return;
-
-                    case MidpointRounding.AwayFromZero:
-                    case MidpointRounding.ToEven:
-                        // TODO: Vectorize the remaining modes
-                        break;
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
                 }
+
+                InvokeSpanIntoSpan(x, new RoundFallbackOperator<T>(digits, mode), destination);
+                return;
             }
 
-            if (x.Length > destination.Length)
+            if ((uint)digits >= (uint)roundPower10.Length)
             {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
+                throw new ArgumentOutOfRangeException(nameof(digits));
             }
 
-            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
+            T power10 = roundPower10[digits];
+            switch (mode)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
-            }
+                case MidpointRounding.ToEven:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundToEvenOperator<T>>(power10), destination);
+                    return;
 
-            ValidateInputOutputSpanNonOverlapping(x, destination);
+                case MidpointRounding.AwayFromZero:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundAwayFromZeroOperator<T>>(power10), destination);
+                    break;
 
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.Round(x[i], digits, mode);
+                case MidpointRounding.ToZero:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, TruncateOperator<T>>(power10), destination);
+                    return;
+
+                case MidpointRounding.ToNegativeInfinity:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, FloorOperator<T>>(power10), destination);
+                    return;
+
+                case MidpointRounding.ToPositiveInfinity:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, CeilingOperator<T>>(power10), destination);
+                    return;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
             }
         }
 
@@ -2200,21 +2453,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ScaleB<T>(ReadOnlySpan<T> x, int n, Span<T> destination)
-            where T : IFloatingPointIeee754<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.ScaleB(x[i], n);
-            }
-        }
+            where T : IFloatingPointIeee754<T> =>
+            InvokeSpanIntoSpan(x, new ScaleBOperator<T>(n), destination);
 
         /// <summary>Computes the element-wise shifting left of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2228,21 +2468,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftLeft<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] << shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftLeftOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise arithmetic (signed) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2256,21 +2483,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightArithmetic<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] >> shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftRightArithmeticOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise logical (unsigned) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2284,21 +2498,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightLogical<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] >>> shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftRightLogicalOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2409,26 +2610,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void SinCos<T>(ReadOnlySpan<T> x, Span<T> sinDestination, Span<T> cosDestination)
-            where T : ITrigonometricFunctions<T>
-        {
-            if (x.Length > sinDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(sinDestination));
-            }
-            if (x.Length > cosDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(cosDestination));
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, sinDestination);
-            ValidateInputOutputSpanNonOverlapping(x, cosDestination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                (sinDestination[i], cosDestination[i]) = T.SinCos(x[i]);
-            }
-        }
+            where T : ITrigonometricFunctions<T> =>
+            InvokeSpanIntoSpan_TwoOutputs<T, SinCosOperator<T>>(x, sinDestination, cosDestination);
 
         /// <summary>Computes the element-wise sine and cosine of the value in the specified tensor that has been multiplied by Pi.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2446,26 +2629,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void SinCosPi<T>(ReadOnlySpan<T> x, Span<T> sinPiDestination, Span<T> cosPiDestination)
-            where T : ITrigonometricFunctions<T>
-        {
-            if (x.Length > sinPiDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(sinPiDestination));
-            }
-            if (x.Length > cosPiDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(cosPiDestination));
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, sinPiDestination);
-            ValidateInputOutputSpanNonOverlapping(x, cosPiDestination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                (sinPiDestination[i], cosPiDestination[i]) = T.SinCosPi(x[i]);
-            }
-        }
+            where T : ITrigonometricFunctions<T> =>
+            InvokeSpanIntoSpan_TwoOutputs<T, SinCosPiOperator<T>>(x, sinPiDestination, cosPiDestination);
 
         /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>

@@ -108,6 +108,9 @@
         <IncludeSubFolders>True</IncludeSubFolders>
       </RunTimeArtifactsIncludeFolders>
 
+      <!-- Used by tests checking PDB validity -->
+      <RunTimeArtifactsIncludeFolders Include="PdbChecker/" TargetDir="PdbChecker/" />
+
       <!-- Used by disasm output verification tests -->
       <RunTimeArtifactsIncludeFolders Include="SuperFileCheck/" TargetDir="SuperFileCheck/">
         <IncludeSubFolders>True</IncludeSubFolders>

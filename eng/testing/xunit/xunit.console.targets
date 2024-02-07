@@ -68,8 +68,8 @@
 
   <!-- ResolveAssemblyReferences is the target that populates ReferenceCopyLocalPaths which is what is copied to output directory. -->
   <Target Name="CopyRunnerToOutputDirectory" BeforeTargets="ResolveAssemblyReferences" Condition="'$(TargetsMobile)' != 'true' or '$(BundleXunitRunner)' == 'true'">
-    <ItemGroup Condition="'$(ArchiveTests)' == 'true'">
-      <!-- When ArchiveTests is set, copy xunit.runner.console to output directory -->
+    <ItemGroup>
+      <!-- Copy test runner to output directory -->
       <None Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\*"
             Exclude="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.*exe.config;
                      $([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.x86.exe;
@@ -84,6 +84,14 @@
             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(XunitConsoleNetCore21AppPath)' != ''"
             CopyToOutputDirectory="PreserveNewest"
             Visible="false" />
+    </ItemGroup>
+
+    <!-- Workaround for https://github.com/xunit/xunit/issues/1651 -->
+    <ItemGroup Condition="'$(ArchiveTests)' != 'true'">
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.utility.net452.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.reporters.net452.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.utility.netcoreapp10.dll" />
+      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.reporters.netcoreapp10.dll" />
     </ItemGroup>
   </Target>
 </Project>

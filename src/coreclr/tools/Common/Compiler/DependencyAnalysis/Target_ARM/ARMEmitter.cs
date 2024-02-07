@@ -216,5 +216,14 @@ namespace ILCompiler.DependencyAnalysis.ARM
             EmitBNE(4);
             EmitRET();
         }
+
+        // beq label(+4): ret(2) + next(2)
+        // bx lr
+        // label: ...
+        public void EmitRETIfNotEqual()
+        {
+            EmitBEQ(4);
+            EmitRET();
+        }
     }
 }

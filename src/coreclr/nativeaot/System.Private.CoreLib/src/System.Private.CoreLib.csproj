@@ -190,7 +190,6 @@
     <Compile Include="System\RuntimeType.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />

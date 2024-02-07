@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build.Framework;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
+
+using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
@@ -139,10 +138,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string DotNetRoot { get; }
 
             public TestApp Application { get; }
+            public TestApp Component { get; }
             public TestApp SelfContainedApplication { get; }
-
-            public TestProjectFixture ComponentWithNoDependenciesFixture { get; }
-            public TestApp Component => ComponentWithNoDependenciesFixture.TestProject.BuiltApp;
 
             public string ComponentTypeName { get; }
             public string ComponentEntryPoint1 => "ComponentEntryPoint1";
@@ -158,11 +155,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 SelfContainedApplication = TestApp.CreateEmpty("SelfContainedApp");
                 SelfContainedApplication.PopulateSelfContained(TestApp.MockedComponent.None);
 
-                ComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
-                    .EnsureRestored()
-                    .PublishProject();
-
-                ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
+                Component = TestApp.CreateFromBuiltAssets("Component");
+                ComponentTypeName = $"Component.Component, {Component.AssemblyName}";
             }
 
             internal IEnumerable<string> GetComponentLoadArgs(bool loadAssemblyBytes, bool loadSymbolBytes)
@@ -178,14 +172,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             protected override void Dispose(bool disposing)
             {
-                if (Application != null)
-                    Application.Dispose();
-
-                if (SelfContainedApplication != null)
-                    SelfContainedApplication.Dispose();
-
-                if (ComponentWithNoDependenciesFixture != null)
-                    ComponentWithNoDependenciesFixture.Dispose();
+                Application?.Dispose();
+                Component?.Dispose();
+                SelfContainedApplication?.Dispose();
 
                 base.Dispose(disposing);
             }

@@ -13,8 +13,7 @@ namespace Internal.Runtime.CompilerHelpers
     /// Math helpers for generated code. The helpers marked with [RuntimeExport] and the type
     /// itself need to be public because they constitute a public contract with the .NET Native toolchain.
     /// </summary>
-    [CLSCompliant(false)]
-    public static class MathHelpers
+    internal static class MathHelpers
     {
 #if !TARGET_64BIT
         //
