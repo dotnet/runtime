@@ -9,6 +9,7 @@ parameters:
   scenarios: ['normal']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false 
+  shouldRunOnLibrariesAndIllinkChanges: true
 
 jobs:
 
@@ -34,8 +35,8 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            and(eq(${{ parameters.shouldRunOnLibrariesAndIllinkChanges }}, true), eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true)),
+            and(eq(${{ parameters.shouldRunOnLibrariesAndIllinkChanges }}, true), eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
          ]
