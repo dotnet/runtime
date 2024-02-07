@@ -2258,6 +2258,7 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadVector128x4AndUnzip(double* address) { throw new PlatformNotSupportedException(); }
+#endif
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]
@@ -2408,7 +2409,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadVector128x4(double* address) { throw new PlatformNotSupportedException(); }
-#endif
 
             /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
@@ -9739,6 +9739,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadVector64x4AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
+#endif
 
         /// <summary>
         ///   A64: LD1 { Vn.8B, Vn+1.8B }, [Xn]
@@ -9844,7 +9845,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadVector64x4(float* address) { throw new PlatformNotSupportedException(); }
-#endif
 
         /// <summary>
         /// uint8x8_t vmax_u8 (uint8x8_t a, uint8x8_t b)

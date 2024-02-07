@@ -26,6 +26,7 @@
 #define WidenAcross INTRIN_kind_widen_across
 #define Across INTRIN_kind_across
 #define Arm64DotProd INTRIN_kind_arm64_dot_prod
+#define AddPointer INTRIN_kind_add_pointer
 #if !defined(Generic)
 #define Generic
 #endif
@@ -361,6 +362,8 @@ INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SADDV, aarch64_neon_saddv, Arm64, Across, 
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UADDV, aarch64_neon_uaddv, Arm64, Across, V64 | V128 | I1 | I2 | I4 | I8)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_FADDV, aarch64_neon_faddv, Arm64, Across, V64 | V128 | R4 | R8)
 
+// INTRINS_OVR_2_ARG(AARCH64_ADV_SIMD_LD2, aarch64_neon_ld2, Arm64, v128_i4_t, ptr_t)
+INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_LD2, aarch64_neon_ld2, Arm64, AddPointer, V64 | V128 | I1 | I2 | I4 | R4)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SMAXV, aarch64_neon_smaxv, Arm64, Across, V64 | V128 | I1 | I2 | I4)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_UMAXV, aarch64_neon_umaxv, Arm64, Across, V64 | V128 | I1 | I2 | I4)
 INTRINS_OVR_TAG_KIND(AARCH64_ADV_SIMD_SMINV, aarch64_neon_sminv, Arm64, Across, V64 | V128 | I1 | I2 | I4)
