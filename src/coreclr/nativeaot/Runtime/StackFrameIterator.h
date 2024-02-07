@@ -69,10 +69,6 @@ public:
     bool HasStackRangeToReportConservatively();
     void GetStackRangeToReportConservatively(PTR_OBJECTREF * ppLowerBound, PTR_OBJECTREF * ppUpperBound);
 
-    // Debugger Hijacked frame looks very much like a usual managed frame except when the
-    // frame must be reported conservatively, and when that happens, regular GC reporting should be skipped
-    bool ShouldSkipRegularGcReporting();
-
 private:
     // The invoke of a funclet is a bit special and requires an assembly thunk, but we don't want to break the
     // stackwalk due to this.  So this routine will unwind through the assembly thunks used to invoke funclets.
@@ -220,7 +216,6 @@ protected:
     PreservedRegPtrs    m_funcletPtrs;  // @TODO: Placing the 'scratch space' in the StackFrameIterator is not
                                         // preferred because not all StackFrameIterators require this storage
                                         // space.  However, the implementation simpler by doing it this way.
-    bool                m_ShouldSkipRegularGcReporting;
     PTR_VOID            m_OriginalControlPC;
     PTR_PInvokeTransitionFrame m_pPreviousTransitionFrame;
 };
