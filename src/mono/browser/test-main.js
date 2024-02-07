@@ -274,12 +274,10 @@ function configureRuntime(dotnet, runArgs) {
         }
     }
 
-    /*
-    dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
-    dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
-    dotnet.withEnvironmentVariable("MONO_GC_DEBUG", "9")
-    dotnet.withEnvironmentVariable("DOTNET_DebugWriteToStdErr", "1")
-    */
+    // dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+    // dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
+    // dotnet.withEnvironmentVariable("MONO_GC_DEBUG", "9")
+    // dotnet.withEnvironmentVariable("DOTNET_DebugWriteToStdErr", "1")
 
     if (ENVIRONMENT_IS_WEB) {
         if (runArgs.memorySnapshot)
