@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors
 {
@@ -2304,7 +2306,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Round<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPoint<T> =>
-            Round(x, digits: 0, MidpointRounding.ToEven, destination);
+            InvokeSpanIntoSpan<T, RoundToEvenOperator<T>>(x, destination);
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2318,8 +2320,34 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Round<T>(ReadOnlySpan<T> x, MidpointRounding mode, Span<T> destination)
-            where T : IFloatingPoint<T> =>
-            Round(x, digits: 0, mode, destination);
+            where T : IFloatingPoint<T>
+        {
+            switch (mode)
+            {
+                case MidpointRounding.ToEven:
+                    Round(x, destination);
+                    return;
+
+                case MidpointRounding.AwayFromZero:
+                    InvokeSpanIntoSpan<T, RoundAwayFromZeroOperator<T>>(x, destination);
+                    break;
+
+                case MidpointRounding.ToZero:
+                    Truncate(x, destination);
+                    return;
+
+                case MidpointRounding.ToNegativeInfinity:
+                    Floor(x, destination);
+                    return;
+
+                case MidpointRounding.ToPositiveInfinity:
+                    Ceiling(x, destination);
+                    return;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
+            }
+        }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2354,33 +2382,63 @@ namespace System.Numerics.Tensors
         {
             if (digits == 0)
             {
-                switch (mode)
-                {
-                    case MidpointRounding.ToZero:
-                        Truncate(x, destination);
-                        return;
-
-                    case MidpointRounding.ToNegativeInfinity:
-                        Floor(x, destination);
-                        return;
-
-                    case MidpointRounding.ToPositiveInfinity:
-                        Ceiling(x, destination);
-                        return;
-
-                    case MidpointRounding.AwayFromZero:
-                    case MidpointRounding.ToEven:
-                        // TODO: Vectorize the remaining modes
-                        break;
-                }
+                Round(x, mode, destination);
             }
 
-            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
+            ReadOnlySpan<T> roundPower10;
+            if (typeof(T) == typeof(float))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
+                ReadOnlySpan<float> roundPower10Single = [1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f];
+                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<float, T>(ref MemoryMarshal.GetReference(roundPower10Single)), roundPower10Single.Length);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                Debug.Assert(typeof(T) == typeof(double));
+                ReadOnlySpan<double> roundPower10Double = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
+                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<double, T>(ref MemoryMarshal.GetReference(roundPower10Double)), roundPower10Double.Length);
+            }
+            else
+            {
+                if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
+                }
+
+                InvokeSpanIntoSpan(x, new RoundFallbackOperator<T>(digits, mode), destination);
+                return;
             }
 
-            InvokeSpanIntoSpan(x, new RoundOperator<T>(digits, mode), destination);
+            if ((uint)digits >= (uint)roundPower10.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(digits));
+            }
+
+            T power10 = roundPower10[digits];
+            switch (mode)
+            {
+                case MidpointRounding.ToEven:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundToEvenOperator<T>>(power10), destination);
+                    return;
+
+                case MidpointRounding.AwayFromZero:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundAwayFromZeroOperator<T>>(power10), destination);
+                    break;
+
+                case MidpointRounding.ToZero:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, TruncateOperator<T>>(power10), destination);
+                    return;
+
+                case MidpointRounding.ToNegativeInfinity:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, FloorOperator<T>>(power10), destination);
+                    return;
+
+                case MidpointRounding.ToPositiveInfinity:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, CeilingOperator<T>>(power10), destination);
+                    return;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
+            }
         }
 
         /// <summary>Computes the element-wise product of numbers in the specified tensor and their base-radix raised to the specified power.</summary>
