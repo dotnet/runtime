@@ -68,6 +68,8 @@
            Text="Expected to find either one or two in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
 
     <ItemGroup>
+      <!-- We need nugets for all wasm runtime flavors. The one corresponding the current 
+      property values is already built, the others need to be added to _NuGetsToBuild -->
       <_NuGetsToBuild Include="$(_DefaultRuntimePackNuGetPath)"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
