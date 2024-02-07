@@ -8,8 +8,7 @@ parameters:
   platforms: []
   scenarios: ['normal']
   shouldContinueOnError: false
-  shouldRunSmokeOnly: false 
-  shouldRunOnLibrariesAndIllinkChanges: true
+  shouldRunSmokeOnly: false
 
 jobs:
 
@@ -35,13 +34,26 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            and(eq(${{ parameters.shouldRunOnLibrariesAndIllinkChanges }}, true), eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true)),
-            and(eq(${{ parameters.shouldRunOnLibrariesAndIllinkChanges }}, true), eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_chrome.containsChange'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
          ]
+      - name: shouldRunSmokeOnlyVar
+        value: $[
+          or(
+            eq('${{ parameters.shouldRunSmokeOnly }}', 'true'),
+            and(
+              eq('${{ parameters.shouldRunSmokeOnly }}', 'onLibrariesAndIllinkChanges'),
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true)
+              )
+            )
+          )
+          ]
       - name: _wasmRunSmokeTestsOnlyArg
-        value: /p:RunSmokeTestsOnly=${{ eq(parameters.shouldRunSmokeOnly, true) }}
+        value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
       - name: chromeInstallArg
         ${{ if containsValue(parameters.scenarios, 'wasmtestonbrowser') }}:
           value: /p:InstallChromeForTests=true

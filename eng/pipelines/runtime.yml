@@ -530,7 +530,7 @@ extends:
           nameSuffix: _Threading
           extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           alwaysRun: ${{ variables.isRollingBuild }}
-          shouldRunOnLibrariesAndIllinkChanges: false
+          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
           scenarios:
             - WasmTestOnBrowser
             #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
@@ -608,18 +608,6 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # Build and Smoke Tests only - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _Threading_Smoke
-          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - WasmTestOnBrowser
 
       # WASI/WASM
 
