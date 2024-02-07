@@ -24616,10 +24616,6 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
                 }
                 break;
             case IF_LARGELDC:
-            case IF_SVE_ID_2A:
-            case IF_SVE_JG_2A:
-            case IF_SVE_IE_2A:
-            case IF_SVE_JH_2A:
                 isLocalAccess = false;
                 break;
 
