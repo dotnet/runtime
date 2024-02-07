@@ -193,12 +193,20 @@ export function normalizeConfig() {
         config.pthreadPoolSize = 7;
     }
 
-    if (config.debugLevel !== 0 && !isDebuggingSupported())
-        config.debugLevel = 0;
+    // this is how long the Mono GC will try to wait for all threads to be suspended before it gives up and aborts the process
+    if (WasmEnableThreads && config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] === undefined) {
+        config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] = "5000";
+    }
 
-    if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
+    if (config.debugLevel !== 0 && !isDebuggingSupported()) {
+        config.debugLevel = 0;
+    }
+
+
+    if (BuildConfiguration === "Debug" && config.diagnosticTracing === undefined) {
         config.diagnosticTracing = true;
     }
+
     if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;
