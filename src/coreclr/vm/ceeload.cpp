@@ -1722,7 +1722,7 @@ void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
         }
         else
         {
-            pLoaderAllocator = pDomainAssembly->GetAppDomain()->GetLoaderAllocator();
+            pLoaderAllocator = AppDomain::GetCurrentDomain()->GetLoaderAllocator();
         }
 
         SIZE_T size = GetDomainLocalModuleSize();
@@ -1770,7 +1770,7 @@ void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
     // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
     // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
     if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL && !GetAssembly()->IsCollectible())
-        AllocateRegularStaticHandles(pDomainAssembly->GetAppDomain());
+        AllocateRegularStaticHandles(AppDomain::GetCurrentDomain());
 }
 
 OBJECTREF Module::GetExposedObject()

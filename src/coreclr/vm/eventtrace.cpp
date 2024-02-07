@@ -4323,7 +4323,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
     BOOL bIsManifestModule = pModule->IsManifest();
-    ULONGLONG ullAppDomainId = 0; // This is used only with DomainModule events
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
@@ -4348,11 +4347,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     GetCodeViewInfo(pModule, &cvInfoIL, &cvInfoNative);
 
     PWCHAR ModuleILPath=(PWCHAR)W(""), ModuleNativePath=(PWCHAR)W("");
-
-    if(bFireDomainModuleEvents)
-    {
-        ullAppDomainId = (ULONGLONG)pModule->GetDomainAssembly()->GetAppDomain();
-    }
 
     LPCWSTR pEmptyString = W("");
     SString moduleName{ SString::Empty() };
@@ -4381,6 +4375,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(bFireDomainModuleEvents)
     {
+        ULONGLONG ullAppDomainId = (ULONGLONG)AppDomain::GetCurrentDomain();
         if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
         {
             FireEtwDomainModuleLoad_V1(ullModuleId, ullAssemblyId, ullAppDomainId, ulFlags, ulReservedFlags, szDtraceOutput1, szDtraceOutput2, GetClrInstanceId());

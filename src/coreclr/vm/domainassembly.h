@@ -76,13 +76,6 @@ public:
     DomainAssembly() {LIMITED_METHOD_CONTRACT;};
 #endif
 
-    PTR_AppDomain GetAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_pDomain;
-    }
-
     PEAssembly *GetPEAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -429,7 +422,6 @@ private:
     // ------------------------------------------------------------
 
     PTR_Assembly                m_pAssembly;
-    PTR_AppDomain               m_pDomain;
     PTR_PEAssembly              m_pPEAssembly;
     PTR_Module                  m_pModule;
 
