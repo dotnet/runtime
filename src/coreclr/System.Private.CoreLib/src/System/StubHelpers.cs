@@ -804,17 +804,35 @@ namespace System.StubHelpers
 
         internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
+            // COMPAT: We never pass null to ConvertContentsToNative.
+            if (pManagedHome is null)
+            {
+                return;
+            }
+
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
         }
 
         internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
         {
+            // COMPAT: We never pass null to ConvertContentsToManaged.
+            if (*pNativeHome == IntPtr.Zero)
+            {
+                return;
+            }
+
             pManagedHome = marshaler.MarshalNativeToManaged(*pNativeHome);
         }
 
 #pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
         internal static void ClearNative(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
         {
+            // COMPAT: We never pass null to ClearNative.
+            if (*pNativeHome == IntPtr.Zero)
+            {
+                return;
+            }
+
             try
             {
                 marshaler.CleanUpNativeData(*pNativeHome);
