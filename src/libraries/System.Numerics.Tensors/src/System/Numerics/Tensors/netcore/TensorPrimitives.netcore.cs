@@ -6,13 +6,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
-// TODO:
-// - Vectorize remaining trig-related functions (some aren't vectorized at all, some are only vectorized for float).
-// - Vectorize integer operations when sizeof(T) == 1 or 2 (currently only vectorized in most operations for sizeof(T) == 4 or 8).
 
 namespace System.Numerics.Tensors
 {
@@ -13064,42 +13061,79 @@ namespace System.Numerics.Tensors
             //
             // coshf = v/2 * exp(x - log(v)) where v = 0x1.0000e8p-1
 
-            private const float LOGV = 0.693161f;
-            private const float HALFV = 1.0000138f;
-            private const float INVV2 = 0.24999309f;
+            private const float SINGLE_LOGV = 0.693161f;
+            private const float SINGLE_HALFV = 1.0000138f;
+            private const float SINGLE_INVV2 = 0.24999309f;
 
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            private const double DOUBLE_LOGV = 0.6931471805599453;
+            private const double DOUBLE_HALFV = 1.0;
+            private const double DOUBLE_INVV2 = 0.25;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Cosh(x);
 
             public static Vector128<T> Invoke(Vector128<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector128<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> x = t.AsSingle();
 
-                Vector128<float> y = Vector128.Abs(x);
-                Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create(LOGV));
-                return (Vector128.Create(HALFV) * (z + (Vector128.Create(INVV2) / z))).As<float, T>();
+                    Vector128<float> y = Vector128.Abs(x);
+                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)SINGLE_LOGV));
+                    return (Vector128.Create((float)SINGLE_HALFV) * (z + (Vector128.Create((float)SINGLE_INVV2) / z))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector128<double> x = t.AsDouble();
+
+                    Vector128<double> y = Vector128.Abs(x);
+                    Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(DOUBLE_LOGV));
+                    return (Vector128.Create(DOUBLE_HALFV) * (z + (Vector128.Create(DOUBLE_INVV2) / z))).As<double, T>();
+                }
             }
 
             public static Vector256<T> Invoke(Vector256<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector256<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector256<float> x = t.AsSingle();
 
-                Vector256<float> y = Vector256.Abs(x);
-                Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create(LOGV));
-                return (Vector256.Create(HALFV) * (z + (Vector256.Create(INVV2) / z))).As<float, T>();
+                    Vector256<float> y = Vector256.Abs(x);
+                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)SINGLE_LOGV));
+                    return (Vector256.Create((float)SINGLE_HALFV) * (z + (Vector256.Create((float)SINGLE_INVV2) / z))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector256<double> x = t.AsDouble();
+
+                    Vector256<double> y = Vector256.Abs(x);
+                    Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(DOUBLE_LOGV));
+                    return (Vector256.Create(DOUBLE_HALFV) * (z + (Vector256.Create(DOUBLE_INVV2) / z))).As<double, T>();
+                }
             }
 
             public static Vector512<T> Invoke(Vector512<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector512<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector512<float> x = t.AsSingle();
 
-                Vector512<float> y = Vector512.Abs(x);
-                Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create(LOGV));
-                return (Vector512.Create(HALFV) * (z + (Vector512.Create(INVV2) / z))).As<float, T>();
+                    Vector512<float> y = Vector512.Abs(x);
+                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)SINGLE_LOGV));
+                    return (Vector512.Create((float)SINGLE_HALFV) * (z + (Vector512.Create((float)SINGLE_INVV2) / z))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector512<double> x = t.AsDouble();
+
+                    Vector512<double> y = Vector512.Abs(x);
+                    Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(DOUBLE_LOGV));
+                    return (Vector512.Create(DOUBLE_HALFV) * (z + (Vector512.Create(DOUBLE_INVV2) / z))).As<double, T>();
+                }
             }
         }
 
@@ -13132,49 +13166,91 @@ namespace System.Numerics.Tensors
             // Same as cosh, but with `z -` rather than `z +`, and with the sign
             // flipped on the result based on the sign of the input.
 
-            private const uint SIGN_MASK = 0x7FFFFFFF;
-            private const float LOGV = 0.693161f;
-            private const float HALFV = 1.0000138f;
-            private const float INVV2 = 0.24999309f;
+            private const float SINGLE_LOGV = 0.693161f;
+            private const float SINGLE_HALFV = 1.0000138f;
+            private const float SINGLE_INVV2 = 0.24999309f;
 
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            private const double DOUBLE_LOGV = 0.6931471805599453;
+            private const double DOUBLE_HALFV = 1.0;
+            private const double DOUBLE_INVV2 = 0.25;
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Sinh(x);
 
             public static Vector128<T> Invoke(Vector128<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector128<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> x = t.AsSingle();
 
-                Vector128<float> y = Vector128.Abs(x);
-                Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create(LOGV));
-                Vector128<float> result = Vector128.Create(HALFV) * (z - (Vector128.Create(INVV2) / z));
-                Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
-                return (sign ^ result.AsUInt32()).AsSingle().As<float, T>();
+                    Vector128<float> y = Vector128.Abs(x);
+                    Vector128<float> z = ExpOperator<float>.Invoke(y - Vector128.Create((float)SINGLE_LOGV));
+                    Vector128<float> result = Vector128.Create((float)SINGLE_HALFV) * (z - (Vector128.Create((float)SINGLE_INVV2) / z));
+                    Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~(uint)int.MaxValue);
+                    return (sign ^ result.AsUInt32()).As<uint, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector128<double> x = t.AsDouble();
+
+                    Vector128<double> y = Vector128.Abs(x);
+                    Vector128<double> z = ExpOperator<double>.Invoke(y - Vector128.Create(DOUBLE_LOGV));
+                    Vector128<double> result = Vector128.Create(DOUBLE_HALFV) * (z - (Vector128.Create(DOUBLE_INVV2) / z));
+                    Vector128<ulong> sign = x.AsUInt64() & Vector128.Create(~(ulong)long.MaxValue);
+                    return (sign ^ result.AsUInt64()).As<ulong, T>();
+                }
             }
 
             public static Vector256<T> Invoke(Vector256<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector256<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector256<float> x = t.AsSingle();
 
-                Vector256<float> y = Vector256.Abs(x);
-                Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create(LOGV));
-                Vector256<float> result = Vector256.Create(HALFV) * (z - (Vector256.Create(INVV2) / z));
-                Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
-                return (sign ^ result.AsUInt32()).AsSingle().As<float, T>();
+                    Vector256<float> y = Vector256.Abs(x);
+                    Vector256<float> z = ExpOperator<float>.Invoke(y - Vector256.Create((float)SINGLE_LOGV));
+                    Vector256<float> result = Vector256.Create((float)SINGLE_HALFV) * (z - (Vector256.Create((float)SINGLE_INVV2) / z));
+                    Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~(uint)int.MaxValue);
+                    return (sign ^ result.AsUInt32()).As<uint, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector256<double> x = t.AsDouble();
+
+                    Vector256<double> y = Vector256.Abs(x);
+                    Vector256<double> z = ExpOperator<double>.Invoke(y - Vector256.Create(DOUBLE_LOGV));
+                    Vector256<double> result = Vector256.Create(DOUBLE_HALFV) * (z - (Vector256.Create(DOUBLE_INVV2) / z));
+                    Vector256<ulong> sign = x.AsUInt64() & Vector256.Create(~(ulong)long.MaxValue);
+                    return (sign ^ result.AsUInt64()).As<ulong, T>();
+                }
             }
 
             public static Vector512<T> Invoke(Vector512<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector512<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector512<float> x = t.AsSingle();
 
-                Vector512<float> y = Vector512.Abs(x);
-                Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create(LOGV));
-                Vector512<float> result = Vector512.Create(HALFV) * (z - (Vector512.Create(INVV2) / z));
-                Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
-                return (sign ^ result.AsUInt32()).AsSingle().As<float, T>();
+                    Vector512<float> y = Vector512.Abs(x);
+                    Vector512<float> z = ExpOperator<float>.Invoke(y - Vector512.Create((float)SINGLE_LOGV));
+                    Vector512<float> result = Vector512.Create((float)SINGLE_HALFV) * (z - (Vector512.Create((float)SINGLE_INVV2) / z));
+                    Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~(uint)int.MaxValue);
+                    return (sign ^ result.AsUInt32()).As<uint, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector512<double> x = t.AsDouble();
+
+                    Vector512<double> y = Vector512.Abs(x);
+                    Vector512<double> z = ExpOperator<double>.Invoke(y - Vector512.Create(DOUBLE_LOGV));
+                    Vector512<double> result = Vector512.Create(DOUBLE_HALFV) * (z - (Vector512.Create(DOUBLE_INVV2) / z));
+                    Vector512<ulong> sign = x.AsUInt64() & Vector512.Create(~(ulong)long.MaxValue);
+                    return (sign ^ result.AsUInt64()).As<ulong, T>();
+                }
             }
         }
 
@@ -13223,43 +13299,74 @@ namespace System.Numerics.Tensors
             // If x < 0, then we use the identity
             //    tanhf(-x) = -tanhf(x)
 
-            private const uint SIGN_MASK = 0x7FFFFFFF;
-
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Tanh(x);
 
             public static Vector128<T> Invoke(Vector128<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector128<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> x = t.AsSingle();
 
-                Vector128<float> y = Vector128.Abs(x);
-                Vector128<float> z = ExpM1Operator<float>.Invoke(Vector128.Create(-2f) * y);
-                Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SIGN_MASK);
-                return (sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
+                    Vector128<float> y = Vector128.Abs(x);
+                    Vector128<float> z = ExpM1Operator<float>.Invoke(Vector128.Create(-2f) * y);
+                    Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~(uint)int.MaxValue);
+                    return (sign ^ (-z / (z + Vector128.Create(2f))).AsUInt32()).As<uint, T>();
+                }
+                else
+                {
+                    Vector128<double> x = t.AsDouble();
+
+                    Vector128<double> y = Vector128.Abs(x);
+                    Vector128<double> z = ExpM1Operator<double>.Invoke(Vector128.Create(-2d) * y);
+                    Vector128<ulong> sign = x.AsUInt64() & Vector128.Create(~(ulong)long.MaxValue);
+                    return (sign ^ (-z / (z + Vector128.Create(2d))).AsUInt64()).As<ulong, T>();
+                }
             }
 
             public static Vector256<T> Invoke(Vector256<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector256<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector256<float> x = t.AsSingle();
 
-                Vector256<float> y = Vector256.Abs(x);
-                Vector256<float> z = ExpM1Operator<float>.Invoke(Vector256.Create(-2f) * y);
-                Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SIGN_MASK);
-                return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
+                    Vector256<float> y = Vector256.Abs(x);
+                    Vector256<float> z = ExpM1Operator<float>.Invoke(Vector256.Create(-2f) * y);
+                    Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~(uint)int.MaxValue);
+                    return (sign ^ (-z / (z + Vector256.Create(2f))).AsUInt32()).As<uint, T>();
+                }
+                else
+                {
+                    Vector256<double> x = t.AsDouble();
+
+                    Vector256<double> y = Vector256.Abs(x);
+                    Vector256<double> z = ExpM1Operator<double>.Invoke(Vector256.Create(-2d) * y);
+                    Vector256<ulong> sign = x.AsUInt64() & Vector256.Create(~(ulong)long.MaxValue);
+                    return (sign ^ (-z / (z + Vector256.Create(2d))).AsUInt64()).As<ulong, T>();
+                }
             }
 
             public static Vector512<T> Invoke(Vector512<T> t)
             {
-                Debug.Assert(typeof(T) == typeof(float));
-                Vector512<float> x = t.AsSingle();
+                if (typeof(T) == typeof(float))
+                {
+                    Vector512<float> x = t.AsSingle();
 
-                Vector512<float> y = Vector512.Abs(x);
-                Vector512<float> z = ExpM1Operator<float>.Invoke(Vector512.Create(-2f) * y);
-                Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SIGN_MASK);
-                return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).AsSingle().As<float, T>();
+                    Vector512<float> y = Vector512.Abs(x);
+                    Vector512<float> z = ExpM1Operator<float>.Invoke(Vector512.Create(-2f) * y);
+                    Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~(uint)int.MaxValue);
+                    return (sign ^ (-z / (z + Vector512.Create(2f))).AsUInt32()).As<uint, T>();
+                }
+                else
+                {
+                    Vector512<double> x = t.AsDouble();
+
+                    Vector512<double> y = Vector512.Abs(x);
+                    Vector512<double> z = ExpM1Operator<double>.Invoke(Vector512.Create(-2d) * y);
+                    Vector512<ulong> sign = x.AsUInt64() & Vector512.Create(~(ulong)long.MaxValue);
+                    return (sign ^ (-z / (z + Vector512.Create(2d))).AsUInt64()).As<ulong, T>();
+                }
             }
         }
 
@@ -14722,7 +14829,7 @@ namespace System.Numerics.Tensors
         /// <summary>1 / (1 + T.Exp(-x))</summary>
         internal readonly struct SigmoidOperator<T> : IUnaryOperator<T, T> where T : IExponentialFunctions<T>
         {
-            public static bool Vectorizable => typeof(T) == typeof(float);
+            public static bool Vectorizable => ExpOperator<T>.Vectorizable;
             public static T Invoke(T x) => T.One / (T.One + T.Exp(-x));
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.Create(T.One) / (Vector128.Create(T.One) + ExpOperator<T>.Invoke(-x));
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.Create(T.One) / (Vector256.Create(T.One) + ExpOperator<T>.Invoke(-x));
@@ -15180,13 +15287,160 @@ namespace System.Numerics.Tensors
             }
         }
 
-        /// <summary>T.Round</summary>
-        internal readonly struct RoundOperator<T>(int digits, MidpointRounding mode) : IStatefulUnaryOperator<T> where T : IFloatingPoint<T>
+        /// <summary>T.Round(x)</summary>
+        internal readonly struct RoundToEvenOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
+        {
+            // This code is based on `nearbyint` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public static T Invoke(T x) => T.Round(x);
+
+            private const float SingleBoundary = 8388608.0f; // 2^23
+            private const double DoubleBoundary = 4503599627370496.0; // 2^52
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                Vector128<T> boundary = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector128<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector128.ConditionalSelect(Vector128.GreaterThan(Vector128.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                Vector256<T> boundary = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector256<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector256.ConditionalSelect(Vector256.GreaterThan(Vector256.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                Vector512<T> boundary = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(SingleBoundary) : T.CreateTruncating(DoubleBoundary));
+                Vector512<T> temp = CopySignOperator<T>.Invoke(boundary, x);
+                return Vector512.ConditionalSelect(Vector512.GreaterThan(Vector512.Abs(x), boundary), x, CopySignOperator<T>.Invoke((x + temp) - temp, x));
+            }
+        }
+
+        /// <summary>T.Round(x, MidpointRounding.AwayFromZero)</summary>
+        internal readonly struct RoundAwayFromZeroOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
+        {
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
+            public static T Invoke(T x) => T.Round(x, MidpointRounding.AwayFromZero);
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    if (AdvSimd.IsSupported)
+                    {
+                        return AdvSimd.RoundAwayFromZero(x.AsSingle()).As<float, T>();
+                    }
+
+                    return TruncateOperator<float>.Invoke(x.AsSingle() + CopySignOperator<float>.Invoke(Vector128.Create(0.49999997f), x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    if (AdvSimd.Arm64.IsSupported)
+                    {
+                        return AdvSimd.Arm64.RoundAwayFromZero(x.AsDouble()).As<double, T>();
+                    }
+
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return TruncateOperator<double>.Invoke(x.AsDouble() + CopySignOperator<double>.Invoke(Vector128.Create(0.49999999999999994), x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return TruncateOperator<float>.Invoke(x.AsSingle() + CopySignOperator<float>.Invoke(Vector256.Create(0.49999997f), x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return TruncateOperator<double>.Invoke(x.AsDouble() + CopySignOperator<double>.Invoke(Vector256.Create(0.49999999999999994), x.AsDouble())).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    return TruncateOperator<float>.Invoke(x.AsSingle() + CopySignOperator<float>.Invoke(Vector512.Create(0.49999997f), x.AsSingle())).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    return TruncateOperator<double>.Invoke(x.AsDouble() + CopySignOperator<double>.Invoke(Vector512.Create(0.49999999999999994), x.AsDouble())).As<double, T>();
+                }
+            }
+        }
+
+        /// <summary>(T.Round(x * power10, digits, mode)) / power10</summary>
+        internal readonly struct MultiplyRoundDivideOperator<T, TDelegatedRound> : IStatefulUnaryOperator<T>
+            where T : IFloatingPoint<T>
+            where TDelegatedRound : IUnaryOperator<T, T>
+        {
+            private readonly T _factor;
+
+            public MultiplyRoundDivideOperator(T factor)
+            {
+                Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
+                _factor = factor;
+            }
+
+            public static bool Vectorizable => true;
+
+            private const float Single_RoundLimit = 1e8f;
+            private const double Double_RoundLimit = 1e16d;
+
+            public T Invoke(T x)
+            {
+                T limit = typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit);
+                return T.Abs(x) < limit ?
+                    TDelegatedRound.Invoke(x * _factor) / _factor :
+                    x;
+            }
+
+            public Vector128<T> Invoke(Vector128<T> x)
+            {
+                Vector128<T> limit = Vector128.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
+                return Vector128.ConditionalSelect(Vector128.LessThan(Vector128.Abs(x), limit),
+                    TDelegatedRound.Invoke(x * _factor) / _factor,
+                    x);
+            }
+
+            public Vector256<T> Invoke(Vector256<T> x)
+            {
+                Vector256<T> limit = Vector256.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
+                return Vector256.ConditionalSelect(Vector256.LessThan(Vector256.Abs(x), limit),
+                    TDelegatedRound.Invoke(x * _factor) / _factor,
+                    x);
+            }
+
+            public Vector512<T> Invoke(Vector512<T> x)
+            {
+                Vector512<T> limit = Vector512.Create(typeof(T) == typeof(float) ? T.CreateTruncating(Single_RoundLimit) : T.CreateTruncating(Double_RoundLimit));
+                return Vector512.ConditionalSelect(Vector512.LessThan(Vector512.Abs(x), limit),
+                    TDelegatedRound.Invoke(x * _factor) / _factor,
+                    x);
+            }
+        }
+
+        /// <summary>T.Round(x, digits, mode)</summary>
+        internal readonly struct RoundFallbackOperator<T>(int digits, MidpointRounding mode) : IStatefulUnaryOperator<T>
+            where T : IFloatingPoint<T>
         {
             private readonly int _digits = digits;
             private readonly MidpointRounding _mode = mode;
 
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => false;
 
             public T Invoke(T x) => T.Round(x, _digits, _mode);
 
@@ -15909,7 +16163,7 @@ namespace System.Numerics.Tensors
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>
         /// <remarks>The input and output type must be of the same size if vectorization is desired.</remarks>
-        private interface IUnaryOperator<TInput, TOutput>
+        internal interface IUnaryOperator<TInput, TOutput>
         {
             static abstract bool Vectorizable { get; }
             static abstract TOutput Invoke(TInput x);
