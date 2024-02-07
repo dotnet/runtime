@@ -8443,6 +8443,18 @@ public:
     // Infrastructure functions: start/stop/reserve/emit.
     //
 
+#ifdef TARGET_ARM64
+    static bool IsGpr(regMaskTP regMask)
+    {
+        return (regMask & RBM_ALLFLOAT) == RBM_NONE;
+    }
+
+    static bool IsFloat(regMaskTP regMask)
+    {
+        return (regMask & ~RBM_ALLFLOAT) == RBM_NONE;
+    }
+#endif
+
     void unwindBegProlog();
     void unwindEndProlog();
     void unwindBegEpilog();
