@@ -28,7 +28,8 @@ namespace System.Net.Http
             ArgumentNullException.ThrowIfNull(nameValueCollection);
 
             // Encode and concatenate data
-            StringBuilder builder = new StringBuilder();
+            var builder = new ValueStringBuilder(stackalloc char[256]);
+
             foreach (KeyValuePair<string?, string?> pair in nameValueCollection)
             {
                 if (builder.Length > 0)
@@ -36,22 +37,52 @@ namespace System.Net.Http
                     builder.Append('&');
                 }
 
-                builder.Append(Encode(pair.Key));
+                Encode(ref builder, pair.Key);
                 builder.Append('=');
-                builder.Append(Encode(pair.Value));
+                Encode(ref builder, pair.Value);
             }
 
-            return HttpRuleParser.DefaultHttpEncoding.GetBytes(builder.ToString());
+            // We know the encoded length because the input is all ASCII.
+            byte[] bytes = new byte[builder.Length];
+            HttpRuleParser.DefaultHttpEncoding.GetBytes(builder.AsSpan(), bytes);
+            builder.Dispose();
+            return bytes;
         }
 
-        private static string Encode(string? data)
+        private static void Encode(ref ValueStringBuilder builder, string? data)
         {
-            if (string.IsNullOrEmpty(data))
+            if (!string.IsNullOrEmpty(data))
             {
-                return string.Empty;
+                int charsWritten;
+                while (!Uri.TryEscapeDataString(data, builder.RawChars.Slice(builder.Length), out charsWritten))
+                {
+                    builder.EnsureCapacity(builder.Capacity + 1);
+                }
+
+                // Escape spaces as '+'.
+                if (data.Contains(' '))
+                {
+                    ReadOnlySpan<char> escapedChars = builder.RawChars.Slice(builder.Length, charsWritten);
+
+                    while (true)
+                    {
+                        int indexOfEscapedSpace = escapedChars.IndexOf("%20", StringComparison.Ordinal);
+                        if (indexOfEscapedSpace < 0)
+                        {
+                            builder.Append(escapedChars);
+                            break;
+                        }
+
+                        builder.Append(escapedChars.Slice(0, indexOfEscapedSpace));
+                        builder.Append('+');
+                        escapedChars = escapedChars.Slice(indexOfEscapedSpace + 3); // Skip "%20"
+                    }
+                }
+                else
+                {
+                    builder.Length += charsWritten;
+                }
             }
-            // Escape spaces as '+'.
-            return Uri.EscapeDataString(data).Replace("%20", "+");
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
