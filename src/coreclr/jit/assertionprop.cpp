@@ -3992,7 +3992,13 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         changed = true;
     }
 
-    return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
+    if (changed)
+    {
+        // It's possible we no longer have side-effects on the tree.
+        gtUpdateNodeSideEffects(tree);
+        return optAssertionProp_Update(tree, tree, stmt);
+    }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
