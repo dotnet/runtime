@@ -8,7 +8,6 @@
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
-
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
@@ -24,8 +23,8 @@
     <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
     <!-- When building from source, ensure the RID we're building for is part of the RID graph -->
     <AdditionalRuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalRuntimeIdentifiers);$(OutputRID)</AdditionalRuntimeIdentifiers>
-    <ServicingVersion>4</ServicingVersion>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <ServicingVersion>5</ServicingVersion>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
