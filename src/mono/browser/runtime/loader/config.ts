@@ -192,10 +192,11 @@ export function normalizeConfig() {
         // ActiveIssue https://github.com/dotnet/runtime/issues/75602
         config.pthreadPoolSize = 7;
     }
+
+    // this is how long the Mono GC will try to wait for all threads to be suspended before it gives up and aborts the process
     if (WasmEnableThreads && config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] === undefined) {
         config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] = "5000";
     }
-
 
     // Default values (when WasmDebugLevel is not set)
     // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1

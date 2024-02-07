@@ -60,8 +60,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     // These two need to be lazy because they may be missing
-    [() => !runtimeHelpers.emscriptenBuildOptions.linkerEnableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.linkerEnableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_method_bound", "number", ["number", "number", "number"]],

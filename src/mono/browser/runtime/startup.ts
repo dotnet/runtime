@@ -400,10 +400,13 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     mono_log_debug("mono_wasm_pre_init_essential");
 
     if (loaderHelpers.gitHash !== runtimeHelpers.gitHash) {
-        mono_log_warn("The version of dotnet.runtime.js is different from the version of dotnet.js!");
+        mono_log_warn(`The version of dotnet.runtime.js ${runtimeHelpers.gitHash} is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
     }
-    if (loaderHelpers.gitHash !== runtimeHelpers.moduleGitHash) {
-        mono_log_warn("The version of dotnet.native.js is different from the version of dotnet.js!");
+    if (loaderHelpers.gitHash !== runtimeHelpers.emscriptenBuildOptions.gitHash) {
+        mono_log_warn(`The version of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.gitHash}  is different from the version of dotnet.js ${loaderHelpers.gitHash}!`);
+    }
+    if (WasmEnableThreads !== runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads) {
+        mono_log_warn(`The threads of dotnet.native.js ${runtimeHelpers.emscriptenBuildOptions.wasmEnableThreads} is different from the version of dotnet.runtime.js ${WasmEnableThreads}!`);
     }
 
     init_c_exports();
@@ -517,10 +520,10 @@ async function instantiate_wasm_module(
 async function ensureUsedWasmFeatures() {
     runtimeHelpers.featureWasmSimd = await loaderHelpers.simd();
     runtimeHelpers.featureWasmEh = await loaderHelpers.exceptions();
-    if (runtimeHelpers.emscriptenBuildOptions.linkerWasmEnableSIMD) {
+    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
-    if (runtimeHelpers.emscriptenBuildOptions.linkerWasmEnableEH) {
+    if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
         mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }
 }

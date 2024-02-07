@@ -78,7 +78,7 @@ export type MonoConfigInternal = MonoConfig & {
     appendElementOnExit?: boolean
     assertAfterExit?: boolean // default true for shell/nodeJS
     interopCleanupOnExit?: boolean
-    dumpThreadsOnExit?: boolean
+    dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
@@ -178,7 +178,6 @@ export type LoaderHelpers = {
 export type RuntimeHelpers = {
     emscriptenBuildOptions: EmscriptenBuildOptions,
     gitHash: string,
-    moduleGitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -250,14 +249,15 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
     return (value === undefined) || (value === null);
 }
 
+// these are values from the last re-link with emcc/workload
 export type EmscriptenBuildOptions = {
-    linkerWasmEnableSIMD: boolean,
-    linkerWasmEnableEH: boolean,
-    linkerEnableAotProfiler: boolean,
-    linkerEnableBrowserProfiler: boolean,
-    linkerRunAOTCompilation: boolean,
-    linkerUseThreads: boolean,
-    moduleGitHash: string,
+    wasmEnableSIMD: boolean,
+    wasmEnableEH: boolean,
+    enableAotProfiler: boolean,
+    enableBrowserProfiler: boolean,
+    runAOTCompilation: boolean,
+    wasmEnableThreads: boolean,
+    gitHash: string,
 };
 export type EmscriptenInternals = {
     isPThread: boolean,

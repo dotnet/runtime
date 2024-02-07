@@ -108,7 +108,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
                 if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
                     runtimeHelpers.forceDisposeProxies(true, true);
                 }
-                if (WasmEnableThreads && exit_code !== 0 && loaderHelpers.config?.dumpThreadsOnExit) {
+                if (WasmEnableThreads && exit_code !== 0 && loaderHelpers.config?.dumpThreadsOnNonZeroExit) {
                     runtimeHelpers.dumpThreads();
                 }
             }

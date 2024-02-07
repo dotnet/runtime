@@ -254,7 +254,7 @@ function configureRuntime(dotnet, runArgs) {
         .withElementOnExit()
         .withInteropCleanupOnExit()
         .withAssertAfterExit()
-        .withDumpThreadsOnExit()
+        .withDumpThreadsOnNonZeroExit()
         .withConfig({
             loadAllSatelliteResources: true
         });
@@ -315,7 +315,7 @@ async function dry_run(runArgs) {
             virtualWorkingDirectory: undefined,
             pthreadPoolSize: 0,
             interopCleanupOnExit: false,
-            dumpThreadsOnExit: false,
+            dumpThreadsOnNonZeroExit: false,
             // this just means to not continue startup after the snapshot is taken.
             // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true

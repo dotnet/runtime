@@ -2017,8 +2017,8 @@ export function jiterpreter_allocate_tables() {
     //  then create special placeholder functions that examine the rmethod to determine which kind
     //  of method is being called.
     const traceTableSize = options.tableSize,
-        jitCallTableSize = runtimeHelpers.emscriptenBuildOptions.linkerRunAOTCompilation ? options.tableSize : 1,
-        interpEntryTableSize = runtimeHelpers.emscriptenBuildOptions.linkerRunAOTCompilation ? options.aotTableSize : 1,
+        jitCallTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.tableSize : 1,
+        interpEntryTableSize = runtimeHelpers.emscriptenBuildOptions.runAOTCompilation ? options.aotTableSize : 1,
         numInterpEntryTables = JiterpreterTable.LAST - JiterpreterTable.InterpEntryStatic0 + 1,
         totalSize = traceTableSize + jitCallTableSize + (numInterpEntryTables * interpEntryTableSize) + 1,
         wasmTable = getWasmFunctionTable();

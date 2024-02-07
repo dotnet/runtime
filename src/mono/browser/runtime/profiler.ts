@@ -15,7 +15,7 @@ import { utf8ToString } from "./strings";
 // DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
 export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
-    mono_assert(runtimeHelpers.emscriptenBuildOptions.linkerEnableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     if (!("writeAt" in options))
@@ -27,7 +27,7 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
 }
 
 export function mono_wasm_init_browser_profiler(options: BrowserProfilerOptions): void {
-    mono_assert(runtimeHelpers.emscriptenBuildOptions.linkerEnableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     const arg = "browser:";

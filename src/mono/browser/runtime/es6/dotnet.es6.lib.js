@@ -82,13 +82,13 @@ function injectDependencies() {
     #endif
 
     DotnetSupportLib["$DOTNET__postset"] = `DOTNET.setup({ ` +
-        `linkerWasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
-        `linkerWasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
-        `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
-        `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
-        `linkerRunAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
-        `linkerUseThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
-        `moduleGitHash: "${gitHash}", ` +
+        `wasmEnableSIMD: ${WASM_ENABLE_SIMD ? "true" : "false"},` +
+        `wasmEnableEH: ${WASM_ENABLE_EH ? "true" : "false"},` +
+        `enableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+        `enableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}, ` +
+        `runAOTCompilation: ${RUN_AOT_COMPILATION ? "true" : "false"}, ` +
+        `wasmEnableThreads: ${USE_PTHREADS ? "true" : "false"}, ` +
+        `gitHash: "${gitHash}", ` +
         `});`;
 
     autoAddDeps(DotnetSupportLib, "$DOTNET");

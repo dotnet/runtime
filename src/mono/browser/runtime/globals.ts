@@ -38,7 +38,6 @@ export function passEmscriptenInternals(internals: EmscriptenInternals, emscript
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
-    runtimeHelpers.moduleGitHash = internals.gitHash;
     runtimeHelpers.getMemory = internals.getMemory;
     runtimeHelpers.getWasmIndirectFunctionTable = internals.getWasmIndirectFunctionTable;
     runtimeHelpers.updateMemoryViews = internals.updateMemoryViews;
