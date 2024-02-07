@@ -3825,40 +3825,73 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp_ModDiv: Convert DIV/MOD to UDIV/UMOD if both operands
-//    can be proven to be non-negative, e.g.:
-//
-//    if (x > 0)         // creates "x > 0" assertion
-//        return x / 8;  // DIV can be converted to UDIV
+// optAssertionProp_IntegralRangeProperties: Obtains range properties for an integral tree
 //
 // Arguments:
-//    assertions - set of live assertions
-//    tree       - the DIV/MOD node to optimize
-//    stmt       - statement containing DIV/MOD
+//    assertions         - set of live assertions
+//    tree               - the integral tree to analyze
+//    isKnownNonZero     - [OUT] set to true if the tree is known to be non-zero
+//    isKnownNonNegative - [OUT] set to true if the tree is known to be non-negative
 //
-// Returns:
-//    Updated UDIV/UMOD node, or "nullptr"
-//
-GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP assertions,
+                                                        GenTree*         tree,
+                                                        bool*            isKnownNonZero,
+                                                        bool*            isKnownNonNegative)
 {
-    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
+    *isKnownNonZero     = false;
+    *isKnownNonNegative = false;
+
+    if (!varTypeIsIntegral(tree))
     {
-        return nullptr;
+        return;
     }
 
-    // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
-    // Technically, we can check assertions for both operands, but it's not clear if it's worth it.
-    if (!tree->gtGetOp2()->IsNeverNegative(this))
+    // First, check properties without using assertions.
+
+    if (tree->IsNeverNegative(this))
     {
-        return nullptr;
+        *isKnownNonNegative = true;
+    }
+    if (tree->IsNeverZero())
+    {
+        *isKnownNonZero = true;
     }
 
-    const ValueNum  dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+    if (*isKnownNonNegative && *isKnownNonZero)
+    {
+        // TP: We already have both properties, no need to check assertions.
+        return;
+    }
+
+    if (optLocalAssertionProp || BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return;
+    }
+
+    const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+
+        // First, analyze possible X ==/!= CNS assertions.
+        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
+        {
+            if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && (curAssertion->op2.u1.iconVal == 0))
+            {
+                // X != 0 --> definitely non-zero
+                // We can't say anything about X's non-negativity
+                *isKnownNonZero = true;
+            }
+            else if (curAssertion->assertionKind != OAK_NOT_EQUAL)
+            {
+                // X == CNS --> definitely non-negative if CNS >= 0
+                // and definitely non-zero if CNS != 0
+                *isKnownNonNegative = curAssertion->op2.u1.iconVal >= 0;
+                *isKnownNonZero     = curAssertion->op2.u1.iconVal != 0;
+            }
+        }
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
@@ -3870,7 +3903,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         ValueNumStore::ConstantBoundInfo info;
         vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
 
-        if (info.cmpOpVN != dividendVN)
+        if (info.cmpOpVN != treeVN)
         {
             continue;
         }
@@ -3893,27 +3926,73 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
         if ((info.constVal >= 0))
         {
-            bool isNotNegative = false;
             if (info.isUnsigned && ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
             {
                 // (uint)X <= CNS means X is [0..CNS]
-                isNotNegative = true;
+                *isKnownNonNegative = true;
             }
             else if (!info.isUnsigned && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
             {
                 // X >= CNS means X is [CNS..unknown]
-                isNotNegative = true;
-            }
-
-            if (isNotNegative)
-            {
-                JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-                tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-                return optAssertionProp_Update(tree, tree, stmt);
+                *isKnownNonNegative = true;
+                *isKnownNonZero     = (cmpOper == GT_GT) || (info.constVal > 0);
             }
         }
     }
-    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// optAssertionProp_ModDiv: Optimizes DIV/MOD via assertions
+//    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
+//    2) Marks DIV/MOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
+//    3) Marks DIV/MOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the DIV/MOD node to optimize
+//    stmt       - statement containing DIV/MOD
+//
+// Returns:
+//    Updated DIV/MOD node, or nullptr
+//
+GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+{
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return nullptr;
+    }
+
+    bool dividendIsNotZero;
+    bool dividendIsNotNegative;
+    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp1(), &dividendIsNotZero, &dividendIsNotNegative);
+
+    bool divisorIsNotZero;
+    bool divisorIsNotNegative;
+    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp2(), &divisorIsNotZero, &divisorIsNotNegative);
+
+    bool changed = false;
+    if (divisorIsNotNegative && dividendIsNotNegative)
+    {
+        JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+        tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+        changed = true;
+    }
+
+    if (divisorIsNotZero)
+    {
+        JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
+        tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+        changed = true;
+    }
+
+    if (dividendIsNotNegative || divisorIsNotNegative)
+    {
+        JITDUMP("DIV/MOD is proven to never overflow...\n")
+        tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+        changed = true;
+    }
+
+    return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
 }
 
 //------------------------------------------------------------------------
