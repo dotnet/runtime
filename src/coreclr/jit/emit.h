@@ -418,8 +418,9 @@ struct emitLclVarAddr
     // Constructor
     void initLclVarAddr(int varNum, unsigned offset);
 
-    int lvaVarNum(); // Returns the variable to access. Note that it returns a negative number for compiler spill temps.
-    unsigned lvaOffset(); // returns the offset into the variable to access
+    int lvaVarNum() const; // Returns the variable to access. Note that it returns a negative number for compiler spill
+                           // temps.
+    unsigned lvaOffset() const; // returns the offset into the variable to access
 
     // This struct should be 32 bits in size for the release build.
     // We have this constraint because this type is used in a union
@@ -2225,7 +2226,7 @@ protected:
     static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(instrDesc* id);
+    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
     unsigned emitInsCount;
 
     /************************************************************************/
