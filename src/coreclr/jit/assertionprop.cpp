@@ -3838,6 +3838,11 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
                                                         bool*            isKnownNonZero,
                                                         bool*            isKnownNonNegative)
 {
+    if (optLocalAssertionProp || BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return;
+    }
+
     *isKnownNonZero     = false;
     *isKnownNonNegative = false;
 
@@ -3860,11 +3865,6 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
     if (*isKnownNonNegative && *isKnownNonZero)
     {
         // TP: We already have both properties, no need to check assertions.
-        return;
-    }
-
-    if (optLocalAssertionProp || BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
-    {
         return;
     }
 
@@ -3957,21 +3957,15 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
 //
 GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
 {
-    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
-    {
-        return nullptr;
-    }
-
     bool dividendIsNotZero;
     bool dividendIsNotNegative;
-    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp1(), &dividendIsNotZero, &dividendIsNotNegative);
-
     bool divisorIsNotZero;
     bool divisorIsNotNegative;
+    optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp1(), &dividendIsNotZero, &dividendIsNotNegative);
     optAssertionProp_IntegralRangeProperties(assertions, tree->gtGetOp2(), &divisorIsNotZero, &divisorIsNotNegative);
 
     bool changed = false;
-    if (divisorIsNotNegative && dividendIsNotNegative)
+    if (divisorIsNotNegative && dividendIsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
     {
         JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
         tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
@@ -3994,8 +3988,6 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
     if (changed)
     {
-        // It's possible we no longer have side-effects on the tree.
-        gtUpdateNodeSideEffects(tree);
         return optAssertionProp_Update(tree, tree, stmt);
     }
     return nullptr;
@@ -4197,8 +4189,7 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     //
     // Currently only GT_EQ or GT_NE are supported Relops for local AssertionProp
     //
-
-    if ((tree->gtOper != GT_EQ) && (tree->gtOper != GT_NE))
+    if (!tree->OperIs(GT_EQ, GT_NE))
     {
         return nullptr;
     }
@@ -5346,6 +5337,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_MOD:
         case GT_DIV:
+        case GT_UMOD:
+        case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt);
 
         case GT_BLK:
