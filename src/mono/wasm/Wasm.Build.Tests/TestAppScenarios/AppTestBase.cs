@@ -73,9 +73,10 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 CheckCounter: false,
                 Config: options.Configuration,
                 OnConsoleMessage: OnConsoleMessage,
-                QueryString: queryString);
+                QueryString: queryString,
+                Host: host);
 
-        await BlazorRunForBuildWithDotnetRun(blazorRunOptions);
+        await BlazorRunTest(blazorRunOptions);
 
         void OnConsoleMessage(IConsoleMessage msg)
         {
