@@ -270,7 +270,7 @@ internal sealed class Xcode
         var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "icudt*" };
 
         // TODO: All of these exclusions shouldn't be needed once we carefully construct the publish folder on Helix
-        if (runtime == "NativeAOT")
+        if (targetRuntime == TargetRuntime.NativeAOT)
         {
             predefinedExcludes.Add(".dll");
             predefinedExcludes.Add(".pdb");
@@ -361,7 +361,7 @@ internal sealed class Xcode
             // Current differences:
             // - NativeAOT produces {ProjectName}.dylib, while MonoAOT produces lib{ProjectName}.dylib
             // - NativeAOT places the library in the 'workspace' location ie 'publish' folder, while MonoAOT places it in 'binDir' ie 'AppBundle'
-            if (useNativeAOTRuntime)
+            if (targetRuntime == TargetRuntime.NativeAOT)
             {
                 libraryPath = Path.Combine(workspace, $"{projectName}.dylib");
             }
@@ -378,7 +378,7 @@ internal sealed class Xcode
             cmakeLists = cmakeLists.Replace("%DYLIB_PATH%", libraryPath);
 
             // pass the shared library to the linker for dynamic linking
-            if (useNativeAOTRuntime)
+            if (targetRuntime == TargetRuntime.NativeAOT)
                 toLink += $"    {libraryPath}{Environment.NewLine}";
         }
         else
