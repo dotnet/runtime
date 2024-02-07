@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
@@ -10,4 +10,18 @@
 
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
   </ItemGroup>
+
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <_PublishFramework Remove="@(_PublishFramework)" />
+      <_PublishFramework Include="$(TargetFrameworks)" />
+
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).dll" TargetPath="tasks\%(_PublishFramework.Identity)" />
+      <FilesToPackage Include="$(OutputPath)%(_PublishFramework.Identity)\$(AssemblyName).pdb" TargetPath="tasks\%(_PublishFramework.Identity)" />
+
+      <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*.dll*"
+                      TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
+    </ItemGroup>
+  </Target>
 </Project>
