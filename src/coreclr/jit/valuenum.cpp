@@ -12564,9 +12564,9 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
         case NI_System_Type_GetTypeFromHandle:
         {
             // Optimize Type.GetTypeFromHandle(TypeHandleToRuntimeTypeHandle(clsHandle)) to a frozen handle.
-            // This is a NativeAOT specific since RuntimeTypeHandle has a different layout in NativeAOT.
-            // On CoreCLR, it's just a thin wrapper over RuntimeType object.
-            assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+            // This, technically, works regardless of whether RuntimeTypeHandle is RuntimeType-based wrapper
+            // or not, but we expect this to be hit only for the TYP_I_IMPL case (NativeAOT).
+            assert(GetRuntimeHandleUnderlyingType() == TYP_I_IMPL);
 
             VNFuncApp bitcastFuncApp;
             ValueNum  argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
@@ -13016,10 +13016,10 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
         case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
         {
-            // In CoreCLR, RuntimeTypeHandle is just a wrapper around RuntimeType object, so we can
+            // If RuntimeTypeHandle is just a wrapper around RuntimeType object, we can
             // just number it as BitCast<TYP_STRUCT>(nonGcRuntimeTypeObj);
             const ValueNum argVN = call->gtArgs.GetArgByIndex(0)->GetNode()->gtVNPair.GetConservative();
-            if (!opts.IsReadyToRun() && vnStore->IsVNTypeHandle(argVN))
+            if ((GetRuntimeHandleUnderlyingType() == TYP_REF) && vnStore->IsVNTypeHandle(argVN))
             {
                 CORINFO_CLASS_HANDLE  cls     = (CORINFO_CLASS_HANDLE)vnStore->ConstantValue<ssize_t>(argVN);
                 CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
