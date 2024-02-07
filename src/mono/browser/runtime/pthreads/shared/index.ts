@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../../globals";
-import { mono_log_debug, mono_set_thread_name } from "../../logging";
+import { mono_log_debug, set_thread_prefix } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
 import { GCHandle, GCHandleNull, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
@@ -63,16 +63,28 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function update_thread_info(): void {
-    loaderHelpers.mono_set_thread_name(monoThreadInfo.threadName!);
+    const threadType = monoThreadInfo.isUI ? "main"
+        : !monoThreadInfo.isAttached ? "emsc"
+            : monoThreadInfo.isTimer ? "timr"
+                : monoThreadInfo.isLongRunning ? "long"
+                    : monoThreadInfo.isThreadPoolGate ? "gate"
+                        : monoThreadInfo.isDebugger ? "dbgr"
+                            : monoThreadInfo.isThreadPoolWorker ? "pool"
+                                : monoThreadInfo.isExternalEventLoop ? "jsww"
+                                    : monoThreadInfo.isBackground ? "back"
+                                        : "norm";
+    monoThreadInfo.threadPrefix = `0x${monoThreadInfo.pthreadId.toString(16).padStart(8, "0")}-${threadType}`;
+
+    loaderHelpers.set_thread_prefix(monoThreadInfo.threadPrefix!);
     if (!loaderHelpers.config.forwardConsoleLogsToWS) {
-        mono_set_thread_name(monoThreadInfo.threadName!);
+        set_thread_prefix(monoThreadInfo.threadPrefix!);
     }
 
     (globalThis as any).monoThreadInfo = monoThreadInfo;
     if (WasmEnableThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         monoThreadInfo.updateCount++;
         try {
-            (globalThis as any).monoThreadInfoFn = new Function(`//# sourceURL=https://${monoThreadInfo.updateCount}WorkerInfo${monoThreadInfo.isAttached ? monoThreadInfo.threadName : ""}/\r\nconsole.log("${JSON.stringify(monoThreadInfo)}");`);
+            (globalThis as any).monoThreadInfoFn = new Function(`//# sourceURL=https://${monoThreadInfo.updateCount}WorkerInfo${monoThreadInfo.isAttached ? monoThreadInfo.threadPrefix : ""}/\r\nconsole.log("${JSON.stringify(monoThreadInfo)}");`);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;

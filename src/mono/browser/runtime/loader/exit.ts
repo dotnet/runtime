@@ -108,6 +108,9 @@ export function mono_exit(exit_code: number, reason?: any): void {
                 if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
                     runtimeHelpers.forceDisposeProxies(true, true);
                 }
+                if (WasmEnableThreads && exit_code !== 0 && loaderHelpers.config?.dumpThreadsOnNonZeroExit) {
+                    runtimeHelpers.dumpThreads();
+                }
             }
         }
         catch (err) {
@@ -163,9 +166,9 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
         try {
             runtimeHelpers.nativeExit(exit_code);
         }
-        catch (err) {
-            if (runtimeHelpers.ExitStatus && !(err instanceof runtimeHelpers.ExitStatus)) {
-                mono_log_warn("mono_wasm_exit failed", err);
+        catch (error: any) {
+            if (runtimeHelpers.ExitStatus && !(error instanceof runtimeHelpers.ExitStatus)) {
+                mono_log_warn("mono_wasm_exit failed: " + error.toString());
             }
         }
     }

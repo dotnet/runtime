@@ -240,7 +240,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
     }
 
     // Ignore any assignments of NULL.
-    GenTree* const data = store->Data()->gtSkipReloadOrCopy()->gtEffectiveVal();
+    GenTree* const data = store->Data()->gtSkipReloadOrCopy();
     if (data->IsIntegralConst(0))
     {
         return WBF_NoBarrier;

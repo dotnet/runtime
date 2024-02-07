@@ -2951,7 +2951,12 @@ public:
 
     GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant);
 
-    GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
+    GenTreeIntCon*   gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
+
+    static var_types gtGetTypeForIconFlags(GenTreeFlags flags)
+    {
+        return flags == GTF_ICON_OBJ_HDL ? TYP_REF : TYP_I_IMPL;
+    }
 
     GenTreeFlags gtTokenToIconFlags(unsigned token);
 
@@ -3159,6 +3164,9 @@ public:
     GenTree* gtNewSimdCreateScalarUnsafeNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
 
+    GenTree* gtNewSimdCreateSequenceNode(
+        var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize);
+
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
@@ -3173,6 +3181,8 @@ public:
                                      GenTree*    op2,
                                      CorInfoType simdBaseJitType,
                                      unsigned    simdSize);
+
+    GenTree* gtNewSimdGetIndicesNode(var_types type, CorInfoType simdBaseJitType, unsigned simdSize);
 
     GenTree* gtNewSimdGetLowerNode(var_types   type,
                                    GenTree*    op1,
@@ -5596,6 +5606,9 @@ public:
 
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
+
+    // Does value-numbering for a special intrinsic call.
+    bool fgValueNumberSpecialIntrinsic(GenTreeCall* call);
 
     // Does value-numbering for a helper representing a cast operation.
     void fgValueNumberCastHelper(GenTreeCall* call);
