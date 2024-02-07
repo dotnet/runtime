@@ -1071,11 +1071,15 @@ namespace System.Net
             }
 
             // Create stream buffer for transferring data from RequestStream to the StreamContent.
-            StreamBuffer streamBuffer = new StreamBuffer();
-            _sendRequestTask = SendRequest(async, new StreamContent(new HttpClientContentStream(streamBuffer)));
+            StreamBuffer streamBuffer = new StreamBuffer(maxBufferSize: int.MaxValue);
+            // If we're buffering we don't need to open the connection right away.
+            if (!AllowWriteStreamBuffering)
+            {
+                _sendRequestTask = SendRequest(async, new StreamContent(new HttpClientContentStream(streamBuffer)));
+            }
 
             // If any parameter changed, change the RequestStream.
-            _requestStream = new RequestStream(streamBuffer, AllowWriteStreamBuffering);
+            _requestStream = new RequestStream(streamBuffer);
 
             return Task.FromResult((Stream)_requestStream);
         }
@@ -1134,20 +1138,22 @@ namespace System.Net
             return stream;
         }
 
-        private Task<HttpResponseMessage> SendRequest(bool async, HttpContent? content = null)
+        private Task<HttpResponseMessage> SendRequest(bool async, HttpContent content)
         {
             if (RequestSubmitted)
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
+            if (AllowWriteStreamBuffering && _requestStream is not null)
+            {
+                content.Headers.ContentLength = _requestStream.GetBuffer().ReadBytesAvailable;
+            }
+
             _sendRequestMessage = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
             _sendRequestCts = new CancellationTokenSource();
             _httpClient = GetCachedOrCreateHttpClient(async, out _disposeRequired);
-            if (content is not null)
-            {
-                _sendRequestMessage.Content = content;
-            }
+            _sendRequestMessage.Content = content;
 
             if (_hostUri is not null)
             {
@@ -1165,9 +1171,6 @@ namespace System.Net
                 // are only allowed in the request headers collection and not in the request content headers collection.
                 if (IsWellKnownContentHeader(headerName))
                 {
-                    // Create empty content so that we can send the entity-body header.
-                    _sendRequestMessage.Content ??= new ByteArrayContent(Array.Empty<byte>());
-
                     _sendRequestMessage.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
                 else
@@ -1197,60 +1200,68 @@ namespace System.Net
             _sendRequestMessage.Version = ProtocolVersion;
             HttpCompletionOption completionOption = _allowReadStreamBuffering ?
                             HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
-            _sendRequestTask = async ?
-                _httpClient.SendAsync(_sendRequestMessage, completionOption, _sendRequestCts!.Token) :
-                Task.Run(() => _httpClient.Send(_sendRequestMessage, completionOption, _sendRequestCts!.Token));
+            // If we're not buffering, there is no way to open the connection and not send the request without async.
+            // So we should use Async, if we're not buffering.
+            _sendRequestTask = async || !AllowWriteStreamBuffering ?
+                _httpClient.SendAsync(_sendRequestMessage, completionOption, _sendRequestCts.Token) :
+                Task.FromResult(_httpClient.Send(_sendRequestMessage, completionOption, _sendRequestCts.Token));
 
             return _sendRequestTask!;
         }
 
         private async Task<WebResponse> HandleResponse(bool async)
         {
-            _sendRequestTask ??= SendRequest(async);
-
             try
             {
-                if (_requestStream is not null) // If we didn't flush and end the request stream, do it now, don't wait for dispose.
-                {
-                    if (async)
-                    {
-                        await _requestStream.FlushAsync().ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        _requestStream.Flush();
-                    }
-                    _requestStream.EndWriteOnStreamBuffer();
-                }
+                _requestStream?.EndWriteOnStreamBuffer();
             }
             catch (ObjectDisposedException)
             {
                 // If the request stream was disposed, don't do anything.
             }
 
-            HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
-
-            HttpWebResponse response = new HttpWebResponse(responseMessage, _requestUri, _cookieContainer);
-
-            int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
-            if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
+            HttpContent content;
+            if (_requestStream is not null)
             {
-                throw new WebException(
-                    SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
-                    null,
-                    WebExceptionStatus.ProtocolError,
-                    response);
+                content = new StreamContent(new HttpClientContentStream(_requestStream.GetBuffer()));
+                if (AllowWriteStreamBuffering)
+                {
+                    content.Headers.ContentLength = _requestStream.GetBuffer().ReadBytesAvailable;
+                }
+            }
+            else
+            {
+                content = new ByteArrayContent(Array.Empty<byte>());
             }
 
-            _sendRequestMessage?.Dispose();
+            _sendRequestTask ??= SendRequest(async, content);
 
-            if (_disposeRequired)
+            try
             {
-                _httpClient?.Dispose();
-                _httpClient = null;
-            }
+                HttpResponseMessage responseMessage = await _sendRequestTask.ConfigureAwait(false);
+                HttpWebResponse response = new(responseMessage, _requestUri, _cookieContainer);
 
-            return response;
+                int maxSuccessStatusCode = AllowAutoRedirect ? 299 : 399;
+                if ((int)response.StatusCode > maxSuccessStatusCode || (int)response.StatusCode < 200)
+                {
+                    throw new WebException(
+                        SR.Format(SR.net_servererror, (int)response.StatusCode, response.StatusDescription),
+                        null,
+                        WebExceptionStatus.ProtocolError,
+                        response);
+                }
+
+                return response;
+            }
+            finally
+            {
+                _sendRequestMessage?.Dispose();
+
+                if (_disposeRequired)
+                {
+                    _httpClient?.Dispose();
+                }
+            }
         }
 
         private void AddCacheControlHeaders(HttpRequestMessage request)

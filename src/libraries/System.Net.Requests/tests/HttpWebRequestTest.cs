@@ -2078,14 +2078,16 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task SendHttpPostRequest_ConnectionShouldStartWithRequestStream()
+        public async Task SendHttpPostRequest_BufferingDisabled_ConnectionShouldStartWithRequestStream()
         {
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
+                    request.AllowWriteStreamBuffering = false;
                     var stream = await request.GetRequestStreamAsync();
+                    await Assert.ThrowsAnyAsync<Exception>(() => request.GetResponseAsync());
                 },
                 async (server) => 
                 {
@@ -2098,8 +2100,10 @@ namespace System.Net.Tests
             );
         }
 
-        [Fact]
-        public async Task SendHttpPostRequest_AllowWriteBufferingFalse_ConnectionShouldStartWithRequestStream()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SendHttpPostRequest_WhenBufferingChanges_Success(bool buffering)
         {
             const string text = "Hello World!!!!\n";
             await LoopbackServer.CreateClientAndServerAsync(
@@ -2108,14 +2112,18 @@ namespace System.Net.Tests
                     int size = text.Length * 128 * 1024;
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.ContentType = "application/text";
-                    request.ContentLength = size;
+                    if (!buffering)
+                    {
+                        request.ContentLength = size;
+                    }
                     request.Method = "POST";
-                    request.AllowWriteStreamBuffering = false;
+                    request.AllowWriteStreamBuffering = buffering;
                     using var stream = await request.GetRequestStreamAsync();
                     for (int i = 0; i < size / text.Length; i++)
                     {
                         await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
                     }
+                    await request.GetResponseAsync();
                 },
                 async (server) =>
                 {
@@ -2126,43 +2134,7 @@ namespace System.Net.Tests
                         {
                             Assert.Equal(text, Encoding.UTF8.GetString(data.Body[i..(i + text.Length)]));
                         }
-                    });
-                }
-            );
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        public async Task SendHttpPost_WriteBufferingEnabled(int delayMs)
-        {
-            const string text = "Hello World!!!!\n";
-            await LoopbackServer.CreateClientAndServerAsync(
-                async (uri) =>
-                {
-                    const int size = 1048576 / 4;
-                    HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.AllowWriteStreamBuffering = true;
-                    request.ContentType = "application/text";
-                    request.ContentLength = size;
-                    request.Method = "POST";
-                    request.Timeout = (size/16 * delayMs * 2) + request.Timeout;
-                    using var stream = await request.GetRequestStreamAsync();
-                    for (int i = 0; i < size/16; i++)
-                    {
-                        await stream.WriteAsync(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(text)));
-                        if (delayMs > 0)
-                        {
-                            await Task.Delay(TimeSpan.FromMilliseconds(delayMs));
-                        }
-                    }
-                },
-                async (server) =>
-                {
-                    await server.AcceptConnectionAsync(async connection =>
-                    {
-                        var data = await connection.ReadRequestDataAsync();
-                        Assert.Equal(text, Encoding.UTF8.GetString(data.Body[0..text.Length]));
+                        await connection.SendResponseAsync();
                     });
                 }
             );
@@ -2171,7 +2143,6 @@ namespace System.Net.Tests
         [Fact]
         public async Task SendHttpPostRequest_WithContinueTimeoutAndBody_BodyIsDelayed()
         {
-            TaskCompletionSource tcs = new TaskCompletionSource();
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
@@ -2185,7 +2156,6 @@ namespace System.Net.Tests
                         requestStream.Write("aaaa\r\n\r\n"u8);
                     }
                     await request.GetResponseAsync();
-                    tcs.SetResult();
                 },
                 async (server) =>
                 {
@@ -2195,7 +2165,6 @@ namespace System.Net.Tests
                         // This should time out, because we're expecting the body itself but we'll get it after 30 sec.
                         await Assert.ThrowsAsync<TimeoutException>(() => client.ReadLineAsync().WaitAsync(TimeSpan.FromMilliseconds(100)));
                         await client.SendResponseAsync();
-                        await tcs.Task;
                     });
                 }
             );
@@ -2213,7 +2182,6 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = expect100Continue;
                     request.ContinueTimeout = continueTimeout;
-                    request.ContentLength = 8;
                     using (Stream requestStream = await request.GetRequestStreamAsync())
                     {
                         requestStream.Write("aaaa\r\n\r\n"u8);

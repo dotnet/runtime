@@ -16,19 +16,12 @@ namespace System.Net
     // amounts of data to the server such as from a file stream.
     internal sealed class RequestStream : Stream
     {
-        private readonly MemoryStream? _buffer;
         private readonly StreamBuffer _streamBuffer;
-        private readonly bool _isBuffered;
         private bool _disposed;
 
-        public RequestStream(StreamBuffer streamBuffer, bool isBuffered)
+        public RequestStream(StreamBuffer streamBuffer)
         {
-            if (isBuffered)
-            {
-                _buffer = new MemoryStream();
-            }
             _streamBuffer = streamBuffer;
-            _isBuffered = isBuffered;
         }
 
         public override bool CanRead
@@ -63,25 +56,11 @@ namespace System.Net
         public override void Flush()
         {
             ThrowIfDisposed();
-
-            if (_isBuffered && _buffer!.Length > 0)
-            {
-                _streamBuffer.Write(_buffer!.GetBuffer().AsSpan(0, (int) _buffer!.Length));
-                _buffer!.SetLength(0);
-            }
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-
-            if (_isBuffered && _buffer!.Length > 0)
-            {
-                Task task = _streamBuffer.WriteAsync(_buffer.GetBuffer().AsMemory(0, (int) _buffer.Length), cancellationToken).AsTask();
-                _buffer.SetLength(0);
-                return task;
-            }
-
             return !cancellationToken.IsCancellationRequested ? Task.CompletedTask : Task.FromCanceled(cancellationToken);
         }
 
@@ -124,37 +103,27 @@ namespace System.Net
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            if (_isBuffered)
-            {
-                _buffer!.Write(buffer, offset, count);
-            }
-            else
-            {
                 _streamBuffer.Write(new(buffer, offset, count));
-            }
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            return _isBuffered ? _buffer!.WriteAsync(buffer, offset, count, cancellationToken) :
-                _streamBuffer.WriteAsync(new(buffer, offset, count), cancellationToken).AsTask();
+            return _streamBuffer.WriteAsync(new(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            return _isBuffered ? _buffer!.WriteAsync(buffer, cancellationToken) :
-                _streamBuffer.WriteAsync(buffer, cancellationToken);
+            return _streamBuffer.WriteAsync(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState)
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-            return _isBuffered ? _buffer!.BeginWrite(buffer, offset, count, asyncCallback, asyncState) :
-                TaskToAsyncResult.Begin(_streamBuffer.WriteAsync(new(buffer, offset, count)).AsTask(), asyncCallback, asyncState);
+            return TaskToAsyncResult.Begin(_streamBuffer.WriteAsync(new(buffer, offset, count)).AsTask(), asyncCallback, asyncState);
         }
 
         public void EndWriteOnStreamBuffer()
@@ -162,23 +131,20 @@ namespace System.Net
             _streamBuffer.EndWrite();
         }
 
+        public StreamBuffer GetBuffer()
+        {
+            return _streamBuffer;
+        }
+
         public override void EndWrite(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-            if (_isBuffered)
-            {
-                _buffer!.EndWrite(asyncResult);
-            }
-            else
-            {
-                TaskToAsyncResult.End(asyncResult);
-            }
+            TaskToAsyncResult.End(asyncResult);
         }
 
         protected override void Dispose(bool disposing)
         {
             ThrowIfDisposed();
-            Flush();
 
             if (disposing && !_disposed)
             {
@@ -191,11 +157,7 @@ namespace System.Net
 
         private void ThrowIfDisposed()
         {
-            if (_disposed)
-                ThrowDisposedException();
-
-            [StackTraceHidden]
-            static void ThrowDisposedException() => throw new ObjectDisposedException(nameof(RequestStream));
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }
