@@ -65,7 +65,7 @@ Revision History:
 #include <mach/mach_host.h>
 #endif // defined(TARGET_APPLE)
 
-#if !defined(TARGET_IOS)
+#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
 // On some platforms sys/user.h ends up defining _DEBUG; if so
 // remove the definition before including the header and put
 // back our definition afterwards
@@ -79,7 +79,7 @@ Revision History:
 #define _DEBUG OLD_DEBUG
 #undef OLD_DEBUG
 #endif
-#endif // !TARGET_IOS
+#endif // !TARGET_IOS && !TARGET_TVOS
 
 #include "pal/dbgmsg.h"
 #include "pal/process.h"
