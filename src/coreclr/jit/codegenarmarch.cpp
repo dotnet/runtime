@@ -4946,8 +4946,8 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // DEBUG
 
 #if defined(TARGET_ARM)
-    regMaskTP maskPushRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskTP maskPushRegsInt   = rsPushRegs & ~maskPushRegsFloat;
+    regMaskFloat maskPushRegsFloat = rsPushRegs & RBM_ALLFLOAT;
+    regMaskGpr maskPushRegsInt   = rsPushRegs & ~maskPushRegsFloat;
 
     maskPushRegsInt |= genStackAllocRegisterMask(compiler->compLclFrameSize, maskPushRegsFloat);
 

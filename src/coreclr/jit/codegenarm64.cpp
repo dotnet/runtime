@@ -718,7 +718,7 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
 //   no return value; the regStack argument is modified.
 //
 // static
-void CodeGen::genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack)
+void CodeGen::genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>* regStack)
 {
     assert(regStack != nullptr);
     assert(regStack->Height() == 0);
@@ -820,7 +820,7 @@ void CodeGen::genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack)
 // Note: Because int and float register type sizes match we can call this function with a mask that includes both.
 //
 // static
-int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
+int CodeGen::genGetSlotSizeForRegsInMask(regMaskOnlyOne regsMask)
 {
     assert((regsMask & (RBM_CALLEE_SAVED | RBM_FP | RBM_LR)) == regsMask); // Do not expect anything else.
 
@@ -836,8 +836,10 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
 //   spDelta              - if non-zero, the amount to add to SP before the first register save (or together with it);
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
 //
-void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
+void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset)
 {
+    assert(Compiler::IsGprRegMask(regsMask) != Compiler::IsFloatRegMask(regsMask));
+
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
     ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
@@ -902,7 +904,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskAny regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
 {
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
@@ -926,8 +928,8 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 
     // Save integer registers at higher addresses than floating-point registers.
 
-    regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
+    regMaskFloat maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
+    regMaskGpr maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
@@ -951,7 +953,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
 //   spDelta              - if non-zero, the amount to add to SP after the last register restore (or together with it);
 //   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
 //
-void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset)
+void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset)
 {
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
@@ -1017,7 +1019,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskAny regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
 {
     assert(spDelta >= 0);
     unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
@@ -1043,8 +1045,8 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
 
     // Save integer registers at higher addresses than floating-point registers.
 
-    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+    regMaskFloat maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
+    regMaskGpr maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
 
     // Restore in the opposite order of saving.
 
@@ -1368,8 +1370,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    regMaskTP maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskTP maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
+    regMaskFloat maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskGpr maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
 
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
     assert((maskSaveRegsInt & RBM_LR) != 0);
@@ -1377,7 +1379,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     bool isFilter = (block->bbCatchTyp == BBCT_FILTER);
 
-    regMaskTP maskArgRegsLiveIn;
+    regMaskGpr maskArgRegsLiveIn;
     if (isFilter)
     {
         maskArgRegsLiveIn = RBM_R0 | RBM_R1;
@@ -5541,9 +5543,10 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
+    assert(Compiler::IsGprRegMask(maskArgRegsLiveIn));
 
     if (frameSize == 0)
     {

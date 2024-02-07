@@ -4559,9 +4559,13 @@ void CodeGen::genCheckUseBlockInit()
  *  initialized to 0. (Arm Only) Else copies from the integer register which
  *  is slower.
  */
-void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg)
+void CodeGen::genZeroInitFltRegs(const regMaskFloat& initFltRegs,
+                                 const regMaskFloat& initDblRegs,
+                                 const regNumber&    initReg)
 {
     assert(compiler->compGeneratingProlog);
+    assert(Compiler::IsFloatRegMask(initFltRegs));
+    assert(Compiler::IsFloatRegMask(initDblRegs));
 
     // The first float/double reg that is initialized to 0. So they can be used to
     // initialize the remaining registers.
@@ -6790,7 +6794,7 @@ void CodeGen::genSinglePop()
 // Notes:
 //    This function does not check if the register is marked as used, etc.
 //
-regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs)
+regMaskGpr CodeGen::genPushRegs(regMaskGpr regs, regMaskGpr* byrefRegs, regMaskGpr* noRefRegs)
 {
     *byrefRegs = RBM_NONE;
     *noRefRegs = RBM_NONE;
@@ -6799,6 +6803,8 @@ regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* 
     {
         return RBM_NONE;
     }
+
+    assert(Compiler::IsGprRegMask(regs));
 
 #if FEATURE_FIXED_OUT_ARGS
 
@@ -6863,13 +6869,14 @@ regMaskTP CodeGen::genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* 
 // Return Value:
 //    None
 //
-void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs)
+void CodeGen::genPopRegs(regMaskGpr regs, regMaskGpr byrefRegs, regMaskGpr noRefRegs)
 {
     if (regs == RBM_NONE)
     {
         return;
     }
 
+    assert(Compiler::IsGprRegMask(regs));
 #if FEATURE_FIXED_OUT_ARGS
 
     NYI("Don't call genPopRegs with real regs!");
@@ -8300,7 +8307,7 @@ unsigned CodeGenInterface::getCurrentStackLevel() const
 //   This function emits code to poison address exposed non-zero-inited local variables. We expect this function
 //   to be called when emitting code for the scratch BB that comes right after the prolog.
 //   The variables are poisoned using 0xcdcdcdcd.
-void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
+void CodeGen::genPoisonFrame(regMaskAny regLiveIn)
 {
     assert(compiler->compShouldPoisonFrame());
 #if defined(TARGET_XARCH)

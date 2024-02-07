@@ -1715,7 +1715,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // For generating Enter callout we would need two registers and one of them has to be r0 to pass profiler handle.
     // The call target register could be any free register.
     regNumber argReg     = REG_PROFILER_ENTER_ARG;
-    regMaskTP argRegMask = genRegMask(argReg);
+    regMaskGpr argRegMask = genRegMask(argReg);
     assert((regSet.rsMaskPreSpillRegArg & argRegMask) != 0);
 
     if (compiler->compProfilerMethHndIndirected)
@@ -1891,7 +1891,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1943,10 +1943,10 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     compiler->unwindAllocStack(frameSize);
 }
 
-void CodeGen::genPushFltRegs(regMaskTP regMask)
+void CodeGen::genPushFltRegs(regMaskFloat regMask)
 {
-    assert(regMask != 0);                        // Don't call uness we have some registers to push
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert(regMask != 0);                      // Don't call unless we have some registers to push
+    assert(Compiler::IsFloatRegMask(regMask)); // Only floating point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
@@ -1962,10 +1962,10 @@ void CodeGen::genPushFltRegs(regMaskTP regMask)
     GetEmitter()->emitIns_R_I(INS_vpush, EA_8BYTE, lowReg, slots / 2);
 }
 
-void CodeGen::genPopFltRegs(regMaskTP regMask)
+void CodeGen::genPopFltRegs(regMaskFloat regMask)
 {
     assert(regMask != 0);                        // Don't call uness we have some registers to pop
-    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+    assert(Compiler::IsFloatRegMask(regMask)); // Only floasting point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
@@ -2100,7 +2100,7 @@ void CodeGen::genMov32RelocatableImmediate(emitAttr size, BYTE* addr, regNumber 
  *  instead of using "sub sp" / "add sp". Returns RBM_NONE if either frame size
  *  is zero, or if we should use "sub sp" / "add sp" instead of push/pop.
  */
-regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat)
+regMaskGpr CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskFloat maskCalleeSavedFloat)
 {
     assert(compiler->compGeneratingProlog || compiler->compGeneratingEpilog);
 
@@ -2108,6 +2108,8 @@ regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskC
     // the stack would be allocated in a wrong spot.
     if (maskCalleeSavedFloat != RBM_NONE)
         return RBM_NONE;
+
+    assert(Compiler::IsFloatRegMask(maskCalleeSavedFloat));
 
     // Allocate space for small frames by pushing extra registers. It generates smaller and faster code
     // that extra sub sp,XXX/add sp,XXX.
@@ -2157,7 +2159,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 }
 
-bool CodeGen::genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog)
+bool CodeGen::genCanUsePopToReturn(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
@@ -2171,9 +2173,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskTP maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
-    regMaskTP maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
-    regMaskTP maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
+    regMaskAny maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskFloat maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
+    regMaskGpr maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 
     // First, pop float registers
 
@@ -2187,7 +2189,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     if (!jmpEpilog)
     {
-        regMaskTP maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize, maskPopRegsFloat);
+        regMaskGpr maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize, maskPopRegsFloat);
         maskPopRegsInt |= maskStackAlloc;
     }
 
@@ -2197,7 +2199,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         maskPopRegsInt |= RBM_FPBASE;
     }
 
-    if (genCanUsePopToReturn(maskPopRegsInt, jmpEpilog))
+    if (genCanUsePopToReturn(jmpEpilog))
     {
         maskPopRegsInt |= RBM_PC;
         // Record the fact that we use a pop to the PC to perform the return
@@ -2332,10 +2334,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    regMaskTP maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskTP maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
+    regMaskFloat maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskGpr maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
 
-    regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
+    regMaskGpr maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
     maskPushRegsInt |= maskStackAlloc;
 
     assert(FitsIn<int>(maskPushRegsInt));
@@ -2350,7 +2352,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     bool isFilter = (block->bbCatchTyp == BBCT_FILTER);
 
-    regMaskTP maskArgRegsLiveIn;
+    regMaskGpr maskArgRegsLiveIn;
     if (isFilter)
     {
         maskArgRegsLiveIn = RBM_R0 | RBM_R1;
@@ -2428,10 +2430,10 @@ void CodeGen::genFuncletEpilog()
     /* The saved regs info saves the LR register. We need to pop the PC register to return */
     assert(genFuncletInfo.fiSaveRegs & RBM_LR);
 
-    regMaskTP maskPopRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskTP maskPopRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
+    regMaskFloat maskPopRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
+    regMaskGpr maskPopRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
 
-    regMaskTP maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
+    regMaskGpr maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
     maskPopRegsInt |= maskStackAlloc;
 
     if (maskStackAlloc == RBM_NONE)
@@ -2488,7 +2490,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
-        regMaskTP rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
+        regMaskAny rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
         unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
         unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;

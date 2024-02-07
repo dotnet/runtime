@@ -127,7 +127,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
 
     regNumber regGSCheck;
-    regMaskTP regMaskGSCheck = RBM_NONE;
+    regMaskGpr regMaskGSCheck = RBM_NONE;
 
     if (!pushReg)
     {
@@ -162,9 +162,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 #endif // !TARGET_X86
     }
 
-    regMaskTP byrefPushedRegs = RBM_NONE;
-    regMaskTP norefPushedRegs = RBM_NONE;
-    regMaskTP pushedRegs      = RBM_NONE;
+    regMaskGpr byrefPushedRegs = RBM_NONE;
+    regMaskGpr norefPushedRegs = RBM_NONE;
+    regMaskGpr pushedRegs      = RBM_NONE;
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -9994,10 +9994,10 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     //
     if (doesSupersetOfNormalPops)
     {
-        regMaskTP rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
-        regMaskTP tier0CalleeSaves =
-            ((regMaskTP)compiler->info.compPatchpointInfo->CalleeSaveRegisters()) & RBM_OSR_INT_CALLEE_SAVED;
-        regMaskTP additionalCalleeSaves = rsPopRegs & ~tier0CalleeSaves;
+        regMaskGpr rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+        regMaskGpr tier0CalleeSaves =
+            ((regMaskGpr)compiler->info.compPatchpointInfo->CalleeSaveRegisters()) & RBM_OSR_INT_CALLEE_SAVED;
+        regMaskGpr additionalCalleeSaves = rsPopRegs & ~tier0CalleeSaves;
 
         // Registers saved by the OSR prolog.
         //
@@ -10014,7 +10014,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     // Registers saved by a normal prolog
     //
-    regMaskTP      rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr     rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
     const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
@@ -10023,8 +10023,10 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 // genPopCalleeSavedRegistersFromMask: pop specified set of callee saves
 //   in the "standard" order
 //
-unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs)
+unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskGpr rsPopRegs)
 {
+    assert(Compiler::IsGprRegMask(rsPopRegs));
+
     unsigned popCount = 0;
     if ((rsPopRegs & RBM_EBX) != 0)
     {
@@ -10642,7 +10644,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // Callee saved int registers are pushed to stack.
     genPushCalleeSavedRegisters();
 
-    regMaskTP maskArgRegsLiveIn;
+    regMaskGpr maskArgRegsLiveIn;
     if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
     {
         maskArgRegsLiveIn = RBM_ARG_0;

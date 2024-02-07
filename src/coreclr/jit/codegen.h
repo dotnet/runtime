@@ -329,16 +329,16 @@ protected:
         }
     };
 
-    static void genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack);
+    static void genBuildRegPairsStack(regMaskOnlyOne regsMask, ArrayStack<RegPair>* regStack);
     static void genSetUseSaveNextPairs(ArrayStack<RegPair>* regStack);
 
-    static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
+    static int genGetSlotSizeForRegsInMask(regMaskOnlyOne regsMask);
 
-    void genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
-    void genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, int spOffset);
+    void genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset);
+    void genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset);
 
-    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
-    void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
+    void genSaveCalleeSavedRegistersHelp(regMaskAny regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
+    void genRestoreCalleeSavedRegistersHelp(regMaskAny regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 
@@ -355,9 +355,9 @@ protected:
     void genStackProbe(ssize_t frameSize, regNumber rOffset, regNumber rLimit, regNumber rPageSize);
 #endif
 
-    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
+    void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn);
 
-    void genPoisonFrame(regMaskTP bbRegLiveIn);
+    void genPoisonFrame(regMaskAny bbRegLiveIn);
 
 #if defined(TARGET_ARM)
 
@@ -366,11 +366,9 @@ protected:
 
     bool genStackPointerAdjustment(ssize_t spAdjustment, regNumber tmpReg);
 
-    void genPushFltRegs(regMaskTP regMask);
-    void genPopFltRegs(regMaskTP regMask);
-    regMaskTP genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat);
-
-    regMaskTP genJmpCallArgMask();
+    void genPushFltRegs(regMaskFloat regMask);
+    void genPopFltRegs(regMaskFloat regMask);
+    regMaskGpr genStackAllocRegisterMask(unsigned frameSize, regMaskFloat maskCalleeSavedFloat);
 
     void genFreeLclFrame(unsigned           frameSize,
                          /* IN OUT */ bool* pUnwindStarted);
@@ -387,7 +385,7 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;                  // Set of registers saved in the funclet prolog (includes LR)
+        regMaskAny fiSaveRegs;                 // Set of registers saved in the funclet prolog (includes LR)
         unsigned  fiFunctionCallerSPtoFPdelta; // Delta between caller SP and the frame pointer
         unsigned  fiSpDelta;                   // Stack pointer delta
         unsigned  fiPSP_slot_SP_offset;        // PSP slot offset from SP
@@ -403,7 +401,7 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes LR)
+        regMaskAny fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes LR)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_FPLR_save_delta;         // FP/LR register save offset from SP (positive)
@@ -438,7 +436,7 @@ protected:
     // and used by all funclet prologs and epilogs, which must all be the same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        regMaskAny fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes RA)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
@@ -457,7 +455,7 @@ protected:
     // and used by all funclet prologs and epilogs, which must all be the same.
     struct FuncletFrameInfoDsc
     {
-        regMaskTP fiSaveRegs;                // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        regMaskAny fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes RA)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
@@ -481,7 +479,8 @@ protected:
 
 #endif // TARGET_XARCH
 
-    void genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& initDblRegs, const regNumber& initReg);
+    void genZeroInitFltRegs(const regMaskFloat& initFltRegs, const regMaskFloat& initDblRegs,
+                            const regNumber&             initReg);
 
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
@@ -530,7 +529,7 @@ protected:
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(TARGET_ARM)
-    bool genCanUsePopToReturn(regMaskTP maskPopRegsInt, bool jmpEpilog);
+    bool genCanUsePopToReturn(bool jmpEpilog);
 #endif
 
 #if defined(TARGET_ARM64)
@@ -542,7 +541,7 @@ protected:
     void genPopCalleeSavedRegisters(bool jmpEpilog = false);
 
 #if defined(TARGET_XARCH)
-    unsigned genPopCalleeSavedRegistersFromMask(regMaskTP rsPopRegs);
+    unsigned genPopCalleeSavedRegistersFromMask(regMaskGpr rsPopRegs);
 #endif // !defined(TARGET_XARCH)
 
 #endif // !defined(TARGET_ARM64)
@@ -682,8 +681,8 @@ protected:
 
     void      genSinglePush();
     void      genSinglePop();
-    regMaskTP genPushRegs(regMaskTP regs, regMaskTP* byrefRegs, regMaskTP* noRefRegs);
-    void genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefRegs);
+    regMaskGpr genPushRegs(regMaskGpr regs, regMaskGpr* byrefRegs, regMaskGpr* noRefRegs);
+    void      genPopRegs(regMaskGpr regs, regMaskGpr byrefRegs, regMaskGpr noRefRegs);
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
