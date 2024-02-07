@@ -144,7 +144,6 @@ else()
 
         System.Globalization.Native-Static
         System.IO.Compression.Native-Static
-        System.Net.Security.Native-Static
         System.Native-Static
 
         palrt
@@ -154,6 +153,10 @@ else()
         eventprovider
         nativeresourcestring
     )
+
+    if(NOT CLR_CMAKE_TARGET_TVOS)
+        LIST(APPEND NATIVE_LIBS System.Net.Security.Native-Static)
+    endif()
 
     if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_HOST_ANDROID)
         LIST(APPEND NATIVE_LIBS System.Security.Cryptography.Native.OpenSsl-Static)

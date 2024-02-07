@@ -60,10 +60,12 @@ namespace
         // This function is only called with the library name specified for a p/invoke, not any variations.
         // It must handle exact matches to the names specified. See Interop.Libraries.cs for each platform.
 #if !defined(_WIN32)
+#if !defined(TARGET_TVOS)
         if (strcmp(library_name, LIB_NAME("System.Net.Security.Native")) == 0)
         {
             return SecurityResolveDllImport(entry_point_name);
         }
+#endif
 
         if (strcmp(library_name, LIB_NAME("System.Native")) == 0)
         {
