@@ -172,7 +172,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Math.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\MathF.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ModuleHandle.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeFieldHandle.cs" />
