@@ -160,43 +160,43 @@ private:
     struct PreservedRegPtrs
     {
 #ifdef TARGET_ARM
-        PTR_UIntNative pR4;
-        PTR_UIntNative pR5;
-        PTR_UIntNative pR6;
-        PTR_UIntNative pR7;
-        PTR_UIntNative pR8;
-        PTR_UIntNative pR9;
-        PTR_UIntNative pR10;
-        PTR_UIntNative pR11;
+        PTR_uintptr_t pR4;
+        PTR_uintptr_t pR5;
+        PTR_uintptr_t pR6;
+        PTR_uintptr_t pR7;
+        PTR_uintptr_t pR8;
+        PTR_uintptr_t pR9;
+        PTR_uintptr_t pR10;
+        PTR_uintptr_t pR11;
 #elif defined(TARGET_ARM64)
-        PTR_UIntNative pX19;
-        PTR_UIntNative pX20;
-        PTR_UIntNative pX21;
-        PTR_UIntNative pX22;
-        PTR_UIntNative pX23;
-        PTR_UIntNative pX24;
-        PTR_UIntNative pX25;
-        PTR_UIntNative pX26;
-        PTR_UIntNative pX27;
-        PTR_UIntNative pX28;
-        PTR_UIntNative pFP;
+        PTR_uintptr_t pX19;
+        PTR_uintptr_t pX20;
+        PTR_uintptr_t pX21;
+        PTR_uintptr_t pX22;
+        PTR_uintptr_t pX23;
+        PTR_uintptr_t pX24;
+        PTR_uintptr_t pX25;
+        PTR_uintptr_t pX26;
+        PTR_uintptr_t pX27;
+        PTR_uintptr_t pX28;
+        PTR_uintptr_t pFP;
 #elif defined(UNIX_AMD64_ABI)
-        PTR_UIntNative pRbp;
-        PTR_UIntNative pRbx;
-        PTR_UIntNative pR12;
-        PTR_UIntNative pR13;
-        PTR_UIntNative pR14;
-        PTR_UIntNative pR15;
+        PTR_uintptr_t pRbp;
+        PTR_uintptr_t pRbx;
+        PTR_uintptr_t pR12;
+        PTR_uintptr_t pR13;
+        PTR_uintptr_t pR14;
+        PTR_uintptr_t pR15;
 #else // TARGET_ARM
-        PTR_UIntNative pRbp;
-        PTR_UIntNative pRdi;
-        PTR_UIntNative pRsi;
-        PTR_UIntNative pRbx;
+        PTR_uintptr_t pRbp;
+        PTR_uintptr_t pRdi;
+        PTR_uintptr_t pRsi;
+        PTR_uintptr_t pRbx;
 #ifdef TARGET_AMD64
-        PTR_UIntNative pR12;
-        PTR_UIntNative pR13;
-        PTR_UIntNative pR14;
-        PTR_UIntNative pR15;
+        PTR_uintptr_t pR12;
+        PTR_uintptr_t pR13;
+        PTR_uintptr_t pR14;
+        PTR_uintptr_t pR15;
 #endif // TARGET_AMD64
 #endif // TARGET_ARM
     };
@@ -212,8 +212,8 @@ protected:
     PTR_VOID            m_effectiveSafePointAddress;
     PTR_OBJECTREF       m_pHijackedReturnValue;
     GCRefKind           m_HijackedReturnValueKind;
-    PTR_UIntNative      m_pConservativeStackRangeLowerBound;
-    PTR_UIntNative      m_pConservativeStackRangeUpperBound;
+    PTR_uintptr_t      m_pConservativeStackRangeLowerBound;
+    PTR_uintptr_t      m_pConservativeStackRangeUpperBound;
     uint32_t            m_dwFlags;
     PTR_ExInfo          m_pNextExInfo;
     PTR_VOID            m_pendingFuncletFramePointer;

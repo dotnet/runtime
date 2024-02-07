@@ -2368,27 +2368,17 @@ inline type* DacUnsafeMarshalSingleElement( ArrayDPTR(type) arrayPtr )
 //
 //----------------------------------------------------------------------------
 
-typedef DPTR(size_t)  PTR_size_t;
-#ifdef NATIVEAOT
-typedef DPTR(int8_t)          PTR_Int8;
-typedef DPTR(int16_t)         PTR_Int16;
-typedef DPTR(int32_t)         PTR_Int32;
-typedef DPTR(int64_t)         PTR_Int64;
-typedef ArrayDPTR(uint8_t)    PTR_UInt8;
-typedef DPTR(PTR_UInt8)     PTR_PTR_UInt8;
-typedef DPTR(PTR_PTR_UInt8) PTR_PTR_PTR_UInt8;
-typedef DPTR(uint16_t)        PTR_UInt16;
-typedef DPTR(uint32_t)        PTR_UInt32;
-typedef DPTR(uint64_t)        PTR_UInt64;
-typedef DPTR(uintptr_t)    PTR_UIntNative;
-typedef uint8_t               Code;
-typedef DPTR(Code)          PTR_Code;
-typedef DPTR(PTR_Code)      PTR_PTR_Code;
-#else
-typedef ArrayDPTR(BYTE)    PTR_BYTE;
+typedef DPTR(size_t)       PTR_size_t;
 typedef ArrayDPTR(uint8_t) PTR_uint8_t;
+typedef DPTR(PTR_uint8_t)  PTR_PTR_uint8_t;
+typedef DPTR(int32_t)      PTR_int32_t;
+typedef DPTR(uint32_t)     PTR_uint32_t;
+typedef DPTR(uint64_t)     PTR_uint64_t;
+typedef DPTR(uintptr_t)    PTR_uintptr_t;
+
+#ifndef NATIVEAOT
+typedef ArrayDPTR(BYTE)    PTR_BYTE;
 typedef DPTR(PTR_BYTE) PTR_PTR_BYTE;
-typedef DPTR(PTR_uint8_t) PTR_PTR_uint8_t;
 typedef DPTR(PTR_PTR_BYTE) PTR_PTR_PTR_BYTE;
 typedef ArrayDPTR(signed char) PTR_SBYTE;
 typedef ArrayDPTR(const BYTE) PTR_CBYTE;
@@ -2398,7 +2388,6 @@ typedef DPTR(UINT16)  PTR_UINT16;
 typedef DPTR(WORD)    PTR_WORD;
 typedef DPTR(USHORT)  PTR_USHORT;
 typedef DPTR(DWORD)   PTR_DWORD;
-typedef DPTR(uint32_t) PTR_uint32_t;
 typedef DPTR(LONG)    PTR_LONG;
 typedef DPTR(ULONG)   PTR_ULONG;
 typedef DPTR(INT32)   PTR_INT32;
