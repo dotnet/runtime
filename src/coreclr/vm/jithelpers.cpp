@@ -682,6 +682,11 @@ namespace
         UINT32 bits = *reinterpret_cast<UINT32*>(&val);
         return (bits & 0x7FFFFFFFU) > 0x7F800000U;
     }
+    bool isfinite(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (bits & 0x7FFFFFFFU) >= 0x7F800000U;
+    }
 }
 #endif
 
@@ -700,12 +705,12 @@ HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
     // ***"negated for -infinity" has been removed from the spec
     //
 
-    if (divisor==0 || !_finite(dividend))
+    if (divisor==0 || !isfinite(dividend))
     {
         UINT32 NaN = CLR_NAN_32;
         return *(float *)(&NaN);
     }
-    else if (!_finite(divisor) && !isnan(divisor))
+    else if (!isfinite(divisor) && !isnan(divisor))
     {
         return dividend;
     }
@@ -733,12 +738,12 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
     //
     // ***"negated for -infinity" has been removed from the spec
     //
-    if (divisor==0 || !_finite(dividend))
+    if (divisor==0 || !isfinite(dividend))
     {
         UINT64 NaN = CLR_NAN_64;
         return *(double *)(&NaN);
     }
-    else if (!_finite(divisor) && !isnan(divisor))
+    else if (!isfinite(divisor) && !isnan(divisor))
     {
         return dividend;
     }

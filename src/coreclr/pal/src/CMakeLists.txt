@@ -132,7 +132,6 @@ set(SOURCES
   cruntime/file.cpp
   cruntime/filecrt.cpp
   cruntime/malloc.cpp
-  cruntime/math.cpp
   cruntime/misc.cpp
   cruntime/printfcpp.cpp
   cruntime/string.cpp

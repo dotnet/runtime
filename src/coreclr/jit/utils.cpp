@@ -2629,6 +2629,38 @@ bool FloatingPointUtils::isAllBitsSet(double val)
 }
 
 //------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return (bits & 0x7FFFFFFFU) >= 0x7F800000U;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return (bits & 0x7FFFFFFFFFFFFFFFULL) >= 0x7FF0000000000000ULL;
+}
+
+//------------------------------------------------------------------------
 // isNegative: Determines whether the specified value is negative
 //
 // Arguments:

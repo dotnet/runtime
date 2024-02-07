@@ -813,6 +813,10 @@ public:
 
     static bool isAllBitsSet(double val);
 
+    static bool isFinite(float val);
+
+    static bool isFinite(double val);
+
     static bool isNegative(float val);
 
     static bool isNegative(double val);

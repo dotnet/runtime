@@ -6506,7 +6506,7 @@ void Interpreter::CkFinite()
         break;
     }
 
-    if (!_finite(val))
+    if (!isfinite(val))
         ThrowSysArithException();
 }
 

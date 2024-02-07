@@ -113,8 +113,6 @@ c_runtime/wcstoul/test4/paltest_wcstoul_test4
 c_runtime/wcstoul/test5/paltest_wcstoul_test5
 c_runtime/wcstoul/test6/paltest_wcstoul_test6
 c_runtime/_alloca/test1/paltest_alloca_test1
-c_runtime/_finite/test1/paltest_finite_test1
-c_runtime/_finitef/test1/paltest_finitef_test1
 c_runtime/_itow/test1/paltest_itow_test1
 c_runtime/_putenv/test1/paltest_putenv_test1
 c_runtime/_putenv/test2/paltest_putenv_test2

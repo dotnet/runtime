@@ -101,7 +101,7 @@ TFp FpAdd(TFp value1, TFp value2)
     // If [value1] is positive infinity and [value2] is negative infinity
     //   the result is NaN.
 
-    if (!_finite(value1) && !_finite(value2))
+    if (!FloatingPointUtils::isFinite(value1) && !FloatingPointUtils::isFinite(value2))
     {
         if (value1 < 0 && value2 > 0)
         {
@@ -137,7 +137,7 @@ TFp FpSub(TFp value1, TFp value2)
     // If [value1] is negative infinity and [value2] is negative infinity
     //   the result is NaN.
 
-    if (!_finite(value1) && !_finite(value2))
+    if (!FloatingPointUtils::isFinite(value1) && !FloatingPointUtils::isFinite(value2))
     {
         if (value1 > 0 && value2 > 0)
         {
@@ -175,11 +175,11 @@ TFp FpMul(TFp value1, TFp value2)
     // If [value1] is infinity and [value2] is zero
     //   the result is NaN.
 
-    if (value1 == 0 && !_finite(value2) && !FloatingPointUtils::isNaN(value2))
+    if (value1 == 0 && !FloatingPointUtils::isFinite(value2) && !FloatingPointUtils::isNaN(value2))
     {
         return TFpTraits::NaN();
     }
-    if (!_finite(value1) && !FloatingPointUtils::isNaN(value1) && value2 == 0)
+    if (!FloatingPointUtils::isFinite(value1) && !FloatingPointUtils::isNaN(value1) && value2 == 0)
     {
         return TFpTraits::NaN();
     }
@@ -213,7 +213,7 @@ TFp FpDiv(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-    else if (!_finite(dividend) && !FloatingPointUtils::isNaN(dividend) && !_finite(divisor) && !FloatingPointUtils::isNaN(divisor))
+    else if (!FloatingPointUtils::isFinite(dividend) && !FloatingPointUtils::isNaN(dividend) && !FloatingPointUtils::isFinite(divisor) && !FloatingPointUtils::isNaN(divisor))
     {
         return TFpTraits::NaN();
     }
@@ -232,11 +232,11 @@ TFp FpRem(TFp dividend, TFp divisor)
     // If [divisor] is infinity,
     //   the result is [dividend]
 
-    if (divisor == 0 || !_finite(dividend))
+    if (divisor == 0 || !FloatingPointUtils::isFinite(dividend))
     {
         return TFpTraits::NaN();
     }
-    else if (!_finite(divisor) && !FloatingPointUtils::isNaN(divisor))
+    else if (!FloatingPointUtils::isFinite(divisor) && !FloatingPointUtils::isNaN(divisor))
     {
         return dividend;
     }
