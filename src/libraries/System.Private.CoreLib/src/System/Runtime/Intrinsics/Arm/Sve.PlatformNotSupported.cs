@@ -11,7 +11,6 @@ namespace System.Runtime.Intrinsics.Arm
     /// <summary>
     /// This class provides access to the ARM SVE hardware instructions via intrinsics
     /// </summary>
-    [Intrinsic]
     [CLSCompliant(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
 #if SYSTEM_PRIVATE_CORELIB
