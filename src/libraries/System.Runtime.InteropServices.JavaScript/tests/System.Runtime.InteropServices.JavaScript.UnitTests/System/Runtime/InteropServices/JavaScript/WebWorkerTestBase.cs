@@ -158,6 +158,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                         mr.Wait(cts.Token);
                     } catch (OperationCanceledException) { /* ignore */ }
                 }},
+                new NamedCall { Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
+                    using var sem = new SemaphoreSlim(2);
+                    var cts = new CancellationTokenSource(8);
+                    try {
+                        sem.Wait(cts.Token);
+                    } catch (OperationCanceledException) { /* ignore */ }
+                }},
         };
 
         public static IEnumerable<object[]> GetTargetThreadsAndBlockingCalls()
