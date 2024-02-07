@@ -4969,6 +4969,51 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit blocks that are outside
+// the loop but that may have regular predecessors inside the loop.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
+{
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    BitVecTraits traits = m_dfsTree->PostOrderTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    for (FlowEdge* edge : ExitEdges())
+    {
+        BasicBlockVisit result = edge->getSourceBlock()->VisitRegularSuccs(comp, [&](BasicBlock* succ) {
+            assert(m_dfsTree->Contains(succ));
+            if (!ContainsBlock(succ) && BitVecOps::TryAddElemD(&traits, visited, succ->bbPostorderNum) &&
+                (func(succ) == BasicBlockVisit::Abort))
+            {
+                return BasicBlockVisit::Abort;
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return BasicBlockVisit::Abort;
+        }
+    }
+
+    return BasicBlockVisit::Continue;
+}
+
 /*****************************************************************************/
 #endif //_COMPILER_HPP_
 /*****************************************************************************/

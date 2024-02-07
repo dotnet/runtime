@@ -2057,6 +2057,41 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     assert(condLast->NextIs(fastPreheader));
     condLast->SetFalseTarget(fastPreheader);
     fgAddRefPred(fastPreheader, condLast);
+
+    //// Now canonicalize exits for both the cold and hot loops.
+    // ArrayStack<BasicBlock*> exitBlocks(getAllocator(CMK_LoopClone));
+    // loop->VisitRegularExitBlocks([&exitBlocks](BasicBlock* exit) {
+    //    exitBlocks.Push(exit);
+    //    return BasicBlockVisit::Continue;
+    //});
+
+    // for (int i = 0; i < exitBlocks.Height(); i++)
+    //{
+    //    BasicBlock* exit = exitBlocks.Bottom(i);
+    //    // Canonicalization should have already ensured this.
+    //    assert(!exit->KindIs(BBJ_CALLFINALLY));
+
+    //    BasicBlock* coldExit = fgNewBBbefore(BBJ_ALWAYS, exit, false, exit);
+    //    coldExit->SetFlags(BBF_NONE_QUIRK | BBF_INTERNAL);
+    //    coldExit->bbCodeOffs = exit->bbCodeOffs;
+    //    fgSetEHRegionForNewPreheader(coldExit);
+    //    fgAddRefPred(exit, coldExit);
+
+    //    BasicBlock* hotExit = fgNewBBbefore(BBJ_ALWAYS, exit, false, exit);
+    //    hotExit->SetFlags(BBF_NONE_QUIRK | BBF_INTERNAL);
+    //    hotExit->bbCodeOffs = exit->bbCodeOffs;
+    //    fgSetEHRegionForNewPreheader(hotExit);
+    //    fgAddRefPred(exit, hotExit);
+
+    //    for (BasicBlock* pred : exit->PredBlocks())
+    //    {
+    //        if (loop->ContainsBlock(pred))
+    //        {
+    //            fgReplaceJumpTarget(pred, exit, hotExit);
+    //            fgReplaceJumpTarget((*blockMap)[pred], exit, coldExit);
+    //        }
+    //    }
+    //}
 }
 
 //-------------------------------------------------------------------------
@@ -2969,11 +3004,18 @@ PhaseStatus Compiler::optCloneLoops()
 
     if (optLoopsCloned > 0)
     {
-        fgRenumberBlocks();
-
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        if (optCanonicalizeLoops())
+        {
+            fgInvalidateDfsTree();
+            m_dfsTree = fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+
+        fgRenumberBlocks();
     }
 
 #ifdef DEBUG
