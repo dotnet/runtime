@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /***
-*strtok_s.c - tokenize a string with given delimiters
+*xtow_s.c - convert integers to UTF-16 strings
 *
 
 *
 *Purpose:
-*   defines strtok_s() - breaks string into series of token
-*   via repeated calls.
+*   defines _*tox_s() functions - convert integers to UTF-16 strings
 *
 *******************************************************************************/
 
