@@ -67,10 +67,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             }
             else
             {
-                IEnumerable<DirectoryInfoBase> candidates = directory.EnumerateFileSystemInfos().OfType<DirectoryInfoBase>();
-                foreach (DirectoryInfoBase candidate in candidates)
+                IEnumerable<FileSystemInfoBase> candidates = directory.EnumerateFileSystemInfos();
+                foreach (FileSystemInfoBase candidate in candidates)
                 {
-                    if (_declaredLiteralFolderSegmentInString.Contains(candidate.Name))
+                    if (candidate is DirectoryInfoBase &&
+                        _declaredLiteralFolderSegmentInString.Contains(candidate.Name))
                     {
                         entities.Add(candidate);
                     }
