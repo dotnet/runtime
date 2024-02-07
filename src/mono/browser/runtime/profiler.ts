@@ -44,7 +44,7 @@ export const enum MeasuredBlock {
     onRuntimeInitialized = "mono.onRuntimeInitialized",
     postRun = "mono.postRun",
     postRunWorker = "mono.postRunWorker",
-    memorySnapshot = "mono.memorySnapshot",
+    startRuntime = "mono.startRuntime",
     loadRuntime = "mono.loadRuntime",
     bindingsInit = "mono.bindingsInit",
     bindJsFunction = "mono.bindJsFunction:",
