@@ -806,7 +806,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                         // If we're building tests not for Mono, we can skip handling the specifics of the SkipOnMonoAttribute.
                         continue;
                     }
-                    if (filterAttribute.ConstructorArguments.Length == 1)
+                    if (filterAttribute.ConstructorArguments.Length <= 1)
                     {
                         return ImmutableArray<ITestInfo>.Empty;
                     }
