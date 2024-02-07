@@ -244,7 +244,7 @@
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10;20.04;20.10;21.04;21.10;22.04;22.10;23.04;23.10</Versions>
+      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10;20.04;20.10;21.04;21.10;22.04;22.10;23.04;23.10;24.04</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
