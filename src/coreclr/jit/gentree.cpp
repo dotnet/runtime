@@ -2707,6 +2707,14 @@ AGAIN:
     {
         return false;
     }
+    if ((oper == GT_MOD) || (oper == GT_UMOD) || (oper == GT_DIV) || (oper == GT_UDIV))
+    {
+        if ((op1->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) !=
+            (op2->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)))
+        {
+            return false;
+        }
+    }
 
     /* Figure out what kind of nodes we're comparing */
 
