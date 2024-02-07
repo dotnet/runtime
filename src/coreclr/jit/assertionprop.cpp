@@ -3942,18 +3942,18 @@ void Compiler::optAssertionProp_IntegralRangeProperties(ASSERT_VALARG_TP asserti
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp_ModDiv: Optimizes DIV/MOD via assertions
+// optAssertionProp_ModDiv: Optimizes DIV/UDIV/MOD/UMOD via assertions
 //    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
-//    2) Marks DIV/MOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
-//    3) Marks DIV/MOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
+//    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
+//    3) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
 //
 // Arguments:
 //    assertions - set of live assertions
-//    tree       - the DIV/MOD node to optimize
-//    stmt       - statement containing DIV/MOD
+//    tree       - the DIV/UDIV/MOD/UMOD node to optimize
+//    stmt       - statement containing DIV/UDIV/MOD/UMOD
 //
 // Returns:
-//    Updated DIV/MOD node, or nullptr
+//    Updated DIV/UDIV/MOD/UMOD node, or nullptr
 //
 GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
 {
