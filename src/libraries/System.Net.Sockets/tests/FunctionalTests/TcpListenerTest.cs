@@ -229,6 +229,40 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task ReadAsyncTest()
+        {
+            async Task StartListenerAsync()
+            {
+                TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+                listener.Start();
+                Tcp client = await listener.AcceptTcpClientAsync();
+                using (NetworkStream stream = client.GetStream())
+                {
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0);
+                }
+                listener.Stop();
+            }
+
+            async Task StartClientAsync()
+            {
+                TcpClient client = new TcpClient(IPAddress.Loopback, 0);
+                using (NetworkStream stream = client.GetStream())
+                {
+                    byte[] data = Encoding.UTF8.GetBytes(new string('*', 1 << 22));
+                    await Task.Delay(10);
+                    await stream.WriteAsync(data, 0, data.Length);
+                }
+                client.Close();
+            }
+
+            Task.Run(() => Console.WriteLine(Environment.StackTrace)).Wait();
+            await StartListenerAsync();
+            await StartClientAsync();
+        }
+
+        [Fact]
         public void ExclusiveAddressUse_ListenerNotStarted_SetAndReadSuccessfully()
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
