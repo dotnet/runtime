@@ -4904,6 +4904,11 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, Valu
             // Pointer to a local
             return GCInfo::WriteBarrierForm::WBF_NoBarrier;
         }
+        if ((funcApp.m_func == VNF_PtrToStatic) && vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
+        {
+            // Boxed static - always on the heap
+            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+        }
         if (funcApp.m_func == VNFunc(GT_ADD))
         {
             // Check arguments of the GT_ADD
