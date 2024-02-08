@@ -101,11 +101,32 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 			public static void Keep () { }
 		}
 
+		public interface IBaseUnused
+		{
+			public static virtual int Value {
+				get => 0;
+			}
+		}
+
+		public interface IMiddleUnused : IBaseUnused
+		{
+			static int IBaseUnused.Value {
+				get => 1;
+			}
+		}
+
+		public interface IDerivedUnused : IMiddleUnused
+		{
+			static int IBaseUnused.Value {
+				get => 2;
+			}
+		}
+
 		[Kept]
 		[KeptInterface (typeof (IBase))]
 		[KeptInterface (typeof (IMiddle))]
 		[KeptInterface (typeof (IDerived2))]
-		class UsedInUnconstrainedGeneric : IDerived2, INotReferenced
+		class UsedInUnconstrainedGeneric : IDerived2, INotReferenced, IDerivedUnused
 		{
 		}
 
