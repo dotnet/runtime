@@ -126,7 +126,7 @@
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsImmutableVersion>7.0.0</SystemCollectionsImmutableVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
-    <SystemDataSqlClientVersion>4.8.5</SystemDataSqlClientVersion>
+    <SystemDataSqlClientVersion>4.8.6</SystemDataSqlClientVersion>
     <SystemDrawingCommonVersion>8.0.0</SystemDrawingCommonVersion>
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
