@@ -6004,6 +6004,26 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_sqrdmulh, EA_SCALABLE, REG_V22, REG_V23, REG_V15, 1,
                                 INS_OPTS_SCALABLE_D); // SQRDMULH <Zd>.D, <Zn>.D, <Zm>.D[<imm>]
 
+    // IF_SVE_FJ_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlalb, EA_SCALABLE, REG_V0, REG_V1, REG_V1, 1,
+                                INS_OPTS_SCALABLE_H); // SQDMLALB <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlalt, EA_SCALABLE, REG_V2, REG_V3, REG_V3, 3,
+                                INS_OPTS_SCALABLE_H); // SQDMLALT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlslb, EA_SCALABLE, REG_V4, REG_V5, REG_V5, 5,
+                                INS_OPTS_SCALABLE_H); // SQDMLSLB <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlslt, EA_SCALABLE, REG_V6, REG_V0, REG_V7, 7,
+                                INS_OPTS_SCALABLE_H); // SQDMLSLT <Zda>.S, <Zn>.H, <Zm>.H[<imm>]
+
+    // IF_SVE_FJ_3B
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlalb, EA_SCALABLE, REG_V8, REG_V9, REG_V0, 0,
+                                INS_OPTS_SCALABLE_S); // SQDMLALB <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlalt, EA_SCALABLE, REG_V10, REG_V11, REG_V5, 1,
+                                INS_OPTS_SCALABLE_S); // SQDMLALT <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlslb, EA_SCALABLE, REG_V12, REG_V13, REG_V10, 2,
+                                INS_OPTS_SCALABLE_S); // SQDMLSLB <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+    theEmitter->emitIns_R_R_R_I(INS_sve_sqdmlslt, EA_SCALABLE, REG_V14, REG_V15, REG_V15, 3,
+                                INS_OPTS_SCALABLE_S); // SQDMLSLT <Zda>.D, <Zn>.S, <Zm>.S[<imm>]
+
     // IF_SVE_ED_1A
     theEmitter->emitIns_R_I(INS_sve_smax, EA_SCALABLE, REG_V0, -128,
                             INS_OPTS_SCALABLE_B); // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>
