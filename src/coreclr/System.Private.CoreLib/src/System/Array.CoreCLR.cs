@@ -72,7 +72,7 @@ namespace System
                 ref byte dst = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (uint)destinationIndex * elementSize);
 
                 if (pMT->ContainsGCPointers)
-                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount, IntPtr.Zero);
                 else
                     Buffer.Memmove(ref dst, ref src, byteCount);
 

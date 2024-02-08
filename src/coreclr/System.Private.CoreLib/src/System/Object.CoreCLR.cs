@@ -28,7 +28,7 @@ namespace System
             ref byte dst = ref clone.GetRawData();
 
             if (RuntimeHelpers.GetMethodTable(clone)->ContainsGCPointers)
-                Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount, IntPtr.Zero);
             else
                 Buffer.Memmove(ref dst, ref src, byteCount);
 

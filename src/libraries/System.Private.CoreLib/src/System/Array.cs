@@ -375,7 +375,7 @@ namespace System
                 ref byte dst = ref Unsafe.As<RawArrayData>(destinationArray).Data;
 
                 if (pMT->ContainsGCPointers)
-                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                    Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount, (IntPtr)pMT);
                 else
                     Buffer.Memmove(ref dst, ref src, byteCount);
 
@@ -406,7 +406,7 @@ namespace System
                     ref byte dst = ref Unsafe.AddByteOffset(ref Unsafe.As<RawArrayData>(destinationArray).Data, (uint)destinationIndex * elementSize);
 
                     if (pMT->ContainsGCPointers)
-                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount);
+                        Buffer.BulkMoveWithWriteBarrier(ref dst, ref src, byteCount, (IntPtr)pMT);
                     else
                         Buffer.Memmove(ref dst, ref src, byteCount);
 
