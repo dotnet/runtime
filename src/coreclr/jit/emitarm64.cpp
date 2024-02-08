@@ -11716,6 +11716,127 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             break;
 
+        case INS_sve_smullb:
+        case INS_sve_smullt:
+        case INS_sve_umullb:
+        case INS_sve_umullt:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3));
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm3(imm));                    // ii i
+                fmt = IF_SVE_FE_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
+                assert(isValidUimm2(imm));                     // i i
+                fmt = IF_SVE_FE_3B;
+            }
+            break;
+
+        case INS_sve_smlalb:
+        case INS_sve_smlalt:
+        case INS_sve_umlalb:
+        case INS_sve_umlalt:
+        case INS_sve_smlslb:
+        case INS_sve_smlslt:
+        case INS_sve_umlslb:
+        case INS_sve_umlslt:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3));
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm3(imm));                    // ii i
+                fmt = IF_SVE_FG_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
+                assert(isValidUimm2(imm));                     // i i
+                fmt = IF_SVE_FG_3B;
+            }
+            break;
+
+        case INS_sve_sqdmullb:
+        case INS_sve_sqdmullt:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3));
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm3(imm));                    // ii i
+                fmt = IF_SVE_FH_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
+                assert(isValidUimm2(imm));                     // i i
+                fmt = IF_SVE_FH_3B;
+            }
+            break;
+
+        case INS_sve_sqdmulh:
+        case INS_sve_sqrdmulh:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3));
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm3(imm));                    // ii i
+                fmt = IF_SVE_FI_3A;
+            }
+            else if (opt == INS_OPTS_SCALABLE_S)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm2(imm));                    // ii
+                fmt = IF_SVE_FI_3B;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_D);
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
+                assert(isValidImm1(imm));                      // i
+                fmt = IF_SVE_FI_3C;
+            }
+            break;
+
+        case INS_sve_sqdmlalb:
+        case INS_sve_sqdmlalt:
+        case INS_sve_sqdmlslb:
+        case INS_sve_sqdmlslt:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3));
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm3(imm));                    // ii i
+                fmt = IF_SVE_FJ_3A;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_S);
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
+                assert(isValidUimm2(imm));                     // ii
+                fmt = IF_SVE_FJ_3B;
+            }
+            break;
+
         default:
             unreached();
             break;
