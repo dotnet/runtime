@@ -217,32 +217,32 @@ namespace System
             return null;
         }
 
-        private static ReadOnlySpan<ushort> PrimitiveAttributes => [
-            0x0000, // Unknown
-            0x0000, // Void
-            0x0004, // Boolean (W = BOOL)
-            0xCf88, // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
-            0xC550, // SByte (W = I1, I2, I4, I8, R4, R8)
-            0xCFE8, // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
-            0xC540, // Int16 (W = I2, I4, I8, R4, R8)
-            0xCF88, // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
-            0xC500, // Int32 (W = I4, I8, R4, R8)
-            0xCE00, // UInt32 (W = U4, I8, R4, R8)
-            0xC400, // Int64 (W = I8, R4, R8)
-            0xC800, // UInt64 (W = U8, R4, R8)
-            0x0000, // IntPtr
-            0x0000, // UIntPtr
-            0xC000, // Single (W = R4, R8)
-            0x8000, // Double (W = R8)
-        ];
-
         private static bool CanPrimitiveWiden(EETypeElementType destType, EETypeElementType srcType)
         {
             Debug.Assert(destType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
             Debug.Assert(srcType is < EETypeElementType.ValueType and >= EETypeElementType.Boolean);
 
+            ReadOnlySpan<ushort> primitiveAttributes = [
+                0x0000, // Unknown
+                0x0000, // Void
+                0x0004, // Boolean (W = BOOL)
+                0xCf88, // Char (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC550, // SByte (W = I1, I2, I4, I8, R4, R8)
+                0xCFE8, // Byte (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
+                0xC540, // Int16 (W = I2, I4, I8, R4, R8)
+                0xCF88, // UInt16 (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+                0xC500, // Int32 (W = I4, I8, R4, R8)
+                0xCE00, // UInt32 (W = U4, I8, R4, R8)
+                0xC400, // Int64 (W = I8, R4, R8)
+                0xC800, // UInt64 (W = U8, R4, R8)
+                0x0000, // IntPtr
+                0x0000, // UIntPtr
+                0xC000, // Single (W = R4, R8)
+                0x8000, // Double (W = R8)
+            ];
+
             ushort mask = (ushort)(1 << (byte)destType);
-            return (PrimitiveAttributes[(int)srcType & 0xF] & mask) != 0;
+            return (primitiveAttributes[(int)srcType & 0xF] & mask) != 0;
         }
 
         private static Exception ConvertPointerIfPossible(object srcObject, MethodTable* dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
