@@ -12,18 +12,18 @@ export interface PThreadInfo {
     reuseCount: number,
     updateCount: number,
 
-    name?: string,
     threadName: string,
+    threadPrefix: string,
 
     isLoaded?: boolean,
     isRegistered?: boolean,
     isRunning?: boolean,
     isAttached?: boolean,
     isExternalEventLoop?: boolean,
-    isBrowserThread?: boolean;
+    isUI?: boolean;
     isBackground?: boolean,
     isDebugger?: boolean,
-    isThreadPool?: boolean,
+    isThreadPoolWorker?: boolean,
     isTimer?: boolean,
     isLongRunning?: boolean,
     isThreadPoolGate?: boolean,

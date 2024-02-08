@@ -694,7 +694,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
         // more than 64 assertions.
         // Note this tracks at most only 256 assertions.
         //
-        static const AssertionIndex countFunc[] = {64, 128, 256, 64};
+        static const AssertionIndex countFunc[] = {64, 128, 256, 128, 64};
         static const unsigned       upperBound  = ArrLen(countFunc) - 1;
         const unsigned              codeSize    = info.compILCodeSize / 512;
         optMaxAssertionCount                    = countFunc[min(upperBound, codeSize)];
@@ -2075,60 +2075,20 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     {
         return NO_ASSERTION_INDEX;
     }
-    GenTree* op1 = relop->gtGetOp1();
-    GenTree* op2 = relop->gtGetOp2();
-
-    ValueNum op1VN   = vnStore->VNConservativeNormalValue(op1->gtVNPair);
-    ValueNum op2VN   = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+    GenTree* op2     = relop->gtGetOp2();
     ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
-    bool hasTestAgainstZero =
-        (relop->gtOper == GT_EQ || relop->gtOper == GT_NE) && (op2VN == vnStore->VNZeroForType(op2->TypeGet()));
-
     ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
-    // Cases where op1 holds the upper bound arithmetic and op2 is 0.
-    // Loop condition like: "i < bnd +/-k == 0"
-    // Assertion: "i < bnd +/- k == 0"
-    if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBoundArith(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_OPER_BND;
-        dsc.op1.vn         = op1VN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
+
     // Cases where op1 holds the lhs of the condition and op2 holds the bound arithmetic.
     // Loop condition like: "i < bnd +/-k"
     // Assertion: "i < bnd +/- k != 0"
-    else if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
+    if (vnStore->IsVNCompareCheckedBoundArith(relopVN))
     {
         AssertionDsc dsc;
         dsc.assertionKind  = OAK_NOT_EQUAL;
         dsc.op1.kind       = O1K_BOUND_OPER_BND;
         dsc.op1.vn         = relopVN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
-        return index;
-    }
-    // Cases where op1 holds the upper bound and op2 is 0.
-    // Loop condition like: "i < bnd == 0"
-    // Assertion: "i < bnd == false"
-    else if (hasTestAgainstZero && vnStore->IsVNCompareCheckedBound(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_BOUND_LOOP_BND;
-        dsc.op1.vn         = op1VN;
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal = 0;
@@ -2178,23 +2138,6 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
             // after i < bnd so we need to change the assertion edge to "next".
             return AssertionInfo::ForNextEdge(index);
         }
-        return index;
-    }
-    // Cases where op1 holds the condition bound check and op2 is 0.
-    // Loop condition like: "i < 100 == 0"
-    // Assertion: "i < 100 == false"
-    else if (hasTestAgainstZero && vnStore->IsVNConstantBound(op1VN))
-    {
-        AssertionDsc dsc;
-        dsc.assertionKind  = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind       = O1K_CONSTANT_LOOP_BND;
-        dsc.op1.vn         = op1VN;
-        dsc.op2.kind       = O2K_CONST_INT;
-        dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
-        dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlag(GTF_EMPTY);
-        AssertionIndex index = optAddAssertion(&dsc);
-        optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
     // Cases where op1 holds the lhs of the condition op2 holds rhs.
@@ -2862,7 +2805,16 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, G
         {
             if (tree->TypeGet() == TYP_REF)
             {
-                conValTree = gtNewIconNode(vnStore->ConstantValue<size_t>(vnCns), TYP_REF);
+                const size_t value = vnStore->ConstantValue<size_t>(vnCns);
+                if (value == 0)
+                {
+                    conValTree = gtNewNull();
+                }
+                else
+                {
+                    assert(vnStore->IsVNObjHandle(vnCns));
+                    conValTree = gtNewIconHandleNode(value, GTF_ICON_OBJ_HDL);
+                }
             }
         }
         break;
@@ -3910,7 +3862,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
-        if (!curAssertion->IsConstantBound())
+        if (!curAssertion->IsConstantBound() && !curAssertion->IsConstantBoundUnsigned())
         {
             continue;
         }
@@ -3939,12 +3891,26 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
 
-        // "X >= CNS" or "X > CNS" where CNS is >= 0
-        if ((info.constVal >= 0) && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+        if ((info.constVal >= 0))
         {
-            JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-            tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-            return optAssertionProp_Update(tree, tree, stmt);
+            bool isNotNegative = false;
+            if (info.isUnsigned && ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
+            {
+                // (uint)X <= CNS means X is [0..CNS]
+                isNotNegative = true;
+            }
+            else if (!info.isUnsigned && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
+            {
+                // X >= CNS means X is [CNS..unknown]
+                isNotNegative = true;
+            }
+
+            if (isNotNegative)
+            {
+                JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+                tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+                return optAssertionProp_Update(tree, tree, stmt);
+            }
         }
     }
     return nullptr;
@@ -4631,7 +4597,11 @@ GenTree* Compiler::optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* 
 //
 GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    if (optNonNullAssertionProp_Ind(assertions, tree))
+    assert(tree->OperIsIndir());
+
+    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
+    bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
+    if (didNonNullProp || didNonHeapProp)
     {
         return optAssertionProp_Update(tree, tree, stmt);
     }
@@ -4644,12 +4614,12 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 //   based on assertions
 //
 // Arguments:
-//   op - tree to check
+//   op          - tree to check
 //   assertions  - set of live assertions
-//   pVnBased - [out] set to true if value numbers were used
-//   pIndex - [out] the assertion used in the proof
+//   pVnBased    - [out] set to true if value numbers were used
+//   pIndex      - [out] the assertion used in the proof
 //
-// Returns:
+// Return Value:
 //   true if the tree's value will be non-null
 //
 // Notes:
@@ -4699,11 +4669,11 @@ bool Compiler::optAssertionIsNonNull(GenTree*         op,
 //   be non-null based on assertions
 //
 // Arguments:
-//   op - tree to check
-//   assertions  - set of live assertions
-//   pVnBased - [out] set to true if value numbers were used
+//   op         - tree to check
+//   assertions - set of live assertions
+//   pVnBased   - [out] set to true if value numbers were used
 //
-// Returns:
+// Return Value:
 //   index of assertion, or NO_ASSERTION_INDEX
 //
 AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
@@ -4809,6 +4779,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
     }
     return NO_ASSERTION_INDEX;
 }
+
 /*****************************************************************************
  *
  *  Given a tree consisting of a call and a set of available assertions, we
@@ -4863,7 +4834,7 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 {
     assert(indir->OperIsIndir());
 
-    if (!(indir->gtFlags & GTF_EXCEPT))
+    if ((indir->gtFlags & GTF_EXCEPT) == 0)
     {
         return false;
     }
@@ -4887,6 +4858,98 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 
         // Set this flag to prevent reordering
         indir->SetHasOrderingSideEffect();
+
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optAssertionIsNonHeap: see if we can prove a tree's value will be not GC-tracked
+//   based on assertions
+//
+// Arguments:
+//   op         - tree to check
+//   assertions - set of live assertions
+//   pVnBased   - [out] set to true if value numbers were used
+//   pIndex     - [out] the assertion used in the proof
+//
+// Return Value:
+//   true if the tree's value will be not GC-tracked
+//
+// Notes:
+//   Sets "pVnBased" if the assertion is value number based. If no matching
+//    assertions are found from the table, then returns "NO_ASSERTION_INDEX."
+//
+//   If both VN and assertion table yield a matching assertion, "pVnBased"
+//   is only set and the return value is "NO_ASSERTION_INDEX."
+//
+bool Compiler::optAssertionIsNonHeap(GenTree*         op,
+                                     ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
+                                         DEBUGARG(AssertionIndex* pIndex))
+{
+    bool vnBased = (!optLocalAssertionProp && vnStore->IsVNObjHandle(op->gtVNPair.GetConservative()));
+#ifdef DEBUG
+    *pIndex   = NO_ASSERTION_INDEX;
+    *pVnBased = vnBased;
+#endif
+
+    if (vnBased)
+    {
+        return true;
+    }
+
+    if (op->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// optNonHeapAssertionProp_Ind: Possibly prove an indirection not GC-tracked.
+//
+// Arguments:
+//    assertions - Active assertions
+//    indir      - The indirection
+//
+// Return Value:
+//    Whether the indirection was found to be not GC-tracked and marked as such.
+//
+bool Compiler::optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
+{
+    assert(indir->OperIsIndir());
+
+    if (!indir->OperIs(GT_STOREIND) || (indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
+    {
+        return false;
+    }
+
+// We like CSE to happen for handles, as the codegen for loading a 64-bit constant can be pretty heavy
+// and this is particularly true on platforms with a fixed-width instruction encoding. However, this
+// pessimizes stores as we can no longer optimize around some object handles that would allow us to
+// bypass the write barrier.
+//
+// In order to handle that, we'll propagate the IND_TGT_NOT_HEAP flag onto the store if the handle is
+// directly or if the underlying value number is an applicable object handle.
+
+#ifdef DEBUG
+    bool           vnBased = false;
+    AssertionIndex index   = NO_ASSERTION_INDEX;
+#endif
+    if (optAssertionIsNonHeap(indir->AsIndir()->Data(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    {
+#ifdef DEBUG
+        if (verbose)
+        {
+            (vnBased) ? printf("\nVN based non-heap prop in " FMT_BB ":\n", compCurBB->bbNum)
+                      : printf("\nNon-heap prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+            gtDispTree(indir, nullptr, nullptr, true);
+        }
+#endif
+        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
 
         return true;
     }
@@ -4950,10 +5013,16 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
                 return optAssertionProp_Update(arg1, call, stmt);
             }
 
-            // TODO-InlineCast: check optAssertionIsNonNull for the object argument and replace
-            // the helper with its nonnull version, e.g.:
-            // CORINFO_HELP_ISINSTANCEOFANY -> CORINFO_HELP_ISINSTANCEOFANY_NONNULL
-            // so then fgLateCastExpansion can skip the null check.
+            // Leave a hint for fgLateCastExpansion that obj is never null.
+            INDEBUG(AssertionIndex nonNullIdx = NO_ASSERTION_INDEX);
+            INDEBUG(bool vnBased = false);
+            // GTF_CALL_M_CAST_CAN_BE_EXPANDED check is to improve TP
+            if (((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0) &&
+                optAssertionIsNonNull(arg1, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
+            {
+                call->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
+                return optAssertionProp_Update(call, call, stmt);
+            }
         }
     }
 
