@@ -31,4 +31,8 @@
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Microsoft.NET.Runtime.WorkloadTesting.Internal\Microsoft.NET.Runtime.WorkloadTesting.Internal.pkgproj" />
+  </ItemGroup>
 </Project>

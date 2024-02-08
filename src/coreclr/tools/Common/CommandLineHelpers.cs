@@ -96,7 +96,7 @@ namespace System.CommandLine
                     Architecture.Arm => TargetArchitecture.ARM,
                     Architecture.Arm64 => TargetArchitecture.ARM64,
                     Architecture.LoongArch64 => TargetArchitecture.LoongArch64,
-                    (Architecture)9 => TargetArchitecture.RiscV64, /* TODO: update with Architecture.RiscV64 */
+                    Architecture.RiscV64 => TargetArchitecture.RiscV64,
                     _ => throw new NotImplementedException()
                 };
             }

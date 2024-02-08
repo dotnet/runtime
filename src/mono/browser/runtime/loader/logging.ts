@@ -14,8 +14,8 @@ let theConsoleApi: any;
 let originalConsoleMethods: any;
 let threadNamePrefix: string;
 
-export function mono_set_thread_name(threadName: string) {
-    threadNamePrefix = threadName;
+export function set_thread_prefix(threadPrefix: string) {
+    threadNamePrefix = threadPrefix;
 }
 
 export function mono_log_debug(msg: string, ...data: any[]) {
