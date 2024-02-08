@@ -4021,7 +4021,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define sincosf       PAL_sincosf
 #define malloc        PAL_malloc
 #define free          PAL_free
-#define _strdup       PAL__strdup
 #define _open         PAL__open
 #define _pread        PAL__pread
 #define _close        PAL__close
@@ -4080,6 +4079,7 @@ PALIMPORT char * __cdecl strrchr(const char *, int);
 PALIMPORT char * __cdecl strpbrk(const char *, const char *);
 PALIMPORT char * __cdecl strstr(const char *, const char *);
 PALIMPORT char * __cdecl strtok_r(char *, const char *, char **);
+PALIMPORT char * __cdecl strdup(const char*);
 PALIMPORT int __cdecl atoi(const char *);
 PALIMPORT unsigned long __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
@@ -4150,6 +4150,11 @@ inline int _stricmp(const char* a, const char* b)
 inline int _strnicmp(const char* a, const char* b, size_t c)
 {
     return strncasecmp(a, b, c);
+}
+
+inline char* _strdup(const char* a)
+{
+    return strdup(a);
 }
 
 #ifdef __cplusplus
@@ -4305,7 +4310,6 @@ inline __int64 abs(SSIZE_T _X) {
 PALIMPORT DLLEXPORT void * __cdecl malloc(size_t);
 PALIMPORT DLLEXPORT void   __cdecl free(void *);
 PALIMPORT DLLEXPORT void * __cdecl realloc(void *, size_t);
-PALIMPORT char * __cdecl _strdup(const char *);
 
 #if defined(_MSC_VER)
 #define alloca _alloca
