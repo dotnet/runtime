@@ -60,7 +60,7 @@ public class QuicCountersListener : IDisposable
     }
 }
 
-[CollectionDefinition(nameof(QuicCountersListener))]
+[CollectionDefinition(nameof(QuicCountersListener), DisableParallelization = true)]
 public class QuicCountersCollection : ICollectionFixture<QuicCountersListener>
 {
 }

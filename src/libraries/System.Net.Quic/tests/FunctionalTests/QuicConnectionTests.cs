@@ -13,7 +13,6 @@ namespace System.Net.Quic.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [Collection(nameof(DisableParallelization))]
     [Collection(nameof(QuicCountersListener))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicConnectionTests : QuicTestBase
