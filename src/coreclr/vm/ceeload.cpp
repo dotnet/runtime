@@ -345,6 +345,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pAssembly = pAssembly;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
+    m_dwPersistedFlags = 0x00000001;
 
     // Memory allocated on LoaderHeap is zero-filled. Spot-check it here.
     _ASSERTE(m_pBinder == NULL);
