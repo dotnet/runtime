@@ -470,7 +470,7 @@ inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)
 inline CodeVersionManager * Module::GetCodeVersionManager()
 {
     LIMITED_METHOD_CONTRACT;
-    return GetDomain()->GetCodeVersionManager();
+    return AppDomain::GetCurrentDomain()->GetCodeVersionManager();
 }
 #endif // FEATURE_CODE_VERSIONING
 

@@ -84,8 +84,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_COM 1)
-
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
