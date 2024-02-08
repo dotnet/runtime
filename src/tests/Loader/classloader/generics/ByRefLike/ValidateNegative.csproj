@@ -13,6 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
-    <ProjectReference Include="InvalidCSharp.ilproj" />
+    <ProjectReference Include="InvalidCSharpNegative.ilproj" />
   </ItemGroup>
 </Project>
