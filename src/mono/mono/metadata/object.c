@@ -5358,7 +5358,7 @@ mono_object_new_handle (MonoClass *klass, MonoError *error)
 	
 	if (MONO_CLASS_IS_IMPORT(klass)) {
 		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
-		return NULL;
+		return MONO_HANDLE_NEW (MonoObject, NULL);
 	}
 
 	MonoVTable* const vtable = mono_class_vtable_checked (klass, error);
