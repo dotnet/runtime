@@ -1151,6 +1151,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm7(emitGetInsSC(id)));       // iiiii
             break;
 
+        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn/mmmmm
+            assert(isVectorRegister(id->idReg3())); // mmmmm/aaaaa
+            break;
+
         case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
         case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
         case IF_SVE_EZ_3A: // ...........iimmm ......nnnnnddddd -- SVE mixed sign dot product (indexed)
@@ -10479,6 +10487,30 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isPredicateRegister(reg2)); // gggg
             assert(isPredicateRegister(reg3)); // NNNN
             fmt = IF_SVE_CZ_4A;
+            break;
+
+        case INS_sve_mlapt:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(insOptsNone(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            fmt = IF_SVE_EW_3A;
+
+            // opt is set only for convenience in emitDispInsHelp
+            opt = INS_OPTS_SCALABLE_D;
+            break;
+
+        case INS_sve_madpt:
+            unreached(); // TODO-SVE: Not yet supported.
+            assert(insOptsNone(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // mmmmm
+            assert(isVectorRegister(reg3)); // aaaaa
+            fmt = IF_SVE_EW_3B;
+
+            // opt is set only for convenience in emitDispInsHelp
+            opt = INS_OPTS_SCALABLE_D;
             break;
 
         default:
@@ -20372,6 +20404,22 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg3());   // aaaaa
+            code |= insEncodeReg_V_20_to_16(id->idReg2()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
         case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
         case IF_SVE_EZ_3A: // ...........iimmm ......nnnnnddddd -- SVE mixed sign dot product (indexed)
@@ -23457,9 +23505,13 @@ void emitter::emitDispInsHelp(
         case IF_SVE_BE_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 signed saturating doubling multiply high
                            // (unpredicated)
         case IF_SVE_BK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point trig select coefficient
+        // <Zda>.D, <Zn>.D, <Zm>.D
+        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        // <Zdn>.D, <Zm>.D, <Za>.D
+        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);  // ddddd
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn
-            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true);  // nnnnn/mmmmm
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
             break;
 
         // <Zd>.<T>, <R><n>, <R><m>
@@ -26757,6 +26809,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_SVE_GU_3C: // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply-add (indexed)
         case IF_SVE_GX_3C: // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply (indexed)
+        case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;

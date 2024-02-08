@@ -5940,6 +5940,14 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_sqrdcmlah, EA_SCALABLE, REG_V21, REG_V22, REG_V23, 3,
                                 INS_OPTS_SCALABLE_D); // SQRDCMLAH <Zda>.<T>, <Zn>.<T>, <Zm>.<T>, <const>
 
+#ifdef ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+    // IF_SVE_EW_3A
+    theEmitter->emitIns_R_R_R(INS_sve_mlapt, EA_SCALABLE, REG_V0, REG_V1, REG_V2); // MLAPT <Zda>.D, <Zn>.D, <Zm>.D
+
+    // IF_SVE_EW_3B
+    theEmitter->emitIns_R_R_R(INS_sve_madpt, EA_SCALABLE, REG_V3, REG_V4, REG_V5); // MADPT <Zdn>.D, <Zm>.D, <Za>.D
+#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+
     // IF_SVE_EY_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_sdot, EA_SCALABLE, REG_V9, REG_V10, REG_V4, 0,
                                 INS_OPTS_SCALABLE_B); // SDOT <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
