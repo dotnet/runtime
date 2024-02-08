@@ -288,7 +288,7 @@ namespace Mono.Linker
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethod &&
 						!potentialImplMethod.IsAbstract) {
-						AddDefaultInterfaceImplementation(interfaceMethod, type, interfaceImpl);
+						AddDefaultInterfaceImplementation (interfaceMethod, type, interfaceImpl);
 					}
 
 					if (!potentialImplMethod.HasOverrides)
@@ -297,7 +297,7 @@ namespace Mono.Linker
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var @override in potentialImplMethod.Overrides) {
 						if (context.TryResolve (@override) == interfaceMethod) {
-							AddDefaultInterfaceImplementation(interfaceMethod, type, interfaceImpl);
+							AddDefaultInterfaceImplementation (interfaceMethod, type, interfaceImpl);
 							foundImpl = true;
 							break;
 						}
@@ -311,7 +311,7 @@ namespace Mono.Linker
 				// We haven't found a MethodImpl on the current interface, but one of the interfaces
 				// this interface requires could still provide it.
 				if (!foundImpl) {
-					FindAndAddDefaultInterfaceImplementations(potentialImplInterface, interfaceMethod);
+					FindAndAddDefaultInterfaceImplementations (potentialImplInterface, interfaceMethod);
 				}
 			}
 		}
