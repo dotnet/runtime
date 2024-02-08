@@ -412,12 +412,10 @@ namespace System
             {
                 // Rounds to the nearest value; if the number falls midway,
                 // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
-#pragma warning disable IntrinsicsInSystemPrivateCoreLib
-                case MidpointRounding.AwayFromZero when AdvSimd.IsSupported:
-                    // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
-#pragma warning restore IntrinsicsInSystemPrivateCoreLib
                 case MidpointRounding.AwayFromZero:
+                    // For ARM/ARM64 we can lower it down to a single instruction FRINTA
+                    if (AdvSimd.IsSupported)
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
                     // For other platforms we use a fast managed implementation
                     // manually fold BitDecrement(0.5)
                     return Truncate(x + CopySign(0.49999997f, x));
