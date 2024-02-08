@@ -266,16 +266,8 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // I want to create:
         // top -> poll -> bottom (lexically)
         // so that we jump over poll to get to bottom.
-        BasicBlock*   top                = block;
-        unsigned char lpIndexFallThrough = BasicBlock::NOT_IN_LOOP;
-
-        BBKinds       oldJumpKind = top->GetKind();
-        unsigned char lpIndex     = top->bbNatLoopNum;
-
-        if (oldJumpKind == BBJ_COND)
-        {
-            lpIndexFallThrough = top->GetFalseTarget()->bbNatLoopNum;
-        }
+        BasicBlock* top         = block;
+        BBKinds     oldJumpKind = top->GetKind();
 
         BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom           = fgNewBBafter(top->GetKind(), poll, true);
@@ -288,37 +280,16 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         // Update block flags
         const BasicBlockFlags originalFlags = top->GetFlagsRaw() | BBF_GC_SAFE_POINT;
 
-        // We are allowed to split loops and we need to keep a few other flags...
+        // We need to keep a few flags...
         //
-        noway_assert(
-            (originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL))) == 0);
-        top->SetFlagsRaw(originalFlags &
-                         (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
-        bottom->SetFlags(originalFlags &
-                         (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL));
+        noway_assert((originalFlags & (BBF_SPLIT_NONEXIST & ~(BBF_LOOP_HEAD | BBF_RETLESS_CALL))) == 0);
+        top->SetFlagsRaw(originalFlags & (~(BBF_SPLIT_LOST | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT));
+        bottom->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_RETLESS_CALL));
         bottom->inheritWeight(top);
         poll->SetFlags(originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT));
 
         // Mark Poll as rarely run.
         poll->bbSetRunRarely();
-
-        if (optLoopTableValid)
-        {
-            poll->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-
-            bottom->bbNatLoopNum = lpIndex; // Set the bbNatLoopNum in case we are in a loop
-            if (lpIndex != BasicBlock::NOT_IN_LOOP)
-            {
-                // Set the new lpBottom in the natural loop table
-                optLoopTable[lpIndex].lpBottom = bottom;
-            }
-
-            if (lpIndexFallThrough != BasicBlock::NOT_IN_LOOP)
-            {
-                // Set the new lpHead in the natural loop table
-                optLoopTable[lpIndexFallThrough].lpHead = bottom;
-            }
-        }
 
         // Add the GC_CALL node to Poll.
         Statement* pollStmt = fgNewStmtAtEnd(poll, call);
@@ -1655,7 +1626,8 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
     block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
-    fgAddRefPred(genReturnBB, block);
+    FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
+    newEdge->setLikelihood(1.0);
 
 #ifdef DEBUG
     if (verbose)
@@ -1868,7 +1840,7 @@ public:
                 return;
             }
 
-            // We'e reached our threshold
+            // We've reached our threshold
             mergingReturns = true;
 
             // Merge any returns we've already identified
@@ -2126,7 +2098,8 @@ private:
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
                     returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
-                    comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    FlowEdge* const newEdge = comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    newEdge->setLikelihood(1.0);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
@@ -2478,29 +2451,25 @@ PhaseStatus Compiler::fgAddInternal()
 
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
-        GenTree* tree = NULL;
+        GenTree* tree = nullptr;
 
         /* Insert the expression "enterCrit(this)" or "enterCrit(handle)" */
 
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, tree);
         }
         else
         {
             noway_assert(lvaTable[info.compThisArg].lvType == TYP_REF);
-
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, tree);
         }
 
         /* Create a new basic block and stick the call in it */
 
         fgEnsureFirstBBisScratch();
-
         fgNewStmtAtEnd(fgFirstBB, tree);
 
 #ifdef DEBUG
@@ -2522,13 +2491,11 @@ PhaseStatus Compiler::fgAddInternal()
         if (info.compIsStatic)
         {
             tree = fgGetCritSectOfStaticMethod();
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, tree);
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
-
             tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, tree);
         }
 
@@ -2537,15 +2504,16 @@ PhaseStatus Compiler::fgAddInternal()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nSynchronized method - Add exit expression ");
-            printTreeID(tree);
+            printf("\nSynchronized method - Add exitCrit statement in single return block %s\n",
+                   genReturnBB->dspToString());
+            gtDispTree(tree);
             printf("\n");
         }
 #endif
 
         // Reset cookies used to track start and end of the protected region in synchronized methods
-        syncStartEmitCookie = NULL;
-        syncEndEmitCookie   = NULL;
+        syncStartEmitCookie = nullptr;
+        syncEndEmitCookie   = nullptr;
         madeChanges         = true;
     }
 
@@ -4380,7 +4348,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
 
         // Find the exit edges
         //
-        loop->VisitLoopBlocks([=](BasicBlock* loopBlock) {
+        loop->VisitLoopBlocksReversePostOrder([=](BasicBlock* loopBlock) {
             loopBlock->VisitRegularSuccs(comp, [=](BasicBlock* succBlock) {
                 if (!loop->ContainsBlock(succBlock))
                 {
@@ -4404,10 +4372,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         for (FlowEdge* const predEdge : loop->m_header->PredEdges())
         {
             BasicBlock* predBlock = predEdge->getSourceBlock();
-            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predEdge->getSourceBlock()))
+            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predBlock))
             {
-                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predEdge->getSourceBlock()->bbNum,
-                        loop->m_header->bbNum);
+                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predBlock->bbNum, loop->m_header->bbNum);
                 loop->m_entryEdges.push_back(predEdge);
             }
         }
@@ -4573,23 +4540,12 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
         return;
     }
 
-    // Display: LOOP# (old LOOP#) / header / parent loop# / blocks / entry edges / exit edges / back edges
+    // Display: LOOP# / header / parent loop# / blocks / entry edges / exit edges / back edges
     // Blocks can compacted be "[top .. bottom]" if lexically adjacent and no non-loop blocks in
     // the range. Otherwise, print a verbose list of blocks.
 
     Compiler* comp = loop->GetDfsTree()->GetCompiler();
     printf(FMT_LP, loop->GetIndex());
-
-    // We might want to print out the old loop number using something like:
-    //
-    // if (comp->m_newToOldLoop[loop->GetIndex()] != nullptr)
-    // {
-    //   printf(" (old: " FMT_LP ")", (unsigned)(comp->m_newToOldLoop[loop->GetIndex()] - comp->optLoopTable));
-    // }
-    //
-    // However, not all callers of FlowGraphNaturalLoops::Find update m_newToOldLoop -- only
-    // Compiler::optFindNewLoops() does that. This dumper should work with any construction of
-    // FlowGraphNaturalLoops.
 
     printf(" header: " FMT_BB, loop->GetHeader()->bbNum);
     if (loop->GetParent() != nullptr)
@@ -4791,7 +4747,7 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
 /* static */
 void FlowGraphNaturalLoops::Dump(FlowGraphNaturalLoops* loops)
 {
-    printf("\n***************  (New) Natural loop graph\n");
+    printf("\n***************  Natural loop graph\n");
 
     if (loops == nullptr)
     {
@@ -4971,51 +4927,79 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     JITDUMP("  Preheader = " FMT_BB "\n", preheader->bbNum);
 
-    // TODO-Quirk: For backwards compatibility always try the lexically
-    // bottom-most block for the loop variable.
-    BasicBlock* bottom = GetLexicallyBottomMostBlock();
-    JITDUMP("  Bottom = " FMT_BB "\n", bottom->bbNum);
+    BasicBlock* initBlock = nullptr;
+    GenTree*    init      = nullptr;
+    GenTree*    test      = nullptr;
 
-    BasicBlock* cond      = bottom;
-    BasicBlock* initBlock = preheader;
-    GenTree*    init;
-    GenTree*    test;
-    if (!cond->KindIs(BBJ_COND) ||
-        !comp->optExtractInitTestIncr(&initBlock, bottom, m_header, &init, &test, &info->IterTree))
+    info->IterVar = BAD_VAR_NUM;
+
+    for (FlowEdge* exitEdge : ExitEdges())
     {
-        // TODO-CQ: Try all exit edges here to see if we can find an induction variable.
-        JITDUMP("  Could not extract induction variable from bottom\n");
-        return false;
+        BasicBlock* cond = exitEdge->getSourceBlock();
+        JITDUMP("  Checking exiting block " FMT_BB "\n", cond->bbNum);
+        if (!cond->KindIs(BBJ_COND))
+        {
+            JITDUMP("    Not a BBJ_COND\n");
+            continue;
+        }
+
+        GenTree* iterTree = nullptr;
+        initBlock         = preheader;
+        if (!comp->optExtractInitTestIncr(&initBlock, cond, m_header, &init, &test, &iterTree))
+        {
+            JITDUMP("    Could not extract an IV\n");
+            continue;
+        }
+
+        unsigned iterVar = comp->optIsLoopIncrTree(iterTree);
+        assert(iterVar != BAD_VAR_NUM);
+        LclVarDsc* const iterVarDsc = comp->lvaGetDesc(iterVar);
+        // Bail on promoted case, otherwise we'd have to search the loop
+        // for both iterVar and its parent.
+        // TODO-CQ: Fix this
+        //
+        if (iterVarDsc->lvIsStructField)
+        {
+            JITDUMP("    iterVar V%02u is a promoted field\n", iterVar);
+            continue;
+        }
+
+        // Bail on the potentially aliased case.
+        //
+        if (iterVarDsc->IsAddressExposed())
+        {
+            JITDUMP("    iterVar V%02u is address exposed\n", iterVar);
+            continue;
+        }
+
+        if (!MatchLimit(iterVar, test, info))
+        {
+            continue;
+        }
+
+        bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
+            if ((def->GetLclNum() != iterVar) || (def == iterTree))
+                return true;
+
+            JITDUMP("    Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
+            return false;
+        });
+
+        if (!result)
+        {
+            continue;
+        }
+
+        info->TestBlock    = cond;
+        info->IterVar      = iterVar;
+        info->IterTree     = iterTree;
+        info->ExitedOnTrue = !ContainsBlock(cond->GetTrueTarget());
+        break;
     }
 
-    assert(ContainsBlock(cond->GetTrueTarget()) != ContainsBlock(cond->GetFalseTarget()));
-
-    info->TestBlock    = cond;
-    info->IterVar      = comp->optIsLoopIncrTree(info->IterTree);
-    info->ExitedOnTrue = !ContainsBlock(cond->GetTrueTarget());
-
-    // TODO-CQ: Currently, since we only look at the lexically bottom most block all loops have
-    // ExitedOnTrue == false. Once we recognize more structures this can be true.
-    assert(!info->ExitedOnTrue);
-
-    assert(info->IterVar != BAD_VAR_NUM);
-    LclVarDsc* const iterVarDsc = comp->lvaGetDesc(info->IterVar);
-
-    // Bail on promoted case, otherwise we'd have to search the loop
-    // for both iterVar and its parent.
-    // TODO-CQ: Fix this
-    //
-    if (iterVarDsc->lvIsStructField)
+    if (info->IterVar == BAD_VAR_NUM)
     {
-        JITDUMP("  iterVar V%02u is a promoted field\n", info->IterVar);
-        return false;
-    }
-
-    // Bail on the potentially aliased case.
-    //
-    if (iterVarDsc->IsAddressExposed())
-    {
-        JITDUMP("  iterVar V%02u is address exposed\n", info->IterVar);
+        JITDUMP("  Could not find any IV\n");
         return false;
     }
 
@@ -5028,11 +5012,6 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
     {
         JITDUMP("  Init = [%06u], test = [%06u], incr = [%06u]\n", Compiler::dspTreeID(init), Compiler::dspTreeID(test),
                 Compiler::dspTreeID(info->IterTree));
-    }
-
-    if (!MatchLimit(info, test))
-    {
-        return false;
     }
 
     MatchInit(info, initBlock, init);
@@ -5052,7 +5031,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     if (!CheckLoopConditionBaseCase(initBlock, info))
     {
-        JITDUMP("  Loop condition is not always true\n");
+        JITDUMP("  Loop condition may not be true on the first iteration\n");
         return false;
     }
 
@@ -5078,7 +5057,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
     }
 #endif
 
-    return result;
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -5113,8 +5092,9 @@ void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* init
 // induction variable.
 //
 // Parameters:
-//   info      - [in, out] Info structure to query and fill out
-//   test      - Loop condition test
+//   iterVar - Local number of potential IV
+//   test    - Loop condition test
+//   info    - [out] Info structure to fill out with information about the limit
 //
 // Returns:
 //   True if the loop condition was recognized and "info" was filled out.
@@ -5123,8 +5103,13 @@ void FlowGraphNaturalLoop::MatchInit(NaturalLoopIterInfo* info, BasicBlock* init
 //   Unlike the initialization, we do require that we are able to match the
 //   loop condition.
 //
-bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
+bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info)
 {
+    info->HasConstLimit          = false;
+    info->HasSimdLimit           = false;
+    info->HasArrayLengthLimit    = false;
+    info->HasInvariantLocalLimit = false;
+
     Compiler* comp = m_dfsTree->GetCompiler();
 
     // Obtain the relop from the "test" tree.
@@ -5148,12 +5133,12 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
     GenTree* limitOp;
 
     // Make sure op1 or op2 is the iterVar.
-    if (opr1->OperIsScalarLocal() && (opr1->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    if (opr1->OperIsScalarLocal() && (opr1->AsLclVarCommon()->GetLclNum() == iterVar))
     {
         iterOp  = opr1;
         limitOp = opr2;
     }
-    else if (opr2->OperIsScalarLocal() && (opr2->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    else if (opr2->OperIsScalarLocal() && (opr2->AsLclVarCommon()->GetLclNum() == iterVar))
     {
         iterOp  = opr2;
         limitOp = opr1;
@@ -5183,14 +5168,14 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
         //
         if (comp->lvaGetDesc(limitOp->AsLclVarCommon())->IsAddressExposed())
         {
-            JITDUMP("  Limit var V%02u is address exposed\n", limitOp->AsLclVarCommon()->GetLclNum());
+            JITDUMP("    Limit var V%02u is address exposed\n", limitOp->AsLclVarCommon()->GetLclNum());
             return false;
         }
 
         GenTreeLclVarCommon* def = FindDef(limitOp->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
-            JITDUMP("  Limit var V%02u modified by [%06u]\n", limitOp->AsLclVarCommon()->GetLclNum(),
+            JITDUMP("    Limit var V%02u modified by [%06u]\n", limitOp->AsLclVarCommon()->GetLclNum(),
                     Compiler::dspTreeID(def));
             return false;
         }
@@ -5205,20 +5190,20 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
 
         if (!array->OperIs(GT_LCL_VAR))
         {
-            JITDUMP("  Array limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
+            JITDUMP("    Array limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
             return false;
         }
 
         if (comp->lvaGetDesc(array->AsLclVarCommon())->IsAddressExposed())
         {
-            JITDUMP("  Array base local V%02u is address exposed\n", array->AsLclVarCommon()->GetLclNum());
+            JITDUMP("    Array base local V%02u is address exposed\n", array->AsLclVarCommon()->GetLclNum());
             return false;
         }
 
         GenTreeLclVarCommon* def = FindDef(array->AsLclVarCommon()->GetLclNum());
         if (def != nullptr)
         {
-            JITDUMP("  Array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),
+            JITDUMP("    Array limit var V%02u modified by [%06u]\n", array->AsLclVarCommon()->GetLclNum(),
                     Compiler::dspTreeID(def));
             return false;
         }
@@ -5227,7 +5212,7 @@ bool FlowGraphNaturalLoop::MatchLimit(NaturalLoopIterInfo* info, GenTree* test)
     }
     else
     {
-        JITDUMP("  Loop limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
+        JITDUMP("    Loop limit tree [%06u] not analyzable\n", Compiler::dspTreeID(limitOp));
         return false;
     }
 
@@ -5280,11 +5265,10 @@ bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
 
 //------------------------------------------------------------------------
 // CheckLoopConditionBaseCase: Verify that the loop condition is true when the
-// loop is entered (or validated immediately on entry).
+// loop is entered.
 //
 // Returns:
-//   True if we could prove that the condition is true at all interesting
-//   points in the loop.
+//   True if we could prove that the condition is true on entry.
 //
 // Remarks:
 //   Currently handles the following cases:
@@ -5323,18 +5307,137 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
     }
 
     // Do we have a zero-trip test?
-    if (initBlock->KindIs(BBJ_COND))
+    if (initBlock->KindIs(BBJ_COND) && IsZeroTripTest(initBlock, info))
     {
-        GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
-        assert(enteringJTrue->OperIs(GT_JTRUE));
-        if (enteringJTrue->gtGetOp1()->OperIsCompare() && ((enteringJTrue->gtGetOp1()->gtFlags & GTF_RELOP_ZTT) != 0))
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsZeroTripTest: Check whether `initBlock`, a BBJ_COND block that enters the
+// loop in one case and not in the other, implies that the loop invariant is
+// true on entry.
+//
+// Returns:
+//   True if we could prove that the loop invariant is true on entry through
+//   "initBlock".
+//
+bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+    GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
+    assert(enteringJTrue->OperIs(GT_JTRUE));
+    GenTree* relop = enteringJTrue->gtGetOp1();
+    if (!relop->OperIsCmpCompare())
+    {
+        return false;
+    }
+
+    // Technically optExtractInitTestIncr only handles the "false"
+    // entry case, and preheader creation should ensure that that's the
+    // only time we'll see a BBJ_COND init block. However, it does not
+    // hurt to let this logic be correct by construction.
+    bool enterOnTrue = InitBlockEntersLoopOnTrue(initBlock);
+
+    JITDUMP("  Init block " FMT_BB " enters the loop when condition [%06u] evaluates to %s\n", initBlock->bbNum,
+            Compiler::dspTreeID(relop), enterOnTrue ? "true" : "false");
+
+    GenTree*   limitCandidate;
+    genTreeOps oper;
+
+    if (relop->gtGetOp1()->OperIsScalarLocal() && (relop->gtGetOp1()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op1 is the iteration variable\n");
+        oper           = relop->gtOper;
+        limitCandidate = relop->gtGetOp2();
+    }
+    else if (relop->gtGetOp2()->OperIsScalarLocal() &&
+             (relop->gtGetOp2()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op2 is the iteration variable\n");
+        oper           = GenTree::SwapRelop(relop->gtOper);
+        limitCandidate = relop->gtGetOp1();
+    }
+    else
+    {
+        JITDUMP("    Relop does not involve iteration variable\n");
+        return false;
+    }
+
+    if (!enterOnTrue)
+    {
+        oper = GenTree::ReverseRelop(oper);
+    }
+
+    // Here we want to prove that [iterVar] [oper] [limitCandidate] implies
+    // [iterVar] [info->IterOper()] [info->Limit()]. Currently we just do the
+    // simple exact checks, but this could be improved. Note that using
+    // `GenTree::Compare` for the limits is ok for a "same value" check for the
+    // limited shapes of limits we recognize.
+    //
+    if ((relop->IsUnsigned() != info->TestTree->IsUnsigned()) || (oper != info->TestOper()) ||
+        !GenTree::Compare(limitCandidate, info->Limit()))
+    {
+        JITDUMP("    Condition guarantees V%02u %s%s [%06u], but invariant requires V%02u %s%s [%06u]\n", info->IterVar,
+                relop->IsUnsigned() ? "(uns) " : "", GenTree::OpName(oper), Compiler::dspTreeID(limitCandidate),
+                info->IterVar, info->TestTree->IsUnsigned() ? "(uns) " : "", GenTree::OpName(info->TestOper()),
+                Compiler::dspTreeID(info->Limit()));
+        return false;
+    }
+
+    JITDUMP("  Condition is established before entry at [%06u]\n", Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// InitBlockEntersLoopOnTrue: Determine whether a BBJ_COND init block enters the
+// loop in the false or true case.
+//
+// Parameters:
+//   initBlock - A BBJ_COND block that is assumed to dominate the loop, and
+//   only enter the loop in one of the two cases.
+//
+// Returns:
+//   True if the loop is entered if the condition evaluates to true; otherwise false.
+//
+// Remarks:
+//   Handles only limited cases (optExtractInitTestIncr ensures that we see
+//   only limited cases).
+//
+bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+
+    if (initBlock->FalseTargetIs(GetHeader()))
+    {
+        return false;
+    }
+
+    if (initBlock->TrueTargetIs(GetHeader()))
+    {
+        return true;
+    }
+
+    // `optExtractInitTestIncr` may look at preds of preds to find an init
+    // block, so try a little bit harder. Today this always happens since we
+    // always have preheaders created in the places we call
+    // FlowGraphNaturalLoop::AnalyzeIteration.
+    for (FlowEdge* enterEdge : EntryEdges())
+    {
+        BasicBlock* entering = enterEdge->getSourceBlock();
+        if (initBlock->FalseTargetIs(entering))
         {
-            JITDUMP("  Condition is established before entry at [%06u]\n",
-                    Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+            return false;
+        }
+        if (initBlock->TrueTargetIs(entering))
+        {
             return true;
         }
     }
 
+    assert(!"Could not find init block enter side");
     return false;
 }
 
@@ -5420,6 +5523,124 @@ bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
 
     // If we stopped early we found a def.
     return !result;
+}
+
+//------------------------------------------------------------------------
+// CanDuplicate: Check if this loop can be duplicated.
+//
+// Parameters:
+//   reason - If this function returns false, the reason why.
+//
+// Returns:
+//   True if the loop can be duplicated.
+//
+// Remarks:
+//   We currently do not support duplicating loops with EH constructs in them.
+//
+bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
+{
+#ifdef DEBUG
+    const char* localReason;
+    if (reason == nullptr)
+    {
+        reason = &localReason;
+    }
+#endif
+
+    Compiler*       comp   = m_dfsTree->GetCompiler();
+    BasicBlockVisit result = VisitLoopBlocks([=](BasicBlock* block) {
+        if (comp->bbIsTryBeg(block))
+        {
+            INDEBUG(*reason = "Loop has a `try` begin");
+            return BasicBlockVisit::Abort;
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    return result != BasicBlockVisit::Abort;
+}
+
+//------------------------------------------------------------------------
+// Duplicate: Duplicate the blocks of this loop, inserting them after `insertAfter`.
+//
+// Parameters:
+//   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
+//   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
+//   weightScale            - Factor to scale weight of new blocks by
+//
+void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
+{
+    assert(CanDuplicate(nullptr));
+
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    BasicBlock* bottom = GetLexicallyBottomMostBlock();
+
+    VisitLoopBlocksLexical([=](BasicBlock* blk) {
+        // Initialize newBlk as BBJ_ALWAYS without jump target, and fix up jump target later
+        // with BasicBlock::CopyTarget().
+        BasicBlock* newBlk = comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /*extendRegion*/ true);
+        JITDUMP("Adding " FMT_BB " (copy of " FMT_BB ") after " FMT_BB "\n", newBlk->bbNum, blk->bbNum,
+                (*insertAfter)->bbNum);
+
+        BasicBlock::CloneBlockState(comp, newBlk, blk);
+
+        // We're going to create the preds below, which will set the bbRefs properly,
+        // so clear out the cloned bbRefs field.
+        newBlk->bbRefs = 0;
+
+        newBlk->scaleBBWeight(weightScale);
+
+        *insertAfter = newBlk;
+        map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
+
+        return BasicBlockVisit::Continue;
+    });
+
+    // Now go through the new blocks, remapping their jump targets within the loop
+    // and updating the preds lists.
+    VisitLoopBlocks([=](BasicBlock* blk) {
+        BasicBlock* newBlk = nullptr;
+        bool        b      = map->Lookup(blk, &newBlk);
+        assert(b && newBlk != nullptr);
+
+        // Jump target should not be set yet
+        assert(!newBlk->HasInitializedTarget());
+
+        // First copy the jump destination(s) from "blk".
+        newBlk->CopyTarget(comp, blk);
+
+        // Now redirect the new block according to "blockMap".
+        comp->optRedirectBlock(newBlk, map);
+
+        // Add predecessor edges for the new successors, as well as the fall-through paths.
+        switch (newBlk->GetKind())
+        {
+            case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
+            case BBJ_CALLFINALLYRET:
+                comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
+                break;
+
+            case BBJ_COND:
+                comp->fgAddRefPred(newBlk->GetFalseTarget(), newBlk);
+                comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
+                break;
+
+            case BBJ_SWITCH:
+                for (BasicBlock* const switchDest : newBlk->SwitchTargets())
+                {
+                    comp->fgAddRefPred(switchDest, newBlk);
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //------------------------------------------------------------------------

@@ -13,6 +13,12 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
 
+            if (RuntimeHelpers.IsKnownConstant(value) && value.Length == 1)
+            {
+                // Call the char overload, e.g. Contains("X") -> Contains('X')
+                return Contains(value[0]);
+            }
+
             return SpanHelpers.IndexOf(
                 ref _firstChar,
                 Length,

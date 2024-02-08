@@ -17,23 +17,25 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder methodBuilder = type.DefineMethod("EmptyMethod", MethodAttributes.Public, typeof(void), new[] { typeof(Version) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("EmptyMethod", MethodAttributes.Public, typeof(void), [typeof(Version)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ret);
                 type.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
-                MethodBody body = method.GetMethodBody();
-                Assert.Empty(body.LocalVariables);
-                Assert.Empty(body.ExceptionHandlingClauses);
-                byte[]? bodyBytes = body.GetILAsByteArray();
-                Assert.NotNull(bodyBytes);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[0]);
-
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
+                    MethodBody body = method.GetMethodBody();
+                    Assert.Empty(body.LocalVariables);
+                    Assert.Empty(body.ExceptionHandlingClauses);
+                    byte[]? bodyBytes = body.GetILAsByteArray();
+                    Assert.NotNull(bodyBytes);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[0]);
+                }
             }
         }
 
@@ -44,7 +46,7 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
 
                 ILGenerator ilGenerator = method.GetILGenerator(size);
@@ -52,16 +54,19 @@ namespace System.Reflection.Emit.Tests
                 ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
                 ilGenerator.Emit(OpCodes.Ret);
                 type.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodInfo methodFromFile = typeFromDisk.GetMethod("TestMethod");
-                MethodBody body = methodFromFile.GetMethodBody();
-                byte[]? bodyBytes = body.GetILAsByteArray();
-                Assert.NotNull(bodyBytes);
-                Assert.Equal(OpCodes.Ldc_I4_5.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[1]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodInfo methodFromFile = typeFromDisk.GetMethod("TestMethod");
+                    MethodBody body = methodFromFile.GetMethodBody();
+                    byte[]? bodyBytes = body.GetILAsByteArray();
+                    Assert.NotNull(bodyBytes);
+                    Assert.Equal(OpCodes.Ldc_I4_5.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[1]);
+                }
             }
         }
 
@@ -72,10 +77,10 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder multiplyMethod = type.DefineMethod("MultiplyMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder multiplyMethod = type.DefineMethod("MultiplyMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
                 multiplyMethod.DefineParameter(1, ParameterAttributes.None, "myParam");
-                MethodBuilder addMethod = type.DefineMethod("AddMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new Type[] { typeof(int), typeof(int) });
+                MethodBuilder addMethod = type.DefineMethod("AddMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
                 addMethod.DefineParameter(1, ParameterAttributes.None, "firsParam");
                 addMethod.DefineParameter(2, ParameterAttributes.None, "secondParam");
 
@@ -91,22 +96,25 @@ namespace System.Reflection.Emit.Tests
                 addMethodIL.Emit(OpCodes.Add);
                 addMethodIL.Emit(OpCodes.Ret);
                 type.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? multiplyBody = typeFromDisk.GetMethod("MultiplyMethod").GetMethodBody().GetILAsByteArray();
-                byte[]? addBody = typeFromDisk.GetMethod("AddMethod").GetMethodBody().GetILAsByteArray();
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? multiplyBody = typeFromDisk.GetMethod("MultiplyMethod").GetMethodBody().GetILAsByteArray();
+                    byte[]? addBody = typeFromDisk.GetMethod("AddMethod").GetMethodBody().GetILAsByteArray();
 
-                Assert.NotNull(multiplyBody);
-                Assert.Equal(OpCodes.Ldarg_0.Value, multiplyBody[0]);
-                Assert.Equal(OpCodes.Ldc_I4_S.Value, multiplyBody[1]);
-                Assert.Equal(multiplier, multiplyBody[2]);
-                Assert.Equal(OpCodes.Mul.Value, multiplyBody[3]);
-                Assert.NotNull(addBody);
-                Assert.Equal(OpCodes.Ldarg_0.Value, addBody[0]);
-                Assert.Equal(OpCodes.Ldarg_1.Value, addBody[1]);
-                Assert.Equal(OpCodes.Add.Value, addBody[2]);
+                    Assert.NotNull(multiplyBody);
+                    Assert.Equal(OpCodes.Ldarg_0.Value, multiplyBody[0]);
+                    Assert.Equal(OpCodes.Ldc_I4_S.Value, multiplyBody[1]);
+                    Assert.Equal(multiplier, multiplyBody[2]);
+                    Assert.Equal(OpCodes.Mul.Value, multiplyBody[3]);
+                    Assert.NotNull(addBody);
+                    Assert.Equal(OpCodes.Ldarg_0.Value, addBody[0]);
+                    Assert.Equal(OpCodes.Ldarg_1.Value, addBody[1]);
+                    Assert.Equal(OpCodes.Add.Value, addBody[2]);
+                }
             }
         }
 
@@ -115,9 +123,9 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder multiplyMethod = type.DefineMethod("MultiplyMethod", MethodAttributes.Public, typeof(short), new Type[] { typeof(short) });
-                MethodBuilder addMethod = type.DefineMethod("AddMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(double), new Type[] { typeof(double) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder multiplyMethod = type.DefineMethod("MultiplyMethod", MethodAttributes.Public, typeof(short), [typeof(short)]);
+                MethodBuilder addMethod = type.DefineMethod("AddMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(double), [typeof(double)]);
 
                 ILGenerator multiplyMethodIL = multiplyMethod.GetILGenerator();
                 multiplyMethodIL.Emit(OpCodes.Ldarg, 1);
@@ -145,38 +153,41 @@ namespace System.Reflection.Emit.Tests
                 longMethodIL.Emit(OpCodes.Ldc_I8, (long)1234567);
                 longMethodIL.Emit(OpCodes.Ret);
                 anotherType.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Module moduleFromFile = assemblyFromDisk.Modules.First();
-                Type typeFromDisk = moduleFromFile.GetType("MyType");
-                Type anotherTypeFromDisk = moduleFromFile.GetType("AnotherType");
-                byte[]? multiplyBody = typeFromDisk.GetMethod("MultiplyMethod").GetMethodBody().GetILAsByteArray();
-                byte[]? addBody = typeFromDisk.GetMethod("AddMethod").GetMethodBody().GetILAsByteArray();
-                byte[]? stringBody = anotherTypeFromDisk.GetMethod("StringMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().GetILAsByteArray();
-                byte[]? floatBody = anotherTypeFromDisk.GetMethod("FloatMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().GetILAsByteArray();
-                byte[]? longBody = anotherTypeFromDisk.GetMethod("LongMethod", BindingFlags.NonPublic | BindingFlags.Static).GetMethodBody().GetILAsByteArray();
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Module moduleFromFile = assemblyFromDisk.Modules.First();
+                    Type typeFromDisk = moduleFromFile.GetType("MyType");
+                    Type anotherTypeFromDisk = moduleFromFile.GetType("AnotherType");
+                    byte[]? multiplyBody = typeFromDisk.GetMethod("MultiplyMethod").GetMethodBody().GetILAsByteArray();
+                    byte[]? addBody = typeFromDisk.GetMethod("AddMethod").GetMethodBody().GetILAsByteArray();
+                    byte[]? stringBody = anotherTypeFromDisk.GetMethod("StringMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().GetILAsByteArray();
+                    byte[]? floatBody = anotherTypeFromDisk.GetMethod("FloatMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().GetILAsByteArray();
+                    byte[]? longBody = anotherTypeFromDisk.GetMethod("LongMethod", BindingFlags.NonPublic | BindingFlags.Static).GetMethodBody().GetILAsByteArray();
 
-                Assert.NotNull(multiplyBody);
-                Assert.Equal(OpCodes.Ldarg_1.Value, multiplyBody[0]);
-                Assert.Equal(OpCodes.Ldc_I4_S.Value, multiplyBody[1]);
-                Assert.Equal(11, multiplyBody[2]);
-                Assert.NotNull(addBody);
-                Assert.Equal(OpCodes.Ldarg_0.Value, addBody[0]);
-                Assert.Equal(OpCodes.Ldc_R8.Value, addBody[1]);
-                Assert.NotNull(stringBody);
-                Assert.Equal(OpCodes.Ldstr.Value, stringBody[0]);
-                Assert.NotNull(floatBody);
-                Assert.Equal(OpCodes.Ldc_R4.Value, floatBody[0]);
-                Assert.NotNull(longBody);
-                Assert.Equal(OpCodes.Ldc_I8.Value, longBody[0]);
+                    Assert.NotNull(multiplyBody);
+                    Assert.Equal(OpCodes.Ldarg_1.Value, multiplyBody[0]);
+                    Assert.Equal(OpCodes.Ldc_I4_S.Value, multiplyBody[1]);
+                    Assert.Equal(11, multiplyBody[2]);
+                    Assert.NotNull(addBody);
+                    Assert.Equal(OpCodes.Ldarg_0.Value, addBody[0]);
+                    Assert.Equal(OpCodes.Ldc_R8.Value, addBody[1]);
+                    Assert.NotNull(stringBody);
+                    Assert.Equal(OpCodes.Ldstr.Value, stringBody[0]);
+                    Assert.NotNull(floatBody);
+                    Assert.Equal(OpCodes.Ldc_R4.Value, floatBody[0]);
+                    Assert.NotNull(longBody);
+                    Assert.Equal(OpCodes.Ldc_I8.Value, longBody[0]);
+                }
             }
         }
 
         [Fact]
         public void ILOffset_Test()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(Type), Type.EmptyTypes);
             ILGenerator ilGenerator = method.GetILGenerator();
 
@@ -190,8 +201,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(long), new[] { typeof(int), typeof(long), typeof(short), typeof(byte) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(long), [typeof(int), typeof(long), typeof(short), typeof(byte)]);
                 ILGenerator il1 = method1.GetILGenerator();
 
                 // public int Method1(int x, int y, short z, byte r) =>
@@ -217,7 +228,7 @@ namespace System.Reflection.Emit.Tests
                 il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 1
                 il1.Emit(OpCodes.Ret);         // pop 1 stack size 0
 
-                MethodBuilder method2 = type.DefineMethod("Method2", MethodAttributes.Public, typeof(int), new Type[] { typeof(int), typeof(byte) });
+                MethodBuilder method2 = type.DefineMethod("Method2", MethodAttributes.Public, typeof(int), [typeof(int), typeof(byte)]);
                 ILGenerator il2 = method2.GetILGenerator();
 
                 // int Method2(int x, int y) =>  x + (y + 18);
@@ -228,18 +239,21 @@ namespace System.Reflection.Emit.Tests
                 il2.Emit(OpCodes.Add);         // pop 2 push 1 stack size 1
                 il2.Emit(OpCodes.Ret);         // pop 1 stack size 0
                 type.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(9, getMaxStackMethod.Invoke(il1, null));
                 Assert.Equal(3, getMaxStackMethod.Invoke(il2, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body1 = typeFromDisk.GetMethod("Method1").GetMethodBody();
-                MethodBody body2 = typeFromDisk.GetMethod("Method2").GetMethodBody();
-                Assert.Equal(9, body1.MaxStackSize);
-                Assert.Equal(8, body2.MaxStackSize); // apparently doesn't write lower than 8 
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body1 = typeFromDisk.GetMethod("Method1").GetMethodBody();
+                    MethodBody body2 = typeFromDisk.GetMethod("Method2").GetMethodBody();
+                    Assert.Equal(9, body1.MaxStackSize);
+                    Assert.Equal(8, body2.MaxStackSize); // apparently doesn't write lower than 8
+                }
             }
         }
 
@@ -261,8 +275,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public, typeof(int), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public, typeof(int), [typeof(int), typeof(int)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 Label failed = il.DefineLabel();
                 Label endOfMethod = il.DefineLabel();
@@ -286,24 +300,27 @@ namespace System.Reflection.Emit.Tests
                 il.MarkLabel(endOfMethod);
                 il.Emit(OpCodes.Ret);
                 type.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(
-                [
-                    (byte)OpCodes.Ldarg_1.Value, (byte)OpCodes.Ldc_I4_S.Value, 100, 0, 0, 0,
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(
+                    [
+                        (byte)OpCodes.Ldarg_1.Value, (byte)OpCodes.Ldc_I4_S.Value, 100, 0, 0, 0,
                     (byte)OpCodes.Bgt_S.Value, 13,
                     (byte)OpCodes.Ldarg_2.Value, (byte)OpCodes.Ldc_I4_S.Value, 100, 0, 0, 0,
                     (byte)OpCodes.Bgt_S.Value, 5,
                     (byte)OpCodes.Ldarg_1.Value, (byte)OpCodes.Ldarg_2.Value, (byte)OpCodes.Add.Value,
                     (byte)OpCodes.Br_S.Value, (byte)OpCodes.Break.Value,
                     (byte)OpCodes.Ldc_I4_M1.Value, (byte)OpCodes.Ret.Value
-                ], bodyBytes);
+                    ], bodyBytes);
+                }
             }
         }
 
@@ -312,8 +329,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public, typeof(string), new[] { typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public, typeof(string), [typeof(int)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 Label defaultCase = il.DefineLabel();
                 Label endOfMethod = il.DefineLabel();
@@ -357,18 +374,21 @@ namespace System.Reflection.Emit.Tests
                 il.MarkLabel(endOfMethod);
                 il.Emit(OpCodes.Ret);
                 type.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(1, getMaxStackMethod.Invoke(il, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
-                Assert.Equal((byte)OpCodes.Ldarg_1.Value, bodyBytes[0]);
-                Assert.Equal((byte)OpCodes.Switch.Value, bodyBytes[1]);
-                Assert.Equal(5, bodyBytes[2]); // case count
-                Assert.Equal(69, bodyBytes.Length);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal((byte)OpCodes.Ldarg_1.Value, bodyBytes[0]);
+                    Assert.Equal((byte)OpCodes.Switch.Value, bodyBytes[1]);
+                    Assert.Equal(5, bodyBytes[2]); // case count
+                    Assert.Equal(69, bodyBytes.Length);
+                }
             }
         }
 
@@ -377,8 +397,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(int), typeof(string) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(string)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 LocalBuilder intLocal = il.DeclareLocal(typeof(int));
                 LocalBuilder stringLocal = il.DeclareLocal(typeof(string));
@@ -406,50 +426,53 @@ namespace System.Reflection.Emit.Tests
                 type.CreateType();
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method1").GetMethodBody();
-                Assert.Equal(4, body.LocalVariables.Count);
-                Assert.Equal(intLocal.LocalIndex, body.LocalVariables[0].LocalIndex);
-                Assert.Equal(intLocal.LocalType.FullName, body.LocalVariables[0].LocalType.FullName);
-                Assert.Equal(intLocal.IsPinned, body.LocalVariables[0].IsPinned);
-                Assert.Equal(stringLocal.LocalIndex, body.LocalVariables[1].LocalIndex);
-                Assert.Equal(stringLocal.LocalType.FullName, body.LocalVariables[1].LocalType.FullName);
-                Assert.Equal(stringLocal.IsPinned, body.LocalVariables[1].IsPinned);
-                Assert.Equal(shortLocal.LocalIndex, body.LocalVariables[2].LocalIndex);
-                Assert.Equal(shortLocal.LocalType.FullName, body.LocalVariables[2].LocalType.FullName);
-                Assert.Equal(shortLocal.IsPinned, body.LocalVariables[2].IsPinned);
-                Assert.Equal(int2Local.LocalIndex, body.LocalVariables[3].LocalIndex);
-                Assert.Equal(int2Local.LocalType.FullName, body.LocalVariables[3].LocalType.FullName);
-                Assert.Equal(int2Local.IsPinned, body.LocalVariables[3].IsPinned);
-                byte[]? bodyBytes = body.GetILAsByteArray();
-                Assert.Equal((byte)OpCodes.Ldarg_1.Value, bodyBytes[0]);
-                Assert.Equal((byte)OpCodes.Stloc_1.Value, bodyBytes[1]);
-                Assert.Equal((byte)OpCodes.Ldstr.Value, bodyBytes[2]);
-                Assert.Equal((byte)OpCodes.Stloc_1.Value, bodyBytes[7]);
-                Assert.Equal((byte)OpCodes.Ldloc_1.Value, bodyBytes[8]);
-                Assert.Equal((byte)OpCodes.Starg_S.Value, bodyBytes[9]);
-                Assert.Equal((byte)OpCodes.Ldarg_0.Value, bodyBytes[11]);
-                Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[12]);
-                Assert.Equal((byte)OpCodes.Ldc_I4_S.Value, bodyBytes[13]);
-                Assert.Equal(120, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(14, 4)));
-                Assert.Equal(0xFE, bodyBytes[18]); // Stloc instruction occupies 2 bytes 0xfe0e
-                Assert.Equal(0x0E, bodyBytes[19]);
-                Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(20, 4))); // index 2 of 'il.Emit(OpCodes.Stloc, 2);' instruction
-                Assert.Equal((byte)OpCodes.Ldloc_2.Value, bodyBytes[24]);
-                Assert.Equal(0xFE, bodyBytes[25]); // Ldloc = 0xfe0c
-                Assert.Equal(0x0C, bodyBytes[26]);
-                Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il.Emit(OpCodes.Ldloc, 0);' instruction
-                Assert.Equal((byte)OpCodes.Add.Value, bodyBytes[31]);
-                Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[32]);
-                Assert.Equal((byte)OpCodes.Ldloca_S.Value, bodyBytes[33]);
-                Assert.Equal(0, bodyBytes[34]); // intLocal index is 0 for 'il.Emit(OpCodes.Ldloca, intLocal);' instruction
-                Assert.Equal((byte)OpCodes.Ldind_I.Value, bodyBytes[35]);
-                Assert.Equal((byte)OpCodes.Stloc_3.Value, bodyBytes[36]);
-                Assert.Equal((byte)OpCodes.Ldloc_3.Value, bodyBytes[37]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[38]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method1").GetMethodBody();
+                    Assert.Equal(4, body.LocalVariables.Count);
+                    Assert.Equal(intLocal.LocalIndex, body.LocalVariables[0].LocalIndex);
+                    Assert.Equal(intLocal.LocalType.FullName, body.LocalVariables[0].LocalType.FullName);
+                    Assert.Equal(intLocal.IsPinned, body.LocalVariables[0].IsPinned);
+                    Assert.Equal(stringLocal.LocalIndex, body.LocalVariables[1].LocalIndex);
+                    Assert.Equal(stringLocal.LocalType.FullName, body.LocalVariables[1].LocalType.FullName);
+                    Assert.Equal(stringLocal.IsPinned, body.LocalVariables[1].IsPinned);
+                    Assert.Equal(shortLocal.LocalIndex, body.LocalVariables[2].LocalIndex);
+                    Assert.Equal(shortLocal.LocalType.FullName, body.LocalVariables[2].LocalType.FullName);
+                    Assert.Equal(shortLocal.IsPinned, body.LocalVariables[2].IsPinned);
+                    Assert.Equal(int2Local.LocalIndex, body.LocalVariables[3].LocalIndex);
+                    Assert.Equal(int2Local.LocalType.FullName, body.LocalVariables[3].LocalType.FullName);
+                    Assert.Equal(int2Local.IsPinned, body.LocalVariables[3].IsPinned);
+                    byte[]? bodyBytes = body.GetILAsByteArray();
+                    Assert.Equal((byte)OpCodes.Ldarg_1.Value, bodyBytes[0]);
+                    Assert.Equal((byte)OpCodes.Stloc_1.Value, bodyBytes[1]);
+                    Assert.Equal((byte)OpCodes.Ldstr.Value, bodyBytes[2]);
+                    Assert.Equal((byte)OpCodes.Stloc_1.Value, bodyBytes[7]);
+                    Assert.Equal((byte)OpCodes.Ldloc_1.Value, bodyBytes[8]);
+                    Assert.Equal((byte)OpCodes.Starg_S.Value, bodyBytes[9]);
+                    Assert.Equal((byte)OpCodes.Ldarg_0.Value, bodyBytes[11]);
+                    Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[12]);
+                    Assert.Equal((byte)OpCodes.Ldc_I4_S.Value, bodyBytes[13]);
+                    Assert.Equal(120, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(14, 4)));
+                    Assert.Equal(0xFE, bodyBytes[18]); // Stloc instruction occupies 2 bytes 0xfe0e
+                    Assert.Equal(0x0E, bodyBytes[19]);
+                    Assert.Equal(2, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(20, 4))); // index 2 of 'il.Emit(OpCodes.Stloc, 2);' instruction
+                    Assert.Equal((byte)OpCodes.Ldloc_2.Value, bodyBytes[24]);
+                    Assert.Equal(0xFE, bodyBytes[25]); // Ldloc = 0xfe0c
+                    Assert.Equal(0x0C, bodyBytes[26]);
+                    Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(27, 4))); // index 0 of 'il.Emit(OpCodes.Ldloc, 0);' instruction
+                    Assert.Equal((byte)OpCodes.Add.Value, bodyBytes[31]);
+                    Assert.Equal((byte)OpCodes.Stloc_0.Value, bodyBytes[32]);
+                    Assert.Equal((byte)OpCodes.Ldloca_S.Value, bodyBytes[33]);
+                    Assert.Equal(0, bodyBytes[34]); // intLocal index is 0 for 'il.Emit(OpCodes.Ldloca, intLocal);' instruction
+                    Assert.Equal((byte)OpCodes.Ldind_I.Value, bodyBytes[35]);
+                    Assert.Equal((byte)OpCodes.Stloc_3.Value, bodyBytes[36]);
+                    Assert.Equal((byte)OpCodes.Ldloc_3.Value, bodyBytes[37]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[38]);
+                }
             }
         }
 
@@ -458,8 +481,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(string), new[] { typeof(int), typeof(string) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("Method1", MethodAttributes.Public | MethodAttributes.Static, typeof(string), [typeof(int), typeof(string)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 LocalBuilder intLocal = il.DeclareLocal(typeof(int));
                 LocalBuilder stringLocal = il.DeclareLocal(typeof(string));
@@ -478,7 +501,7 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Stloc, intLocal);
                 il.Emit(OpCodes.Ldloc, stringLocal);
                 il.Emit(OpCodes.Ret);
-                MethodBuilder multiplyMethod = type.DefineMethod("MultiplyMethod", MethodAttributes.Public, typeof(int), new[] { typeof(int) });
+                MethodBuilder multiplyMethod = type.DefineMethod("MultiplyMethod", MethodAttributes.Public, typeof(int), [typeof(int)]);
                 ILGenerator multiplyMethodIL = multiplyMethod.GetILGenerator();
                 LocalBuilder iLocal = multiplyMethodIL.DeclareLocal(typeof(int));
                 LocalBuilder shLocal = multiplyMethodIL.DeclareLocal(typeof(short));
@@ -526,24 +549,27 @@ namespace System.Reflection.Emit.Tests
                 longMethodIL.Emit(OpCodes.Ldloc, longLocal);
                 longMethodIL.Emit(OpCodes.Ret);
                 anotherType.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Module moduleFromFile = assemblyFromDisk.Modules.First();
-                Type typeFromDisk = moduleFromFile.GetType("MyType");
-                Assert.Equal(2, typeFromDisk.GetMethod("MultiplyMethod").GetMethodBody().LocalVariables.Count);
-                Assert.Equal(3, typeFromDisk.GetMethod("Method1").GetMethodBody().LocalVariables.Count);
-                Type anotherTypeFromDisk = moduleFromFile.GetType("AnotherType");
-                Assert.Equal(1, anotherTypeFromDisk.GetMethod("StringMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().LocalVariables.Count);
-                Assert.Equal(2, anotherTypeFromDisk.GetMethod("TypeMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().LocalVariables.Count);
-                Assert.Equal(2, anotherTypeFromDisk.GetMethod("LongMethod", BindingFlags.NonPublic | BindingFlags.Static).GetMethodBody().LocalVariables.Count);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Module moduleFromFile = assemblyFromDisk.Modules.First();
+                    Type typeFromDisk = moduleFromFile.GetType("MyType");
+                    Assert.Equal(2, typeFromDisk.GetMethod("MultiplyMethod").GetMethodBody().LocalVariables.Count);
+                    Assert.Equal(3, typeFromDisk.GetMethod("Method1").GetMethodBody().LocalVariables.Count);
+                    Type anotherTypeFromDisk = moduleFromFile.GetType("AnotherType");
+                    Assert.Equal(1, anotherTypeFromDisk.GetMethod("StringMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().LocalVariables.Count);
+                    Assert.Equal(2, anotherTypeFromDisk.GetMethod("TypeMethod", BindingFlags.NonPublic | BindingFlags.Instance).GetMethodBody().LocalVariables.Count);
+                    Assert.Equal(2, anotherTypeFromDisk.GetMethod("LongMethod", BindingFlags.NonPublic | BindingFlags.Static).GetMethodBody().LocalVariables.Count);
+                }
             }
         }
 
         [Fact]
         public void LocalBuilderExceptions()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             ILGenerator il = type.DefineMethod("Method1", MethodAttributes.Public).GetILGenerator();
             ILGenerator anotherIL = type.DefineMethod("AnotherMethod", MethodAttributes.Public).GetILGenerator();
             LocalBuilder stringLocal = il.DeclareLocal(typeof(string));
@@ -559,8 +585,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder methodBuilder = tb.DefineMethod("Method1", MethodAttributes.Public, typeof(int), new[] { typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder methodBuilder = tb.DefineMethod("Method1", MethodAttributes.Public, typeof(int), [typeof(int)]);
                 FieldBuilder fbNumber = tb.DefineField("_number", typeof(int), FieldAttributes.Private);
                 Assert.Equal(0, fbNumber.MetadataToken);
 
@@ -571,19 +597,22 @@ namespace System.Reflection.Emit.Tests
                 il.Emit(OpCodes.Mul);
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(9, bodyBytes.Length);
-                Assert.NotEqual(0, fbNumber.MetadataToken);
-                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[1]);
-                Assert.Equal(fbNumber.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(2, 4)));
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[6]);
-                Assert.Equal(OpCodes.Mul.Value, bodyBytes[7]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[8]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(9, bodyBytes.Length);
+                    Assert.NotEqual(0, fbNumber.MetadataToken);
+                    Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[1]);
+                    Assert.Equal(fbNumber.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(2, 4)));
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[6]);
+                    Assert.Equal(OpCodes.Mul.Value, bodyBytes[7]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[8]);
+                }
             }
         }
 
@@ -592,12 +621,12 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder methodMain = tb.DefineMethod("Main", MethodAttributes.Public, typeof(void), new[] { typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder methodMain = tb.DefineMethod("Main", MethodAttributes.Public, typeof(void), [typeof(int)]);
                 FieldBuilder field = tb.DefineField("_field", typeof(int), FieldAttributes.Private);
-                MethodInfo writeLineString = typeof(Console).GetMethod("WriteLine", new[] { typeof(string) });
-                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(string), typeof(object), typeof(object), typeof(object) });
-                MethodBuilder methodMultiply = tb.DefineMethod("Multiply", MethodAttributes.Public, typeof(int), new[] { typeof(int) });
+                MethodInfo writeLineString = typeof(Console).GetMethod("WriteLine", [typeof(string)]);
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", [typeof(string), typeof(object), typeof(object), typeof(object)]);
+                MethodBuilder methodMultiply = tb.DefineMethod("Multiply", MethodAttributes.Public, typeof(int), [typeof(int)]);
                 /*
                 class MyType
                 { 
@@ -633,32 +662,35 @@ namespace System.Reflection.Emit.Tests
                 ilMain.Emit(OpCodes.Call, writeLineObj);
                 ilMain.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[5]);
-                // Bytes 6, 7, 8, 9 are token for writeLineString, but it is not same as the value before save
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[10]);
-                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[15]);
-                Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[16]);
-                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(17, 4)));
-                Assert.Equal(OpCodes.Box.Value, bodyBytes[21]);
-                int intTypeToken = BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(22, 4));
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[26]);
-                Assert.Equal(OpCodes.Box.Value, bodyBytes[27]);
-                Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(28, 4)));
-                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[32]);
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[33]);
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[34]);
-                Assert.Equal(methodMultiply.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(35, 4)));
-                Assert.Equal(OpCodes.Box.Value, bodyBytes[39]);
-                Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(40, 4)));
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[44]);
-                // Bytes 24, 46, 47, 48 are token for writeLineObj, but it is not same as the value before save
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[5]);
+                    // Bytes 6, 7, 8, 9 are token for writeLineString, but it is not same as the value before save
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[10]);
+                    Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[15]);
+                    Assert.Equal(OpCodes.Ldfld.Value, bodyBytes[16]);
+                    Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(17, 4)));
+                    Assert.Equal(OpCodes.Box.Value, bodyBytes[21]);
+                    int intTypeToken = BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(22, 4));
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[26]);
+                    Assert.Equal(OpCodes.Box.Value, bodyBytes[27]);
+                    Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(28, 4)));
+                    Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[32]);
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[33]);
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[34]);
+                    Assert.Equal(methodMultiply.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(35, 4)));
+                    Assert.Equal(OpCodes.Box.Value, bodyBytes[39]);
+                    Assert.Equal(intTypeToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(40, 4)));
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[44]);
+                    // Bytes 24, 46, 47, 48 are token for writeLineObj, but it is not same as the value before save
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
+                }
             }
         }
 
@@ -667,13 +699,13 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.Public);
                 MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
                 GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
                 genericMethod.SetSignature(null, null, null, new[] { methodParams[0] }, null, null);
                 ILGenerator ilg = genericMethod.GetILGenerator();
-                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", [typeof(object)]);
                 ilg.Emit(OpCodes.Ldarg_0);
                 ilg.EmitCall(OpCodes.Call, writeLineObj, null);
                 ilg.Emit(OpCodes.Ret);
@@ -684,17 +716,20 @@ namespace System.Reflection.Emit.Tests
                 ilg.EmitCall(OpCodes.Call, GMOfString, null);
                 ilg.Emit(OpCodes.Ret);
                 type.CreateType();
-                saveMethod.Invoke(ab, new[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodInfo genericMethodFromDisk = typeFromDisk.GetMethod("GM");
-                Assert.True(genericMethodFromDisk.IsGenericMethod);
-                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
-                byte[] ilBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
-                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
-                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodInfo genericMethodFromDisk = typeFromDisk.GetMethod("GM");
+                    Assert.True(genericMethodFromDisk.IsGenericMethod);
+                    Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                    byte[] ilBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                    Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                    Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+                }
             }
         }
 
@@ -703,8 +738,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
-                GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(new[] { "T" });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(["T"]);
                 ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public |
                     MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
                 FieldBuilder myField = type.DefineField("Field", typeParams[0], FieldAttributes.Public);
@@ -724,7 +759,7 @@ namespace System.Reflection.Emit.Tests
                 ilg.Emit(OpCodes.Ldloc_0);
                 ilg.Emit(OpCodes.Ldfld, FieldOfU);
                 ilg.Emit(OpCodes.Box, methodParams[0]);
-                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", new[] { typeof(object) });
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", [typeof(object)]);
                 ilg.EmitCall(OpCodes.Call, writeLineObj, null);
                 ilg.Emit(OpCodes.Ret);
                 type.CreateType();
@@ -758,34 +793,38 @@ internal class Dummy
         MyType<string>.GM("HelloWorld");
     }
 }               */
-                saveMethod.Invoke(ab, new[] { file.Path });
+                ab.Save(file.Path);
 
-                Module module = AssemblySaveTools.LoadAssemblyFromPath(file.Path).Modules.First();
-                Type myTypeFromDisk = module.GetType("MyType");
-                Assert.True(myTypeFromDisk.IsGenericType);
-                Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
-                Assert.Equal("T", myTypeFromDisk.GetGenericArguments()[0].Name);
-                Assert.Equal("T", myTypeFromDisk.GetField("Field").FieldType.Name);
-                MethodInfo genericMethodFromDisk = myTypeFromDisk.GetMethod("GM");
-                Assert.True(genericMethodFromDisk.IsGenericMethod);
-                Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
-                Assert.Equal(1, genericMethodFromDisk.GetMethodBody().LocalVariables.Count);
-                Assert.Equal("MyType[U]", genericMethodFromDisk.GetMethodBody().LocalVariables[0].LocalType.ToString());
-                byte[] gmIlBytes = genericMethodFromDisk.GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Newobj.Value, gmIlBytes[0]);
-                Assert.Equal(OpCodes.Stloc_0.Value, gmIlBytes[5]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[6]);
-                Assert.Equal(OpCodes.Ldarg_0.Value, gmIlBytes[7]);
-                Assert.Equal(OpCodes.Stfld.Value, gmIlBytes[8]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[13]);
-                Assert.Equal(OpCodes.Ldfld.Value, gmIlBytes[14]);
-                Assert.Equal(OpCodes.Box.Value, gmIlBytes[19]);
-                Assert.Equal(OpCodes.Call.Value, gmIlBytes[24]);
-                Assert.Equal(OpCodes.Ret.Value, gmIlBytes[29]);
-                byte[] ilBytes = module.GetType("Dummy").GetMethod("Main").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
-                Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
-                Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Module module = assemblyFromDisk.Modules.First();
+                    Type myTypeFromDisk = module.GetType("MyType");
+                    Assert.True(myTypeFromDisk.IsGenericType);
+                    Assert.True(myTypeFromDisk.IsGenericTypeDefinition);
+                    Assert.Equal("T", myTypeFromDisk.GetGenericArguments()[0].Name);
+                    Assert.Equal("T", myTypeFromDisk.GetField("Field").FieldType.Name);
+                    MethodInfo genericMethodFromDisk = myTypeFromDisk.GetMethod("GM");
+                    Assert.True(genericMethodFromDisk.IsGenericMethod);
+                    Assert.True(genericMethodFromDisk.IsGenericMethodDefinition);
+                    Assert.Equal(1, genericMethodFromDisk.GetMethodBody().LocalVariables.Count);
+                    Assert.Equal("MyType[U]", genericMethodFromDisk.GetMethodBody().LocalVariables[0].LocalType.ToString());
+                    byte[] gmIlBytes = genericMethodFromDisk.GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Newobj.Value, gmIlBytes[0]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, gmIlBytes[5]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[6]);
+                    Assert.Equal(OpCodes.Ldarg_0.Value, gmIlBytes[7]);
+                    Assert.Equal(OpCodes.Stfld.Value, gmIlBytes[8]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, gmIlBytes[13]);
+                    Assert.Equal(OpCodes.Ldfld.Value, gmIlBytes[14]);
+                    Assert.Equal(OpCodes.Box.Value, gmIlBytes[19]);
+                    Assert.Equal(OpCodes.Call.Value, gmIlBytes[24]);
+                    Assert.Equal(OpCodes.Ret.Value, gmIlBytes[29]);
+                    byte[] ilBytes = module.GetType("Dummy").GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldstr.Value, ilBytes[0]);
+                    Assert.Equal(OpCodes.Call.Value, ilBytes[5]);
+                    Assert.Equal(OpCodes.Ret.Value, ilBytes[10]);
+                }
             }
         }
 
@@ -794,7 +833,7 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type1, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type1);
                 MethodBuilder method = type1.DefineMethod("meth", MethodAttributes.Public, typeof(int), Type.EmptyTypes);
                 FieldBuilder field = type1.DefineField("field", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -809,28 +848,31 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldsfld, field);
                 ilGenerator.Emit(OpCodes.Ret);
                 type1.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("meth").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldc_I4_1.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[1]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[2]);
-                Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[3]);
-                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(4, 4)));
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[8]);
-                Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[13]);
-                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(14, 4)));
-                Assert.Equal(OpCodes.Callvirt.Value, bodyBytes[18]);
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[23]);
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[28]);
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[33]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[38]);
-                Assert.Equal(OpCodes.Callvirt.Value, bodyBytes[39]);
-                Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[44]);
-                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(45, 4)));
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("meth").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldc_I4_1.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[1]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[2]);
+                    Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[3]);
+                    Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(4, 4)));
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[8]);
+                    Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[13]);
+                    Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(14, 4)));
+                    Assert.Equal(OpCodes.Callvirt.Value, bodyBytes[18]);
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[23]);
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[28]);
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[33]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[38]);
+                    Assert.Equal(OpCodes.Callvirt.Value, bodyBytes[39]);
+                    Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[44]);
+                    Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(45, 4)));
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[49]);
+                }
             }
         }
 
@@ -839,8 +881,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder methodMain = tb.DefineMethod("Main", MethodAttributes.Public, typeof(int), new[] { typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder methodMain = tb.DefineMethod("Main", MethodAttributes.Public, typeof(int), [typeof(int)]);
                 TypeBuilder anotherType = ab.GetDynamicModule("MyModule").DefineType("AnotherType", TypeAttributes.Public);
                 FieldBuilder field = anotherType.DefineField("StaticField", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
                 MethodBuilder staticMethod = anotherType.DefineMethod("StaticMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
@@ -868,19 +910,22 @@ internal class Dummy
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
                 anotherType.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[0]);
-                Assert.Equal(staticMethod.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(1, 4)));
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[5]);
-                Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[6]);
-                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(7, 4)));
-                Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[11]);
-                Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(12, 4)));
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[16]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("Main").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[0]);
+                    Assert.Equal(staticMethod.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(1, 4)));
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[5]);
+                    Assert.Equal(OpCodes.Stsfld.Value, bodyBytes[6]);
+                    Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(7, 4)));
+                    Assert.Equal(OpCodes.Ldsfld.Value, bodyBytes[11]);
+                    Assert.Equal(field.MetadataToken, BinaryPrimitives.ReadInt32LittleEndian(bodyBytes.AsSpan().Slice(12, 4)));
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[16]);
+                }
             }
         }
 
@@ -889,9 +934,9 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder methodBuilder = tb.DefineMethod("Method1", MethodAttributes.Public, typeof(Version), new[] { typeof(int), typeof(int) });
-                ConstructorInfo ctor = typeof(Version).GetConstructor(new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder methodBuilder = tb.DefineMethod("Method1", MethodAttributes.Public, typeof(Version), [typeof(int), typeof(int)]);
+                ConstructorInfo ctor = typeof(Version).GetConstructor([typeof(int), typeof(int)]);
 
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_1);
@@ -899,15 +944,18 @@ internal class Dummy
                 il.Emit(OpCodes.Newobj, ctor);
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Ldarg_2.Value, bodyBytes[1]);
-                Assert.Equal(OpCodes.Newobj.Value, bodyBytes[2]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[7]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("Method1").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Ldarg_2.Value, bodyBytes[1]);
+                    Assert.Equal(OpCodes.Newobj.Value, bodyBytes[2]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[7]);
+                }
             }
         }
 
@@ -916,7 +964,7 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 MethodBuilder method = tb.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(bool), Type.EmptyTypes);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 LocalBuilder lb0 = ilGenerator.DeclareLocal(typeof(ValueTuple));
@@ -925,24 +973,27 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldc_I4, 1);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                byte[]? bodyBytes = typeFromDisk.GetMethod("meth1").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldloca_S.Value, bodyBytes[0]); // short form of Ldloca
-                Assert.Equal(0, bodyBytes[1]);
-                Assert.Equal(0xFE, bodyBytes[2]); // Initobj = 0xfe15
-                Assert.Equal(0x15, bodyBytes[3]);
-                Assert.Equal(OpCodes.Ldc_I4_1.Value, bodyBytes[8]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[9]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    byte[]? bodyBytes = typeFromDisk.GetMethod("meth1").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldloca_S.Value, bodyBytes[0]); // short form of Ldloca
+                    Assert.Equal(0, bodyBytes[1]);
+                    Assert.Equal(0xFE, bodyBytes[2]); // Initobj = 0xfe15
+                    Assert.Equal(0x15, bodyBytes[3]);
+                    Assert.Equal(OpCodes.Ldc_I4_1.Value, bodyBytes[8]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[9]);
+                }
             }
         }
 
         [Fact]
         public void MemberReferenceExceptions()
         {
-            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+            AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
             MethodBuilder method = type.DefineMethod("Method1", MethodAttributes.Public);
             ILGenerator il = method.GetILGenerator();
             MethodInfo nullMethod = null;
@@ -975,8 +1026,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), [typeof(int), typeof(int)]);
                 Type dBZException = typeof(DivideByZeroException);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
@@ -996,28 +1047,31 @@ internal class Dummy
                 tb.CreateType();
 
                 Assert.Equal(3, getMaxStackMethod.Invoke(ilGenerator, null));
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(1, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(dBZException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
-                byte[] bodyBytes = body.GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
-                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
-                // Next 4 bytes 'exBlock' label location
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]); // "Error: division by zero"
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]); // Calls Console.WriteLine
-                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[25]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[30]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[31]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(1, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(dBZException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                    byte[] bodyBytes = body.GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                    Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                    Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                    // Next 4 bytes 'exBlock' label location
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]); // "Error: division by zero"
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[14]); // Calls Console.WriteLine
+                    Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
+                    Assert.Equal(OpCodes.Leave.Value, bodyBytes[25]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[30]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[31]);
+                }
             }
         }
 
@@ -1026,8 +1080,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), [typeof(int), typeof(int)]);
                 Type dBZException = typeof(DivideByZeroException);
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -1057,40 +1111,43 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 Assert.Equal(2, maxStackField.GetValue(ilGenerator));
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(2, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
-                Assert.Equal(dBZException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
-                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
-                byte[] bodyBytes = body.GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
-                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]); // "Error: division by zero"
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]); // Calls Console.WriteLine
-                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
-                Assert.Equal(OpCodes.Pop.Value, bodyBytes[25]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[26]);
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[31]); // "Error: division by zero"
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[36]); // Calls Console.WriteLine
-                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[41]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[46]);
-                Assert.Equal(OpCodes.Pop.Value, bodyBytes[47]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[48]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[53]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[54]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(2, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                    Assert.Equal(dBZException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                    Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                    byte[] bodyBytes = body.GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                    Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                    Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]); // "Error: division by zero"
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[14]); // Calls Console.WriteLine
+                    Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
+                    Assert.Equal(OpCodes.Pop.Value, bodyBytes[25]);
+                    Assert.Equal(OpCodes.Leave.Value, bodyBytes[26]);
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[31]); // "Error: division by zero"
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[36]); // Calls Console.WriteLine
+                    Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[41]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[46]);
+                    Assert.Equal(OpCodes.Pop.Value, bodyBytes[47]);
+                    Assert.Equal(OpCodes.Leave.Value, bodyBytes[48]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[53]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[54]);
+                }
             }
         }
 
@@ -1099,8 +1156,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), [typeof(int), typeof(int)]);
                 Type dBZException = typeof(DivideByZeroException);
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -1139,18 +1196,21 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(2, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[0].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
-                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(2, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[0].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                    Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                }
             }
         }
 
@@ -1159,8 +1219,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), [typeof(int), typeof(int)]);
                 Type dBZException = typeof(DivideByZeroException);
                 Type overflowException = typeof(OverflowException);
                 Type exception = typeof(Exception);
@@ -1209,20 +1269,23 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(3, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[1].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
-                Assert.Equal(overflowException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
-                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[2].CatchType.FullName);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(3, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[1].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
+                    Assert.Equal(overflowException.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                    Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[2].CatchType.FullName);
+                }
             }
         }
 
@@ -1231,8 +1294,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), [typeof(int), typeof(int)]);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 LocalBuilder local = ilGenerator.DeclareLocal(typeof(float));
                 Label exBlock = ilGenerator.BeginExceptionBlock();
@@ -1246,27 +1309,30 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(1, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[0].Flags);
-                byte[] bodyBytes = body.GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
-                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]);
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]);
-                Assert.Equal(OpCodes.Endfinally.Value, bodyBytes[19]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[20]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[21]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(1, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[0].Flags);
+                    byte[] bodyBytes = body.GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                    Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                    Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]);
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[14]);
+                    Assert.Equal(OpCodes.Endfinally.Value, bodyBytes[19]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[20]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[21]);
+                }
             }
         }
 
@@ -1275,8 +1341,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [typeof(int), typeof(int)]);
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 ilGenerator.BeginExceptionBlock();
@@ -1290,18 +1356,21 @@ internal class Dummy
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(2, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[1].Flags);
-                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(2, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[1].Flags);
+                    Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                }
             }
         }
 
@@ -1310,12 +1379,12 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
                 Type overflowEType = typeof(OverflowException);
-                ConstructorInfo myConstructorInfo = overflowEType.GetConstructor(new[] { typeof(string) });
+                ConstructorInfo myConstructorInfo = overflowEType.GetConstructor([typeof(string)]);
                 MethodInfo myExToStrMI = overflowEType.GetMethod("ToString");
-                MethodInfo myWriteLineMI = typeof(Console).GetMethod("WriteLine", new[] { typeof(string), typeof(object) });
+                MethodInfo myWriteLineMI = typeof(Console).GetMethod("WriteLine", [typeof(string), typeof(object)]);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 LocalBuilder myLocalBuilder1 = ilGenerator.DeclareLocal(typeof(int));
                 LocalBuilder myLocalBuilder2 = ilGenerator.DeclareLocal(overflowEType);
@@ -1359,19 +1428,22 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldloc_S, myLocalBuilder1);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(3, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[0].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[2].Flags);
-                Assert.Equal(overflowEType.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(3, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[0].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[2].Flags);
+                    Assert.Equal(overflowEType.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                }
             }
         }
 
@@ -1380,8 +1452,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(float), [typeof(int), typeof(int)]);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 Label exBlock = ilGenerator.BeginExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ldarg_0);
@@ -1396,29 +1468,32 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(1, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Fault, body.ExceptionHandlingClauses[0].Flags);
-                byte[] bodyBytes = body.GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
-                Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
-                Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
-                Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
-                Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]);
-                Assert.Equal(OpCodes.Call.Value, bodyBytes[14]);
-                Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
-                Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
-                Assert.Equal(OpCodes.Endfinally.Value, bodyBytes[25]);
-                Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[26]);
-                Assert.Equal(OpCodes.Ret.Value, bodyBytes[27]);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(1, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Fault, body.ExceptionHandlingClauses[0].Flags);
+                    byte[] bodyBytes = body.GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldarg_0.Value, bodyBytes[0]);
+                    Assert.Equal(OpCodes.Ldarg_1.Value, bodyBytes[1]);
+                    Assert.Equal(OpCodes.Div.Value, bodyBytes[2]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[3]);
+                    Assert.Equal(OpCodes.Leave.Value, bodyBytes[4]);
+                    Assert.Equal(OpCodes.Ldstr.Value, bodyBytes[9]);
+                    Assert.Equal(OpCodes.Call.Value, bodyBytes[14]);
+                    Assert.Equal(OpCodes.Ldc_R4.Value, bodyBytes[19]);
+                    Assert.Equal(OpCodes.Stloc_0.Value, bodyBytes[24]);
+                    Assert.Equal(OpCodes.Endfinally.Value, bodyBytes[25]);
+                    Assert.Equal(OpCodes.Ldloc_0.Value, bodyBytes[26]);
+                    Assert.Equal(OpCodes.Ret.Value, bodyBytes[27]);
+                }
             }
         }
 
@@ -1427,8 +1502,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(void), [typeof(int), typeof(int)]);
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
@@ -1472,20 +1547,23 @@ internal class Dummy
                 ilGenerator.EndExceptionBlock();
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 Assert.Equal(5, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(3, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
-                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
-                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
-                Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[2].CatchType.FullName);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(3, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[0].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[1].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
+                    Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[0].CatchType.FullName);
+                    Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[1].CatchType.FullName);
+                    Assert.Equal(exception.FullName, body.ExceptionHandlingClauses[2].CatchType.FullName);
+                }
             }
         }
 
@@ -1494,8 +1572,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
-                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(int), typeof(int) });
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+                MethodBuilder method = tb.DefineMethod("Method", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int), typeof(int)]);
                 Type exception = typeof(Exception);
                 ILGenerator ilGenerator = method.GetILGenerator();
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
@@ -1569,20 +1647,23 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, new object[] { file.Path });
+                ab.Save(file.Path);
 
                 Assert.Equal(5, getMaxStackMethod.Invoke(ilGenerator, null));
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
-                Assert.Equal(6, body.ExceptionHandlingClauses.Count);
-                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[0].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[1].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[3].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[4].Flags);
-                Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[5].Flags);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodBody body = typeFromDisk.GetMethod("Method").GetMethodBody();
+                    Assert.Equal(6, body.ExceptionHandlingClauses.Count);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[0].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Filter, body.ExceptionHandlingClauses[1].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[2].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Finally, body.ExceptionHandlingClauses[3].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[4].Flags);
+                    Assert.Equal(ExceptionHandlingClauseOptions.Clause, body.ExceptionHandlingClauses[5].Flags);
+                }
             }
         }
 
@@ -1597,7 +1678,7 @@ internal class Dummy
             int a = 1, b = 1, result = 2;
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliBlittable"), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("EmitCalliBlittable"));
                 TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 Type returnType = typeof(int);
                 MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
@@ -1609,7 +1690,7 @@ internal class Dummy
                 il.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, returnType, [typeof(int), typeof(int)]);
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
@@ -1631,7 +1712,7 @@ internal class Dummy
             int a = 1, b = 1, result = 2;
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliManagedBlittable"), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("EmitCalliManagedBlittable"));
                 TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 Type returnType = typeof(int);
                 MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(int), typeof(int)]);
@@ -1645,7 +1726,7 @@ internal class Dummy
                 il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, returnType, [typeof(int), typeof(int)], null);
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
@@ -1666,10 +1747,10 @@ internal class Dummy
         [Fact]
         public void EmitCalliNonBlittable()
         {
-            string input = "Test string!", result = "!gnirts tseT";
+                string input = "Test string!", result = "!gnirts tseT";
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(new AssemblyName("EmitCalliNonBlittable"), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("EmitCalliNonBlittable"));
                 TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 Type returnType = typeof(string);
                 MethodBuilder methodBuilder = tb.DefineMethod("F", MethodAttributes.Public | MethodAttributes.Static, returnType, [typeof(IntPtr), typeof(string)]);
@@ -1680,7 +1761,7 @@ internal class Dummy
                 il.EmitCalli(OpCodes.Calli, CallingConvention.Cdecl, returnType, [typeof(string)]);
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Assembly assemblyFromDisk = tlc.LoadFromAssemblyPath(file.Path);
@@ -1702,7 +1783,7 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 MethodBuilder mb1 = tb.DefineMethod("VarArgMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.VarArgs, null, [typeof(string)]);
                 ILGenerator il1 = mb1.GetILGenerator();
                 LocalBuilder locAi = il1.DeclareLocal(typeof(ArgIterator));
@@ -1755,24 +1836,27 @@ internal class Dummy
                 il2.EmitCall(OpCodes.Call, mb1, [typeof(string), typeof(int)]);
                 il2.Emit(OpCodes.Ret);
                 Type type = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                MethodInfo varArgMethodFromDisk = typeFromDisk.GetMethod("VarArgMethod");
-                Assert.Equal(CallingConventions.VarArgs, varArgMethodFromDisk.CallingConvention);
-                ParameterInfo[] parameters = varArgMethodFromDisk.GetParameters();
-                Assert.Equal(1, parameters.Length); // TODO: how to get the vararg parameter?
-                IList<LocalVariableInfo> locals = varArgMethodFromDisk.GetMethodBody().LocalVariables;
-                Assert.Equal(2, locals.Count);
-                Assert.Equal(typeof(ArgIterator).FullName, locals[0].LocalType.FullName);
-                Assert.Equal(typeof(bool).FullName, locals[1].LocalType.FullName);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodInfo varArgMethodFromDisk = typeFromDisk.GetMethod("VarArgMethod");
+                    Assert.Equal(CallingConventions.VarArgs, varArgMethodFromDisk.CallingConvention);
+                    ParameterInfo[] parameters = varArgMethodFromDisk.GetParameters();
+                    Assert.Equal(1, parameters.Length); // TODO: how to get the vararg parameter?
+                    IList<LocalVariableInfo> locals = varArgMethodFromDisk.GetMethodBody().LocalVariables;
+                    Assert.Equal(2, locals.Count);
+                    Assert.Equal(typeof(ArgIterator).FullName, locals[0].LocalType.FullName);
+                    Assert.Equal(typeof(bool).FullName, locals[1].LocalType.FullName);
 
-                byte[] callingMethodBody = typeFromDisk.GetMethod("CallVarArgMethod").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[0]);
-                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[5]);
-                Assert.Equal(OpCodes.Ldc_I4.Value, callingMethodBody[10]);
-                Assert.Equal(OpCodes.Call.Value, callingMethodBody[15]);
+                    byte[] callingMethodBody = typeFromDisk.GetMethod("CallVarArgMethod").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[0]);
+                    Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[5]);
+                    Assert.Equal(OpCodes.Ldc_I4.Value, callingMethodBody[10]);
+                    Assert.Equal(OpCodes.Call.Value, callingMethodBody[15]);
+                }
             }
         }
 
@@ -1788,7 +1872,7 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 MethodBuilder mb1 = tb.DefineMethod("VarArgMethod", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.VarArgs, null, [typeof(string)]);
                 ILGenerator il1 = mb1.GetILGenerator();
                 FieldInfo maxStack = GetMaxStackDepthAndCurrentStackDepthField(out FieldInfo currentStack);
@@ -1862,19 +1946,22 @@ internal class Dummy
                 Assert.Equal(0, depthAdjustment.GetValue(il2));
                 Assert.Equal(4, getMaxStackMethod.Invoke(il2, null));
                 Type type = tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                Assert.Equal(CallingConventions.VarArgs, typeFromDisk.GetMethod("VarArgMethod").CallingConvention);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    Assert.Equal(CallingConventions.VarArgs, typeFromDisk.GetMethod("VarArgMethod").CallingConvention);
 
-                byte[] callingMethodBody = typeFromDisk.GetMethod("CallingMethod").GetMethodBody().GetILAsByteArray();
-                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[0]);
-                Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[5]);
-                Assert.Equal(OpCodes.Ldc_I4.Value, callingMethodBody[10]);
-                Assert.Equal(0xFE, callingMethodBody[15]); // Ldftn = 0xfe06
-                Assert.Equal(0x06, callingMethodBody[16]);
-                Assert.Equal(OpCodes.Calli.Value, callingMethodBody[21]);
+                    byte[] callingMethodBody = typeFromDisk.GetMethod("CallingMethod").GetMethodBody().GetILAsByteArray();
+                    Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[0]);
+                    Assert.Equal(OpCodes.Ldstr.Value, callingMethodBody[5]);
+                    Assert.Equal(OpCodes.Ldc_I4.Value, callingMethodBody[10]);
+                    Assert.Equal(0xFE, callingMethodBody[15]); // Ldftn = 0xfe06
+                    Assert.Equal(0x06, callingMethodBody[16]);
+                    Assert.Equal(OpCodes.Calli.Value, callingMethodBody[21]);
+                }
             }
         }
 
@@ -1895,7 +1982,7 @@ internal class Dummy
             /// </summary>
             static void GetCode(int num)
             {
-                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
                 var ilg = method.GetILGenerator();
 
@@ -1941,7 +2028,7 @@ internal class Dummy
 
             static void GetCode(int num)
             {
-                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
                 var ilg = method.GetILGenerator();
 
@@ -1990,7 +2077,7 @@ internal class Dummy
 
             static void GetCode(int num)
             {
-                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
                 var ilg = method.GetILGenerator();
 
@@ -2044,8 +2131,8 @@ internal class Dummy
 
             static void GetCode()
             {
-                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
-                MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] { typeof(bool) });
+                AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(bool)]);
                 var ilg = method.GetILGenerator();
 
                 // The label is targeted with stack depth zero.
@@ -2075,7 +2162,7 @@ internal class Dummy
 
             static void GetCode()
             {
-                AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo _);
+                AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("meth1", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
                 var ilg = method.GetILGenerator();
 
@@ -2104,7 +2191,7 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
                 MethodBuilder mb2 = tb.DefineMethod("SumMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
                 ILGenerator il = mb2.GetILGenerator();
                 LocalBuilder sum = il.DeclareLocal(typeof(int));
@@ -2132,7 +2219,7 @@ internal class Dummy
                 il.Emit(OpCodes.Ldloc_0);
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(2, getMaxStackMethod.Invoke(il, null));
@@ -2151,7 +2238,8 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder tb, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("RecursiveSumTest"));
+                TypeBuilder tb = ab.DefineDynamicModule("MyModule").DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
                 MethodBuilder mb2 = tb.DefineMethod("RecursiveMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), [typeof(int)]);
                 ILGenerator il = mb2.GetILGenerator();
                 Label loopEnd = il.DefineLabel();
@@ -2169,7 +2257,7 @@ internal class Dummy
                 il.Emit(OpCodes.Ldc_I4_0);
                 il.Emit(OpCodes.Ret);
                 tb.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 MethodInfo getMaxStackMethod = GetMaxStackMethod();
                 Assert.Equal(3, getMaxStackMethod.Invoke(il, null));
@@ -2189,7 +2277,7 @@ internal class Dummy
         {
             using (TempFile file = TempFile.Create())
             {
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderTypeBuilderAndSaveMethod(out TypeBuilder type, out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder method = type.DefineMethod("M1", MethodAttributes.Public, typeof(string), null);
 
                 ILGenerator ilGenerator = method.GetILGenerator();
@@ -2209,7 +2297,7 @@ internal class Dummy
                 ilGenerator.Emit(OpCodes.Ret);
 
                 type.CreateType();
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
                 TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
                 Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");

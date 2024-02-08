@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Linq
@@ -33,12 +33,16 @@ namespace System.Linq
 
                 return [];
             }
-            else
+
+            return EnumerableToArray(source);
+
+            [MethodImpl(MethodImplOptions.NoInlining)] // avoid large stack allocation impacting other paths
+            static TSource[] EnumerableToArray(IEnumerable<TSource> source)
             {
                 SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
                 SegmentedArrayBuilder<TSource> builder = new(scratch);
 
-                builder.AddNonICollectionRange(source);
+                builder.AddNonICollectionRangeInlined(source);
                 TSource[] result = builder.ToArray();
 
                 builder.Dispose();

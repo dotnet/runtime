@@ -11,7 +11,7 @@
 #define __CORHLPRPRIV_H__
 
 #include "corhlpr.h"
-#include <minipal/utf8.h>
+#include "fstring.h"
 
 #if defined(_MSC_VER) && defined(HOST_X86)
 #pragma optimize("y", on)		// If routines don't get inlined, don't pay the EBP frame penalty
@@ -225,33 +225,71 @@ public:
         iSize = cbTotal;
     }
 
+
+    // Convert UTF8 string to UNICODE string, optimized for speed
+    HRESULT ConvertUtf8_UnicodeNoThrow(const char * utf8str)
+    {
+        bool allAscii;
+        DWORD length;
+
+        HRESULT hr = FString::Utf8_Unicode_Length(utf8str, & allAscii, & length);
+
+        if (SUCCEEDED(hr))
+        {
+            LPWSTR buffer = (LPWSTR) AllocNoThrow((length + 1) * sizeof(WCHAR));
+
+            if (buffer == NULL)
+            {
+                hr = E_OUTOFMEMORY;
+            }
+            else
+            {
+                hr = FString::Utf8_Unicode(utf8str, allAscii, buffer, length);
+            }
+        }
+
+        return hr;
+    }
+
     // Convert UTF8 string to UNICODE string, optimized for speed
     void ConvertUtf8_Unicode(const char * utf8str)
     {
-        size_t sourceLen = strlen(utf8str);
-        size_t destLen = minipal_get_length_utf8_to_utf16(utf8str, sourceLen, 0);
+        bool allAscii;
+        DWORD length;
 
-        CHAR16_T* buffer = (CHAR16_T*) AllocThrows((destLen + 1) * sizeof(CHAR16_T));
-        buffer[destLen] = W('\0');
+        HRESULT hr = FString::Utf8_Unicode_Length(utf8str, & allAscii, & length);
 
-        if (!minipal_convert_utf8_to_utf16(utf8str, sourceLen, buffer, destLen, 0))
+        if (SUCCEEDED(hr))
         {
-            ThrowHR(EMAKEHR(errno));
+            LPWSTR buffer = (LPWSTR) AllocThrows((length + 1) * sizeof(WCHAR));
+
+            hr = FString::Utf8_Unicode(utf8str, allAscii, buffer, length);
+        }
+
+        if (FAILED(hr))
+        {
+            ThrowHR(hr);
         }
     }
 
     // Convert UNICODE string to UTF8 string, optimized for speed
     void ConvertUnicode_Utf8(const WCHAR * pString)
     {
-        size_t sourceLen = u16_strlen(pString);
-        size_t destLen = minipal_get_length_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, 0);
+        bool allAscii;
+        DWORD length;
 
-        LPSTR buffer = (LPSTR) AllocThrows((destLen + 1) * sizeof(char));
-        buffer[destLen] = '\0';
+        HRESULT hr = FString::Unicode_Utf8_Length(pString, & allAscii, & length);
 
-        if (!minipal_convert_utf16_to_utf8((const CHAR16_T*)pString, sourceLen, buffer, destLen, 0))
+        if (SUCCEEDED(hr))
         {
-            ThrowHR(EMAKEHR(errno));
+            LPSTR buffer = (LPSTR) AllocThrows((length + 1) * sizeof(char));
+
+            hr = FString::Unicode_Utf8(pString, allAscii, buffer, length);
+        }
+
+        if (FAILED(hr))
+        {
+            ThrowHR(hr);
         }
     }
 

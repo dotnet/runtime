@@ -64,6 +64,12 @@
     <Version Condition="'$(VersionSuffix)' != ''">$(Version)-$(VersionSuffix)</Version>
   </PropertyGroup>
 
+  <!-- Main packages intentionally don't include assets for net6.0 and net7.0 anymore. -->
+  <ItemGroup>
+    <PackageValidationBaselineFrameworkToIgnore Include="net6.0" />
+    <PackageValidationBaselineFrameworkToIgnore Include="net7.0" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
     <None Include="$(PackageDesignerMarkerFile)"

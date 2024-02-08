@@ -42,7 +42,7 @@ namespace System.SpanTests
             Span<int> srcSpan = new Span<int>(src);
             bool success = srcSpan.TryCopyTo(segment);
             Assert.True(success);
-            Assert.Equal<int>(src, segment);
+            Assert.Equal(src, segment);
         }
 
         [Fact]

@@ -1211,9 +1211,9 @@ public static partial class DataContractSerializerTests
         string[][] jaggedStringArray = new string[][] { new string[] { "1", "3", "5", "7", "9" }, new string[] { "0", "2", "4", "6" }, new string[] { "11", "22" } };
         var actualJaggedStringArray = DataContractSerializerHelper.SerializeAndDeserialize<string[][]>(jaggedStringArray, @"<ArrayOfArrayOfstring xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><ArrayOfstring><string>1</string><string>3</string><string>5</string><string>7</string><string>9</string></ArrayOfstring><ArrayOfstring><string>0</string><string>2</string><string>4</string><string>6</string></ArrayOfstring><ArrayOfstring><string>11</string><string>22</string></ArrayOfstring></ArrayOfArrayOfstring>");
 
-        Assert.Equal<string>(jaggedStringArray[0], actualJaggedStringArray[0]);
-        Assert.Equal<string>(jaggedStringArray[1], actualJaggedStringArray[1]);
-        Assert.Equal<string>(jaggedStringArray[2], actualJaggedStringArray[2]);
+        Assert.Equal(jaggedStringArray[0], actualJaggedStringArray[0]);
+        Assert.Equal(jaggedStringArray[1], actualJaggedStringArray[1]);
+        Assert.Equal(jaggedStringArray[2], actualJaggedStringArray[2]);
 
         object[] objectArray = new object[] { 1, 1.0F, 1.0, "string", Guid.Parse("2054fd3e-e118-476a-9962-1a882be51860"), new DateTime(2013, 1, 2) };
         var actualObjectArray = DataContractSerializerHelper.SerializeAndDeserialize<object[]>(objectArray, @"<ArrayOfanyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><anyType i:type=""a:int"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">1</anyType><anyType i:type=""a:float"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">1</anyType><anyType i:type=""a:double"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">1</anyType><anyType i:type=""a:string"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">string</anyType><anyType i:type=""a:guid"" xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/"">2054fd3e-e118-476a-9962-1a882be51860</anyType><anyType i:type=""a:dateTime"" xmlns:a=""http://www.w3.org/2001/XMLSchema"">2013-01-02T00:00:00</anyType></ArrayOfanyType>");
