@@ -2,6 +2,7 @@
   <Target Name="_GetNugetsForAOT" Returns="@(NuGetsToBuildForWorkloadTesting)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <PropertyGroup>
+      <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetNuGetToBuildForTargetingPack;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
       <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
       <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg</_AOTCrossNuGetPath>
     </PropertyGroup>

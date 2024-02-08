@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <GetWorkloadInputsDependsOn>_GetWorkloadsToInstall;$(GetWorkloadInputsDependsOn)</GetWorkloadInputsDependsOn>
-    <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;_GetNuGetToBuildForTargetingPack;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
+    <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
   </PropertyGroup>
 
   <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
