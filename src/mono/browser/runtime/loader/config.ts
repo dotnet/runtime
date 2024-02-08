@@ -12,7 +12,6 @@ import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryI
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
-import { mono_assert } from "./globals";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -214,11 +213,6 @@ export function normalizeConfig() {
 
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
-    config.startupMemoryCache = !!config.startupMemoryCache;
-    if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {
-        mono_log_debug("Disabling startupMemoryCache because waitForDebugger is set");
-        config.startupMemoryCache = false;
-    }
 
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
@@ -260,13 +254,6 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         }
 
         normalizeConfig();
-
-        mono_assert(!loaderHelpers.config.startupMemoryCache || !module.instantiateWasm, "startupMemoryCache is not supported with Module.instantiateWasm");
-
-        loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
-        if (!loaderHelpers.config.startupMemoryCache) {
-            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
-        }
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });

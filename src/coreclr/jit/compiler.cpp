@@ -10028,11 +10028,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[CALL_GUARDED]");
                     }
 
-                    if (call->IsExpRuntimeLookup())
-                    {
-                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
-                    }
-
                     if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
                     {
                         chars += printf("[CALL_MD_STRESS_TAILCALL]");

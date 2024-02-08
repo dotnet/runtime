@@ -67,7 +67,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
         return ptr as T;
 }
 
-// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
+// when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
     linkerEnabled?: boolean,
     assets?: AssetEntryInternal[],
@@ -83,7 +83,6 @@ export type MonoConfigInternal = MonoConfig & {
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
     exitOnUnhandledError?: boolean
-    exitAfterSnapshot?: number
     loadAllSatelliteResources?: boolean
     runtimeId?: number
 
@@ -139,7 +138,6 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
-    memorySnapshotSkippedOrDone: PromiseAndController<void>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -189,7 +187,6 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    loadedMemorySnapshotSize?: number,
     enablePerfMeasure: boolean;
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
@@ -197,8 +194,6 @@ export type RuntimeHelpers = {
     nativeExit: (code: number) => void,
     nativeAbort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
-    storeMemorySnapshotPending: boolean,
-    memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     getMemory(): WebAssembly.Memory,
