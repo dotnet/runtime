@@ -787,11 +787,15 @@ namespace System.Reflection.Emit
         {
             if (type is TypeBuilderImpl tb && Equals(tb.Module))
             {
+                Debug.Assert(tb.IsCreated());
+
                 return tb._handle;
             }
 
             if (type is EnumBuilderImpl eb && Equals(eb.Module))
             {
+                Debug.Assert(eb._typeBuilder.IsCreated());
+
                 return eb._typeBuilder._handle;
             }
 
@@ -853,9 +857,9 @@ namespace System.Reflection.Emit
         public override Guid ModuleVersionId => _moduleVersionId;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
 
-        public override int GetFieldMetadataToken(FieldInfo field) => GetTokenForHandle(GetFieldHandle(field));
+        public override int GetFieldMetadataToken(FieldInfo field) => GetTokenForHandle(TryGetFieldHandle(field));
 
-        internal EntityHandle GetFieldHandle(FieldInfo field)
+        internal EntityHandle TryGetFieldHandle(FieldInfo field)
         {
             if (field is FieldBuilderImpl fb)
             {
@@ -907,7 +911,7 @@ namespace System.Reflection.Emit
             return false;
         }
 
-        internal EntityHandle GetTypeHandleForIL(Type type)
+        internal EntityHandle TryGetTypeHandle(Type type)
         {
             if (type is TypeBuilderImpl tb && Equals(tb.Module))
             {
@@ -927,9 +931,9 @@ namespace System.Reflection.Emit
             return GetTypeReferenceOrSpecificationHandle(type);
         }
 
-        public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(GetConstructorHandle(constructor));
+        public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(TryGetConstructorHandle(constructor));
 
-        internal EntityHandle GetConstructorHandle(ConstructorInfo constructor)
+        internal EntityHandle TryGetConstructorHandle(ConstructorInfo constructor)
         {
             if (constructor is ConstructorBuilderImpl cb)
             {
@@ -939,9 +943,9 @@ namespace System.Reflection.Emit
             return GetHandleForMember(constructor);
         }
 
-        public override int GetMethodMetadataToken(MethodInfo method) => GetTokenForHandle(GetMethodHandle(method));
+        public override int GetMethodMetadataToken(MethodInfo method) => GetTokenForHandle(TryGetMethodHandle(method));
 
-        internal EntityHandle GetMethodHandle(MethodInfo method)
+        internal EntityHandle TryGetMethodHandle(MethodInfo method)
         {
             if (method is MethodBuilderImpl mb)
             {
@@ -963,7 +967,7 @@ namespace System.Reflection.Emit
         private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) =>
             method.IsConstructedGenericMethod && method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default;
 
-        internal EntityHandle GetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
+        internal EntityHandle TryGetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
             if ((method.CallingConvention & CallingConventions.VarArgs) == 0)
             {
@@ -1001,7 +1005,7 @@ namespace System.Reflection.Emit
 
         public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));
 
-        public override int GetTypeMetadataToken(Type type) => GetTokenForHandle(GetTypeHandle(type));
+        public override int GetTypeMetadataToken(Type type) => GetTokenForHandle(TryGetTypeHandle(type));
 
         protected override void CreateGlobalFunctionsCore()
         {
