@@ -180,7 +180,7 @@ namespace System
                 }
                 else if (pDestMT->ContainsGCPointers)
                 {
-                    Buffer.BulkMoveWithWriteBarrier(ref dest, ref obj.GetRawData(), destSize);
+                    Buffer.BulkMoveWithWriteBarrier(ref dest, ref obj.GetRawData(), destSize, IntPtr.Zero);
                 }
                 else
                 {
