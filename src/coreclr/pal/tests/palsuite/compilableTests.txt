@@ -130,9 +130,6 @@ c_runtime/strncpy/test1/paltest_strncpy_test1
 c_runtime/strpbrk/test1/paltest_strpbrk_test1
 c_runtime/strrchr/test1/paltest_strrchr_test1
 c_runtime/strstr/test1/paltest_strstr_test1
-c_runtime/strtod/test1/paltest_strtod_test1
-c_runtime/strtod/test2/paltest_strtod_test2
-c_runtime/strtoul/test1/paltest_strtoul_test1
 c_runtime/tan/test1/paltest_tan_test1
 c_runtime/tanf/test1/paltest_tanf_test1
 c_runtime/tanh/test1/paltest_tanh_test1

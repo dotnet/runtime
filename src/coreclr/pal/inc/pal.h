@@ -3982,8 +3982,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define exit          PAL_exit
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
-#define strtoul       PAL_strtoul
-#define strtoull      PAL_strtoull
 #define fprintf       PAL_fprintf
 #define vfprintf      PAL_vfprintf
 #define rand          PAL_rand
@@ -4084,7 +4082,7 @@ PALIMPORT char * __cdecl strpbrk(const char *, const char *);
 PALIMPORT char * __cdecl strstr(const char *, const char *);
 PALIMPORT char * __cdecl strtok_r(char *, const char *, char **);
 PALIMPORT int __cdecl atoi(const char *);
-PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
+PALIMPORT unsigned long __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
 PALIMPORT double __cdecl atof(const char *);
 PALIMPORT double __cdecl strtod(const char *, char **);

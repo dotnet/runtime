@@ -234,8 +234,8 @@ const int MAX_LEVEL_FILTERS = 100;
 static int s_levelFilterCount;
 struct LevelFilter
 {
-    int minLevel;
-    int maxLevel;
+    unsigned long minLevel;
+    unsigned long maxLevel;
 };
 
 static LevelFilter s_levelFilter[MAX_LEVEL_FILTERS];
@@ -249,8 +249,8 @@ struct GcStartEnd
 const int MAX_GC_INDEX = 1024 * 1024;
 static GcStartEnd s_gcStartEnd[MAX_GC_INDEX];
 
-static int s_gcFilterStart;
-static int s_gcFilterEnd;
+static unsigned long s_gcFilterStart;
+static unsigned long s_gcFilterEnd;
 
 const int MAX_VALUE_FILTERS = 100;
 static int s_valueFilterCount;
@@ -755,7 +755,7 @@ bool ParseOptions(int argc, char* argv[])
                         char* end = nullptr;
                         if (_strnicmp(arg, "gc", 2) == 0 || _strnicmp(arg, "bg", 2) == 0)
                         {
-                            int gcHeapNumber = strtoul(arg+2, &end, 10);
+                            unsigned long gcHeapNumber = strtoul(arg+2, &end, 10);
                             GcThreadKind kind = _strnicmp(arg, "gc", 2) == 0 ? GC_THREAD_FG : GC_THREAD_BG;
                             if (gcHeapNumber < MAX_NUMBER_OF_HEAPS)
                             {
