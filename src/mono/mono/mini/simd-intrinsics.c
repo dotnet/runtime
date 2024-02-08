@@ -484,6 +484,8 @@ is_hw_intrinsics_class (MonoClass *klass, const char *name, gboolean *is_64bit)
 	if ((!strcmp (class_name, "X64") || !strcmp (class_name, "Arm64")) && m_class_get_nested_in (klass)) {
 		*is_64bit = TRUE;
 		return !strcmp (m_class_get_name (m_class_get_nested_in (klass)), name);
+	} else if (!strcmp (class_name, "VL")) {
+		return !strcmp (m_class_get_name (m_class_get_nested_in (klass)), name);
 	} else {
 		*is_64bit = FALSE;
 		return !strcmp (class_name, name);
@@ -4673,6 +4675,11 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Aes", MONO_CPU_X86_AES, aes_methods, sizeof (aes_methods) },
 	{ "Avx", MONO_CPU_X86_AVX, unsupported, sizeof (unsupported) },
 	{ "Avx2", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Avx512BW", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Avx512CD", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Avx512DQ", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Avx512F", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
+	{ "Avx512Vbmi", MONO_CPU_X86_AVX2, unsupported, sizeof (unsupported) },
 	{ "AvxVnni", 0, unsupported, sizeof (unsupported) },
 	{ "Bmi1", MONO_CPU_X86_BMI1, bmi1_methods, sizeof (bmi1_methods) },
 	{ "Bmi2", MONO_CPU_X86_BMI2, bmi2_methods, sizeof (bmi2_methods) },
