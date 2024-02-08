@@ -2481,6 +2481,17 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/MethodImpl/generics_override1/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/Statics/Misc/LiteralStatic/**" />
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/CustomAttributes/DynamicObjects/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/localloc/call/call05_dynamic/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/jit64/verif/sniff/fg/ver_fg_13/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/badendfinally/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/ceeillegal/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_d/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**" />
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'minifullaot' or '$(TargetsAppleMobile)' == 'true')">
