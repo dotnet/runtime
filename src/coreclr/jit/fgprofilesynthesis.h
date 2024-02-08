@@ -16,6 +16,7 @@ typedef jitstd::vector<weight_t> WeightVector;
 //
 enum class ProfileSynthesisOption
 {
+    AssignLikelihoodsOnly,
     AssignLikelihoods,
     RetainLikelihoods,
     RepairLikelihoods,

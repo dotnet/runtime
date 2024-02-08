@@ -2843,6 +2843,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             JITDUMP("BBOPT not set\n");
         }
 
+        // Use heuristics to come up with sensible likelihoods
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoodsOnly);
+
         // Scale the "synthetic" block weights.
         //
         fgApplyProfileScale();
@@ -2951,6 +2954,18 @@ PhaseStatus Compiler::fgIncorporateProfileData()
             JITDUMP("\nIncorporated count data had inconsistencies; blending profile...\n");
             ProfileSynthesis::Run(this, ProfileSynthesisOption::BlendLikelihoods);
         }
+        else if (!fgPgoHaveWeights)
+        {
+            // If profile data is unusable, use heuristics to set likelihoods.
+            //
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoodsOnly);
+        }
+    }
+    else
+    {
+        // If profile data is unusable, use heuristics to set likelihoods.
+        //
+        ProfileSynthesis::Run(this, ProfileSynthesisOption::AssignLikelihoodsOnly);
     }
 
 #ifdef DEBUG

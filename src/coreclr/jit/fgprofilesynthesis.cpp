@@ -32,13 +32,14 @@
 //
 void ProfileSynthesis::Run(ProfileSynthesisOption option)
 {
-    m_dfsTree = m_comp->fgComputeDfs();
-    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-
     // Retain or compute edge likelihood information
     //
     switch (option)
     {
+        case ProfileSynthesisOption::AssignLikelihoodsOnly:
+            AssignLikelihoods();
+            return; // Nothing left to do
+
         case ProfileSynthesisOption::AssignLikelihoods:
             AssignLikelihoods();
             break;
@@ -71,6 +72,9 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             assert(!"unexpected profile synthesis option");
             break;
     }
+
+    m_dfsTree = m_comp->fgComputeDfs();
+    m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     // Determine cyclic probabilities
     //
@@ -247,52 +251,52 @@ void ProfileSynthesis::AssignLikelihoodCond(BasicBlock* block)
 
     // LOOP BACK EDGE heuristic
     //
-    bool const isJumpEdgeBackEdge = m_loops->IsLoopBackEdge(jumpEdge);
-    bool const isNextEdgeBackEdge = m_loops->IsLoopBackEdge(nextEdge);
+    // bool const isJumpEdgeBackEdge = m_loops->IsLoopBackEdge(jumpEdge);
+    // bool const isNextEdgeBackEdge = m_loops->IsLoopBackEdge(nextEdge);
 
-    if (isJumpEdgeBackEdge != isNextEdgeBackEdge)
-    {
-        if (isJumpEdgeBackEdge)
-        {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, jump->bbNum);
-            jumpEdge->setLikelihood(loopBackLikelihood);
-            nextEdge->setLikelihood(1.0 - loopBackLikelihood);
-        }
-        else
-        {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, next->bbNum);
-            jumpEdge->setLikelihood(1.0 - loopBackLikelihood);
-            nextEdge->setLikelihood(loopBackLikelihood);
-        }
+    // if (isJumpEdgeBackEdge != isNextEdgeBackEdge)
+    // {
+    //     if (isJumpEdgeBackEdge)
+    //     {
+    //         JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, jump->bbNum);
+    //         jumpEdge->setLikelihood(loopBackLikelihood);
+    //         nextEdge->setLikelihood(1.0 - loopBackLikelihood);
+    //     }
+    //     else
+    //     {
+    //         JITDUMP(FMT_BB "->" FMT_BB " is loop back edge\n", block->bbNum, next->bbNum);
+    //         jumpEdge->setLikelihood(1.0 - loopBackLikelihood);
+    //         nextEdge->setLikelihood(loopBackLikelihood);
+    //     }
 
-        return;
-    }
+    //     return;
+    // }
 
-    // LOOP EXIT EDGE heuristic
-    //
-    // Consider: adjust probability if loop has multiple exit edges, so that
-    // overall exit probability is around 0.1.
-    //
-    bool const isJumpEdgeExitEdge = m_loops->IsLoopExitEdge(jumpEdge);
-    bool const isNextEdgeExitEdge = m_loops->IsLoopExitEdge(nextEdge);
+    // // LOOP EXIT EDGE heuristic
+    // //
+    // // Consider: adjust probability if loop has multiple exit edges, so that
+    // // overall exit probability is around 0.1.
+    // //
+    // bool const isJumpEdgeExitEdge = m_loops->IsLoopExitEdge(jumpEdge);
+    // bool const isNextEdgeExitEdge = m_loops->IsLoopExitEdge(nextEdge);
 
-    if (isJumpEdgeExitEdge != isNextEdgeExitEdge)
-    {
-        if (isJumpEdgeExitEdge)
-        {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, jump->bbNum);
-            jumpEdge->setLikelihood(1.0 - loopExitLikelihood);
-            nextEdge->setLikelihood(loopExitLikelihood);
-        }
-        else
-        {
-            JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, next->bbNum);
-            jumpEdge->setLikelihood(loopExitLikelihood);
-            nextEdge->setLikelihood(1.0 - loopExitLikelihood);
-        }
+    // if (isJumpEdgeExitEdge != isNextEdgeExitEdge)
+    // {
+    //     if (isJumpEdgeExitEdge)
+    //     {
+    //         JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, jump->bbNum);
+    //         jumpEdge->setLikelihood(1.0 - loopExitLikelihood);
+    //         nextEdge->setLikelihood(loopExitLikelihood);
+    //     }
+    //     else
+    //     {
+    //         JITDUMP(FMT_BB "->" FMT_BB " is loop exit edge\n", block->bbNum, next->bbNum);
+    //         jumpEdge->setLikelihood(loopExitLikelihood);
+    //         nextEdge->setLikelihood(1.0 - loopExitLikelihood);
+    //     }
 
-        return;
-    }
+    //     return;
+    // }
 
     // RETURN heuristic
     //
