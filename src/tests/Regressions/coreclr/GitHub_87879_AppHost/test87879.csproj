@@ -4,8 +4,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseAppHost>true</UseAppHost>
     <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true'">false</CLRTestTargetUnsupported>
-    <DisableProjectBuild>$(CLRTestTargetUnsupported)</DisableProjectBuild>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR ('$(TargetsUnix)' == 'true' AND '$(TargetsMobile)' != 'true')">false</CLRTestTargetUnsupported>
+    <DisableProjectBuild>true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(TargetsWindows)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR ('$(TargetsUnix)' == 'true' AND '$(TargetsMobile)' != 'true')">false</DisableProjectBuild>
     <DefineConstants>$(DefineConstants);INTENTIONALLY_FAIL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
