@@ -89,7 +89,7 @@ namespace Wasm.Build.Tests
                                 InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
                                 DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
 
-            // Becuase we get extra "-verbosity, "Debug" from XHarness
+            // Because we get extra "-verbosity", "Debug" from XHarness
             int argsCount = args.Length + 2;
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42 + argsCount, args: string.Join(' ', args),
