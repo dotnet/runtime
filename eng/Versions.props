@@ -22,8 +22,8 @@
     <UsingToolIbcOptimization>false</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
-    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.16</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
-    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.16</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.17</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.17</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
   </PropertyGroup>
   <ItemGroup>
     <!-- The bands we want to produce workload manifests for -->
