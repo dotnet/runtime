@@ -184,6 +184,8 @@ function_name() to call the system's implementation
 #define strtod DUMMY_strtod
 #define strtoul DUMMY_strtoul
 #define strtoull DUMMY_strtoull
+#define strcasecmp DUMMY_strcasecmp
+#define strncasecmp DUMMY_strncasecmp
 #define strtok_r DUMMY_strtok_r
 #define tolower DUMMY_tolower
 #define toupper DUMMY_toupper
@@ -377,6 +379,8 @@ function_name() to call the system's implementation
 #undef strpbrk
 #undef strtoul
 #undef strtoull
+#undef strcasecmp
+#undef strncasecmp
 #undef strtod
 #undef strtok_r
 #undef strdup

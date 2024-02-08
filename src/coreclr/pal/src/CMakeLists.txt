@@ -135,7 +135,6 @@ set(SOURCES
   cruntime/math.cpp
   cruntime/misc.cpp
   cruntime/printfcpp.cpp
-  cruntime/string.cpp
   cruntime/thread.cpp
   cruntime/wchar.cpp
   debug/debug.cpp

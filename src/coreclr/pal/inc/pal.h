@@ -4071,7 +4071,7 @@ PALIMPORT long long int __cdecl atoll(const char *) MATH_THROW_DECL;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
-PALIMPORT int __cdecl _strnicmp(const char *, const char *, size_t);
+PALIMPORT int __cdecl strncasecmp(const char *, const char *, size_t);
 PALIMPORT char * __cdecl strcat(char *, const char *);
 PALIMPORT char * __cdecl strncat(char *, const char *, size_t);
 PALIMPORT char * __cdecl strcpy(char *, const char *);
@@ -4112,7 +4112,7 @@ PALIMPORT int remove(const char*);
 
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
+PALIMPORT DLLEXPORT int __cdecl strcasecmp(const char *, const char *);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT int __cdecl __iscsym(int);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
@@ -4141,6 +4141,16 @@ PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
+
+inline int _stricmp(const char* a, const char* b)
+{
+    return strcasecmp(a, b);
+}
+
+inline int _strnicmp(const char* a, const char* b, size_t c)
+{
+    return strncasecmp(a, b, c);
+}
 
 #ifdef __cplusplus
 extern "C++" {
