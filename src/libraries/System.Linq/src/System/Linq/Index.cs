@@ -7,9 +7,9 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        /// <summary>Return index and the associated item.</summary>
+        /// <summary>Returns an enumerable that incorporates the element's index in a tuple.</summary>
         /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
-        /// <param name="source">An <see cref="IEnumerable{T}" /> to return an element from.</param>
+        /// <param name="source">The source enumerable providing the elements.</param>
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         public static IEnumerable<(int Index, TSource Item)> Index<TSource>(this IEnumerable<TSource> source)
         {
