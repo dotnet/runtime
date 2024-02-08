@@ -123,5 +123,7 @@
   <ItemGroup>
     <PackageReference Include="System.Data.Common.TestData" Version="$(SystemDataCommonTestDataVersion)" />
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+
+    <TrimmerRootAssembly Include="System.Data" />
   </ItemGroup>
 </Project>

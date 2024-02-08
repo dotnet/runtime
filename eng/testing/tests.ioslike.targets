@@ -138,6 +138,9 @@
       <_ApplePropertyNames Include="MetadataUpdaterSupport" />
       <_ApplePropertyNames Include="EventSourceSupport" />
       <_ApplePropertyNames Include="JsonSerializerIsReflectionEnabledByDefault" />
+      <_ApplePropertyNames Include="EnableUnsafeBinaryFormatterSerialization" />
+      <_ApplePropertyNames Include="UseSystemResourceKeys" />
+      <_ApplePropertyNames Include="CustomResourceTypesSupport" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
