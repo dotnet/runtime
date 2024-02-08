@@ -9,7 +9,8 @@
 import gitHash from "consts:gitHash";
 
 import { RuntimeAPI } from "./types/index";
-import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
+import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions } from "./types/internal";
+import { mono_log_error } from "./logging";
 
 // these are our public API (except internal)
 export let Module: DotnetModuleInternal;
@@ -29,23 +30,14 @@ export let exportedRuntimeAPI: RuntimeAPI = null as any;
 export let runtimeHelpers: RuntimeHelpers = null as any;
 export let loaderHelpers: LoaderHelpers = null as any;
 
-export let linkerWasmEnableSIMD = true;
-export let linkerWasmEnableEH = true;
-export let linkerEnableAotProfiler = false;
-export let linkerEnableBrowserProfiler = false;
-export let linkerRunAOTCompilation = false;
 export let _runtimeModuleLoaded = false; // please keep it in place also as rollup guard
 
-export function passEmscriptenInternals(internals: EmscriptenInternals): void {
+export function passEmscriptenInternals(internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions): void {
+    runtimeHelpers.emscriptenBuildOptions = emscriptenBuildOptions;
+
     ENVIRONMENT_IS_PTHREAD = internals.isPThread;
-    linkerWasmEnableSIMD = internals.linkerWasmEnableSIMD;
-    linkerWasmEnableEH = internals.linkerWasmEnableEH;
-    linkerEnableAotProfiler = internals.linkerEnableAotProfiler;
-    linkerEnableBrowserProfiler = internals.linkerEnableBrowserProfiler;
-    linkerRunAOTCompilation = internals.linkerRunAOTCompilation;
     runtimeHelpers.quit = internals.quit_;
     runtimeHelpers.ExitStatus = internals.ExitStatus;
-    runtimeHelpers.moduleGitHash = internals.gitHash;
     runtimeHelpers.getMemory = internals.getMemory;
     runtimeHelpers.getWasmIndirectFunctionTable = internals.getWasmIndirectFunctionTable;
     runtimeHelpers.updateMemoryViews = internals.updateMemoryViews;
@@ -104,5 +96,6 @@ export function mono_assert(condition: unknown, messageFactory: string | (() => 
         ? messageFactory()
         : messageFactory);
     const error = new Error(message);
-    runtimeHelpers.abort(error);
+    mono_log_error(message, error);
+    runtimeHelpers.nativeAbort(error);
 }

@@ -610,7 +610,7 @@ public:
 
     bool CanRemoveJumpToNext(Compiler* compiler) const;
 
-    bool CanRemoveJumpToFalseTarget(Compiler* compiler) const;
+    bool CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const;
 
     unsigned GetTargetOffs() const
     {
@@ -663,19 +663,13 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbTrueTarget != nullptr);
-        assert(target != nullptr);
         return (bbTrueTarget == target);
     }
 
     BasicBlock* GetFalseTarget() const
     {
         assert(KindIs(BBJ_COND));
-
-        // So long as bbFalseTarget tracks bbNext in SetNext(), it is possible for bbFalseTarget to be null
-        // if this block is unlinked from the block list.
-        // So check bbNext before triggering the assert if bbFalseTarget is null.
-        // TODO-NoFallThrough: Remove IsLast() check once bbFalseTarget isn't hard-coded to bbNext
-        assert((bbFalseTarget != nullptr) || IsLast());
+        assert(bbFalseTarget != nullptr);
         return bbFalseTarget;
     }
 
@@ -690,15 +684,12 @@ public:
     {
         assert(KindIs(BBJ_COND));
         assert(bbFalseTarget != nullptr);
-        assert(target != nullptr);
         return (bbFalseTarget == target);
     }
 
     void SetCond(BasicBlock* trueTarget, BasicBlock* falseTarget)
     {
         assert(trueTarget != nullptr);
-        // TODO-NoFallThrough: Allow falseTarget to diverge from bbNext
-        assert(falseTarget == bbNext);
         bbKind        = BBJ_COND;
         bbTrueTarget  = trueTarget;
         bbFalseTarget = falseTarget;
@@ -2079,9 +2070,8 @@ private:
     // The count of duplicate "edges" (used for switch stmts or degenerate branches)
     unsigned m_dupCount;
 
-#ifdef DEBUG
+    // True if likelihood has been set
     bool m_likelihoodSet;
-#endif
 
 public:
     FlowEdge(BasicBlock* block, FlowEdge* rest)
@@ -2090,7 +2080,8 @@ public:
         , m_edgeWeightMin(0)
         , m_edgeWeightMax(0)
         , m_likelihood(0)
-        , m_dupCount(0) DEBUGARG(m_likelihoodSet(false))
+        , m_dupCount(0)
+        , m_likelihoodSet(false)
     {
     }
 
@@ -2146,22 +2137,20 @@ public:
     {
         assert(likelihood >= 0.0);
         assert(likelihood <= 1.0);
-        INDEBUG(m_likelihoodSet = true);
-        m_likelihood = likelihood;
+        m_likelihoodSet = true;
+        m_likelihood    = likelihood;
     }
 
     void clearLikelihood()
     {
-        m_likelihood = 0.0;
-        INDEBUG(m_likelihoodSet = false);
+        m_likelihood    = 0.0;
+        m_likelihoodSet = false;
     }
 
-#ifdef DEBUG
     bool hasLikelihood() const
     {
         return m_likelihoodSet;
     }
-#endif
 
     weight_t getLikelyWeight() const
     {

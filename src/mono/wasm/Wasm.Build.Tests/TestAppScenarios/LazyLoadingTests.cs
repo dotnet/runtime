@@ -21,7 +21,6 @@ public class LazyLoadingTests : AppTestBase
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");
@@ -32,7 +31,6 @@ public class LazyLoadingTests : AppTestBase
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/97054")]
     public async Task FailOnMissingLazyAssembly()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests");

@@ -573,17 +573,6 @@ OBJECTREF FnPtrTypeDesc::GetManagedClassObject()
 
 #endif // #ifndef DACCESS_COMPILE
 
-BOOL TypeDesc::IsRestored()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    SUPPORTS_DAC;
-
-    return (m_typeAndFlags & TypeDesc::enum_flag_Unrestored) == 0;
-}
-
 ClassLoadLevel TypeDesc::GetLoadLevel()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -591,15 +580,7 @@ ClassLoadLevel TypeDesc::GetLoadLevel()
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    if (m_typeAndFlags & TypeDesc::enum_flag_UnrestoredTypeKey)
-    {
-        return CLASS_LOAD_UNRESTOREDTYPEKEY;
-    }
-    else if (m_typeAndFlags & TypeDesc::enum_flag_Unrestored)
-    {
-        return CLASS_LOAD_UNRESTORED;
-    }
-    else if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
+    if (m_typeAndFlags & TypeDesc::enum_flag_IsNotFullyLoaded)
     {
         if (m_typeAndFlags & TypeDesc::enum_flag_DependenciesLoaded)
         {

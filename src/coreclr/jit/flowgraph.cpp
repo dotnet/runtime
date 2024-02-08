@@ -1626,7 +1626,8 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
     block->SetKindAndTarget(BBJ_ALWAYS, genReturnBB);
-    fgAddRefPred(genReturnBB, block);
+    FlowEdge* const newEdge = fgAddRefPred(genReturnBB, block);
+    newEdge->setLikelihood(1.0);
 
 #ifdef DEBUG
     if (verbose)
@@ -2097,7 +2098,8 @@ private:
                     // Change BBJ_RETURN to BBJ_ALWAYS targeting const return block.
                     assert((comp->info.compFlags & CORINFO_FLG_SYNCH) == 0);
                     returnBlock->SetKindAndTarget(BBJ_ALWAYS, constReturnBlock);
-                    comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    FlowEdge* const newEdge = comp->fgAddRefPred(constReturnBlock, returnBlock);
+                    newEdge->setLikelihood(1.0);
 
                     // Remove GT_RETURN since constReturnBlock returns the constant.
                     assert(returnBlock->lastStmt()->GetRootNode()->OperIs(GT_RETURN));
@@ -4370,10 +4372,9 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         for (FlowEdge* const predEdge : loop->m_header->PredEdges())
         {
             BasicBlock* predBlock = predEdge->getSourceBlock();
-            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predEdge->getSourceBlock()))
+            if (dfsTree->Contains(predBlock) && !dfsTree->IsAncestor(header, predBlock))
             {
-                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predEdge->getSourceBlock()->bbNum,
-                        loop->m_header->bbNum);
+                JITDUMP(FMT_BB " -> " FMT_BB " is an entry edge\n", predBlock->bbNum, loop->m_header->bbNum);
                 loop->m_entryEdges.push_back(predEdge);
             }
         }
@@ -5030,7 +5031,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
 
     if (!CheckLoopConditionBaseCase(initBlock, info))
     {
-        JITDUMP("  Loop condition is not always true\n");
+        JITDUMP("  Loop condition may not be true on the first iteration\n");
         return false;
     }
 
@@ -5264,11 +5265,10 @@ bool FlowGraphNaturalLoop::EvaluateRelop(T op1, T op2, genTreeOps oper)
 
 //------------------------------------------------------------------------
 // CheckLoopConditionBaseCase: Verify that the loop condition is true when the
-// loop is entered (or validated immediately on entry).
+// loop is entered.
 //
 // Returns:
-//   True if we could prove that the condition is true at all interesting
-//   points in the loop.
+//   True if we could prove that the condition is true on entry.
 //
 // Remarks:
 //   Currently handles the following cases:
@@ -5307,18 +5307,137 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* initBlock, Nat
     }
 
     // Do we have a zero-trip test?
-    if (initBlock->KindIs(BBJ_COND))
+    if (initBlock->KindIs(BBJ_COND) && IsZeroTripTest(initBlock, info))
     {
-        GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
-        assert(enteringJTrue->OperIs(GT_JTRUE));
-        if (enteringJTrue->gtGetOp1()->OperIsCompare() && ((enteringJTrue->gtGetOp1()->gtFlags & GTF_RELOP_ZTT) != 0))
+        return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsZeroTripTest: Check whether `initBlock`, a BBJ_COND block that enters the
+// loop in one case and not in the other, implies that the loop invariant is
+// true on entry.
+//
+// Returns:
+//   True if we could prove that the loop invariant is true on entry through
+//   "initBlock".
+//
+bool FlowGraphNaturalLoop::IsZeroTripTest(BasicBlock* initBlock, NaturalLoopIterInfo* info)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+    GenTree* enteringJTrue = initBlock->lastStmt()->GetRootNode();
+    assert(enteringJTrue->OperIs(GT_JTRUE));
+    GenTree* relop = enteringJTrue->gtGetOp1();
+    if (!relop->OperIsCmpCompare())
+    {
+        return false;
+    }
+
+    // Technically optExtractInitTestIncr only handles the "false"
+    // entry case, and preheader creation should ensure that that's the
+    // only time we'll see a BBJ_COND init block. However, it does not
+    // hurt to let this logic be correct by construction.
+    bool enterOnTrue = InitBlockEntersLoopOnTrue(initBlock);
+
+    JITDUMP("  Init block " FMT_BB " enters the loop when condition [%06u] evaluates to %s\n", initBlock->bbNum,
+            Compiler::dspTreeID(relop), enterOnTrue ? "true" : "false");
+
+    GenTree*   limitCandidate;
+    genTreeOps oper;
+
+    if (relop->gtGetOp1()->OperIsScalarLocal() && (relop->gtGetOp1()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op1 is the iteration variable\n");
+        oper           = relop->gtOper;
+        limitCandidate = relop->gtGetOp2();
+    }
+    else if (relop->gtGetOp2()->OperIsScalarLocal() &&
+             (relop->gtGetOp2()->AsLclVarCommon()->GetLclNum() == info->IterVar))
+    {
+        JITDUMP("    op2 is the iteration variable\n");
+        oper           = GenTree::SwapRelop(relop->gtOper);
+        limitCandidate = relop->gtGetOp1();
+    }
+    else
+    {
+        JITDUMP("    Relop does not involve iteration variable\n");
+        return false;
+    }
+
+    if (!enterOnTrue)
+    {
+        oper = GenTree::ReverseRelop(oper);
+    }
+
+    // Here we want to prove that [iterVar] [oper] [limitCandidate] implies
+    // [iterVar] [info->IterOper()] [info->Limit()]. Currently we just do the
+    // simple exact checks, but this could be improved. Note that using
+    // `GenTree::Compare` for the limits is ok for a "same value" check for the
+    // limited shapes of limits we recognize.
+    //
+    if ((relop->IsUnsigned() != info->TestTree->IsUnsigned()) || (oper != info->TestOper()) ||
+        !GenTree::Compare(limitCandidate, info->Limit()))
+    {
+        JITDUMP("    Condition guarantees V%02u %s%s [%06u], but invariant requires V%02u %s%s [%06u]\n", info->IterVar,
+                relop->IsUnsigned() ? "(uns) " : "", GenTree::OpName(oper), Compiler::dspTreeID(limitCandidate),
+                info->IterVar, info->TestTree->IsUnsigned() ? "(uns) " : "", GenTree::OpName(info->TestOper()),
+                Compiler::dspTreeID(info->Limit()));
+        return false;
+    }
+
+    JITDUMP("  Condition is established before entry at [%06u]\n", Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// InitBlockEntersLoopOnTrue: Determine whether a BBJ_COND init block enters the
+// loop in the false or true case.
+//
+// Parameters:
+//   initBlock - A BBJ_COND block that is assumed to dominate the loop, and
+//   only enter the loop in one of the two cases.
+//
+// Returns:
+//   True if the loop is entered if the condition evaluates to true; otherwise false.
+//
+// Remarks:
+//   Handles only limited cases (optExtractInitTestIncr ensures that we see
+//   only limited cases).
+//
+bool FlowGraphNaturalLoop::InitBlockEntersLoopOnTrue(BasicBlock* initBlock)
+{
+    assert(initBlock->KindIs(BBJ_COND));
+
+    if (initBlock->FalseTargetIs(GetHeader()))
+    {
+        return false;
+    }
+
+    if (initBlock->TrueTargetIs(GetHeader()))
+    {
+        return true;
+    }
+
+    // `optExtractInitTestIncr` may look at preds of preds to find an init
+    // block, so try a little bit harder. Today this always happens since we
+    // always have preheaders created in the places we call
+    // FlowGraphNaturalLoop::AnalyzeIteration.
+    for (FlowEdge* enterEdge : EntryEdges())
+    {
+        BasicBlock* entering = enterEdge->getSourceBlock();
+        if (initBlock->FalseTargetIs(entering))
         {
-            JITDUMP("  Condition is established before entry at [%06u]\n",
-                    Compiler::dspTreeID(enteringJTrue->gtGetOp1()));
+            return false;
+        }
+        if (initBlock->TrueTargetIs(entering))
+        {
             return true;
         }
     }
 
+    assert(!"Could not find init block enter side");
     return false;
 }
 
@@ -5449,16 +5568,8 @@ bool FlowGraphNaturalLoop::CanDuplicate(INDEBUG(const char** reason))
 //   insertAfter            - [in, out] Block to insert duplicated blocks after; updated to last block inserted.
 //   map                    - A map that will have mappings from loop blocks to duplicated blocks added to it.
 //   weightScale            - Factor to scale weight of new blocks by
-//   bottomNeedsRedirection - Whether or not to insert a redirection block for the bottom block in case of fallthrough
 //
-// Remarks:
-//   Due to fallthrough this block may need to insert blocks with no
-//   corresponding source block in "map".
-//
-void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
-                                     BlockToBlockMap* map,
-                                     weight_t         weightScale,
-                                     bool             bottomNeedsRedirection)
+void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* map, weight_t weightScale)
 {
     assert(CanDuplicate(nullptr));
 
@@ -5483,38 +5594,6 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock**     insertAfter,
 
         *insertAfter = newBlk;
         map->Set(blk, newBlk, BlockToBlockMap::Overwrite);
-
-        // If the block falls through to a block outside the loop then we may
-        // need to insert a new block to redirect.
-        // Skip this once we get to the bottom block if our cloned version is
-        // going to fall into the right version anyway.
-        if (blk->bbFallsThrough() && !ContainsBlock(blk->Next()) && ((blk != bottom) || bottomNeedsRedirection))
-        {
-            if (blk->KindIs(BBJ_COND))
-            {
-                BasicBlock* targetBlk = blk->GetFalseTarget();
-                assert(blk->NextIs(targetBlk));
-
-                // Need to insert a block.
-                BasicBlock* newRedirBlk =
-                    comp->fgNewBBafter(BBJ_ALWAYS, *insertAfter, /* extendRegion */ true, targetBlk);
-                newRedirBlk->copyEHRegion(*insertAfter);
-                newRedirBlk->bbWeight = blk->Next()->bbWeight;
-                newRedirBlk->CopyFlags(blk->Next(), (BBF_RUN_RARELY | BBF_PROF_WEIGHT));
-                newRedirBlk->scaleBBWeight(weightScale);
-
-                JITDUMP(FMT_BB " falls through to " FMT_BB "; inserted redirection block " FMT_BB "\n", blk->bbNum,
-                        blk->Next()->bbNum, newRedirBlk->bbNum);
-                // This block isn't part of the loop, so below loop won't add
-                // refs for it.
-                comp->fgAddRefPred(targetBlk, newRedirBlk);
-                *insertAfter = newRedirBlk;
-            }
-            else
-            {
-                assert(!"Cannot handle fallthrough");
-            }
-        }
 
         return BasicBlockVisit::Continue;
     });

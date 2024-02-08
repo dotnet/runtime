@@ -125,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodDesc implMethod = declType.FindVirtualFunctionTargetMethodOnObjectType(virtualSlots[i]);
 
-                if (implMethod.CanMethodBeInSealedVTable())
+                if (implMethod.CanMethodBeInSealedVTable(factory))
                     _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(implMethod));
             }
 
@@ -162,8 +162,7 @@ namespace ILCompiler.DependencyAnalysis
                     // dispatch will walk the inheritance chain).
                     if (implMethod != null)
                     {
-                        if (implMethod.Signature.IsStatic ||
-                            (implMethod.CanMethodBeInSealedVTable() && !implMethod.OwningType.HasSameTypeDefinition(declType)))
+                        if (implMethod.Signature.IsStatic || !implMethod.OwningType.HasSameTypeDefinition(declType))
                         {
                             TypeDesc implType = declType;
                             while (!implType.HasSameTypeDefinition(implMethod.OwningType))
@@ -173,7 +172,8 @@ namespace ILCompiler.DependencyAnalysis
                             if (!implType.IsTypeDefinition)
                                 targetMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(implMethod.GetTypicalMethodDefinition(), (InstantiatedType)implType);
 
-                            _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(targetMethod));
+                            if (targetMethod.CanMethodBeInSealedVTable(factory) || implMethod.Signature.IsStatic)
+                                _sealedVTableEntries.Add(SealedVTableEntry.FromVirtualMethod(targetMethod));
                         }
                     }
                     else

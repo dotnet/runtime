@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
@@ -33,14 +33,14 @@ export function initializeReplacements(replacements: EmscriptenReplacements): vo
     replacements.ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WORKER;
 
     // threads
-    if (MonoWasmThreads && replacements.modulePThread) {
+    if (WasmEnableThreads && replacements.modulePThread) {
         replaceEmscriptenPThreadLibrary(replacements.modulePThread);
     }
 }
 
 export async function init_polyfills_async(): Promise<void> {
     // v8 shell doesn't have Event and EventTarget
-    if (MonoWasmThreads && typeof globalThis.Event === "undefined") {
+    if (WasmEnableThreads && typeof globalThis.Event === "undefined") {
         globalThis.Event = class Event {
             readonly type: string;
             constructor(type: string) {
@@ -48,7 +48,7 @@ export async function init_polyfills_async(): Promise<void> {
             }
         } as any;
     }
-    if (MonoWasmThreads && typeof globalThis.EventTarget === "undefined") {
+    if (WasmEnableThreads && typeof globalThis.EventTarget === "undefined") {
         globalThis.EventTarget = class EventTarget {
             private subscribers = new Map<string, Array<{ listener: EventListenerOrEventListenerObject, oneShot: boolean }>>();
             addEventListener(type: string, listener: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions) {

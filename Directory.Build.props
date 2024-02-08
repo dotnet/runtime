@@ -96,7 +96,7 @@
     <NetCoreAppMinimum>net8.0</NetCoreAppMinimum>
     <NetCoreAppMinimum Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppMinimum>
 
-    <!-- when this is updated, make sure to keep $(_TargetFrameworkForNETCoreTasks)
+    <!-- when this is updated, make sure to keep $(_NetCoreAppToolCurrent)
          in src/mono/wasm/build/WasmApp.LocalBuild.props
          and in src/mono/msbuild/apple/build/AppleBuild.LocalBuild.props in sync -->
     <NetCoreAppToolCurrentVersion>9.0</NetCoreAppToolCurrentVersion>
@@ -117,12 +117,6 @@
     <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
     <ApiCompatNetCoreAppBaselineVersion>8.0.0</ApiCompatNetCoreAppBaselineVersion>
     <ApiCompatNetCoreAppBaselineTFM>net8.0</ApiCompatNetCoreAppBaselineTFM>
-
-    <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
-    <!-- Don't build for NETFramework during source-build. -->
-    <TargetFrameworkForNETFrameworkTasks Condition="'$(DotNetBuildFromSource)' == 'true'" />
-
-    <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateConfiguration">
