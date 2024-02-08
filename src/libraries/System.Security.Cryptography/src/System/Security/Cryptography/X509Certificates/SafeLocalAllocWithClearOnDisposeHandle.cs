@@ -12,21 +12,18 @@ namespace System.Security.Cryptography.X509Certificates
     /// </summary>
     internal sealed class SafeLocalAllocWithClearOnDisposeHandle : SafeCrypt32Handle<SafeLocalAllocWithClearOnDisposeHandle>
     {
-        private int _length;
+        internal int Length { get; private set; }
 
         public static SafeLocalAllocWithClearOnDisposeHandle Create(int cb)
         {
             var h = new SafeLocalAllocWithClearOnDisposeHandle();
             h.SetHandle(Marshal.AllocHGlobal(cb));
-            h._length = cb;
+            h.Length = cb;
             return h;
         }
 
-        public unsafe PointerMemoryManager<byte> GetMemoryManager()
-            => new PointerMemoryManager<byte>((byte*)handle, _length);
-
         private unsafe Span<byte> GetSpan()
-            => new Span<byte>((void*)handle, _length);
+            => new Span<byte>((void*)handle, Length);
 
         protected sealed override unsafe bool ReleaseHandle()
         {

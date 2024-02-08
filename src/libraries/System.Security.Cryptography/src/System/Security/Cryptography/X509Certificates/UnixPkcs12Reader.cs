@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 // We use unmanaged buffer to avoid GC compaction clones of the private key material
                 _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.Create(encodedData.Length);
-                _tmpManager = _tmpMemoryHandle.GetMemoryManager();
+                _tmpManager = DangerousCreateMemoryManagerFromHandle(_tmpMemoryHandle);
                 Span<byte> tmpSpan = _tmpManager.GetSpan();
                 encodedData.CopyTo(tmpSpan);
 
@@ -64,6 +64,14 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
+
+        /// <summary>
+        /// This method can be very dangerous to use.
+        /// This method doesn't manage the ref count of the handle.
+        /// It is the caller's responsibility to ensure that the handle is alive for the duration of the memory manager's lifetime.
+        /// </summary>
+        private static unsafe PointerMemoryManager<byte> DangerousCreateMemoryManagerFromHandle(SafeLocalAllocWithClearOnDisposeHandle safeHandle)
+            => new PointerMemoryManager<byte>((byte*)safeHandle.DangerousGetHandle(), safeHandle.Length);
 
         internal CertAndKey GetSingleCert()
         {
@@ -111,10 +119,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Dispose()
         {
-            _tmpMemoryHandle.Dispose();
-            _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.InvalidHandle;
             ((IDisposable?)_tmpManager)?.Dispose();
             _tmpManager = null;
+            _tmpMemoryHandle.Dispose();
 
             ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
             CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
