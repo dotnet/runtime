@@ -1946,8 +1946,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Runtime.Intrinsics.Vector64<float> LoadAndReplicateToVector64(float* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector64<ushort> LoadAndReplicateToVector64(ushort* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector64<uint> LoadAndReplicateToVector64(uint* address) { throw null; }
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
         public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadAndReplicateToVector64x2(byte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadAndReplicateToVector64x2(sbyte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadAndReplicateToVector64x2(short* address) { throw null; }
@@ -1969,7 +1967,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2, System.Runtime.Intrinsics.Vector64<int> Value3, System.Runtime.Intrinsics.Vector64<int> Value4) LoadAndReplicateToVector64x4(int* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2, System.Runtime.Intrinsics.Vector64<uint> Value3, System.Runtime.Intrinsics.Vector64<uint> Value4) LoadAndReplicateToVector64x4(uint* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3, System.Runtime.Intrinsics.Vector64<float> Value4) LoadAndReplicateToVector64x4(float* address) { throw null; }
-#endif
         public static unsafe System.Runtime.Intrinsics.Vector128<byte> LoadVector128(byte* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector128<double> LoadVector128(double* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector128<short> LoadVector128(short* address) { throw null; }
@@ -3372,8 +3369,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe System.Runtime.Intrinsics.Vector128<double> LoadAndReplicateToVector128(double* address) { throw null; }
             public static unsafe System.Runtime.Intrinsics.Vector128<long> LoadAndReplicateToVector128(long* address) { throw null; }
             public static unsafe System.Runtime.Intrinsics.Vector128<ulong> LoadAndReplicateToVector128(ulong* address) { throw null; }
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
             public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadAndReplicateToVector128x2(byte* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadAndReplicateToVector128x2(sbyte* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadAndReplicateToVector128x2(short* address) { throw null; }
@@ -3404,7 +3399,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3, System.Runtime.Intrinsics.Vector128<ulong> Value4) LoadAndReplicateToVector128x4(ulong* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3, System.Runtime.Intrinsics.Vector128<float> Value4) LoadAndReplicateToVector128x4(float* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3, System.Runtime.Intrinsics.Vector128<double> Value4) LoadAndReplicateToVector128x4(double* address) { throw null; }
-#endif
             public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairScalarVector64(int* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairScalarVector64(float* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairScalarVector64(uint* address) { throw null; }
