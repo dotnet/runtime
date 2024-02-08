@@ -184,6 +184,7 @@ function_name() to call the system's implementation
 #define strtod DUMMY_strtod
 #define strtoul DUMMY_strtoul
 #define strtoull DUMMY_strtoull
+#define strnlen  DUMMY_strnlen
 #define strcasecmp DUMMY_strcasecmp
 #define strncasecmp DUMMY_strncasecmp
 #define strtok_r DUMMY_strtok_r

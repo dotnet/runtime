@@ -4026,7 +4026,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _pread        PAL__pread
 #define _close        PAL__close
 #define _flushall     PAL__flushall
-#define strnlen       PAL_strnlen
 
 #ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
@@ -4086,6 +4085,7 @@ PALIMPORT unsigned long __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
 PALIMPORT double __cdecl atof(const char *);
 PALIMPORT double __cdecl strtod(const char *, char **);
+PALIMPORT size_t strnlen(const char *, size_t);
 PALIMPORT int __cdecl isprint(int);
 PALIMPORT int __cdecl isspace(int);
 PALIMPORT int __cdecl isalpha(int);
