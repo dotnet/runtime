@@ -571,8 +571,7 @@ namespace Mono.Linker.Steps
 
 		void ProcessVirtualMethods ()
 		{
-			var vms = _virtual_methods.ToArray ();
-			foreach ((var method, var scope) in vms) {
+			foreach ((var method, var scope) in _virtual_methods) {
 				using (ScopeStack.PushScope (scope)) {
 					ProcessVirtualMethod (method);
 				}
@@ -711,7 +710,7 @@ namespace Mono.Linker.Steps
 				}
 				var overridingMethods = Annotations.GetOverrides (method);
 				if (overridingMethods is not null) {
-					foreach (var ov in overridingMethods ?? []) {
+					foreach (var ov in overridingMethods) {
 						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, ov.Override.DeclaringType))
 							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
 					}
