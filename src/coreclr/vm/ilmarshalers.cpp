@@ -3903,11 +3903,11 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     if (!IsCLRToNative(m_dwMarshalFlags) && IsOut(m_dwMarshalFlags) && IsIn(m_dwMarshalFlags))
     {
-        pslILEmit->EmitLDC(1);
+        pslILEmit->EmitLDC(1); // true
     }
     else
     {
-        pslILEmit->EmitLDC(0);
+        pslILEmit->EmitLDC(0); // false
     }
 
     if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
@@ -4550,7 +4550,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFi
             else
             {
                 pMarshaler->ComToOleArray(&arrayRef, pNativeHome, pThis->m_pElementMT, pThis->m_BestFitMap,
-                    pThis->m_ThrowOnUnmappableChar, false, pThis->m_cElements, pThis->m_pManagedElementMarshaler);
+                    pThis->m_ThrowOnUnmappableChar, FALSE, pThis->m_cElements, pThis->m_pManagedElementMarshaler);
             }
         }
     }
