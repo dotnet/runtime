@@ -1756,7 +1756,7 @@ mono_empty_compile (MonoCompile *cfg)
 	cfg->headers_to_free = NULL;
 
 	if (cfg->mempool) {
-	//mono_mempool_stats (cfg->mempool);
+		//mono_mempool_stats (cfg->mempool);
 		mono_mempool_destroy (cfg->mempool);
 		cfg->mempool = NULL;
 	}
@@ -1787,6 +1787,10 @@ mono_destroy_compile (MonoCompile *cfg)
 	g_hash_table_destroy (cfg->abs_patches);
 
 	mono_debug_free_method (cfg);
+
+	g_free (cfg->asm_symbol);
+	g_free (cfg->asm_debug_symbol);
+	g_free (cfg->llvm_method_name);
 
 	g_free (cfg->varinfo);
 	g_free (cfg->vars);

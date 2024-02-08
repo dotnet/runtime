@@ -3395,10 +3395,13 @@ decode_exception_debug_info (MonoAotModule *amodule,
 			MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 			jit_mm_lock (jit_mm);
 			/* This could be set already since this function can be called more than once for the same method */
-			if (!g_hash_table_lookup (jit_mm->seq_points, method))
+			MonoSeqPointInfo *existing_seq_points = NULL;
+			if (!g_hash_table_lookup_extended (jit_mm->seq_points, method, NULL, (gpointer *)&existing_seq_points)) {
 				g_hash_table_insert (jit_mm->seq_points, method, seq_points);
-			else
+			} else {
 				mono_seq_point_info_free (seq_points);
+				seq_points = existing_seq_points;
+			}
 			jit_mm_unlock (jit_mm);
 		}
 

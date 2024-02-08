@@ -102,9 +102,9 @@ namespace System.Numerics.Tensors
                     Vector512<T> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
                     Vector512<T> yVec = Vector512.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector512<T>.Count;
                 }
@@ -120,9 +120,9 @@ namespace System.Numerics.Tensors
                     xVec &= remainderMask;
                     yVec &= remainderMask;
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
                 }
 
                 // Sum(X * Y) / (|X| * |Y|)
@@ -148,9 +148,9 @@ namespace System.Numerics.Tensors
                     Vector256<T> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
                     Vector256<T> yVec = Vector256.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector256<T>.Count;
                 }
@@ -166,9 +166,9 @@ namespace System.Numerics.Tensors
                     xVec &= remainderMask;
                     yVec &= remainderMask;
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
                 }
 
                 // Sum(X * Y) / (|X| * |Y|)
@@ -194,9 +194,9 @@ namespace System.Numerics.Tensors
                     Vector128<T> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
                     Vector128<T> yVec = Vector128.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector128<T>.Count;
                 }
@@ -212,9 +212,9 @@ namespace System.Numerics.Tensors
                     xVec &= remainderMask;
                     yVec &= remainderMask;
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
                 }
 
                 // Sum(X * Y) / (|X| * |Y|)
@@ -228,9 +228,9 @@ namespace System.Numerics.Tensors
             T dotProduct = T.Zero, xSumOfSquares = T.Zero, ySumOfSquares = T.Zero;
             for (int i = 0; i < x.Length; i++)
             {
-                dotProduct = FusedMultiplyAdd(x[i], y[i], dotProduct);
-                xSumOfSquares = FusedMultiplyAdd(x[i], x[i], xSumOfSquares);
-                ySumOfSquares = FusedMultiplyAdd(y[i], y[i], ySumOfSquares);
+                dotProduct = MultiplyAddEstimateOperator<T>.Invoke(x[i], y[i], dotProduct);
+                xSumOfSquares = MultiplyAddEstimateOperator<T>.Invoke(x[i], x[i], xSumOfSquares);
+                ySumOfSquares = MultiplyAddEstimateOperator<T>.Invoke(y[i], y[i], ySumOfSquares);
             }
 
             // Sum(X * Y) / (|X| * |Y|)
@@ -12912,80 +12912,6 @@ namespace System.Numerics.Tensors
             }
         }
 
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T FusedMultiplyAdd<T>(T x, T y, T addend) where T : INumberBase<T>
-        {
-            if (typeof(T) == typeof(Half))
-            {
-                Half result = Half.FusedMultiplyAdd(Unsafe.As<T, Half>(ref x), Unsafe.As<T, Half>(ref y), Unsafe.As<T, Half>(ref addend));
-                return Unsafe.As<Half, T>(ref result);
-            }
-
-            if (typeof(T) == typeof(float))
-            {
-                float result = float.FusedMultiplyAdd(Unsafe.As<T, float>(ref x), Unsafe.As<T, float>(ref y), Unsafe.As<T, float>(ref addend));
-                return Unsafe.As<float, T>(ref result);
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                double result = double.FusedMultiplyAdd(Unsafe.As<T, double>(ref x), Unsafe.As<T, double>(ref y), Unsafe.As<T, double>(ref addend));
-                return Unsafe.As<double, T>(ref result);
-            }
-
-            return (x * y) + addend;
-        }
-
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> FusedMultiplyAdd<T>(Vector128<T> x, Vector128<T> y, Vector128<T> addend) where T : INumberBase<T>
-        {
-            if (Fma.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), addend.AsSingle()).As<float, T>();
-                if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), addend.AsDouble()).As<double, T>();
-            }
-
-            if (AdvSimd.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(addend.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
-            }
-
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(addend.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
-            }
-
-            return (x * y) + addend;
-        }
-
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> FusedMultiplyAdd<T>(Vector256<T> x, Vector256<T> y, Vector256<T> addend) where T : INumberBase<T>
-        {
-            if (Fma.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), addend.AsSingle()).As<float, T>();
-                if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), addend.AsDouble()).As<double, T>();
-            }
-
-            return (x * y) + addend;
-        }
-
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> FusedMultiplyAdd<T>(Vector512<T> x, Vector512<T> y, Vector512<T> addend) where T : INumberBase<T>
-        {
-            if (Avx512F.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), addend.AsSingle()).As<float, T>();
-                if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), addend.AsDouble()).As<double, T>();
-            }
-
-            return (x * y) + addend;
-        }
-
         /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
         /// <typeparam name="T">The element type.</typeparam>
         /// <typeparam name="TAggregate">Specifies the operation to be performed on each pair of values.</typeparam>
@@ -14862,12 +14788,151 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>(x * y) + z</summary>
+        internal readonly struct MultiplyAddEstimateOperator<T> : ITernaryOperator<T> where T : INumberBase<T>
+        {
+            public static T Invoke(T x, T y, T z)
+            {
+                // TODO https://github.com/dotnet/runtime/issues/98053: Use T.MultiplyAddEstimate when it's available.
+
+                if (Fma.IsSupported || AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(Half))
+                    {
+                        Half result = Half.FusedMultiplyAdd(Unsafe.As<T, Half>(ref x), Unsafe.As<T, Half>(ref y), Unsafe.As<T, Half>(ref z));
+                        return Unsafe.As<Half, T>(ref result);
+                    }
+
+                    if (typeof(T) == typeof(float))
+                    {
+                        float result = float.FusedMultiplyAdd(Unsafe.As<T, float>(ref x), Unsafe.As<T, float>(ref y), Unsafe.As<T, float>(ref z));
+                        return Unsafe.As<float, T>(ref result);
+                    }
+
+                    if (typeof(T) == typeof(double))
+                    {
+                        double result = double.FusedMultiplyAdd(Unsafe.As<T, double>(ref x), Unsafe.As<T, double>(ref y), Unsafe.As<T, double>(ref z));
+                        return Unsafe.As<double, T>(ref result);
+                    }
+                }
+
+                return (x * y) + z;
+            }
+
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                if (AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(z.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(z.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
+                }
+
+                return (x * y) + z;
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return (x * y) + z;
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
+            {
+                if (Avx512F.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return (x * y) + z;
+            }
+        }
+
+        /// <summary>(x * y) + z</summary>
         internal readonly struct FusedMultiplyAddOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
         {
-            public static T Invoke(T x, T y, T z) => FusedMultiplyAdd(x, y, z);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => FusedMultiplyAdd(x, y, z);
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => FusedMultiplyAdd(x, y, z);
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z) => FusedMultiplyAdd(x, y, z);
+            public static T Invoke(T x, T y, T z) => T.FusedMultiplyAdd(x, y, z);
+
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                if (AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(z.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(z.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
+                }
+
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> xFloats = x.AsSingle();
+                    Vector128<float> yFloats = y.AsSingle();
+                    Vector128<float> zFloats = z.AsSingle();
+                    return Vector128.Create(
+                        float.FusedMultiplyAdd(xFloats[0], yFloats[0], zFloats[0]),
+                        float.FusedMultiplyAdd(xFloats[1], yFloats[1], zFloats[1]),
+                        float.FusedMultiplyAdd(xFloats[2], yFloats[2], zFloats[2]),
+                        float.FusedMultiplyAdd(xFloats[3], yFloats[3], zFloats[3])).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector128<double> xDoubles = x.AsDouble();
+                    Vector128<double> yDoubles = y.AsDouble();
+                    Vector128<double> zDoubles = z.AsDouble();
+                    return Vector128.Create(
+                        double.FusedMultiplyAdd(xDoubles[0], yDoubles[0], zDoubles[0]),
+                        double.FusedMultiplyAdd(xDoubles[1], yDoubles[1], zDoubles[1])).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return Vector256.Create(
+                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
+                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
+            {
+                if (Avx512F.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return Vector512.Create(
+                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
+                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
+            }
         }
 
         /// <summary>(x * (1 - z)) + (y * z)</summary>
@@ -18303,9 +18368,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize for float
 
             public static int Invoke(T x) => T.ILogB(x);
-            public static Vector128<int> Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static Vector256<int> Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static Vector512<int> Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static Vector128<int> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<int> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<int> Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>double.ILogB(x)</summary>
@@ -18314,9 +18379,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static int Invoke(double x) => double.ILogB(x);
-            public static Vector128<int> Invoke(Vector128<double> lower, Vector128<double> upper) => throw new NotImplementedException();
-            public static Vector256<int> Invoke(Vector256<double> lower, Vector256<double> upper) => throw new NotImplementedException();
-            public static Vector512<int> Invoke(Vector512<double> lower, Vector512<double> upper) => throw new NotImplementedException();
+            public static Vector128<int> Invoke(Vector128<double> lower, Vector128<double> upper) => throw new NotSupportedException();
+            public static Vector256<int> Invoke(Vector256<double> lower, Vector256<double> upper) => throw new NotSupportedException();
+            public static Vector512<int> Invoke(Vector512<double> lower, Vector512<double> upper) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateChecked(x)</summary>
@@ -18325,9 +18390,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateChecked(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateSaturating(x)</summary>
@@ -18336,9 +18401,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateSaturating(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateTruncating(x)</summary>
@@ -18347,9 +18412,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateTruncating(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>(uint)float</summary>
@@ -18993,9 +19058,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static (T, T) Invoke(T x) => T.SinCos(x);
-            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.SinCosPi(x)</summary>
@@ -19004,9 +19069,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static (T, T) Invoke(T x) => T.SinCosPi(x);
-            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>
