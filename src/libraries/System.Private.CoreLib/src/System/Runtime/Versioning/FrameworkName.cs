@@ -197,12 +197,12 @@ namespace System.Runtime.Versioning
 
         public static bool operator ==(FrameworkName? left, FrameworkName? right)
         {
-            if (left is null)
+            if (ReferenceEquals(left, right))
             {
-                return right is null;
+                return true;
             }
 
-            return left.Equals(right);
+            return right is not null && right.Equals(left);
         }
 
         public static bool operator !=(FrameworkName? left, FrameworkName? right)

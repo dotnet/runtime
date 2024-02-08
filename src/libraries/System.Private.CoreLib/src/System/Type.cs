@@ -663,7 +663,6 @@ namespace System
 
         public override string ToString() => "Type: " + Name;  // Why do we add the "Type: " prefix?
 
-        public override bool Equals(object? o) => o == null ? false : Equals(o as Type);
         public override int GetHashCode()
         {
             Type systemType = UnderlyingSystemType;
@@ -671,7 +670,9 @@ namespace System
                 return systemType.GetHashCode();
             return base.GetHashCode();
         }
-        public virtual bool Equals(Type? o) => o == null ? false : ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
+
+        public override bool Equals(object? o) => o is Type type && Equals(type);
+        public virtual bool Equals(Type? o) => o is not null && ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
         [Intrinsic]
         public static bool operator ==(Type? left, Type? right)

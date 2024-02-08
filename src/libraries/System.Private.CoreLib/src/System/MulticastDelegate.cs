@@ -28,14 +28,12 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {
-            // Test d2 first to allow branch elimination when inlined for null checks (== null)
-            // so it can become a simple test
-            if (d2 is null)
+            if (ReferenceEquals(d1, d2))
             {
-                return d1 is null;
+                return true;
             }
 
-            return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
+            return d2 is not null && d2.Equals(d1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,12 +43,12 @@ namespace System
 
             // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
             // so it can become a simple test
-            if (d2 is null)
+            if (ReferenceEquals(d1, d2))
             {
-                return d1 is not null;
+                return false;
             }
 
-            return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
+            return d2 is not null && !d2.Equals(d1);
         }
     }
 #pragma warning restore CS0660, CS0661

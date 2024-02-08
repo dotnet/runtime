@@ -187,20 +187,12 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Assembly? left, Assembly? right)
         {
-            // Test "right" first to allow branch elimination when inlined for null checks (== null)
-            // so it can become a simple test
-            if (right is null)
-            {
-                return left is null;
-            }
-
-            // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
             if (ReferenceEquals(left, right))
             {
                 return true;
             }
 
-            return (left is null) ? false : left.Equals(right);
+            return right is not null && right.Equals(left);
         }
 
         public static bool operator !=(Assembly? left, Assembly? right) => !(left == right);

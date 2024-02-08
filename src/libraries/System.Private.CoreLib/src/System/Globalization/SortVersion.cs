@@ -64,12 +64,12 @@ namespace System.Globalization
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
-            if (right is null)
+            if (ReferenceEquals(left, right))
             {
-                return left is null;
+                return true;
             }
 
-            return right.Equals(left);
+            return right is not null && right.Equals(left);
         }
 
         public static bool operator !=(SortVersion? left, SortVersion? right) =>
