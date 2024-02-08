@@ -47,8 +47,6 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        //public override int MetadataToken => m_token;
-
         public override Module Module => _module;
 
         public override Type? ReflectedType => _containingType;
@@ -59,22 +57,15 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodBase Overrides
-        public override ParameterInfo[] GetParameters()
-        {
-            throw new NotSupportedException(SR.NotSupported_SymbolMethod);
-        }
+        public override ParameterInfo[] GetParameters() => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
-        public override MethodImplAttributes GetMethodImplementationFlags()
-        {
-            throw new NotSupportedException(SR.NotSupported_SymbolMethod);
-        }
+        public override MethodImplAttributes GetMethodImplementationFlags() => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
         public override MethodAttributes Attributes => MethodAttributes.PrivateScope;
 
         public override CallingConventions CallingConvention => _callingConvention;
 
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
-
         #endregion
 
         #region MethodInfo Overrides
@@ -83,32 +74,17 @@ namespace System.Reflection.Emit
         public override ICustomAttributeProvider ReturnTypeCustomAttributes => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
-        {
-            throw new NotSupportedException(SR.NotSupported_SymbolMethod);
-        }
+            => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
-        public override MethodInfo GetBaseDefinition()
-        {
-            return this;
-        }
+        public override MethodInfo GetBaseDefinition() => this;
         #endregion
 
         #region ICustomAttributeProvider Implementation
-        public override object[] GetCustomAttributes(bool inherit)
-        {
-            throw new NotSupportedException(SR.NotSupported_SymbolMethod);
-        }
+        public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-        {
-            throw new NotSupportedException(SR.NotSupported_SymbolMethod);
-        }
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
 
-        public override bool IsDefined(Type attributeType, bool inherit)
-        {
-            throw new NotSupportedException(SR.NotSupported_SymbolMethod);
-        }
-
+        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SymbolMethod);
         #endregion
     }
 }

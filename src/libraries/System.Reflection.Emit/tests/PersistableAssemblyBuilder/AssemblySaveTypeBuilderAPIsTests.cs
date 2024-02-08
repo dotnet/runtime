@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.VisualBasic.FileIO;
-using System.Xml.Linq;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
