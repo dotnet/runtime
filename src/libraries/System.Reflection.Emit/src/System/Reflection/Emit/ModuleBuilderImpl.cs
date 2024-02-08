@@ -678,6 +678,7 @@ namespace System.Reflection.Emit
                 Type type = defaultValue.GetType();
                 if (type.IsEnum)
                 {
+                    // ECMA spec II.22.9: in case of enum the constant type shall match the underlying type of that enum.
                     defaultValue = Convert.ChangeType(defaultValue, type.GetEnumUnderlyingType());
                 }
             }
