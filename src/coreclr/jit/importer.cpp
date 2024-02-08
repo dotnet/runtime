@@ -12280,7 +12280,7 @@ void Compiler::impFixPredLists()
 
                         BasicBlock* const continuation = predBlock->Next();
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
-                        newEdge->setLikelihood(1.0);
+                        newEdge->setLikelihood(1.0 / predCount);
 
                         jumpEhf->bbeSuccs[predNum] = continuation;
                         ++predNum;

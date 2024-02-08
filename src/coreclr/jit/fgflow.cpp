@@ -235,6 +235,20 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     //
     assert(block->checkPredListOrder());
 
+    // When initializing preds, ensure edge likelihood is set,
+    // such that this edge is as likely as any other successor edge
+    //
+    if (initializingPreds)
+    {
+        // Shouldn't be copying edge likelihoods/weights from an existing edge
+        //
+        assert(oldEdge == nullptr);
+
+        const unsigned numSucc = blockPred->NumSucc();
+        assert(numSucc > 0);
+        flow->setLikelihood(1.0 / numSucc);
+    }
+
     return flow;
 }
 
