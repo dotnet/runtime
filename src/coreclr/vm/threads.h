@@ -1401,9 +1401,10 @@ public:
 
     // on MP systems, each thread has its own allocation chunk so we can avoid
     // lock prefixes and expensive MP cache snooping stuff
-    gc_alloc_context        m_alloc_context;
+    ee_alloc_context        m_alloc_context;
 
-    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return &m_alloc_context; }
+    inline ee_alloc_context *GetEEAllocContext() { LIMITED_METHOD_CONTRACT; return &m_alloc_context; }
+    inline gc_alloc_context *GetAllocContext() { LIMITED_METHOD_CONTRACT; return &(m_alloc_context.gc_alloc_context); }
 
     // This is the type handle of the first object in the alloc context at the time
     // we fire the AllocationTick event. It's only for tooling purpose.

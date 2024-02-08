@@ -444,6 +444,20 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
     return pThread->GetAllocContext();
 }
 
+void InvokeGCAllocCallback(ee_alloc_context* pEEAllocContext, enum_alloc_context_func* fn, void* param)
+{
+    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
+    fn(pAllocContext, param);
+    if(pEEAllocContext->fast_alloc_helper_limit_ptr > pAllocContext->alloc_limit ||
+        pAllocContext->alloc_ptr > pEEAllocContext->fast_alloc_helper_limit_ptr)
+    {
+        // fast_alloc_limit_ptr should be in the range [alloc_ptr, alloc_limit].
+        // If it isn't that means the GC just moved the allocation context to a
+        // different region of memory within the callback and we need to fix it up.
+        pEEAllocContext->SetFastAllocHelperLimit();
+    }
+}
+
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
 {
     CONTRACTL
@@ -458,12 +472,12 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
         Thread * pThread = NULL;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
         {
-            fn(pThread->GetAllocContext(), param);
+            InvokeGCAllocCallback(pThread->GetEEAllocContext(), fn, param);
         }
     }
     else
     {
-        fn(&g_global_alloc_context, param);
+        InvokeGCAllocCallback(&g_global_ee_alloc_context, fn, param);
     }
 }
 

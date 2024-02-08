@@ -12,6 +12,32 @@ GPTR_DECL(IGCHeap, g_pGCHeap);
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
+
+// This struct adds some state that is only visible to the EE onto the standard gc_alloc_context
+typedef struct _ee_alloc_context
+{
+    uint8_t* fast_alloc_helper_limit_ptr; 
+    gc_alloc_context gc_alloc_context;
+
+ public:
+    void init()
+    {
+        LIMITED_METHOD_CONTRACT;
+        fast_alloc_helper_limit_ptr = 0;
+        gc_alloc_context.init();
+    }
+
+    inline void SetFastAllocHelperLimit()
+    {
+        // If sampling is off this is just setting fast_alloc_helper_limit_ptr = alloc_limit
+        // If sampling is on then we'd do some pseudo-random number generation to decide what is
+        // the next sampled byte in the gc_alloc_context, if any.
+
+        //TODO: implement sampling limit placement strategy
+        fast_alloc_helper_limit_ptr = gc_alloc_context.alloc_limit;
+    }
+} ee_alloc_context;
+
 GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
@@ -21,7 +47,11 @@ GVAL_DECL(GCHeapType, g_heap_type);
 // for all allocations. In order to avoid extra indirections in assembly
 // allocation helpers, the EE owns the global allocation context and the
 // GC will update it when it needs to.
-GVAL_DECL(gc_alloc_context, g_global_alloc_context);
+extern "C" ee_alloc_context g_global_ee_alloc_context;
+
+// This is a pointer into the g_global_ee_alloc_context for the GC visible
+// subset of the data
+GPTR_DECL(gc_alloc_context, g_global_alloc_context);
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE

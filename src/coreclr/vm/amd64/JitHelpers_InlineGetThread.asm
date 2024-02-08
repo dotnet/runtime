@@ -41,7 +41,7 @@ LEAF_ENTRY JIT_TrialAllocSFastMP_InlineGetThread, _TEXT
         ; m_BaseSize is guaranteed to be a multiple of 8.
 
         INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
+        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__fast_alloc_helper_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
         add     rdx, rax
@@ -65,7 +65,7 @@ NESTED_ENTRY JIT_BoxFastMP_InlineGetThread, _TEXT
         mov     r8d, [rcx + OFFSET__MethodTable__m_BaseSize]
 
         INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
+        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__fast_alloc_helper_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
         add     r8, rax
@@ -136,7 +136,7 @@ LEAF_ENTRY AllocateStringFastMP_InlineGetThread, _TEXT
         and     edx, -8
 
         INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
+        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__fast_alloc_helper_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
         add     rdx, rax
@@ -189,7 +189,7 @@ LEAF_ENTRY JIT_NewArr1VC_MP_InlineGetThread, _TEXT
 
 
         INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
+        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__fast_alloc_helper_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
         add     r8, rax
@@ -238,7 +238,7 @@ LEAF_ENTRY JIT_NewArr1OBJ_MP_InlineGetThread, _TEXT
         ; to be a multiple of 8.
 
         INLINE_GETTHREAD r11
-        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__alloc_limit]
+        mov     r10, [r11 + OFFSET__Thread__m_alloc_context__fast_alloc_helper_limit]
         mov     rax, [r11 + OFFSET__Thread__m_alloc_context__alloc_ptr]
 
         add     r8, rax

@@ -119,17 +119,17 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x58
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x60
+ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, gc_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x60
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
+#define               OFFSET__Thread__m_alloc_context__fast_alloc_helper_limit 0x58
+ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__fast_alloc_helper_limit == offsetof(Thread, m_alloc_context) + offsetof(ee_alloc_context, fast_alloc_helper_limit_ptr));
 
-#define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_ptr);
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, gc_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSETOF__gc_alloc_context__alloc_limit 0x8
-ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_limit);
+#define               OFFSETOF__ee_alloc_context__fast_alloc_helper_limit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__fast_alloc_helper_limit == offsetof(ee_alloc_context, fast_alloc_helper_limit_ptr));
 
 #define               OFFSETOF__ThreadExceptionState__m_pCurrentTracker 0x000
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker

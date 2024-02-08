@@ -40,13 +40,13 @@
 //
 //========================================================================
 
-inline gc_alloc_context* GetThreadAllocContext()
+inline ee_alloc_context* GetThreadAllocContext()
 {
     WRAPPER_NO_CONTRACT;
 
     assert(GCHeapUtilities::UseThreadAllocationContexts());
 
-    return & GetThread()->m_alloc_context;
+    return GetThread()->GetEEAllocContext();
 }
 
 // When not using per-thread allocation contexts, we (the EE) need to take care that
@@ -183,6 +183,50 @@ inline void CheckObjectSize(size_t alloc_size)
     }
 }
 
+inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
+    } CONTRACTL_END;
+
+    gc_alloc_context* pAllocContext = &pEEAllocContext->gc_alloc_context;
+
+    if (flags & GC_ALLOC_USER_OLD_HEAP)
+    {
+        // if sampling is on, decide if this object should be sampled
+    }
+    else
+    {
+        size_t available = (pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+        if(pEEAllocContext->fast_alloc_helper_limit_ptr < pAllocContext->alloc_limit &&
+           size > available)
+        {
+            // this allocation overlaps the SOH sampling point, record an allocation sampling event
+            // TODO: route this to a sampling callback. I'm thinking we might just add a
+            // bool* was_sampled out parameter and get this signal routed back to PublishObjectAndNotify that is going to
+            // called a few frames up the stack. That lets us get the object initialized before delivering
+            // the notification.
+        }
+    }
+
+    GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
+    Object* retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
+
+    if(pEEAllocContext->fast_alloc_helper_limit_ptr > pAllocContext->alloc_limit ||
+        pAllocContext->alloc_ptr > pEEAllocContext->fast_alloc_helper_limit_ptr)
+    {
+        // fast_alloc_limit_ptr should be in the range [alloc_ptr, alloc_limit]
+        // if it isn't that means at least one of these things just happened:
+        // 1) We allocated a new object that advanced alloc_ptr past fast_alloc_helper_limit_ptr
+        // 2) The GC just moved the allocation context to a different region of memory
+        // Either way we need to update the fast_alloc_limit_ptr to place it back within the
+        // allocation context area.
+        pEEAllocContext->SetFastAllocHelperLimit();
+    }
+    return retVal;
+}
 
 // There are only two ways to allocate an object.
 //     * Call optimized helpers that were generated on the fly. This is how JIT compiled code does most
@@ -222,16 +266,12 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
 
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
-        gc_alloc_context *threadContext = GetThreadAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(threadContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(threadContext, size, flags);
+        retVal = Alloc(GetThreadAllocContext(), size, flags);
     }
     else
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        gc_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(globalContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(globalContext, size, flags);
+        retVal = Alloc(&g_global_ee_alloc_context, size, flags);
     }
 
 
