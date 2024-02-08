@@ -3451,8 +3451,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadPairVector64NonTemporal(ushort* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairVector64NonTemporal(uint* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector64<ulong> Value1, System.Runtime.Intrinsics.Vector64<ulong> Value2) LoadPairVector64NonTemporal(ulong* address) { throw null; }
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
             public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadVector128x2AndUnzip(byte* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadVector128x2AndUnzip(sbyte* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadVector128x2AndUnzip(short* address) { throw null; }
@@ -3483,7 +3481,6 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3, System.Runtime.Intrinsics.Vector128<ulong> Value4) LoadVector128x4AndUnzip(ulong* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3, System.Runtime.Intrinsics.Vector128<float> Value4) LoadVector128x4AndUnzip(float* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3, System.Runtime.Intrinsics.Vector128<double> Value4) LoadVector128x4AndUnzip(double* address) { throw null; }
-#endif
             public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadVector128x2(byte* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadVector128x2(sbyte* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadVector128x2(short* address) { throw null; }
