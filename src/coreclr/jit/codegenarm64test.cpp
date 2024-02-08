@@ -6982,7 +6982,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_OPTS_SCALABLE_D); // FCMNE   <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0
 
     // IF_SVE_HM_2A
-    theEmitter->emitIns_R_R_F(INS_sve_fadd, EA_SCALABLE, REG_V0, REG_P1, 0.5,
+    theEmitter->emitIns_R_R_F(INS_sve_fadd, EA_SCALABLE, REG_V0, REG_P0, 0.5,
                               INS_OPTS_SCALABLE_H); // FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
     theEmitter->emitIns_R_R_F(INS_sve_fadd, EA_SCALABLE, REG_V0, REG_P1, 1.0,
                               INS_OPTS_SCALABLE_H); // FADD    <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
