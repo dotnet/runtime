@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // - synchronous [JSExport] into managed code, which would block
             // - synchronous [JSImport] to another thread, which would block
             // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Monitor.ThrowOnBlockingWaitOnJSInteropThread = true;
+            Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
 
             var proxyContext = ctx.ProxyContext;
             JSProxyContext.CurrentThreadContext = proxyContext;
@@ -216,11 +216,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 d(state);
                 return;
             }
-            // TODO, refactor into single assert method
-            if (Monitor.ThrowOnBlockingWaitOnJSInteropThread)
-            {
-                throw new PlatformNotSupportedException("Blocking wait is not supported on the JS interop threads.");
-            }
+
+            Thread.AssureBlockingPossible();
 
             using (var signal = new ManualResetEventSlim(false))
             {

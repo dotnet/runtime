@@ -56,9 +56,7 @@ extern errno_t wcscpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* i
 
 extern errno_t strncpy_s( char* outDest, size_t inDestBufferSize, const char* inSrc, size_t inCount );
 extern errno_t wcsncpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inSrc, size_t inCount );
-
-extern char* strtok_s( char* inString, const char* inControl, char** ioContext );
-extern WCHAR* wcstok_s( WCHAR* inString, const WCHAR* inControl, WCHAR** ioContext );
+extern errno_t wcsncpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inSrc, size_t inCount );
 
 // strnlen is not required unless the source string is completely untrusted (e.g. anonymous input on a website)
 #ifndef SUPPRESS_STRNLEN

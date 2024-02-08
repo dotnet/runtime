@@ -52,6 +52,7 @@ void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
 void emitDispSveExtendOptsModN(insOpts opt, int n);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
+void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -559,6 +560,9 @@ static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, em
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
+static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
+
 // Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
 
@@ -628,6 +632,12 @@ static bool isStackRegister(regNumber reg)
 static bool isValidSimm4(ssize_t value)
 {
     return (-8 <= value) && (value <= 7);
+};
+
+// Returns true if 'value' is a legal signed immediate 9 bit encoding (such as for LDR).
+static bool isValidSimm9(ssize_t value)
+{
+    return (-256 <= value) && (value <= 255);
 };
 
 // Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
