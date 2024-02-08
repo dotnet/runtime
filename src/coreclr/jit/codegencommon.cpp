@@ -128,7 +128,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
 #if defined(TARGET_XARCH)
     // Shouldn't be used before it is set in genFnProlog()
-    compiler->compCalleeFPRegsSavedMask = (regMaskTP)-1;
+    compiler->compCalleeFPRegsSavedMask = (regMaskAny)-1;
 #endif // defined(TARGET_XARCH)
 #endif // DEBUG
 
@@ -511,9 +511,9 @@ void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
 
 // Return the register mask for the given register variable
 // inline
-regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
+regMaskOnlyOne CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 {
-    regMaskTP regMask = RBM_NONE;
+    regMaskOnlyOne regMask = RBM_NONE;
 
     assert(varDsc->lvIsInReg());
 
@@ -531,11 +531,11 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 
 // Return the register mask for the given lclVar or regVar tree node
 // inline
-regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
+regMaskOnlyOne CodeGenInterface::genGetRegMask(GenTree* tree)
 {
     assert(tree->gtOper == GT_LCL_VAR);
 
-    regMaskTP        regMask = RBM_NONE;
+    regMaskOnlyOne   regMask = RBM_NONE;
     const LclVarDsc* varDsc  = compiler->lvaGetDesc(tree->AsLclVarCommon());
     if (varDsc->lvPromoted)
     {
@@ -562,7 +562,7 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
-    regMaskTP regMask = genGetRegMask(varDsc);
+    regMaskOnlyOne regMask = genGetRegMask(varDsc);
 
 #ifdef DEBUG
     if (compiler->verbose)
