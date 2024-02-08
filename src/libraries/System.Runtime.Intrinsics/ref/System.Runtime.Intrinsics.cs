@@ -4150,6 +4150,19 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get { throw null; } }
         }
     }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
+    public abstract partial class Sve : System.Runtime.Intrinsics.Arm.AdvSimd
+    {
+        internal Sve() { }
+        public static new bool IsSupported { get { throw null; } }
+
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.AdvSimd.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
 }
 namespace System.Runtime.Intrinsics.X86
 {

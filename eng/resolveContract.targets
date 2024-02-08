@@ -114,6 +114,12 @@
     <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
+  <!-- ##### GenFacades settings ##### -->
+  <PropertyGroup>
+    <!-- Let GenFacades use roslyn from the toolset package as it loads sources which might require newer language features. -->
+    <GenFacadesUseRoslynToolsetPackagePath>true</GenFacadesUseRoslynToolsetPackagePath>
+  </PropertyGroup>
+
   <!-- ##### GenAPI settings ##### -->
 
   <PropertyGroup>
