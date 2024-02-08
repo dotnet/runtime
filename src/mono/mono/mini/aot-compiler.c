@@ -4212,22 +4212,23 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			res->debug_sym = get_plt_entry_debug_sym (acfg, res->ji, acfg->plt_entry_debug_sym_cache);
 		if (synchronized) {
 			/* Avoid duplicate symbols because we don't cache */
+			char *tmp_symbol = res->symbol;
 			res->symbol = g_strdup_printf ("%s_%d", res->symbol, synchronized_symbol_idx);
-			if (res->debug_sym)
+			g_free (tmp_symbol);
+			if (res->debug_sym) {
+				char *tmp_debug_sym = res->debug_sym;
 				res->debug_sym = g_strdup_printf ("%s_%d", res->debug_sym, synchronized_symbol_idx);
+				g_free (tmp_debug_sym);
+			}
 			synchronized_symbol_idx ++;
 		}
 
 		if (res->debug_sym)
-			res->llvm_symbol = g_strdup_printf ("%s_%s_llvm", res->symbol, res->debug_sym);
+			res->llvm_symbol = mono_mempool_strdup_printf (acfg->mempool, "%s_%s_llvm", res->symbol, res->debug_sym);
 		else
-			res->llvm_symbol = g_strdup_printf ("%s_llvm", res->symbol);
-		if (strstr (res->llvm_symbol, acfg->temp_prefix) == res->llvm_symbol) {
-			/* The llvm symbol shouldn't be temporary, since the llvm generated object file references it */
-			char *tmp = res->llvm_symbol;
-			res->llvm_symbol = g_strdup (res->llvm_symbol + strlen (acfg->temp_prefix));
-			g_free (tmp);
-		}
+			res->llvm_symbol = mono_mempool_strdup_printf (acfg->mempool, "%s_llvm", res->symbol);
+		if (strstr (res->llvm_symbol, acfg->temp_prefix) == res->llvm_symbol)
+			res->llvm_symbol = res->llvm_symbol + strlen (acfg->temp_prefix);
 
 		g_hash_table_insert (acfg->patch_to_plt_entry [new_ji->type], new_ji, res);
 
@@ -7003,7 +7004,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 /*
  * sanitize_symbol:
  *
- *   Return a modified version of S which only includes characters permissible in symbols.
+ *   Returns either S or a malloc-ed modified version of S which only includes characters permissible in symbols.
  */
 static char*
 sanitize_symbol (MonoAotCompile *acfg, char *s)
@@ -7045,7 +7046,7 @@ sanitize_symbol (MonoAotCompile *acfg, char *s)
 		}
 	}
 
-	res = mono_mempool_strdup (acfg->mempool, gs->str);
+	res = g_strdup (gs->str);
 	g_string_free (gs, TRUE);
 	return res;
 }
@@ -8039,7 +8040,12 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 
 	g_free (prefix);
 
-	return sanitize_symbol (acfg, debug_sym);
+	char *tmp_debug_sym = debug_sym;
+	debug_sym = sanitize_symbol (acfg, debug_sym);
+	if (tmp_debug_sym != debug_sym)
+		g_free (tmp_debug_sym);
+
+	return debug_sym;
 }
 
 /*
@@ -9863,11 +9869,15 @@ mono_aot_get_method_name (MonoCompile *cfg)
 		}
 	}
 
-	if (llvm_acfg->aot_opts.static_link)
+	if (llvm_acfg->aot_opts.static_link) {
 		/* Include the assembly name too to avoid duplicate symbol errors */
-		return g_strdup_printf ("%s_%s", llvm_acfg->assembly_name_sym, get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash));
-	else
+		char *tmp_debug_sym = get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
+		char *debug_sym = g_strdup_printf ("%s_%s", llvm_acfg->assembly_name_sym, tmp_debug_sym);
+		g_free (tmp_debug_sym);
+		return debug_sym;
+	} else {
 		return get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
+	}
 }
 
 static gboolean
@@ -15372,7 +15382,7 @@ emit_aot_image (MonoAotCompile *acfg)
 			} else {
 				cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
 			}
-			cfg->asm_debug_symbol = cfg->asm_symbol;
+			cfg->asm_debug_symbol = g_strdup (cfg->asm_symbol);
 		}
 	}
 
