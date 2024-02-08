@@ -14794,22 +14794,25 @@ namespace System.Numerics.Tensors
             {
                 // TODO https://github.com/dotnet/runtime/issues/98053: Use T.MultiplyAddEstimate when it's available.
 
-                if (typeof(T) == typeof(Half))
+                if (Fma.IsSupported || AdvSimd.IsSupported)
                 {
-                    Half result = Half.FusedMultiplyAdd(Unsafe.As<T, Half>(ref x), Unsafe.As<T, Half>(ref y), Unsafe.As<T, Half>(ref z));
-                    return Unsafe.As<Half, T>(ref result);
-                }
+                    if (typeof(T) == typeof(Half))
+                    {
+                        Half result = Half.FusedMultiplyAdd(Unsafe.As<T, Half>(ref x), Unsafe.As<T, Half>(ref y), Unsafe.As<T, Half>(ref z));
+                        return Unsafe.As<Half, T>(ref result);
+                    }
 
-                if (typeof(T) == typeof(float))
-                {
-                    float result = float.FusedMultiplyAdd(Unsafe.As<T, float>(ref x), Unsafe.As<T, float>(ref y), Unsafe.As<T, float>(ref z));
-                    return Unsafe.As<float, T>(ref result);
-                }
+                    if (typeof(T) == typeof(float))
+                    {
+                        float result = float.FusedMultiplyAdd(Unsafe.As<T, float>(ref x), Unsafe.As<T, float>(ref y), Unsafe.As<T, float>(ref z));
+                        return Unsafe.As<float, T>(ref result);
+                    }
 
-                if (typeof(T) == typeof(double))
-                {
-                    double result = double.FusedMultiplyAdd(Unsafe.As<T, double>(ref x), Unsafe.As<T, double>(ref y), Unsafe.As<T, double>(ref z));
-                    return Unsafe.As<double, T>(ref result);
+                    if (typeof(T) == typeof(double))
+                    {
+                        double result = double.FusedMultiplyAdd(Unsafe.As<T, double>(ref x), Unsafe.As<T, double>(ref y), Unsafe.As<T, double>(ref z));
+                        return Unsafe.As<double, T>(ref result);
+                    }
                 }
 
                 return (x * y) + z;
