@@ -4302,28 +4302,25 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNati
 
     GCX_COOP();
 
-    BASEARRAYREF arrayRef = NULL;
-    GCPROTECT_BEGIN(arrayRef);
-    arrayRef = (BASEARRAYREF)pManagedHome.Get();
-
-    if (arrayRef == NULL)
+    if (pManagedHome.Get() == NULL)
     {
         *pNativeHome = NULL;
     }
     else
     {
-        SIZE_T cElements = arrayRef->GetNumComponents();
+        SIZE_T cElements = ((BASEARRAYREF)pManagedHome.Get())->GetNumComponents();
         SIZE_T cbElement = OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT);
 
         if (cbElement == 0)
             COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+
+        GCX_PREEMP();
 
         SIZE_T cbArray;
         if ( (!ClrSafeInt<SIZE_T>::multiply(cElements, cbElement, cbArray)) || cbArray > MAX_SIZE_FOR_INTEROP)
             COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
         {
-            GCX_PREEMP();
             *pNativeHome = CoTaskMemAlloc(cbArray);
         }
 
@@ -4333,8 +4330,6 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertSpaceToNative(MngdNati
         // initialize the array
         FillMemory(*pNativeHome, cbArray, 0);
     }
-
-    GCPROTECT_END();
 
     END_QCALL;
 }
