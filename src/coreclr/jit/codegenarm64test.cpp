@@ -7015,29 +7015,33 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_F(INS_sve_fsubr, EA_SCALABLE, REG_V6, REG_P3, 1.0,
                               INS_OPTS_SCALABLE_S); // FSUBR   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <const>
 
-    //// IF_SVE_HN_2A
-    //theEmitter->emitIns_R_R_I(INS_sve_ftmad, EA_SCALABLE, REG_V0, REG_V0, 5,
-    //                          INS_OPTS_SCALABLE_B); // FTMAD   <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
+    // IF_SVE_HN_2A
+    // FTMAD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
+    theEmitter->emitIns_R_R_I(INS_sve_ftmad, EA_SCALABLE, REG_V0, REG_V2, 0, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_I(INS_sve_ftmad, EA_SCALABLE, REG_V3, REG_V5, 1, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_I(INS_sve_ftmad, EA_SCALABLE, REG_V4, REG_V2, 7, INS_OPTS_SCALABLE_D);
 
-    //// IF_SVE_HP_3A
-    //theEmitter->emitIns_R_R_R(INS_sve_flogb, EA_SCALABLE, REG_V0, REG_P0, REG_V0,
-    //                          INS_OPTS_SCALABLE_B); // FLOGB   <Zd>.<T>, <Pg>/M, <Zn>.<T>
+    // IF_SVE_HP_3A
+    // FLOGB <Zd>.<T>, <Pg>/M, <Zn>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_flogb, EA_SCALABLE, REG_V31, REG_P7, REG_V31, INS_OPTS_SCALABLE_H);
+    theEmitter->emitIns_R_R_R(INS_sve_flogb, EA_SCALABLE, REG_V31, REG_P7, REG_V31, INS_OPTS_SCALABLE_S);
+    theEmitter->emitIns_R_R_R(INS_sve_flogb, EA_SCALABLE, REG_V31, REG_P7, REG_V31, INS_OPTS_SCALABLE_D);
 
-    //// IF_SVE_HU_4B
-    //theEmitter->emitIns_R_R_R_R(INS_sve_bfmla, EA_SCALABLE, REG_V0, REG_V0, REG_P0, REG_V0,
-    //                            INS_OPTS_SCALABLE_B); // BFMLA   <Zda>.H, <Pg>/M, <Zn>.H, <Zm>.H
-    //theEmitter->emitIns_R_R_R_R(INS_sve_bfmls, EA_SCALABLE, REG_V0, REG_V0, REG_P0, REG_V0,
-    //                            INS_OPTS_SCALABLE_B); // BFMLS   <Zda>.H, <Pg>/M, <Zn>.H, <Zm>.H
+    // IF_SVE_HU_4B
+    theEmitter->emitIns_R_R_R_R(INS_sve_bfmla, EA_SCALABLE, REG_V1, REG_P5, REG_V4, REG_V3,
+                                INS_OPTS_SCALABLE_H); // BFMLA   <Zda>.H, <Pg>/M, <Zn>.H, <Zm>.H
+    theEmitter->emitIns_R_R_R_R(INS_sve_bfmls, EA_SCALABLE, REG_V0, REG_P6, REG_V1, REG_V2,
+                                INS_OPTS_SCALABLE_H); // BFMLS   <Zda>.H, <Pg>/M, <Zn>.H, <Zm>.H
 
-    //// IF_SVE_HV_4A
-    //theEmitter->emitIns_R_R_R_R(INS_sve_fmad, EA_SCALABLE, REG_V0, REG_V0, REG_P0, REG_V0,
-    //                            INS_OPTS_SCALABLE_B); // FMAD    <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
-    //theEmitter->emitIns_R_R_R_R(INS_sve_fmsb, EA_SCALABLE, REG_V0, REG_V0, REG_P0, REG_V0,
-    //                            INS_OPTS_SCALABLE_B); // FMSB    <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
-    //theEmitter->emitIns_R_R_R_R(INS_sve_fnmad, EA_SCALABLE, REG_V0, REG_V0, REG_P0, REG_V0,
-    //                            INS_OPTS_SCALABLE_B); // FNMAD   <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
-    //theEmitter->emitIns_R_R_R_R(INS_sve_fnmsb, EA_SCALABLE, REG_V0, REG_V0, REG_P0, REG_V0,
-    //                            INS_OPTS_SCALABLE_B); // FNMSB   <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+    // IF_SVE_HV_4A
+    theEmitter->emitIns_R_R_R_R(INS_sve_fmad, EA_SCALABLE, REG_V3, REG_P4, REG_V5, REG_V6,
+                                INS_OPTS_SCALABLE_H); // FMAD    <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_fmsb, EA_SCALABLE, REG_V1, REG_P2, REG_V3, REG_V7,
+                                INS_OPTS_SCALABLE_S); // FMSB    <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_fnmad, EA_SCALABLE, REG_V0, REG_P5, REG_V4, REG_V3,
+                                INS_OPTS_SCALABLE_D); // FNMAD   <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
+    theEmitter->emitIns_R_R_R_R(INS_sve_fnmsb, EA_SCALABLE, REG_V5, REG_P3, REG_V1, REG_V2,
+                                INS_OPTS_SCALABLE_S); // FNMSB   <Zdn>.<T>, <Pg>/M, <Zm>.<T>, <Za>.<T>
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)

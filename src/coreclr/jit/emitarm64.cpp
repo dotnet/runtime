@@ -2073,42 +2073,45 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isScalableVectorSize(elemsize));
             break;
 
-        //case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
-        //    elemsize = id->idOpSize();
-        //    assert(insOptsScalable(id->idInsOpt()));
-        //    assert(isVectorRegister(id->idReg10()));       // mmmmm
-        //    assert(isVectorRegister(id->idReg20()));       // ddddd
-        //    assert(isValidImm());                          // iii
-        //    assert(isValidVectorElemsize(id->idInsOpt())); // xx
-        //    break;
+        case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
+            imm      = emitGetInsSC(id);
+            elemsize = id->idOpSize();
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isValidUimm3(imm));
+            assert(isScalableVectorSize(elemsize));
+            break;
 
-        //case IF_SVE_HP_3A: // .............xx. ...gggnnnnnddddd -- SVE floating-point convert to integer
-        //    elemsize = id->idOpSize();
-        //    assert(insOptsScalable(id->idInsOpt()));
-        //    assert(isVectorRegister(id->idReg10()));       // nnnnn
-        //    assert(isPredicateRegister(id->idReg20()));    // ggg
-        //    assert(isVectorRegister(id->idReg30()));       // ddddd
-        //    assert(isValidVectorElemsize(id->idInsOpt())); // xx
-        //    break;
+        case IF_SVE_HP_3A: // .............xx. ...gggnnnnnddddd -- SVE floating-point convert to integer
+            elemsize = id->idOpSize();
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isLowPredicateRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            assert(isScalableVectorSize(elemsize));
+            break;
 
-        //case IF_SVE_HU_4B: // ...........mmmmm ...gggnnnnnddddd -- SVE floating-point multiply-accumulate writing addend
-        //    assert(insOptsScalable(id->idInsOpt()));
-        //    assert(isVectorRegister(id->idReg10()));    // mmmmm
-        //    assert(isVectorRegister(id->idReg20()));    // nnnnn
-        //    assert(isPredicateRegister(id->idReg30())); // ggg
-        //    assert(isVectorRegister(id->idReg40()));    // ddddd
-        //    break;
+        case IF_SVE_HU_4B: // ...........mmmmm ...gggnnnnnddddd -- SVE floating-point multiply-accumulate writing addend
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isLowPredicateRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            assert(isVectorRegister(id->idReg4()));
+            assert(isScalableVectorSize(elemsize));
+            break;
 
-        //case IF_SVE_HV_4A: // ........xx.aaaaa ...gggmmmmmddddd -- SVE floating-point multiply-accumulate writing
-        //                   // multiplicand
-        //    elemsize = id->idOpSize();
-        //    assert(insOptsScalable(id->idInsOpt()));
-        //    assert(isVectorRegister(id->idReg10()));       // aaaaa
-        //    assert(isVectorRegister(id->idReg20()));       // mmmmm
-        //    assert(isPredicateRegister(id->idReg30()));    // ggg
-        //    assert(isVectorRegister(id->idReg40()));       // ddddd
-        //    assert(isValidVectorElemsize(id->idInsOpt())); // xx
-        //    break;
+        case IF_SVE_HV_4A: // ........xx.aaaaa ...gggmmmmmddddd -- SVE floating-point multiply-accumulate writing
+                           // multiplicand
+            elemsize = id->idOpSize();
+            assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isLowPredicateRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            assert(isVectorRegister(id->idReg4()));
+            assert(isScalableVectorSize(elemsize));
+            break;
 
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
@@ -8831,6 +8834,16 @@ void emitter::emitIns_R_R_I(instruction     ins,
             }
             break;
 
+        case INS_sve_ftmad:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isValidUimm3(imm));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_HN_2A;
+            break;
+
         default:
             unreached();
             break;
@@ -10555,11 +10568,22 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_sve_fcmle:
         case INS_sve_fcmne:
             assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
             assert(isPredicateRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isScalableVectorSize(size));
             fmt = IF_SVE_HI_3A;
+            break;
+
+        case INS_sve_flogb:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isScalableVectorSize(size));
+            fmt = IF_SVE_HP_3A;
             break;
 
         default:
@@ -13207,6 +13231,30 @@ void emitter::emitInsSve_R_R_R_R(instruction     ins,
             assert(isScalableVectorSize(size));
             assert(opt == INS_OPTS_SCALABLE_Q);
             fmt = IF_SVE_JF_4A;
+            break;
+
+        case INS_sve_bfmla:
+        case INS_sve_bfmls:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isVectorRegister(reg4));
+            fmt = IF_SVE_HU_4B;
+            break;
+
+        case INS_sve_fmad:
+        case INS_sve_fmsb:
+        case INS_sve_fnmad:
+        case INS_sve_fnmsb:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(insScalableOptsNone(sopt));
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isVectorRegister(reg4));
+            fmt = IF_SVE_HV_4A;
             break;
 
         default:
@@ -16214,6 +16262,34 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  This specifically encodes the size at bit locations '18-17'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_18_to_17(emitAttr size)
+{
+    switch (size)
+    {
+        case EA_1BYTE:
+            return 0;
+
+        case EA_2BYTE:
+            return (1 << 17); // set the bit at location 17
+
+        case EA_4BYTE:
+            return (1 << 18); // set the bit at location 18
+
+        case EA_8BYTE:
+            return (1 << 18) | (1 << 17); // set the bit at location 18 and 17
+
+        default:
+            assert(!"Invalid insOpt for vector register");
+    }
+    return 0;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction
  *  This specifically encodes the field 'sz' at bit location '21'.
  */
@@ -18028,6 +18104,18 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isValidSimm8(imm) || isValidUimm8(imm));
     return (code_t)((imm & 0xFF) << 5);
+}
+
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the unsigned immediate value as 3-bits at bit locations '18-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm3_18_to_16(ssize_t imm)
+{
+    assert(isValidUimm3(imm));
+    return (code_t)imm << 16;
 }
 
 /*****************************************************************************
@@ -21172,43 +21260,44 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         }
         break;
 
-        //case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
-        //    code = emitInsCodeSve(ins, fmt);
-        //    code |= insEncodeReg_V_9_to_5(id->idReg10()); // mmmmm
-        //    code |= insEncodeReg_V_4_to_0(id->idReg20()); // ddddd
-        //    code |= insEncodeImm();                       // iii
-        //    code |= insEncodeElemsize(id->idInsOpt());    // xx
-        //    dst += emitOutput_Instr(dst, code);
-        //    break;
+        case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                     // mmmmm
+            code |= insEncodeUimm3_18_to_16(imm);                            // iii
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
 
-        //case IF_SVE_HP_3A: // .............xx. ...gggnnnnnddddd -- SVE floating-point convert to integer
-        //    code = emitInsCodeSve(ins, fmt);
-        //    code |= insEncodeReg_V_9_to_5(id->idReg10());   // nnnnn
-        //    code |= insEncodeReg_P_12_to_10(id->idReg20()); // ggg
-        //    code |= insEncodeReg_V_4_to_0(id->idReg30());   // ddddd
-        //    code |= insEncodeElemsize(id->idInsOpt());      // xx
-        //    dst += emitOutput_Instr(dst, code);
-        //    break;
+        case IF_SVE_HP_3A: // .............xx. ...gggnnnnnddddd -- SVE floating-point convert to integer
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                              // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                            // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());                              // nnnnn
+            code |= insEncodeSveElemsize_18_to_17(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
 
-        //case IF_SVE_HU_4B: // ...........mmmmm ...gggnnnnnddddd -- SVE floating-point multiply-accumulate writing addend
-        //    code = emitInsCodeSve(ins, fmt);
-        //    code |= insEncodeReg_V_21_to_17(id->idReg10()); // mmmmm
-        //    code |= insEncodeReg_V_9_to_5(id->idReg20());   // nnnnn
-        //    code |= insEncodeReg_P_12_to_10(id->idReg30()); // ggg
-        //    code |= insEncodeReg_V_4_to_0(id->idReg40());   // ddddd
-        //    dst += emitOutput_Instr(dst, code);
-        //    break;
+        case IF_SVE_HU_4B: // ...........mmmmm ...gggnnnnnddddd -- SVE floating-point multiply-accumulate writing addend
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg4()); // mmmmm
+            dst += emitOutput_Instr(dst, code);
+            break;
 
-        //case IF_SVE_HV_4A: // ........xx.aaaaa ...gggmmmmmddddd -- SVE floating-point multiply-accumulate writing
-        //                   // multiplicand
-        //    code = emitInsCodeSve(ins, fmt);
-        //    code |= insEncodeReg_V_21_to_17(id->idReg10()); // aaaaa
-        //    code |= insEncodeReg_V_9_to_5(id->idReg20());   // mmmmm
-        //    code |= insEncodeReg_P_12_to_10(id->idReg30()); // ggg
-        //    code |= insEncodeReg_V_4_to_0(id->idReg40());   // ddddd
-        //    code |= insEncodeElemsize(id->idInsOpt());      // xx
-        //    dst += emitOutput_Instr(dst, code);
-        //    break;
+        case IF_SVE_HV_4A: // ........xx.aaaaa ...gggmmmmmddddd -- SVE floating-point multiply-accumulate writing
+                           // multiplicand
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
+            code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());                     // mmmmm
+            code |= insEncodeReg_V_20_to_16(id->idReg4());                   // aaaaa
+            code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
+            dst += emitOutput_Instr(dst, code);
+            break;
 
         default:
             assert(!"Unexpected format");
