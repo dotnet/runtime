@@ -942,13 +942,13 @@ INST3(stnt1d,            "stnt1d",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_ID_2A        SVE_IE_2A                   
-INST2(ldr,               "ldr",                   LD,                      IF_SVE_2AA,              0x85800000,      0x85804000                  )
+INST2(ldr,               "ldr",                   0,                       IF_SVE_2AA,              0x85800000,      0x85804000                  )
     // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_ID_2A           1000010110iiiiii 000iiinnnnn0TTTT     8580 0000   
     // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_IE_2A           1000010110iiiiii 010iiinnnnnttttt     8580 4000   
 
 
 //    enum               name                     info                                              SVE_JG_2A        SVE_JH_2A                   
-INST2(str,               "str",                   ST,                      IF_SVE_2AB,              0xE5800000,      0xE5804000                  )
+INST2(str,               "str",                   0,                       IF_SVE_2AB,              0xE5800000,      0xE5804000                  )
     // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_JG_2A           1110010110iiiiii 000iiinnnnn0TTTT     E580 0000   
     // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_JH_2A           1110010110iiiiii 010iiinnnnnttttt     E580 4000   
 

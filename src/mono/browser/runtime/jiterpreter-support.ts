@@ -1557,7 +1557,6 @@ export function getWasmFunctionTable() {
 
 export function addWasmFunctionPointer(table: JiterpreterTable, f: Function) {
     mono_assert(f, "Attempting to set null function into table");
-    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
     const index = cwraps.mono_jiterp_allocate_table_entry(table);
     if (index > 0) {
