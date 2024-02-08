@@ -246,7 +246,20 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
 
         const unsigned numSucc = blockPred->NumSucc();
         assert(numSucc > 0);
-        flow->setLikelihood(1.0 / numSucc);
+
+        // NumSucc() returns 1 for BBJ_CONDs with the same true/false target;
+        // for such cases, don't factor in the edge dup count to avoid overflowing the likelihood
+        //
+        if (blockPred->KindIs(BBJ_COND) && (numSucc == 1))
+        {
+            flow->setLikelihood(1.0);
+        }
+        else
+        {
+            // Else, account for duplicate successors so the edge likelihood isn't too small
+            //
+            flow->setLikelihood((1.0 / numSucc) * flow->getDupCount());
+        }
     }
 
     return flow;
