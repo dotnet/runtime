@@ -297,14 +297,14 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
+    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
 }
 
 //------------------------------------------------------------------------
 // CanRemoveJumpToTarget: determine if jump to target can be omitted
 //
 // Arguments:
-//    target - true/false target of BBJ_COND block
+//    target - true/false target of the BBJ_COND block
 //    compiler - current compiler instance
 //
 // Returns:
@@ -513,7 +513,6 @@ void BasicBlock::dspFlags() const
         {BBF_NO_CSE_IN, "no-cse"},
         {BBF_CAN_ADD_PRED, "add-pred"},
         {BBF_RETLESS_CALL, "retless"},
-        {BBF_LOOP_PREHEADER, "preheader"},
         {BBF_COLD, "cold"},
         {BBF_KEEP_BBJ_ALWAYS, "KEEP"},
         {BBF_CLONED_FINALLY_BEGIN, "cfb"},
@@ -523,7 +522,6 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
         {BBF_NONE_QUIRK, "q"},
-        {BBF_OLD_LOOP_HEADER_QUIRK, "loopheader"},
     };
 
     bool first = true;
@@ -628,6 +626,25 @@ void BasicBlock::dspSuccs(Compiler* compiler)
 // things strictly.
 void BasicBlock::dspKind() const
 {
+    auto dspBlockNum = [](const BasicBlock* b) -> const char* {
+        static char buffers[3][64]; // static array of 3 to allow 3 concurrent calls in one printf()
+        static int  nextBufferIndex = 0;
+
+        auto& buffer    = buffers[nextBufferIndex];
+        nextBufferIndex = (nextBufferIndex + 1) % ArrLen(buffers);
+
+        if (b == nullptr)
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), "NULL");
+        }
+        else
+        {
+            _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB, b->bbNum);
+        }
+
+        return buffer;
+    };
+
     switch (bbKind)
     {
         case BBJ_EHFINALLYRET:
@@ -646,7 +663,7 @@ void BasicBlock::dspKind() const
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
                 }
             }
 
@@ -659,11 +676,11 @@ void BasicBlock::dspKind() const
             break;
 
         case BBJ_EHFILTERRET:
-            printf(" -> " FMT_BB " (fltret)", bbTarget->bbNum);
+            printf(" -> %s (fltret)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_EHCATCHRET:
-            printf(" -> " FMT_BB " (cret)", bbTarget->bbNum);
+            printf(" -> %s (cret)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_THROW:
@@ -677,28 +694,28 @@ void BasicBlock::dspKind() const
         case BBJ_ALWAYS:
             if (HasFlag(BBF_KEEP_BBJ_ALWAYS))
             {
-                printf(" -> " FMT_BB " (ALWAYS)", bbTarget->bbNum);
+                printf(" -> %s (ALWAYS)", dspBlockNum(bbTarget));
             }
             else
             {
-                printf(" -> " FMT_BB " (always)", bbTarget->bbNum);
+                printf(" -> %s (always)", dspBlockNum(bbTarget));
             }
             break;
 
         case BBJ_LEAVE:
-            printf(" -> " FMT_BB " (leave)", bbTarget->bbNum);
+            printf(" -> %s (leave)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_CALLFINALLY:
-            printf(" -> " FMT_BB " (callf)", bbTarget->bbNum);
+            printf(" -> %s (callf)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_CALLFINALLYRET:
-            printf(" -> " FMT_BB " (callfr)", bbTarget->bbNum);
+            printf(" -> %s (callfr)", dspBlockNum(bbTarget));
             break;
 
         case BBJ_COND:
-            printf(" -> " FMT_BB " (cond)", bbTarget->bbNum);
+            printf(" -> %s,%s (cond)", dspBlockNum(bbTrueTarget), dspBlockNum(bbFalseTarget));
             break;
 
         case BBJ_SWITCH:
@@ -710,7 +727,7 @@ void BasicBlock::dspKind() const
 
             for (unsigned i = 0; i < jumpCnt; i++)
             {
-                printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
 
                 const bool isDefault = bbSwtTargets->bbsHasDefault && (i == jumpCnt - 1);
                 if (isDefault)
@@ -791,14 +808,11 @@ void* BasicBlock::MemoryPhiArg::operator new(size_t sz, Compiler* comp)
 //    compiler - Jit compiler instance
 //    to - New/empty block to copy statements into
 //    from - Block to copy statements from
-//    varNum - lclVar uses with lclNum `varNum` will be replaced; can be ~0 to indicate no replacement.
-//    varVal - If replacing uses of `varNum`, replace them with int constants with value `varVal`.
 //
 // Note:
 //    Leaves block ref count at zero, and pred edge list empty.
 //
-void BasicBlock::CloneBlockState(
-    Compiler* compiler, BasicBlock* to, const BasicBlock* from, unsigned varNum, int varVal)
+void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from)
 {
     assert(to->bbStmtList == nullptr);
     to->CopyFlags(from);
@@ -817,7 +831,7 @@ void BasicBlock::CloneBlockState(
 
     for (Statement* const fromStmt : from->Statements())
     {
-        GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode(), GTF_EMPTY, varNum, varVal);
+        GenTree* newExpr = compiler->gtCloneExpr(fromStmt->GetRootNode());
         assert(newExpr != nullptr);
         compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
@@ -843,8 +857,7 @@ void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
             SetEhf(new (compiler, CMK_BasicBlock) BBehfDesc(compiler, from->GetEhfTargets()));
             break;
         case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
+            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
@@ -885,8 +898,7 @@ void BasicBlock::TransferTarget(BasicBlock* from)
             from->bbEhfTargets = nullptr; // Make sure nobody uses the descriptor after this.
             break;
         case BBJ_COND:
-            // TODO-NoFallThrough: Copy false target, too?
-            SetCond(from->GetTrueTarget(), Next());
+            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
             break;
         case BBJ_ALWAYS:
             SetKindAndTarget(from->GetKind(), from->GetTarget());
@@ -1111,11 +1123,13 @@ Statement* BasicBlock::FirstNonPhiDefOrCatchArgStore() const
     return stmt;
 }
 
-/*****************************************************************************
- *
- *  Can a BasicBlock be inserted after this without altering the flowgraph
- */
-
+//------------------------------------------------------------------------
+// bbFallsThrough: Check if inserting a BasicBlock after this one will alter
+// the flowgraph.
+//
+// Returns:
+//    True if so.
+//
 bool BasicBlock::bbFallsThrough() const
 {
     switch (bbKind)
@@ -1856,10 +1870,10 @@ weight_t BasicBlock::getCalledCount(Compiler* comp)
 //    compiler - Compiler instance
 //
 // Notes:
-//    with profie data: number of expected executions of this block, given
-//    one call to the method
+//    With profile data: number of expected executions of this block, given
+//    one call to the method.
 //
-weight_t BasicBlock::getBBWeight(Compiler* comp)
+weight_t BasicBlock::getBBWeight(Compiler* comp) const
 {
     if (this->bbWeight == BB_ZERO_WEIGHT)
     {

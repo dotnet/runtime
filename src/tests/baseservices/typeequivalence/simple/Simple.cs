@@ -7,6 +7,7 @@ using System.Text;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 using Xunit;
 using TypeEquivalenceTypes;
@@ -285,6 +286,13 @@ public class Simple
         EquivalentValueType inst = (EquivalentValueType)otherEquivalentValueTypeInstance;
     }
 
+    private static void TestsExactTypeOptimizations()
+    {
+        TestsExactTypeOptimizationsHelper.s_arrayInstance = new TestValueType[1];
+        Thread.Yield();
+        Assert.True(typeof(TestValueType[]) == TestsExactTypeOptimizationsHelper.s_arrayInstance.GetType());
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -305,6 +313,7 @@ public class Simple
             TestTypeEquivalenceWithTypePunning();
             TestLoadingValueTypesWithMethod();
             TestCastsOptimizations();
+            TestsExactTypeOptimizations();
         }
         catch (Exception e)
         {

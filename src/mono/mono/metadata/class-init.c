@@ -40,9 +40,6 @@
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 
-/* Set by the EE */
-gint32 mono_simd_register_size;
-
 /* Statistics */
 static gint32 classes_size;
 static gint32 inflated_classes_size;
@@ -315,11 +312,6 @@ mono_class_setup_fields (MonoClass *klass)
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
 	if (explicit_size)
 		instance_size += real_size;
-
-	if (mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System.Numerics") && !strcmp (klass->name, "Register")) {
-		if (mono_simd_register_size)
-			instance_size += mono_simd_register_size;
-	}
 
 	/*
 	 * This function can recursively call itself.

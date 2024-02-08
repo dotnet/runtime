@@ -377,5 +377,16 @@ namespace Microsoft.Extensions
             public IList<string> UnInstantiatedIList { get; set; }
             public IReadOnlyList<string> UnInstantiatedIReadOnlyList { get; set; }
         }
+
+        public class CollectionContainer
+        {
+            public string Name { get; set; }
+            public List<Element> Elements { get; set; }
+        }
+
+        public class Element
+        {
+            public string Type { get; set; }
+        }
     }
 }

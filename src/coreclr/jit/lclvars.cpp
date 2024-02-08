@@ -3651,6 +3651,7 @@ void Compiler::lvaSortByRefCount()
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 case TYP_SIMD64:
+                case TYP_MASK:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:

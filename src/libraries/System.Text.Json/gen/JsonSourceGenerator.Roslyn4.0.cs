@@ -16,9 +16,7 @@ namespace System.Text.Json.SourceGeneration
     /// <summary>
     /// Generates source code to optimize serialization and deserialization with JsonSerializer.
     /// </summary>
-#pragma warning disable RS1041 // we're multi-targeting so this is fine
     [Generator]
-#pragma warning restore
     public sealed partial class JsonSourceGenerator : IIncrementalGenerator
     {
 #if ROSLYN4_4_OR_GREATER

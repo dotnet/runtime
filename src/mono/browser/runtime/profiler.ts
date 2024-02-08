@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, linkerEnableAotProfiler, linkerEnableBrowserProfiler, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, mono_assert, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";
@@ -15,7 +15,7 @@ import { utf8ToString } from "./strings";
 // DumpAotProfileData stores the data into INTERNAL.aotProfileData.
 //
 export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
-    mono_assert(linkerEnableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "AOT profiler is not enabled, please use <WasmProfilers>aot;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     if (!("writeAt" in options))
@@ -27,7 +27,7 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
 }
 
 export function mono_wasm_init_browser_profiler(options: BrowserProfilerOptions): void {
-    mono_assert(linkerEnableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
+    mono_assert(runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "Browser profiler is not enabled, please use <WasmProfilers>browser;</WasmProfilers> in your project file.");
     if (options == null)
         options = {};
     const arg = "browser:";
@@ -43,6 +43,7 @@ export const enum MeasuredBlock {
     preRunWorker = "mono.preRunWorker",
     onRuntimeInitialized = "mono.onRuntimeInitialized",
     postRun = "mono.postRun",
+    postRunWorker = "mono.postRunWorker",
     memorySnapshot = "mono.memorySnapshot",
     loadRuntime = "mono.loadRuntime",
     bindingsInit = "mono.bindingsInit",

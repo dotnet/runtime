@@ -3739,6 +3739,14 @@ namespace System.Text.Json.Tests
                 count--;
             }
         }
+
+        [Fact]
+        public static void DeserializeNullAsNullLiteral()
+        {
+            var jsonDocument = JsonSerializer.Deserialize<JsonDocument>("null");
+            Assert.NotNull(jsonDocument);
+            Assert.Equal(JsonValueKind.Null, jsonDocument.RootElement.ValueKind);
+        }
     }
 
     public class ThrowOnReadStream : MemoryStream

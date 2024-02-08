@@ -41,16 +41,21 @@
     </ItemGroup>
   </Target>
 
-  <!-- For local builds, only one of the 3 required runtime packs might be available. In that case,
+  <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,
        build the other nugets with the *same runtime* but different names.
   -->
   <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <PropertyGroup>
-      <_DefaultBuildVariant Condition="'$(MonoWasmBuildVariant)' == 'multithread'">.multithread.</_DefaultBuildVariant>
-      <_DefaultBuildVariant Condition="'$(_DefaultBuildVariant)' == ''">.</_DefaultBuildVariant>
-
-      <_DefaultRuntimePackNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono$(_DefaultBuildVariant)$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg</_DefaultRuntimePackNuGetPath>
+      <_IsMTNugetMissing Condition="'$(WasmEnableThreads)' != 'true'">true</_IsMTNugetMissing>
+      <_BuildVariant Condition="'$(_IsMTNugetMissing)' == 'true'">multithread</_BuildVariant>
+      <_Descriptor Condition="'$(_IsMTNugetMissing)' == 'true'">runtime pack for $(_BuildVariant)</_Descriptor>
+      <_Descriptor Condition="'$(_IsMTNugetMissing)' != 'true'">single threaded runtime pack</_Descriptor>
+      <_DefaultRuntimePackNuGetPath>$([System.String]::Join('.',
+        $(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono,
+        $(_BuildVariant),
+        $(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg))
+      </_DefaultRuntimePackNuGetPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -63,22 +68,13 @@
            Text="Expected to find either one or two in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
 
     <ItemGroup>
-      <_BuildVariants Include="multithread" Condition="'$(_DefaultBuildVariant)' != '.multithread.'" />
-
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.%(_BuildVariants.Identity).$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg"
+      <!-- We need nugets for all wasm runtime flavors. The one corresponding the current 
+      property values is already built, the others need to be added to _NuGetsToBuild -->
+      <_NuGetsToBuild Include="$(_DefaultRuntimePackNuGetPath)"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant=%(_BuildVariants.Identity)"
-                      Descriptor="runtime pack for %(_BuildVariants.Identity)"
-                      Condition="'%(_BuildVariants.Identity)' != ''"/>
-
-      <!-- add for non-threaded runtime also -->
-      <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant="
-                      Dependencies="$(_DefaultRuntimePackNuGetPath)"
-                      Descriptor="single threaded runtime pack"
-                      Condition="'$(_DefaultBuildVariant)' != '.'" />
+                      Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(_IsMTNugetMissing)"
+                      Descriptor="$(_Descriptor)"/>
     </ItemGroup>
 
     <Message

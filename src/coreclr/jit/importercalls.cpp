@@ -3216,6 +3216,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1->gtType = TYP_REF;
                     retNode     = op1;
                 }
+                else if (GetRuntimeHandleUnderlyingType() == TYP_I_IMPL)
+                {
+                    // We'll try to expand it later.
+                    isSpecial = true;
+                }
                 break;
             }
 
@@ -3438,15 +3443,22 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_CompareExchange:
             {
                 var_types retType = JITtype2varType(sig->retType);
+
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+                else if (genTypeSize(retType) < 4)
+                {
+                    break;
+                }
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop(1).val->IsIntegralConst(0) || impStackTop(1).val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
-                    // Intrinsify "object" overload in case of null assignment
+                    // Intrinsify "object" overload in case of null or NonGC assignment
                     // since we don't need the write barrier.
                 }
                 else if (!varTypeIsIntegral(retType))
@@ -3471,15 +3483,23 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 2);
 
                 var_types retType = JITtype2varType(sig->retType);
+                assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
+
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
                     break;
                 }
+#if !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
+                else if (genTypeSize(retType) < 4)
+                {
+                    break;
+                }
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
 
                 if ((retType == TYP_REF) &&
                     (impStackTop().val->IsIntegralConst(0) || impStackTop().val->IsIconHandle(GTF_ICON_OBJ_HDL)))
                 {
-                    // Intrinsify "object" overload in case of null assignment
+                    // Intrinsify "object" overload in case of null or NonGC assignment
                     // since we don't need the write barrier.
                     assert(ni == NI_System_Threading_Interlocked_Exchange);
                 }
@@ -3542,7 +3562,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree* res =
                         gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_FMA_MultiplyAddScalar, callJitType, 16);
 
-                    retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callJitType, 16);
+                    retNode = gtNewSimdToScalarNode(callType, res, callJitType, 16);
                     break;
                 }
 #elif defined(TARGET_ARM64)
@@ -3566,7 +3586,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar,
                                                        callJitType, 8);
 
-                    retNode = gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector64_ToScalar, callJitType, 8);
+                    retNode = gtNewSimdToScalarNode(callType, retNode, callJitType, 8);
                     break;
                 }
 #endif
@@ -5590,7 +5610,8 @@ void Compiler::impCheckForPInvokeCall(
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
         unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
-        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
+        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction ||
+        unmanagedCallConv == CorInfoCallConvExtension::Swift)
     {
         return;
     }
@@ -5742,10 +5763,10 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// pickGDV: Use profile information to pick a GDV candidate for a call site.
+// pickGDV: Use profile information to pick a GDV/cast type candidate for a call site.
 //
 // Arguments:
-//    call            - the call
+//    call            - the call (either virtual or cast helper)
 //    ilOffset        - exact IL offset of the call
 //    isInterface     - whether or not the call target is defined on an interface
 //    classGuesses    - [out] the classes to guess for (mutually exclusive with methodGuess)
@@ -5766,7 +5787,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     const int               maxLikelyClasses = MAX_GDV_TYPE_CHECKS;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
     unsigned                numberOfClasses = 0;
-    if (call->IsVirtualStub() || call->IsVirtualVtable())
+    if (call->IsVirtualStub() || call->IsVirtualVtable() || call->IsHelperCall())
     {
         numberOfClasses =
             getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
@@ -5784,6 +5805,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
     //
     if (!opts.IsReadyToRun() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
     {
+        assert(!call->IsHelperCall());
         numberOfMethods =
             getLikelyMethods(likelyMethods, maxLikelyMethods, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
@@ -5875,6 +5897,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         }
         else
         {
+            assert(!call->IsHelperCall());
             methodGuesses[0] = (CORINFO_METHOD_HANDLE)likelyMethods[index - numberOfClasses].handle;
             likelihoods[0]   = 100;
             *candidatesCount = 1;
@@ -5905,12 +5928,40 @@ void Compiler::pickGDV(GenTreeCall*           call,
         if (maxNumberOfGuesses == 1)
         {
             // We're allowed to make only a single guess - it means we want to work only with dominating types
-            likelihoodThreshold = isInterface ? 25 : 30;
+            if (call->IsHelperCall())
+            {
+                // Casts. Most casts aren't too expensive
+                likelihoodThreshold = 50;
+            }
+            else if (isInterface)
+            {
+                // interface calls
+                likelihoodThreshold = 25;
+            }
+            else
+            {
+                // virtual calls
+                likelihoodThreshold = 30;
+            }
         }
         else if (maxNumberOfGuesses == 2)
         {
             // Two guesses - slightly relax the thresholds
-            likelihoodThreshold = isInterface ? 15 : 20;
+            if (call->IsHelperCall())
+            {
+                // Casts. Most casts aren't too expensive
+                likelihoodThreshold = 40;
+            }
+            else if (isInterface)
+            {
+                // interface calls
+                likelihoodThreshold = 15;
+            }
+            else
+            {
+                // virtual calls
+                likelihoodThreshold = 20;
+            }
         }
         else
         {
@@ -6838,7 +6889,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     switch (intrinsicName)
     {
         case NI_System_Math_Abs:
-        case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
 
@@ -8478,7 +8528,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                     retNode->AsHWIntrinsic()->Op(2) = op1;
                 }
 
-                return gtNewSimdHWIntrinsicNode(callType, retNode, NI_Vector128_ToScalar, callJitType, 16);
+                return gtNewSimdToScalarNode(callType, retNode, callJitType, 16);
             }
         }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
@@ -8643,7 +8693,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                                            callJitType, 16);
         }
 
-        return gtNewSimdHWIntrinsicNode(callType, tmp, NI_Vector128_ToScalar, callJitType, 16);
+        return gtNewSimdToScalarNode(callType, tmp, callJitType, 16);
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 

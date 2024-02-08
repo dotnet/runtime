@@ -107,7 +107,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
     if (comp->IsBaselineVector512IsaSupportedOpportunistically() ||
         comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
     {
-        if (!node->Data()->OperIs(GT_CNS_VEC))
+        if (!node->Data()->IsCnsVec())
         {
             return;
         }
@@ -116,7 +116,8 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         {
             return;
         }
-        if (node->Data()->AsVecCon()->IsAllBitsSet() || node->Data()->AsVecCon()->IsZero())
+
+        if (node->Data()->IsVectorAllBitsSet() || node->Data()->IsVectorZero())
         {
             // To avoid some unexpected regression, this optimization only applies to non-all 1/0 constant vectors.
             return;
@@ -1071,59 +1072,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         size_t numArgs        = node->GetOperandCount();
         size_t expectedArgNum = HWIntrinsicInfo::EmbRoundingArgPos(intrinsicId);
+
         if (numArgs == expectedArgNum)
         {
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            uint32_t    simdSize        = node->GetSimdSize();
-            var_types   simdType        = node->TypeGet();
-            GenTree*    lastOp          = node->Op(numArgs);
+            GenTree* lastOp = node->Op(numArgs);
+            uint8_t  mode   = 0xFF;
 
             if (lastOp->IsCnsIntOrI())
             {
-                uint8_t mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
+                // Mark the constant as contained since it's specially encoded
+                MakeSrcContained(node, lastOp);
 
-                GenTreeHWIntrinsic* embRoundingNode;
-                switch (numArgs)
-                {
-                    case 3:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), node->Op(2),
-                                                                         intrinsicId, simdBaseJitType, simdSize);
-                        break;
-                    case 2:
-                        embRoundingNode = comp->gtNewSimdHWIntrinsicNode(simdType, node->Op(1), intrinsicId,
-                                                                         simdBaseJitType, simdSize);
-                        break;
-
-                    default:
-                        unreached();
-                }
-
-                embRoundingNode->SetEmbRoundingMode(mode);
-                BlockRange().InsertAfter(lastOp, embRoundingNode);
-                LIR::Use use;
-                if (BlockRange().TryGetUse(node, &use))
-                {
-                    use.ReplaceWith(embRoundingNode);
-                }
-                else
-                {
-                    embRoundingNode->SetUnusedValue();
-                }
-                BlockRange().Remove(node);
-                BlockRange().Remove(lastOp);
-                node = embRoundingNode;
-                if (mode != 0x08)
-                {
-                    // As embedded rounding can only work under register-to-register form, we can skip contain check at
-                    // this point.
-                    return node->gtNext;
-                }
+                mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
             }
-            else
+
+            if ((mode & 0x03) != 0x00)
             {
-                // If the control byte is not constant, generate a jump table fallback when emitting the code.
-                assert(!lastOp->IsCnsIntOrI());
-                node->SetEmbRoundingMode(0x08);
+                // Embedded rounding only works for register-to-register operations, so skip containment
                 return node->gtNext;
             }
         }
@@ -1133,7 +1098,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_Vector128_ConditionalSelect:
         case NI_Vector256_ConditionalSelect:
-        case NI_Vector512_ConditionalSelect:
         {
             return LowerHWIntrinsicCndSel(node);
         }
@@ -1832,6 +1796,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 return next;
             }
             break;
+        }
+
+        case NI_AVX512F_TernaryLogic:
+        case NI_AVX512F_VL_TernaryLogic:
+        {
+            return LowerHWIntrinsicTernaryLogic(node);
         }
 
         default:
@@ -2687,6 +2657,144 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
     BlockRange().Remove(node);
     return LowerNode(tmp4);
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerHWIntrinsicCndSel: Lowers an AVX512 TernaryLogic call
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
+{
+    assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+
+    var_types   simdType        = node->gtType;
+    CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+    var_types   simdBaseType    = node->GetSimdBaseType();
+    unsigned    simdSize        = node->GetSimdSize();
+
+    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsArithmetic(simdBaseType));
+    assert(simdSize != 0);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+    GenTree* op3 = node->Op(3);
+    GenTree* op4 = node->Op(4);
+
+    if (op4->IsCnsIntOrI())
+    {
+        uint8_t control = static_cast<uint8_t>(op4->AsIntConCommon()->IconValue());
+
+        switch (control)
+        {
+            case 0xAC: // A ? C : B; (C & A) | (B & ~A)
+            case 0xB8: // B ? C : A; (C & B) | (A & ~B)
+            case 0xD8: // C ? B : A; (B & C) | (A & ~C)
+            case 0xCA: // A ? B : C; (B & A) | (C & ~A)
+            case 0xE2: // B ? A : C; (A & B) | (C & ~B)
+            case 0xE4: // C ? A : B; (A & C) | (B & ~C)
+            {
+                // For the operations that work as a conditional select, we want
+                // to try and optimize it to use BlendVariableMask when the condition
+                // is already a TYP_MASK
+
+                const TernaryLogicInfo& ternLogInfo = TernaryLogicInfo::lookup(control);
+
+                assert(ternLogInfo.oper1 == TernaryLogicOperKind::Select);
+                assert(ternLogInfo.oper2 == TernaryLogicOperKind::Select);
+                assert(ternLogInfo.oper3 == TernaryLogicOperKind::Cond);
+
+                GenTree* condition   = nullptr;
+                GenTree* selectTrue  = nullptr;
+                GenTree* selectFalse = nullptr;
+
+                if (ternLogInfo.oper1Use == TernaryLogicUseFlags::A)
+                {
+                    selectTrue = op1;
+
+                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::B)
+                    {
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::C);
+
+                        selectFalse = op2;
+                        condition   = op3;
+                    }
+                    else
+                    {
+                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::C);
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::B);
+
+                        selectFalse = op3;
+                        condition   = op2;
+                    }
+                }
+                else if (ternLogInfo.oper1Use == TernaryLogicUseFlags::B)
+                {
+                    selectTrue = op2;
+
+                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::A)
+                    {
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::C);
+
+                        selectFalse = op1;
+                        condition   = op3;
+                    }
+                    else
+                    {
+                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::C);
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::A);
+
+                        selectFalse = op3;
+                        condition   = op1;
+                    }
+                }
+                else
+                {
+                    assert(ternLogInfo.oper1Use == TernaryLogicUseFlags::C);
+
+                    selectTrue = op3;
+
+                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::A)
+                    {
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::B);
+
+                        selectFalse = op1;
+                        condition   = op2;
+                    }
+                    else
+                    {
+                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::B);
+                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::A);
+
+                        selectFalse = op2;
+                        condition   = op1;
+                    }
+                }
+
+                if (!condition->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector))
+                {
+                    break;
+                }
+
+                node->ResetHWIntrinsicId(NI_AVX512F_BlendVariableMask, comp, selectFalse, selectTrue,
+                                         condition->AsHWIntrinsic()->Op(1));
+
+                BlockRange().Remove(condition);
+                BlockRange().Remove(op4);
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    ContainCheckHWIntrinsic(node);
+    return node->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -6403,8 +6511,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 //
 // Arguments:
-//     tree  -  a binary-op tree node that is either commutative
-//              or a compare oper.
+//     op1  - The first operand of the binary operation to consider
+//     op2  - The second operand of the binary operation to consider
 //
 // Returns:
 //     Returns op1 or op2 of tree node that is preferred for
@@ -6413,18 +6521,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 // Note: if the tree oper is neither commutative nor a compare oper
 // then only op2 can be reg optional on xarch and hence no need to
 // call this routine.
-GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
+GenTree* Lowering::PreferredRegOptionalOperand(GenTree* op1, GenTree* op2)
 {
-    assert(GenTree::OperIsBinary(tree->OperGet()));
-    assert(tree->OperIsCommutative() || tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST));
-
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
-    assert(!op1->IsRegOptional() && !op2->IsRegOptional());
-
-    // We default to op1, as op2 is likely to have the shorter lifetime.
-    GenTree* preferredOp = op1;
-
     // This routine uses the following heuristics:
     //
     // a) If both are register candidates, marking the one with lower weighted
@@ -6460,27 +6558,43 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
     //
     // f) If neither of them are local vars (i.e. tree temps), prefer to
     // mark op1 as reg optional for the same reason as mentioned in (d) above.
-    if (op1->OperGet() == GT_LCL_VAR && op2->OperGet() == GT_LCL_VAR)
-    {
-        LclVarDsc* v1 = comp->lvaGetDesc(op1->AsLclVarCommon());
-        LclVarDsc* v2 = comp->lvaGetDesc(op2->AsLclVarCommon());
 
-        bool v1IsRegCandidate = !v1->lvDoNotEnregister;
-        bool v2IsRegCandidate = !v2->lvDoNotEnregister;
-        if (v1IsRegCandidate && v2IsRegCandidate)
+    assert(!op1->IsRegOptional());
+    assert(!op2->IsRegOptional());
+
+    // We default to op1, as op2 is likely to have the shorter lifetime.
+    GenTree* preferredOp = op1;
+
+    if (op1->OperIs(GT_LCL_VAR))
+    {
+        if (op2->OperIs(GT_LCL_VAR))
         {
-            // Both are enregisterable locals.  The one with lower weight is less likely
-            // to get a register and hence beneficial to mark the one with lower
-            // weight as reg optional.
-            // If either is not tracked, it may be that it was introduced after liveness
-            // was run, in which case we will always prefer op1 (should we use raw refcnt??).
-            if (v1->lvTracked && v2->lvTracked && (v1->lvRefCntWtd() >= v2->lvRefCntWtd()))
+            LclVarDsc* v1 = comp->lvaGetDesc(op1->AsLclVarCommon());
+            LclVarDsc* v2 = comp->lvaGetDesc(op2->AsLclVarCommon());
+
+            bool v1IsRegCandidate = !v1->lvDoNotEnregister;
+            bool v2IsRegCandidate = !v2->lvDoNotEnregister;
+
+            if (v1IsRegCandidate && v2IsRegCandidate)
             {
-                preferredOp = op2;
+                // Both are enregisterable locals.  The one with lower weight is less likely
+                // to get a register and hence beneficial to mark the one with lower
+                // weight as reg optional.
+                //
+                // If either is not tracked, it may be that it was introduced after liveness
+                // was run, in which case we will always prefer op1 (should we use raw refcnt??).
+
+                if (v1->lvTracked && v2->lvTracked)
+                {
+                    if (v1->lvRefCntWtd() >= v2->lvRefCntWtd())
+                    {
+                        preferredOp = op2;
+                    }
+                }
             }
         }
     }
-    else if (!(op1->OperGet() == GT_LCL_VAR) && (op2->OperGet() == GT_LCL_VAR))
+    else if (op2->OperIs(GT_LCL_VAR))
     {
         preferredOp = op2;
     }
@@ -7330,7 +7444,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             // One of op1 or op2 could be marked as reg optional
             // to indicate that codegen can still generate code
             // if one of them is on stack.
-            GenTree* regOptionalCandidate = op1->IsCnsIntOrI() ? op2 : PreferredRegOptionalOperand(cmp);
+            GenTree* regOptionalCandidate = op1->IsCnsIntOrI() ? op2 : PreferredRegOptionalOperand(op1, op2);
 
             bool setRegOptional =
                 (regOptionalCandidate == op1) ? IsSafeToMarkRegOptional(cmp, op1) : IsSafeToMarkRegOptional(cmp, op2);
@@ -7759,16 +7873,16 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX512F_BroadcastVector128ToVector512:
                 case NI_AVX512F_BroadcastVector256ToVector512:
                 {
+                    assert(!supportsSIMDScalarLoads);
+
                     if (parentNode->OperIsMemoryLoad())
                     {
                         supportsGeneralLoads = !childNode->OperIsHWIntrinsic();
                         break;
                     }
-                    else
-                    {
-                        supportsGeneralLoads = true;
-                        break;
-                    }
+
+                    supportsGeneralLoads = true;
+                    break;
                 }
 
                 case NI_SSE41_ConvertToVector128Int16:
@@ -7834,15 +7948,17 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 case NI_SSE2_ConvertToVector128Double:
-                case NI_SSE3_MoveAndDuplicate:
                 case NI_AVX_ConvertToVector256Double:
+                case NI_AVX512F_ConvertToVector512Double:
+                case NI_AVX512F_VL_ConvertToVector128Double:
+                case NI_AVX512F_VL_ConvertToVector256Double:
                 {
                     assert(!supportsSIMDScalarLoads);
 
                     // Most instructions under the non-VEX encoding require aligned operands.
                     // Those used for Sse2.ConvertToVector128Double (CVTDQ2PD and CVTPS2PD)
-                    // and Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't fail for
-                    // unaligned inputs as they read mem64 (half the vector width) instead
+                    // are exceptions and don't fail for unaligned inputs as they read half
+                    // the vector width instead
 
                     supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
                     supportsUnalignedSIMDLoads = true;
@@ -7850,10 +7966,29 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
                     const unsigned operandSize  = genTypeSize(childNode->TypeGet());
 
-                    // For broadcasts we can only optimize constants and memory operands
-                    const bool broadcastIsContainable = childNode->OperIsConst() || childNode->isMemoryOp();
-                    supportsGeneralLoads =
-                        broadcastIsContainable && supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    if (childNode->OperIsConst() || childNode->isMemoryOp())
+                    {
+                        // For broadcasts we can only optimize constants and memory operands
+                        // since we're going from a smaller base type to a larger base type
+                        supportsGeneralLoads = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    }
+                    break;
+                }
+
+                case NI_SSE3_MoveAndDuplicate:
+                {
+                    // Most instructions under the non-VEX encoding require aligned operands.
+                    // Those used for Sse3.MoveAndDuplicate (MOVDDUP) are exceptions and don't
+                    // fail for unaligned inputs as they read half the vector width instead
+
+                    supportsAlignedSIMDLoads   = !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = true;
+
+                    const unsigned expectedSize = genTypeSize(parentNode->TypeGet()) / 2;
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+
+                    supportsGeneralLoads    = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    supportsSIMDScalarLoads = true;
                     break;
                 }
 
@@ -7879,8 +8014,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     break;
                 }
             }
-
-            assert(supportsSIMDScalarLoads == false);
             break;
         }
 
@@ -8632,7 +8765,7 @@ void Lowering::TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode,
 //     return true if compress success.
 void Lowering::TryCompressConstVecData(GenTreeStoreInd* node)
 {
-    assert(node->Data()->OperIs(GT_CNS_VEC));
+    assert(node->Data()->IsCnsVec());
     GenTreeVecCon*      vecCon    = node->Data()->AsVecCon();
     GenTreeHWIntrinsic* broadcast = nullptr;
 
@@ -8900,7 +9033,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             return;
                         }
 
-                        assert(op1->OperIs(GT_CNS_VEC));
+                        assert(op1->IsCnsVec());
                         break;
                     }
 
@@ -9016,7 +9149,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                     {
-                        if (op2->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                        if (op2->IsCnsVec() && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, op2->AsVecCon());
@@ -9030,7 +9163,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
-                        if (op1->OperIs(GT_CNS_VEC) && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                        if (op1->IsCnsVec() && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
                             node->OperIsEmbBroadcastCompatible())
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, op1->AsVecCon());
@@ -9043,19 +9176,30 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Swap the operands here to make the containment checks in codegen significantly simpler
                         std::swap(node->Op(1), node->Op(2));
                     }
+                    else if (supportsOp1RegOptional)
+                    {
+                        if (supportsOp2RegOptional)
+                        {
+                            GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op2);
+                            MakeSrcRegOptional(node, regOptionalOperand);
+
+                            if (regOptionalOperand == op1)
+                            {
+                                // Swap the operands here to make the containment checks in codegen simpler
+                                std::swap(node->Op(1), node->Op(2));
+                            }
+                        }
+                        else
+                        {
+                            MakeSrcRegOptional(node, op1);
+
+                            // Swap the operands here to make the containment checks in codegen simpler
+                            std::swap(node->Op(1), node->Op(2));
+                        }
+                    }
                     else if (supportsOp2RegOptional)
                     {
                         MakeSrcRegOptional(node, op2);
-
-                        // TODO-XArch-CQ: For commutative nodes, either operand can be reg-optional.
-                        //                https://github.com/dotnet/runtime/issues/6358
-                    }
-                    else if (supportsOp1RegOptional)
-                    {
-                        MakeSrcRegOptional(node, op1);
-
-                        // Swap the operands here to make the containment checks in codegen significantly simpler
-                        std::swap(node->Op(1), node->Op(2));
                     }
                     break;
                 }
@@ -9401,22 +9545,44 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // result = ([op1] * op2) + op3
                             MakeSrcContained(node, op1);
                         }
-                        else if (supportsOp3RegOptional)
+                        else if (supportsOp1RegOptional)
                         {
-                            assert(resultOpNum != 3);
-                            MakeSrcRegOptional(node, op3);
+                            if (supportsOp2RegOptional)
+                            {
+                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op2);
 
-                            // TODO-XArch-CQ: Any operand can be reg-optional.
-                            //                https://github.com/dotnet/runtime/issues/6358
+                                if (supportsOp3RegOptional)
+                                {
+                                    regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op3);
+                                }
+
+                                MakeSrcRegOptional(node, regOptionalOperand);
+                            }
+                            else if (supportsOp3RegOptional)
+                            {
+                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op3);
+                                MakeSrcRegOptional(node, regOptionalOperand);
+                            }
+                            else
+                            {
+                                MakeSrcRegOptional(node, op1);
+                            }
                         }
                         else if (supportsOp2RegOptional)
                         {
-                            assert(resultOpNum != 2);
-                            MakeSrcRegOptional(node, op2);
+                            if (supportsOp3RegOptional)
+                            {
+                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op2, op3);
+                                MakeSrcRegOptional(node, regOptionalOperand);
+                            }
+                            else
+                            {
+                                MakeSrcRegOptional(node, op2);
+                            }
                         }
-                        else if (supportsOp1RegOptional)
+                        else if (supportsOp3RegOptional)
                         {
-                            MakeSrcRegOptional(node, op1);
+                            MakeSrcRegOptional(node, op3);
                         }
                     }
                     else if (HWIntrinsicInfo::IsPermuteVar2x(intrinsicId))
@@ -9465,19 +9631,30 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // Swap the operands here to make the containment checks in codegen significantly simpler
                             swapOperands = true;
                         }
+                        else if (supportsOp1RegOptional)
+                        {
+                            if (supportsOp3RegOptional)
+                            {
+                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op3);
+                                MakeSrcRegOptional(node, regOptionalOperand);
+
+                                if (regOptionalOperand == op1)
+                                {
+                                    // Swap the operands here to make the containment checks in codegen simpler
+                                    swapOperands = true;
+                                }
+                            }
+                            else
+                            {
+                                MakeSrcRegOptional(node, op1);
+
+                                // Swap the operands here to make the containment checks in codegen simpler
+                                swapOperands = true;
+                            }
+                        }
                         else if (supportsOp3RegOptional)
                         {
                             MakeSrcRegOptional(node, op3);
-
-                            // TODO-XArch-CQ: Either op1 or op3 can be reg-optional.
-                            //                https://github.com/dotnet/runtime/issues/6358
-                        }
-                        else if (supportsOp1RegOptional)
-                        {
-                            MakeSrcRegOptional(node, op1);
-
-                            // Swap the operands here to make the containment checks in codegen significantly simpler
-                            swapOperands = true;
                         }
 
                         if (swapOperands)
@@ -9602,8 +9779,69 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_SSE41_BlendVariable:
                             case NI_AVX_BlendVariable:
                             case NI_AVX2_BlendVariable:
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    MakeSrcRegOptional(node, op2);
+                                }
+                                break;
+                            }
+
                             case NI_AVX512F_BlendVariableMask:
                             {
+                                // BlendVariableMask represents one of the following instructions:
+                                // * vblendmpd
+                                // * vblendmps
+                                // * vpblendmpb
+                                // * vpblendmpd
+                                // * vpblendmpq
+                                // * vpblendmpw
+                                //
+                                // In all cases, the node operands are ordered:
+                                // * op1: selectFalse
+                                // * op2: selectTrue
+                                // * op3: condition
+                                //
+                                // The managed API surface we expose doesn't directly support TYP_MASK
+                                // and we don't directly expose overloads for APIs like `vaddps` which
+                                // support embedded masking. Instead, we have decide to do pattern
+                                // recognition over the relevant ternary select APIs which functionally
+                                // execute `cond ? selectTrue : selectFalse` on a per element basis.
+                                //
+                                // To facilitate this, the mentioned ternary select APIs, such as
+                                // ConditionalSelect or TernaryLogic, with a correct control word, will
+                                // all compile down to BlendVariableMask when the condition is of TYP_MASK.
+                                //
+                                // So, before we do the normal containment checks for memory operands, we
+                                // instead want to check if `selectTrue` (op2) supports embedded masking and
+                                // if so, we want to mark it as contained. Codegen will then see that it is
+                                // contained and not a memory operand and know to invoke the special handling
+                                // so that the embedded masking can work as expected.
+
+                                if (op2->isEvexEmbeddedMaskingCompatibleHWIntrinsic())
+                                {
+                                    uint32_t maskSize = genTypeSize(simdBaseType);
+                                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
+                                    if ((maskSize == operSize) && IsInvariantInRange(op2, node))
+                                    {
+                                        MakeSrcContained(node, op2);
+                                        op2->MakeEmbMaskOp();
+
+                                        if (op1->IsVectorZero())
+                                        {
+                                            // When we are merging with zero, we can specialize
+                                            // and avoid instantiating the vector constant.
+                                            MakeSrcContained(node, op1);
+                                        }
+                                        break;
+                                    }
+                                }
+
                                 if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op2);
@@ -9632,19 +9870,42 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             case NI_BMI2_MultiplyNoFlags:
                             case NI_BMI2_X64_MultiplyNoFlags:
                             {
-                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                bool supportsOp1RegOptional = false;
+                                bool supportsOp2RegOptional = false;
+
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                                 {
                                     MakeSrcContained(node, op2);
                                 }
-                                else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                                else if (IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                                 {
                                     MakeSrcContained(node, op1);
-                                    // MultiplyNoFlags is a Commutative operation, so swap the first two operands here
-                                    // to make the containment checks in codegen significantly simpler
-                                    node->Op(1) = op2;
-                                    node->Op(2) = op1;
+
+                                    // Swap the operands here to make the containment checks in codegen simpler
+                                    std::swap(node->Op(1), node->Op(2));
                                 }
-                                else if (supportsRegOptional)
+                                else if (supportsOp1RegOptional)
+                                {
+                                    if (supportsOp2RegOptional)
+                                    {
+                                        GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op2);
+                                        MakeSrcRegOptional(node, regOptionalOperand);
+
+                                        if (regOptionalOperand == op1)
+                                        {
+                                            // Swap the operands here to make the containment checks in codegen simpler
+                                            std::swap(node->Op(1), node->Op(2));
+                                        }
+                                    }
+                                    else
+                                    {
+                                        MakeSrcRegOptional(node, op1);
+
+                                        // Swap the operands here to make the containment checks in codegen simpler
+                                        std::swap(node->Op(1), node->Op(2));
+                                    }
+                                }
+                                else if (supportsOp2RegOptional)
                                 {
                                     MakeSrcRegOptional(node, op2);
                                 }
