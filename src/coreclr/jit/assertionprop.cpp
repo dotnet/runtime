@@ -4906,17 +4906,22 @@ static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, Valu
         }
         if (funcApp.m_func == VNFunc(GT_ADD))
         {
-            // Check arguments of the byref add
-            const GCInfo::WriteBarrierForm arg0Type = GetWriteBarrierForm(vnStore, funcApp.m_args[0]);
-            if (arg0Type != GCInfo::WriteBarrierForm::WBF_BarrierUnknown)
+            // Check arguments of the GT_ADD
+            // To make it conservative, we require one of the arguments to be a constant, e.g.:
+            //
+            //   addressOfLocal + cns    -> NoBarrier
+            //   cns + addressWithinHeap -> BarrierUnchecked
+            //
+            // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
+            // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
+            //
+            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
             {
-                return arg0Type;
+                return GetWriteBarrierForm(vnStore, funcApp.m_args[1]);
             }
-
-            const GCInfo::WriteBarrierForm arg1Type = GetWriteBarrierForm(vnStore, funcApp.m_args[1]);
-            if (arg1Type != GCInfo::WriteBarrierForm::WBF_BarrierUnknown)
+            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
             {
-                return arg1Type;
+                return GetWriteBarrierForm(vnStore, funcApp.m_args[0]);
             }
         }
     }
@@ -4978,20 +4983,21 @@ bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions
         barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());
     }
 
+    JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));
     if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
     {
-        JITDUMP("Marking STOREIND as not requiring a write barrier:\n");
-        DISPTREE(indir);
+        JITDUMP("is not needed at all.\n");
         indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
         return true;
     }
     if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
     {
-        JITDUMP("Marking STOREIND as not requiring a CHECKED write barrier:\n");
-        DISPTREE(indir);
+        JITDUMP("unchecked is fine.\n");
         indir->gtFlags |= GTF_IND_TGT_HEAP;
         return true;
     }
+
+    JITDUMP("unknown (checked).\n");
     return false;
 }
 
