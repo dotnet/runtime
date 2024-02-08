@@ -486,7 +486,7 @@
         <IncludesTestRunner>false</IncludesTestRunner>
       </AllTestScripts>
       <AllTestScripts Condition="'@(MergedRunnableTestPaths)' != ''" Include="%(MergedRunnableTestPaths.Identity)" >
-        <IncludesTestRunner>true</IncludesTestRunner>
+        <IncludesTestRunner>false</IncludesTestRunner>
       </AllTestScripts>
       <AllTestScripts Condition="'@(OutOfProcessTestGroups)' != ''" Include="%(OutOfProcessTestGroups.Identity)" >
         <IncludesTestRunner>true</IncludesTestRunner>
