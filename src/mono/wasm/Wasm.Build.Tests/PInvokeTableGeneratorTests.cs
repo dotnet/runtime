@@ -779,14 +779,10 @@ namespace Wasm.Build.Tests
                         var paires = accept_and_return_pair(pair);
                         Console.WriteLine(""paires.B="" + paires.B);
 
-                        // Interpreter and AOT implementations of this are broken.
-                        if (true) {
-                            var ia = InlineArrayTest1();
-                            // The return value from the pinvoke appears to be correct, but when ia
-                            //  is passed in to the pinvoke, it's all zeroes.
-                            var iares = InlineArrayTest2(ia);
-                            Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]}"");
-                        }
+                        // This test is split into methods to simplify debugging issues with it
+                        var ia = InlineArrayTest1();
+                        var iares = InlineArrayTest2(ia);
+                        Console.WriteLine($""iares[0]={iares[0]} iares[1]={iares[1]}"");
 
                         MyFixedArray fa = new ();
                         for (int i = 0; i < 2; i++)
@@ -795,16 +791,6 @@ namespace Wasm.Build.Tests
                         Console.WriteLine(""fares.elements[1]="" + fares.elements[1]);
 
                         return (int)res.Value;
-                    }
-
-                    public static unsafe T ReadThroughAddress<T> (ref T r) {
-                        var ptr = RefAsAddress(ref r);
-                        ref T rr = ref Unsafe.AsRef<T>((void *)ptr);
-                        return rr;
-                    }
-
-                    public static unsafe IntPtr RefAsAddress<T> (ref T r) {
-                        return new IntPtr(Unsafe.AsPointer(ref r));
                     }
 
                     public static unsafe MyInlineArray InlineArrayTest1 () {

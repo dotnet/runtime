@@ -1344,7 +1344,6 @@ typedef enum {
 	// This isn't ifdefed so it's easier to write code that handles it without sprinkling
 	//  800 ifdefs in this file
 	PINVOKE_ARG_WASM_VALUETYPE_RESULT = 7,
-	PINVOKE_ARG_I8_RESULT = 8,
 } PInvokeArgType;
 
 typedef struct {
@@ -1488,7 +1487,7 @@ retry:
 #if SIZEOF_VOID_P == 4
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			info->ret_pinvoke_type = PINVOKE_ARG_I8_RESULT;
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
 			break;
 #endif
 		case MONO_TYPE_VALUETYPE:
@@ -1620,10 +1619,6 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 		margs->iargs[0] = (gpointer*)frame->retval;
 		// The return type is void so retval should be NULL
 		margs->retval = NULL;
-		margs->is_float_ret = 0;
-		break;
-	case PINVOKE_ARG_I8_RESULT:
-		margs->retval = (gpointer*)frame->retval;
 		margs->is_float_ret = 0;
 		break;
 	case PINVOKE_ARG_INT:
