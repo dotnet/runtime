@@ -8522,7 +8522,8 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 if (isNumber)
                 {
-                    std::swap(op1, op2);
+                    // Swap the operands so that the cnsNode is op1, this prevents
+                    // the unknown value (which could be NaN) from being selected.
 
                     retNode->AsHWIntrinsic()->Op(1) = op2;
                     retNode->AsHWIntrinsic()->Op(2) = op1;
