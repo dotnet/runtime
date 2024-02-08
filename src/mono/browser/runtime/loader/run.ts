@@ -165,18 +165,6 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withStartupMemoryCache(value: boolean): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                startupMemoryCache: value
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
     withInterpreterPgo(value: boolean, autoSaveDelay?: number): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
