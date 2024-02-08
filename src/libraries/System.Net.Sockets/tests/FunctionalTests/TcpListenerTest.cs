@@ -249,7 +249,6 @@ namespace System.Net.Sockets.Tests
             {
                 using (RuntimeEventListener eventListener = new RuntimeEventListener())
                 {
-                    Task.Run(() => Console.WriteLine(Environment.StackTrace)).Wait();
                     TaskCompletionSource<int> portTcs = new TaskCompletionSource<int>();
                     async Task StartListenerAsync()
                     {
