@@ -5,12 +5,8 @@
 
 #ifdef DISABLE_THREADS
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 1
-// enables specialized mono_llvm_cpp_catch_exception replacement (see jiterpreter-jit-call.ts)
-// works even if the jiterpreter is otherwise disabled.
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 1
 #else
 #define JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES 0
-#define JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL 0
 #endif // DISABLE_THREADS
 
 // mono_interp_tier_prepare_jiterpreter will return these special values if it doesn't
@@ -148,8 +144,6 @@ ptrdiff_t
 mono_jiterp_monitor_trace (const guint16 *ip, void *frame, void *locals);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
-
-extern WasmDoJitCall jiterpreter_do_jit_call;
 
 #endif // HOST_BROWSER
 
