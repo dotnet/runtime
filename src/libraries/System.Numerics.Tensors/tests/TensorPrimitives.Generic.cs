@@ -867,8 +867,9 @@ namespace System.Numerics.Tensors.Tests
         #region Span,Span,Span -> Destination
         public static IEnumerable<object[]> SpanSpanSpanDestinationFunctionsToTest()
         {
-            yield return new object[] { new SpanSpanSpanDestinationDelegate(TensorPrimitives.Lerp), new Func<T, T, T, T>(T.Lerp) };
             yield return new object[] { new SpanSpanSpanDestinationDelegate(TensorPrimitives.FusedMultiplyAdd), new Func<T, T, T, T>(T.FusedMultiplyAdd) };
+            yield return new object[] { new SpanSpanSpanDestinationDelegate(TensorPrimitives.Lerp), new Func<T, T, T, T>(T.Lerp) };
+            yield return new object[] { new SpanSpanSpanDestinationDelegate(TensorPrimitives.MultiplyAddEstimate), new Func<T, T, T, T>(T.FusedMultiplyAdd) }; // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
         }
 
         [Theory]
@@ -1001,6 +1002,7 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return new object[] { new SpanSpanScalarDestinationDelegate(TensorPrimitives.FusedMultiplyAdd), new Func<T, T, T, T>(T.FusedMultiplyAdd) };
             yield return new object[] { new SpanSpanScalarDestinationDelegate(TensorPrimitives.Lerp), new Func<T, T, T, T>(T.Lerp) };
+            yield return new object[] { new SpanSpanScalarDestinationDelegate(TensorPrimitives.MultiplyAddEstimate), new Func<T, T, T, T>(T.FusedMultiplyAdd) }; // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
         }
 
         [Theory]
@@ -1105,6 +1107,7 @@ namespace System.Numerics.Tensors.Tests
         {
             yield return new object[] { new SpanScalarSpanDestinationDelegate(TensorPrimitives.FusedMultiplyAdd), new Func<T, T, T, T>(T.FusedMultiplyAdd) };
             yield return new object[] { new SpanScalarSpanDestinationDelegate(TensorPrimitives.Lerp), new Func<T, T, T, T>(T.Lerp) };
+            yield return new object[] { new SpanScalarSpanDestinationDelegate(TensorPrimitives.MultiplyAddEstimate), new Func<T, T, T, T>(T.FusedMultiplyAdd) }; // TODO: Change T.FusedMultiplyAdd to T.MultiplyAddEstimate when available
         }
 
         [Theory]
