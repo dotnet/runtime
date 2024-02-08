@@ -7734,10 +7734,38 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
             }
 
 #ifdef TARGET_ARM64
-            case NI_AdvSimd_Multiply:
             case NI_AdvSimd_MultiplyByScalar:
-            case NI_AdvSimd_Arm64_Multiply:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    // Handle `x * 0 == 0` and `0 * x == 0`
+                    // Not safe for floating-point when x == -0.0, NaN, +Inf, -Inf
+                    ValueNum zeroVN = VNZeroForType(TypeOfVN(cnsVN));
+
+                    if (cnsVN == zeroVN)
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+
+                assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
+
+                // Handle x * 1 => x, but only if the scalar RHS is <1, ...>.
+                if (IsVNConstant(arg1VN))
+                {
+                    if (EvaluateSimdGetElement(this, TYP_SIMD8, baseType, arg1VN, 0) == VNOneForType(baseType))
+                    {
+                        return arg0VN;
+                    }
+                }
+                break;
+            }
+#endif
+
+#ifdef TARGET_ARM64
+            case NI_AdvSimd_Multiply:
+            case NI_AdvSimd_Arm64_Multiply:
 #else
             case NI_SSE_Multiply:
             case NI_SSE2_Multiply:
