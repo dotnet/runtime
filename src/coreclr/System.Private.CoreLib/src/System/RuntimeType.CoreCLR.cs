@@ -3886,9 +3886,11 @@ namespace System
         [DebuggerHidden]
         internal object GetUninitializedObject()
         {
-            if (GenericCache is not CreateUninitializedCache cache)
+            object? genericCache = GenericCache;
+
+            if (genericCache is not CreateUninitializedCache cache)
             {
-                if (GenericCache is ActivatorCache activatorCache)
+                if (genericCache is ActivatorCache activatorCache)
                 {
                     cache = activatorCache.GetCreateUninitializedCache(this);
                 }

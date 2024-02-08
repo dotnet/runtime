@@ -188,8 +188,7 @@ namespace System.Runtime.CompilerServices
             if (type is not RuntimeType rt)
             {
                 ArgumentNullException.ThrowIfNull(type);
-                static void Throw(Type type) => throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
-                Throw(type);
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
             return rt.GetUninitializedObject();
