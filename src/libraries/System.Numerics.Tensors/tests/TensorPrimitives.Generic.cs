@@ -270,12 +270,16 @@ namespace System.Numerics.Tensors.Tests
             yield return T.CreateTruncating(BitConverter.UInt32BitsToSingle(0x7FA0_0000)); // +sNaN
 
             // +Infinity, -Infinity
-            yield return T.CreateTruncating(float.PositiveInfinity);
-            yield return T.CreateTruncating(float.NegativeInfinity);
+            yield return T.PositiveInfinity;
+            yield return T.NegativeInfinity;
 
-            // +Zero, -Zero
+            // +0, -0
             yield return T.Zero;
             yield return T.NegativeZero;
+
+            // +1, -1
+            yield return T.One;
+            yield return T.NegativeOne;
 
             // Subnormals
             yield return T.Epsilon;
@@ -286,8 +290,15 @@ namespace System.Numerics.Tensors.Tests
             // Normals
             yield return T.CreateTruncating(BitConverter.UInt32BitsToSingle(0x0080_0000));
             yield return T.CreateTruncating(BitConverter.UInt32BitsToSingle(0x8080_0000));
-            yield return T.CreateTruncating(BitConverter.UInt32BitsToSingle(0x7F7F_FFFF)); // MaxValue
-            yield return T.CreateTruncating(BitConverter.UInt32BitsToSingle(0xFF7F_FFFF)); // MinValue
+            yield return T.CreateTruncating(float.MinValue);
+            yield return T.CreateTruncating(float.MaxValue);
+            yield return T.CreateTruncating(double.MinValue);
+            yield return T.CreateTruncating(double.MaxValue);
+
+            // Other known constants
+            yield return T.E;
+            yield return T.Pi;
+            yield return T.Tau;
         }
 
         protected override void SetSpecialValues(Span<T> x, Span<T> y)
