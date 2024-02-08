@@ -856,7 +856,7 @@ namespace System.Numerics.Tensors
                 {
                     return VectorizedSmall2(ref xRef, remainder);
                 }
-                if (sizeof(T) == 4)
+                else if (sizeof(T) == 4)
                 {
                     return VectorizedSmall4(ref xRef, remainder);
                 }
@@ -875,7 +875,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -1046,7 +1046,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -2023,7 +2023,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -2200,7 +2200,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -3791,7 +3791,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -3959,7 +3959,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -5103,7 +5103,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -5271,7 +5271,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -6641,7 +6641,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -6829,7 +6829,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -7987,7 +7987,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -8179,7 +8179,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -9434,7 +9434,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -9642,7 +9642,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -10897,7 +10897,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -11109,7 +11109,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
@@ -12376,7 +12376,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 63:
                     case 62:
                     case 61:
@@ -12588,7 +12588,7 @@ namespace System.Numerics.Tensors
 
                 switch (remainder)
                 {
-                    // Two Vector128's worth of data, with at least one element overlapping.
+                    // Two Vector256's worth of data, with at least one element overlapping.
                     case 31:
                     case 30:
                     case 29:
