@@ -3188,20 +3188,6 @@ mono_class_init_checked (MonoClass *klass, MonoError *error)
 	return success;
 }
 
-#ifndef DISABLE_COM
-/*
- * COM initialization is delayed until needed.
- * However when a [ComImport] attribute is present on a type it will trigger
- * the initialization. This is not a problem unless the BCL being executed
- * lacks the types that COM depends on (e.g. Variant on Silverlight).
- */
-static void
-init_com_from_comimport (MonoClass *klass)
-{
-	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
-}
-#endif /*DISABLE_COM*/
-
 /*
  * LOCKING: this assumes the loader lock is held
  */
@@ -3226,14 +3212,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 	}
 
 	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
-		/* Imported COM Objects always derive from __ComObject. */
-#ifndef DISABLE_COM
-		if (MONO_CLASS_IS_IMPORT (klass)) {
-			init_com_from_comimport (klass);
-			if (parent == mono_defaults.object_class)
-				parent = mono_class_get_com_object_class ();
-		}
-#endif
 		if (!parent) {
 			/* set the parent to something useful and safe, but mark the type as broken */
 			parent = mono_defaults.object_class;
@@ -3254,9 +3232,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 
 		klass->delegate  = parent->delegate;
 
-		if (MONO_CLASS_IS_IMPORT (klass) || mono_class_is_com_object (parent))
-			mono_class_set_is_com_object (klass);
-
 		if (system_namespace) {
 			if (klass->name [0] == 'D' && !strcmp (klass->name, "Delegate"))
 				klass->delegate  = 1;
@@ -3270,11 +3245,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 		}
 		/*klass->enumtype = klass->parent->enumtype; */
 	} else {
-		/* initialize com types if COM interfaces are present */
-#ifndef DISABLE_COM
-		if (MONO_CLASS_IS_IMPORT (klass))
-			init_com_from_comimport (klass);
-#endif
 		klass->parent = NULL;
 	}
 
