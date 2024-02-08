@@ -84,14 +84,10 @@ namespace System
 
         public void AddStackTrace(string s)
         {
-            // The (approx.) maximum size that Vista appears to allow. Post discussion with the OS event log team,
-            // it has been identified that Vista has taken a breaking change in ReportEventW API implementation
-            // without getting it publicly documented.
+            // The (approx.) maximum size that EventLog appears to allow.
             //
-            // An event entry comprises of string to be written and event header information. Prior to Vista,
-            // 32K length strings were allowed and event header size was over it. Vista onwards, the total
-            // permissible length of the string and event header became 32K, resulting in strings becoming
-            // shorter in length. Hence, the change in size.
+            // An event entry comprises of string to be written and event header information.
+            // The total permissible length of the string and event header is 32K.
             const int MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA = 0x7C62; // decimal 31842
 
             // Continue to append to the buffer until we are full
