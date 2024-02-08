@@ -196,6 +196,27 @@ namespace System
                 bool minimalFailFast = (exception == PreallocatedOutOfMemoryException.Instance);
                 if (!minimalFailFast)
                 {
+#if TARGET_WINDOWS
+                    if (EventReporter.ShouldLogInEventLog)
+                    {
+                        var reporter = new EventReporter(reason);
+                        if (exception != null && reason is not RhFailFastReason.AssertionFailure)
+                        {
+                            reporter.AddDescription($"{exception.GetType()}: {exception.Message}");
+                            reporter.AddStackTrace(exception.StackTrace);
+                        }
+                        else
+                        {
+                            if (message != null)
+                                reporter.AddDescription(message);
+                            reporter.BeginStackTrace();
+                            reporter.AddStackTrace(new StackTrace().ToString());
+                        }
+
+                        reporter.Report();
+                    }
+#endif
+
                     Internal.Console.Error.Write(((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
                         "Process terminated. " : "Unhandled exception. ");
 
