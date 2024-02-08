@@ -2554,6 +2554,10 @@ void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer
 gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
 void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+// After the pinvoke call is done, this return an error context value from the ccontext.
+gpointer mono_arch_get_swift_error 				(CallContext *ccontext, MonoMethodSignature *sig, int *arg_index);
+#endif
 /* Free the structure returned by mono_arch_get_interp_native_call_info (NULL, sig) */
 void mono_arch_free_interp_native_call_info (gpointer call_info);
 #endif
@@ -2916,6 +2920,7 @@ typedef enum {
 	MONO_CPU_ARM64_NEON   = 1 << 4,
 	MONO_CPU_ARM64_RDM    = 1 << 5,
 	MONO_CPU_ARM64_DP     = 1 << 6,
+	MONO_CPU_ARM64_SVE    = 1 << 7,
 #endif
 } MonoCPUFeatures;
 

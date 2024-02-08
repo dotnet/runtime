@@ -162,21 +162,27 @@ private:
 
     enum
     {
-        numParameters = 14,
+        numParameters = 19,
         booleanScale  = 5,
         maxSteps      = 65, // MAX_CSE_CNT + 1 (for stopping)
     };
-    double    m_parameters[numParameters];
-    double    m_alpha;
-    double    m_rewards[maxSteps];
-    CLRRandom m_cseRNG;
-    bool      m_updateParameters;
-    bool      m_greedy;
-    bool      m_verbose;
 
+    double                  m_parameters[numParameters];
+    double                  m_alpha;
+    double                  m_rewards[maxSteps];
+    CLRRandom               m_cseRNG;
+    bool                    m_updateParameters;
+    bool                    m_greedy;
+    bool                    m_verbose;
+    unsigned                m_registerPressure;
+    jitstd::vector<double>* m_localWeights;
+
+    void CaptureLocalWeights();
     void GetFeatures(CSEdsc* dsc, double* features);
-    void DumpFeatures(CSEdsc* dsc, double* features);
     double Preference(CSEdsc* dsc);
+    void GetStoppingFeatures(double* features);
+    double StoppingPreference();
+    void DumpFeatures(CSEdsc* dsc, double* features);
     Choice& ChooseSoftmax(ArrayStack<Choice>& choices);
     Choice& ChooseGreedy(ArrayStack<Choice>& choices);
     void BuildChoices(ArrayStack<Choice>& choices);
@@ -188,17 +194,12 @@ private:
     void SoftmaxPolicy();
     void UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
     Choice* FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
+    const char* Name() const;
 
 public:
     CSE_HeuristicRL(Compiler*);
     void ConsiderCandidates();
     bool ConsiderTree(GenTree* tree, bool isReturn);
-
-    const char* Name() const
-    {
-        return "Reinforcement Learning CSE Heuristic";
-    }
-
 #ifdef DEBUG
     virtual void DumpMetrics();
     virtual void Announce();
@@ -261,9 +262,7 @@ struct CSEdsc
     ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
     ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
     // assignment
-    unsigned csdIndex;         // 1..optCSECandidateCount
-    bool     csdIsSharedConst; // true if this CSE is a shared const
-    bool     csdLiveAcrossCall;
+    unsigned csdIndex; // 1..optCSECandidateCount
 
     unsigned short csdDefCount; // definition   count
     unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
@@ -289,6 +288,18 @@ struct CSEdsc
     // number, this will reflect it; otherwise, NoVN.
     // not used for shared const CSE's
     ValueNum defConservNormVN;
+
+    // Number of distinct locals referenced (in first def tree)
+    // and total number of local nodes.
+    //
+    unsigned short numDistinctLocals;
+    unsigned short numLocalOccurrences;
+
+    // true if this CSE is a shared const
+    bool csdIsSharedConst;
+
+    // true if this CSE is live across a call
+    bool csdLiveAcrossCall;
 
     // We may form candidates that we can't use.
     // Is this a viable cse?
@@ -317,6 +328,8 @@ struct CSEdsc
 
         return true;
     }
+
+    void ComputeNumLocals(Compiler* compiler);
 };
 
 //  The following class nested within CSE_Heuristic encapsulates the information

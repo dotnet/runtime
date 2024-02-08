@@ -2744,35 +2744,38 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				ins->klass = klass;
 			}
 			return ins;
-		}
-		// FIXME: These don't work since Vector2/Vector3 are not handled as SIMD
-#if 0
-		} else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
+		} 
+// FIXME: Support Vector2 and Vector3 for WASM
+#ifndef TARGET_WASM 
+		else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
-			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, args [1]->dreg, args [2]->dreg);
-			ins->inst_c0 = 2;
+			MonoInst* vec_ins = args [1];
+			if (COMPILE_LLVM (cfg)) {
+				vec_ins = emit_simd_ins (cfg, klass, OP_XWIDEN, args [1]->dreg, -1);
+			}
+
+			ins = emit_vector_insert_element (cfg, klass, vec_ins, MONO_TYPE_R4, args [2], 2, FALSE);
 			ins->dreg = dreg;
 			return ins;
 		} else if (len == 4 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector4 (Vector3, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
-			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, args [1]->dreg, args [2]->dreg);
-			ins->inst_c0 = 3;
+			ins = emit_vector_insert_element (cfg, klass, args [1], MONO_TYPE_R4, args [2], 3, FALSE);
 			ins->dreg = dreg;
 			return ins;
 		} else if (len == 4 && fsig->param_count == 3 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type && fsig->params [2]->type == etype->type) {
 			/* Vector4 (Vector2, float, float) */
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
-			int sreg = args [1]->dreg;
-			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, sreg, args [2]->dreg);
-			ins->inst_c0 = 2;
-			ins = emit_simd_ins (cfg, klass, OP_INSERT_R4, ins->dreg, args [3]->dreg);
-			ins->inst_c0 = 3;
+			MonoInst* vec_ins = args [1];
+			if (COMPILE_LLVM (cfg)) {
+				vec_ins = emit_simd_ins (cfg, klass, OP_XWIDEN, args [1]->dreg, -1);
+			}
+
+			ins = emit_vector_insert_element (cfg, klass, vec_ins, MONO_TYPE_R4, args [2], 2, FALSE);
+			ins = emit_vector_insert_element (cfg, klass, ins, MONO_TYPE_R4, args [3], 3, FALSE);
 			ins->dreg = dreg;
 			return ins;
-		} else {
-			g_assert_not_reached ();
 		}
 #endif
 		break;
@@ -3917,6 +3920,7 @@ static const IntrinGroup supported_arm_intrinsics [] = {
 	{ "Rdm", MONO_CPU_ARM64_RDM, rdm_methods, sizeof (rdm_methods) },
 	{ "Sha1", MONO_CPU_ARM64_CRYPTO, sha1_methods, sizeof (sha1_methods) },
 	{ "Sha256", MONO_CPU_ARM64_CRYPTO, sha256_methods, sizeof (sha256_methods) },
+	{ "Sve", MONO_CPU_ARM64_SVE, unsupported, sizeof (unsupported) },
 };
 
 static MonoInst*

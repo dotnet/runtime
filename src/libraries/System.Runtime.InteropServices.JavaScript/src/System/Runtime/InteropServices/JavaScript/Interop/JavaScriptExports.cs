@@ -233,18 +233,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 if (holder.CallbackReady != null)
                 {
-                    var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
-                    try
-                    {
-                        Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
 #pragma warning disable CA1416 // Validate platform compatibility
-                        holder.CallbackReady?.Wait();
+                    Thread.ForceBlockingWait(static (callbackReady) => ((ManualResetEventSlim)callbackReady!).Wait(), holder.CallbackReady);
 #pragma warning restore CA1416 // Validate platform compatibility
-                    }
-                    finally
-                    {
-                        Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
-                    }
                 }
 
                 lock (ctx)
