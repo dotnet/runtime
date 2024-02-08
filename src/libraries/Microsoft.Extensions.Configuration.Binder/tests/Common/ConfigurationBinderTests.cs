@@ -2118,8 +2118,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
 #if !BUILDING_SOURCE_GENERATOR_TESTS
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAppleMobile))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotAppleMobile))]
         public void TraceSwitchTest()
         {
             var dic = new Dictionary<string, string>
