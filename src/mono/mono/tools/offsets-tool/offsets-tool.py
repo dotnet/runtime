@@ -245,7 +245,6 @@ class OffsetsTool:
 			"MonoArrayBounds",
 			"MonoSafeHandle",
 			"MonoHandleRef",
-			"MonoComInteropProxy",
 			"MonoString",
 			"MonoException",
 			"MonoTypedRef",

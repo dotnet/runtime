@@ -78,16 +78,6 @@ EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRem(double dividend, double
     return(fmod(dividend,divisor));
 }
 
-EXTERN_C NATIVEAOT_API double REDHAWK_CALLCONV RhpDblRound(double value)
-{
-    return round(value);
-}
-
-EXTERN_C NATIVEAOT_API float REDHAWK_CALLCONV RhpFltRound(float value)
-{
-    return roundf(value);
-}
-
 #ifdef HOST_ARM
 EXTERN_C NATIVEAOT_API int32_t REDHAWK_CALLCONV RhpIDiv(int32_t i, int32_t j)
 {
