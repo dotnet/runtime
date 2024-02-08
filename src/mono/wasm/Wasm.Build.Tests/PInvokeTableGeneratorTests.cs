@@ -31,7 +31,7 @@ namespace Wasm.Build.Tests
                     public static int Main(string[] args)
                     {
                         Console.WriteLine($""Main running"");
-                        if (args.Length > 0)
+                        if (args.Length > 2)
                         {
                             // We don't want to run this, because we can't call variadic functions
                             Console.WriteLine($""sum_three: {sum_three(7, 14, 21)}"");
