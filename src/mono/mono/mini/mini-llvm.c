@@ -11620,28 +11620,17 @@ MONO_RESTORE_WARNING
 		}
 		case OP_ARM64_LDM: {
 			const char *oname = "arm64_ldm";
-			LLVMTypeRef ret_t;
-			if (!addresses [ins->dreg]) {
-				ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			if (!addresses [ins->dreg])
 				addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname), ret_t);
-			} else {
-				ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
-			}
 			LLVMTypeRef vec_t = LLVMGetElementType (ret_t);
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
 			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, oname);
-			int len = LLVMGetVectorSize (ret_t);
-			LLVMValueRef elem;
-			LLVMValueRef retval = LLVMGetUndef (ret_t);
-			for (int i = 0; i < len; i++) {
-				elem = LLVMBuildExtractValue (builder, result,  i, "extract_elem");
-				retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val");
-			}
 			LLVMTypeRef retptr_t = pointer_type (ret_t);
 			LLVMValueRef dst = convert (ctx, addresses [ins->dreg]->value, retptr_t);
-			LLVMBuildStore (builder, retval, dst);
-			values [ins->dreg] = retval;
+			LLVMBuildStore (builder, result, dst);
+			values [ins->dreg] = result;
 			break;
 		}
 		case OP_ARM64_ST1: {
