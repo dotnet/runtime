@@ -48,6 +48,7 @@ internal sealed unsafe partial class MsQuicApi
             ThrowHelper.ThrowIfMsQuicError(ApiTable->RegistrationOpen(&cfg, &handle), "RegistrationOpen failed");
 
             Registration = new MsQuicSafeHandle(handle, apiTable->RegistrationClose, SafeHandleType.Registration);
+            // QuicTelemetry.EnsureInitialized();
         }
     }
 

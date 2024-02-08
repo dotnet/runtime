@@ -61,7 +61,7 @@ internal static class MsQuicHelpers
         GetMsQuicParameter(handle, parameter, (uint)sizeof(T), (byte*)&value);
         return value;
     }
-    internal static unsafe void GetMsQuicParameter(MsQuicSafeHandle handle, uint parameter, uint length, byte* value)
+    internal static unsafe void GetMsQuicParameter(MsQuicSafeHandle? handle, uint parameter, uint length, byte* value)
     {
         int status = MsQuicApi.Api.GetParam(
             handle,
