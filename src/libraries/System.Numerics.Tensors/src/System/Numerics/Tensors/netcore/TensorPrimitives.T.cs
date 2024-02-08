@@ -1932,7 +1932,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> addend, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : INumberBase<T> =>
             InvokeSpanSpanSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
@@ -1958,7 +1958,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T addend, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : INumberBase<T> =>
             InvokeSpanSpanScalarIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
@@ -1983,7 +1983,7 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> addend, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : INumberBase<T> =>
             InvokeSpanScalarSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
