@@ -373,7 +373,21 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 }
                 else
                 {
-                    CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
+                    if ((dstType != TYP_INT) && (dstType != TYP_LONG))
+                    {
+                        break;
+                    }
+                    CorInfoType destFieldType = (dstType == TYP_INT)   ? CORINFO_TYPE_INT 
+                                              : (dstType == TYP_LONG)  ? CORINFO_TYPE_LONG
+                                              : (dstType == TYP_SHORT) ? CORINFO_TYPE_INT
+                                              :                          CORINFO_TYPE_INT;
+                    
+                    ssize_t actualMaxVal = (dstType == TYP_INT)   ? INT32_MAX 
+                                         : (dstType == TYP_LONG)  ? INT64_MAX
+                                         : (dstType == TYP_SHORT) ? INT16_MAX
+                                         :                          INT8_MAX;
+
+                    // CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
                     // Generate the control table for VFIXUPIMMSD
                     // The behavior we want is to saturate negative values to 0.
                     GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
@@ -401,9 +415,9 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     GenTree* saturate_val = oper;
                     
                     //get the max value vector
-                    ssize_t actualMaxVal = (dstType == TYP_INT) ? INT32_MAX : INT64_MAX;
+                    
                     GenTree* max_val = (srcType == TYP_DOUBLE) ? gtNewDconNodeD(static_cast<double>(actualMaxVal)) : gtNewDconNodeF(static_cast<float>(actualMaxVal));
-                    GenTree* max_valDup = (dstType == TYP_INT) ? gtNewIconNode(actualMaxVal, dstType) : gtNewIconNode(actualMaxVal, dstType);
+                    GenTree* max_valDup = gtNewIconNode(actualMaxVal, dstType);
                     max_val = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_val, fieldType, 16);
                     max_valDup = gtNewSimdCreateBroadcastNode(TYP_SIMD16, max_valDup, destFieldType, 16);
                     
