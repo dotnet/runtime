@@ -9632,9 +9632,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) { throw new PlatformNotSupportedException(); }
 
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
         /// <summary>
         ///   A64: LD2 { Vn.8B, Vn+1.8B }, [Xn]
         /// </summary>
@@ -9739,7 +9736,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadVector64x4AndUnzip(float* address) { throw new PlatformNotSupportedException(); }
-#endif
 
         /// <summary>
         ///   A64: LD1 { Vn.8B, Vn+1.8B }, [Xn]

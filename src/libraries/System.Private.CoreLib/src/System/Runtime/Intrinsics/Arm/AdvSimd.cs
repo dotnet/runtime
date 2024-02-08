@@ -2103,9 +2103,6 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128NonTemporal(ulong* address) => LoadPairVector128NonTemporal(address);
 
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
             /// <summary>
             ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
@@ -2255,7 +2252,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadVector128x4AndUnzip(double* address) => LoadVector128x4AndUnzip(address);
-#endif
 
             /// <summary>
             ///   A64: LD1 { Vn.16B, Vn+1.16B }, [Xn]
@@ -9628,9 +9624,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) => LoadVector128(address);
 
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
         /// <summary>
         ///   A64: LD2 { Vn.8B, Vn+1.8B }, [Xn]
         /// </summary>
@@ -9735,7 +9728,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD4 { Vn.4S, Vn+1.4S, Vn+2.4S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadVector64x4AndUnzip(float* address) => LoadVector64x4AndUnzip(address);
-#endif
 
         /// <summary>
         ///   A64: LD1 { Vn.8B, Vn+1.8B }, [Xn]

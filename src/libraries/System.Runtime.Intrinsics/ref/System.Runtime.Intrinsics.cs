@@ -1990,8 +1990,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Runtime.Intrinsics.Vector64<ushort> LoadVector64(ushort* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector64<uint> LoadVector64(uint* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector64<ulong> LoadVector64(ulong* address) { throw null; }
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
         public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadVector64x2AndUnzip(byte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadVector64x2AndUnzip(sbyte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadVector64x2AndUnzip(short* address) { throw null; }
@@ -2013,7 +2011,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2, System.Runtime.Intrinsics.Vector64<int> Value3, System.Runtime.Intrinsics.Vector64<int> Value4) LoadVector64x4AndUnzip(int* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2, System.Runtime.Intrinsics.Vector64<uint> Value3, System.Runtime.Intrinsics.Vector64<uint> Value4) LoadVector64x4AndUnzip(uint* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3, System.Runtime.Intrinsics.Vector64<float> Value4) LoadVector64x4AndUnzip(float* address) { throw null; }
-#endif
         public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadVector64x2(byte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadVector64x2(sbyte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadVector64x2(short* address) { throw null; }
