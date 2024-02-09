@@ -7205,7 +7205,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 
     // IF_SVE_GP_3A
     theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 90,
-                              INS_OPTS_SCALABLE_H); // FCADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
+                                INS_OPTS_SCALABLE_H); // FCADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
     theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 270,
                                 INS_OPTS_SCALABLE_H); // FCADD   <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
     theEmitter->emitIns_R_R_R_I(INS_sve_fcadd, EA_SCALABLE, REG_V0, REG_P1, REG_V2, 270,
@@ -7215,7 +7215,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
 
     // IF_SVE_GT_4A
     theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P1, REG_V3, REG_V4, 0,
-                                 INS_OPTS_SCALABLE_H); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
+                                  INS_OPTS_SCALABLE_H); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
     theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V0, REG_P2, REG_V1, REG_V5, 90,
                                   INS_OPTS_SCALABLE_S); // FCMLA   <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
     theEmitter->emitIns_R_R_R_R_I(INS_sve_fcmla, EA_SCALABLE, REG_V2, REG_P3, REG_V0, REG_V6, 180,
