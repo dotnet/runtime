@@ -3342,7 +3342,7 @@
     <value>Object does not match target type.</value>
   </data>
   <data name="RFLCT_Targ_ITargMismatch_WithType" xml:space="preserve">
-    <value>Object of type {0} does not match target type {1}.</value>
+    <value>Object type {0} does not match target type {1}.</value>
   </data>	  
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
