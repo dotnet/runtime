@@ -450,9 +450,9 @@
   #define REG_ARG_5                REG_R9
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
-  extern const regMaskTP intArgMasks[MAX_REG_ARG];
+  extern const regMaskGpr intArgMasks[MAX_REG_ARG];
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
-  extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
+  extern const regMaskFloat fltArgMasks[MAX_FLOAT_REG_ARG];
 
   #define RBM_ARG_0                RBM_RDI
   #define RBM_ARG_1                RBM_RSI
@@ -473,9 +473,9 @@
   #define REG_ARG_3                REG_R9
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
-  extern const regMaskTP intArgMasks[MAX_REG_ARG];
+  extern const regMaskGpr intArgMasks[MAX_REG_ARG];
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
-  extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
+  extern const regMaskFloat fltArgMasks[MAX_FLOAT_REG_ARG];
 
   #define RBM_ARG_0                RBM_ECX
   #define RBM_ARG_1                RBM_EDX
