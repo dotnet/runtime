@@ -149,8 +149,8 @@
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=8400" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-trampolines=21000" />
-      <!-- <MonoAotOption Include="llvm" /> -->
-      <!-- <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" /> -->
+      <MonoAotOption Include="llvm" />
+      <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
     </ItemGroup>
     <ItemGroup Condition="'$(MonoFullAot)' == 'true' and '$(TargetOS)' == 'linux'">
