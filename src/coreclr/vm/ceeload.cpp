@@ -5360,7 +5360,7 @@ TypeVarTypeDescMap::TypeVarTypeDescMap(uint8_t* pTable, uint32_t count) : dwCoun
 /*static*/ uint32_t TypeVarTypeDescMap::IndexForBitMask(uint32_t index)
 {
     LIMITED_METHOD_CONTRACT;
-    return index / (sizeof(uintptr_t) * 8);
+    return index / (sizeof(LONG) * 8);
 }
 
 /*static*/ TypeVarTypeDesc *TypeVarTypeDescMap::GetTypeVarTypeDescWorker(TypeVarTypeDescMap *pNodeCurrent, PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token)
