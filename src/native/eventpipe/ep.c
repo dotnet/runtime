@@ -1453,21 +1453,6 @@ ep_shutdown (void)
 	dn_vector_free (_ep_deferred_disable_session_ids);
 	_ep_deferred_disable_session_ids = NULL;
 
-	ep_thread_fini ();
-
-	// dotnet/coreclr: issue 24850: EventPipe shutdown race conditions
-	// Deallocating providers/events here might cause AV if a WriteEvent
-	// was to occur. Thus, we are not doing this cleanup.
-
-	/*EP_LOCK_ENTER (section1)
-		ep_sample_profiler_shutdown ();
-	EP_LOCK_EXIT (section1)*/
-
-	// // Remove EventPipeEventSource first since it tries to use the data structures that we remove below.
-	// // We need to do this after disabling sessions since those try to write to EventPipeEventSource.
-	// ep_event_source_fini (ep_event_source_get ());
-	// ep_config_shutdown (ep_config_get ());
-
 ep_on_exit:
 	ep_requires_lock_not_held ();
 	ep_rt_shutdown ();
