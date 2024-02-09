@@ -595,7 +595,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     }
 
 #ifdef TARGET_ARM
-    regMaskTP doubleAlignMask = RBM_NONE;
+    regMaskGpr doubleAlignMask = RBM_NONE;
 #endif // TARGET_ARM
 
     // Skip skipArgs arguments from the signature.
@@ -770,7 +770,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 {
                     break;
                 }
-                regMaskTP regMask = genMapArgNumToRegMask(varDscInfo->regArgNum(TYP_INT) + ix, TYP_INT);
+                regMaskGpr regMask = genMapArgNumToRegMask(varDscInfo->regArgNum(TYP_INT) + ix, TYP_INT);
                 if (cAlign == 2)
                 {
                     doubleAlignMask |= regMask;
@@ -5556,8 +5556,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     unsigned argLcls = 0;
 
     // Take care of pre spill registers first.
-    regMaskTP preSpillMask = codeGen->regSet.rsMaskPreSpillRegs(false);
-    regMaskTP tempMask     = RBM_NONE;
+    regMaskAny preSpillMask = codeGen->regSet.rsMaskPreSpillRegs(false);
+    regMaskAny tempMask     = RBM_NONE;
     for (unsigned i = 0, preSpillLclNum = lclNum; i < argSigLen; ++i, ++preSpillLclNum)
     {
         if (lvaIsPreSpilled(preSpillLclNum, preSpillMask))
@@ -5785,7 +5785,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
         // in the prolog, so we have to do SetStackOffset() here
         //
-        regMaskTP regMask = genRegMask(varDsc->GetArgReg());
+        regMaskAny regMask = genRegMask(varDsc->GetArgReg());
         if (codeGen->regSet.rsMaskPreSpillRegArg & regMask)
         {
             // Signature: void foo(struct_8, int, struct_4)
