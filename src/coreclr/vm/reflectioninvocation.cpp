@@ -26,7 +26,8 @@
 #include "argdestination.h"
 
 FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -62,7 +63,8 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
 FCIMPLEND
 
 FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBaseObject *pValueTypeUNSAFE, ReflectClassBaseObject *pTargetTypeUNSAFE) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pValueTypeUNSAFE));
         PRECONDITION(CheckPointer(pTargetTypeUNSAFE));
@@ -115,7 +117,8 @@ FCIMPLEND
 ///  Allocate the value type and copy the optional value into it.
 /// </summary>
 FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject *pTargetTypeUNSAFE, Object *valueUNSAFE) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pTargetTypeUNSAFE));
         PRECONDITION(CheckPointer(valueUNSAFE, NULL_OK));
@@ -159,7 +162,8 @@ FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
 FCIMPLEND
 
 FCIMPL6(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, ReflectClassBaseObject *pDeclaringTypeUNSAFE, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -203,7 +207,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     QCall::ObjectHandleOnStack pInstantiatedObject
 )
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(!pTypeHandle.AsTypeHandle().IsNull());
         PRECONDITION(cInstArray >= 0);
@@ -288,7 +293,8 @@ FCIMPLEND
 
 static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -322,7 +328,8 @@ static OBJECTREF InvokeArrayConstructor(TypeHandle th, PVOID* args, int argCnt)
 
 static BOOL IsActivationNeededForMethodInvoke(MethodDesc * pMD)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -853,7 +860,8 @@ struct SkipStruct {
 // This method is called by the GetMethod function and will crawl backward
 //  up the stack for integer methods.
 static StackWalkAction SkipMethods(CrawlFrame* frame, VOID* data) {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -915,7 +923,8 @@ FCIMPL1(ReflectMethodObject*, RuntimeMethodHandle::GetCurrentMethod, StackCrawlM
 FCIMPLEND
 
 static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -938,7 +947,8 @@ static OBJECTREF DirectObjectFieldGet(FieldDesc *pField, TypeHandle fieldType, T
 }
 
 FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, TypedByRef *pTarget, ReflectClassBaseObject *pDeclaringTypeUNSAFE) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -1038,7 +1048,8 @@ lExit: ;
 FCIMPLEND
 
 static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHandle enclosingType, TypedByRef *pTarget, OBJECTREF *pValue, CLR_BOOL *pDomainInitialized) {
-    CONTRACTL {
+    CONTRACTL
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
@@ -1061,7 +1072,8 @@ static void DirectObjectFieldSet(FieldDesc *pField, TypeHandle fieldType, TypeHa
 }
 
 FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE, TypedByRef *pTarget, Object *valueUNSAFE, ReflectClassBaseObject *pContextTypeUNSAFE) {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
     }
     CONTRACTL_END;
@@ -1221,9 +1233,10 @@ lExit: ;
 }
 FCIMPLEND
 
-static FC_BOOL_RET IsFastPathSupportedHelper(FieldDesc* pFieldDesc)
+static bool IsFastPathSupportedHelper(FieldDesc* pFieldDesc)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -1231,38 +1244,34 @@ static FC_BOOL_RET IsFastPathSupportedHelper(FieldDesc* pFieldDesc)
     }
     CONTRACTL_END;
 
-    return pFieldDesc->IsThreadStatic() ||
-        pFieldDesc->IsEnCNew() ||
-        pFieldDesc->IsCollectible() ? FALSE : TRUE;
+    return !pFieldDesc->IsThreadStatic() &&
+        !pFieldDesc->IsEnCNew() &&
+        !pFieldDesc->IsCollectible();
 }
 
 FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject *pFieldUNSAFE)
 {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
+    FCALL_CONTRACT;
 
     REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
-    if (refField == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refField != NULL);
 
     FieldDesc* pFieldDesc = refField->GetField();
-    return IsFastPathSupportedHelper(pFieldDesc);
+    return IsFastPathSupportedHelper(pFieldDesc) ? TRUE : FALSE;
 }
 FCIMPLEND
 
 FCIMPL1(INT32, RuntimeFieldHandle::GetInstanceFieldOffset, ReflectFieldObject *pFieldUNSAFE)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pFieldUNSAFE));
     }
     CONTRACTL_END;
 
     REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
-    if (refField == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refField != NULL);
 
     FieldDesc* pFieldDesc = refField->GetField();
     _ASSERTE(!pFieldDesc->IsStatic());
@@ -1276,7 +1285,8 @@ FCIMPLEND
 
 FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pFieldUNSAFE)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pFieldUNSAFE));
     }
@@ -1373,7 +1383,8 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 // It does not walk a subset of callgraph to provide CER guarantees.
 extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc *pMD, TypeHandle *pInstantiation, UINT32 cInstantiation)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(pMD != NULL);
         PRECONDITION(CheckPointer(pInstantiation, NULL_OK));
@@ -1426,7 +1437,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_PrepareMethod(MethodDesc *pMD, Ty
 // was prepared prior to the Combine.
 FCIMPL1(void, ReflectionInvocation::PrepareDelegate, Object* delegateUNSAFE)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(delegateUNSAFE, NULL_OK));
     }
@@ -1487,7 +1499,8 @@ FCIMPLEND
 
 FCIMPL4(void, ReflectionInvocation::MakeTypedReference, TypedByRef * value, Object* targetUNSAFE, ArrayBase* fldsUNSAFE, ReflectClassBaseObject *pFieldTypeUNSAFE)
 {
-    CONTRACTL {
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(targetUNSAFE));
         PRECONDITION(CheckPointer(fldsUNSAFE));
@@ -1759,7 +1772,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     BOOL* pfCtorIsPublic
 )
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(CheckPointer(ppfnAllocator));
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));
@@ -1878,7 +1892,8 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
 FCIMPL1(Object*, RuntimeTypeHandle::AllocateComObject,
     void* pClassFactory)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(pClassFactory));
     }
@@ -1927,7 +1942,8 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectIn
     PCODE* ppfnAllocator,
     void** pvAllocatorFirstArg)
 {
-    CONTRACTL{
+    CONTRACTL
+    {
         QCALL_CHECK;
         PRECONDITION(CheckPointer(ppfnAllocator));
         PRECONDITION(CheckPointer(pvAllocatorFirstArg));

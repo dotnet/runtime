@@ -289,8 +289,8 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        LoaderAllocator *pLoaderAllocatorOfMethod = GetApproxEnclosingMethodTable()->GetLoaderAllocator();
-        return pLoaderAllocatorOfMethod->IsCollectible();
+        LoaderAllocator *pLoaderAllocator = GetApproxEnclosingMethodTable()->GetLoaderAllocator();
+        return pLoaderAllocator->IsCollectible();
     }
 
     // Was this field added by EnC?
