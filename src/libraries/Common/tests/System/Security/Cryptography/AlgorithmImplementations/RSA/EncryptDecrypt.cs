@@ -717,7 +717,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void Decrypt_Pkcs1_BadPadding()
         {
-            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
+            if (!RSAFactory.SupportsSha2Oaep)
             {
                 return;
             }
