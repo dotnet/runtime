@@ -2145,12 +2145,6 @@ public:
         gtFlags &= ~GTF_MUL_64RSLT;
     }
 
-    void ClearDivFlags()
-    {
-        assert(OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD));
-        gtFlags &= ~(GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW);
-    }
-
     void SetAllEffectsFlags(GenTree* source)
     {
         SetAllEffectsFlags(source->gtFlags & GTF_ALL_EFFECT);

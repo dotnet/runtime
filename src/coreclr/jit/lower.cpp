@@ -6492,8 +6492,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             divisorValue -= 1;
         }
 
-        divMod->ClearDivFlags();
-        divMod->SetOper(newOper);
+        divMod->ChangeOper(newOper);
         divisor->AsIntCon()->SetIconValue(divisorValue);
         ContainCheckNode(divMod);
         return true;
@@ -6505,8 +6504,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
             ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
         {
-            divMod->ClearDivFlags();
-            divMod->SetOper(GT_GE);
+            divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
             ContainCheckNode(divMod);
             return true;
@@ -6641,8 +6639,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
         if (isDiv && !postShift && (type == TYP_I_IMPL))
         {
-            divMod->ClearDivFlags();
-            divMod->SetOper(GT_MULHI);
+            divMod->ChangeOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
             divMod->SetUnsigned();
         }
@@ -6674,8 +6671,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
                 if (isDiv && (type == TYP_I_IMPL))
                 {
-                    divMod->ClearDivFlags();
-                    divMod->SetOper(GT_RSZ);
+                    divMod->ChangeOper(GT_RSZ);
                     divMod->gtOp1 = mulhi;
                     divMod->gtOp2 = shiftBy;
                 }
@@ -6693,8 +6689,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, mulhi, divisor);
                 dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
-                divMod->ClearDivFlags();
-                divMod->SetOper(GT_SUB);
+                divMod->ChangeOper(GT_SUB);
                 divMod->gtOp1 = dividend;
                 divMod->gtOp2 = mul;
 
@@ -6702,8 +6697,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-                divMod->ClearDivFlags();
-                divMod->SetOper(GT_CAST);
+                divMod->ChangeOper(GT_CAST);
                 divMod->AsCast()->gtCastType = TYP_INT;
                 divMod->gtOp1                = mulhi;
                 divMod->gtOp2                = nullptr;
@@ -6793,8 +6787,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
-            divMod->ClearDivFlags();
-            divMod->SetOper(GT_EQ);
+            divMod->ChangeOper(GT_EQ);
             *nextNode = node;
             return true;
         }
@@ -6889,8 +6882,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
         if (isDiv)
         {
-            divMod->ClearDivFlags();
-            divMod->SetOperRaw(GT_ADD);
+            divMod->ChangeOper(GT_ADD);
             divMod->AsOp()->gtOp1 = adjusted;
             divMod->AsOp()->gtOp2 = signBit;
         }
@@ -6905,8 +6897,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
             BlockRange().InsertBefore(divMod, dividend, div, divisor, mul);
 
-            divMod->ClearDivFlags();
-            divMod->SetOperRaw(GT_SUB);
+            divMod->ChangeOper(GT_SUB);
             divMod->AsOp()->gtOp1 = dividend;
             divMod->AsOp()->gtOp2 = mul;
         }
