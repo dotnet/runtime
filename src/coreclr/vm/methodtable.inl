@@ -1395,7 +1395,6 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(pInterface->IsInterface()); // class we are looking up should be an interface
-        PRECONDITION(!pInterface->IsSpecialMarkerTypeForGenericCasting());
     }
     CONTRACTL_END;
 
@@ -1428,7 +1427,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && !ContainsGenericVariables() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !GetWriteableData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();
