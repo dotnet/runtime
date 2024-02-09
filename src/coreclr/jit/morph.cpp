@@ -1969,8 +1969,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     bool callIsVararg      = IsVarArgs();
 
 #ifdef TARGET_ARM
-    regMaskTP argSkippedRegMask    = RBM_NONE;
-    regMaskTP fltArgSkippedRegMask = RBM_NONE;
+    regMaskGpr argSkippedRegMask    = RBM_NONE;
+    regMaskFloat fltArgSkippedRegMask = RBM_NONE;
 #endif //  TARGET_ARM
 
 #if defined(TARGET_X86)
@@ -2547,7 +2547,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
                 {
                     // Back-fill the register.
                     isBackFilled              = true;
-                    regMaskTP backFillBitMask = genFindLowestBit(fltArgSkippedRegMask);
+                    regMaskFloat backFillBitMask = genFindLowestBit(fltArgSkippedRegMask);
                     fltArgSkippedRegMask &=
                         ~backFillBitMask; // Remove the back-filled register(s) from the skipped mask
                     nextFltArgRegNum = genMapFloatRegNumToRegArgNum(genRegNumFromMask(backFillBitMask));
