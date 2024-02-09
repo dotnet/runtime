@@ -320,7 +320,7 @@
   #define REG_ARG_1                REG_EDX
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
-  extern const regMaskTP intArgMasks[MAX_REG_ARG];
+  extern const regMaskGpr intArgMasks[MAX_REG_ARG];
 
   #define RBM_ARG_0                RBM_ECX
   #define RBM_ARG_1                RBM_EDX
