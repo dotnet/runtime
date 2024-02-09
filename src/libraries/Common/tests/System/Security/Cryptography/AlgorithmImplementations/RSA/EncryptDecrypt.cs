@@ -741,6 +741,11 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void Decrypt_Pkcs1_BadPadding()
         {
+            if (PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater)
+            {
+                return;
+            }
+
             RSAParameters keyParams = TestData.RSA2048Params;
             BigInteger e = new BigInteger(keyParams.Exponent, true, true);
             BigInteger n = new BigInteger(keyParams.Modulus, true, true);
