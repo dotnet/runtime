@@ -232,6 +232,7 @@ typedef unsigned __int64 regMaskOnlyOne;
 // 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
 // 2. Have a data structure like struct to pass all these together
 typedef unsigned __int64 regMaskAny;
+// TODO: should have `regMaskSingleReg` to represent genRegMask(regNumber) return value
 #else
 // x86 and arm
 typedef unsigned       regMaskTP;

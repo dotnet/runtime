@@ -10432,7 +10432,7 @@ public:
 
 #if defined(TARGET_XARCH)
     // Mask of callee saved float regs on stack.
-    regMaskTP compCalleeFPRegsSavedMask;
+    regMaskFloat compCalleeFPRegsSavedMask;
 #endif
 #ifdef TARGET_AMD64
 // Quirk for VS debug-launch scenario to work:

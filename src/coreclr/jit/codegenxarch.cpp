@@ -2373,8 +2373,9 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn)
 {
+    assert(compiler->IsGprRegMask(maskArgRegsLiveIn));
     assert(compiler->compGeneratingProlog);
 
     if (frameSize == 0)
@@ -5798,9 +5799,9 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     assert(varTypeUsesIntReg(type1));
 
     regNumber oldOp1Reg     = lcl1->GetRegNum();
-    regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
+    regMaskGpr oldOp1RegMask = genRegMask(oldOp1Reg);
     regNumber oldOp2Reg     = lcl2->GetRegNum();
-    regMaskTP oldOp2RegMask = genRegMask(oldOp2Reg);
+    regMaskGpr oldOp2RegMask = genRegMask(oldOp2Reg);
 
     // We don't call genUpdateVarReg because we don't have a tree node with the new register.
     varDsc1->SetRegNum(oldOp2Reg);
@@ -6095,7 +6096,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskTP killMask = RBM_CALLEE_TRASH;
+    regMaskAny killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
@@ -6639,7 +6640,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif
 
     // Next move any un-enregistered register arguments back to their register.
-    regMaskTP fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
+    regMaskGpr fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
     unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
@@ -6814,14 +6815,14 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         assert(compiler->info.compIsVarArgs);
         assert(firstArgVarNum != BAD_VAR_NUM);
 
-        regMaskTP remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
+        regMaskGpr remainingIntArgMask = RBM_ARG_REGS & ~fixedIntArgMask;
         if (remainingIntArgMask != RBM_NONE)
         {
             GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
                 regNumber argReg     = intArgRegs[argNum];
-                regMaskTP argRegMask = genRegMask(argReg);
+                regMaskGpr argRegMask = genRegMask(argReg);
 
                 if ((remainingIntArgMask & argRegMask) != 0)
                 {
@@ -6914,7 +6915,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
         !varTypeIsByte(targetType))
     {
-        regMaskTP targetRegMask = genRegMask(targetReg);
+        regMaskFloat targetRegMask = genRegMask(targetReg);
         if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
         {
             instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
@@ -7085,7 +7086,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         if ((targetReg != REG_NA) && (op1->GetRegNum() != targetReg) && (op2->GetRegNum() != targetReg) &&
             !varTypeIsByte(targetType))
         {
-            regMaskTP targetRegMask = genRegMask(targetReg);
+            regMaskGpr targetRegMask = genRegMask(targetReg);
             if (((op1->gtGetContainedRegMask() | op2->gtGetContainedRegMask()) & targetRegMask) == 0)
             {
                 instGen_Set_Reg_To_Zero(emitTypeSize(TYP_I_IMPL), targetReg);
@@ -8440,7 +8441,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     regNumber simdTmpReg      = REG_NA;
     if (putArgStk->AvailableTempRegCount() != 0)
     {
-        regMaskTP rsvdRegs = putArgStk->gtRsvdRegs;
+        regMaskAny rsvdRegs = putArgStk->gtRsvdRegs;
         if ((rsvdRegs & RBM_ALLINT) != 0)
         {
             intTmpReg = putArgStk->GetSingleTempReg(RBM_ALLINT);
@@ -9143,7 +9144,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
     addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
     regNumber callTarget           = REG_NA;
-    regMaskTP killMask             = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regMaskAny killMask             = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (!addr)
     {
@@ -9173,14 +9174,14 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                 // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
                 // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
                 callTargetReg            = REG_DEFAULT_HELPER_CALL_TARGET;
-                regMaskTP callTargetMask = genRegMask(callTargetReg);
+                regMaskGpr callTargetMask = genRegMask(callTargetReg);
                 noway_assert((callTargetMask & killMask) == callTargetMask);
             }
             else
             {
                 // The call target must not overwrite any live variable, though it may not be in the
                 // kill set for the call.
-                regMaskTP callTargetMask = genRegMask(callTargetReg);
+                regMaskGpr callTargetMask = genRegMask(callTargetReg);
                 noway_assert((callTargetMask & regSet.GetMaskVars()) == RBM_NONE);
             }
 #endif
@@ -9671,7 +9672,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // registers that profiler callback kills.
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
-        regMaskTP thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
+        regMaskAny thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
         noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
     }
 
@@ -9787,8 +9788,8 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // Emit appropriate unwind.
     //
     PatchpointInfo* const patchpointInfo             = compiler->info.compPatchpointInfo;
-    regMaskTP const       tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    regMaskTP             tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskAny const      tier0CalleeSaves           = (regMaskAny)patchpointInfo->CalleeSaveRegisters();
+    regMaskGpr            tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     int const             tier0IntCalleeSaveUsedSize = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
 
     JITDUMP("--OSR--- tier0 has already saved ");
@@ -9810,7 +9811,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     //
     for (regNumber reg = REG_INT_LAST; tier0IntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
     {
-        regMaskTP regBit = genRegMask(reg);
+        regMaskAny regBit = genRegMask(reg);
 
         if ((regBit & tier0IntCalleeSaves) != 0)
         {
@@ -9855,7 +9856,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskGpr rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9867,11 +9868,11 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // Figure out which set of int callee saves still needs saving.
     //
     PatchpointInfo* const patchpointInfo              = compiler->info.compPatchpointInfo;
-    regMaskTP const       tier0CalleeSaves            = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-    regMaskTP             tier0IntCalleeSaves         = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskAny const      tier0CalleeSaves            = (regMaskAny)patchpointInfo->CalleeSaveRegisters();
+    regMaskGpr            tier0IntCalleeSaves         = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     unsigned const        tier0IntCalleeSaveUsedSize  = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
-    regMaskTP const       osrIntCalleeSaves           = rsPushRegs & RBM_OSR_INT_CALLEE_SAVED;
-    regMaskTP             osrAdditionalIntCalleeSaves = osrIntCalleeSaves & ~tier0IntCalleeSaves;
+    regMaskGpr const      osrIntCalleeSaves           = rsPushRegs & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskGpr            osrAdditionalIntCalleeSaves = osrIntCalleeSaves & ~tier0IntCalleeSaves;
 
     JITDUMP("---OSR--- int callee saves are ");
     JITDUMPEXEC(dspRegMask(osrIntCalleeSaves));
@@ -9901,7 +9902,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     //
     for (regNumber reg = REG_INT_LAST; osrAdditionalIntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
     {
-        regMaskTP regBit = genRegMask(reg);
+        regMaskAny regBit = genRegMask(reg);
 
         if ((regBit & osrAdditionalIntCalleeSaves) != 0)
         {
@@ -9936,7 +9937,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9966,7 +9967,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // and all the other code that expects it to be in this order.
     for (regNumber reg = REG_INT_LAST; rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
     {
-        regMaskTP regBit = genRegMask(reg);
+        regMaskAny regBit = genRegMask(reg);
 
         if ((regBit & rsPushRegs) != 0)
         {
@@ -10201,10 +10202,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             //
             PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
 
-            regMaskTP const tier0CalleeSaves           = (regMaskTP)patchpointInfo->CalleeSaveRegisters();
-            regMaskTP const tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskTP const osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskTP const allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
+            regMaskAny const tier0CalleeSaves           = (regMaskAny)patchpointInfo->CalleeSaveRegisters();
+            regMaskGpr const tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskGpr const osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskGpr const allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
             unsigned const  tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
             unsigned const  tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
             unsigned const  osrCalleeSaveSize          = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
@@ -10733,7 +10734,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(isFramePointerUsed());
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
                                                                           // finalized
-    assert(compiler->compCalleeFPRegsSavedMask != (regMaskTP)-1); // The float registers to be preserved is finalized
+    assert(compiler->compCalleeFPRegsSavedMask != (regMaskAny)-1); // The float registers to be preserved is finalized
 
     // Even though lvaToInitialSPRelativeOffset() depends on compLclFrameSize,
     // that's ok, because we're figuring out an offset in the parent frame.
@@ -11191,10 +11192,10 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
     genVzeroupperIfNeeded(false);
-    regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
+    regMaskFloat regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
-    assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
+    assert(compiler->IsFloatRegMask(regMask));
 
     // fast path return
     if (regMask == RBM_NONE)
@@ -11216,7 +11217,7 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 
     for (regNumber reg = REG_FLT_CALLEE_SAVED_FIRST; regMask != RBM_NONE; reg = REG_NEXT(reg))
     {
-        regMaskTP regBit = genRegMask(reg);
+        regMaskAny regBit = genRegMask(reg);
         if ((regBit & regMask) != 0)
         {
             // ABI requires us to preserve lower 128-bits of YMM register.
@@ -11238,10 +11239,10 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 {
-    regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
+    regMaskFloat regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
-    assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
+    assert(compiler->IsFloatRegMask(regMask));
 
     // fast path return
     if (regMask == RBM_NONE)
@@ -11280,7 +11281,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 
     for (regNumber reg = REG_FLT_CALLEE_SAVED_FIRST; regMask != RBM_NONE; reg = REG_NEXT(reg))
     {
-        regMaskTP regBit = genRegMask(reg);
+        regMaskAny regBit = genRegMask(reg);
         if ((regBit & regMask) != 0)
         {
             // ABI requires us to restore lower 128-bits of YMM register.
