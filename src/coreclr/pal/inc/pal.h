@@ -42,6 +42,7 @@ Abstract:
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <ctype.h>
 #include <sys/stat.h>
