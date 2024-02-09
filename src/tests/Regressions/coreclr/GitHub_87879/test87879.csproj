@@ -3,7 +3,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
-    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR ('$(TargetsUnix)' == 'true' AND '$(TargetsMobile)' != 'true')">false</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' OR '$(TargetsAppleMobile)' == 'true' OR ('$(TargetsUnix)' == 'true' AND '$(TargetsMobile)' != 'true')">false</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test87879.cs" />
