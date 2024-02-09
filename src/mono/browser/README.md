@@ -244,7 +244,7 @@ Two things to keep in mind:
 
 The steps below will download the `vsts-npm-auth` tool from https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm
 
-In folder `src\mono\wasm\runtime\`
+In folder `src\mono\browser\runtime\`
 
 ```sh
 rm -rf node_modules

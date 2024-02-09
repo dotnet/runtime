@@ -89,29 +89,6 @@ PhaseStatus StackLevelSetter::DoPhase()
         }
     }
 
-    // The above loop might have moved a BBJ_COND's true target to its next block.
-    // In such cases, reverse the condition so we can remove a branch.
-    if (madeChanges)
-    {
-        for (BasicBlock* const block : comp->Blocks())
-        {
-            if (block->KindIs(BBJ_COND) && block->CanRemoveJumpToTarget(block->GetTrueTarget(), comp))
-            {
-                // Reverse the jump condition
-                GenTree* test = block->lastNode();
-                assert(test->OperIsConditionalJump());
-                GenTree* cond = comp->gtReverseCond(test);
-                assert(cond == test); // Ensure `gtReverseCond` did not create a new node.
-
-                BasicBlock* newFalseTarget = block->GetTrueTarget();
-                BasicBlock* newTrueTarget  = block->GetFalseTarget();
-                block->SetTrueTarget(newTrueTarget);
-                block->SetFalseTarget(newFalseTarget);
-                assert(block->CanRemoveJumpToTarget(newFalseTarget, comp));
-            }
-        }
-    }
-
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 

@@ -205,7 +205,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
             string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
             switch (top_func) {
-                // keep function names un-mangled via src\mono\wasm\runtime\rollup.config.js
+                // keep function names un-mangled via src\mono\browser\runtime\rollup.config.js
                 case "mono_wasm_set_entrypoint_breakpoint":
                 case "_mono_wasm_set_entrypoint_breakpoint":
                     {
@@ -1591,7 +1591,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
             if (!resolveBreakpoints)
                 return;
-            foreach (var req in context.BreakpointRequests.Values)
+            var breakpointRequests = context.BreakpointRequests.Values.ToList<BreakpointRequest>(); //this can be changed while we are looping it and cause an exception
+            foreach (var req in breakpointRequests)
             {
                 if (req.TryResolve(source))
                 {

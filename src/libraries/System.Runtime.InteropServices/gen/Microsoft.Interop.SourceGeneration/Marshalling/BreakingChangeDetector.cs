@@ -23,7 +23,7 @@ namespace Microsoft.Interop
             }
 
             // Breaking change: [MarshalAs(UnmanagedType.Struct)] in object in unmanaged-to-managed scenarios will not respect VT_BYREF.
-            if (info is { RefKind: RefKind.In, MarshallingAttributeInfo: NativeMarshallingAttributeInfo(ManagedTypeInfo(_, TypeNames.ComVariantMarshaller), _) }
+            if (info is { RefKind: RefKind.In or RefKind.RefReadOnlyParameter, MarshallingAttributeInfo: NativeMarshallingAttributeInfo(ManagedTypeInfo(_, TypeNames.ComVariantMarshaller), _) }
                 && context.Direction == MarshalDirection.UnmanagedToManaged)
             {
                 gen = ResolvedGenerator.ResolvedWithDiagnostics(

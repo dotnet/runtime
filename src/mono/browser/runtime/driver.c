@@ -189,19 +189,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_link_icu_shim ();
 #endif
 
-#ifndef DISABLE_THREADS
-	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
-#endif
-
-	// monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
-
-#ifdef DEBUG
-	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
-    // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
-    // output will be sent to the console.  Right now this is the only way to emit debug logging from
-    // corlib assemblies.
-#endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
 	const char *appctx_keys[2];
@@ -372,7 +359,10 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
-	mono_jit_cleanup (root_domain);
+	if (exit_code == 0)
+	{
+		mono_jit_cleanup (root_domain);
+	}
 	fflush (stdout);
 	fflush (stderr);
 	emscripten_force_exit (exit_code);
@@ -400,12 +390,6 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_parse_runtime_options (int argc, char* argv[])
 {
 	mono_jit_parse_options (argc, argv);
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_enable_on_demand_gc (int enable)
-{
-	mono_wasm_enable_gc = enable ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -437,18 +421,6 @@ mono_wasm_string_get_data_ref (
 			*outIsInterned = mono_string_instance_is_interned (*string);
 	}
 	MONO_EXIT_GC_UNSAFE;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoType *
-mono_wasm_class_get_type (MonoClass *klass)
-{
-	if (!klass)
-		return NULL;
-	MonoType *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_get_type (klass);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
 }
 
 EMSCRIPTEN_KEEPALIVE void

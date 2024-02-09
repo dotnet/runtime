@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig, MonoConfig, ResourceGroups, ResourceList } from "../types";
@@ -12,7 +12,6 @@ import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryI
 import { mono_exit } from "./exit";
 import { makeURLAbsoluteWithApplicationBase } from "./polyfills";
 import { appendUniqueQuery } from "./assets";
-import { mono_assert } from "./globals";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     // no need to merge the same object
@@ -188,9 +187,14 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
-    if (MonoWasmThreads && !Number.isInteger(config.pthreadPoolSize)) {
-        // ActiveIssue https://github.com/dotnet/runtime/issues/91538
+    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolSize)) {
+        // ActiveIssue https://github.com/dotnet/runtime/issues/75602
         config.pthreadPoolSize = 7;
+    }
+
+    // this is how long the Mono GC will try to wait for all threads to be suspended before it gives up and aborts the process
+    if (WasmEnableThreads && config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] === undefined) {
+        config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] = "5000";
     }
 
     // Default values (when WasmDebugLevel is not set)
@@ -200,9 +204,10 @@ export function normalizeConfig() {
     // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
     config.debugLevel = hasDebuggingEnabled(config) ? config.debugLevel : 0;
 
-    if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
+    if (BuildConfiguration === "Debug" && config.diagnosticTracing === undefined) {
         config.diagnosticTracing = true;
     }
+
     if (config.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
         config.environmentVariables!["LANG"] = `${config.applicationCulture}.UTF-8`;
@@ -210,11 +215,6 @@ export function normalizeConfig() {
 
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
-    config.startupMemoryCache = !!config.startupMemoryCache;
-    if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {
-        mono_log_debug("Disabling startupMemoryCache because waitForDebugger is set");
-        config.startupMemoryCache = false;
-    }
 
     runtimeHelpers.enablePerfMeasure = !!config.browserProfilerOptions
         && globalThis.performance
@@ -256,13 +256,6 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         }
 
         normalizeConfig();
-
-        mono_assert(!loaderHelpers.config.startupMemoryCache || !module.instantiateWasm, "startupMemoryCache is not supported with Module.instantiateWasm");
-
-        loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
-        if (!loaderHelpers.config.startupMemoryCache) {
-            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
-        }
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });

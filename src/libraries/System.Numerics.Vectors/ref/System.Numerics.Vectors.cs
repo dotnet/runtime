@@ -243,6 +243,7 @@ namespace System.Numerics
         public static System.Numerics.Vector<System.UInt32> ConvertToUInt32(System.Numerics.Vector<System.Single> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ConvertToUInt64(System.Numerics.Vector<System.Double> value) { throw null; }
+        public static System.Numerics.Vector<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> Divide<T>(System.Numerics.Vector<T> left, T right) { throw null; }
         public static T Dot<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
@@ -596,6 +597,7 @@ namespace System.Numerics
         public Vector(T[] values, int index) { throw null; }
         public static System.Numerics.Vector<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
+        public static System.Numerics.Vector<T> Indices { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }

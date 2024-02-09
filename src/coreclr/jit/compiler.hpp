@@ -196,10 +196,45 @@ inline unsigned __int64 BitsBetween(unsigned __int64 value, unsigned __int64 end
            (end - 1);                       // Ones to the right of set bit in the end mask.
 }
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------------
+// jitIsScaleIndexMul: Check if the value is a valid addressing mode multiplier
+// amount for x64.
+//
+// Parameters:
+//   val - The multiplier
+//
+// Returns:
+//   True if value is 1, 2, 4 or 8.
+//
 inline bool jitIsScaleIndexMul(size_t val)
 {
+    // TODO-Cleanup: On arm64 the scale that can be used in addressing modes
+    // depends on the containing indirection, so this function should be reevaluated.
+    switch (val)
+    {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// jitIsScaleIndexMul: Check if the value is a valid addressing mode multiplier amount.
+//
+// Parameters:
+//   val - The multiplier
+//   naturalMul - For arm64, the natural multiplier (size of containing indirection)
+//
+// Returns:
+//   True if the multiplier can be used in an address mode.
+//
+inline bool jitIsScaleIndexMul(size_t val, unsigned naturalMul)
+{
+#if defined(TARGET_XARCH)
     switch (val)
     {
         case 1:
@@ -211,6 +246,11 @@ inline bool jitIsScaleIndexMul(size_t val)
         default:
             return false;
     }
+#elif defined(TARGET_ARM64)
+    return val == naturalMul;
+#else
+    return false;
+#endif
 }
 
 // Returns "tree" iff "val" is a valid addressing mode scale shift amount on
@@ -368,7 +408,7 @@ inline unsigned Compiler::ehGetIndex(EHblkDsc* ehDsc)
  * Return the EH descriptor for the most nested 'try' region this BasicBlock is a member of
  * (or nullptr if this block is not in a 'try' region).
  */
-inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockTryDsc(const BasicBlock* block)
 {
     if (!block->hasTryIndex())
     {
@@ -382,7 +422,7 @@ inline EHblkDsc* Compiler::ehGetBlockTryDsc(BasicBlock* block)
  * Return the EH descriptor for the most nested filter or handler region this BasicBlock is a member of
  * (or nullptr if this block is not in a filter or handler region).
  */
-inline EHblkDsc* Compiler::ehGetBlockHndDsc(BasicBlock* block)
+inline EHblkDsc* Compiler::ehGetBlockHndDsc(const BasicBlock* block)
 {
     if (!block->hasHndIndex())
     {
@@ -1284,9 +1324,10 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
     GenTreeIntCon* node;
 #if defined(LATE_DISASM)
-    node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
+    node = new (this, LargeOpOpcode())
+        GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields DEBUGARG(/*largeNode*/ true));
 #else
-    node             = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
+    node             = new (this, GT_CNS_INT) GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields);
 #endif
     node->gtFlags |= flags;
     return node;
@@ -3496,7 +3537,7 @@ inline void Compiler::compUpdateLife(VARSET_VALARG_TP newLife)
  *  the cookie associated with the given basic block.
  */
 
-inline void* emitCodeGetCookie(BasicBlock* block)
+inline void* emitCodeGetCookie(const BasicBlock* block)
 {
     assert(block);
     return block->bbEmitCookie;
@@ -4893,27 +4934,40 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocks(TFunc func)
 template <typename TFunc>
 BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 {
-    BasicBlock* top    = m_header;
-    BasicBlock* bottom = m_header;
+    BasicBlock* top           = m_header;
+    unsigned    numLoopBlocks = 0;
     VisitLoopBlocks([&](BasicBlock* block) {
         if (block->bbNum < top->bbNum)
+        {
             top = block;
-        if (block->bbNum > bottom->bbNum)
-            bottom = block;
+        }
+
+        numLoopBlocks++;
         return BasicBlockVisit::Continue;
     });
 
-    BasicBlock* block = top;
-    while (true)
+    INDEBUG(BasicBlock* prev = nullptr);
+    BasicBlock* cur = top;
+    while (numLoopBlocks > 0)
     {
-        if (ContainsBlock(block) && (func(block) == BasicBlockVisit::Abort))
-            return BasicBlockVisit::Abort;
+        // If we run out of blocks the blocks aren't sequential.
+        assert(cur != nullptr);
 
-        if (block == bottom)
-            return BasicBlockVisit::Continue;
+        if (ContainsBlock(cur))
+        {
+            assert((prev == nullptr) || (prev->bbNum < cur->bbNum));
 
-        block = block->Next();
+            if (func(cur) == BasicBlockVisit::Abort)
+                return BasicBlockVisit::Abort;
+
+            INDEBUG(prev = cur);
+            numLoopBlocks--;
+        }
+
+        cur = cur->Next();
     }
+
+    return BasicBlockVisit::Continue;
 }
 
 /*****************************************************************************/

@@ -30,7 +30,13 @@ namespace System.Reflection.Emit
 
         public override int Position => _position;
 
-        public override void SetConstant(object? defaultValue) => _defaultValue = defaultValue;
+        public override void SetConstant(object? defaultValue)
+        {
+            Type parameterType = _position == 0 ? _methodBuilder.ReturnType : _methodBuilder.ParameterTypes![_position - 1];
+            FieldBuilderImpl.ValidateDefaultValueType(defaultValue, parameterType);
+            _defaultValue = defaultValue;
+            _attributes |= ParameterAttributes.HasDefault;
+        }
 
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
