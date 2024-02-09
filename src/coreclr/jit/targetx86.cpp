@@ -18,7 +18,7 @@ const Target::ArgOrder Target::g_tgtUnmanagedArgOrder = ARG_ORDER_R2L;
 
 // clang-format off
 const regNumber intArgRegs [] = {REG_ECX, REG_EDX};
-const regMaskTP intArgMasks[] = {RBM_ECX, RBM_EDX};
+const regMaskGpr intArgMasks[] = {RBM_ECX, RBM_EDX};
 // clang-format on
 
 #endif // TARGET_X86
