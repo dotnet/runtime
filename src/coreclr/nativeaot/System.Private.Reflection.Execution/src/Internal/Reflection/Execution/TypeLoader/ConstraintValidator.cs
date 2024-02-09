@@ -13,7 +13,7 @@ namespace Internal.Reflection.Execution
     {
         private static bool SatisfiesConstraints(this Type genericVariable, SigTypeContext typeContextOfConstraintDeclarer, Type typeArg)
         {
-            GenericParameterAttributes specialConstraints = genericVariable.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
+            GenericParameterAttributes specialConstraints = genericVariable.GenericParameterAttributes;
 
             if ((specialConstraints & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
             {

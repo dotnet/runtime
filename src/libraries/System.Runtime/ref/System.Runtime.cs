@@ -11587,7 +11587,9 @@ namespace System.Reflection
         ReferenceTypeConstraint = 4,
         NotNullableValueTypeConstraint = 8,
         DefaultConstructorConstraint = 16,
+        [Obsolete("No longer represents all special constraints")]
         SpecialConstraintMask = 28,
+        AcceptByRefLike = 32,
     }
     public partial interface ICustomAttributeProvider
     {
