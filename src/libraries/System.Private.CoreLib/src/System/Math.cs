@@ -1298,86 +1298,50 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, MidpointRounding mode)
         {
-            // Inline single-instruction modes
-            if (RuntimeHelpers.IsKnownConstant((int)mode))
+            switch (mode)
             {
-                if (mode == MidpointRounding.ToEven)
-                    return Round(value);
-
-                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For other platforms we use a fast managed implementation
-                if (mode == MidpointRounding.AwayFromZero)
-                {
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
+                case MidpointRounding.AwayFromZero:
+                    // For ARM/ARM64 we can lower it down to a single instruction FRINTA
                     if (AdvSimd.IsSupported)
-                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(value)).ToScalar();
+                    // For other platforms we use a fast managed implementation
                     // manually fold BitDecrement(0.5)
                     return Truncate(value + CopySign(0.49999999999999994, value));
-                }
-            }
 
-            return Round(value, 0, mode);
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value with an even least significant digit
+                case MidpointRounding.ToEven:
+                    return Round(value);
+                // Directed rounding: Round to the nearest value, toward to zero
+                case MidpointRounding.ToZero:
+                    return Truncate(value);
+                // Directed Rounding: Round down to the next value, toward negative infinity
+                case MidpointRounding.ToNegativeInfinity:
+                    return Floor(value);
+                // Directed rounding: Round up to the next value, toward positive infinity
+                case MidpointRounding.ToPositiveInfinity:
+                    return Ceiling(value);
+
+                default:
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    return default;
+            }
         }
 
-        public static unsafe double Round(double value, int digits, MidpointRounding mode)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Round(double value, int digits, MidpointRounding mode)
         {
-            if ((digits < 0) || (digits > maxRoundingDigits))
+            if ((uint)digits > maxRoundingDigits)
             {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
-            }
-
-            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.ToPositiveInfinity)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
+                ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits(nameof(digits));
             }
 
             if (Abs(value) < doubleRoundLimit)
             {
                 double power10 = RoundPower10Double[digits];
-
-                value *= power10;
-
-                switch (mode)
-                {
-                    // Rounds to the nearest value; if the number falls midway,
-                    // it is rounded to the nearest value with an even least significant digit
-                    case MidpointRounding.ToEven:
-                    {
-                        value = Round(value);
-                        break;
-                    }
-                    // Rounds to the nearest value; if the number falls midway,
-                    // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
-                    case MidpointRounding.AwayFromZero:
-                    {
-                        // manually fold BitDecrement(0.5)
-                        value = Truncate(value + CopySign(0.49999999999999994, value));
-                        break;
-                    }
-                    // Directed rounding: Round to the nearest value, toward to zero
-                    case MidpointRounding.ToZero:
-                    {
-                        value = Truncate(value);
-                        break;
-                    }
-                    // Directed Rounding: Round down to the next value, toward negative infinity
-                    case MidpointRounding.ToNegativeInfinity:
-                    {
-                        value = Floor(value);
-                        break;
-                    }
-                    // Directed rounding: Round up to the next value, toward positive infinity
-                    case MidpointRounding.ToPositiveInfinity:
-                    {
-                        value = Ceiling(value);
-                        break;
-                    }
-                    default:
-                    {
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
-                    }
-                }
-
-                value /= power10;
+                value = Round(value * power10, mode) / power10;
             }
 
             return value;
