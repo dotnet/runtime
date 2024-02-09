@@ -448,17 +448,17 @@ namespace System.Numerics.Tests
                     0x88, 0x48, 0xB9, 0xFB, 0xB3, 0xCD, 0xF8, 0xA9,
                     0x9C, 0x20, 0x6F, 0x63, 0x23, 0xE5, 0xC2, 0x85,
                     0xCD, 0x75, 0x7A, 0x55, 0x04, 0xA4, 0x08, 0x99,
-                ], true, true);
+                ], isUnsigned: true, isBigEndian: true);
 
             exponent = 65537;
             var buf = new byte[256];
             buf[1] = 2;
             buf.AsSpan(2, 8).Fill(1);
-            value = new BigInteger(buf, true, true);
+            value = new BigInteger(buf, isUnsigned: true, isBigEndian: true);
             yield return [value, exponent, modulus];
 
             buf[^1] = 1;
-            value = new BigInteger(buf, true, true);
+            value = new BigInteger(buf, isUnsigned: true, isBigEndian: true);
             yield return [value, exponent, modulus];
         }
     }
