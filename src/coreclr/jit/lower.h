@@ -261,7 +261,7 @@ private:
     bool IsCallTargetInRange(void* addr);
 
 #if defined(TARGET_XARCH)
-    GenTree* PreferredRegOptionalOperand(GenTree* tree);
+    GenTree* PreferredRegOptionalOperand(GenTree* op1, GenTree* op2);
 
     // ------------------------------------------------------------------
     // SetRegOptionalBinOp - Indicates which of the operands of a bin-op
@@ -299,7 +299,7 @@ private:
 
         if (op1Legal)
         {
-            regOptionalOperand = op2Legal ? PreferredRegOptionalOperand(tree) : op1;
+            regOptionalOperand = op2Legal ? PreferredRegOptionalOperand(op1, op2) : op1;
         }
         else if (op2Legal)
         {

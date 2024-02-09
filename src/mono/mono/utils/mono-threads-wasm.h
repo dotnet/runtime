@@ -87,6 +87,9 @@ mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gb
 void
 mono_threads_wasm_on_thread_unregistered (void);
 
+void
+mono_wasm_pthread_set_name (const char* thread_name);
+
 #endif /* HOST_WASM*/
 
 #endif /* __MONO_THREADS_WASM_H__ */
