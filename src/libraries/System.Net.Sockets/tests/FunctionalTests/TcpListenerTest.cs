@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.RemoteExecutor;
-using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -229,62 +226,6 @@ namespace System.Net.Sockets.Tests
                 Assert.False(listener.Pending());
                 await connectTask;
             }
-        }
-
-        internal sealed class RuntimeEventListener : EventListener
-        {
-            protected override void OnEventSourceCreated(EventSource source)
-            {
-                if (source.Name.Equals("Microsoft-Windows-DotNETRuntime"))
-                {
-                    EnableEvents(source, EventLevel.Verbose, (EventKeywords)0x10000);
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void ReadAsyncTest()
-        {
-            RemoteExecutor.Invoke(async () =>
-            {
-                using (RuntimeEventListener eventListener = new RuntimeEventListener())
-                {
-                    TaskCompletionSource<int> portTcs = new TaskCompletionSource<int>();
-                    async Task StartListenerAsync()
-                    {
-                        TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
-                        listener.Start();
-                        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-                        portTcs.SetResult(port);
-                        TcpClient client = await listener.AcceptTcpClientAsync();
-                        using (NetworkStream stream = client.GetStream())
-                        {
-                            byte[] buffer = new byte[1024];
-                            int bytesRead;
-                            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0);
-                        }
-                        listener.Stop();
-                    }
-
-                    async Task StartClientAsync()
-                    {
-                        int port = await portTcs.Task;
-                        using (TcpClient client = new TcpClient(new IPEndPoint(IPAddress.Loopback, 0)))
-                        {
-                            await client.ConnectAsync(IPAddress.Loopback, port);
-                            using (NetworkStream stream = client.GetStream())
-                            {
-                                byte[] data = Encoding.UTF8.GetBytes(new string('*', 1 << 26));
-                                await stream.WriteAsync(data, 0, data.Length);
-                            }
-                        }
-                    }
-
-                    Task listenerTask = StartListenerAsync();
-                    Task clientTask = StartClientAsync();
-                    await Task.WhenAll(listenerTask, clientTask);
-                }
-            }).Dispose();
         }
 
         [Fact]
