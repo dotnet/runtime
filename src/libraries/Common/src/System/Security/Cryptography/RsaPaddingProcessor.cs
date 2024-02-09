@@ -130,8 +130,9 @@ namespace System.Security.Cryptography
             int primitive = DepadPkcs1Encryption(source);
             int primitiveSign = SignStretch(primitive);
 
-            // len = abs(primitive);
-            int len = Choose(primitiveSign, -primitive, primitive);
+            // Primitive is a positive length, or ~length to indicate
+            // an error, so flip ~length to length if the high bit is set.
+            int len = Choose(primitiveSign, ~primitive, primitive);
             int spaceRemain = destination.Length - len;
             int spaceRemainSign = SignStretch(spaceRemain);
 
@@ -177,10 +178,12 @@ namespace System.Security.Cryptography
             // Check that the first two bytes are { 00 02 }
             valid &= CheckZero(source[0] | (source[1] ^ 0x02));
 
-            // If there were no zeros, use the full after-min-padding segment.
-            int lenIfBad = Choose(hasLen, zeroPos, source.Length - 11);
             int lenIfGood = afterPadding.Length - zeroPos - 1;
-            return Choose(valid, lenIfGood, 0 - lenIfBad);
+            // If there were no zeros, use the full after-min-padding segment.
+            int lenIfBad = ~Choose(hasLen, lenIfGood, source.Length - 11);
+
+            Debug.Assert(lenIfBad < 0);
+            return Choose(valid, lenIfGood, lenIfBad);
         }
 
         private static int BlindFindFirstZero(ReadOnlySpan<byte> source)
