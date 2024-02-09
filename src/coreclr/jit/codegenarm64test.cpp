@@ -6198,6 +6198,24 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_I(INS_sve_ushllt, EA_SCALABLE, REG_V22, REG_V23, 31,
                               INS_OPTS_SCALABLE_S); // USHLLT <Zd>.<T>, <Zn>.<Tb>, #<const>
 
+    // IF_SVE_FV_2A
+    theEmitter->emitIns_R_R_I(INS_sve_cadd, EA_SCALABLE, REG_V0, REG_V1, 90,
+                              INS_OPTS_SCALABLE_B); // CADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+    theEmitter->emitIns_R_R_I(INS_sve_cadd, EA_SCALABLE, REG_V2, REG_V3, 90,
+                              INS_OPTS_SCALABLE_H); // CADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+    theEmitter->emitIns_R_R_I(INS_sve_cadd, EA_SCALABLE, REG_V4, REG_V5, 270,
+                              INS_OPTS_SCALABLE_S); // CADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+    theEmitter->emitIns_R_R_I(INS_sve_cadd, EA_SCALABLE, REG_V6, REG_V7, 270,
+                              INS_OPTS_SCALABLE_D); // CADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqcadd, EA_SCALABLE, REG_V8, REG_V9, 270,
+                              INS_OPTS_SCALABLE_B); // SQCADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqcadd, EA_SCALABLE, REG_V10, REG_V11, 270,
+                              INS_OPTS_SCALABLE_H); // SQCADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqcadd, EA_SCALABLE, REG_V12, REG_V13, 90,
+                              INS_OPTS_SCALABLE_S); // SQCADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+    theEmitter->emitIns_R_R_I(INS_sve_sqcadd, EA_SCALABLE, REG_V14, REG_V15, 90,
+                              INS_OPTS_SCALABLE_D); // SQCADD <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+
     // IF_SVE_ED_1A
     theEmitter->emitIns_R_I(INS_sve_smax, EA_SCALABLE, REG_V0, -128,
                             INS_OPTS_SCALABLE_B); // SMAX <Zdn>.<T>, <Zdn>.<T>, #<imm>

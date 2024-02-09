@@ -1602,6 +1602,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
         }
 
+        case IF_SVE_FV_2A: // ........xx...... .....rmmmmmddddd -- SVE2 complex integer add
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isVectorRegister(id->idReg2()));                           // nnnnn
+            assert(isValidImm1(emitGetInsSC(id)));                            // r
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
+            break;
+
         case IF_SVE_GK_2A: // ................ ......mmmmmddddd -- SVE2 crypto destructive binary operations
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt()));
@@ -8955,6 +8963,19 @@ void emitter::emitIns_R_R_I(instruction     ins,
             }
 
             fmt = IF_SVE_GB_2A;
+            break;
+
+        case INS_sve_cadd:
+        case INS_sve_sqcadd:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert((imm == 90) || (imm == 270));                   // r
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            // Convert rot to bitwise representation: 0 if 90, 1 if 270
+            imm = (ssize_t)(imm == 270);
+            fmt = IF_SVE_FV_2A;
             break;
 
         case INS_sve_ldr:
@@ -18175,6 +18196,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 1 bit at bit location '10'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeImm1_10(ssize_t imm)
+{
+    assert(isValidImm1(imm));
+    return (code_t)imm << 10;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 1 bit at bit location '11'.
  */
 
@@ -20942,6 +20974,15 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeUimm5_20_to_16(insGetImmDiff(emitGetInsSC(id), id->idInsOpt()));      // iii
             code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_FV_2A: // ........xx...... .....rmmmmmddddd -- SVE2 complex integer add
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                  // mmmmm
+            code |= insEncodeImm1_10(emitGetInsSC(id));                   // r
+            code |= insEncodeElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -24221,6 +24262,18 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);     // ddddd
             emitDispSveReg(id->idReg2(), largeSizeSpecifier, true); // nnnnn
             emitDispImm(emitGetInsSC(id), false);                   // iii
+            break;
+        }
+
+        // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, <const>
+        case IF_SVE_FV_2A: // ........xx...... .....rmmmmmddddd -- SVE2 complex integer add
+        {
+            // Rotation bit implies rotation is 270 if set, else rotation is 90
+            const ssize_t rot = (emitGetInsSC(id) == 0) ? 90 : 270;
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // mmmmm
+            emitDispImm(rot, false);                            // r
             break;
         }
 
@@ -27582,6 +27635,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
         case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
         case IF_SVE_EB_1B: // ........xx...... ...........ddddd -- SVE broadcast integer immediate (unpredicated)
+        case IF_SVE_FV_2A: // ........xx...... .....rmmmmmddddd -- SVE2 complex integer add
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
