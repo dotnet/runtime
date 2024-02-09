@@ -238,10 +238,13 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 		jit_mm_lock (jit_mm);
 		// FIXME: The lookup can fail if the method is JITted recursively though a type cctor
-		if (!g_hash_table_lookup (jit_mm->seq_points, cfg->method_to_register))
+		MonoSeqPointInfo *existing_seq_points = NULL;
+		if (!g_hash_table_lookup_extended (jit_mm->seq_points, cfg->method_to_register, NULL, (gpointer *)&existing_seq_points)) {
 			g_hash_table_insert (jit_mm->seq_points, cfg->method_to_register, cfg->seq_point_info);
-		else
+		} else {
 			mono_seq_point_info_free (cfg->seq_point_info);
+			cfg->seq_point_info = existing_seq_points;
+		}
 		jit_mm_unlock (jit_mm);
 
 		g_assert (jinfo);

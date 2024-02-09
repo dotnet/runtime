@@ -150,6 +150,14 @@ namespace System.Collections.Tests
             yield return new object[] { new Dictionary<float, double> { { 1.0f, 1.0 }, { 2.0f, 2.0 } }.Values };
             yield return new object[] { new SortedDictionary<Guid, string> { { Guid.NewGuid(), "One" }, { Guid.NewGuid(), "Two" } }.Keys };
             yield return new object[] { new SortedDictionary<long, Guid> { { 1L, Guid.NewGuid() }, { 2L, Guid.NewGuid() } }.Values };
+#if !NETFRAMEWORK
+            // In .Net Framework 4.8 KeyCollection and ValueCollection from ReadOnlyDictionary are marked with
+            // an incorrect debugger type proxy attribute. Both classes have two template parameters, but
+            // ICollectionDebugView<> used there has only one. Neither VS nor this testing code is able to
+            // create a type proxy in such case.
+            yield return new object[] { new ReadOnlyDictionary<double, float>(new Dictionary<double, float> { { 1.0, 1.0f }, { 2.0, 2.0f } }).Keys };
+            yield return new object[] { new ReadOnlyDictionary<float, double>(new Dictionary<float, double> { { 1.0f, 1.0 }, { 2.0f, 2.0 } }).Values };
+#endif
         }
 
         public static IEnumerable<object[]> TestDebuggerAttributes_InputsPresentedAsDictionary()
@@ -213,8 +221,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(TestDebuggerAttributes_Inputs))]
         public static void TestDebuggerAttributes_Null(object obj)
         {
-            Type proxyType = DebuggerAttributes.GetProxyType(obj);
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.CreateDebuggerTypeProxyWithNullArgument(obj.GetType()));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 

@@ -24,6 +24,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 
+#include <dn-u16.h> // for u16_strtod
+
 /*****************************************************************************/
 
 #define DECLARE_DATA
@@ -914,6 +916,181 @@ void ConfigMethodRange::Dump()
         {
             printf("%i [0x%08x-0x%08x]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
         }
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigIntArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are separated decimal with no whitespace.
+//    Separators are any digit not '-' or '0-9'
+//
+void ConfigIntArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                p++;
+            }
+
+            numValues++;
+        }
+        else
+        {
+            p++;
+        }
+    }
+
+    m_length = numValues;
+    m_values = (int*)g_jitHost->allocateMemory(numValues * sizeof(int));
+
+    numValues         = 0;
+    p                 = str;
+    int  currentValue = 0;
+    bool isNegative   = false;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                isNegative = true;
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                currentValue = currentValue * 10 + (*p++) - L'0';
+            }
+
+            if (isNegative)
+            {
+                currentValue = -currentValue;
+            }
+
+            m_values[numValues++] = currentValue;
+            currentValue          = 0;
+        }
+        else
+        {
+            p++;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigIntArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config int array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config int array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%i", i == 0 ? "" : ", ", m_values[i]);
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigDoubleArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are comma, tab or space separated.
+//    Consecutive separators are ignored
+//
+void ConfigDoubleArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+        WCHAR* pNext = nullptr;
+        u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            numValues++;
+        }
+        p = pNext;
+    }
+
+    m_length  = numValues;
+    m_values  = (double*)g_jitHost->allocateMemory(numValues * sizeof(double));
+    p         = str;
+    numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+
+        WCHAR* pNext = nullptr;
+        double val   = u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            m_values[numValues++] = val;
+        }
+        p = pNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigDoubleArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config double array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config double array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%f ", i == 0 ? "" : ",", m_values[i]);
     }
 }
 
@@ -2196,65 +2373,34 @@ double FloatingPointUtils::round(double x)
     //            MathF.Round(float), and FloatingPointUtils::round(float)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This represents the boundary at which point we can only represent whole integers
+    const double IntegerBoundary = 4503599627370496.0; // 2^52
 
-    uint64_t bits     = *reinterpret_cast<uint64_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 52) & 0x07FF;
-
-    if (exponent <= 0x03FE)
+    if (fabs(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        double result = ((exponent == 0x03FE) && ((bits & UI64(0x000FFFFFFFFFFFFF)) != 0)) ? 1.0 : 0.0;
-        return _copysign(result, x);
-    }
-
-    if (exponent >= 0x0433)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x03FF <= exponent) && (exponent <= 0x0432));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint64_t lastBitMask   = UI64(1) << (0x0433 - exponent);
-    uint64_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<double*>(&bits);
+    double temp = _copysign(IntegerBoundary, x);
+    return _copysign((x + temp) - temp, x);
 }
 
 // Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
@@ -2278,65 +2424,40 @@ float FloatingPointUtils::round(float x)
     //            Math.Round(double), and FloatingPointUtils::round(double)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This code is based on `nearbyint` from amd/aocl-libm-ose
+    // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+    //
+    // Licensed under the BSD 3-Clause "New" or "Revised" License
+    // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-    uint32_t bits     = *reinterpret_cast<uint32_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 23) & 0xFF;
+    // This represents the boundary at which point we can only represent whole integers
+    const float IntegerBoundary = 8388608.0f; // 2^23
 
-    if (exponent <= 0x7E)
+    if (fabsf(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        float result = ((exponent == 0x7E) && ((bits & 0x007FFFFF) != 0)) ? 1.0f : 0.0f;
-        return _copysignf(result, x);
-    }
-
-    if (exponent >= 0x96)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x7F <= exponent) && (exponent <= 0x95));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint32_t lastBitMask   = 1U << (0x96 - exponent);
-    uint32_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<float*>(&bits);
+    float temp = _copysignf(IntegerBoundary, x);
+    return _copysignf((x + temp) - temp, x);
 }
 
 bool FloatingPointUtils::isNormal(double x)

@@ -418,8 +418,9 @@ struct emitLclVarAddr
     // Constructor
     void initLclVarAddr(int varNum, unsigned offset);
 
-    int lvaVarNum(); // Returns the variable to access. Note that it returns a negative number for compiler spill temps.
-    unsigned lvaOffset(); // returns the offset into the variable to access
+    int lvaVarNum() const; // Returns the variable to access. Note that it returns a negative number for compiler spill
+                           // temps.
+    unsigned lvaOffset() const; // returns the offset into the variable to access
 
     // This struct should be 32 bits in size for the release build.
     // We have this constraint because this type is used in a union
@@ -767,12 +768,26 @@ protected:
         unsigned _idLargeDsp : 1;  // does a large displacement follow?
         unsigned _idLargeCall : 1; // large call descriptor used
 
-        unsigned _idBound : 1; // jump target / frame offset bound
-#ifndef TARGET_ARMARCH
-        unsigned _idCallRegPtr : 1; // IL indirect calls: addr in reg
-#endif
-        unsigned _idCallAddr : 1; // IL indirect calls: can make a direct call to iiaAddr
-        unsigned _idNoGC : 1;     // Some helpers don't get recorded in GC tables
+        // We have several pieces of information we need to encode but which are only applicable
+        // to a subset of instrDescs. To accommodate that, we define a several _idCustom# bitfields
+        // and then some defineds to make accessing them simpler
+
+        unsigned _idCustom1 : 1;
+        unsigned _idCustom2 : 1;
+        unsigned _idCustom3 : 1;
+
+#define _idBound _idCustom1 /* jump target / frame offset bound */
+#define _idTlsGD _idCustom2 /* Used to store information related to TLS GD access on linux */
+#define _idNoGC _idCustom3  /* Some helpers don't get recorded in GC tables */
+#define _idEvexAaaContext (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1 /* bits used for the EVEX.aaa context */
+
+#if !defined(TARGET_ARMARCH)
+        unsigned _idCustom4 : 1;
+
+#define _idCallRegPtr _idCustom4   /* IL indirect calls : addr in reg */
+#define _idEvexZContext _idCustom4 /* bits used for the EVEX.z context */
+#endif                             // !TARGET_ARMARCH
+
 #if defined(TARGET_XARCH)
         // EVEX.b can indicate several context: embedded broadcast, embedded rounding.
         // For normal and embedded broadcast intrinsics, EVEX.L'L has the same semantic, vector length.
@@ -1577,33 +1592,50 @@ protected:
 
         bool idIsBound() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idBound != 0;
         }
         void idSetIsBound()
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idBound = 1;
         }
 
 #ifndef TARGET_ARMARCH
         bool idIsCallRegPtr() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idCallRegPtr != 0;
         }
         void idSetIsCallRegPtr()
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idCallRegPtr = 1;
         }
-#endif
+#endif // !TARGET_ARMARCH
+
+        bool idIsTlsGD() const
+        {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
+            return _idTlsGD != 0;
+        }
+        void idSetTlsGD()
+        {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
+            _idTlsGD = 1;
+        }
 
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
         bool idIsNoGC() const
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             return _idNoGC != 0;
         }
         void idSetIsNoGC(bool val)
         {
+            assert(!IsAvx512OrPriorInstruction(_idIns));
             _idNoGC = val;
         }
 
@@ -1615,7 +1647,8 @@ protected:
 
         void idSetEvexbContext(insOpts instOptions)
         {
-            assert(_idEvexbContext == 0);
+            assert(!idIsEvexbContextSet());
+
             if (instOptions == INS_OPTS_EVEX_eb_er_rd)
             {
                 _idEvexbContext = 1;
@@ -1637,6 +1670,34 @@ protected:
         unsigned idGetEvexbContext() const
         {
             return _idEvexbContext;
+        }
+
+        unsigned idGetEvexAaaContext() const
+        {
+            assert(IsAvx512OrPriorInstruction(_idIns));
+            return _idEvexAaaContext;
+        }
+
+        void idSetEvexAaaContext(insOpts instOptions)
+        {
+            assert(idGetEvexAaaContext() == 0);
+            unsigned value = static_cast<unsigned>((instOptions & INS_OPTS_EVEX_aaa_MASK) >> 2);
+
+            _idCustom1 = ((value >> 0) & 1);
+            _idCustom2 = ((value >> 1) & 1);
+            _idCustom3 = ((value >> 2) & 1);
+        }
+
+        bool idIsEvexZContextSet() const
+        {
+            assert(IsAvx512OrPriorInstruction(_idIns));
+            return _idEvexZContext != 0;
+        }
+
+        void idSetEvexZContext()
+        {
+            assert(!idIsEvexZContextSet());
+            _idEvexZContext = 1;
         }
 #endif
 
@@ -1776,6 +1837,7 @@ protected:
 
 #define PERFSCORE_THROUGHPUT_ZERO 0.0f // Only used for pseudo-instructions that don't generate code
 
+#define PERFSCORE_THROUGHPUT_9X (1.0f / 9.0f)
 #define PERFSCORE_THROUGHPUT_6X (1.0f / 6.0f) // Hextuple issue
 #define PERFSCORE_THROUGHPUT_5X 0.20f         // Pentuple issue
 #define PERFSCORE_THROUGHPUT_4X 0.25f         // Quad issue
@@ -2164,7 +2226,7 @@ protected:
     static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(instrDesc* id);
+    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
     unsigned emitInsCount;
 
     /************************************************************************/
@@ -2212,6 +2274,7 @@ protected:
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
     void emitDispEmbBroadcastCount(instrDesc* id);
     void emitDispEmbRounding(instrDesc* id);
+    void emitDispEmbMasking(instrDesc* id);
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,

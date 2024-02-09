@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { MonoConfigInternal, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
 import { MonoConfig } from "../types";
-import { MonoConfigInternal } from "../types/internal";
 import { deep_merge_config, normalizeConfig } from "./config";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_debug } from "./logging";
-
-export const monoSymbol = "__mono_message_please_dont_collide__"; //Symbol("mono");
 
 export function setupPreloadChannelToMainThread() {
     const channel = new MessageChannel();
@@ -20,7 +18,13 @@ export function setupPreloadChannelToMainThread() {
         mainPort.close();
     }, { once: true });
     workerPort.start();
-    self.postMessage(makePreloadMonoMessage(mainPort), [mainPort]);
+    // ask for config even before WASM is loaded
+    self.postMessage({
+        [monoMessageSymbol]: {
+            monoCmd: WorkerToMainMessageType.preload,
+            port: mainPort
+        }
+    }, [mainPort]);
 }
 
 let workerMonoConfigReceived = false;
@@ -43,16 +47,3 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
     }
 }
 
-export function makePreloadMonoMessage<TPort>(port: TPort): any {
-    return {
-        [monoSymbol]: {
-            monoCmd: WorkerMonoCommandType.preload,
-            port
-        }
-    };
-}
-
-const enum WorkerMonoCommandType {
-    channelCreated = "channel_created",
-    preload = "preload",
-}

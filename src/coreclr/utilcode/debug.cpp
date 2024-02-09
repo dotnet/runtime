@@ -236,7 +236,7 @@ bool _DbgBreakCheck(
 
             sprintf_s(formatBuffer, sizeof(formatBuffer),
                 "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
-                "    File: %s Line: %d\n"
+                "    File: %s:%d\n"
                 "    Image: %s\n\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
@@ -517,7 +517,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     SString buffer;
     buffer.Printf("CLR: Assert failure(PID %d [0x%08x], Thread: %d [0x%x]): %s\n"
-                "    File: %s, Line: %d Image:\n%s\n",
+                "    File: %s:%d Image:\n%s\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
                 szExpr, szFile, iLine, modulePath.GetUTF8());
@@ -528,7 +528,7 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     // Log to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
-    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
+    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     FailFastOnAssert();
     UNREACHABLE();
