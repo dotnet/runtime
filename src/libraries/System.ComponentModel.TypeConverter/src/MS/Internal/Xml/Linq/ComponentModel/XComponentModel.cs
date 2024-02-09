@@ -29,13 +29,11 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
         }
 
-        // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         public override PropertyDescriptorCollection GetProperties()
         {
             return GetProperties(null);
         }
 
-        // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
         public override PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             PropertyDescriptorCollection properties = new PropertyDescriptorCollection(null);

@@ -12,12 +12,6 @@ using System.Text;
 
 namespace System.Data.Common
 {
-    // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
-    //     Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
-    //         + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-    // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-    //     Justification = "The use of GetType preserves implementation of ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
-    //         + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {
@@ -394,10 +388,6 @@ namespace System.Data.Common
             return attributes;
         }
 
-        // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-        //     Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
-        //         + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-        // [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         private PropertyDescriptorCollection GetProperties()
         {
             PropertyDescriptorCollection? propertyDescriptors = _propertyDescriptors;
@@ -423,10 +413,6 @@ namespace System.Data.Common
             return propertyDescriptors;
         }
 
-        // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-        //     Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
-        //         + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-        // [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(Hashtable propertyDescriptors)
         {
             long logScopeId = DataCommonEventSource.Log.EnterScope("<comm.DbConnectionStringBuilder.GetProperties|API> {0}", ObjectID);
@@ -547,10 +533,6 @@ namespace System.Data.Common
         public static bool SupportsFilteredGetProperties => false;
 #pragma warning restore IL4000
 
-        // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-        //     Justification = "The use of GetType preserves this member with RequiresUnreferencedCode, but the GetType callsites either "
-        //         + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
-        // [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)
         {
             if (!SupportsFilteredGetProperties)
@@ -625,13 +607,11 @@ namespace System.Data.Common
         {
             return TypeDescriptor.GetAttributes(this, true);
         }
-        // [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             // return TypeDescriptor.GetEditor(this, editorBaseType, true);
             return TypeDescriptor.GetEditor(typeof(DbConnectionStringBuilder), editorBaseType);
         }
-        // [RequiresUnreferencedCode("SVEN: type of the component can't be statically determined.")] //eneric TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         TypeConverter ICustomTypeDescriptor.GetConverter()
         {
             // RUC on GetConverter comes down to the 'this' argument type needing All, for the reflection type descriptor provider.
@@ -646,23 +626,19 @@ namespace System.Data.Common
             // return TypeDescriptor.GetConverter(this, true);
             return TypeDescriptor.GetConverter(typeof(DbConnectionStringBuilder));
         }
-        // [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
         {
             // return TypeDescriptor.GetDefaultProperty(this, true);
             return TypeDescriptor.GetDefaultProperty(typeof(DbConnectionStringBuilder));
         }
-        // [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties()
         {
             return GetProperties();
         }
-        // [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes)
         {
             return GetProperties(attributes);
         }
-        // [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
         {
             // return TypeDescriptor.GetDefaultEvent(this, true);
@@ -678,7 +654,6 @@ namespace System.Data.Common
             return TypeDescriptor.GetEvents(this, true);
         }
 
-        // [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
         {
             if (!SupportsFilteredGetProperties)

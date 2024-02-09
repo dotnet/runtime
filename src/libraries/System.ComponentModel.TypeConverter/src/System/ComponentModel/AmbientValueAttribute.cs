@@ -17,7 +17,6 @@ namespace System.ComponentModel
         /// specified value to the specified type, and using the U.S. English culture as the
         /// translation context.
         /// </summary>
-        // [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         public AmbientValueAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, string value)
         {
             // The try/catch here is because attributes should never throw exceptions. We would fail to

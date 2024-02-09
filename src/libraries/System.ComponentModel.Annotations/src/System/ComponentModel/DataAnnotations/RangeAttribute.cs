@@ -250,8 +250,6 @@ namespace System.ComponentModel.DataAnnotations
             }
         }
 
-        // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-        //     Justification = "The ctor that allows this code to be called is marked with RequiresUnreferencedCode.")]
         private TypeConverter GetOperandTypeConverter() =>
             TypeDescriptor.GetConverter(OperandType);
 

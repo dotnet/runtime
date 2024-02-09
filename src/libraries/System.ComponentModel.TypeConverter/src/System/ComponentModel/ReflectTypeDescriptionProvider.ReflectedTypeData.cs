@@ -172,7 +172,6 @@ namespace System.ComponentModel
             /// it will be used to retrieve attributes. Otherwise, _type
             /// will be used.
             /// </summary>
-            // [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered. The Type of instance cannot be statically discovered.")]
             internal TypeConverter GetConverter(object? instance)
             {
                 TypeConverterAttribute? typeAttr = null;
@@ -262,7 +261,6 @@ namespace System.ComponentModel
             /// <summary>
             /// Return the default property.
             /// </summary>
-            // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " The Type of instance cannot be statically discovered.")]
             internal PropertyDescriptor? GetDefaultProperty(object? instance)
             {
                 AttributeCollection attributes;
@@ -458,7 +456,6 @@ namespace System.ComponentModel
             /// <summary>
             /// Retrieves the properties for this type.
             /// </summary>
-            // [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
             internal PropertyDescriptorCollection GetProperties()
             {
                 // Worst case collision scenario:  we don't want the perf hit
@@ -500,10 +497,6 @@ namespace System.ComponentModel
             /// that this PropertyDescriptor came from is first checked,
             /// then a global Type.GetType is performed.
             /// </summary>
-            // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            //     Justification = "Calling _type.Assembly.GetType on a non-assembly qualified type will still work. See https://github.com/mono/linker/issues/1895")]
-            // [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:TypeGetType",
-            //     Justification = "Using the non-assembly qualified type name will still work.")]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             private Type? GetTypeFromName(
                 // this method doesn't create the type, but all callers are annotated with PublicConstructors,
@@ -569,19 +562,3 @@ namespace System.ComponentModel
         }
     }
 }
-
-
-// namespace System.Diagnostics.CodeAnalysis
-// {
-//     // Allow AttributeTargets.Method for testing invalid usages of a custom FeatureGuardAttribute
-//     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, Inherited=false, AllowMultiple=true)]
-//     internal sealed class FeatureGuardAttribute : Attribute
-//     {
-//         public Type RequiresAttributeType { get; }
-
-//         public FeatureGuardAttribute(Type requiresAttributeType)
-//         {
-//             RequiresAttributeType = requiresAttributeType;
-//         }
-//     }
-// }
