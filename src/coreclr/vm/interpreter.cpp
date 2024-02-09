@@ -73,7 +73,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
 #if defined(_DEBUG)
         m_methName = ::eeGetMethodFullName(comp, methInfo->ftn, &clsName);
 #else
-        m_methName = comp->getMethodNameFromMetadata(methInfo->ftn, &clsName, NULL, NULL);
+        m_methName = getMethodName(comp, methInfo->ftn, &clsName);
 #endif
         char* myClsName = new char[strlen(clsName) + 1];
         strcpy(myClsName, clsName);
@@ -752,7 +752,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     if (!jmpCall)
     {
         const char* clsName;
-        const char* methName = comp->getMethodNameFromMetadata(info->ftn, &clsName, NULL, NULL);
+        const char* methName = getMethodName(comp, info->ftn, &clsName);
         if (   !s_InterpretMeths.contains(methName, clsName, info->args.pSig)
             || s_InterpretMethsExclude.contains(methName, clsName, info->args.pSig))
         {
@@ -6083,7 +6083,7 @@ void Interpreter::NewObj()
     else if ((clsFlags & CORINFO_FLG_VAROBJSIZE) && !(clsFlags & CORINFO_FLG_ARRAY))
     {
         // For a VAROBJSIZE class (currently == String), pass NULL as this to "pseudo-constructor."
-        void* specialFlagArg = reinterpret_cast<void*>(0x1);  // Special value for "thisArg" argument of "DoCallWork": push NULL that's not on op stack.
+        void* specialFlagArg = reinterpret_cast<void*>(0x1);  // Special value for "thisArg" argument of "DoCallWork": pushing NULL that's not on op stack is unnecessary.(#62936)
         DoCallWork(/*virtCall*/false, specialFlagArg, &methTok, &callInfo);  // pushes result automatically
     }
     else
@@ -9220,24 +9220,22 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         sigInfo.numArgs = sigInfoFull.numArgs;
         sigInfo.callConv = sigInfoFull.callConv;
         sigInfo.retType = sigInfoFull.retType;
+        sigInfo.fHasThis = CORINFO_SIG_INFO_SMALL::ComputeHasThis(methToCall);
     }
 
     // Point A in our cycle count.
 
 
-    // TODO: enable when NamedIntrinsic is available to interpreter
-
-    /*
     // Is the method an intrinsic?  If so, and if it's one we've written special-case code for
     // handle intrinsically.
-    NamedIntrinsic intrinsicName;
+    InterpreterNamedIntrinsics intrinsicId;
     {
         GCX_PREEMP();
-        intrinsicName = getIntrinsicName(CORINFO_METHOD_HANDLE(methToCall), nullptr);
+        intrinsicId = getNamedIntrinsicID(&m_interpCeeInfo, CORINFO_METHOD_HANDLE(methToCall));
     }
 
 #if INTERP_TRACING
-    if (intrinsicName == NI_Illegal)
+    if (intrinsicId == NI_Illegal)
         InterlockedIncrement(&s_totalInterpCallsToIntrinsics);
 #endif // INTERP_TRACING
     bool didIntrinsic = false;
@@ -9245,6 +9243,10 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
+        case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
+            DoGetArrayDataReference();
+            didIntrinsic = true;
+            break;
 #if INTERP_ILSTUBS
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -9282,15 +9284,26 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // Hardware intrinsics are recognized by name.
             const char* namespaceName = NULL;
             const char* className = NULL;
-            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
             if (
+                (strcmp(namespaceName, "System.Runtime.Intrinsics") == 0 ||
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0 &&
+                strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
 #elif defined(TARGET_ARM64)
-                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0 &&
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+                strcmp(namespaceName, "System.Runtime.Intrinsics.Arm") == 0
+#else
+                0
+#endif
+                ) &&
                 strcmp(methodName, "get_IsSupported") == 0
             )
+            {
+                GCX_COOP();
+                DoGetIsSupported();
+                didIntrinsic = true;
+            }
+
+            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0 && strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
             {
                 GCX_COOP();
                 DoGetIsSupported();
@@ -9309,7 +9322,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             // SIMD intrinsics are recognized by name.
             const char* namespaceName = NULL;
             const char* className = NULL;
-            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            const char* methodName = getMethodName(&m_interpCeeInfo, (CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
             if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
             {
                 GCX_COOP();
@@ -9338,7 +9351,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // Now we can return.
         return;
     }
-    */
 
     // Handle other simple special cases:
 
@@ -9402,6 +9414,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         sigInfo.numArgs = sig.numArgs;
         sigInfo.callConv = sig.callConv;
         sigInfo.retType = sig.retType;
+        MethodDesc* pCallSiteMD = reinterpret_cast<MethodDesc*>(m_methInfo->m_method);
+        sigInfo.fHasThis = CORINFO_SIG_INFO_SMALL::ComputeHasThis(pCallSiteMD);
         // Adding 'this' pointer because, numArgs doesn't include the this pointer.
         totalSigArgs = sigInfo.numArgs + sigInfo.hasThis();
 
@@ -9473,8 +9487,16 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     unsigned totalArgsOnILStack = totalSigArgs;
     if (m_callThisArg != NULL)
     {
-        _ASSERTE(totalArgsOnILStack > 0);
-        totalArgsOnILStack--;
+        if (size_t(m_callThisArg) == 0x1)
+        {
+            // For string constructors, it is not necessary to pass NULL as "thisArg" to "pseudo-constructor." (#62936)
+            _ASSERTE(!sigInfo.hasThis());
+        }
+        else
+        {
+            _ASSERTE(totalArgsOnILStack > 0);
+            totalArgsOnILStack--;
+        }
     }
 
 #if defined(FEATURE_HFA)
@@ -9560,9 +9582,20 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         _ASSERTE(m_callThisArg == NULL);  // "m_callThisArg" non-null only for .ctor, which are not callvirts.
 
-        CorInfoType argCIT = OpStackTypeGet(argsBase + arg).ToCorInfoType();
-        if (argCIT != CORINFO_TYPE_BYREF)
-            VerificationError("This arg of constrained call must be managed pointer.");
+        // The constrained. prefix will be immediately followed by a ldftn, call or callvirt instruction.
+        // See Ecma-335-Augments.md#iii21-constrained---prefix-invoke-a-member-on-a-value-of-a-variable-type-page-316 for more detail
+        if (sigInfo.hasThis())
+        {
+            // For the callvirt instruction, the ptr argument will be a managed pointer (&) to thisType.
+            CorInfoType argCIT = OpStackTypeGet(argsBase + arg).ToCorInfoType();
+            if (argCIT != CORINFO_TYPE_BYREF)
+                VerificationError("This arg of constrained call must be managed pointer.");
+        }
+        else
+        {
+            // If the constrained. prefix is applied to a call or ldftn instruction, method must be a virtual static method.
+            // TODO: Assert it is a virtual static method.
+        }
 
         // We only cache for the CORINFO_NO_THIS_TRANSFORM case, so we may assume that if we have a cached call site,
         // there's no thisTransform to perform.
@@ -9647,7 +9680,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     const char* methToCallName = NULL;
     {
         GCX_PREEMP();
-        methToCallName = m_interpCeeInfo.getMethodNameFromMetadata(CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName, NULL, NULL);
+        methToCallName = getMethodName(&m_interpCeeInfo, CORINFO_METHOD_HANDLE(methToCall), &clsOfMethToCallName);
     }
 #if INTERP_TRACING
     if (strncmp(methToCallName, "get_", 4) == 0)
@@ -9681,7 +9714,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             {
                 TypeHandle th = ms.GetLastTypeHandleThrowing(ClassLoader::LoadTypes);
                 CONSISTENCY_CHECK(th.CheckFullyLoaded());
-                CONSISTENCY_CHECK(th.IsRestored());
             }
         }
     }
@@ -9691,16 +9723,10 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     if (sigInfo.hasThis())
     {
+        _ASSERTE(size_t(m_callThisArg) != 0x1); // Ensure m_callThisArg is not a Special "thisArg" argument for String constructors.
         if (m_callThisArg != NULL)
         {
-            if (size_t(m_callThisArg) == 0x1)
-            {
-                args[curArgSlot] = NULL;
-            }
-            else
-            {
-                args[curArgSlot] = PtrToArgSlot(m_callThisArg);
-            }
+            args[curArgSlot] = PtrToArgSlot(m_callThisArg);
             argTypes[curArgSlot] = InterpreterType(CORINFO_TYPE_BYREF);
         }
         else
@@ -9856,6 +9882,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             sigInfo.numArgs = sigInfoFull.numArgs;
             sigInfo.callConv = sigInfoFull.callConv;
             sigInfo.retType = sigInfoFull.retType;
+            sigInfo.fHasThis = CORINFO_SIG_INFO_SMALL::ComputeHasThis(methToCall);
         }
 
         if (sigInfo.hasTypeArg())
@@ -10846,6 +10873,39 @@ void Interpreter::DoGetIsSupported()
     m_curStackHt++;
 }
 
+void Interpreter::DoGetArrayDataReference()
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    _ASSERTE(m_curStackHt > 0);
+    unsigned ind = m_curStackHt - 1;
+
+#ifdef _DEBUG
+    _ASSERTE(OpStackTypeGet(ind).ToCorInfoType() == CORINFO_TYPE_CLASS);
+#endif // _DEBUG
+
+    Object* obj = OpStackGet<Object*>(ind);
+
+    if (obj == NULL)
+    {
+        ThrowNullPointerException();
+    }
+
+#ifdef _DEBUG
+    _ASSERTE(obj->GetMethodTable()->IsArray());
+#endif // _DEBUG
+
+    ArrayBase* a = reinterpret_cast<ArrayBase*>(obj);
+    ThrowOnInvalidPointer(a);
+    PTR_BYTE dataPtr = a->GetDataPtr();
+    OpStackSet<void*>(ind, dataPtr);
+    OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_BYREF));
+}
+
 void Interpreter::RecordConstrainedCall()
 {
     CONTRACTL {
@@ -11667,6 +11727,67 @@ static const char* CorInfoTypeNames[] = {
     "var"
 };
 
+// Also see Compiler::lookupNamedIntrinsic
+Interpreter::InterpreterNamedIntrinsics Interpreter::getNamedIntrinsicID(CEEInfo* info, CORINFO_METHOD_HANDLE methodHnd)
+{
+    InterpreterNamedIntrinsics result = NI_Illegal;
+
+    const char* namespaceName = NULL;
+    const char* className = NULL;
+    const char* methodName = getMethodName(info, (CORINFO_METHOD_HANDLE)methodHnd, &className, &namespaceName, NULL);
+
+    if (strncmp(namespaceName, "System", 6) == 0)
+    {
+        namespaceName += 6;
+        if (namespaceName[0] == '.')
+        {
+            namespaceName += 1;
+            if (strcmp(namespaceName, "StubHelpers") == 0)
+            {
+                if (strcmp(className, "StubHelpers") == 0)
+                {
+                    if (strcmp(methodName, "GetStubContext") == 0)
+                    {
+                        result = NI_System_StubHelpers_GetStubContext;
+                    }
+                }
+            }
+            else if (strncmp(namespaceName, "Runtime.", 8) == 0)
+            {
+                namespaceName += 8;
+                if (strcmp(namespaceName, "InteropServices") == 0)
+                {
+                    if (strcmp(className, "MemoryMarshal") == 0)
+                    {
+                        if (strcmp(methodName, "GetArrayDataReference") == 0)
+                        {
+                            result = NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
+// Simple version of getMethodName which supports IL Stubs such as IL_STUB_PInvoke additionally.
+// Also see getMethodNameFromMetadata and printMethodName in corinfo.h
+const char* Interpreter::getMethodName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** className, const char** namespaceName, const char **enclosingClassName)
+{
+    MethodDesc *pMD = GetMethod(hnd);
+    if (pMD->IsILStub())
+    {
+        if (className != NULL)
+        {
+            *className = ILStubResolver::GetStubClassName(pMD);
+        }
+        return pMD->GetName();
+    }
+
+    return info->getMethodNameFromMetadata(hnd, className, namespaceName, enclosingClassName);
+}
+
 const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const char** clsName)
 {
     CONTRACTL {
@@ -11680,7 +11801,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     const char* returnType = NULL;
 
     const char* className;
-    const char* methodName = info->getMethodNameFromMetadata(hnd, &className, NULL, NULL);
+    const char* methodName = Interpreter::getMethodName(info, hnd, &className);
     if (clsName != NULL)
     {
         *clsName = className;

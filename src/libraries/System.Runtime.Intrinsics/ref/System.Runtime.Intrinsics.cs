@@ -144,6 +144,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(System.Runtime.Intrinsics.Vector64<T> lower, System.Runtime.Intrinsics.Vector64<T> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(T value) { throw null; }
@@ -320,6 +321,7 @@ namespace System.Runtime.Intrinsics
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector128<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector128<T> Indices { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> Zero { get { throw null; } }
@@ -477,6 +479,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(System.Runtime.Intrinsics.Vector128<T> lower, System.Runtime.Intrinsics.Vector128<T> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(T value) { throw null; }
@@ -653,6 +656,7 @@ namespace System.Runtime.Intrinsics
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector256<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector256<T> Indices { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> Zero { get { throw null; } }
@@ -810,6 +814,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<System.UInt64> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Create<T>(System.Runtime.Intrinsics.Vector256<T> lower, System.Runtime.Intrinsics.Vector256<T> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Create<T>(T value) { throw null; }
@@ -984,6 +989,7 @@ namespace System.Runtime.Intrinsics
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector512<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector512<T> Indices { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector512<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector512<T> Zero { get { throw null; } }
@@ -1118,6 +1124,7 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateScalarUnsafe<T>(T value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> CreateSequence<T>(T start, T step) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(T[] values) { throw null; }
@@ -1285,6 +1292,7 @@ namespace System.Runtime.Intrinsics
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector64<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
+        public static System.Runtime.Intrinsics.Vector64<T> Indices { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> One { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> Zero { get { throw null; } }
@@ -2000,7 +2008,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2, System.Runtime.Intrinsics.Vector64<ushort> Value3) LoadVector64x3AndUnzip(ushort* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2, System.Runtime.Intrinsics.Vector64<int> Value3) LoadVector64x3AndUnzip(int* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2, System.Runtime.Intrinsics.Vector64<uint> Value3) LoadVector64x3AndUnzip(uint* address) { throw null; }
-        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3) LoadVector64x3AndUnzip(float* address) { throw null; }      
+        public static unsafe (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2, System.Runtime.Intrinsics.Vector64<float> Value3) LoadVector64x3AndUnzip(float* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2, System.Runtime.Intrinsics.Vector64<byte> Value3, System.Runtime.Intrinsics.Vector64<byte> Value4) LoadVector64x4AndUnzip(byte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2, System.Runtime.Intrinsics.Vector64<sbyte> Value3, System.Runtime.Intrinsics.Vector64<sbyte> Value4) LoadVector64x4AndUnzip(sbyte* address) { throw null; }
         public static unsafe (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2, System.Runtime.Intrinsics.Vector64<short> Value3, System.Runtime.Intrinsics.Vector64<short> Value4) LoadVector64x4AndUnzip(short* address) { throw null; }
@@ -3464,10 +3472,10 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2, System.Runtime.Intrinsics.Vector128<long> Value3) LoadVector128x3AndUnzip(long* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3) LoadVector128x3AndUnzip(ulong* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3) LoadVector128x3AndUnzip(float* address) { throw null; }
-            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3) LoadVector128x3AndUnzip(double* address) { throw null; }     
+            public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3) LoadVector128x3AndUnzip(double* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2, System.Runtime.Intrinsics.Vector128<byte> Value3, System.Runtime.Intrinsics.Vector128<byte> Value4) LoadVector128x4AndUnzip(byte* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2, System.Runtime.Intrinsics.Vector128<sbyte> Value3, System.Runtime.Intrinsics.Vector128<sbyte> Value4) LoadVector128x4AndUnzip(sbyte* address) { throw null; }
-            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2, System.Runtime.Intrinsics.Vector128<short> Value3, System.Runtime.Intrinsics.Vector128<short> Value4) LoadVector128x4AndUnzip(short* address) { throw null; }  
+            public static unsafe (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2, System.Runtime.Intrinsics.Vector128<short> Value3, System.Runtime.Intrinsics.Vector128<short> Value4) LoadVector128x4AndUnzip(short* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2, System.Runtime.Intrinsics.Vector128<ushort> Value3, System.Runtime.Intrinsics.Vector128<ushort> Value4) LoadVector128x4AndUnzip(ushort* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2, System.Runtime.Intrinsics.Vector128<int> Value3, System.Runtime.Intrinsics.Vector128<int> Value4) LoadVector128x4AndUnzip(int* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2, System.Runtime.Intrinsics.Vector128<uint> Value3, System.Runtime.Intrinsics.Vector128<uint> Value4) LoadVector128x4AndUnzip(uint* address) { throw null; }
@@ -3502,7 +3510,7 @@ namespace System.Runtime.Intrinsics.Arm
             public static unsafe (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2, System.Runtime.Intrinsics.Vector128<int> Value3, System.Runtime.Intrinsics.Vector128<int> Value4) LoadVector128x4(int* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2, System.Runtime.Intrinsics.Vector128<uint> Value3, System.Runtime.Intrinsics.Vector128<uint> Value4) LoadVector128x4(uint* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2, System.Runtime.Intrinsics.Vector128<long> Value3, System.Runtime.Intrinsics.Vector128<long> Value4) LoadVector128x4(long* address)  { throw null; }
-            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3, System.Runtime.Intrinsics.Vector128<ulong> Value4) LoadVector128x4(ulong* address) { throw null; }        
+            public static unsafe (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2, System.Runtime.Intrinsics.Vector128<ulong> Value3, System.Runtime.Intrinsics.Vector128<ulong> Value4) LoadVector128x4(ulong* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2, System.Runtime.Intrinsics.Vector128<float> Value3, System.Runtime.Intrinsics.Vector128<float> Value4) LoadVector128x4(float* address) { throw null; }
             public static unsafe (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2, System.Runtime.Intrinsics.Vector128<double> Value3, System.Runtime.Intrinsics.Vector128<double> Value4) LoadVector128x4(double* address) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Max(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
@@ -4125,6 +4133,19 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector128<uint> ScheduleUpdate0(System.Runtime.Intrinsics.Vector128<uint> w0_3, System.Runtime.Intrinsics.Vector128<uint> w4_7) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> ScheduleUpdate1(System.Runtime.Intrinsics.Vector128<uint> w0_3, System.Runtime.Intrinsics.Vector128<uint> w8_11, System.Runtime.Intrinsics.Vector128<uint> w12_15) { throw null; }
         public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview.")]
+    public abstract partial class Sve : System.Runtime.Intrinsics.Arm.AdvSimd
+    {
+        internal Sve() { }
+        public static new bool IsSupported { get { throw null; } }
+
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.AdvSimd.Arm64
         {
             internal Arm64() { }
             public static new bool IsSupported { get { throw null; } }

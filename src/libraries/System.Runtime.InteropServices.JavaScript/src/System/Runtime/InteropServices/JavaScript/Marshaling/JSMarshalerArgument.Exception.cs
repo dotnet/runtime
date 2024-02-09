@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     var jsException = jse.jsException;
                     jsException.AssertNotDisposed();
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                     var ctx = jsException.ProxyContext;
 
                     if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)

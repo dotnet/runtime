@@ -36,7 +36,7 @@ namespace ILCompiler
             DebugInformationProvider debugInformationProvider,
             Logger logger,
             int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, nodeFactory.CompilationModuleGroup, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, nodeFactory.CompilationModuleGroup, logger)
         {
             _helperCache = new HelperCache(this);
             _parallelism = parallelism;
@@ -418,11 +418,21 @@ namespace ILCompiler
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _implementators = new();
             private HashSet<TypeDesc> _disqualifiedTypes = new();
+            private HashSet<MethodDesc> _overridenMethods = new();
+            private HashSet<MethodDesc> _generatedVirtualMethods = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
+                var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
+
                 foreach (var node in markedNodes)
                 {
+                    // Collect all non-generic virtual method bodies we compiled
+                    if (node is IMethodBodyNode { Method.IsVirtual: true, Method.HasInstantiation: false } virtualMethodBody)
+                    {
+                        _generatedVirtualMethods.Add(virtualMethodBody.Method);
+                    }
+
                     TypeDesc type = node switch
                     {
                         ConstructedEETypeNode eetypeNode => eetypeNode.Type,
@@ -528,6 +538,39 @@ namespace ILCompiler
                                 added = _unsealedTypes.Add(baseType);
                                 baseType = baseType.BaseType;
                             }
+
+                            static List<MethodDesc> BuildVTable(NodeFactory factory, TypeDesc currentType, TypeDesc implType, List<MethodDesc> vtable)
+                            {
+                                if (currentType == null)
+                                    return vtable;
+
+                                BuildVTable(factory, currentType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific), implType, vtable);
+
+                                IReadOnlyList<MethodDesc> slice = factory.VTable(currentType).Slots;
+                                foreach (MethodDesc decl in slice)
+                                {
+                                    vtable.Add(implType.GetClosestDefType()
+                                        .FindVirtualFunctionTargetMethodOnObjectType(decl));
+                                }
+
+                                return vtable;
+                            }
+
+                            baseType = canonType.BaseType?.ConvertToCanonForm(CanonicalFormKind.Specific);
+                            if (!canonType.IsArray && baseType != null)
+                            {
+                                if (!vtables.TryGetValue(baseType, out List<MethodDesc> baseVtable))
+                                    vtables.Add(baseType, baseVtable = BuildVTable(factory, baseType, baseType, new List<MethodDesc>()));
+
+                                if (!vtables.TryGetValue(canonType, out List<MethodDesc> vtable))
+                                    vtables.Add(canonType, vtable = BuildVTable(factory, canonType, canonType, new List<MethodDesc>()));
+
+                                for (int i = 0; i < baseVtable.Count; i++)
+                                {
+                                    if (baseVtable[i] != vtable[i])
+                                        _overridenMethods.Add(baseVtable[i]);
+                                }
+                            }
                         }
                     }
                 }
@@ -601,6 +644,29 @@ namespace ILCompiler
 
                 // Everything else can be considered sealed.
                 return true;
+            }
+
+            public override bool IsEffectivelySealed(MethodDesc method)
+            {
+                // First try to answer using metadata
+                if (method.IsFinal || method.OwningType.IsSealed())
+                    return true;
+
+                // Now let's see if we can seal through whole program view
+
+                // Sealing abstract methods or methods on interface can't lead to anything good
+                if (method.IsAbstract || method.OwningType.IsInterface)
+                    return false;
+
+                // If we want to make something final, we better have a method body for it.
+                // Sometimes we might have optimized it away so don't let codegen make direct calls.
+                // NOTE: this check naturally also rejects generic virtual methods since we don't track them.
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (!_generatedVirtualMethods.Contains(canonMethod))
+                    return false;
+
+                // If we haven't seen any other method override this, this method is sealed
+                return !_overridenMethods.Contains(canonMethod);
             }
 
             protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType, out CORINFO_DEVIRTUALIZATION_DETAIL devirtualizationDetail)

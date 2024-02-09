@@ -976,6 +976,7 @@ create_method_token (MonoDynamicImage *assembly, MonoMethod *method, MonoArrayHa
 	sig->hasthis = old->hasthis;
 	sig->explicit_this = old->explicit_this;
 	sig->call_convention = old->call_convention;
+	sig->ext_callconv = old->ext_callconv;
 	sig->generic_param_count = old->generic_param_count;
 	sig->param_count = old->param_count + GINT_TO_UINT16 (nargs);
 	sig->sentinelpos = old->param_count;

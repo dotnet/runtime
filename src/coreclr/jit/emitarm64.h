@@ -25,7 +25,8 @@ enum PredicateType
     PREDICATE_MERGE,    // Predicate printed with /m
     PREDICATE_ZERO,     // Predicate printed with /z
     PREDICATE_SIZED,    // Predicate printed with element size
-    PREDICATE_N_SIZED,  // Predicate printed printed as counter with element size
+    PREDICATE_N,        // Predicate printed as counter
+    PREDICATE_N_SIZED,  // Predicate printed as counter with element size
 };
 
 const char* emitSveRegName(regNumber reg);
@@ -39,6 +40,7 @@ void emitDispLargeJmp(
 void emitDispComma();
 void emitDispInst(instruction ins);
 void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
+void emitDispElementIndex(const ssize_t imm, const bool addComma);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
 void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
@@ -50,6 +52,7 @@ void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
 void emitDispSveExtendOptsModN(insOpts opt, int n);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
+void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -59,6 +62,7 @@ void emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, b
 void emitDispVectorElemList(regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma);
 void emitDispSveConsecutiveRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma);
 void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
+void emitDispPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispVectorLengthSpecifier(instrDesc* id);
@@ -128,6 +132,9 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 
 //  Emit the 32-bit Arm64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
+
+// Append the machine code corresponding to the given SVE instruction descriptor.
+BYTE* emitOutput_InstrSve(BYTE* dst, instrDesc* id);
 
 // A helper method to return the natural scale for an EA 'size'
 static unsigned NaturalScale_helper(emitAttr size);
@@ -381,6 +388,9 @@ static code_t insEncodeReg_P_2_to_0(regNumber reg);
 // Return an encoding for the specified predicate type used in '16' position.
 static code_t insEncodePredQualifier_16(bool merge);
 
+// Return an encoding for the specified predicate type used in '4' position.
+static code_t insEncodePredQualifier_4(bool merge);
+
 // Return an encoding for the specified 'V' register used in '18' thru '16' position.
 static code_t insEncodeReg_V_18_to_16(regNumber reg);
 
@@ -508,26 +518,34 @@ static int insGetSveReg1ListSize(instruction ins);
 static PredicateType insGetPredicateType(insFormat fmt, int regpos = 0);
 
 // Returns true if the SVE instruction has a LSL addr.
-// This is for formats that have [<Xn|SP>, <Xm>, LSL #N]
+// This is for formats that have [<Xn|SP>, <Xm>, LSL #N], [<Xn|SP>{, <Xm>, LSL #N}]
 static bool insSveIsLslN(instruction ins, insFormat fmt);
 
 // Returns true if the SVE instruction has a <mod> addr.
 // This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N]
 static bool insSveIsModN(instruction ins, insFormat fmt);
 
-// Returns 0, 1, 2 or 3 depending on the instruction and format.
-// This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N]
+// Returns 0, 1, 2, 3 or 4 depending on the instruction and format.
+// This is for formats that have [<Xn|SP>, <Zm>.T, <mod>], [<Xn|SP>, <Zm>.T, <mod> #N], [<Xn|SP>, <Xm>, LSL #N],
+// [<Xn|SP>{, <Xm>, LSL #N}]
 static int insSveGetLslOrModN(instruction ins, insFormat fmt);
 
 // Returns true if the specified instruction can encode the 'dtype' field.
 static bool canEncodeSveElemsize_dtype(instruction ins);
 
-// Returns the encoding to select the 1/2/4/8/16 byte elemsize for an Arm64 Sve vector instruction
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
 // for the 'dtype' field.
 static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t code);
 
+// Returns the encoding to select the 4/8/16 byte elemsize for the Arm64 Sve vector instruction 'ld1w'
+// for the 'dtype' field.
+static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, emitAttr size, code_t code);
+
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 9-bits at bit locations '21-16' for high and '12-10' for low.
+static code_t insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm);
 
 // Returns the encoding for the immediate value that is a multiple of 2 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf2_19_to_16(ssize_t imm);
@@ -546,6 +564,21 @@ static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
+static code_t insEncodeUimm2_9_to_8(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '11-10'.
+static code_t insEncodeUimm2_11_to_10(ssize_t imm);
+
+// Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
+static code_t insEncodeUimm2_20_to_19(ssize_t imm);
+
+// Returns the encoding for the immediate value as 1 bit at bit location '11'.
+static code_t insEncodeImm1_11(ssize_t imm);
+
+// Returns the encoding for the immediate value as 1 bit at bit location '22'.
+static code_t insEncodeImm1_22(ssize_t imm);
 
 // Returns the encoding for the immediate value as 7-bits at bit locations '20-14'.
 static code_t insEncodeUimm7_20_to_14(ssize_t imm);
@@ -585,6 +618,12 @@ static bool isValidSimm4(ssize_t value)
     return (-8 <= value) && (value <= 7);
 };
 
+// Returns true if 'value' is a legal signed immediate 9 bit encoding (such as for LDR).
+static bool isValidSimm9(ssize_t value)
+{
+    return (-256 <= value) && (value <= 255);
+};
+
 // Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
 static bool isValidSimm4_MultipleOf2(ssize_t value)
 {
@@ -613,6 +652,30 @@ static bool isValidSimm4_MultipleOf16(ssize_t value)
 static bool isValidSimm4_MultipleOf32(ssize_t value)
 {
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
+};
+
+// Returns true if 'value' is a legal immediate 1 bit encoding (such as for PEXT).
+static bool isValidImm1(ssize_t value)
+{
+    return (value == 0) || (value == 1);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 2 bit encoding (such as for PEXT).
+static bool isValidUimm2(ssize_t value)
+{
+    return (0 <= value) || (value <= 3);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 3 bit encoding.
+static bool isValidUimm3(ssize_t value)
+{
+    return (0 <= value) && (value <= 7);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
+static bool isValidUimm4(ssize_t value)
+{
+    return (0 <= value) && (value <= 15);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
@@ -1064,6 +1127,12 @@ inline static bool insOptsScalableWordsOrQuadwords(insOpts opt)
     return (insOptsScalableWords(opt) || (opt == INS_OPTS_SCALABLE_Q));
 }
 
+inline static bool insOptsScalableDoubleWordsOrQuadword(insOpts opt)
+{
+    // `opt` is a double-word or quad-word.
+    return ((opt == INS_OPTS_SCALABLE_D) || (opt == INS_OPTS_SCALABLE_Q));
+}
+
 inline static bool insOptsScalableAtLeastHalf(insOpts opt)
 {
     // `opt` is any of the half and above scalable types.
@@ -1181,8 +1250,13 @@ void emitIns_R_I_I(instruction ins,
                    insOpts opt = INS_OPTS_NONE DEBUGARG(size_t targetHandle = 0)
                        DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
-void emitIns_R_R_I(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt = INS_OPTS_NONE);
+void emitIns_R_R_I(instruction     ins,
+                   emitAttr        attr,
+                   regNumber       reg1,
+                   regNumber       reg2,
+                   ssize_t         imm,
+                   insOpts         opt  = INS_OPTS_NONE,
+                   insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 // Checks for a large immediate that needs a second instruction
 void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);
@@ -1204,6 +1278,15 @@ void emitIns_R_R_R_I(instruction ins,
                      insOpts     opt      = INS_OPTS_NONE,
                      emitAttr    attrReg2 = EA_UNKNOWN);
 
+void emitIns_R_R_R_I_I(instruction ins,
+                       emitAttr    attr,
+                       regNumber   reg1,
+                       regNumber   reg2,
+                       regNumber   reg3,
+                       ssize_t     imm1,
+                       ssize_t     imm2,
+                       insOpts     opt);
+
 void emitIns_R_R_R_Ext(instruction ins,
                        emitAttr    attr,
                        regNumber   reg1,
@@ -1223,6 +1306,15 @@ void emitIns_R_R_R_R(instruction     ins,
                      regNumber       reg4,
                      insOpts         opt  = INS_OPTS_NONE,
                      insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitInsSve_R_R_R_R(instruction     ins,
+                        emitAttr        attr,
+                        regNumber       reg1,
+                        regNumber       reg2,
+                        regNumber       reg3,
+                        regNumber       reg4,
+                        insOpts         opt  = INS_OPTS_NONE,
+                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 
