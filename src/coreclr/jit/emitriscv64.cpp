@@ -2122,7 +2122,7 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
     return sizeof(code_t);
 }
 
-static inline void assertCodeLength(unsigned code, uint8_t size)
+static inline void assertCodeLength(size_t code, uint8_t size)
 {
     assert((code >> size) == 0);
 }
@@ -2959,7 +2959,7 @@ BYTE* emitter::emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned
 BYTE* emitter::emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitConsBlock) + offset;
-    assertCodeLength(immediate, 40);
+    assertCodeLength(static_cast<size_t>(immediate), 40);
     const regNumber rsvdReg = codeGen->rsGetRsvdReg();
 
     const instruction lastIns = (*ins == INS_jal) ? (*ins = INS_addi) : *ins;
@@ -3002,7 +3002,7 @@ BYTE* emitter::emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber 
 BYTE* emitter::emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1)
 {
     const ssize_t immediate = reinterpret_cast<ssize_t>(emitCodeBlock) + igOffs;
-    assertCodeLength(immediate, 32 + 20);
+    assertCodeLength(static_cast<size_t>(immediate), 32 + 20);
 
     const regNumber rsvdReg      = codeGen->rsGetRsvdReg();
     const ssize_t   upperSignExt = UpperWordOfDoubleWordDoubleSignExtend<32, 52>(immediate);
