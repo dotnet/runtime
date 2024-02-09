@@ -164,15 +164,20 @@ mono_native_thread_os_id_get (void)
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
+#ifdef __EMSCRIPTEN_PTHREADS__
+	return pthread_create (tid, NULL, (void *(*)(void *)) func, arg) == 0;
+#else
 	g_error ("WASM doesn't support threading");
+#endif
 }
-
-static const char *thread_name;
 
 void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 {
-	thread_name = g_strdup (name);
+#ifndef DISABLE_THREADS
+	// note there is also emscripten_set_thread_name, but it only changes the name for emscripten profiler
+	mono_wasm_pthread_set_name (name);
+#endif
 }
 
 gboolean
@@ -571,6 +576,25 @@ mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void 
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
 }
 
+static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	func (user_data1, user_data2);
+	mono_coop_sem_post (done);
+}
+
+void
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	MonoCoopSem sem;
+	mono_coop_sem_init (&sem, 0);
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, user_data2);
+
+	MONO_ENTER_GC_UNSAFE;
+	mono_coop_sem_wait (&sem, MONO_SEM_FLAGS_NONE);
+	MONO_EXIT_GC_UNSAFE;
+
+	mono_coop_sem_destroy (&sem);
+}
 
 #endif /* DISABLE_THREADS */
 

@@ -216,9 +216,8 @@ decompose_long_opcode (MonoCompile *cfg, MonoInst *ins, MonoInst **repl_ins)
 #endif
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, 0x7fffffff);
 		MONO_EMIT_NEW_COND_EXC (cfg, GT, "OverflowException");
-		/* The int cast is needed for the VS compiler.  See Compiler Warning (level 2) C4146. */
 #if SIZEOF_REGISTER == 8
-		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, (-(int)2147483648));
+		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, INT_MIN);
 #else
 		g_assert (COMPILE_LLVM (cfg));
 		MONO_EMIT_NEW_LCOMPARE_IMM (cfg, ins->sreg1, -2147483648LL);

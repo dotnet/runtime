@@ -79,6 +79,8 @@
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob+libs.pretest</DefaultLibrariesSubsets>
+    <!-- Respect the DotNetBuildTests product flag when building the product. --> 
+    <DefaultLibrariesSubsets Condition="'$(DotNetBuildTests)' == 'true'">$(DefaultLibrariesSubsets)+libs.tests</DefaultLibrariesSubsets>
 
     <DefaultToolsSubsets>tools.illink</DefaultToolsSubsets>
 

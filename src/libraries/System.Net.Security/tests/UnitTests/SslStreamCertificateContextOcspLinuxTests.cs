@@ -15,6 +15,7 @@ using Xunit;
 
 namespace System.Net.Security.Tests;
 
+[PlatformSpecific(TestPlatforms.Linux)]
 public class SslStreamCertificateContextOcspLinuxTests
 {
     [Fact]
@@ -101,7 +102,8 @@ public class SslStreamCertificateContextOcspLinuxTests
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.Add(SslStreamCertificateContext.MinRefreshBeforeExpirationInterval);
 
             SslStreamCertificateContext ctx = ctxFactory(false);
-            byte[] ocsp = await ctx.GetOcspResponseAsync();
+            byte[] ocsp = await ctx.WaitForPendingOcspFetchAsync();
+
             Assert.NotNull(ocsp);
 
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
@@ -111,12 +113,10 @@ public class SslStreamCertificateContextOcspLinuxTests
             byte[] ocsp2 = ctx.GetOcspResponseNoWaiting();
             Assert.Equal(ocsp, ocsp2);
 
-            await RetryHelper.ExecuteAsync(async () =>
-            {
-                byte[] ocsp3 = await ctx.GetOcspResponseAsync();
-                Assert.NotNull(ocsp3);
-                Assert.NotEqual(ocsp, ocsp3);
-            }, maxAttempts: 5, backoffFunc: i => (i + 1) * 200 /* ms */);
+            // The download should succeed
+            byte[] ocsp3 = await ctx.WaitForPendingOcspFetchAsync();
+            Assert.NotNull(ocsp3);
+            Assert.NotEqual(ocsp, ocsp3);
         });
     }
 
@@ -128,7 +128,10 @@ public class SslStreamCertificateContextOcspLinuxTests
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddSeconds(1);
 
             SslStreamCertificateContext ctx = ctxFactory(false);
+            // Make sure the inner OCSP fetch finished
+            await ctx.WaitForPendingOcspFetchAsync();
 
+            // wait until the cached OCSP response expires
             await Task.Delay(2000);
 
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
@@ -137,8 +140,8 @@ public class SslStreamCertificateContextOcspLinuxTests
             byte[] ocsp = ctx.GetOcspResponseNoWaiting();
             Assert.Null(ocsp);
 
-            // subsequent call will return the new response
-            byte[] ocsp2 = await ctx.GetOcspResponseAsync();
+            // The download should succeed
+            byte[] ocsp2 = await ctx.WaitForPendingOcspFetchAsync();
             Assert.NotNull(ocsp2);
         });
     }
@@ -155,25 +158,34 @@ public class SslStreamCertificateContextOcspLinuxTests
             intermediate.RevocationExpiration = DateTimeOffset.UtcNow.Add(SslStreamCertificateContext.MinRefreshBeforeExpirationInterval);
 
             SslStreamCertificateContext ctx = ctxFactory(false);
-            byte[] ocsp = await ctx.GetOcspResponseAsync();
+            // Make sure the inner OCSP fetch finished
+            byte[] ocsp = await ctx.WaitForPendingOcspFetchAsync();
             Assert.NotNull(ocsp);
 
             responder.RespondKind = RespondKind.Invalid;
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 2; i++)
             {
-                await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval);
                 byte[] ocsp2 = await ctx.GetOcspResponseAsync();
+                await ctx.WaitForPendingOcspFetchAsync();
                 Assert.Equal(ocsp, ocsp2);
+                await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval.Add(TimeSpan.FromSeconds(1)));
             }
 
+            // make sure we try again only after backoff expires
+            await ctx.WaitForPendingOcspFetchAsync();
+            await Task.Delay(SslStreamCertificateContext.RefreshAfterFailureBackOffInterval.Add(TimeSpan.FromSeconds(1)));
+
             // after responder comes back online, the staple is eventually refreshed
+            intermediate.RevocationExpiration = DateTimeOffset.UtcNow.AddDays(1);
             responder.RespondKind = RespondKind.Normal;
-            await RetryHelper.ExecuteAsync(async () =>
-            {
-                byte[] ocsp3 = await ctx.GetOcspResponseAsync();
-                Assert.NotNull(ocsp3);
-                Assert.NotEqual(ocsp, ocsp3);
-            }, maxAttempts: 5, backoffFunc: i => (i + 1) * 200 /* ms */);
+
+            // dispatch background refresh (first call still returns the old cached value)
+            await ctx.GetOcspResponseAsync();
+
+            // after refresh we should have a new staple
+            byte[] ocsp3 = await ctx.WaitForPendingOcspFetchAsync();
+            Assert.NotNull(ocsp3);
+            Assert.NotEqual(ocsp, ocsp3);
         });
     }
 

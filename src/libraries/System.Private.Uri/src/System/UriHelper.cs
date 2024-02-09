@@ -322,11 +322,6 @@ namespace System
                             {
                                 if (ch == Uri.c_DummyChar)
                                 {
-                                    if (unescapeMode >= UnescapeMode.UnescapeAllOrThrow)
-                                    {
-                                        // Should be a rare case where the app tries to feed an invalid escaped sequence
-                                        throw new UriFormatException(SR.net_uri_BadString);
-                                    }
                                     continue;
                                 }
                             }
@@ -369,11 +364,6 @@ namespace System
                         }
                         else if (unescapeMode >= UnescapeMode.UnescapeAll)
                         {
-                            if (unescapeMode >= UnescapeMode.UnescapeAllOrThrow)
-                            {
-                                // Should be a rare case where the app tries to feed an invalid escaped sequence
-                                throw new UriFormatException(SR.net_uri_BadString);
-                            }
                             // keep a '%' as part of a bogus sequence
                             continue;
                         }
