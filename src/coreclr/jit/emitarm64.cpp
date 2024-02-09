@@ -18299,7 +18299,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*****************************************************************************
  *
  *  Returns the immediate value for instructions that encode it as a difference
- *  from (size specifier << 3).
+ *  from tszh:tszl:imm3.
  */
 /*static*/ ssize_t emitter::insGetImmDiff(const ssize_t imm, const insOpts opt)
 {

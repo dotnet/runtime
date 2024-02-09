@@ -603,7 +603,7 @@ static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift
 // for an Arm64 Sve instruction.
 static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
-// Returns the immediate value for instructions that encode it as a difference from (size specifier << 3).
+// Returns the immediate value for instructions that encode it as a difference from tszh:tszl:imm3.
 static ssize_t insGetImmDiff(const ssize_t imm, const insOpts opt);
 
 // Returns the encoding to select an insSvePattern
