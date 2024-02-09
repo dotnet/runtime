@@ -4,9 +4,9 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
+import { dumpThreads, onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
 import { mono_wasm_pthread_on_pthread_created } from "../worker";
-import { PThreadLibrary, PThreadWorker, getModulePThread, getRunningWorkers, getUnusedWorkerPool } from "./emscripten-internals";
+import { PThreadLibrary, PThreadWorker, getModulePThread, getUnusedWorkerPool } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
 
@@ -119,26 +119,10 @@ function allocateUnusedWorker(): PThreadWorker {
         pthreadId: 0,
         reuseCount: 0,
         updateCount: 0,
-        threadName: "",
+        threadPrefix: "          -    ",
+        threadName: "emscripten-pool",
     };
     return worker;
 }
 
 
-export function dumpThreads(): void {
-    if (!WasmEnableThreads) return;
-    // eslint-disable-next-line no-console
-    console.log("Running workers:");
-    getRunningWorkers().forEach((worker) => {
-        // eslint-disable-next-line no-console
-        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
-    });
-
-    // eslint-disable-next-line no-console
-    console.log("Unused workers:");
-    getUnusedWorkerPool().forEach((worker) => {
-        // eslint-disable-next-line no-console
-        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
-    });
-
-}

@@ -3,6 +3,7 @@
 
 import { _lookup_js_owned_object } from "./gc-handles";
 import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
+import { mono_log_warn } from "./logging";
 import { PromiseHolder } from "./marshal-to-cs";
 import { ControllablePromise, GCHandle } from "./types/internal";
 
@@ -35,6 +36,13 @@ export function mono_wasm_cancel_promise(task_holder_gc_handle: GCHandle): void 
     const promise = holder.promise;
     loaderHelpers.assertIsControllablePromise(promise);
     const promise_control = loaderHelpers.getPromiseController(promise);
+    if (holder.isResolved) {
+        // FIXME: something needs to free the GCHandle
+        mono_log_warn("Canceling a promise that has already resolved.");
+        return;
+    }
+    mono_assert(!holder.isCanceled, "This promise already canceled.");
+    holder.isCanceled = true;
     promise_control.reject(new Error("OperationCanceledException"));
 }
 

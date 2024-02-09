@@ -93,6 +93,12 @@ typedef struct SeqPointInfo SeqPointInfo;
 #define LLVM_ENABLED FALSE
 #endif
 
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+#define ARCH_SIMD_ENABLED TRUE
+#else
+#define ARCH_SIMD_ENABLED FALSE
+#endif
+
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
 #define COMPILE_SOFT_FLOAT(cfg) (!COMPILE_LLVM ((cfg)) && mono_arch_is_soft_float ())
 #else
@@ -296,24 +302,11 @@ enum {
 /* Determine whenever 'ins' represents a load of the 'this' argument */
 #define MONO_CHECK_THIS(ins) (mono_method_signature_internal (cfg->method)->hasthis && ((ins)->opcode == OP_MOVE) && ((ins)->sreg1 == cfg->args [0]->dreg))
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-
-#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI)  || ((ins)->opcode == OP_XPHI))
-#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE))
-#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
-
-#else
-
-#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI))
-#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE))
-/*A real MOVE is one that isn't decomposed such as a VMOVE or LMOVE*/
-#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_ZERO(ins) ((ins)->opcode == OP_VZERO)
-
-#endif
+#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI)  || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XPHI))
+#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
+#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE))
+#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
+#define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XZERO))
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 #define EMIT_NEW_X86_LEA(cfg,dest,sr1,sr2,shift,imm) do { \
@@ -1516,7 +1509,7 @@ typedef struct {
 	guint            deopt : 1;
 	guint            prefer_instances : 1;
 	guint            init_method_rgctx_elim : 1;
-	guint8           uses_simd_intrinsics;
+	guint8           uses_simd_intrinsics : 1;
 	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
@@ -1697,10 +1690,6 @@ typedef enum {
 	MONO_CFG_NEEDS_DECOMPOSE = 1 << 8,
 	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
-
-typedef enum {
-	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-} MonoSimdIntrinsicsFlags;
 
 typedef struct {
 	gint32 methods_compiled;
@@ -2565,6 +2554,10 @@ void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer
 gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
 void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+// After the pinvoke call is done, this return an error context value from the ccontext.
+gpointer mono_arch_get_swift_error 				(CallContext *ccontext, MonoMethodSignature *sig, int *arg_index);
+#endif
 /* Free the structure returned by mono_arch_get_interp_native_call_info (NULL, sig) */
 void mono_arch_free_interp_native_call_info (gpointer call_info);
 #endif
@@ -2927,6 +2920,7 @@ typedef enum {
 	MONO_CPU_ARM64_NEON   = 1 << 4,
 	MONO_CPU_ARM64_RDM    = 1 << 5,
 	MONO_CPU_ARM64_DP     = 1 << 6,
+	MONO_CPU_ARM64_SVE    = 1 << 7,
 #endif
 } MonoCPUFeatures;
 
@@ -2963,13 +2957,11 @@ MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
-#endif
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared
@@ -2998,7 +2990,7 @@ mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 		return TRUE;
 	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
 #ifdef TARGET_ARM64
-	if (size == 8 || size == 16)
+	if (size == 8 || size == 12 || size == 16)
 		return TRUE;
 #else
 	if (size == 16)

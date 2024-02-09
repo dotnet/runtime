@@ -187,7 +187,7 @@ typedef struct _AssemblyEventData AssemblyEventData;
 typedef enum {
 	TYPE_FLAGS_DELEGATE = 0x1,
 	TYPE_FLAGS_FINALIZABLE = 0x2,
-	TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
+	// unused = 0x4,
 	TYPE_FLAGS_ARRAY = 0x8,
 
 	TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
@@ -1547,8 +1547,6 @@ bulk_type_log_single_type (
 		val->fixed_sized_data.flags |= TYPE_FLAGS_FINALIZABLE;
 	if (m_class_is_delegate (klass))
 		val->fixed_sized_data.flags |= TYPE_FLAGS_DELEGATE;
-	if (mono_class_is_com_object (klass))
-		val->fixed_sized_data.flags |= TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
 	val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
 
 	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated

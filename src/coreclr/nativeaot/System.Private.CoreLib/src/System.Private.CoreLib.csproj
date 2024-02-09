@@ -183,7 +183,6 @@
     <Compile Include="System\GC.NativeAot.cs" />
     <Compile Include="System\Math.NativeAot.cs" />
     <Compile Include="System\MathF.NativeAot.cs" />
-    <Compile Include="System\MulticastDelegate.cs" />
     <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\Resources\ManifestBasedResourceGroveler.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
