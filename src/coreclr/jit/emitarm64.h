@@ -600,6 +600,9 @@ static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift
 // for an Arm64 Sve instruction.
 static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
+// Returns the immediate value for instructions that encode it as a difference from (size specifier << 3).
+static ssize_t insGetImmDiff(const ssize_t imm, const insOpts opt);
+
 // Returns the encoding to select an insSvePattern
 static code_t insEncodeSvePattern(insSvePattern pattern);
 
@@ -675,6 +678,12 @@ static bool isValidUimm3(ssize_t value)
     return (0 <= value) && (value <= 7);
 };
 
+// Returns true if 'value' is a legal unsigned immediate 3 bit encoding, starting from 1 (such as for SHRNB).
+static bool isValidUimm3From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 8);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
 static bool isValidUimm4(ssize_t value)
 {
@@ -691,6 +700,12 @@ static bool isValidUimm4From1(ssize_t value)
 static bool isValidUimm5(ssize_t value)
 {
     return (0 <= value) && (value <= 0x1FLL);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding, starting from 1 (such as for SHRNB).
+static bool isValidUimm5From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 0x20);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).

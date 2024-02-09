@@ -1545,7 +1545,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
-        case IF_SVE_GB_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift right narrow
         {
             assert(insOptsScalableWide(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
@@ -1565,6 +1564,35 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
                 case INS_OPTS_SCALABLE_S:
                     assert(isValidUimm5(imm)); // xx iii
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
+            break;
+        }
+
+        case IF_SVE_GB_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift right narrow
+        {
+            assert(insOptsScalableWide(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));                           // ddddd
+            assert(isVectorRegister(id->idReg2()));                           // nnnnn
+            assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // x xx
+            const ssize_t imm = emitGetInsSC(id);
+
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm3From1(imm)); // iii
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm4From1(imm)); // x iii
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm5From1(imm)); // xx iii
                     break;
 
                 default:
@@ -8910,15 +8938,15 @@ void emitter::emitIns_R_R_I(instruction     ins,
             switch (opt)
             {
                 case INS_OPTS_SCALABLE_B:
-                    assert(isValidUimm3(imm)); // iii
+                    assert(isValidUimm3From1(imm)); // iii
                     break;
 
                 case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm4(imm)); // x iii
+                    assert(isValidUimm4From1(imm)); // x iii
                     break;
 
                 case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm5(imm)); // xx iii
+                    assert(isValidUimm5From1(imm)); // xx iii
                     break;
 
                 default:
@@ -18218,6 +18246,35 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the immediate value for instructions that encode it as a difference
+ *  from (size specifier << 3).
+ */
+/*static*/ ssize_t emitter::insGetImmDiff(const ssize_t imm, const insOpts opt)
+{
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B:
+            assert(isValidUimm3From1(imm));
+            return (8 - imm);
+
+        case INS_OPTS_SCALABLE_H:
+            assert(isValidUimm4From1(imm));
+            return (16 - imm);
+
+        case INS_OPTS_SCALABLE_S:
+            assert(isValidUimm5From1(imm));
+            return (32 - imm);
+
+        default:
+            unreached();
+            break;
+    }
+
+    return 0;
+}
+
+/*****************************************************************************
+ *
  * Returns the encoding to select an insSvePattern
  */
 /*static*/ emitter::code_t emitter::insEncodeSvePattern(insSvePattern pattern)
@@ -20869,11 +20926,20 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             break;
 
         case IF_SVE_FR_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift left long
-        case IF_SVE_GB_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift right narrow
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
             code |= insEncodeUimm5_20_to_16(emitGetInsSC(id));                                     // iii
+            code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
+                                                                                                   // x
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_GB_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift right narrow
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                                           // nnnnn
+            code |= insEncodeUimm5_20_to_16(insGetImmDiff(emitGetInsSC(id), id->idInsOpt()));      // iii
             code |= insEncodeSveElemsize_tszh_22_tszl_20_to_19(optGetSveElemsize(id->idInsOpt())); // xx
                                                                                                    // x
             dst += emitOutput_Instr(dst, code);
@@ -24147,7 +24213,7 @@ void emitter::emitDispInsHelp(
             emitDispImm(emitGetInsSC(id), false);                   // iii
             break;
         }
-        
+
         // <Zd>.<T>, <Zn>.<Tb>, #<const>
         case IF_SVE_GB_2A: // .........x.xxiii ......nnnnnddddd -- SVE2 bitwise shift right narrow
         {
