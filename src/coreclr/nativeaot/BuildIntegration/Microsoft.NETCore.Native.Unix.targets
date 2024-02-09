@@ -175,7 +175,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(NativeAotSupported)' == 'true' and '$(_IsApplePlatform)' == 'true'">
+    <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false' and '$(_IsApplePlatform)' == 'true'">
       <CustomLinkerArg Condition="'$(_XcodeVersion)' &gt;= '15'" Include="-ld_classic" />
     </ItemGroup>
 
