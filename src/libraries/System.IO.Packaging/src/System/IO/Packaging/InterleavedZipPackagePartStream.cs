@@ -55,29 +55,15 @@ namespace System.IO.Packaging
 
         /// <inheritdoc/>
         public override int Read(byte[] buffer, int offset, int count)
-            => Read(new Span<byte>(buffer, offset, count));
+            => ReadCore(new Span<byte>(buffer, offset, count));
 
-
-#if NETCOREAPP2_1_OR_GREATER
+#if !NETFRAMEWORK && !NETSTANDARD2_0
         /// <inheritdoc/>
-        public override
-#else
-        /// <summary>
-        /// When overridden in a derived class, reads a sequence of bytes from the current stream and
-        /// advances the position within the stream by the number of bytes read.
-        /// </summary>
-        /// <param name="buffer">
-        /// A region of memory. When this method returns, the contents of this region are replaced by
-        /// the bytes read from the current source.
-        /// </param>
-        /// <returns>
-        /// The total number of bytes read into the buffer. This can be less than the size of the buffer
-        /// if that many bytes are not currently available, or zero (0) if the buffer's length is zero
-        /// or the end of the stream has been reached.
-        /// </returns>
-        public
+        public override int Read(Span<byte> buffer)
+            => ReadCore(buffer);
 #endif
-        int Read(Span<byte> buffer)
+
+        private int ReadCore(Span<byte> buffer)
         {
             CheckClosed();
 
@@ -99,7 +85,7 @@ namespace System.IO.Packaging
 
             // .NET Standard 2.0 doesn't support the Read(Span<byte>) method. Instead, we rent a temporary
             // buffer of the same length, read into that and perform a copy into the span.
-#if !NETCOREAPP2_1_OR_GREATER
+#if NETFRAMEWORK || NETSTANDARD2_0
             byte[] tempInputBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
 #endif
 
@@ -124,7 +110,7 @@ namespace System.IO.Packaging
 
                 while (totalBytesRead < buffer.Length)
                 {
-#if NETCOREAPP2_1_OR_GREATER
+#if !NETFRAMEWORK && !NETSTANDARD2_0
                     int numBytesRead = pieceStream.Read(buffer.Slice(totalBytesRead));
 #else
                     int numBytesRead = pieceStream.Read(
@@ -164,7 +150,7 @@ namespace System.IO.Packaging
                     totalBytesRead += numBytesRead;
                 }
 
-#if !NETCOREAPP2_1_OR_GREATER
+#if NETFRAMEWORK || NETSTANDARD2_0
                 ArrayPool<byte>.Shared.Return(tempInputBuffer);
 #endif
 
@@ -261,30 +247,19 @@ namespace System.IO.Packaging
         /// pieces.
         /// </remarks>
         public override void Write(byte[] buffer, int offset, int count)
-            => Write(new ReadOnlySpan<byte>(buffer, offset, count));
+            => WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
 
-#if NETCOREAPP2_1_OR_GREATER
+#if !NETFRAMEWORK && !NETSTANDARD2_0
         /// <inheritdoc/>
         /// <remarks>
         /// Zip streams can be assumed seekable so the length will be available for chaining
         /// pieces.
         /// </remarks>
-        public override
-#else
-        /// <summary>
-        /// When overridden in a derived class, writes a sequence of bytes to the current stream
-        /// and advances the current position within this stream by the number of bytes written.
-        /// </summary>
-        /// <param name="buffer">
-        /// A region of memory. This method copies the contents of this region to the current stream.
-        /// </param>
-        /// <remarks>
-        /// Zip streams can be assumed seekable so the length will be available for chaining
-        /// pieces.
-        /// </remarks>
-        public
+        public override void Write(ReadOnlySpan<byte> buffer)
+            => WriteCore(buffer);
 #endif
-        void Write(ReadOnlySpan<byte> buffer)
+
+        private void WriteCore(ReadOnlySpan<byte> buffer)
         {
             CheckClosed();
 
@@ -306,7 +281,7 @@ namespace System.IO.Packaging
             // .NET Standard 2.0 doesn't support the Write(ReadOnlySpan<byte>) method. Instead, rent a temporary
             // buffer of a specific length, write into that and write that to the underlying stream.
             // To slightly reduce memory usage, this buffer is reallocated with every new piece.
-#if !NETCOREAPP2_1_OR_GREATER
+#if NETFRAMEWORK || NETSTANDARD2_0
             byte[] tempInputBuffer = null;
 #endif
 
@@ -332,7 +307,7 @@ namespace System.IO.Packaging
                         }
                     }
 
-#if !NETCOREAPP2_1_OR_GREATER
+#if NETFRAMEWORK || NETSTANDARD2_0
                     // Allocate memory to tempInputBuffer, copy the correct segment from the ReadOnlySpan, and
                     // do the write to pieceStream.
                     tempInputBuffer ??= ArrayPool<byte>.Shared.Rent(numBytesToWriteInCurrentPiece);
@@ -358,7 +333,7 @@ namespace System.IO.Packaging
                         //Seek inorder to set the correct pointer for the next piece stream
                         pieceStream.Seek(0, SeekOrigin.Begin);
 
-#if !NETCOREAPP2_1_OR_GREATER
+#if NETFRAMEWORK || NETSTANDARD2_0
                         // Return and unset tempInputBuffer, forcing it to be reallocated with the size of
                         // the next piece.
                         ArrayPool<byte>.Shared.Return(tempInputBuffer);
