@@ -366,7 +366,7 @@ const char* getRegName(regNumber reg);
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
-extern void dspRegMask(regMaskTP regMask, size_t minSiz = 0);
+extern void dspRegMask(regMaskAny regMask, size_t minSiz = 0);
 #endif
 
 #if CPU_HAS_BYTE_REGS
@@ -381,8 +381,8 @@ inline bool isByteReg(regNumber reg)
 }
 #endif
 
-inline regMaskTP genRegMask(regNumber reg);
-inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
+inline regMaskAny genRegMask(regNumber reg);
+inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -474,7 +474,7 @@ inline regNumber theFixedRetBuffReg()
 // theFixedRetBuffMask:
 //     Returns the regNumber to use for the fixed return buffer
 //
-inline regMaskTP theFixedRetBuffMask()
+inline regMaskGpr theFixedRetBuffMask()
 {
     assert(hasFixedRetBuffReg()); // This predicate should be checked before calling this method
 #ifdef TARGET_ARM64
@@ -503,7 +503,7 @@ inline unsigned theFixedRetBuffArgNum()
 //     Returns the full mask of all possible integer registers
 //     Note this includes the fixed return buffer register on Arm64
 //
-inline regMaskTP fullIntArgRegMask()
+inline regMaskGpr fullIntArgRegMask()
 {
     if (hasFixedRetBuffReg())
     {
@@ -588,7 +588,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
 
 extern const regMaskSmall regMasks[REG_COUNT];
 
-inline regMaskTP genRegMask(regNumber reg)
+inline regMaskAny genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
 #ifdef TARGET_AMD64
@@ -596,7 +596,7 @@ inline regMaskTP genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskTP result = 1ULL << reg;
+    regMaskAny result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
@@ -652,10 +652,10 @@ inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TY
 //    For registers that are used in pairs, the caller will be handling
 //    each member of the pair separately.
 //
-inline regMaskTP genRegMask(regNumber regNum, var_types type)
+inline regMaskAny genRegMask(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
-    regMaskTP regMask = RBM_NONE;
+    regMaskAny regMask = RBM_NONE;
 
     if (varTypeUsesIntReg(type))
     {
