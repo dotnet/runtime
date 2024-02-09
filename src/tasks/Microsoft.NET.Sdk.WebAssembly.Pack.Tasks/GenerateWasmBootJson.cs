@@ -71,6 +71,8 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] LazyLoadedAssemblies { get; set; }
 
+    public bool IsPublish { get; set; }
+
     public override bool Execute()
     {
         using var fileStream = File.Create(OutputPath);
@@ -330,8 +332,16 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
+            int? debugLevel = ParseOptionalInt(DebugLevel);
+
             // If user didn't give us a value, check if we have any PDB.
-            result.debugLevel = ParseOptionalInt(DebugLevel) ?? (result.resources?.pdb?.Count > 0 ? -1 : 0);
+            if (debugLevel == null && result.resources?.pdb?.Count > 0)
+                debugLevel = -1;
+
+            // Fallback to -1 for build, or 0 for publish
+            debugLevel ??= IsPublish ? 0 : -1;
+
+            result.debugLevel = debugLevel.Value;
         }
 
         if (ConfigurationFiles != null)

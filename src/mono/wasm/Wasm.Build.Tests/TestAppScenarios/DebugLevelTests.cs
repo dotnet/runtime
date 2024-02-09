@@ -91,4 +91,19 @@ public class DebugLevelTests : AppTestBase
         ));
         AssertDebugLevel(result, debugLevel);
     }
+
+    [Theory]
+    [InlineData("Debug")]
+    [InlineData("Release")]
+    public async Task PublishWithDefaultLevelAndPdbs(string configuration)
+    {
+        CopyTestAsset("WasmBasicTestApp", $"DebugLevelTests_PublishWithDefaultLevelAndPdbs_{configuration}");
+        PublishProject(configuration, $"-p:CopyOutputSymbolsToPublishDirectory=true");
+
+        var result = await RunSdkStyleAppForPublish(new(
+            Configuration: configuration,
+            TestScenario: "DebugLevelTest"
+        ));
+        AssertDebugLevel(result, -1);
+    }
 }
