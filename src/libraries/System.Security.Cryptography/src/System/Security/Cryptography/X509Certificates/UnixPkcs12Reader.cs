@@ -24,8 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
         private ContentInfoAsn[]? _safeContentsValues;
         private CertAndKey[]? _certs;
         private int _certCount;
-        private PointerMemoryManager<byte>? _tmpManager;
-        private SafeLocalAllocWithClearOnDisposeHandle _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.InvalidHandle;
+        private UnmanagedCryptoBufferMemoryManager? _tmpManager;
         private bool _allowDoubleBind;
 
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
@@ -42,8 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
                 ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
 
                 // We use unmanaged buffer to avoid GC compaction clones of the private key material
-                _tmpMemoryHandle = SafeLocalAllocWithClearOnDisposeHandle.Create(encodedData.Length);
-                _tmpManager = DangerousCreateMemoryManagerFromHandle(_tmpMemoryHandle);
+                _tmpManager = new UnmanagedCryptoBufferMemoryManager(encodedData.Length);
                 Span<byte> tmpSpan = _tmpManager.GetSpan();
                 encodedData.CopyTo(tmpSpan);
 
@@ -64,14 +62,6 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
-
-        /// <summary>
-        /// This method can be very dangerous to use.
-        /// This method doesn't manage the ref count of the handle.
-        /// It is the caller's responsibility to ensure that the handle is alive for the duration of the memory manager's lifetime.
-        /// </summary>
-        private static unsafe PointerMemoryManager<byte> DangerousCreateMemoryManagerFromHandle(SafeLocalAllocWithClearOnDisposeHandle safeHandle)
-            => new PointerMemoryManager<byte>((byte*)safeHandle.DangerousGetHandle(), safeHandle.Length);
 
         internal CertAndKey GetSingleCert()
         {
@@ -121,7 +111,6 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ((IDisposable?)_tmpManager)?.Dispose();
             _tmpManager = null;
-            _tmpMemoryHandle.Dispose();
 
             ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
             CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
