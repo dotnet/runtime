@@ -239,6 +239,38 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
+# Mono CoreCLR runtime test executions using live libraries and mini Full AOT
+# Only when Mono is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+      - linux_x64
+    variables:
+      - name: timeoutPerTestInMinutes
+        value: 60
+      - name: timeoutPerTestCollectionInMinutes
+        value: 180
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_MiniFullAot_RuntimeTests
+      runtimeVariant: minifullaot
+      buildArgs: -s mono+libs+clr.hosts -c Release
+      timeoutInMinutes: 300
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            llvmAotStepContainer: linux_x64
+            testRunNamePrefixSuffix: Mono_Release
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+
+#
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
 # Only when Mono is changed
 - template: /eng/pipelines/common/platform-matrix.yml
