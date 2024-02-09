@@ -57,7 +57,7 @@ void emitterStats(FILE* fout);
 void emitterStaticStats(FILE* fout); // Static stats about the emitter (data structure offsets, sizes, etc.)
 #endif
 
-void printRegMaskInt(regMaskTP mask);
+void printRegMaskInt(regMaskGpr mask);
 
 /*****************************************************************************/
 /* Forward declarations */
@@ -2471,18 +2471,18 @@ public:
 
 private:
 #if defined(TARGET_AMD64)
-    regMaskTP rbmFltCalleeTrash;
+    regMaskFloat rbmFltCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskFloat get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP rbmMskCalleeTrash;
+    regMaskPredicate rbmMskCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskPredicate get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
@@ -3197,7 +3197,7 @@ public:
 
 #ifdef DEBUG
     const char* emitGetFrameReg();
-    void emitDispRegSet(regMaskTP regs);
+    void        emitDispRegSet(regMaskAny regs);
     void emitDispVarSet();
 #endif
 
