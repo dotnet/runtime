@@ -1087,6 +1087,7 @@ namespace System
         private object? m_d;
         private int m_b;
         private object? m_e;
+        private object? m_f;
         private RuntimeFieldHandleInternal m_fieldHandle;
 #pragma warning restore 414, 169, IDE0044
 
@@ -1190,6 +1191,15 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsFastPathSupported(RtFieldInfo field);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetInstanceFieldOffset(RtFieldInfo field);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern IntPtr GetStaticFieldAddress(RtFieldInfo field);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetToken(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1199,7 +1209,7 @@ namespace System
         internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, FieldAttributes fieldAttr, RuntimeType? declaringType, ref bool domainInitialized);
+        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool domainInitialized);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);

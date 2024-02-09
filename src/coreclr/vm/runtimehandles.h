@@ -293,9 +293,12 @@ class RuntimeFieldHandle {
 
 public:
     static FCDECL5(Object*, GetValue, ReflectFieldObject *pFieldUNSAFE, Object *instanceUNSAFE, ReflectClassBaseObject *pFieldType, ReflectClassBaseObject *pDeclaringType, CLR_BOOL *pDomainInitialized);
-    static FCDECL7(void, SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldType, DWORD attr, ReflectClassBaseObject *pDeclaringType, CLR_BOOL *pDomainInitialized);
+    static FCDECL6(void, SetValue, ReflectFieldObject *pFieldUNSAFE, Object *targetUNSAFE, Object *valueUNSAFE, ReflectClassBaseObject *pFieldType, ReflectClassBaseObject *pDeclaringType, CLR_BOOL *pDomainInitialized);
     static FCDECL4(Object*, GetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldType, TypedByRef *pTarget, ReflectClassBaseObject *pDeclaringType);
     static FCDECL5(void, SetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldType, TypedByRef *pTarget, Object *valueUNSAFE, ReflectClassBaseObject *pContextType);
+    static FCDECL1(FC_BOOL_RET, IsFastPathSupported, ReflectFieldObject *pField);
+    static FCDECL1(INT32, GetInstanceFieldOffset, ReflectFieldObject *pField);
+    static FCDECL1(void*, GetStaticFieldAddress, ReflectFieldObject *pField);
     static FCDECL1(StringObject*, GetName, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL1(LPCUTF8, GetUtf8Name, FieldDesc *pField);
 
