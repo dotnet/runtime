@@ -1648,6 +1648,9 @@
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
   </data>
+  <data name="Argument_WrongSizeArrayInNativeStruct" xml:space="preserve">
+    <value>Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout.</value>
+  </data>
   <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
     <value>MethodOverride's body must be from this type.</value>
   </data>

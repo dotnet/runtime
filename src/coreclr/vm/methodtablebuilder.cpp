@@ -1373,7 +1373,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         *pszDebugNamespace ? NAMESPACE_SEPARATOR_STR : "",
         debugName.GetUTF8(),
         pModule->GetDebugName(),
-        pModule->GetDomain(),
+        AppDomain::GetCurrentDomain(),
         (pModule->IsSystem()) ? "System Domain" : ""
     ));
 #endif // _DEBUG
