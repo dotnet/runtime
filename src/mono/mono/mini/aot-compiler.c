@@ -14229,7 +14229,7 @@ static void
 acfg_free (MonoAotCompile *acfg)
 {
 #ifdef ENABLE_LLVM
-	if (acfg->aot_opts.llvm)
+	if (mono_use_llvm || acfg->aot_opts.llvm)
 		mono_llvm_free_aot_module ();
 #endif
 

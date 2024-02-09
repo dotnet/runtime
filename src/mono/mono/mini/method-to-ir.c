@@ -4746,6 +4746,15 @@ mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *
 	return inline_method (cfg, cmethod, fsig, sp, ip, real_offset, inline_always, NULL);
 }
 
+static gboolean
+aggressive_inline_method (MonoMethod *cmethod)
+{
+	gboolean aggressive_inline = m_method_is_aggressive_inlining (cmethod);
+	if (aggressive_inline)
+		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cmethod);
+	return aggressive_inline;
+}
+
 /*
  * inline_method:
  *
@@ -4871,7 +4880,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
-	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))) {
+	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cmethod))) {
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
