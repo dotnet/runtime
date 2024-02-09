@@ -4130,15 +4130,15 @@ PALIMPORT int __cdecl setvbuf(FILE *stream, char *, int, size_t);
 // in all cases. Instead, we shim it and implement the PAL function where we can include the standard headers.
 // When we allow people to include the standard headers, then we can remove this.
 
-PALIMPORT int * __cdecl PAL_errno();
+PALIMPORT DLLEXPORT int * __cdecl PAL_errno();
 #define errno  (*PAL_errno())
 
 // Only provide a prototype for the PAL forwarders for the standard streams if we are not including the standard headers.
 #ifndef DEFINE_DUMMY_FILE_TYPE
 
-extern "C" PALIMPORT FILE* __cdecl PAL_stdout();
-extern "C" PALIMPORT FILE* __cdecl PAL_stdin();
-extern "C" PALIMPORT FILE* __cdecl PAL_stderr();
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdout();
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdin();
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stderr();
 #define stdout PAL_stdout()
 #define stdin PAL_stdin()
 #define stderr PAL_stderr()

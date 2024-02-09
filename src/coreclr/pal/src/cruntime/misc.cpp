@@ -113,22 +113,22 @@ __iscsym( int c )
 PAL forwarders for standard macro headers.
 
 --*/
-int * __cdecl PAL_errno()
+PALIMPORT DLLEXPORT int * __cdecl PAL_errno()
 {
     return &errno;
 }
 
-extern "C" FILE* __cdecl PAL_stdout()
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdout()
 {
     return stdout;
 }
 
-extern "C" FILE* __cdecl PAL_stdin()
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdin()
 {
     return stdin;
 }
 
-extern "C" FILE* __cdecl PAL_stderr()
+extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stderr()
 {
     return stderr;
 }
