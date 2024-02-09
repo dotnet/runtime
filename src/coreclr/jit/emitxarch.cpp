@@ -14663,7 +14663,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case IF_RRW:
         {
 #ifdef DEBUG
-            regMaskTP regMask = genRegMask(reg);
+            regMaskAny regMask = genRegMask(reg);
 #endif
             if (id->idGCref())
             {
@@ -15006,7 +15006,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // instruction, if writing a GC ref even through reading a long, will go live here.
                         // These situations typically occur due to unsafe casting, such as with Span<T>.
 
-                        regMaskTP regMask;
+                        regMaskAny regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
 
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF
@@ -15509,7 +15509,7 @@ DONE:
                 assert(id->idGCref() == GCT_BYREF);
 
 #ifdef DEBUG
-                regMaskTP regMask;
+                regMaskGpr regMask;
                 regMask = genRegMask(reg);
                 // FIXNOW review the other places and relax the assert there too
 
@@ -17936,7 +17936,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         // The target of the 3-operand imul is implicitly encoded. Make sure
         // that we detected the implicit register and cleared its GC-status.
 
-        regMaskTP regMask = genRegMask(inst3opImulReg(ins));
+        regMaskAny regMask = genRegMask(inst3opImulReg(ins));
         assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
     }
 
