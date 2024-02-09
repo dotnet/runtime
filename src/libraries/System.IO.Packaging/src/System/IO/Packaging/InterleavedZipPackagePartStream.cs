@@ -108,10 +108,12 @@ namespace System.IO.Packaging
                     SeekUnderlyingPieceStream(pieceStream, pieceStreamRelativeOffset);
                 }
 
-                while (totalBytesRead < buffer.Length)
+                try
                 {
+                    while (totalBytesRead < buffer.Length)
+                    {
 #if !NETFRAMEWORK && !NETSTANDARD2_0
-                    int numBytesRead = pieceStream.Read(buffer.Slice(totalBytesRead));
+                        int numBytesRead = pieceStream.Read(buffer.Slice(totalBytesRead));
 #else
                     int numBytesRead = pieceStream.Read(
                         tempInputBuffer,
@@ -122,37 +124,40 @@ namespace System.IO.Packaging
 #endif
 
 
-                    // End of the current stream: try to move to the next stream.
-                    if (numBytesRead == 0)
-                    {
-                        if (_dir.IsLastPiece(pieceNumber))
-                            break;
-
-                        ++pieceNumber;
-                        Debug.Assert(_dir.GetStartOffset(pieceNumber) == _currentOffset + totalBytesRead);
-
-                        pieceStream = _dir.GetStream(pieceNumber);
-
-                        //Seek inorder to set the correct pointer for the next piece stream
-                        if (pieceStream.CanSeek)
+                        // End of the current stream: try to move to the next stream.
+                        if (numBytesRead == 0)
                         {
-                            if (pieceStream.Position != 0)
+                            if (_dir.IsLastPiece(pieceNumber))
+                                break;
+
+                            ++pieceNumber;
+                            Debug.Assert(_dir.GetStartOffset(pieceNumber) == _currentOffset + totalBytesRead);
+
+                            pieceStream = _dir.GetStream(pieceNumber);
+
+                            //Seek inorder to set the correct pointer for the next piece stream
+                            if (pieceStream.CanSeek)
                             {
-                                pieceStream.Seek(0, SeekOrigin.Begin);
-                            }
-                            else
-                            {
-                                pieceStream = _dir.ResetStream(pieceNumber);
+                                if (pieceStream.Position != 0)
+                                {
+                                    pieceStream.Seek(0, SeekOrigin.Begin);
+                                }
+                                else
+                                {
+                                    pieceStream = _dir.ResetStream(pieceNumber);
+                                }
                             }
                         }
+
+                        totalBytesRead += numBytesRead;
                     }
-
-                    totalBytesRead += numBytesRead;
                 }
-
+                finally
+                {
 #if NETFRAMEWORK || NETSTANDARD2_0
-                ArrayPool<byte>.Shared.Return(tempInputBuffer);
+                    ArrayPool<byte>.Shared.Return(tempInputBuffer);
 #endif
+                }
 
                 // Advance current position now we know the operation completed successfully.
                 _currentOffset += totalBytesRead;
@@ -527,13 +532,18 @@ namespace System.IO.Packaging
             byte[] readBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
             int bytesRead = byteCount < BufferSize ? (int)byteCount : BufferSize;
 
-            do
+            try
             {
-                bytesRead = pieceStream.Read(readBuffer, 0, bytesRead);
-                remainingBytes -= bytesRead;
-            } while (remainingBytes > 0 && bytesRead > 0);
-
-            ArrayPool<byte>.Shared.Return(readBuffer);
+                do
+                {
+                    bytesRead = pieceStream.Read(readBuffer, 0, bytesRead);
+                    remainingBytes -= bytesRead;
+                } while (remainingBytes > 0 && bytesRead > 0);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(readBuffer);
+            }
 
             if (remainingBytes != 0)
             {
