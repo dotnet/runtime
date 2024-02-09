@@ -53,6 +53,7 @@
   <Target Name="AddLinuxPackageInformation" BeforeTargets="GetDebInstallerJsonProperties;GetRpmInstallerJsonProperties">
     <ItemGroup>
       <LinuxPackageDependency Include="dotnet-hostfxr-$(MajorVersion).$(MinorVersion);dotnet-runtime-deps-$(MajorVersion).$(MinorVersion)" Version="$(InstallerPackageVersion)" />
+      <RpmJsonProperty Include="directories" Object="[ &quot;/usr/share/dotnet/shared/$(MicrosoftNetCoreAppFrameworkName)&quot; ]" />
     </ItemGroup>
   </Target>
 
