@@ -6169,10 +6169,11 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 }
 
 gboolean
-mono_simd_unsupported_aggressive_inline_intrinsic_type(MonoMethod* cmethod)
+mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod* cmethod)
 {
 	return FALSE;
 }
+
 #endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
 
 #endif /* DISABLE_JIT */
@@ -6205,6 +6206,12 @@ mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
+}
+
+gboolean
+mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod* cmethod)
+{
+	return FALSE;
 }
 
 #endif /* MONO_ARCH_SIMD_INTRINSICS */

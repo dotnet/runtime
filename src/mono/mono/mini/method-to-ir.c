@@ -4750,10 +4750,8 @@ static gboolean
 aggressive_inline_method (MonoMethod *cmethod)
 {
 	gboolean aggressive_inline = m_method_is_aggressive_inlining (cmethod);
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (aggressive_inline)
 		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cmethod);
-#endif
 	return aggressive_inline;
 }
 
