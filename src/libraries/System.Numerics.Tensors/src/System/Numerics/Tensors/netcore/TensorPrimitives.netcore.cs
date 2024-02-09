@@ -18368,9 +18368,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize for float
 
             public static int Invoke(T x) => T.ILogB(x);
-            public static Vector128<int> Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static Vector256<int> Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static Vector512<int> Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static Vector128<int> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<int> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<int> Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>double.ILogB(x)</summary>
@@ -18379,9 +18379,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static int Invoke(double x) => double.ILogB(x);
-            public static Vector128<int> Invoke(Vector128<double> lower, Vector128<double> upper) => throw new NotImplementedException();
-            public static Vector256<int> Invoke(Vector256<double> lower, Vector256<double> upper) => throw new NotImplementedException();
-            public static Vector512<int> Invoke(Vector512<double> lower, Vector512<double> upper) => throw new NotImplementedException();
+            public static Vector128<int> Invoke(Vector128<double> lower, Vector128<double> upper) => throw new NotSupportedException();
+            public static Vector256<int> Invoke(Vector256<double> lower, Vector256<double> upper) => throw new NotSupportedException();
+            public static Vector512<int> Invoke(Vector512<double> lower, Vector512<double> upper) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateChecked(x)</summary>
@@ -18390,9 +18390,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateChecked(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateSaturating(x)</summary>
@@ -18401,9 +18401,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateSaturating(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateTruncating(x)</summary>
@@ -18412,9 +18412,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateTruncating(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>(uint)float</summary>
@@ -19058,9 +19058,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static (T, T) Invoke(T x) => T.SinCos(x);
-            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.SinCosPi(x)</summary>
@@ -19069,9 +19069,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static (T, T) Invoke(T x) => T.SinCosPi(x);
-            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>
