@@ -182,6 +182,7 @@ function_name() to call the system's implementation
 #define strrchr DUMMY_strrchr
 #define strpbrk DUMMY_strpbrk
 #define strtod DUMMY_strtod
+#define strtok_r DUMMY_strtok_r
 #define tolower DUMMY_tolower
 #define toupper DUMMY_toupper
 #define isprint DUMMY_isprint
@@ -375,7 +376,7 @@ function_name() to call the system's implementation
 #undef strtoul
 #undef strtoull
 #undef strtod
-#undef strtok
+#undef strtok_r
 #undef strdup
 #undef tolower
 #undef toupper

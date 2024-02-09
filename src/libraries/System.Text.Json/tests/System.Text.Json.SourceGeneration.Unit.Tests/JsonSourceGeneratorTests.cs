@@ -795,5 +795,32 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 #endif
+
+        [Fact]
+        public void FastPathWithReservedKeywordPropertyNames_CompilesSuccessfully()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98050
+
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public class Model
+                {
+                    public string type { get; set; }
+                    public string alias { get; set; }
+                    public string @class { get; set; }
+                    public string @struct { get; set; }
+                }
+
+                [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+                [JsonSerializable(typeof(Model))]
+                internal partial class ModelContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
     }
 }

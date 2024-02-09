@@ -79,12 +79,26 @@ namespace System.Reflection.Emit
         {
             get
             {
-                if (_method.ContainsGenericParameters)
+                if (_method.ContainsGenericParameters || _type.ContainsGenericParameters)
+                {
                     return true;
-                if (!_method.IsGenericMethodDefinition)
-                    throw new NotSupportedException();
+                }
 
-                return _method.ContainsGenericParameters;
+                if (!IsGenericMethod)
+                {
+                    return false;
+                }
+
+                Type[] args = GetGenericArguments();
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (args[i].ContainsGenericParameters)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]

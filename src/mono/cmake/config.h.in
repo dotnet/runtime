@@ -235,9 +235,6 @@
 /* Disable support debug logging */
 #cmakedefine DISABLE_LOGGING 1
 
-/* Disable COM support */
-#cmakedefine DISABLE_COM 1
-
 /* Disable advanced SSA JIT optimizations */
 #cmakedefine DISABLE_SSA 1
 
