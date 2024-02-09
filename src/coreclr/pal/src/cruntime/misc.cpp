@@ -110,22 +110,27 @@ __iscsym( int c )
 }
 /*++
 
-Function :
-
-    PAL_errno
-
-    Returns the address of the errno.
+PAL forwarders for standard macro headers.
 
 --*/
 int * __cdecl PAL_errno()
 {
-    int *retval;
-    PERF_ENTRY(errno);
-    ENTRY( "PAL_errno( void )\n" );
-    retval = (INT*)(&errno);
-    LOGEXIT("PAL_errno returns %p\n",retval);
-    PERF_EXIT(errno);
-    return retval;
+    return &errno;
+}
+
+extern "C" FILE* __cdecl PAL_stdout()
+{
+    return stdout;
+}
+
+extern "C" FILE* __cdecl PAL_stdin()
+{
+    return stdin;
+}
+
+extern "C" FILE* __cdecl PAL_stderr()
+{
+    return stderr;
 }
 
 /*++

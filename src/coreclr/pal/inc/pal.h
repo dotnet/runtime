@@ -4105,15 +4105,12 @@ PALIMPORT int remove(const char*);
 
 struct _FILE;
 
-#ifndef SKIP_STD_FILE_DECLS
-typedef struct _FILE FILE;
-extern FILE * stdout;
-extern FILE * stdin;
-extern FILE * stderr;
-#else
+#ifdef DEFINE_DUMMY_FILE_TYPE
 #define FILE _PAL_FILE
 struct _PAL_FILE;
-#endif // SKIP_STD_FILE_DECLS
+#else
+typedef _FILE FILE;
+#endif // DEFINE_DUMMY_FILE_TYPE
 
 PALIMPORT int __cdecl fclose(FILE *);
 PALIMPORT int __cdecl fflush(FILE *);
@@ -4129,15 +4126,28 @@ PALIMPORT int __cdecl ferror(FILE *);
 PALIMPORT FILE * __cdecl fopen(const char *, const char *);
 PALIMPORT int __cdecl setvbuf(FILE *stream, char *, int, size_t);
 
-#ifdef SKIP_STD_FILE_DECLS
-#undef FILE
-#endif
-
-// We need a PAL shim for errno as it's not possible to replicate the errno definition from the standard library
+// We need a PAL shim for errno and the standard streams as it's not possible to replicate these definition from the standard library
 // in all cases. Instead, we shim it and implement the PAL function where we can include the standard headers.
 // When we allow people to include the standard headers, then we can remove this.
-PALIMPORT DLLEXPORT int * __cdecl PAL_errno();
+
+PALIMPORT int * __cdecl PAL_errno();
 #define errno  (*PAL_errno())
+
+// Only provide a prototype for the PAL forwarders for the standard streams if we are not including the standard headers.
+#ifndef DEFINE_DUMMY_FILE_TYPE
+
+extern "C" PALIMPORT FILE* __cdecl PAL_stdout();
+extern "C" PALIMPORT FILE* __cdecl PAL_stdin();
+extern "C" PALIMPORT FILE* __cdecl PAL_stderr();
+#define stdout PAL_stdout()
+#define stdin PAL_stdin()
+#define stderr PAL_stderr()
+
+#endif
+
+#ifdef DEFINE_DUMMY_FILE_TYPE
+#undef FILE
+#endif
 #endif // PAL_STDCPP_COMPAT
 
 /* _TRUNCATE */
@@ -4177,7 +4187,7 @@ PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
 
-#ifndef SKIP_STD_FILE_DECLS
+#ifndef DEFINE_DUMMY_FILE_TYPE
 PALIMPORT FILE * __cdecl _wfopen(const WCHAR *, const WCHAR *);
 #endif
 

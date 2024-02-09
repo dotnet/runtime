@@ -29,8 +29,8 @@ nativeStringResourceTable_mscorrc
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
 #PAL_GetUnwindInfoSize
-#PAL_get_stdout
-#PAL_get_stderr
+#PAL_stdout
+#PAL_stderr
 #PAL_GetApplicationGroupId
 #PAL_GetTransportName
 #PAL_GetCurrentThread

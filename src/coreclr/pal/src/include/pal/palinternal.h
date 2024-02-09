@@ -343,7 +343,7 @@ function_name() to call the system's implementation
 #define uintptr_t PAL_uintptr_t
 #define timeval PAL_timeval
 
-#define SKIP_STD_FILE_DECLS
+#define DEFINE_DUMMY_FILE_TYPE
 
 #include "pal.h"
 #include "palprivate.h"

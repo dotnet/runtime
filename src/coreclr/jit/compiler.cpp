@@ -9088,7 +9088,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
