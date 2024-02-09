@@ -25,7 +25,6 @@ namespace System.Net
         private WebHeaderCollection? _webHeaderCollection;
         private string? _characterSet;
         private readonly bool _isVersionHttp11 = true;
-        private readonly int _maxErrorResponseLength = -1;
 
         [Obsolete("This API supports the .NET infrastructure and is not intended to be used directly from your code.", true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -54,11 +53,10 @@ namespace System.Net
             throw new PlatformNotSupportedException();
         }
 
-        internal HttpWebResponse(HttpResponseMessage _message, Uri requestUri, CookieContainer? cookieContainer, int maxErrorResponseLength)
+        internal HttpWebResponse(HttpResponseMessage _message, Uri requestUri, CookieContainer? cookieContainer)
         {
             _httpResponseMessage = _message;
             _requestUri = requestUri;
-            _maxErrorResponseLength = maxErrorResponseLength;
 
             // Match Desktop behavior. If the request didn't set a CookieContainer, we don't populate the response's CookieCollection.
             if (cookieContainer != null)
@@ -340,7 +338,8 @@ namespace System.Net
             if (_httpResponseMessage.Content != null)
             {
                 Stream contentStream = _httpResponseMessage.Content.ReadAsStream();
-                if (_maxErrorResponseLength < 0 || StatusCode < HttpStatusCode.BadRequest)
+                int maxErrorResponseLength = HttpWebRequest.DefaultMaximumErrorResponseLength;
+                if (maxErrorResponseLength <= 0 || StatusCode < HttpStatusCode.BadRequest) // Keep 0 as NOP value for backward compatibility
                 {
                     return contentStream;
                 }
@@ -349,9 +348,9 @@ namespace System.Net
                 byte[] buffer = new byte[1024];
                 int readLength = 0;
 
-                while (readLength < _maxErrorResponseLength)
+                while (readLength < maxErrorResponseLength)
                 {
-                    int len = contentStream.Read(buffer, 0, Math.Min(_maxErrorResponseLength - readLength, buffer.Length));
+                    int len = contentStream.Read(buffer, 0, Math.Min(maxErrorResponseLength - readLength, buffer.Length));
                     if (len == 0)
                     {
                         break;
