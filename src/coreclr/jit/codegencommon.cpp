@@ -314,8 +314,6 @@ void CodeGen::genPrepForCompiler()
             }
         }
     }
-    VarSetOps::AssignNoCopy(compiler, genLastLiveSet, VarSetOps::MakeEmpty(compiler));
-    genLastLiveMask = RBM_NONE;
 #ifdef DEBUG
     compiler->fgBBcountAtCodegen = compiler->fgBBcount;
 #endif
@@ -750,7 +748,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
             // gc sets
-            regMaskTP regMask = varDsc->lvRegMask();
+            regMaskAny regMask = varDsc->lvRegMask();
             if (isGCRef)
             {
                 codeGen->gcInfo.gcRegGCrefSetCur &= ~regMask;
@@ -795,7 +793,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
                 VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
             }
             codeGen->genUpdateRegLife(varDsc, true /*isBorn*/, false /*isDying*/ DEBUGARG(nullptr));
-            regMaskTP regMask = varDsc->lvRegMask();
+            regMaskAny regMask = varDsc->lvRegMask();
             if (isGCRef)
             {
                 codeGen->gcInfo.gcRegGCrefSetCur |= regMask;
@@ -2874,8 +2872,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     unsigned  argNum;           // current argNum, always in [0..argMax-1]
     unsigned  fixedRetBufIndex; // argNum value used by the fixed return buffer argument (ARM64)
     unsigned  regArgNum;        // index into the regArgTab[] table
-    regMaskTP regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn;
+    regMaskOnlyOne regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn;
     bool      doingFloat     = regState->rsIsFloat;
+    assert(compiler->IsOnlyOneRegMask(regArgMaskLive));
+    assert((doingFloat && compiler->IsFloatRegMask(regArgMaskLive)) || compiler->IsGprRegMask(regArgMaskLive));
 
     // We should be generating the prolog block when we are called
     assert(compiler->compGeneratingProlog);
@@ -3636,7 +3636,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 // Compute xtraReg here when we have a float argument
                 assert(xtraReg == REG_NA);
 
-                regMaskTP fpAvailMask;
+                regMaskFloat fpAvailMask;
 
                 fpAvailMask = RBM_FLT_CALLEE_TRASH & ~regArgMaskLive;
                 if (GlobalJitOptions::compFeatureHfa)
@@ -3656,7 +3656,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 assert(fpAvailMask != RBM_NONE);
 
                 // We pick the lowest avail register number
-                regMaskTP tempMask = genFindLowestBit(fpAvailMask);
+                regMaskFloat tempMask = genFindLowestBit(fpAvailMask);
                 xtraReg            = genRegNumFromMask(tempMask);
             }
 #if defined(TARGET_X86)
@@ -3947,7 +3947,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     /* Finally take care of the remaining arguments that must be enregistered */
     while (regArgMaskLive)
     {
-        regMaskTP regArgMaskLiveSave = regArgMaskLive;
+        regMaskOnlyOne regArgMaskLiveSave = regArgMaskLive;
 
         for (argNum = 0; argNum < argMax; argNum++)
         {
@@ -4078,7 +4078,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                  * Skip this one until its target will be free
                  * which is guaranteed to happen since we have no circular dependencies. */
 
-                regMaskTP destMask = genRegMask(destRegNum);
+                regMaskOnlyOne destMask = genRegMask(destRegNum);
 #ifdef TARGET_ARM
                 // Don't process the double until both halves of the destination are clear.
                 if (genActualType(destMemType) == TYP_DOUBLE)
@@ -4523,7 +4523,7 @@ void CodeGen::genCheckUseBlockInit()
 
     if (genUseBlockInit)
     {
-        regMaskTP maskCalleeRegArgMask = intRegState.rsCalleeRegArgMaskLiveIn;
+        regMaskGpr maskCalleeRegArgMask = intRegState.rsCalleeRegArgMaskLiveIn;
 
         // If there is a secret stub param, don't count it, as it will no longer
         // be live when we do block init.
@@ -4574,7 +4574,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskFloat& initFltRegs,
 
     // Iterate through float/double registers and initialize them to 0 or
     // copy from already initialized register of the same type.
-    regMaskTP regMask = genRegMask(REG_FP_FIRST);
+    regMaskFloat regMask = genRegMask(REG_FP_FIRST);
     for (regNumber reg = REG_FP_FIRST; reg <= REG_FP_LAST; reg = REG_NEXT(reg), regMask <<= 1)
     {
         if (regMask & initFltRegs)
@@ -5360,7 +5360,7 @@ void CodeGen::genFinalizeFrame()
         // We always save FP.
         noway_assert(isFramePointerUsed());
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        regMaskTP okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
+        regMaskAny okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
         if (RBM_ENC_CALLEE_SAVED != 0)
         {
             regSet.rsSetRegsModified(RBM_ENC_CALLEE_SAVED);
@@ -5397,7 +5397,7 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskAny maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
 #ifdef TARGET_ARMARCH
     if (isFramePointerUsed())
@@ -5418,8 +5418,8 @@ void CodeGen::genFinalizeFrame()
 
 #if defined(TARGET_ARM)
     // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
-    regMaskTP maskPushRegsFloat = maskCalleeRegsPushed & RBM_ALLFLOAT;
-    regMaskTP maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
+    regMaskFloat maskPushRegsFloat = maskCalleeRegsPushed & RBM_ALLFLOAT;
+    regMaskGpr maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
 
     if ((maskPushRegsFloat != RBM_NONE) ||
         (compiler->opts.MinOpts() && (regSet.rsMaskResvd & maskCalleeRegsPushed & RBM_OPT_RSVD)))
@@ -5447,7 +5447,7 @@ void CodeGen::genFinalizeFrame()
     //
     if (maskPushRegsFloat != RBM_NONE)
     {
-        regMaskTP contiguousMask = genRegMaskFloat(REG_F16);
+        regMaskFloat contiguousMask = genRegMaskFloat(REG_F16);
         while (maskPushRegsFloat > contiguousMask)
         {
             contiguousMask <<= 2;
@@ -5455,7 +5455,7 @@ void CodeGen::genFinalizeFrame()
         }
         if (maskPushRegsFloat != contiguousMask)
         {
-            regMaskTP maskExtraRegs = contiguousMask - maskPushRegsFloat;
+            regMaskFloat maskExtraRegs = contiguousMask - maskPushRegsFloat;
             maskPushRegsFloat |= maskExtraRegs;
             regSet.rsSetRegsModified(maskExtraRegs);
             maskCalleeRegsPushed |= maskExtraRegs;
@@ -5645,9 +5645,9 @@ void CodeGen::genFnProlog()
     int  GCrefHi  = -INT_MAX;
     bool hasGCRef = false;
 
-    regMaskTP initRegs    = RBM_NONE; // Registers which must be init'ed.
-    regMaskTP initFltRegs = RBM_NONE; // FP registers which must be init'ed.
-    regMaskTP initDblRegs = RBM_NONE;
+    regMaskGpr initRegs    = RBM_NONE; // Registers which must be init'ed.
+    regMaskFloat initFltRegs = RBM_NONE; // FP registers which must be init'ed.
+    regMaskFloat initDblRegs = RBM_NONE;
 
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -5721,7 +5721,7 @@ void CodeGen::genFnProlog()
         if (isInReg)
         {
             regNumber regForVar = varDsc->GetRegNum();
-            regMaskTP regMask   = genRegMask(regForVar);
+            regMaskAny regMask   = genRegMask(regForVar);
             if (!genIsValidFloatReg(regForVar))
             {
                 initRegs |= regMask;
@@ -5834,9 +5834,9 @@ void CodeGen::genFnProlog()
     // Track if initReg holds non-zero value. Start conservative and assume it has non-zero value.
     // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
     // will be skipped.
-    bool      initRegZeroed = false;
-    regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskTP tempMask;
+    bool           initRegZeroed = false;
+    regMaskOnlyOne excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskGpr tempMask;
 
     // We should not use the special PINVOKE registers as the initReg
     // since they are trashed by the jithelper call to setup the PINVOKE frame
@@ -6073,7 +6073,7 @@ void CodeGen::genFnProlog()
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
-    regMaskTP maskStackAlloc = RBM_NONE;
+    regMaskGpr maskStackAlloc = RBM_NONE;
 
 #ifdef TARGET_ARM
     maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize + extraFrameSize,
@@ -6320,7 +6320,7 @@ void CodeGen::genFnProlog()
 
     if (initRegs)
     {
-        regMaskTP regMask = 0x1;
+        regMaskGpr regMask = 0x1;
 
         for (regNumber reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg = REG_NEXT(reg), regMask <<= 1)
         {
@@ -6818,11 +6818,11 @@ regMaskGpr CodeGen::genPushRegs(regMaskGpr regs, regMaskGpr* byrefRegs, regMaskG
     noway_assert(genTypeStSz(TYP_REF) == genTypeStSz(TYP_I_IMPL));
     noway_assert(genTypeStSz(TYP_BYREF) == genTypeStSz(TYP_I_IMPL));
 
-    regMaskTP pushedRegs = regs;
+    regMaskGpr pushedRegs = regs;
 
     for (regNumber reg = REG_INT_FIRST; regs != RBM_NONE; reg = REG_NEXT(reg))
     {
-        regMaskTP regBit = regMaskTP(1) << reg;
+        regMaskGpr regBit = regMaskGpr(1) << reg;
 
         if ((regBit & regs) == RBM_NONE)
             continue;
@@ -6895,7 +6895,7 @@ void CodeGen::genPopRegs(regMaskGpr regs, regMaskGpr byrefRegs, regMaskGpr noRef
     // Walk the registers in the reverse order as genPushRegs()
     for (regNumber reg = REG_INT_LAST; regs != RBM_NONE; reg = REG_PREV(reg))
     {
-        regMaskTP regBit = regMaskTP(1) << reg;
+        regMaskGpr regBit = regMaskGpr(1) << reg;
 
         if ((regBit & regs) == RBM_NONE)
             continue;
@@ -8096,7 +8096,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
         // First set the source registers as busy if they haven't been spilled.
         // (Note that this is just for verification that we don't have circular dependencies.)
-        regMaskTP busyRegs = RBM_NONE;
+        regMaskAny busyRegs = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
         {
             if ((op1->GetRegSpillFlagByIdx(i) & GTF_SPILLED) == 0)
@@ -8112,7 +8112,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             regNumber targetReg = genRegCopy(treeNode, i);
             if (targetReg != sourceReg)
             {
-                regMaskTP targetRegMask = genRegMask(targetReg);
+                regMaskAny targetRegMask = genRegMask(targetReg);
                 assert((busyRegs & targetRegMask) == 0);
                 // Clear sourceReg from the busyRegs, and add targetReg.
                 busyRegs &= ~genRegMask(sourceReg);
