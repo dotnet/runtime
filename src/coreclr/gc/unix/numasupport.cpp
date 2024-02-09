@@ -34,8 +34,11 @@ static int GetNodeNum(const char* path, bool firstOnly)
                 continue;
 
             unsigned long nodeNum = strtoul(entry->d_name + STRING_LENGTH("node"), NULL, 0);
-            if (result < nodeNum)
-                result = nodeNum > INT_MAX ? INT_MAX : (int)nodeNum;
+            if (nodeNum > INT_MAX)
+                nodeNum = INT_MAX;
+
+            if (result < (int)nodeNum)
+                result = (int)nodeNum;
 
             if (firstOnly)
                 break;

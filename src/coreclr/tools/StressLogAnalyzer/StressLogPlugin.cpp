@@ -354,7 +354,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
     bool fLevelFilter = false;
     if (s_levelFilterCount > 0)
     {
-        int gcLogLevel = GcLogLevel(facility);
+        unsigned long gcLogLevel = (unsigned long)GcLogLevel(facility);
         for (int i = 0; i < s_levelFilterCount; i++)
         {
             if (s_levelFilter[i].minLevel <= gcLogLevel && gcLogLevel <= s_levelFilter[i].maxLevel)
@@ -1368,7 +1368,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         // find the time interval that includes the GCs in question
         double startTime = INFINITY;
         double endTime = 0.0;
-        for (int i = s_gcFilterStart; i <= s_gcFilterEnd; i++)
+        for (unsigned int i = s_gcFilterStart; i <= s_gcFilterEnd; i++)
         {
             startTime = min(startTime, s_gcStartEnd[i].startTime);
             if (s_gcStartEnd[i].endTime != 0.0)
