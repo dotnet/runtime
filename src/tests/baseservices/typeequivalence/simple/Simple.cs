@@ -262,7 +262,7 @@ public class Simple
     }
 
     [MethodImpl (MethodImplOptions.NoInlining)]
-    private static void TestLoadingValueTypesWithMethod() 
+    private static void TestLoadingValueTypesWithMethod()
     {
         Console.WriteLine($"{nameof(TestLoadingValueTypesWithMethod)}");
         Console.WriteLine($"-- {typeof(ValueTypeWithStaticMethod).Name}");
@@ -293,6 +293,23 @@ public class Simple
         Assert.True(typeof(TestValueType[]) == TestsExactTypeOptimizationsHelper.s_arrayInstance.GetType());
     }
 
+    private static void MethodCallSignature()
+    {
+        Console.WriteLine($"{nameof(MethodCallSignature)}");
+
+        Console.WriteLine($"-- {nameof(MethodCall.InterfaceAfterGeneric)}");
+        MethodCall.InterfaceAfterGeneric((IEmptyType)EmptyType2.Create());
+
+        Console.WriteLine($"-- {nameof(MethodCall.ValueTypeAfterGeneric)}");
+        MethodCall.ValueTypeAfterGeneric(new TestValueType());
+
+        Console.WriteLine($"-- {nameof(MethodCall.InterfaceBeforeGeneric)}");
+        MethodCall.InterfaceBeforeGeneric((IEmptyType)EmptyType2.Create(), null);
+
+        Console.WriteLine($"-- {nameof(MethodCall.ValueTypeBeforeGeneric)}");
+        MethodCall.ValueTypeBeforeGeneric(new TestValueType(), null);
+    }
+
     [Fact]
     public static int TestEntryPoint()
     {
@@ -314,6 +331,7 @@ public class Simple
             TestLoadingValueTypesWithMethod();
             TestCastsOptimizations();
             TestsExactTypeOptimizations();
+            MethodCallSignature();
         }
         catch (Exception e)
         {
