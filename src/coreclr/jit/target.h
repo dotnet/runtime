@@ -679,7 +679,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
  *  the current architecture.
  */
 extern const regNumber raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
-extern const regMaskTP raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regMaskGpr raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short);

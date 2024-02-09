@@ -3476,7 +3476,7 @@ const char* emitter::emitGetFrameReg()
  *  Display a register set in a readable form.
  */
 
-void emitter::emitDispRegSet(regMaskTP regs)
+void emitter::emitDispRegSet(regMaskAny regs)
 {
     regNumber reg;
     bool      sp = false;
@@ -3490,7 +3490,7 @@ void emitter::emitDispRegSet(regMaskTP regs)
             break;
         }
 
-        regMaskTP curReg = genRegMask(reg);
+        regMaskAny curReg = genRegMask(reg);
         if ((regs & curReg) == 0)
         {
             continue;
@@ -9255,7 +9255,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 
     assert(needsGC(gcType));
 
-    regMaskTP regMask = genRegMask(reg);
+    regMaskAny regMask = genRegMask(reg);
 
     regMaskGpr& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
     regMaskGpr& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
@@ -9357,7 +9357,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
         return;
     }
 
-    regMaskTP regMask = genRegMask(reg);
+    regMaskAny regMask = genRegMask(reg);
 
     if ((emitThisGCrefRegs & regMask) != 0)
     {
@@ -10056,7 +10056,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     // of callee-saved registers only).
     for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALLEE_SAVED; calleeSavedRegIdx++)
     {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
+        regMaskGpr calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
         if (emitThisGCrefRegs & calleeSavedRbm)
         {
             gcrefRegs |= (1 << calleeSavedRegIdx);
@@ -10423,7 +10423,7 @@ regMaskAny emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 regMaskAny emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
     assert(emitNoGChelper(helper));
-    regMaskTP result;
+    regMaskAny result;
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_REF:

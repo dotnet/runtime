@@ -936,7 +936,7 @@ regNumber genRegArgNext(regNumber argReg)
  */
 
 const regNumber raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
-const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
+const regMaskGpr raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
 
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
 {
