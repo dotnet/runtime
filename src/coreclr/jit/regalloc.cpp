@@ -100,7 +100,7 @@ bool Compiler::shouldDoubleAlign(
 regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc)
 {
     regNumber inArgReg  = argDsc->GetArgReg();
-    regMaskTP inArgMask = genRegMask(inArgReg);
+    regMaskAny inArgMask = genRegMask(inArgReg);
 
     if (regState->rsIsFloat)
     {
