@@ -335,7 +335,7 @@
       <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.runtime" Version="9.0.0-alpha.1.24072.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.runtime.linux-x64" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
       <SourceBuild RepoName="runtime" ManagedOnly="false" />
