@@ -124,7 +124,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: Runtime_Release
-            buildArgs: -s mono+libs+tools.illink -c $(_BuildConfig) -p:WasmBuildNative=false -p:AotHostArchitecture=x64 -p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+tools.illink -c $(_BuildConfig) -p:AotHostArchitecture=x64 -p:AotHostOS=$(_hostedOS)
             condition:
               or(
                 eq(variables['isRollingBuild'], true),
@@ -134,5 +134,3 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
             postBuildSteps:
               - template: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
-                parameters:
-                    extraTestArgs: '/p:WasmBuildNative=false'

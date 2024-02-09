@@ -501,17 +501,16 @@
       <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
       <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
       <_BoolPropertiesThatTriggerRelinking Include="WasmSingleFileBundle" DefaultValueInRuntimePack="false" />
-      <_WasmChangedProperty Include="%(_BoolPropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and 
-                                                                                      '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '%(_BoolPropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'" />
+      <_ChangedBoolPropertiesThatTriggerRelinking Include="%(_BoolPropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and 
+                                                                                                            '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '%(_BoolPropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'" />
     </ItemGroup>
 
     <PropertyGroup>
-      <_WasmBuildNativeRequired Condition="'$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and 
-                                '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '%(_BoolPropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'">true</_WasmBuildNativeRequired>
+      <_WasmBuildNativeRequired Condition="@(_ChangedBoolPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
     </PropertyGroup>
 
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'" 
-           Text="Wasm native build is necessary. The value of %(_WasmChangedProperty.Identity) has been modified." />
+           Text="WasmBuildNative is required because %(_ChangedBoolPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedBoolPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
