@@ -98,7 +98,7 @@ public:
     void verifyRegistersUsed(regMaskAny regMask);
 
 public:
-    regMaskTP GetMaskVars() const // 'get' property function for rsMaskVars property
+    regMaskAny GetMaskVars() const // 'get' property function for rsMaskVars property
     {
         return _rsMaskVars;
     }
@@ -121,7 +121,7 @@ public:
     }
 
 private:
-    regMaskTP _rsMaskVars; // backing store for rsMaskVars property
+    regMaskAny _rsMaskVars; // backing store for rsMaskVars property
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     regMaskAny rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
@@ -132,9 +132,9 @@ public:                    // TODO-Cleanup: Should be private, but Compiler uses
 
 public: // The PreSpill masks are used in LclVars.cpp
 #ifdef TARGET_ARM
-    regMaskTP rsMaskPreSpillAlign;  // Mask of alignment padding added to prespill to keep double aligned args
+    regMaskGpr rsMaskPreSpillAlign;  // Mask of alignment padding added to prespill to keep double aligned args
                                     // at aligned stack addresses.
-    regMaskTP rsMaskPreSpillRegArg; // mask of incoming registers that are spilled at the start of the prolog
+    regMaskGpr rsMaskPreSpillRegArg; // mask of incoming registers that are spilled at the start of the prolog
                                     // This includes registers used to pass a struct (or part of a struct)
                                     // and all enregistered user arguments in a varargs call
 #endif                              // TARGET_ARM
