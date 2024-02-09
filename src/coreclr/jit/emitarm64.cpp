@@ -1201,7 +1201,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm3(emitGetInsSC(id))); // iii
             break;
 
-        case IF_SVE_EY_3B: // ...........immmm ......nnnnnddddd -- SVE integer dot product (indexed)
         case IF_SVE_FE_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 integer multiply long (indexed)
         case IF_SVE_FG_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 integer multiply-add long (indexed)
         case IF_SVE_FH_3B: // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
@@ -1214,6 +1213,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm2(emitGetInsSC(id))); // ii
             break;
 
+        case IF_SVE_EY_3B: // ...........immmm ......nnnnnddddd -- SVE integer dot product (indexed)
         case IF_SVE_FD_3C: // ...........immmm ......nnnnnddddd -- SVE2 integer multiply (indexed)
         case IF_SVE_FF_3C: // ...........immmm ......nnnnnddddd -- SVE2 integer multiply-add (indexed)
         case IF_SVE_FI_3C: // ...........immmm ......nnnnnddddd -- SVE2 saturating multiply high (indexed)
@@ -10793,7 +10793,33 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_CY_3B;
             break;
 
+        case INS_sve_sdot:
+        case INS_sve_udot:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3));
 
+            if (opt == INS_OPTS_SCALABLE_B)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm2(imm));                    // ii
+                fmt = IF_SVE_EY_3A;
+            }
+            else if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm2(imm));                    // ii
+                fmt = IF_SVE_EG_3A;
+            }
+            else
+            {
+                assert(insOptsNone(opt));
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
+                assert(isValidImm1(imm));                      // i
+                opt = INS_OPTS_SCALABLE_H;
+                fmt = IF_SVE_EY_3B;
+            }
+            break;
 
         case INS_sve_usdot:
         case INS_sve_sudot:
@@ -11839,6 +11865,33 @@ void emitter::emitIns_R_R_R_I(instruction ins,
                 assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
                 assert(isValidUimm2(imm));                     // ii
                 fmt = IF_SVE_FJ_3B;
+            }
+            break;
+
+        case INS_sve_sqrdmlah:
+        case INS_sve_sqrdmlsh:
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3));
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm3(imm));                    // i ii
+                fmt = IF_SVE_FK_3A;
+            }
+            else if (opt == INS_OPTS_SCALABLE_S)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm2(imm));                    // ii
+                fmt = IF_SVE_FK_3B;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_D);
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V15)); // mmmm
+                assert(isValidImm1(imm));                      // i
+                fmt = IF_SVE_FK_3C;
             }
             break;
 
