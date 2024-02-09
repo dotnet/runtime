@@ -69,7 +69,7 @@ steps:
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
       - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} cross /p:RuntimeVariant=llvmfullaot -maxcpucount:2
+        - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }} cross /p:RuntimeVariant=llvmfullaot -maxcpucount:2
           displayName: "LLVM AOT cross-compile CoreCLR tests"
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
