@@ -16111,30 +16111,6 @@ namespace System.Numerics.Tensors
             // 3. Reconstruction
             //      Hence, cos(x) = sin(x + pi/2) = (-1)^N * sin(f)
 
-            internal const uint Single_MaxVectorizedValue = 0x4A989680u;
-            internal const uint Single_SignMask = 0x7FFFFFFFu;
-            private const float Single_AlmHuge = 1.2582912e7f;
-            private const float Single_Pi_Tail1 = 8.742278e-8f;
-            private const float Single_Pi_Tail2 = 3.430249e-15f;
-            private const float Single_C1 = -0.16666657f;
-            private const float Single_C2 = 0.008332962f;
-            private const float Single_C3 = -1.9801206e-4f;
-            private const float Single_C4 = 2.5867037e-6f;
-
-            internal const ulong Double_SignMask = 0x7FFFFFFFFFFFFFFFul;
-            internal const ulong Double_MaxVectorizedValue = 0x4160000000000000ul; // 0x1p23
-            private const double Double_AlmHuge = 6.755399441055744E15;
-            private const double Double_Pi_Tail2 = -1.2246467991473532E-16;
-            private const double Double_Pi_Tail3 = 2.9947698097183397E-33;
-            private const double Double_C1 = -0.16666666666666666;
-            private const double Double_C2 = 0.008333333333333165;
-            private const double Double_C3 = -1.984126984120184E-4;
-            private const double Double_C4 = 2.7557319210152756E-6;
-            private const double Double_C5 = -2.5052106798274616E-8;
-            private const double Double_C6 = 1.6058936490373254E-10;
-            private const double Double_C7 = -7.642917806937501E-13;
-            private const double Double_C8 = 2.7204790963151784E-15;
-
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Cos(x);
@@ -16143,45 +16119,12 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    Vector128<uint> uxMasked = x.AsUInt32() & Vector128.Create(Single_SignMask);
-                    if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(Single_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<CosOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-
-                    Vector128<float> dinput = uxMasked.AsSingle();
-
-                    Vector128<float> almHuge = Vector128.Create(Single_AlmHuge);
-                    Vector128<float> dn = ((dinput + Vector128.Create(float.Pi / 2)) * Vector128.Create(1 / float.Pi)) + almHuge;
-                    Vector128<uint> n = dn.AsUInt32();
-                    dn = dn - almHuge - Vector128.Create(0.5f);
-
-                    Vector128<float> frac = dinput + (dn * Vector128.Create(-float.Pi)) + (dn * Vector128.Create(Single_Pi_Tail1)) + (dn * Vector128.Create(Single_Pi_Tail2));
-                    Vector128<uint> odd = n << 31;
-                    Vector128<float> poly = PolyEvalOdd9(frac, Vector128<float>.One, Vector128.Create(Single_C1), Vector128.Create(Single_C2), Vector128.Create(Single_C3), Vector128.Create(Single_C4));
-                    return (poly.AsUInt32() ^ odd).As<uint, T>();
+                    return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-
-                    Vector128<ulong> uxMasked = x.AsUInt64() & Vector128.Create(Double_SignMask);
-                    if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(Double_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<CosOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-
-                    Vector128<double> dinput = uxMasked.AsDouble();
-
-                    Vector128<double> almHuge = Vector128.Create(Double_AlmHuge);
-                    Vector128<double> dn = ((dinput * Vector128.Create(1 / double.Pi)) + Vector128.Create(double.Pi / 2)) + almHuge;
-                    Vector128<ulong> n = dn.AsUInt64();
-                    dn = dn - almHuge - Vector128.Create(0.5);
-
-                    Vector128<double> frac = dinput + (dn * Vector128.Create(-double.Pi)) + (dn * Vector128.Create(Double_Pi_Tail2)) + (dn * Vector128.Create(Double_Pi_Tail3));
-                    Vector128<ulong> odd = n << 63;
-                    Vector128<double> poly = frac + PolyEvalOdd17(frac, Vector128.Create(Double_C1), Vector128.Create(Double_C2), Vector128.Create(Double_C3), Vector128.Create(Double_C4), Vector128.Create(Double_C5), Vector128.Create(Double_C6), Vector128.Create(Double_C7), Vector128.Create(Double_C8));
-                    return (poly.AsUInt64() ^ odd).As<ulong, T>();
+                    return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
             }
 
@@ -16189,45 +16132,12 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    Vector256<uint> uxMasked = x.AsUInt32() & Vector256.Create(0x7FFFFFFFu);
-                    if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(Single_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<CosOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-
-                    Vector256<float> dinput = uxMasked.AsSingle();
-
-                    Vector256<float> almHuge = Vector256.Create(Single_AlmHuge);
-                    Vector256<float> dn = ((dinput + Vector256.Create(float.Pi / 2)) * Vector256.Create(1 / float.Pi)) + almHuge;
-                    Vector256<uint> n = dn.AsUInt32();
-                    dn = dn - almHuge - Vector256.Create(0.5f);
-
-                    Vector256<float> frac = dinput + (dn * Vector256.Create(-float.Pi)) + (dn * Vector256.Create(Single_Pi_Tail1)) + (dn * Vector256.Create(Single_Pi_Tail2));
-                    Vector256<uint> odd = n << 31;
-                    Vector256<float> poly = PolyEvalOdd9(frac, Vector256<float>.One, Vector256.Create(Single_C1), Vector256.Create(Single_C2), Vector256.Create(Single_C3), Vector256.Create(Single_C4));
-                    return (poly.AsUInt32() ^ odd).As<uint, T>();
+                    return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-
-                    Vector256<ulong> uxMasked = x.AsUInt64() & Vector256.Create(Double_SignMask);
-                    if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(Double_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<CosOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-
-                    Vector256<double> dinput = uxMasked.AsDouble();
-
-                    Vector256<double> almHuge = Vector256.Create(Double_AlmHuge);
-                    Vector256<double> dn = ((dinput * Vector256.Create(1 / double.Pi)) + Vector256.Create(double.Pi / 2)) + almHuge;
-                    Vector256<ulong> n = dn.AsUInt64();
-                    dn = dn - almHuge - Vector256.Create(0.5);
-
-                    Vector256<double> frac = dinput + (dn * Vector256.Create(-double.Pi)) + (dn * Vector256.Create(Double_Pi_Tail2)) + (dn * Vector256.Create(Double_Pi_Tail3));
-                    Vector256<ulong> odd = n << 63;
-                    Vector256<double> poly = frac + PolyEvalOdd17(frac, Vector256.Create(Double_C1), Vector256.Create(Double_C2), Vector256.Create(Double_C3), Vector256.Create(Double_C4), Vector256.Create(Double_C5), Vector256.Create(Double_C6), Vector256.Create(Double_C7), Vector256.Create(Double_C8));
-                    return (poly.AsUInt64() ^ odd).As<ulong, T>();
+                    return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
             }
 
@@ -16235,46 +16145,179 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    Vector512<uint> uxMasked = x.AsUInt32() & Vector512.Create(Single_SignMask);
-                    if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(Single_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<CosOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-
-                    Vector512<float> dinput = uxMasked.AsSingle();
-
-                    Vector512<float> almHuge = Vector512.Create(Single_AlmHuge);
-                    Vector512<float> dn = ((dinput + Vector512.Create(float.Pi / 2)) * Vector512.Create(1 / float.Pi)) + almHuge;
-                    Vector512<uint> n = dn.AsUInt32();
-                    dn = dn - almHuge - Vector512.Create(0.5f);
-
-                    Vector512<float> frac = dinput + (dn * Vector512.Create(-float.Pi)) + (dn * Vector512.Create(Single_Pi_Tail1)) + (dn * Vector512.Create(Single_Pi_Tail2));
-                    Vector512<uint> odd = n << 31;
-                    Vector512<float> poly = PolyEvalOdd9(frac, Vector512<float>.One, Vector512.Create(Single_C1), Vector512.Create(Single_C2), Vector512.Create(Single_C3), Vector512.Create(Single_C4));
-                    return (poly.AsUInt32() ^ odd).As<uint, T>();
+                    return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-
-                    Vector512<ulong> uxMasked = x.AsUInt64() & Vector512.Create(Double_SignMask);
-                    if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(Double_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<CosOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-
-                    Vector512<double> dinput = uxMasked.AsDouble();
-
-                    Vector512<double> almHuge = Vector512.Create(Double_AlmHuge);
-                    Vector512<double> dn = ((dinput * Vector512.Create(1 / double.Pi)) + Vector512.Create(double.Pi / 2)) + almHuge;
-                    Vector512<ulong> n = dn.AsUInt64();
-                    dn = dn - almHuge - Vector512.Create(0.5);
-
-                    Vector512<double> frac = dinput + (dn * Vector512.Create(-double.Pi)) + (dn * Vector512.Create(Double_Pi_Tail2)) + (dn * Vector512.Create(Double_Pi_Tail3));
-                    Vector512<ulong> odd = n << 63;
-                    Vector512<double> poly = frac + PolyEvalOdd17(frac, Vector512.Create(Double_C1), Vector512.Create(Double_C2), Vector512.Create(Double_C3), Vector512.Create(Double_C4), Vector512.Create(Double_C5), Vector512.Create(Double_C6), Vector512.Create(Double_C7), Vector512.Create(Double_C8));
-                    return (poly.AsUInt64() ^ odd).As<ulong, T>();
+                    return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+            }
+        }
+
+        /// <summary>float.Cos(x)</summary>
+        private readonly struct CosOperatorSingle : IUnaryOperator<float, float>
+        {
+            internal const uint MaxVectorizedValue = 0x4A989680u;
+            internal const uint SignMask = 0x7FFFFFFFu;
+            private const float AlmHuge = 1.2582912e7f;
+            private const float Pi_Tail1 = 8.742278e-8f;
+            private const float Pi_Tail2 = 3.430249e-15f;
+            private const float C1 = -0.16666657f;
+            private const float C2 = 0.008332962f;
+            private const float C3 = -1.9801206e-4f;
+            private const float C4 = 2.5867037e-6f;
+
+            public static bool Vectorizable => true;
+
+            public static float Invoke(float x) => float.Cos(x);
+
+            public static Vector128<float> Invoke(Vector128<float> x)
+            {
+                Vector128<uint> uxMasked = x.AsUInt32() & Vector128.Create(SignMask);
+                if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<CosOperatorSingle>(x);
+                }
+
+                Vector128<float> dinput = uxMasked.AsSingle();
+
+                Vector128<float> almHuge = Vector128.Create(AlmHuge);
+                Vector128<float> dn = ((dinput + Vector128.Create(float.Pi / 2)) * Vector128.Create(1 / float.Pi)) + almHuge;
+                Vector128<uint> n = dn.AsUInt32();
+                dn = dn - almHuge - Vector128.Create(0.5f);
+
+                Vector128<float> frac = dinput + (dn * Vector128.Create(-float.Pi)) + (dn * Vector128.Create(Pi_Tail1)) + (dn * Vector128.Create(Pi_Tail2));
+                Vector128<uint> odd = n << 31;
+                Vector128<float> poly = PolyEvalOdd9(frac, Vector128<float>.One, Vector128.Create(C1), Vector128.Create(C2), Vector128.Create(C3), Vector128.Create(C4));
+                return (poly.AsUInt32() ^ odd).AsSingle();
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x)
+            {
+                Vector256<uint> uxMasked = x.AsUInt32() & Vector256.Create(0x7FFFFFFFu);
+                if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<CosOperatorSingle>(x);
+                }
+
+                Vector256<float> dinput = uxMasked.AsSingle();
+
+                Vector256<float> almHuge = Vector256.Create(AlmHuge);
+                Vector256<float> dn = ((dinput + Vector256.Create(float.Pi / 2)) * Vector256.Create(1 / float.Pi)) + almHuge;
+                Vector256<uint> n = dn.AsUInt32();
+                dn = dn - almHuge - Vector256.Create(0.5f);
+
+                Vector256<float> frac = dinput + (dn * Vector256.Create(-float.Pi)) + (dn * Vector256.Create(Pi_Tail1)) + (dn * Vector256.Create(Pi_Tail2));
+                Vector256<uint> odd = n << 31;
+                Vector256<float> poly = PolyEvalOdd9(frac, Vector256<float>.One, Vector256.Create(C1), Vector256.Create(C2), Vector256.Create(C3), Vector256.Create(C4));
+                return (poly.AsUInt32() ^ odd).AsSingle();
+            }
+
+            public static Vector512<float> Invoke(Vector512<float> x)
+            {
+                Vector512<uint> uxMasked = x.AsUInt32() & Vector512.Create(SignMask);
+                if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<CosOperatorSingle>(x);
+                }
+
+                Vector512<float> dinput = uxMasked.AsSingle();
+
+                Vector512<float> almHuge = Vector512.Create(AlmHuge);
+                Vector512<float> dn = ((dinput + Vector512.Create(float.Pi / 2)) * Vector512.Create(1 / float.Pi)) + almHuge;
+                Vector512<uint> n = dn.AsUInt32();
+                dn = dn - almHuge - Vector512.Create(0.5f);
+
+                Vector512<float> frac = dinput + (dn * Vector512.Create(-float.Pi)) + (dn * Vector512.Create(Pi_Tail1)) + (dn * Vector512.Create(Pi_Tail2));
+                Vector512<uint> odd = n << 31;
+                Vector512<float> poly = PolyEvalOdd9(frac, Vector512<float>.One, Vector512.Create(C1), Vector512.Create(C2), Vector512.Create(C3), Vector512.Create(C4));
+                return (poly.AsUInt32() ^ odd).AsSingle();
+            }
+        }
+
+        /// <summary>double.Cos(x)</summary>
+        internal readonly struct CosOperatorDouble : IUnaryOperator<double, double>
+        {
+            internal const ulong SignMask = 0x7FFFFFFFFFFFFFFFul;
+            internal const ulong MaxVectorizedValue = 0x4160000000000000ul;
+            private const double AlmHuge = 6.755399441055744E15;
+            private const double Pi_Tail2 = -1.2246467991473532E-16;
+            private const double Pi_Tail3 = 2.9947698097183397E-33;
+            private const double C1 = -0.16666666666666666;
+            private const double C2 = 0.008333333333333165;
+            private const double C3 = -1.984126984120184E-4;
+            private const double C4 = 2.7557319210152756E-6;
+            private const double C5 = -2.5052106798274616E-8;
+            private const double C6 = 1.6058936490373254E-10;
+            private const double C7 = -7.642917806937501E-13;
+            private const double C8 = 2.7204790963151784E-15;
+
+            public static bool Vectorizable => true;
+
+            public static double Invoke(double x) => double.Cos(x);
+
+            public static Vector128<double> Invoke(Vector128<double> x)
+            {
+                Vector128<ulong> uxMasked = x.AsUInt64() & Vector128.Create(SignMask);
+                if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<CosOperatorDouble>(x);
+                }
+
+                Vector128<double> dinput = uxMasked.AsDouble();
+
+                Vector128<double> almHuge = Vector128.Create(AlmHuge);
+                Vector128<double> dn = (dinput * Vector128.Create(1 / double.Pi)) + Vector128.Create(double.Pi / 2) + almHuge;
+                Vector128<ulong> n = dn.AsUInt64();
+                dn = dn - almHuge - Vector128.Create(0.5);
+
+                Vector128<double> frac = dinput + (dn * Vector128.Create(-double.Pi)) + (dn * Vector128.Create(Pi_Tail2)) + (dn * Vector128.Create(Pi_Tail3));
+                Vector128<ulong> odd = n << 63;
+                Vector128<double> poly = frac + PolyEvalOdd17(frac, Vector128.Create(C1), Vector128.Create(C2), Vector128.Create(C3), Vector128.Create(C4), Vector128.Create(C5), Vector128.Create(C6), Vector128.Create(C7), Vector128.Create(C8));
+                return (poly.AsUInt64() ^ odd).AsDouble();
+            }
+
+            public static Vector256<double> Invoke(Vector256<double> x)
+            {
+                Vector256<ulong> uxMasked = x.AsUInt64() & Vector256.Create(SignMask);
+                if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<CosOperatorDouble>(x);
+                }
+
+                Vector256<double> dinput = uxMasked.AsDouble();
+
+                Vector256<double> almHuge = Vector256.Create(AlmHuge);
+                Vector256<double> dn = (dinput * Vector256.Create(1 / double.Pi)) + Vector256.Create(double.Pi / 2) + almHuge;
+                Vector256<ulong> n = dn.AsUInt64();
+                dn = dn - almHuge - Vector256.Create(0.5);
+
+                Vector256<double> frac = dinput + (dn * Vector256.Create(-double.Pi)) + (dn * Vector256.Create(Pi_Tail2)) + (dn * Vector256.Create(Pi_Tail3));
+                Vector256<ulong> odd = n << 63;
+                Vector256<double> poly = frac + PolyEvalOdd17(frac, Vector256.Create(C1), Vector256.Create(C2), Vector256.Create(C3), Vector256.Create(C4), Vector256.Create(C5), Vector256.Create(C6), Vector256.Create(C7), Vector256.Create(C8));
+                return (poly.AsUInt64() ^ odd).AsDouble();
+            }
+
+            public static Vector512<double> Invoke(Vector512<double> x)
+            {
+                Vector512<ulong> uxMasked = x.AsUInt64() & Vector512.Create(SignMask);
+                if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<CosOperatorDouble>(x);
+                }
+
+                Vector512<double> dinput = uxMasked.AsDouble();
+
+                Vector512<double> almHuge = Vector512.Create(AlmHuge);
+                Vector512<double> dn = (dinput * Vector512.Create(1 / double.Pi)) + Vector512.Create(double.Pi / 2) + almHuge;
+                Vector512<ulong> n = dn.AsUInt64();
+                dn = dn - almHuge - Vector512.Create(0.5);
+
+                Vector512<double> frac = dinput + (dn * Vector512.Create(-double.Pi)) + (dn * Vector512.Create(Pi_Tail2)) + (dn * Vector512.Create(Pi_Tail3));
+                Vector512<ulong> odd = n << 63;
+                Vector512<double> poly = frac + PolyEvalOdd17(frac, Vector512.Create(C1), Vector512.Create(C2), Vector512.Create(C3), Vector512.Create(C4), Vector512.Create(C5), Vector512.Create(C6), Vector512.Create(C7), Vector512.Create(C8));
+                return (poly.AsUInt64() ^ odd).AsDouble();
             }
         }
 
@@ -16291,7 +16334,7 @@ namespace System.Numerics.Tensors
                 Vector128<T> xpi = x * Vector128.Create(T.Pi);
                 if (typeof(T) == typeof(float))
                 {
-                    if (Vector128.GreaterThanAny(xpi.AsUInt32() & Vector128.Create(CosOperator<float>.Single_SignMask), Vector128.Create(CosOperator<float>.Single_MaxVectorizedValue)))
+                    if (Vector128.GreaterThanAny(xpi.AsUInt32() & Vector128.Create(CosOperatorSingle.SignMask), Vector128.Create(CosOperatorSingle.MaxVectorizedValue)))
                     {
                         return ApplyScalar<CosPiOperator<float>>(x.AsSingle()).As<float, T>();
                     }
@@ -16299,7 +16342,7 @@ namespace System.Numerics.Tensors
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector128.GreaterThanAny(xpi.AsUInt64() & Vector128.Create(CosOperator<double>.Double_SignMask), Vector128.Create(CosOperator<double>.Double_MaxVectorizedValue)))
+                    if (Vector128.GreaterThanAny(xpi.AsUInt64() & Vector128.Create(CosOperatorDouble.SignMask), Vector128.Create(CosOperatorDouble.MaxVectorizedValue)))
                     {
                         return ApplyScalar<CosPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
@@ -16313,7 +16356,7 @@ namespace System.Numerics.Tensors
                 Vector256<T> xpi = x * Vector256.Create(T.Pi);
                 if (typeof(T) == typeof(float))
                 {
-                    if (Vector256.GreaterThanAny(xpi.AsUInt32() & Vector256.Create(CosOperator<float>.Single_SignMask), Vector256.Create(CosOperator<float>.Single_MaxVectorizedValue)))
+                    if (Vector256.GreaterThanAny(xpi.AsUInt32() & Vector256.Create(CosOperatorSingle.SignMask), Vector256.Create(CosOperatorSingle.MaxVectorizedValue)))
                     {
                         return ApplyScalar<CosPiOperator<float>>(x.AsSingle()).As<float, T>();
                     }
@@ -16321,7 +16364,7 @@ namespace System.Numerics.Tensors
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector256.GreaterThanAny(xpi.AsUInt64() & Vector256.Create(CosOperator<double>.Double_SignMask), Vector256.Create(CosOperator<double>.Double_MaxVectorizedValue)))
+                    if (Vector256.GreaterThanAny(xpi.AsUInt64() & Vector256.Create(CosOperatorDouble.SignMask), Vector256.Create(CosOperatorDouble.MaxVectorizedValue)))
                     {
                         return ApplyScalar<CosPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
@@ -16335,7 +16378,7 @@ namespace System.Numerics.Tensors
                 Vector512<T> xpi = x * Vector512.Create(T.Pi);
                 if (typeof(T) == typeof(float))
                 {
-                    if (Vector512.GreaterThanAny(xpi.AsUInt32() & Vector512.Create(CosOperator<float>.Single_SignMask), Vector512.Create(CosOperator<float>.Single_MaxVectorizedValue)))
+                    if (Vector512.GreaterThanAny(xpi.AsUInt32() & Vector512.Create(CosOperatorSingle.SignMask), Vector512.Create(CosOperatorSingle.MaxVectorizedValue)))
                     {
                         return ApplyScalar<CosPiOperator<float>>(x.AsSingle()).As<float, T>();
                     }
@@ -16343,7 +16386,7 @@ namespace System.Numerics.Tensors
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector512.GreaterThanAny(xpi.AsUInt64() & Vector512.Create(CosOperator<double>.Double_SignMask), Vector512.Create(CosOperator<double>.Double_MaxVectorizedValue)))
+                    if (Vector512.GreaterThanAny(xpi.AsUInt64() & Vector512.Create(CosOperatorDouble.SignMask), Vector512.Create(CosOperatorDouble.MaxVectorizedValue)))
                     {
                         return ApplyScalar<CosPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
@@ -16475,30 +16518,6 @@ namespace System.Numerics.Tensors
             //
             // The term sin(f) can be approximated by using a polynomial
 
-            internal const uint Single_SignMask = 0x7FFFFFFFu;
-            internal const uint Single_MaxVectorizedValue = 0x49800000u;
-            private const float Single_AlmHuge = 1.2582912e7f;
-            private const float Single_Pi_Tail1 = 8.742278e-8f;
-            private const float Single_Pi_Tail2 = 3.430249e-15f;
-            private const float Single_C1 = -0.16666657f;
-            private const float Single_C2 = 0.0083330255f;
-            private const float Single_C3 = -1.980742e-4f;
-            private const float Single_C4 = 2.6019031e-6f;
-
-            internal const ulong Double_SignMask = 0x7FFFFFFFFFFFFFFFul;
-            internal const ulong Double_MaxVectorizedValue = 0x4160000000000000ul;
-            private const double Double_AlmHuge = 6.755399441055744e15;
-            private const double Double_Pi_Tail1 = 1.224646799147353e-16;
-            private const double Double_Pi_Tail2 = 2.165713347843828e-32;
-            private const double Double_C0 = -0.16666666666666666;
-            private const double Double_C2 = 0.008333333333333165;
-            private const double Double_C4 = -1.984126984120184e-4;
-            private const double Double_C6 = 2.7557319210152756e-6;
-            private const double Double_C8 = -2.5052106798274583e-8;
-            private const double Double_C10 = 1.605893649037159e-10;
-            private const double Double_C12 = -7.642917806891047e-13;
-            private const double Double_C14 = 2.7204790957888847e-15;
-
             public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.Sin(x);
@@ -16507,48 +16526,12 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    Vector128<uint> ux = x.AsUInt32();
-                    Vector128<uint> sign = ux & Vector128.Create(~Single_SignMask);
-                    Vector128<uint> uxMasked = ux & Vector128.Create(Single_SignMask);
-
-                    if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(Single_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<SinOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-
-                    Vector128<float> r = uxMasked.AsSingle();
-                    Vector128<float> almShift = Vector128.Create(Single_AlmHuge);
-                    Vector128<float> dn = (r * Vector128.Create(1 / float.Pi)) + almShift;
-                    Vector128<uint> n = dn.AsUInt32();
-                    dn -= almShift;
-                    Vector128<float> f = r + (dn * Vector128.Create(-float.Pi)) + (dn * Vector128.Create(Single_Pi_Tail1)) + (dn * Vector128.Create(Single_Pi_Tail2));
-
-                    Vector128<uint> odd = n << 31;
-                    Vector128<float> poly = PolyEvalOdd9(f, Vector128<float>.One, Vector128.Create(Single_C1), Vector128.Create(Single_C2), Vector128.Create(Single_C3), Vector128.Create(Single_C4));
-                    return (poly.AsUInt32() ^ sign ^ odd).As<uint, T>();
+                    return SinOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-
-                    Vector128<ulong> ux = x.AsUInt64();
-                    Vector128<ulong> sign = ux & Vector128.Create(~Double_SignMask);
-                    Vector128<ulong> uxMasked = ux & Vector128.Create(Double_SignMask);
-
-                    if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(Double_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<SinOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-
-                    Vector128<double> r = uxMasked.AsDouble();
-                    Vector128<double> almShift = Vector128.Create(Double_AlmHuge);
-                    Vector128<double> dn = (r * Vector128.Create(1 / double.Pi)) + almShift;
-                    Vector128<ulong> odd = dn.AsUInt64() << 63;
-                    dn -= almShift;
-                    Vector128<double> f = r - (dn * Vector128.Create(double.Pi)) - (dn * Vector128.Create(Double_Pi_Tail1)) - (dn * Vector128.Create(Double_Pi_Tail2));
-
-                    Vector128<double> poly = f + PolyEvalOdd17(f, Vector128.Create(Double_C0), Vector128.Create(Double_C2), Vector128.Create(Double_C4), Vector128.Create(Double_C6), Vector128.Create(Double_C8), Vector128.Create(Double_C10), Vector128.Create(Double_C12), Vector128.Create(Double_C14));
-                    return (poly.AsUInt64() ^ sign ^ odd).As<ulong, T>();
+                    return SinOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
             }
 
@@ -16556,48 +16539,12 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    Vector256<uint> ux = x.AsUInt32();
-                    Vector256<uint> sign = ux & Vector256.Create(~Single_SignMask);
-                    Vector256<uint> uxMasked = ux & Vector256.Create(Single_SignMask);
-
-                    if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(Single_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<SinOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-
-                    Vector256<float> r = uxMasked.AsSingle();
-                    Vector256<float> almShift = Vector256.Create(Single_AlmHuge);
-                    Vector256<float> dn = (r * Vector256.Create(1 / float.Pi)) + almShift;
-                    Vector256<uint> n = dn.AsUInt32();
-                    dn -= almShift;
-                    Vector256<float> f = r + (dn * Vector256.Create(-float.Pi)) + (dn * Vector256.Create(Single_Pi_Tail1)) + (dn * Vector256.Create(Single_Pi_Tail2));
-
-                    Vector256<uint> odd = n << 31;
-                    Vector256<float> poly = PolyEvalOdd9(f, Vector256<float>.One, Vector256.Create(Single_C1), Vector256.Create(Single_C2), Vector256.Create(Single_C3), Vector256.Create(Single_C4));
-                    return (poly.AsUInt32() ^ sign ^ odd).As<uint, T>();
+                    return SinOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-
-                    Vector256<ulong> ux = x.AsUInt64();
-                    Vector256<ulong> sign = ux & Vector256.Create(~Double_SignMask);
-                    Vector256<ulong> uxMasked = ux & Vector256.Create(Double_SignMask);
-
-                    if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(Double_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<SinOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-
-                    Vector256<double> r = (ux & Vector256.Create(Double_SignMask)).AsDouble();
-                    Vector256<double> almShift = Vector256.Create(Double_AlmHuge);
-                    Vector256<double> dn = (r * Vector256.Create(1 / double.Pi)) + almShift;
-                    Vector256<ulong> odd = dn.AsUInt64() << 63;
-                    dn -= almShift;
-                    Vector256<double> f = r - (dn * Vector256.Create(double.Pi)) - (dn * Vector256.Create(Double_Pi_Tail1)) - (dn * Vector256.Create(Double_Pi_Tail2));
-
-                    Vector256<double> poly = f + PolyEvalOdd17(f, Vector256.Create(Double_C0), Vector256.Create(Double_C2), Vector256.Create(Double_C4), Vector256.Create(Double_C6), Vector256.Create(Double_C8), Vector256.Create(Double_C10), Vector256.Create(Double_C12), Vector256.Create(Double_C14));
-                    return (poly.AsUInt64() ^ sign ^ odd).As<ulong, T>();
+                    return SinOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
             }
 
@@ -16605,49 +16552,188 @@ namespace System.Numerics.Tensors
             {
                 if (typeof(T) == typeof(float))
                 {
-                    Vector512<uint> ux = x.AsUInt32();
-                    Vector512<uint> sign = ux & Vector512.Create(~Single_SignMask);
-                    Vector512<uint> uxMasked = ux & Vector512.Create(Single_SignMask);
-
-                    if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(Single_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<SinOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-
-                    Vector512<float> almShift = Vector512.Create(Single_AlmHuge);
-                    Vector512<float> r = (ux & Vector512.Create(Single_SignMask)).AsSingle();
-                    Vector512<float> dn = (r * Vector512.Create(1 / float.Pi)) + almShift;
-                    Vector512<uint> n = dn.AsUInt32();
-                    dn -= almShift;
-                    Vector512<float> f = r + (dn * Vector512.Create(-float.Pi)) + (dn * Vector512.Create(Single_Pi_Tail1)) + (dn * Vector512.Create(Single_Pi_Tail2));
-
-                    Vector512<uint> odd = n << 31;
-                    Vector512<float> poly = PolyEvalOdd9(f, Vector512<float>.One, Vector512.Create(Single_C1), Vector512.Create(Single_C2), Vector512.Create(Single_C3), Vector512.Create(Single_C4));
-                    return (poly.AsUInt32() ^ sign ^ odd).As<uint, T>();
+                    return SinOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
                 }
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-
-                    Vector512<ulong> ux = x.AsUInt64();
-                    Vector512<ulong> sign = ux & Vector512.Create(~Double_SignMask);
-                    Vector512<ulong> uxMasked = ux & Vector512.Create(Double_SignMask);
-
-                    if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(Double_MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<SinOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-
-                    Vector512<double> r = (ux & Vector512.Create(Double_SignMask)).AsDouble();
-                    Vector512<double> almShift = Vector512.Create(Double_AlmHuge);
-                    Vector512<double> dn = (r * Vector512.Create(1 / double.Pi)) + almShift;
-                    Vector512<ulong> odd = dn.AsUInt64() << 63;
-                    dn -= almShift;
-                    Vector512<double> f = r - (dn * Vector512.Create(double.Pi)) - (dn * Vector512.Create(Double_Pi_Tail1)) - (dn * Vector512.Create(Double_Pi_Tail2));
-
-                    Vector512<double> poly = f + PolyEvalOdd17(f, Vector512.Create(Double_C0), Vector512.Create(Double_C2), Vector512.Create(Double_C4), Vector512.Create(Double_C6), Vector512.Create(Double_C8), Vector512.Create(Double_C10), Vector512.Create(Double_C12), Vector512.Create(Double_C14));
-                    return (poly.AsUInt64() ^ sign ^ odd).As<ulong, T>();
+                    return SinOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+            }
+        }
+
+        /// <summary>float.Sin(x)</summary>
+        private readonly struct SinOperatorSingle : IUnaryOperator<float, float>
+        {
+            internal const uint SignMask = 0x7FFFFFFFu;
+            internal const uint MaxVectorizedValue = 0x49800000u;
+            private const float AlmHuge = 1.2582912e7f;
+            private const float Pi_Tail1 = 8.742278e-8f;
+            private const float Pi_Tail2 = 3.430249e-15f;
+            private const float C1 = -0.16666657f;
+            private const float C2 = 0.0083330255f;
+            private const float C3 = -1.980742e-4f;
+            private const float C4 = 2.6019031e-6f;
+
+            public static bool Vectorizable => true;
+
+            public static float Invoke(float x) => float.Sin(x);
+
+            public static Vector128<float> Invoke(Vector128<float> x)
+            {
+                Vector128<uint> ux = x.AsUInt32();
+                Vector128<uint> sign = ux & Vector128.Create(~SignMask);
+                Vector128<uint> uxMasked = ux & Vector128.Create(SignMask);
+
+                if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<SinOperatorSingle>(x);
+                }
+
+                Vector128<float> r = uxMasked.AsSingle();
+                Vector128<float> almShift = Vector128.Create(AlmHuge);
+                Vector128<float> dn = (r * Vector128.Create(1 / float.Pi)) + almShift;
+                Vector128<uint> n = dn.AsUInt32();
+                dn -= almShift;
+                Vector128<float> f = r + (dn * Vector128.Create(-float.Pi)) + (dn * Vector128.Create(Pi_Tail1)) + (dn * Vector128.Create(Pi_Tail2));
+
+                Vector128<uint> odd = n << 31;
+                Vector128<float> poly = PolyEvalOdd9(f, Vector128<float>.One, Vector128.Create(C1), Vector128.Create(C2), Vector128.Create(C3), Vector128.Create(C4));
+                return (poly.AsUInt32() ^ sign ^ odd).AsSingle();
+            }
+
+            public static Vector256<float> Invoke(Vector256<float> x)
+            {
+                Vector256<uint> ux = x.AsUInt32();
+                Vector256<uint> sign = ux & Vector256.Create(~SignMask);
+                Vector256<uint> uxMasked = ux & Vector256.Create(SignMask);
+
+                if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<SinOperatorSingle>(x);
+                }
+
+                Vector256<float> r = uxMasked.AsSingle();
+                Vector256<float> almShift = Vector256.Create(AlmHuge);
+                Vector256<float> dn = (r * Vector256.Create(1 / float.Pi)) + almShift;
+                Vector256<uint> n = dn.AsUInt32();
+                dn -= almShift;
+                Vector256<float> f = r + (dn * Vector256.Create(-float.Pi)) + (dn * Vector256.Create(Pi_Tail1)) + (dn * Vector256.Create(Pi_Tail2));
+
+                Vector256<uint> odd = n << 31;
+                Vector256<float> poly = PolyEvalOdd9(f, Vector256<float>.One, Vector256.Create(C1), Vector256.Create(C2), Vector256.Create(C3), Vector256.Create(C4));
+                return (poly.AsUInt32() ^ sign ^ odd).AsSingle();
+            }
+
+            public static Vector512<float> Invoke(Vector512<float> x)
+            {
+                Vector512<uint> ux = x.AsUInt32();
+                Vector512<uint> sign = ux & Vector512.Create(~SignMask);
+                Vector512<uint> uxMasked = ux & Vector512.Create(SignMask);
+
+                if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<SinOperatorSingle>(x);
+                }
+
+                Vector512<float> almShift = Vector512.Create(AlmHuge);
+                Vector512<float> r = (ux & Vector512.Create(SignMask)).AsSingle();
+                Vector512<float> dn = (r * Vector512.Create(1 / float.Pi)) + almShift;
+                Vector512<uint> n = dn.AsUInt32();
+                dn -= almShift;
+                Vector512<float> f = r + (dn * Vector512.Create(-float.Pi)) + (dn * Vector512.Create(Pi_Tail1)) + (dn * Vector512.Create(Pi_Tail2));
+
+                Vector512<uint> odd = n << 31;
+                Vector512<float> poly = PolyEvalOdd9(f, Vector512<float>.One, Vector512.Create(C1), Vector512.Create(C2), Vector512.Create(C3), Vector512.Create(C4));
+                return (poly.AsUInt32() ^ sign ^ odd).AsSingle();
+            }
+        }
+
+        /// <summary>double.Sin(x)</summary>
+        private readonly struct SinOperatorDouble : IUnaryOperator<double, double>
+        {
+            internal const ulong SignMask = 0x7FFFFFFFFFFFFFFFul;
+            internal const ulong MaxVectorizedValue = 0x4160000000000000ul;
+            private const double AlmHuge = 6.755399441055744e15;
+            private const double Pi_Tail1 = 1.224646799147353e-16;
+            private const double Pi_Tail2 = 2.165713347843828e-32;
+            private const double C0 = -0.16666666666666666;
+            private const double C2 = 0.008333333333333165;
+            private const double C4 = -1.984126984120184e-4;
+            private const double C6 = 2.7557319210152756e-6;
+            private const double C8 = -2.5052106798274583e-8;
+            private const double C10 = 1.605893649037159e-10;
+            private const double C12 = -7.642917806891047e-13;
+            private const double C14 = 2.7204790957888847e-15;
+
+            public static bool Vectorizable => true;
+
+            public static double Invoke(double x) => double.Sin(x);
+
+            public static Vector128<double> Invoke(Vector128<double> x)
+            {
+                Vector128<ulong> ux = x.AsUInt64();
+                Vector128<ulong> sign = ux & Vector128.Create(~SignMask);
+                Vector128<ulong> uxMasked = ux & Vector128.Create(SignMask);
+
+                if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<SinOperatorDouble>(x);
+                }
+
+                Vector128<double> r = uxMasked.AsDouble();
+                Vector128<double> almShift = Vector128.Create(AlmHuge);
+                Vector128<double> dn = (r * Vector128.Create(1 / double.Pi)) + almShift;
+                Vector128<ulong> odd = dn.AsUInt64() << 63;
+                dn -= almShift;
+                Vector128<double> f = r - (dn * Vector128.Create(double.Pi)) - (dn * Vector128.Create(Pi_Tail1)) - (dn * Vector128.Create(Pi_Tail2));
+
+                Vector128<double> poly = f + PolyEvalOdd17(f, Vector128.Create(C0), Vector128.Create(C2), Vector128.Create(C4), Vector128.Create(C6), Vector128.Create(C8), Vector128.Create(C10), Vector128.Create(C12), Vector128.Create(C14));
+                return (poly.AsUInt64() ^ sign ^ odd).AsDouble();
+            }
+
+            public static Vector256<double> Invoke(Vector256<double> x)
+            {
+                Vector256<ulong> ux = x.AsUInt64();
+                Vector256<ulong> sign = ux & Vector256.Create(~SignMask);
+                Vector256<ulong> uxMasked = ux & Vector256.Create(SignMask);
+
+                if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<SinOperatorDouble>(x);
+                }
+
+                Vector256<double> r = (ux & Vector256.Create(SignMask)).AsDouble();
+                Vector256<double> almShift = Vector256.Create(AlmHuge);
+                Vector256<double> dn = (r * Vector256.Create(1 / double.Pi)) + almShift;
+                Vector256<ulong> odd = dn.AsUInt64() << 63;
+                dn -= almShift;
+                Vector256<double> f = r - (dn * Vector256.Create(double.Pi)) - (dn * Vector256.Create(Pi_Tail1)) - (dn * Vector256.Create(Pi_Tail2));
+
+                Vector256<double> poly = f + PolyEvalOdd17(f, Vector256.Create(C0), Vector256.Create(C2), Vector256.Create(C4), Vector256.Create(C6), Vector256.Create(C8), Vector256.Create(C10), Vector256.Create(C12), Vector256.Create(C14));
+                return (poly.AsUInt64() ^ sign ^ odd).AsDouble();
+            }
+
+            public static Vector512<double> Invoke(Vector512<double> x)
+            {
+                Vector512<ulong> ux = x.AsUInt64();
+                Vector512<ulong> sign = ux & Vector512.Create(~SignMask);
+                Vector512<ulong> uxMasked = ux & Vector512.Create(SignMask);
+
+                if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
+                {
+                    return ApplyScalar<SinOperatorDouble>(x);
+                }
+
+                Vector512<double> r = (ux & Vector512.Create(SignMask)).AsDouble();
+                Vector512<double> almShift = Vector512.Create(AlmHuge);
+                Vector512<double> dn = (r * Vector512.Create(1 / double.Pi)) + almShift;
+                Vector512<ulong> odd = dn.AsUInt64() << 63;
+                dn -= almShift;
+                Vector512<double> f = r - (dn * Vector512.Create(double.Pi)) - (dn * Vector512.Create(Pi_Tail1)) - (dn * Vector512.Create(Pi_Tail2));
+
+                Vector512<double> poly = f + PolyEvalOdd17(f, Vector512.Create(C0), Vector512.Create(C2), Vector512.Create(C4), Vector512.Create(C6), Vector512.Create(C8), Vector512.Create(C10), Vector512.Create(C12), Vector512.Create(C14));
+                return (poly.AsUInt64() ^ sign ^ odd).AsDouble();
             }
         }
 
@@ -16655,7 +16741,7 @@ namespace System.Numerics.Tensors
         internal readonly struct SinPiOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            public static bool Vectorizable => SinOperator<T>.Vectorizable;
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
 
             public static T Invoke(T x) => T.SinPi(x);
 
@@ -16664,7 +16750,7 @@ namespace System.Numerics.Tensors
                 Vector128<T> xpi = x * Vector128.Create(T.Pi);
                 if (typeof(T) == typeof(float))
                 {
-                    if (Vector128.GreaterThanAny(xpi.AsUInt32() & Vector128.Create(SinOperator<float>.Single_SignMask), Vector128.Create(SinOperator<float>.Single_MaxVectorizedValue)))
+                    if (Vector128.GreaterThanAny(xpi.AsUInt32() & Vector128.Create(SinOperatorSingle.SignMask), Vector128.Create(SinOperatorSingle.MaxVectorizedValue)))
                     {
                         return ApplyScalar<SinPiOperator<float>>(x.AsSingle()).As<float, T>();
                     }
@@ -16672,7 +16758,7 @@ namespace System.Numerics.Tensors
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector128.GreaterThanAny(xpi.AsUInt64() & Vector128.Create(SinOperator<double>.Double_SignMask), Vector128.Create(SinOperator<double>.Double_MaxVectorizedValue)))
+                    if (Vector128.GreaterThanAny(xpi.AsUInt64() & Vector128.Create(SinOperatorDouble.SignMask), Vector128.Create(SinOperatorDouble.MaxVectorizedValue)))
                     {
                         return ApplyScalar<SinPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
@@ -16686,7 +16772,7 @@ namespace System.Numerics.Tensors
                 Vector256<T> xpi = x * Vector256.Create(T.Pi);
                 if (typeof(T) == typeof(float))
                 {
-                    if (Vector256.GreaterThanAny(xpi.AsUInt32() & Vector256.Create(SinOperator<float>.Single_SignMask), Vector256.Create(SinOperator<float>.Single_MaxVectorizedValue)))
+                    if (Vector256.GreaterThanAny(xpi.AsUInt32() & Vector256.Create(SinOperatorSingle.SignMask), Vector256.Create(SinOperatorSingle.MaxVectorizedValue)))
                     {
                         return ApplyScalar<SinPiOperator<float>>(x.AsSingle()).As<float, T>();
                     }
@@ -16694,7 +16780,7 @@ namespace System.Numerics.Tensors
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector256.GreaterThanAny(xpi.AsUInt64() & Vector256.Create(SinOperator<double>.Double_SignMask), Vector256.Create(SinOperator<double>.Double_MaxVectorizedValue)))
+                    if (Vector256.GreaterThanAny(xpi.AsUInt64() & Vector256.Create(SinOperatorDouble.SignMask), Vector256.Create(SinOperatorDouble.MaxVectorizedValue)))
                     {
                         return ApplyScalar<SinPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
@@ -16708,7 +16794,7 @@ namespace System.Numerics.Tensors
                 Vector512<T> xpi = x * Vector512.Create(T.Pi);
                 if (typeof(T) == typeof(float))
                 {
-                    if (Vector512.GreaterThanAny(xpi.AsUInt32() & Vector512.Create(SinOperator<float>.Single_SignMask), Vector512.Create(SinOperator<float>.Single_MaxVectorizedValue)))
+                    if (Vector512.GreaterThanAny(xpi.AsUInt32() & Vector512.Create(SinOperatorSingle.SignMask), Vector512.Create(SinOperatorSingle.MaxVectorizedValue)))
                     {
                         return ApplyScalar<SinPiOperator<float>>(x.AsSingle()).As<float, T>();
                     }
@@ -16716,7 +16802,7 @@ namespace System.Numerics.Tensors
                 else
                 {
                     Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector512.GreaterThanAny(xpi.AsUInt64() & Vector512.Create(SinOperator<double>.Double_SignMask), Vector512.Create(SinOperator<double>.Double_MaxVectorizedValue)))
+                    if (Vector512.GreaterThanAny(xpi.AsUInt64() & Vector512.Create(SinOperatorDouble.SignMask), Vector512.Create(SinOperatorDouble.MaxVectorizedValue)))
                     {
                         return ApplyScalar<SinPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
