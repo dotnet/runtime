@@ -832,7 +832,7 @@ bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     if (val == nullptr)
         goto done;
 
-    file = fopen(filename, "r");
+    file = fopen(filename, "rb");
     if (file == nullptr)
         goto done;
 
@@ -1037,7 +1037,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
 static bool ReadMemAvailable(uint64_t* memAvailable)
 {
     bool foundMemAvailable = false;
-    FILE* memInfoFile = fopen("/proc/meminfo", "r");
+    FILE* memInfoFile = fopen("/proc/meminfo", "rb");
     if (memInfoFile != NULL)
     {
         char *line = nullptr;
@@ -1170,7 +1170,7 @@ static size_t GetCurrentVirtualMemorySize()
     char* line = nullptr;
 
     // process virtual memory size is reported in the first column of the /proc/self/statm
-    FILE* file = fopen("/proc/self/statm", "r");
+    FILE* file = fopen("/proc/self/statm", "rb");
     if (file != nullptr && getline(&line, &linelen, file) != -1)
     {
         // The first column of the /proc/self/statm contains the virtual memory size

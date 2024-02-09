@@ -213,7 +213,7 @@ private:
         char *mountpath = nullptr;
         char *mountroot = nullptr;
 
-        FILE *mountinfofile = fopen(PROC_MOUNTINFO_FILENAME, "r");
+        FILE *mountinfofile = fopen(PROC_MOUNTINFO_FILENAME, "rb");
         if (mountinfofile == nullptr)
             goto done;
 
@@ -302,7 +302,7 @@ private:
         char *cgroup_path = nullptr;
         bool result = false;
 
-        FILE *cgroupfile = fopen(PROC_CGROUP_FILENAME, "r");
+        FILE *cgroupfile = fopen(PROC_CGROUP_FILENAME, "rb");
         if (cgroupfile == nullptr)
             goto done;
 
@@ -388,7 +388,7 @@ private:
         if (asprintf(&stat_filename, "%s%s", s_memory_cgroup_path, CGROUP_MEMORY_STAT_FILENAME) < 0)
             return false;
 
-        FILE *stat_file = fopen(stat_filename, "r");
+        FILE *stat_file = fopen(stat_filename, "rb");
         free(stat_filename);
         if (stat_file == nullptr)
             return false;
@@ -625,7 +625,7 @@ bool GetPhysicalMemoryUsed(size_t* val)
         return true;
 
     // process resident set size.
-    FILE* file = fopen(PROC_STATM_FILENAME, "r");
+    FILE* file = fopen(PROC_STATM_FILENAME, "rb");
     if (file != nullptr && getline(&line, &linelen, file) != -1)
     {
         char* context = nullptr;

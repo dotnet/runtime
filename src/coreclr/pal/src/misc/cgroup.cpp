@@ -179,7 +179,7 @@ private:
         char *mountpath = nullptr;
         char *mountroot = nullptr;
 
-        FILE *mountinfofile = fopen(PROC_MOUNTINFO_FILENAME, "r");
+        FILE *mountinfofile = fopen(PROC_MOUNTINFO_FILENAME, "rb");
         if (mountinfofile == nullptr)
             goto done;
 
@@ -267,7 +267,7 @@ private:
         char *cgroup_path = nullptr;
         bool result = false;
 
-        FILE *cgroupfile = fopen(PROC_CGROUP_FILENAME, "r");
+        FILE *cgroupfile = fopen(PROC_CGROUP_FILENAME, "rb");
         if (cgroupfile == nullptr)
             goto done;
 
@@ -384,7 +384,7 @@ private:
         if (asprintf(&filename, "%s%s", s_cpu_cgroup_path, CGROUP2_CPU_MAX_FILENAME) < 0)
             return false;
 
-        file = fopen(filename, "r");
+        file = fopen(filename, "rb");
         if (file == nullptr)
             goto done;
 
@@ -476,7 +476,7 @@ private:
         if (val == nullptr)
             return false;
 
-        FILE* file = fopen(filename, "r");
+        FILE* file = fopen(filename, "rb");
         if (file == nullptr)
             goto done;
 

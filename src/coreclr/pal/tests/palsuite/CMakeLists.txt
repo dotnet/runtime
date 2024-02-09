@@ -90,42 +90,19 @@ add_executable_clr(paltests
   c_runtime/cosf/test1/test1.cpp
   c_runtime/cosh/test1/test1.cpp
   c_runtime/coshf/test1/test1.cpp
-  c_runtime/errno/test1/test1.cpp
-  c_runtime/errno/test2/test2.cpp
   c_runtime/exit/test1/test1.cpp
   c_runtime/exit/test2/test2.cpp
   c_runtime/exp/test1/test1.cpp
   c_runtime/expf/test1/test1.cpp
   c_runtime/fabs/test1/test1.cpp
   c_runtime/fabsf/test1/test1.cpp
-  c_runtime/ferror/test1/test1.cpp
-  c_runtime/ferror/test2/test2.cpp
-  c_runtime/fflush/test1/test1.cpp
-  c_runtime/fgets/test1/test1.cpp
-  c_runtime/fgets/test2/test2.cpp
-  c_runtime/fgets/test3/test3.cpp
   c_runtime/floor/test1/test1.cpp
   c_runtime/floorf/test1/test1.cpp
   c_runtime/fma/test1/test1.cpp
   c_runtime/fmaf/test1/test1.cpp
   c_runtime/fmod/test1/test1.cpp
   c_runtime/fmodf/test1/test1.cpp
-  c_runtime/fopen/test1/test1.cpp
-  c_runtime/fopen/test2/test2.cpp
-  c_runtime/fopen/test3/test3.cpp
-  c_runtime/fopen/test4/test4.cpp
-  c_runtime/fopen/test5/test5.cpp
-  c_runtime/fopen/test6/test6.cpp
-  c_runtime/fopen/test7/test7.cpp
-  c_runtime/fputs/test1/test1.cpp
-  c_runtime/fputs/test2/test2.cpp
-  c_runtime/fread/test1/test1.cpp
-  c_runtime/fread/test2/test2.cpp
-  c_runtime/fread/test3/test3.cpp
   c_runtime/free/test1/test1.cpp
-  c_runtime/fseek/test1/test1.cpp
-  c_runtime/ftell/test1/ftell.cpp
-  c_runtime/fwrite/test1/test1.cpp
   c_runtime/ilogb/test1/test1.cpp
   c_runtime/ilogbf/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
@@ -519,11 +496,7 @@ add_executable_clr(paltests
   miscellaneous/SetEnvironmentVariableW/test4/test4.cpp
   miscellaneous/SetLastError/test1/test.cpp
   miscellaneous/_i64tow/test1/test1.cpp
-  pal_specific/PAL_errno/test1/PAL_errno.cpp
 # pal_specific/PAL_GetUserTempDirectoryW/test1/PAL_GetUserTempDirectoryW.cpp
-  #pal_specific/PAL_get_stderr/test1/PAL_get_stderr.cpp
-  #pal_specific/PAL_get_stdin/test1/PAL_get_stdin.cpp
-  #pal_specific/PAL_get_stdout/test1/PAL_get_stdout.cpp
   pal_specific/PAL_Initialize_Terminate/test1/PAL_Initialize_Terminate.cpp
   pal_specific/PAL_Initialize_Terminate/test2/pal_initialize_twice.cpp
 #  pal_specific/PAL_RegisterLibraryW_UnregisterLibraryW/test1/PAL_RegisterLibraryW_UnregisterLibraryW.cpp

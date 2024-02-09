@@ -108,8 +108,6 @@ __iscsym( int c )
     PERF_EXIT(__iscsym);
     return 0;
 }
-
-
 /*++
 
 Function :
@@ -119,7 +117,7 @@ Function :
     Returns the address of the errno.
 
 --*/
-int * __cdecl PAL_errno( int caller )
+int * __cdecl PAL_errno()
 {
     int *retval;
     PERF_ENTRY(errno);
@@ -129,7 +127,6 @@ int * __cdecl PAL_errno( int caller )
     PERF_EXIT(errno);
     return retval;
 }
-
 
 /*++
 Function:
