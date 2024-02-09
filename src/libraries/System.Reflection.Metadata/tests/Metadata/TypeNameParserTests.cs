@@ -40,6 +40,14 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("MissingAssemblyName, ")]
         [InlineData("ExtraComma, ,")]
         [InlineData("ExtraComma, , System.Runtime")]
+        [InlineData("TooManyGenericArgumentsDoubleSquareBracket'1[[a],[b]]")]
+        [InlineData("TooManyGenericArgumentsSingleSquareBracket'1[a,b]")]
+        [InlineData("TooManyGenericArgumentsDoubleSquareBracketTwoDigits'10[[1],[2],[3],[4],[5],[6],[7],[8],[9],[10],[11]]")]
+        [InlineData("TooManyGenericArgumentsSingleSquareBracketTwoDigits'10[1,2,3,4,5,6,7,8,9,10,11]")]
+        [InlineData("TooFewGenericArgumentsDoubleSquareBracket'3[[a],[b]]")]
+        [InlineData("TooFewGenericArgumentsDoubleSquareBracket'3[a,b]")]
+        [InlineData("TooFewGenericArgumentsDoubleSquareBracketTwoDigits'10[[1],[2],[3],[4],[5],[6],[7],[8],[9]]")]
+        [InlineData("TooFewGenericArgumentsSingleSquareBracketTwoDigits'10[1,2,3,4,5,6,7,8,9]")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));

@@ -95,7 +95,7 @@ namespace System.Reflection.Metadata
             }
 
             List<int>? nestedNameLengths = null;
-            if (!TryGetTypeNameLengthWithNestedNameLengths(_inputString, ref nestedNameLengths, out int fullTypeNameLength))
+            if (!TryGetTypeNameLengthWithNestedNameLengths(_inputString, ref nestedNameLengths, out int fullTypeNameLength, out int genericArgCount))
             {
                 return null;
             }
@@ -107,7 +107,9 @@ namespace System.Reflection.Metadata
             }
             _inputString = _inputString.Slice(fullTypeNameLength);
 
-            List<TypeName>? genericArgs = null; // TODO: use some stack-based list in CoreLib
+            int genericArgIndex = 0;
+            // Don't allocate now, as it may be an open generic type like "List`1"
+            TypeName[]? genericArgs = null;
 
             // Are there any captured generic args? We'll look for "[[" and "[".
             // There are no spaces allowed before the first '[', but spaces are allowed
@@ -120,6 +122,15 @@ namespace System.Reflection.Metadata
                 int maxObservedRecursionCheck = recursiveDepth;
 
             ParseAnotherGenericArg:
+
+                // Invalid generic argument count provided after backtick.
+                // Examples:
+                // - too many: List`1[[a], [b]]
+                // - not expected: NoBacktick[[a]]
+                if (genericArgIndex >= genericArgCount)
+                {
+                    return null;
+                }
 
                 recursiveDepth = startingRecursionCheck;
                 // Namespace.Type`1[[GenericArgument1, AssemblyName1],[GenericArgument2, AssemblyName2]] - double square bracket syntax allows for fully qualified type names
@@ -141,7 +152,7 @@ namespace System.Reflection.Metadata
                     return null;
                 }
 
-                (genericArgs ??= new()).Add(genericArg);
+                (genericArgs ??= new TypeName[genericArgCount])[genericArgIndex++] = genericArg;
 
                 if (TryStripFirstCharAndTrailingSpaces(ref _inputString, ','))
                 {
@@ -158,6 +169,13 @@ namespace System.Reflection.Metadata
                 // The only other allowable character is ']', indicating the end of
                 // the generic type arg list.
                 if (!TryStripFirstCharAndTrailingSpaces(ref _inputString, ']'))
+                {
+                    return null;
+                }
+
+                // We have reached the end of generic arguments, but parsed fewer than expected.
+                // Example: A`2[[b]]
+                if (genericArgIndex != genericArgCount)
                 {
                     return null;
                 }
@@ -211,7 +229,7 @@ namespace System.Reflection.Metadata
             string name = GetName(fullTypeName).ToString();
             TypeName? underlyingType = genericArgs is null ? null : new(name, fullTypeName.ToString(), assemblyName, containingType: containingType);
             string genericTypeFullName = GetGenericTypeFullName(fullTypeName, genericArgs);
-            TypeName result = new(name, genericTypeFullName, assemblyName, rankOrModifier: 0, underlyingType, containingType, genericArgs?.ToArray());
+            TypeName result = new(name, genericTypeFullName, assemblyName, rankOrModifier: 0, underlyingType, containingType, genericArgs);
 
             if (previousDecorator != default) // some decorators were recognized
             {
@@ -241,10 +259,12 @@ namespace System.Reflection.Metadata
             return result;
         }
 
-        private static bool TryGetTypeNameLengthWithNestedNameLengths(ReadOnlySpan<char> input, ref List<int>? nestedNameLengths, out int totalLength)
+        private static bool TryGetTypeNameLengthWithNestedNameLengths(ReadOnlySpan<char> input, ref List<int>? nestedNameLengths,
+            out int totalLength, out int genericArgCount)
         {
             bool isNestedType;
             totalLength = 0;
+            genericArgCount = 0;
             do
             {
                 int length = GetFullTypeNameLength(input.Slice(totalLength), out isNestedType);
@@ -252,6 +272,8 @@ namespace System.Reflection.Metadata
                 {
                     return false;
                 }
+
+                genericArgCount += GetGenericArgumentCount(input.Slice(totalLength, length));
 
                 if (isNestedType)
                 {
@@ -502,7 +524,7 @@ namespace System.Reflection.Metadata
 #endif
         }
 
-        private static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, List<TypeName>? genericArgs)
+        private static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, TypeName[]? genericArgs)
         {
             if (genericArgs is null)
             {
@@ -510,9 +532,9 @@ namespace System.Reflection.Metadata
             }
 
             int size = fullTypeName.Length + 1;
-            for (int i = 0; i < genericArgs.Count; i++)
+            foreach (TypeName genericArg in genericArgs)
             {
-                size += 3 + genericArgs[i].AssemblyQualifiedName.Length;
+                size += 3 + genericArg.AssemblyQualifiedName.Length;
             }
 
             StringBuilder result = new(size);
@@ -525,16 +547,48 @@ namespace System.Reflection.Metadata
             }
 #endif
             result.Append('[');
-            for (int i = 0; i < genericArgs.Count; i++)
+            foreach (TypeName genericArg in genericArgs)
             {
                 result.Append('[');
-                result.Append(genericArgs[i].AssemblyQualifiedName);
+                result.Append(genericArg.AssemblyQualifiedName);
                 result.Append(']');
                 result.Append(',');
             }
             result[result.Length - 1] = ']'; // replace ',' with ']'
 
             return result.ToString();
+        }
+
+        private static int GetGenericArgumentCount(ReadOnlySpan<char> fullTypeName)
+        {
+            const int ShortestPossibleGenericTypeName = 3; // single letter followed by a backtick and one digit
+            if (fullTypeName.Length < ShortestPossibleGenericTypeName || !IsAsciiDigit(fullTypeName[fullTypeName.Length - 1]))
+            {
+                return 0;
+            }
+
+            int backtickIndex = fullTypeName.Length - 2; // we already know it's true for the last one
+            for (; backtickIndex >= 0; backtickIndex--)
+            {
+                if (fullTypeName[backtickIndex] == '`')
+                    return int.Parse(fullTypeName.Slice(backtickIndex + 1)
+#if NET8_0_OR_GREATER
+                        );
+#else
+                        .ToString());
+#endif
+                else if (!IsAsciiDigit(fullTypeName[backtickIndex]))
+                    break;
+            }
+
+            return 0;
+
+            static bool IsAsciiDigit(char ch) =>
+#if NET8_0_OR_GREATER
+                char.IsAsciiDigit(ch);
+#else
+                ch >= '0' && ch <= '9';
+#endif
         }
     }
 }
