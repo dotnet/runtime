@@ -683,10 +683,7 @@ namespace System.Net
         }
 
         // NOP
-        public static int DefaultMaximumErrorResponseLength
-        {
-            get; set;
-        }
+        public static int DefaultMaximumErrorResponseLength { get; set; } = -1;
 
         private static RequestCachePolicy? _defaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
         private static bool _isDefaultCachePolicySet;

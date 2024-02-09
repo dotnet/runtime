@@ -339,7 +339,7 @@ namespace System.Net
             {
                 Stream contentStream = _httpResponseMessage.Content.ReadAsStream();
                 int maxErrorResponseLength = HttpWebRequest.DefaultMaximumErrorResponseLength;
-                if (maxErrorResponseLength <= 0 || StatusCode < HttpStatusCode.BadRequest) // Keep 0 as NOP value for backward compatibility
+                if (maxErrorResponseLength < 0 || StatusCode < HttpStatusCode.BadRequest)
                 {
                     return contentStream;
                 }
