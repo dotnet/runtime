@@ -197,11 +197,6 @@ export function normalizeConfig() {
         config.environmentVariables["MONO_SLEEP_ABORT_LIMIT"] = "5000";
     }
 
-    if (config.debugLevel !== 0 && !isDebuggingSupported()) {
-        config.debugLevel = 0;
-    }
-
-
     if (BuildConfiguration === "Debug" && config.diagnosticTracing === undefined) {
         config.diagnosticTracing = true;
     }

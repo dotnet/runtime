@@ -15,7 +15,7 @@ import { assertIsControllablePromise, createPromiseController, getPromiseControl
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
 import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-import { deep_merge_config } from "./config";
+import { deep_merge_config, isDebuggingSupported } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 // if we are the first script loaded in the web worker, we are expected to become the sidecar
@@ -120,6 +120,7 @@ export function setLoaderGlobals(
 
         retrieve_asset_download,
         invokeLibraryInitializers,
+        isDebuggingSupported,
 
         // from wasm-feature-detect npm package
         exceptions,
