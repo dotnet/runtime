@@ -115,8 +115,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
-      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true' and (('$(_IsiOSLikePlatform)' == 'true' and '$(HybridGlobalization)' != 'true') or '$(_IsiOSLikePlatform)' != 'true')" />
-      <NetCoreAppNativeLibrary Include="System.HybridGlobalization.Native" Condition="'$(_IsiOSLikePlatform)' == 'true' and '$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true' and '$(HybridGlobalization)' == 'true'" />
+      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true' and (('$(_IsiOSLikePlatform)' == 'true' and '$(HybridGlobalization)' == 'false') or '$(_IsiOSLikePlatform)' != 'true')" />
+      <NetCoreAppNativeLibrary Include="System.HybridGlobalization.Native" Condition="'$(_IsiOSLikePlatform)' == 'true' and '$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true' and '$(HybridGlobalization)' != 'false'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
