@@ -4746,6 +4746,15 @@ mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *
 	return inline_method (cfg, cmethod, fsig, sp, ip, real_offset, inline_always, NULL);
 }
 
+static gboolean
+aggressive_inline_method (MonoMethod *cmethod)
+{
+	gboolean aggressive_inline = m_method_is_aggressive_inlining (cmethod);
+	if (aggressive_inline)
+		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cmethod);
+	return aggressive_inline;
+}
+
 /*
  * inline_method:
  *
@@ -4871,7 +4880,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
-	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))) {
+	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cmethod))) {
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -6431,8 +6440,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = FALSE;
  	dont_verify |= method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE; /* bug #77896 */
-	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP;
-	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP_INVOKE;
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;

@@ -191,10 +191,6 @@ type MonoConfig = {
      */
     pthreadPoolSize?: number;
     /**
-     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
-     */
-    startupMemoryCache?: boolean;
-    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */
