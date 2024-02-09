@@ -1123,7 +1123,6 @@ namespace System.Transactions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97513", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         public async Task VerifyBYOTSyncTSNestedAsync()
         {
             string txId1;

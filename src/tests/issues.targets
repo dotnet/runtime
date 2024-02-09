@@ -75,6 +75,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
@@ -1952,6 +1955,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/InstallEHCallback/*">
           <Issue>https://github.com/dotnet/runtime/issues/67047</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
@@ -3230,6 +3236,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
             <Issue>needs native libraries</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'android'" >
@@ -3675,6 +3684,12 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'linux'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
+   </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">

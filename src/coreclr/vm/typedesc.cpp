@@ -128,21 +128,6 @@ BOOL TypeDesc::ContainsGenericVariables(BOOL methodOnly)
     return FALSE;
 }
 
-
-PTR_BaseDomain TypeDesc::GetDomain()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
-}
-
 PTR_Module TypeDesc::GetModule() {
     CONTRACTL
     {

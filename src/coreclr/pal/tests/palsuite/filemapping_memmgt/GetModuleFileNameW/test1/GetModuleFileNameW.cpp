@@ -73,12 +73,13 @@ PALTEST(filemapping_memmgt_GetModuleFileNameW_test1_paltest_getmodulefilenamew_t
     strcpy(NewModuleFileNameBuf,convertC(ModuleFileNameBuf));
 
     //strip out all full path
-    TempBuf = strtok(NewModuleFileNameBuf,Delimiter);
+    char* context;
+    TempBuf = strtok_r(NewModuleFileNameBuf,Delimiter, &context);
     LastBuf = TempBuf;
     while(NULL != TempBuf)
     {
         LastBuf = TempBuf;
-        TempBuf = strtok(NULL,Delimiter);
+        TempBuf = strtok_r(NULL,Delimiter, &context);
     }
 
 
