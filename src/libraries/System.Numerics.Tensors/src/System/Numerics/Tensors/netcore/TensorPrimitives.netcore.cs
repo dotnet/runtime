@@ -13040,105 +13040,6 @@ namespace System.Numerics.Tensors
             return Vector512.LessThan(vector, Vector512<T>.Zero);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> PolyEvalOdd9<T>(Vector128<T> r, Vector128<T> c0, Vector128<T> c1, Vector128<T> c2, Vector128<T> c3, Vector128<T> c4) where T : INumberBase<T>
-        {
-            Vector128<T> r2 = r * r;
-            Vector128<T> r4 = r2 * r2;
-
-            Vector128<T> a0 = MultiplyAddEstimateOperator<T>.Invoke(c2, r2, c1);
-            Vector128<T> a1 = MultiplyAddEstimateOperator<T>.Invoke(a0, r2, c0);
-            Vector128<T> a2 = MultiplyAddEstimateOperator<T>.Invoke(c3, r2, c4 * r4) * r4;
-
-            return r * (a1 + a2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> PolyEvalOdd9<T>(Vector256<T> r, Vector256<T> c0, Vector256<T> c1, Vector256<T> c2, Vector256<T> c3, Vector256<T> c4) where T : INumberBase<T>
-        {
-            Vector256<T> r2 = r * r;
-            Vector256<T> r4 = r2 * r2;
-
-            Vector256<T> a0 = MultiplyAddEstimateOperator<T>.Invoke(c2, r2, c1);
-            Vector256<T> a1 = MultiplyAddEstimateOperator<T>.Invoke(a0, r2, c0);
-            Vector256<T> a2 = MultiplyAddEstimateOperator<T>.Invoke(c3, r2, c4 * r4) * r4;
-
-            return r * (a1 + a2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> PolyEvalOdd9<T>(Vector512<T> r, Vector512<T> c0, Vector512<T> c1, Vector512<T> c2, Vector512<T> c3, Vector512<T> c4) where T : INumberBase<T>
-        {
-            Vector512<T> r2 = r * r;
-            Vector512<T> r4 = r2 * r2;
-
-            Vector512<T> a0 = MultiplyAddEstimateOperator<T>.Invoke(c2, r2, c1);
-            Vector512<T> a1 = MultiplyAddEstimateOperator<T>.Invoke(a0, r2, c0);
-            Vector512<T> a2 = MultiplyAddEstimateOperator<T>.Invoke(c3, r2, c4 * r4) * r4;
-
-            return r * (a1 + a2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> PolyEvalOdd17<T>(Vector128<T> r, Vector128<T> c1, Vector128<T> c3, Vector128<T> c5, Vector128<T> c7, Vector128<T> c9, Vector128<T> c11, Vector128<T> c13, Vector128<T> c15) where T : INumberBase<T>
-        {
-            Vector128<T> r2 = r * r;
-            Vector128<T> r4 = r2 * r2;
-            Vector128<T> r6 = r4 * r2;
-            Vector128<T> r10 = r6 * r4;
-            Vector128<T> r14 = r10 * r4;
-
-            Vector128<T> a1 = MultiplyAddEstimateOperator<T>.Invoke(c3, r2, c1);
-            Vector128<T> a2 = MultiplyAddEstimateOperator<T>.Invoke(c7, r2, c5);
-            Vector128<T> a3 = MultiplyAddEstimateOperator<T>.Invoke(c11, r2, c9);
-            Vector128<T> a4 = MultiplyAddEstimateOperator<T>.Invoke(c15, r2, c13);
-
-            Vector128<T> b1 = MultiplyAddEstimateOperator<T>.Invoke(a1, r2, a2 * r6);
-            Vector128<T> b2 = MultiplyAddEstimateOperator<T>.Invoke(r10, a3, r14 * a4);
-
-            return r * (b1 + b2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> PolyEvalOdd17<T>(Vector256<T> r, Vector256<T> c1, Vector256<T> c3, Vector256<T> c5, Vector256<T> c7, Vector256<T> c9, Vector256<T> c11, Vector256<T> c13, Vector256<T> c15) where T : INumberBase<T>
-        {
-            Vector256<T> r2 = r * r;
-            Vector256<T> r4 = r2 * r2;
-            Vector256<T> r6 = r4 * r2;
-            Vector256<T> r10 = r6 * r4;
-            Vector256<T> r14 = r10 * r4;
-
-            Vector256<T> a1 = MultiplyAddEstimateOperator<T>.Invoke(c3, r2, c1);
-            Vector256<T> a2 = MultiplyAddEstimateOperator<T>.Invoke(c7, r2, c5);
-            Vector256<T> a3 = MultiplyAddEstimateOperator<T>.Invoke(c11, r2, c9);
-            Vector256<T> a4 = MultiplyAddEstimateOperator<T>.Invoke(c15, r2, c13);
-
-            Vector256<T> b1 = MultiplyAddEstimateOperator<T>.Invoke(a1, r2, a2 * r6);
-            Vector256<T> b2 = MultiplyAddEstimateOperator<T>.Invoke(r10, a3, r14 * a4);
-
-            return r * (b1 + b2);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> PolyEvalOdd17<T>(Vector512<T> r, Vector512<T> c1, Vector512<T> c3, Vector512<T> c5, Vector512<T> c7, Vector512<T> c9, Vector512<T> c11, Vector512<T> c13, Vector512<T> c15) where T : INumberBase<T>
-        {
-            Vector512<T> r2 = r * r;
-            Vector512<T> r4 = r2 * r2;
-            Vector512<T> r6 = r4 * r2;
-            Vector512<T> r10 = r6 * r4;
-            Vector512<T> r14 = r10 * r4;
-
-            Vector512<T> a1 = MultiplyAddEstimateOperator<T>.Invoke(c3, r2, c1);
-            Vector512<T> a2 = MultiplyAddEstimateOperator<T>.Invoke(c7, r2, c5);
-            Vector512<T> a3 = MultiplyAddEstimateOperator<T>.Invoke(c11, r2, c9);
-            Vector512<T> a4 = MultiplyAddEstimateOperator<T>.Invoke(c15, r2, c13);
-
-            Vector512<T> b1 = MultiplyAddEstimateOperator<T>.Invoke(a1, r2, a2 * r6);
-            Vector512<T> b2 = MultiplyAddEstimateOperator<T>.Invoke(r10, a3, r14 * a4);
-
-            return r * (b1 + b2);
-        }
-
         /// <summary>
         /// Gets a vector mask that will be all-ones-set for the last <paramref name="count"/> elements
         /// and zero for all other elements.
@@ -16180,16 +16081,22 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorSingle>(x);
                 }
 
-                Vector128<float> dinput = uxMasked.AsSingle();
-
+                Vector128<float> r = uxMasked.AsSingle();
                 Vector128<float> almHuge = Vector128.Create(AlmHuge);
-                Vector128<float> dn = ((dinput + Vector128.Create(float.Pi / 2)) * Vector128.Create(1 / float.Pi)) + almHuge;
-                Vector128<uint> n = dn.AsUInt32();
+                Vector128<float> dn = ((r + Vector128.Create(float.Pi / 2)) * Vector128.Create(1 / float.Pi)) + almHuge;
+                Vector128<uint> odd = dn.AsUInt32() << 31;
                 dn = dn - almHuge - Vector128.Create(0.5f);
+                Vector128<float> f = r + (dn * Vector128.Create(-float.Pi)) + (dn * Vector128.Create(Pi_Tail1)) + (dn * Vector128.Create(Pi_Tail2));
 
-                Vector128<float> frac = dinput + (dn * Vector128.Create(-float.Pi)) + (dn * Vector128.Create(Pi_Tail1)) + (dn * Vector128.Create(Pi_Tail2));
-                Vector128<uint> odd = n << 31;
-                Vector128<float> poly = PolyEvalOdd9(frac, Vector128<float>.One, Vector128.Create(C1), Vector128.Create(C2), Vector128.Create(C3), Vector128.Create(C4));
+                // POLY_EVAL_ODD_9
+                Vector128<float> f2 = f * f;
+                Vector128<float> f4 = f2 * f2;
+                Vector128<float> a0 = MultiplyAddEstimateOperator<float>.Invoke(Vector128.Create(C2), f2, Vector128.Create(C1));
+                Vector128<float> a1 = MultiplyAddEstimateOperator<float>.Invoke(a0, f2, Vector128<float>.One);
+                Vector128<float> a2 = MultiplyAddEstimateOperator<float>.Invoke(Vector128.Create(C3), f2, Vector128.Create(C4) * f4);
+                Vector128<float> a3 = MultiplyAddEstimateOperator<float>.Invoke(a2, f4, a1);
+                Vector128<float> poly = f * a3;
+
                 return (poly.AsUInt32() ^ odd).AsSingle();
             }
 
@@ -16201,16 +16108,22 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorSingle>(x);
                 }
 
-                Vector256<float> dinput = uxMasked.AsSingle();
-
+                Vector256<float> r = uxMasked.AsSingle();
                 Vector256<float> almHuge = Vector256.Create(AlmHuge);
-                Vector256<float> dn = ((dinput + Vector256.Create(float.Pi / 2)) * Vector256.Create(1 / float.Pi)) + almHuge;
-                Vector256<uint> n = dn.AsUInt32();
+                Vector256<float> dn = ((r + Vector256.Create(float.Pi / 2)) * Vector256.Create(1 / float.Pi)) + almHuge;
+                Vector256<uint> odd = dn.AsUInt32() << 31;
                 dn = dn - almHuge - Vector256.Create(0.5f);
+                Vector256<float> f = r + (dn * Vector256.Create(-float.Pi)) + (dn * Vector256.Create(Pi_Tail1)) + (dn * Vector256.Create(Pi_Tail2));
 
-                Vector256<float> frac = dinput + (dn * Vector256.Create(-float.Pi)) + (dn * Vector256.Create(Pi_Tail1)) + (dn * Vector256.Create(Pi_Tail2));
-                Vector256<uint> odd = n << 31;
-                Vector256<float> poly = PolyEvalOdd9(frac, Vector256<float>.One, Vector256.Create(C1), Vector256.Create(C2), Vector256.Create(C3), Vector256.Create(C4));
+                // POLY_EVAL_ODD_9
+                Vector256<float> f2 = f * f;
+                Vector256<float> f4 = f2 * f2;
+                Vector256<float> a0 = MultiplyAddEstimateOperator<float>.Invoke(Vector256.Create(C2), f2, Vector256.Create(C1));
+                Vector256<float> a1 = MultiplyAddEstimateOperator<float>.Invoke(a0, f2, Vector256<float>.One);
+                Vector256<float> a2 = MultiplyAddEstimateOperator<float>.Invoke(Vector256.Create(C3), f2, Vector256.Create(C4) * f4);
+                Vector256<float> a3 = MultiplyAddEstimateOperator<float>.Invoke(a2, f4, a1);
+                Vector256<float> poly = f * a3;
+
                 return (poly.AsUInt32() ^ odd).AsSingle();
             }
 
@@ -16222,16 +16135,22 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorSingle>(x);
                 }
 
-                Vector512<float> dinput = uxMasked.AsSingle();
-
+                Vector512<float> r = uxMasked.AsSingle();
                 Vector512<float> almHuge = Vector512.Create(AlmHuge);
-                Vector512<float> dn = ((dinput + Vector512.Create(float.Pi / 2)) * Vector512.Create(1 / float.Pi)) + almHuge;
-                Vector512<uint> n = dn.AsUInt32();
+                Vector512<float> dn = ((r + Vector512.Create(float.Pi / 2)) * Vector512.Create(1 / float.Pi)) + almHuge;
+                Vector512<uint> odd = dn.AsUInt32() << 31;
                 dn = dn - almHuge - Vector512.Create(0.5f);
+                Vector512<float> f = r + (dn * Vector512.Create(-float.Pi)) + (dn * Vector512.Create(Pi_Tail1)) + (dn * Vector512.Create(Pi_Tail2));
 
-                Vector512<float> frac = dinput + (dn * Vector512.Create(-float.Pi)) + (dn * Vector512.Create(Pi_Tail1)) + (dn * Vector512.Create(Pi_Tail2));
-                Vector512<uint> odd = n << 31;
-                Vector512<float> poly = PolyEvalOdd9(frac, Vector512<float>.One, Vector512.Create(C1), Vector512.Create(C2), Vector512.Create(C3), Vector512.Create(C4));
+                // POLY_EVAL_ODD_9
+                Vector512<float> f2 = f * f;
+                Vector512<float> f4 = f2 * f2;
+                Vector512<float> a0 = MultiplyAddEstimateOperator<float>.Invoke(Vector512.Create(C2), f2, Vector512.Create(C1));
+                Vector512<float> a1 = MultiplyAddEstimateOperator<float>.Invoke(a0, f2, Vector512<float>.One);
+                Vector512<float> a2 = MultiplyAddEstimateOperator<float>.Invoke(Vector512.Create(C3), f2, Vector512.Create(C4) * f4);
+                Vector512<float> a3 = MultiplyAddEstimateOperator<float>.Invoke(a2, f4, a1);
+                Vector512<float> poly = f * a3;
+
                 return (poly.AsUInt32() ^ odd).AsSingle();
             }
         }
@@ -16265,16 +16184,27 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
-                Vector128<double> dinput = uxMasked.AsDouble();
-
+                Vector128<double> r = uxMasked.AsDouble();
                 Vector128<double> almHuge = Vector128.Create(AlmHuge);
-                Vector128<double> dn = (dinput * Vector128.Create(1 / double.Pi)) + Vector128.Create(double.Pi / 2) + almHuge;
-                Vector128<ulong> n = dn.AsUInt64();
+                Vector128<double> dn = (r * Vector128.Create(1 / double.Pi)) + Vector128.Create(double.Pi / 2) + almHuge;
+                Vector128<ulong> odd = dn.AsUInt64() << 63;
                 dn = dn - almHuge - Vector128.Create(0.5);
+                Vector128<double> f = r + (dn * Vector128.Create(-double.Pi)) + (dn * Vector128.Create(Pi_Tail2)) + (dn * Vector128.Create(Pi_Tail3));
 
-                Vector128<double> frac = dinput + (dn * Vector128.Create(-double.Pi)) + (dn * Vector128.Create(Pi_Tail2)) + (dn * Vector128.Create(Pi_Tail3));
-                Vector128<ulong> odd = n << 63;
-                Vector128<double> poly = frac + PolyEvalOdd17(frac, Vector128.Create(C1), Vector128.Create(C2), Vector128.Create(C3), Vector128.Create(C4), Vector128.Create(C5), Vector128.Create(C6), Vector128.Create(C7), Vector128.Create(C8));
+                // POLY_EVAL_ODD_17
+                Vector128<double> f2 = f * f;
+                Vector128<double> f4 = f2 * f2;
+                Vector128<double> f6 = f4 * f2;
+                Vector128<double> f10 = f6 * f4;
+                Vector128<double> f14 = f10 * f4;
+                Vector128<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C2), f2, Vector128.Create(C1));
+                Vector128<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C4), f2, Vector128.Create(C3));
+                Vector128<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C6), f2, Vector128.Create(C5));
+                Vector128<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C8), f2, Vector128.Create(C7));
+                Vector128<double> b1 = MultiplyAddEstimateOperator<double>.Invoke(a1, f2, a2 * f6);
+                Vector128<double> b2 = MultiplyAddEstimateOperator<double>.Invoke(f10, a3, f14 * a4);
+                Vector128<double> poly = MultiplyAddEstimateOperator<double>.Invoke(f, b1 + b2, f);
+
                 return (poly.AsUInt64() ^ odd).AsDouble();
             }
 
@@ -16286,16 +16216,27 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
-                Vector256<double> dinput = uxMasked.AsDouble();
-
+                Vector256<double> r = uxMasked.AsDouble();
                 Vector256<double> almHuge = Vector256.Create(AlmHuge);
-                Vector256<double> dn = (dinput * Vector256.Create(1 / double.Pi)) + Vector256.Create(double.Pi / 2) + almHuge;
-                Vector256<ulong> n = dn.AsUInt64();
+                Vector256<double> dn = (r * Vector256.Create(1 / double.Pi)) + Vector256.Create(double.Pi / 2) + almHuge;
+                Vector256<ulong> odd = dn.AsUInt64() << 63;
                 dn = dn - almHuge - Vector256.Create(0.5);
+                Vector256<double> f = r + (dn * Vector256.Create(-double.Pi)) + (dn * Vector256.Create(Pi_Tail2)) + (dn * Vector256.Create(Pi_Tail3));
 
-                Vector256<double> frac = dinput + (dn * Vector256.Create(-double.Pi)) + (dn * Vector256.Create(Pi_Tail2)) + (dn * Vector256.Create(Pi_Tail3));
-                Vector256<ulong> odd = n << 63;
-                Vector256<double> poly = frac + PolyEvalOdd17(frac, Vector256.Create(C1), Vector256.Create(C2), Vector256.Create(C3), Vector256.Create(C4), Vector256.Create(C5), Vector256.Create(C6), Vector256.Create(C7), Vector256.Create(C8));
+                // POLY_EVAL_ODD_17
+                Vector256<double> f2 = f * f;
+                Vector256<double> f4 = f2 * f2;
+                Vector256<double> f6 = f4 * f2;
+                Vector256<double> f10 = f6 * f4;
+                Vector256<double> f14 = f10 * f4;
+                Vector256<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C2), f2, Vector256.Create(C1));
+                Vector256<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C4), f2, Vector256.Create(C3));
+                Vector256<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C6), f2, Vector256.Create(C5));
+                Vector256<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C8), f2, Vector256.Create(C7));
+                Vector256<double> b1 = MultiplyAddEstimateOperator<double>.Invoke(a1, f2, a2 * f6);
+                Vector256<double> b2 = MultiplyAddEstimateOperator<double>.Invoke(f10, a3, f14 * a4);
+                Vector256<double> poly = MultiplyAddEstimateOperator<double>.Invoke(f, b1 + b2, f);
+
                 return (poly.AsUInt64() ^ odd).AsDouble();
             }
 
@@ -16307,16 +16248,27 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<CosOperatorDouble>(x);
                 }
 
-                Vector512<double> dinput = uxMasked.AsDouble();
-
+                Vector512<double> r = uxMasked.AsDouble();
                 Vector512<double> almHuge = Vector512.Create(AlmHuge);
-                Vector512<double> dn = (dinput * Vector512.Create(1 / double.Pi)) + Vector512.Create(double.Pi / 2) + almHuge;
-                Vector512<ulong> n = dn.AsUInt64();
+                Vector512<double> dn = (r * Vector512.Create(1 / double.Pi)) + Vector512.Create(double.Pi / 2) + almHuge;
+                Vector512<ulong> odd = dn.AsUInt64() << 63;
                 dn = dn - almHuge - Vector512.Create(0.5);
+                Vector512<double> f = r + (dn * Vector512.Create(-double.Pi)) + (dn * Vector512.Create(Pi_Tail2)) + (dn * Vector512.Create(Pi_Tail3));
 
-                Vector512<double> frac = dinput + (dn * Vector512.Create(-double.Pi)) + (dn * Vector512.Create(Pi_Tail2)) + (dn * Vector512.Create(Pi_Tail3));
-                Vector512<ulong> odd = n << 63;
-                Vector512<double> poly = frac + PolyEvalOdd17(frac, Vector512.Create(C1), Vector512.Create(C2), Vector512.Create(C3), Vector512.Create(C4), Vector512.Create(C5), Vector512.Create(C6), Vector512.Create(C7), Vector512.Create(C8));
+                // POLY_EVAL_ODD_17
+                Vector512<double> f2 = f * f;
+                Vector512<double> f4 = f2 * f2;
+                Vector512<double> f6 = f4 * f2;
+                Vector512<double> f10 = f6 * f4;
+                Vector512<double> f14 = f10 * f4;
+                Vector512<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C2), f2, Vector512.Create(C1));
+                Vector512<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C4), f2, Vector512.Create(C3));
+                Vector512<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C6), f2, Vector512.Create(C5));
+                Vector512<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C8), f2, Vector512.Create(C7));
+                Vector512<double> b1 = MultiplyAddEstimateOperator<double>.Invoke(a1, f2, a2 * f6);
+                Vector512<double> b2 = MultiplyAddEstimateOperator<double>.Invoke(f10, a3, f14 * a4);
+                Vector512<double> poly = MultiplyAddEstimateOperator<double>.Invoke(f, b1 + b2, f);
+
                 return (poly.AsUInt64() ^ odd).AsDouble();
             }
         }
@@ -16591,14 +16543,21 @@ namespace System.Numerics.Tensors
                 }
 
                 Vector128<float> r = uxMasked.AsSingle();
-                Vector128<float> almShift = Vector128.Create(AlmHuge);
-                Vector128<float> dn = (r * Vector128.Create(1 / float.Pi)) + almShift;
-                Vector128<uint> n = dn.AsUInt32();
-                dn -= almShift;
+                Vector128<float> almHuge = Vector128.Create(AlmHuge);
+                Vector128<float> dn = (r * Vector128.Create(1 / float.Pi)) + almHuge;
+                Vector128<uint> odd = dn.AsUInt32() << 31;
+                dn -= almHuge;
                 Vector128<float> f = r + (dn * Vector128.Create(-float.Pi)) + (dn * Vector128.Create(Pi_Tail1)) + (dn * Vector128.Create(Pi_Tail2));
 
-                Vector128<uint> odd = n << 31;
-                Vector128<float> poly = PolyEvalOdd9(f, Vector128<float>.One, Vector128.Create(C1), Vector128.Create(C2), Vector128.Create(C3), Vector128.Create(C4));
+                // POLY_EVAL_ODD_9
+                Vector128<float> f2 = f * f;
+                Vector128<float> f4 = f2 * f2;
+                Vector128<float> a0 = MultiplyAddEstimateOperator<float>.Invoke(Vector128.Create(C2), f2, Vector128.Create(C1));
+                Vector128<float> a1 = MultiplyAddEstimateOperator<float>.Invoke(a0, f2, Vector128<float>.One);
+                Vector128<float> a2 = MultiplyAddEstimateOperator<float>.Invoke(Vector128.Create(C3), f2, Vector128.Create(C4) * f4);
+                Vector128<float> a3 = MultiplyAddEstimateOperator<float>.Invoke(a2, f4, a1);
+                Vector128<float> poly = f * a3;
+
                 return (poly.AsUInt32() ^ sign ^ odd).AsSingle();
             }
 
@@ -16614,14 +16573,21 @@ namespace System.Numerics.Tensors
                 }
 
                 Vector256<float> r = uxMasked.AsSingle();
-                Vector256<float> almShift = Vector256.Create(AlmHuge);
-                Vector256<float> dn = (r * Vector256.Create(1 / float.Pi)) + almShift;
-                Vector256<uint> n = dn.AsUInt32();
-                dn -= almShift;
+                Vector256<float> almHuge = Vector256.Create(AlmHuge);
+                Vector256<float> dn = (r * Vector256.Create(1 / float.Pi)) + almHuge;
+                Vector256<uint> odd = dn.AsUInt32() << 31;
+                dn -= almHuge;
                 Vector256<float> f = r + (dn * Vector256.Create(-float.Pi)) + (dn * Vector256.Create(Pi_Tail1)) + (dn * Vector256.Create(Pi_Tail2));
 
-                Vector256<uint> odd = n << 31;
-                Vector256<float> poly = PolyEvalOdd9(f, Vector256<float>.One, Vector256.Create(C1), Vector256.Create(C2), Vector256.Create(C3), Vector256.Create(C4));
+                // POLY_EVAL_ODD_9
+                Vector256<float> f2 = f * f;
+                Vector256<float> f4 = f2 * f2;
+                Vector256<float> a0 = MultiplyAddEstimateOperator<float>.Invoke(Vector256.Create(C2), f2, Vector256.Create(C1));
+                Vector256<float> a1 = MultiplyAddEstimateOperator<float>.Invoke(a0, f2, Vector256<float>.One);
+                Vector256<float> a2 = MultiplyAddEstimateOperator<float>.Invoke(Vector256.Create(C3), f2, Vector256.Create(C4) * f4);
+                Vector256<float> a3 = MultiplyAddEstimateOperator<float>.Invoke(a2, f4, a1);
+                Vector256<float> poly = f * a3;
+
                 return (poly.AsUInt32() ^ sign ^ odd).AsSingle();
             }
 
@@ -16636,15 +16602,22 @@ namespace System.Numerics.Tensors
                     return ApplyScalar<SinOperatorSingle>(x);
                 }
 
-                Vector512<float> almShift = Vector512.Create(AlmHuge);
                 Vector512<float> r = (ux & Vector512.Create(SignMask)).AsSingle();
-                Vector512<float> dn = (r * Vector512.Create(1 / float.Pi)) + almShift;
-                Vector512<uint> n = dn.AsUInt32();
-                dn -= almShift;
+                Vector512<float> almHuge = Vector512.Create(AlmHuge);
+                Vector512<float> dn = (r * Vector512.Create(1 / float.Pi)) + almHuge;
+                Vector512<uint> odd = dn.AsUInt32() << 31;
+                dn -= almHuge;
                 Vector512<float> f = r + (dn * Vector512.Create(-float.Pi)) + (dn * Vector512.Create(Pi_Tail1)) + (dn * Vector512.Create(Pi_Tail2));
 
-                Vector512<uint> odd = n << 31;
-                Vector512<float> poly = PolyEvalOdd9(f, Vector512<float>.One, Vector512.Create(C1), Vector512.Create(C2), Vector512.Create(C3), Vector512.Create(C4));
+                // POLY_EVAL_ODD_9
+                Vector512<float> f2 = f * f;
+                Vector512<float> f4 = f2 * f2;
+                Vector512<float> a0 = MultiplyAddEstimateOperator<float>.Invoke(Vector512.Create(C2), f2, Vector512.Create(C1));
+                Vector512<float> a1 = MultiplyAddEstimateOperator<float>.Invoke(a0, f2, Vector512<float>.One);
+                Vector512<float> a2 = MultiplyAddEstimateOperator<float>.Invoke(Vector512.Create(C3), f2, Vector512.Create(C4) * f4);
+                Vector512<float> a3 = MultiplyAddEstimateOperator<float>.Invoke(a2, f4, a1);
+                Vector512<float> poly = f * a3;
+
                 return (poly.AsUInt32() ^ sign ^ odd).AsSingle();
             }
         }
@@ -16682,13 +16655,26 @@ namespace System.Numerics.Tensors
                 }
 
                 Vector128<double> r = uxMasked.AsDouble();
-                Vector128<double> almShift = Vector128.Create(AlmHuge);
-                Vector128<double> dn = (r * Vector128.Create(1 / double.Pi)) + almShift;
+                Vector128<double> almHuge = Vector128.Create(AlmHuge);
+                Vector128<double> dn = (r * Vector128.Create(1 / double.Pi)) + almHuge;
                 Vector128<ulong> odd = dn.AsUInt64() << 63;
-                dn -= almShift;
+                dn -= almHuge;
                 Vector128<double> f = r - (dn * Vector128.Create(double.Pi)) - (dn * Vector128.Create(Pi_Tail1)) - (dn * Vector128.Create(Pi_Tail2));
 
-                Vector128<double> poly = f + PolyEvalOdd17(f, Vector128.Create(C0), Vector128.Create(C2), Vector128.Create(C4), Vector128.Create(C6), Vector128.Create(C8), Vector128.Create(C10), Vector128.Create(C12), Vector128.Create(C14));
+                // POLY_EVAL_ODD_17
+                Vector128<double> f2 = f * f;
+                Vector128<double> f4 = f2 * f2;
+                Vector128<double> f6 = f4 * f2;
+                Vector128<double> f10 = f6 * f4;
+                Vector128<double> f14 = f10 * f4;
+                Vector128<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C2), f2, Vector128.Create(C0));
+                Vector128<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C6), f2, Vector128.Create(C4));
+                Vector128<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C10), f2, Vector128.Create(C8));
+                Vector128<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector128.Create(C14), f2, Vector128.Create(C12));
+                Vector128<double> b1 = MultiplyAddEstimateOperator<double>.Invoke(a1, f2, a2 * f6);
+                Vector128<double> b2 = MultiplyAddEstimateOperator<double>.Invoke(f10, a3, f14 * a4);
+                Vector128<double> poly = MultiplyAddEstimateOperator<double>.Invoke(f, b1 + b2, f);
+
                 return (poly.AsUInt64() ^ sign ^ odd).AsDouble();
             }
 
@@ -16704,13 +16690,26 @@ namespace System.Numerics.Tensors
                 }
 
                 Vector256<double> r = (ux & Vector256.Create(SignMask)).AsDouble();
-                Vector256<double> almShift = Vector256.Create(AlmHuge);
-                Vector256<double> dn = (r * Vector256.Create(1 / double.Pi)) + almShift;
+                Vector256<double> almHuge = Vector256.Create(AlmHuge);
+                Vector256<double> dn = (r * Vector256.Create(1 / double.Pi)) + almHuge;
                 Vector256<ulong> odd = dn.AsUInt64() << 63;
-                dn -= almShift;
+                dn -= almHuge;
                 Vector256<double> f = r - (dn * Vector256.Create(double.Pi)) - (dn * Vector256.Create(Pi_Tail1)) - (dn * Vector256.Create(Pi_Tail2));
 
-                Vector256<double> poly = f + PolyEvalOdd17(f, Vector256.Create(C0), Vector256.Create(C2), Vector256.Create(C4), Vector256.Create(C6), Vector256.Create(C8), Vector256.Create(C10), Vector256.Create(C12), Vector256.Create(C14));
+                // POLY_EVAL_ODD_17
+                Vector256<double> f2 = f * f;
+                Vector256<double> f4 = f2 * f2;
+                Vector256<double> f6 = f4 * f2;
+                Vector256<double> f10 = f6 * f4;
+                Vector256<double> f14 = f10 * f4;
+                Vector256<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C2), f2, Vector256.Create(C0));
+                Vector256<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C6), f2, Vector256.Create(C4));
+                Vector256<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C10), f2, Vector256.Create(C8));
+                Vector256<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector256.Create(C14), f2, Vector256.Create(C12));
+                Vector256<double> b1 = MultiplyAddEstimateOperator<double>.Invoke(a1, f2, a2 * f6);
+                Vector256<double> b2 = MultiplyAddEstimateOperator<double>.Invoke(f10, a3, f14 * a4);
+                Vector256<double> poly = MultiplyAddEstimateOperator<double>.Invoke(f, b1 + b2, f);
+
                 return (poly.AsUInt64() ^ sign ^ odd).AsDouble();
             }
 
@@ -16726,13 +16725,26 @@ namespace System.Numerics.Tensors
                 }
 
                 Vector512<double> r = (ux & Vector512.Create(SignMask)).AsDouble();
-                Vector512<double> almShift = Vector512.Create(AlmHuge);
-                Vector512<double> dn = (r * Vector512.Create(1 / double.Pi)) + almShift;
+                Vector512<double> almHuge = Vector512.Create(AlmHuge);
+                Vector512<double> dn = (r * Vector512.Create(1 / double.Pi)) + almHuge;
                 Vector512<ulong> odd = dn.AsUInt64() << 63;
-                dn -= almShift;
+                dn -= almHuge;
                 Vector512<double> f = r - (dn * Vector512.Create(double.Pi)) - (dn * Vector512.Create(Pi_Tail1)) - (dn * Vector512.Create(Pi_Tail2));
 
-                Vector512<double> poly = f + PolyEvalOdd17(f, Vector512.Create(C0), Vector512.Create(C2), Vector512.Create(C4), Vector512.Create(C6), Vector512.Create(C8), Vector512.Create(C10), Vector512.Create(C12), Vector512.Create(C14));
+                // POLY_EVAL_ODD_17
+                Vector512<double> f2 = f * f;
+                Vector512<double> f4 = f2 * f2;
+                Vector512<double> f6 = f4 * f2;
+                Vector512<double> f10 = f6 * f4;
+                Vector512<double> f14 = f10 * f4;
+                Vector512<double> a1 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C2), f2, Vector512.Create(C0));
+                Vector512<double> a2 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C6), f2, Vector512.Create(C4));
+                Vector512<double> a3 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C10), f2, Vector512.Create(C8));
+                Vector512<double> a4 = MultiplyAddEstimateOperator<double>.Invoke(Vector512.Create(C14), f2, Vector512.Create(C12));
+                Vector512<double> b1 = MultiplyAddEstimateOperator<double>.Invoke(a1, f2, a2 * f6);
+                Vector512<double> b2 = MultiplyAddEstimateOperator<double>.Invoke(f10, a3, f14 * a4);
+                Vector512<double> poly = MultiplyAddEstimateOperator<double>.Invoke(f, b1 + b2, f);
+
                 return (poly.AsUInt64() ^ sign ^ odd).AsDouble();
             }
         }
