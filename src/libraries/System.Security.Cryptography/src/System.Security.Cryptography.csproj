@@ -1545,8 +1545,6 @@
              Link="Common\Interop\Windows\Crypt32\Interop.CryptEncodeObject_CertEncodingType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptFormatObject.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CryptFormatObject.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptHashPublicKeyInfo.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.CryptHashPublicKeyInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptImportPublicKeyInfoEx2.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CryptImportPublicKeyInfoEx2.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptImportPublicKeyInfoFlags.cs"

@@ -140,7 +140,7 @@ namespace System
             return vsb.ToString();
         }
 
-        internal static unsafe void EscapeString(ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
@@ -160,7 +160,7 @@ namespace System
         }
 
         private static void EscapeStringToBuilder(
-            ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
+            scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder vsb,
             SearchValues<char> noEscape, bool checkExistingEscaped)
         {
             Debug.Assert(!stringToEscape.IsEmpty && !noEscape.Contains(stringToEscape[0]));
@@ -322,11 +322,6 @@ namespace System
                             {
                                 if (ch == Uri.c_DummyChar)
                                 {
-                                    if (unescapeMode >= UnescapeMode.UnescapeAllOrThrow)
-                                    {
-                                        // Should be a rare case where the app tries to feed an invalid escaped sequence
-                                        throw new UriFormatException(SR.net_uri_BadString);
-                                    }
                                     continue;
                                 }
                             }
@@ -369,11 +364,6 @@ namespace System
                         }
                         else if (unescapeMode >= UnescapeMode.UnescapeAll)
                         {
-                            if (unescapeMode >= UnescapeMode.UnescapeAllOrThrow)
-                            {
-                                // Should be a rare case where the app tries to feed an invalid escaped sequence
-                                throw new UriFormatException(SR.net_uri_BadString);
-                            }
                             // keep a '%' as part of a bogus sequence
                             continue;
                         }
