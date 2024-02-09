@@ -35,7 +35,7 @@ namespace System.ComponentModel.DataAnnotations
             return GetPropertiesWithMetadata(base.GetProperties(attributes));
         }
 
-         public override PropertyDescriptorCollection GetProperties()
+        public override PropertyDescriptorCollection GetProperties()
         {
             return GetPropertiesWithMetadata(base.GetProperties());
         }

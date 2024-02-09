@@ -5,7 +5,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
-    <!-- <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies> -->
     <NoWarn>$(NoWarn);SA1028</NoWarn>
   </PropertyGroup>
 

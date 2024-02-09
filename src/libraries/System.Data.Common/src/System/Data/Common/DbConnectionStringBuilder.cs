@@ -530,7 +530,7 @@ namespace System.Data.Common
 
         [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
 #pragma warning disable IL4000
-        public static bool SupportsFilteredGetProperties => false;
+        private static bool SupportsFilteredGetProperties => false;
 #pragma warning restore IL4000
 
         private PropertyDescriptorCollection GetProperties(Attribute[]? attributes)

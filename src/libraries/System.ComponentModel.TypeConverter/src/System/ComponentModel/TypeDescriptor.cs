@@ -3144,7 +3144,7 @@ namespace System.ComponentModel
 
                 return Provider.IsSupportedType(type);
             }
-        
+
             /// <summary>
             /// A type descriptor for extended types. This type descriptor
             /// looks at the head node in the linked list.
