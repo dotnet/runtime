@@ -24,9 +24,9 @@
     <DefaultPropertiesForNuGetBuild Include="TargetArchitecture=$(TargetArchitectureForWorkload)" />
   </ItemGroup>
 
-  <Target Name="GetNuGetsToBuildForWorkloadTesting_Mobile" Returns="@(_NuGetsToBuild)" Condition="'$(PreparePackagesForWorkloadInstall)' == 'true'">
+  <Target Name="_GetNuGetToBuildForTargetingPack" Returns="@(NuGetsToBuildForWorkloadTesting)" Condition="'$(PreparePackagesForWorkloadInstall)' == 'true'">
     <ItemGroup>
-      <_NuGetsToBuild Include="$(BuiltNuGetsDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
+      <NuGetsToBuildForWorkloadTesting Include="$(BuiltNuGetsDir)Microsoft.NETCore.App.Ref.$(PackageVersionForWorkloadManifests).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
                       Properties="@(DefaultPropertiesForNuGetBuild, ';')"
                       Descriptor="Ref pack"/>

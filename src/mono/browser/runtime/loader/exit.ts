@@ -214,7 +214,6 @@ function abort_promises(reason: any) {
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
-    loaderHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
     if (runtimeHelpers.dotnetReady) {
         runtimeHelpers.dotnetReady.promise_control.reject(reason);
         runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
