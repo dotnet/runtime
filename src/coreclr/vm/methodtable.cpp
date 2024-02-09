@@ -473,13 +473,6 @@ WORD MethodTable::GetNumMethods()
 }
 
 //==========================================================================================
-PTR_BaseDomain MethodTable::GetDomain()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
-}
-
-//==========================================================================================
 BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -1324,7 +1317,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         if (CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
             return TRUE;
 
-        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting())
+        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
             return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
         InterfaceMapIterator it = IterateInterfaceMap();
@@ -1360,7 +1353,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // Shortcut for generic approx type scenario
     if (pMTInterfaceMapOwner != NULL &&
-        !pMTInterfaceMapOwner->ContainsGenericVariables() &&
+        !pMTInterfaceMapOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
@@ -1387,7 +1380,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
-            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->ContainsGenericVariables())
+            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
             {
                 thArg = pMTInterfaceMapOwner;
             }
@@ -1846,7 +1839,7 @@ NOINLINE BOOL MethodTable::ImplementsInterface(MethodTable *pInterface)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
         return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
     return ImplementsInterfaceInline(pInterface);
@@ -1863,7 +1856,7 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
     }
     CONTRACTL_END;
 
-    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
         return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
     // look for exact match first (optimize for success)
@@ -6559,7 +6552,7 @@ UINT32 MethodTable::GetTypeID()
 
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
-    return GetDomain()->GetTypeID(pMT);
+    return AppDomain::GetCurrentDomain()->GetTypeID(pMT);
 }
 
 //==========================================================================================
@@ -6574,7 +6567,7 @@ UINT32 MethodTable::LookupTypeID()
     CONTRACTL_END;
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
-    return GetDomain()->LookupTypeID(pMT);
+    return AppDomain::GetCurrentDomain()->LookupTypeID(pMT);
 }
 
 //==========================================================================================
@@ -9298,12 +9291,13 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
         GC_TRIGGERS;
         THROWS;
         PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
+        PRECONDITION(CheckPointer(pMTOwner));
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
-    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->ContainsGenericVariables())
+    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
