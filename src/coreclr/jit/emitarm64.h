@@ -43,6 +43,7 @@ void emitDispImm(ssize_t imm, bool addComma, bool alwaysHex = false, bool isAddr
 void emitDispElementIndex(const ssize_t imm, const bool addComma);
 void emitDispFloatZero();
 void emitDispFloatImm(ssize_t imm8);
+void emitDispSmallFloatImm(ssize_t imm, instruction ins);
 void emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount);
 void emitDispCond(insCond cond);
 void emitDispFlags(insCflags flags);
@@ -294,6 +295,24 @@ static emitter::floatImm8 emitEncodeFloatImm8(double immDbl);
 
 static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
+static ssize_t emitEncodeRotationImm90_or_270(ssize_t imm);
+
+static ssize_t emitDecodeRotationImm90_or_270(ssize_t imm);
+
+static bool emitIsValidEncodedRotationImm90_or_270(ssize_t imm);
+
+static ssize_t emitEncodeRotationImm0_to_270(ssize_t imm);
+
+static ssize_t emitDecodeRotationImm0_to_270(ssize_t imm);
+
+static bool emitIsValidEncodedRotationImm0_to_270(ssize_t imm);
+
+static ssize_t emitEncodeSmallFloatImm(double immDbl, instruction ins);
+
+static double emitDecodeSmallFloatImm(ssize_t imm, instruction ins);
+
+static bool emitIsValidEncodedSmallFloatImm(size_t imm);
+
 /************************************************************************
 *
 *  This union is used to encode/decode the cond, nzcv and imm5 values for
@@ -520,11 +539,11 @@ static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
 
 // Returns the encoding to select the constant values 0, 90, 180 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit locations '14-13'.
-static code_t insEncodeSveImm0_or_90_or_180_or_270_rot(ssize_t imm);
+static code_t insEncodeSveImm0_to_270_rot(ssize_t imm);
 
 // Returns the encoding to select the constant float values 0, 0.5, 1.0 or 2.0 for an Arm64 SVE vector instruction
 // This specifically encode the field 'i1' at bit location '5'.
-static code_t insEncodeSveFloatImmZero_to_Two(double immDbl);
+static code_t insEncodeSveSmallFloatImm(ssize_t imm);
 
 // Returns the first register list size for the given SVE instruction.
 static int insGetSveReg1ListSize(instruction ins);

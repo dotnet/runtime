@@ -2046,8 +2046,8 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));      
             assert(isLowPredicateRegister(id->idReg2()));
-            assert(isVectorRegister(id->idReg3()));     
-            assert((imm == 90) || (imm == 270));                     
+            assert(isVectorRegister(id->idReg3()));
+            assert(emitIsValidEncodedRotationImm90_or_270(imm));                  
             assert(isScalableVectorSize(elemsize));
             break;
 
@@ -2059,7 +2059,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isLowPredicateRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
             assert(isVectorRegister(id->idReg4()));
-            assert((imm == 0) || (imm == 90) || (imm == 180) || (imm == 270));
+            assert(emitIsValidEncodedRotationImm0_to_270(imm));
             assert(isScalableVectorSize(elemsize));
             break;
 
@@ -2074,11 +2074,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_HM_2A: // ........xx...... ...ggg....iddddd -- SVE floating-point arithmetic with immediate
                            // (predicated)
+            imm      = emitGetInsSC(id);
             elemsize = id->idOpSize();
             assert(insOptsScalableAtLeastHalf(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));
             assert(isLowPredicateRegister(id->idReg2()));
             assert(isScalableVectorSize(elemsize));
+            assert(emitIsValidEncodedSmallFloatImm(imm));
             break;
 
         case IF_SVE_HN_2A: // ........xx...iii ......mmmmmddddd -- SVE floating-point trig multiply-add coefficient
@@ -6011,6 +6013,235 @@ emitter::code_t emitter::emitInsCodeSve(instruction ins, insFormat fmt)
     return result;
 }
 
+/************************************************************************
+ *
+ *  Convert a rotation value that is 90 or 270 into a smaller encoding that matches one-to-one with the 'rot' field.
+ */
+
+/*static*/ ssize_t emitter::emitEncodeRotationImm90_or_270(ssize_t imm)
+{
+    switch (imm)
+    {
+        case 90:
+            return 0;
+
+        case 270:
+            return 1;
+
+        default:
+            break;
+    }
+
+    assert(!"Invalid rotation value");
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Convert an encoded rotation value to 90 or 270.
+ */
+
+/*static*/ ssize_t emitter::emitDecodeRotationImm90_or_270(ssize_t imm)
+{
+    assert(emitIsValidEncodedRotationImm0_to_270(imm));
+    switch (imm)
+    {
+        case 0:
+            return 90;
+
+        case 1:
+            return 270;
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Check if the immediate value is a valid encoded rotation value for 90 or 270.
+ */
+
+/*static*/ bool emitter::emitIsValidEncodedRotationImm90_or_270(ssize_t imm)
+{
+    return (imm == 0) || (imm == 1);
+}
+
+/************************************************************************
+ *
+ *  Convert a rotation value that is 0, 90, 180 or 270 into a smaller encoding that matches one-to-one with the 'rot' field.
+ */
+
+/*static*/ ssize_t emitter::emitEncodeRotationImm0_to_270(ssize_t imm)
+{
+    switch (imm)
+    {
+        case 0:
+            return 0;
+
+        case 90:
+            return 1;
+
+        case 180:
+            return 2;
+
+        case 270:
+            return 3;
+
+        default:
+            break;
+    }
+
+    assert(!"Invalid rotation value");
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Convert an encoded rotation value to 0, 90, 180 or 270.
+ */
+
+/*static*/ ssize_t emitter::emitDecodeRotationImm0_to_270(ssize_t imm)
+{
+    assert(emitIsValidEncodedRotationImm0_to_270(imm));
+    switch (imm)
+    {
+        case 0:
+            return 0;
+
+        case 1:
+            return 90;
+
+        case 2:
+            return 180;
+
+        case 3:
+            return 270;
+
+        default:
+            break;
+    }
+
+    return 0;
+}
+
+/************************************************************************
+ *
+ *  Check if the immediate value is a valid encoded rotation value for 0, 90, 180 or 270.
+ */
+
+/*static*/ bool emitter::emitIsValidEncodedRotationImm0_to_270(ssize_t imm)
+{
+    return (imm >= 0) && (imm <= 3);
+}
+
+/************************************************************************
+ *
+ *  Convert a small immediate float value to an encoded version that matches one-to-one with the instructions.
+ *  The instruction determines the value.
+ */
+
+/*static*/ ssize_t emitter::emitEncodeSmallFloatImm(double immDbl, instruction ins)
+{
+#ifdef DEBUG
+    switch (ins)
+    {
+        case INS_sve_fadd:
+        case INS_sve_fsub:
+        case INS_sve_fsubr:
+            assert((immDbl == 0.5) || (immDbl == 1.0));
+            break;
+
+        case INS_sve_fmax:
+        case INS_sve_fmaxnm:
+        case INS_sve_fmin:
+        case INS_sve_fminnm:
+            assert((immDbl == 0) || (immDbl == 1.0));
+            break;
+
+        case INS_sve_fmul:
+            assert((immDbl == 0.5) || (immDbl == 2.0));
+            break;
+
+        default:
+            assert(!"Invalid instruction");
+            break;
+    }
+#endif // DEBUG
+    if (immDbl < 1.0)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+/************************************************************************
+ *
+ *  Convert an encoded small float immediate value. The instruction determines the value.
+ */
+
+/*static*/ double emitter::emitDecodeSmallFloatImm(ssize_t imm, instruction ins)
+{
+    assert(emitIsValidEncodedSmallFloatImm(imm));
+    switch (ins)
+    {
+        case INS_sve_fadd:
+        case INS_sve_fsub:
+        case INS_sve_fsubr:
+            if (imm == 0)
+            {
+                return 0.5;
+            }
+            else
+            {
+                return 1.0;
+            }
+
+        case INS_sve_fmax:
+        case INS_sve_fmaxnm:
+        case INS_sve_fmin:
+        case INS_sve_fminnm:
+            if (imm == 0)
+            {
+                return 0.0;
+            }
+            else
+            {
+                return 1.0;
+            }
+            break;
+
+        case INS_sve_fmul:
+            if (imm == 0)
+            {
+                return 0.5;
+            }
+            else
+            {
+                return 2.0;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    assert(!"Invalid instruction");
+    return 0.0;
+}
+
+/************************************************************************
+ *
+ *  Check if the immediate value is a valid encoded small float.
+ */
+
+/*static*/ bool emitter::emitIsValidEncodedSmallFloatImm(size_t imm)
+{
+    return (imm == 0) || (imm == 1);
+}
+
 /*****************************************************************************
  *
  *  For the given 'ins' returns the reverse instruction
@@ -9079,9 +9310,6 @@ void emitter::emitIns_R_R_F(
     emitAttr  size = EA_SIZE(attr);
     insFormat fmt  = IF_NONE;
 
-    bool      canEncode = false;
-    floatImm8 fpi;
-
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
@@ -9093,48 +9321,11 @@ void emitter::emitIns_R_R_F(
         case INS_sve_fsub:
         case INS_sve_fmin:
         case INS_sve_fsubr:
-#ifdef DEBUG
-            switch (ins)
-            {
-                case INS_sve_fadd:
-                case INS_sve_fsub:
-                case INS_sve_fsubr:
-                    assert((immDbl == 0.5) || (immDbl == 1.0));
-                    break;
-
-                case INS_sve_fmax:
-                case INS_sve_fmaxnm:
-                case INS_sve_fmin:
-                case INS_sve_fminnm:
-                    assert((immDbl == 0) || (immDbl == 1.0));
-                    break;
-
-                case INS_sve_fmul:
-                    assert((immDbl == 0.5) || (immDbl == 2.0));
-                    break;
-
-                default:
-                    assert(!"Invalid instruction");
-                    break;
-            }
-#endif // DEBUG
-
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isLowPredicateRegister(reg2));
             assert(isScalableVectorSize(size));
-
-            if (immDbl != 0.0)
-            {
-                fpi.immFPIVal = 0;
-                canEncode     = canEncodeFloatImm8(immDbl, &fpi);
-                imm           = fpi.immFPIVal;
-            }
-            else
-            {
-                canEncode = true;
-                imm       = 0;
-            }
+            imm = emitEncodeSmallFloatImm(immDbl, ins);
             fmt = IF_SVE_HM_2A;
             break;
 
@@ -9144,7 +9335,6 @@ void emitter::emitIns_R_R_F(
 
     } // end switch (ins)
 
-    assert(canEncode);
     assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrSC(attr, imm);
@@ -11800,9 +11990,9 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1)); 
             assert(isLowPredicateRegister(reg2)); 
-            assert(isVectorRegister(reg3)); 
-            assert((imm == 90) || (imm == 270));
+            assert(isVectorRegister(reg3));
             assert(isScalableVectorSize(size));
+            imm = emitEncodeRotationImm90_or_270(imm);
             fmt = IF_SVE_GP_3A;
             break;
 
@@ -13420,8 +13610,8 @@ void emitter::emitIns_R_R_R_R_I(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isVectorRegister(reg4));
-            assert((imm == 0) || (imm == 90) || (imm == 180) || (imm == 270));
             assert(isScalableVectorSize(size));
+            imm = emitEncodeRotationImm0_to_270(imm);
             fmt = IF_SVE_GT_4A;
             break;
 
@@ -16458,20 +16648,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeSveImm90_or_270_rot(ssize_t imm)
 {
-    switch (imm)
-    {
-        case 90:
-            return 0;
-
-        case 270:
-            return (1 << 16);
-
-        default:
-            break;
-    }
-
-    assert("Invalid immediate rotation value");
-    return 0;
+    assert(emitIsValidEncodedRotationImm90_or_270(imm));
+    return (code_t)(imm << 16);
 }
 
 /*****************************************************************************
@@ -16480,28 +16658,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
  *  This specifically encode the field 'rot' at bit locations '14-13'.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeSveImm0_or_90_or_180_or_270_rot(ssize_t imm)
+/*static*/ emitter::code_t emitter::insEncodeSveImm0_to_270_rot(ssize_t imm)
 {
-    switch (imm)
-    {
-        case 0:
-            return 0;
-
-        case 90:
-            return (1 << 13);
-
-        case 180:
-            return (1 << 14);
-
-        case 270:
-            return (1 << 14) | (1 << 13);
-
-        default:
-            break;
-    }
-
-    assert("Invalid immediate rotation value");
-    return 0;
+    assert(emitIsValidEncodedRotationImm0_to_270(imm));
+    return (code_t)(imm << 13);
 }
 
 /*****************************************************************************
@@ -16510,15 +16670,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
  *  This specifically encode the field 'i1' at bit location '5'.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeSveFloatImmZero_to_Two(double immDbl)
+/*static*/ emitter::code_t emitter::insEncodeSveSmallFloatImm(ssize_t imm)
 {
-    assert((immDbl == 0.0) || (immDbl == 0.5) || (immDbl == 1.0) || (immDbl == 2.0));
-
-    if (immDbl < 1.0)
-    {
-        return 0;
-    }
-    return (1 << 5);
+    assert(emitIsValidEncodedSmallFloatImm(imm));
+    return (code_t)(imm << 5);
 }
 
 /*****************************************************************************
@@ -21333,7 +21488,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
             code |= insEncodeReg_V_9_to_5(id->idReg3());                     // nnnnn
             code |= insEncodeReg_V_20_to_16(id->idReg4());                   // mmmmm
-            code |= insEncodeSveImm0_or_90_or_180_or_270_rot(imm);           // rr
+            code |= insEncodeSveImm0_to_270_rot(imm);                        // rr
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
             break;
@@ -21350,21 +21505,11 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_HM_2A: // ........xx...... ...ggg....iddddd -- SVE floating-point arithmetic with immediate
                            // (predicated)
         {
-            double immDbl = 0.0;
-
             imm = emitGetInsSC(id);
-
-            if (imm != 0)
-            {
-                floatImm8 fpImm;
-                fpImm.immFPIVal = (unsigned)imm;
-                immDbl          = emitDecodeFloatImm8(fpImm);
-            }
-
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_P_12_to_10(id->idReg2());                   // ggg
-            code |= insEncodeSveFloatImmZero_to_Two(immDbl);                 // i
+            code |= insEncodeSveSmallFloatImm(imm);                          // i
             code |= insEncodeSveElemsize(optGetSveElemsize(id->idInsOpt())); // xx
             dst += emitOutput_Instr(dst, code);
         }
@@ -21582,6 +21727,19 @@ void emitter::emitDispFloatImm(ssize_t imm8)
     double result   = emitDecodeFloatImm8(fpImm);
 
     printf("%.4f", result);
+}
+
+/*****************************************************************************
+ *
+ *  Display an encoded small float constant value
+ */
+void emitter::emitDispSmallFloatImm(ssize_t imm, instruction ins)
+{
+    if (strictArmAsm)
+    {
+        printf("#");
+    }
+    printf("%.4f", emitDecodeSmallFloatImm(imm, ins));
 }
 
 /*****************************************************************************
@@ -24674,20 +24832,22 @@ void emitter::emitDispInsHelp(
 
         // <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.<T>, <const>
         case IF_SVE_GP_3A: // ........xx.....r ...gggmmmmmddddd -- SVE floating-point complex add (predicated)
+            imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
-            emitDispImm(emitGetInsSC(id), false);
+            emitDispImm(emitDecodeRotationImm90_or_270(imm), false);
             break;
 
         // <Zda>.<T>, <Pg>/M, <Zn>.<T>, <Zm>.<T>, <const>
         case IF_SVE_GT_4A: // ........xx.mmmmm .rrgggnnnnnddddd -- SVE floating-point complex multiply-add (predicated)
+            imm = emitGetInsSC(id);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg4(), id->idInsOpt(), true);
-            emitDispImm(emitGetInsSC(id), false);
+            emitDispImm(emitDecodeRotationImm0_to_270(imm), false);
             break;
 
         // <Pd>.<T>, <Pg>/Z, <Zn>.<T>, #0.0
@@ -24705,14 +24865,7 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
-            if (imm != 0)
-            {
-                emitDispFloatImm(imm);
-            }
-            else
-            {
-                emitDispFloatZero();
-            }
+            emitDispSmallFloatImm(imm, id->idIns());
             break;
 
         // <Zdn>.<T>, <Zdn>.<T>, <Zm>.<T>, #<imm>
