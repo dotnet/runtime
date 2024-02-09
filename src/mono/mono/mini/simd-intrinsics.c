@@ -1178,6 +1178,20 @@ create_class_instance (const char* name_space, const char *name, MonoType *param
 	return ivector_inst;
 }
 
+static gboolean
+is_supported_vector_primitive_type (MonoType *type)
+{
+	gboolean constrained_generic_param = (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
+
+	if (constrained_generic_param && type->data.generic_param->gshared_constraint && MONO_TYPE_IS_VECTOR_PRIMITIVE (type->data.generic_param->gshared_constraint))
+		return TRUE;
+
+	if (MONO_TYPE_IS_VECTOR_PRIMITIVE (type))
+		return TRUE;
+
+	return FALSE;
+}
+
 static guint16 sri_vector_methods [] = {
 	SN_Abs,
 	SN_Add,
@@ -1423,8 +1437,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 
 	if (vector_size == 256 || vector_size == 512)
-		return NULL; 
-		
+		return NULL;
+
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
@@ -2477,6 +2491,12 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_free (name);
 	}
 
+	if (id == SN_get_IsSupported) {
+		MonoInst *ins;
+		EMIT_NEW_ICONST (cfg, ins, is_supported_vector_primitive_type (etype) ? 1 : 0);
+		return ins;
+	}
+
 	// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype)) {
 		// Happens often in gshared code
@@ -3198,6 +3218,11 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	klass = cmethod->klass;
 	type = m_class_get_byval_arg (klass);
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
+
+	if (id == SN_get_IsSupported) {
+		EMIT_NEW_ICONST (cfg, ins, is_supported_vector_primitive_type (etype) ? 1 : 0);
+		return ins;
+	}
 
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;
@@ -6118,11 +6143,37 @@ mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *i
 			decompose_vtype_opt_store_arg (cfg, bb, ins, &(ins->dreg));
 	}
 }
+
+gboolean
+mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod)
+{
+	/*
+	* If a method has been marked with aggressive inlining, check if we support
+	* aggressive inlining of the intrinsics type, if not, ignore aggressive inlining
+	* since it could end up inlining a large amount of code that most likely will end
+	* up as dead code.
+	*/
+	if (!strcmp (m_class_get_name_space (cmethod->klass), "System.Runtime.Intrinsics")) {
+		if (!strncmp(m_class_get_name (cmethod->klass), "Vector", 6)) {
+			const char *vector_type = m_class_get_name (cmethod->klass) + 6;
+			if (!strcmp(vector_type, "256`1") || !strcmp(vector_type, "512`1"))
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
 #else
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
 }
+
+gboolean
+mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod* cmethod)
+{
+	return FALSE;
+}
+
 #endif /*defined(TARGET_WIN32) && defined(TARGET_AMD64)*/
 
 #endif /* DISABLE_JIT */
@@ -6155,6 +6206,12 @@ mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 void
 mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins)
 {
+}
+
+gboolean
+mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod* cmethod)
+{
+	return FALSE;
 }
 
 #endif /* MONO_ARCH_SIMD_INTRINSICS */
