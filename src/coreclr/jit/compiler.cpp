@@ -9101,7 +9101,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
     fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
