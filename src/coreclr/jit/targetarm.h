@@ -277,7 +277,7 @@
   #define REG_ARG_3                REG_R3
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
-  extern const regMaskTP intArgMasks[MAX_REG_ARG];
+  extern const regMaskGpr intArgMasks[MAX_REG_ARG];
 
   #define RBM_ARG_0                RBM_R0
   #define RBM_ARG_1                RBM_R1
@@ -288,7 +288,7 @@
   #define RBM_FLTARG_REGS         (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7|RBM_F8|RBM_F9|RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15)
 
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
-  extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
+  extern const regMaskFloat fltArgMasks[MAX_FLOAT_REG_ARG];
 
   #define LBL_DIST_SMALL_MAX_NEG  (0)
   #define LBL_DIST_SMALL_MAX_POS  (+1020)
