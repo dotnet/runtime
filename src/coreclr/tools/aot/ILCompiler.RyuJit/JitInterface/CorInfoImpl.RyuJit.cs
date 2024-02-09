@@ -1836,7 +1836,7 @@ namespace Internal.JitInterface
 
             // Normalize to the slot defining method. We don't have slot information for the overrides.
             methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
-            Debug.Assert(!methodDesc.CanMethodBeInSealedVTable());
+            Debug.Assert(!methodDesc.CanMethodBeInSealedVTable(_compilation.NodeFactory));
 
             // Avoid asking about slots on types like Foo<object, __Canon>. We might not have that information.
             // Canonically-equivalent types have the same slots, so ask for Foo<__Canon, __Canon>.
