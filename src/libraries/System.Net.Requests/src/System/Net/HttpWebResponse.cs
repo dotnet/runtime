@@ -340,7 +340,7 @@ namespace System.Net
             if (_httpResponseMessage.Content != null)
             {
                 Stream contentStream = _httpResponseMessage.Content.ReadAsStream();
-                if (_maxErrorResponseLength == -1 || StatusCode <= (HttpStatusCode)399)
+                if (_maxErrorResponseLength < 0 || StatusCode < HttpStatusCode.BadRequest)
                 {
                     return contentStream;
                 }
@@ -359,8 +359,15 @@ namespace System.Net
                     memoryStream.Write(buffer, 0, len);
                     readLength += len;
                 }
-
-                return memoryStream;
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                try
+                {
+                    return memoryStream;
+                }
+                finally
+                {
+                    contentStream.Dispose();
+                }
             }
 
             return Stream.Null;

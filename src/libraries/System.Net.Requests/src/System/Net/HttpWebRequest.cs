@@ -1679,11 +1679,10 @@ namespace System.Net
                 {
                     var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
-                    // Start resolve dns task
-                    Task<IPAddress[]> addressesTask = Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken);
-                    IPAddress[]? addresses = null;
                     try
                     {
+                        //Start dns resolve
+                        IPAddress[] addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
                         if (parameters.ServicePoint is { } servicePoint)
                         {
                             if (servicePoint.ReceiveBufferSize != -1)
@@ -1700,38 +1699,41 @@ namespace System.Net
 
                             if (servicePoint.BindIPEndPointDelegate != null)
                             {
-                                addresses ??= await addressesTask.ConfigureAwait(false);
-                                foreach (IPAddress address in addresses)
+                                var bindHelper = () =>
                                 {
-                                    int retryCount = 0;
-                                    for (; retryCount < int.MaxValue; retryCount++)
+                                    const int MaxRetries = 100;
+                                    foreach (IPAddress address in addresses)
                                     {
-                                        IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
-                                        if (endPoint != null)
+                                        int retryCount = 0;
+                                        for (; retryCount < MaxRetries; retryCount++)
                                         {
+                                            IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
+                                            if (endPoint == null) // Get other address to try
+                                            {
+                                                break;
+                                            }
                                             try
                                             {
                                                 socket.Bind(endPoint);
-                                                break;
+                                                return; // Bind successful, exit loops.
                                             }
                                             catch
                                             {
                                                 continue;
                                             }
                                         }
-                                    }
 
-                                    if (retryCount == int.MaxValue)
-                                    {
-                                        throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                        if (retryCount >= MaxRetries)
+                                        {
+                                            throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                        }
                                     }
-                                }
+                                };
+                                bindHelper();
                             }
 
                             socket.NoDelay = !servicePoint.UseNagleAlgorithm;
                         }
-
-                        addresses ??= await addressesTask.ConfigureAwait(false);
 
                         if (parameters.Async)
                         {

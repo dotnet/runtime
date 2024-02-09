@@ -2167,6 +2167,96 @@ namespace System.Net.Tests
             );
         }
 
+        [Fact]
+        public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    HttpWebRequest.DefaultMaximumErrorResponseLength = 5;
+                    var exception = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+                    using (var responseStream = exception.Response.GetResponseStream())
+                    {
+                        Assert.Equal(5, responseStream.Length);
+                        var buffer = new byte[10];
+                        int readLen = responseStream.Read(buffer, 0, buffer.Length);
+                        Assert.Equal(5, readLen);
+                        Assert.Equal(new string('a', 5), Encoding.UTF8.GetString(buffer[0..readLen]));
+                    }
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(
+                        async (client) =>
+                        {
+                            await client.SendResponseAsync(statusCode: HttpStatusCode.InternalServerError, content: new string('a', 10));
+                        });
+                });
+        }
+
+        [Fact]
+        public void HttpWebRequest_SetProtocolVersion_Success()
+        {
+            HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
+
+            request.ProtocolVersion = HttpVersion.Version10;
+            Assert.Equal(HttpVersion.Version10, request.ServicePoint.ProtocolVersion);
+
+            request.ProtocolVersion = HttpVersion.Version11;
+            Assert.Equal(HttpVersion.Version11, request.ServicePoint.ProtocolVersion);
+        }
+
+        [Fact]
+        public async Task SendHttpRequest_BindIPEndPoint_Success()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.ServicePoint.BindIPEndPointDelegate =
+                        (sp, ep, retryCount) => { return new IPEndPoint(IPAddress.Loopback, 27277); };
+                    using (var response = (HttpWebResponse)await request.GetResponseAsync())
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(
+                        async (client) =>
+                        {
+                            var ipEp = (IPEndPoint)client.Socket.RemoteEndPoint;
+                            Assert.Equal(27277, ipEp.Port);
+                            await client.SendResponseAsync();
+                        });
+                });
+        }
+
+        [Fact]
+        public async Task SendHttpRequest_BindIPEndPoint_Throws()
+        {
+            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.ServicePoint.BindIPEndPointDelegate =
+                        (sp, ep, retryCount) => { return (IPEndPoint)socket.LocalEndPoint!; };
+                    var exception = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+                    Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(
+                        async (client) =>
+                        {
+                            await client.SendResponseAsync();
+                        });
+                });
+        }
+
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
         {
             RequestState state = (RequestState)asynchronousResult.AsyncState;
