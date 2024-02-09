@@ -3246,7 +3246,150 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
 
+    optSetExitWeight(loop, newExit);
     return true;
+}
+
+//-----------------------------------------------------------------------------
+// optEstimateEdgeLikelihood: Given a block "from" that may transfer control to
+// "to", estimate the likelihood that this will happen taking profile into
+// account if available.
+//
+// Parameters:
+//   from        - From block
+//   to          - To block
+//   fromProfile - [out] Whether or not the estimate is based on profile data
+//
+// Returns:
+//   Estimated likelihood of the edge being taken.
+//
+weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile)
+{
+    *fromProfile = (from->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY) && (to->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY);
+    if (!fgIsUsingProfileWeights() || !from->HasFlag(BBF_PROF_WEIGHT) || !to->HasFlag(BBF_PROF_WEIGHT) ||
+        from->KindIs(BBJ_ALWAYS))
+    {
+        return 1.0 / from->NumSucc(this);
+    }
+
+    bool useEdgeWeights = fgHaveValidEdgeWeights;
+
+    weight_t takenCount    = 0;
+    weight_t notTakenCount = 0;
+
+    if (useEdgeWeights)
+    {
+        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
+            *fromProfile &= succ->hasProfileWeight();
+            FlowEdge* edge       = fgGetPredForBlock(succ, from);
+            weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
+
+            if (succ == to)
+            {
+                takenCount += edgeWeight;
+            }
+            else
+            {
+                notTakenCount += edgeWeight;
+            }
+            return BasicBlockVisit::Continue;
+        });
+
+        // Watch out for cases where edge weights were not properly maintained
+        // so that it appears no profile flow goes to 'to'.
+        //
+        useEdgeWeights = !fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT);
+    }
+
+    if (!useEdgeWeights)
+    {
+        takenCount    = 0;
+        notTakenCount = 0;
+
+        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
+            *fromProfile &= succ->hasProfileWeight();
+            if (succ == to)
+            {
+                takenCount += succ->bbWeight;
+            }
+            else
+            {
+                notTakenCount += succ->bbWeight;
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    if (!*fromProfile)
+    {
+        return 1.0 / from->NumSucc(this);
+    }
+
+    if (fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT))
+    {
+        return 0;
+    }
+
+    weight_t likelihood = takenCount / (takenCount + notTakenCount);
+    return likelihood;
+}
+
+//-----------------------------------------------------------------------------
+// optSetExitWeight: Set the weight of a newly created exit, after it
+// has been added to the flowgraph.
+//
+// Parameters:
+//   loop      - The loop
+//   preheader - The new exit block
+//
+void Compiler::optSetExitWeight(FlowGraphNaturalLoop* loop, BasicBlock* exit)
+{
+    bool hasProfWeight = true;
+
+    // Inherit first estimate from the exit target; optEstimateEdgeLikelihood
+    // may use it in its estimate if we do not have edge weights to estimate
+    // from (we also assume the exiting -> exit edges already inherited their
+    // edge weights from the previous edge).
+    exit->inheritWeight(exit->GetTarget());
+
+    weight_t exitWeight = BB_ZERO_WEIGHT;
+    for (FlowEdge* exitEdge : exit->PredEdges())
+    {
+        BasicBlock* exiting = exitEdge->getSourceBlock();
+
+        bool     fromProfile = false;
+        weight_t likelihood  = optEstimateEdgeLikelihood(exiting, exit, &fromProfile);
+        hasProfWeight &= fromProfile;
+
+        weight_t contribution = exiting->bbWeight * likelihood;
+        JITDUMP("  Estimated likelihood " FMT_BB " -> " FMT_BB " to be " FMT_WT " (contribution: " FMT_WT ")\n",
+                exiting->bbNum, exit->bbNum, likelihood, contribution);
+
+        exitWeight += contribution;
+
+        // Normalize exiting -> new exit weight
+        exitEdge->setEdgeWeights(contribution, contribution, exit);
+    }
+
+    exit->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
+
+    exit->bbWeight = exitWeight;
+    if (hasProfWeight)
+    {
+        exit->SetFlags(BBF_PROF_WEIGHT);
+    }
+
+    if (exitWeight == BB_ZERO_WEIGHT)
+    {
+        exit->SetFlags(BBF_RUN_RARELY);
+        return;
+    }
+
+    // Normalize new exit -> old exit weight
+    FlowEdge* const edgeFromNewExit = fgGetPredForBlock(exit->GetTarget(), exit);
+    assert(edgeFromNewExit != nullptr);
+    edgeFromNewExit->setEdgeWeights(exit->bbWeight, exit->bbWeight, exit->GetTarget());
 }
 
 /*****************************************************************************

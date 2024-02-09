@@ -6802,6 +6802,8 @@ public:
 
     bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
     bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
+    weight_t optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile);
+    void optSetExitWeight(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
