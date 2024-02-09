@@ -10799,7 +10799,7 @@ public:
 
     bool compJitHaltMethod();
 
-    void dumpRegMask(regMaskTP regs) const;
+    void dumpRegMask(regMaskAny regs) const;
 
 #endif
 
