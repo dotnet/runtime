@@ -957,7 +957,7 @@ public:
 
     int GetRegisterDstCount(Compiler* compiler) const;
 
-    regMaskTP gtGetRegMask() const;
+    regMaskAny gtGetRegMask() const;
     regMaskAny gtGetContainedRegMask();
 
     GenTreeFlags gtFlags;
