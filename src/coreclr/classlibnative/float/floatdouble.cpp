@@ -253,8 +253,8 @@ FCIMPL1_V(double, COMDouble::Sin, double x)
     return sin(x);
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(TARGET_AMD64)
-// The /fp:fast form of `sincos` for AMD64 returns sin twice, rather than sincos
+#if defined(_MSC_VER)
+// The /fp:fast form of `sincos` for xarch returns sin twice, rather than sincos
 #pragma float_control(push)
 #pragma float_control(precise, on)
 #endif
@@ -274,7 +274,7 @@ FCIMPL3_VII(void, COMDouble::SinCos, double x, double* pSin, double* pCos)
 
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(TARGET_AMD64)
+#if defined(_MSC_VER)
 #pragma float_control(pop)
 #endif
 
