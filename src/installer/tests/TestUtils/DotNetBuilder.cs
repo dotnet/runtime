@@ -33,9 +33,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 true);
 
             // ./host/fxr/<version>/hostfxr.dll - this is the component being tested
-            SharedFramework.CopyDirectory(
-                builtDotNetCli.GreatestVersionHostFxrPath,
-                Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath)));
+            File.Copy(
+                builtDotNetCli.GreatestVersionHostFxrFilePath,
+                Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath), Binaries.HostFxr.FileName));
         }
 
         /// <summary>

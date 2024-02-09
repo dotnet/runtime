@@ -42,6 +42,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             source._copies.Add(this);
         }
 
+        /// <summary>
+        /// Create a new test artifact.
+        /// </summary>
+        /// <param name="name">Name of the test artifact</param>
+        /// <returns>Test artifact containing no files</returns>
         public static TestArtifact Create(string name)
         {
             var (location, parentPath) = GetNewTestArtifactPath(name);
@@ -49,6 +54,19 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 DirectoryToDelete = parentPath
             };
+        }
+
+        /// <summary>
+        /// Create a new test artifact populated with a copy of <paramref name="sourceDirectory"/>.
+        /// </summary>
+        /// <param name="name">Name of the test artifact</param>
+        /// <param name="sourceDirectory">Source directory to copy</param>
+        /// <returns>Test artifact containing a copy of <paramref name="sourceDirectory"/></returns>
+        public static TestArtifact CreateFromCopy(string name, string sourceDirectory)
+        {
+            var artifact = Create(name);
+            CopyRecursive(sourceDirectory, artifact.Location, overwrite: true);
+            return artifact;
         }
 
         protected void RegisterCopy(TestArtifact artifact)
