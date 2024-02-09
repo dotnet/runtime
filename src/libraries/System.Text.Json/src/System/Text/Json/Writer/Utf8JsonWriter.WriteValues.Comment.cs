@@ -105,7 +105,7 @@ namespace System.Text.Json
         private void WriteCommentIndented(ReadOnlySpan<char> value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(value.Length < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileTranscoding) - indent - 4 - s_newLineLength);
 
@@ -123,7 +123,7 @@ namespace System.Text.Json
             if (_tokenType != JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
                 WriteNewLine(output);
-                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }
 
@@ -212,7 +212,7 @@ namespace System.Text.Json
         private void WriteCommentIndented(ReadOnlySpan<byte> utf8Value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * _options.MaxDepth);
+            Debug.Assert(indent <= _indentLength * _options.MaxDepth);
 
             Debug.Assert(utf8Value.Length < int.MaxValue - indent - 4 - s_newLineLength);
 
@@ -230,7 +230,7 @@ namespace System.Text.Json
             {
                 WriteNewLine(output);
 
-                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }
 

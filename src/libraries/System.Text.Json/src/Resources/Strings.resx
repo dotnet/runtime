@@ -382,8 +382,11 @@
   <data name="DeserializeNoConstructor" xml:space="preserve">
     <value>Deserialization of types without a parameterless constructor, a singular parameterized constructor, or a parameterized constructor annotated with '{0}' is not supported. Type '{1}'.</value>
   </data>
-  <data name="DeserializePolymorphicInterface" xml:space="preserve">
-    <value>Deserialization of interface types is not supported. Type '{0}'.</value>
+  <data name="DeserializeInterfaceOrAbstractType" xml:space="preserve">
+    <value>Deserialization of interface or abstract types is not supported. Type '{0}'.</value>
+  </data>
+  <data name="DeserializationMustSpecifyTypeDiscriminator" xml:space="preserve">
+    <value>The JSON payload for polymorphic interface or abstract type '{0}' must specify a type discriminator.</value>
   </data>
   <data name="SerializationConverterOnAttributeNotCompatible" xml:space="preserve">
     <value>The converter specified on '{0}' is not compatible with the type '{1}'.</value>
@@ -439,8 +442,8 @@
   <data name="MetadataDuplicateIdFound" xml:space="preserve">
     <value>The value of the '$id' metadata property '{0}' conflicts with an existing identifier.</value>
   </data>
-  <data name="MetadataIdIsNotFirstProperty" xml:space="preserve">
-    <value>The metadata property '$id' must be the first reference preservation property in the JSON object.</value>
+  <data name="MetadataIdCannotBeCombinedWithRef" xml:space="preserve">
+    <value>The metadata property '$id' cannot be used together with '$ref' metadata properties.</value>
   </data>
   <data name="MetadataInvalidReferenceToValueType" xml:space="preserve">
     <value>Invalid reference to value type '{0}'.</value>
@@ -477,8 +480,8 @@
   <data name="UnmappedJsonProperty" xml:space="preserve">
     <value>The JSON property '{0}' could not be mapped to any .NET member contained in type '{1}'.</value>
   </data>
-  <data name="MetadataDuplicateTypeProperty" xml:space="preserve">
-    <value>Deserialized object contains a duplicate type discriminator metadata property.</value>
+  <data name="DuplicateMetadataProperty" xml:space="preserve">
+    <value>Deserialized object contains a duplicate '{0}' metadata property.</value>
   </data>
   <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
     <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>
@@ -707,5 +710,11 @@
   </data>
   <data name="FormatHalf" xml:space="preserve">
     <value>Either the JSON value is not in a supported format, or is out of bounds for a Half.</value>
+  </data>
+  <data name="InvalidIndentCharacter" xml:space="preserve">
+    <value>Supported indentation characters are space and horizontal tab.</value>
+  </data>
+  <data name="InvalidIndentSize" xml:space="preserve">
+    <value>Indentation size must be between {0} and {1}.</value>
   </data>
 </root>

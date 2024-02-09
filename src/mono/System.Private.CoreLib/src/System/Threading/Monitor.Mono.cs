@@ -71,10 +71,15 @@ namespace System.Threading
             return ObjectHeader.IsEntered(obj);
         }
 
+#if !FEATURE_WASM_MANAGED_THREADS
         [UnsupportedOSPlatform("browser")]
+#endif
         public static bool Wait(object obj, int millisecondsTimeout)
         {
             ArgumentNullException.ThrowIfNull(obj);
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
             return ObjWait(millisecondsTimeout, obj);
         }
 

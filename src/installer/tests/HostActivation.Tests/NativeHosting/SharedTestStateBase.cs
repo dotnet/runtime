@@ -13,7 +13,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public string BaseDirectory { get; }
         public string NativeHostPath { get; }
         public string NethostPath { get; }
-        public RepoDirectoriesProvider RepoDirectories { get; }
 
         private readonly TestArtifact _baseDirArtifact;
 
@@ -27,8 +26,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             NativeHostPath = Path.Combine(BaseDirectory, nativeHostName);
 
             // Copy over native host
-            RepoDirectories = new RepoDirectoriesProvider();
-            File.Copy(Path.Combine(RepoDirectories.HostTestArtifacts, nativeHostName), NativeHostPath);
+            File.Copy(Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, nativeHostName), NativeHostPath);
 
             // Copy nethost next to native host
             // This is done even for tests not directly using nethost because nativehost consumes nethost in the more

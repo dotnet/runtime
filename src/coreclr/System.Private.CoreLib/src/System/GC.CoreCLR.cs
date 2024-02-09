@@ -106,9 +106,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int GetGenerationWR(IntPtr handle);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static partial long GetTotalMemory();
 
@@ -290,9 +287,16 @@ namespace System
         //
         public static int GetGeneration(WeakReference wo)
         {
-            int result = GetGenerationWR(wo.WeakHandle);
+            // Note - This throws an NRE if given a null weak reference.
+            object? obj = GCHandle.InternalGet(wo.WeakHandle);
             KeepAlive(wo);
-            return result;
+
+            if (obj is null)
+            {
+                throw new ArgumentNullException(nameof(wo));
+            }
+
+            return GetGeneration(obj);
         }
 
         // Returns the maximum GC generation.  Currently assumes only 1 heap.
@@ -376,8 +380,13 @@ namespace System
         /// Get a count of the bytes allocated over the lifetime of the process.
         /// </summary>
         /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
+        public static long GetTotalAllocatedBytes(bool precise = false) => precise ? GetTotalAllocatedBytesPrecise() : GetTotalAllocatedBytesApproximate();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern long GetTotalAllocatedBytes(bool precise = false);
+        private static extern long GetTotalAllocatedBytesApproximate();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
+        private static partial long GetTotalAllocatedBytesPrecise();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
@@ -385,11 +394,11 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool _CancelFullGCNotification();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCApproach(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
+        private static partial int _WaitForFullGCApproach(int millisecondsTimeout);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int _WaitForFullGCComplete(int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCComplete")]
+        private static partial int _WaitForFullGCComplete(int millisecondsTimeout);
 
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold)
         {

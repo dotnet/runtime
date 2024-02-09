@@ -20,14 +20,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="UpdateRuntimePackToAddNewRID" BeforeTargets="ProcessFrameworkReferences">
-    <Message Text="KnownRuntimePack: %(KnownRuntimePack.Identity), %(KnownRuntimePack.RuntimePackLabels), %(KnownRuntimePack.RuntimePackRuntimeIdentifiers)" />
-    <ItemGroup>
-      <KnownRuntimePack Condition="%(RuntimePackLabels) == 'Mono'" RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm" />
-    </ItemGroup>
-    <Message Text="KnownRuntimePack: %(KnownRuntimePack.Identity), %(KnownRuntimePack.RuntimePackLabels), %(KnownRuntimePack.RuntimePackRuntimeIdentifiers)" />
-  </Target>
-
   <!-- Use local runtime pack -->
   <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>

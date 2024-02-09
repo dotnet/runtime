@@ -16,15 +16,11 @@
 
 #include "qcall.h"
 
-class AppDomainNative
-{
-public:
-    static FCDECL0(Object*, GetLoadedAssemblies);
-};
-
 extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str);
 extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str);
 
 extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyLoadContext, NativeAssemblyNameParts* pAssemblyName, INT32 hashAlgorithm, INT32 access, QCall::ObjectHandleOnStack retAssembly);
+
+extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies);
 
 #endif

@@ -1000,14 +1000,17 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             if (_module == null)
             {
                 _module = await JSHost.ImportAsync("JavaScriptTestHelper", "../JavaScriptTestHelper.mjs"); ;
-                await Setup(); ;
+                await Setup();
             }
 
-            var p = echopromise_String("aaa");
-            await p;
-
-            // this gives browser chance to serve UI thread event loop before every test
-            await Task.Yield();
+#if FEATURE_WASM_MANAGED_THREADS
+            // are we in the UI thread ?
+            if (Environment.CurrentManagedThreadId == 1)
+#endif
+            {
+                // this gives browser chance to serve UI thread event loop before every test
+                await Task.Yield();
+            }
         }
 
         public static Task DisposeAsync()

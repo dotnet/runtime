@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
@@ -10,19 +10,20 @@ import { setI32_unchecked, receiveWorkerHeapViews } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { assert_synchronization_context } from "./pthreads/shared";
+import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
 export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    assert_bindings();
+    if (WasmEnableThreads) return;
+    assert_js_interop();
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         bind_js_import(signature);
@@ -35,7 +36,59 @@ export function mono_wasm_bind_js_import(signature: JSFunctionSignature, is_exce
     }
 }
 
+export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signature: JSFunctionSignature) {
+    if (!WasmEnableThreads) return;
+    assert_js_interop();
+
+    const function_handle = get_signature_handle(signature);
+
+    let bound_fn = js_import_wrapper_by_fn_handle[function_handle];
+    if (bound_fn == undefined) {
+        // it was not bound yet, let's do it now
+        bound_fn = bind_js_import(signature);
+    }
+    mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
+
+    let max_postpone_count = 10;
+    function postpone_invoke_import_async() {
+        if (max_postpone_count < 0 || is_thread_available()) {
+            bound_fn(args);
+            Module._free(args as any);
+        } else {
+            max_postpone_count--;
+            Module.safeSetTimeout(postpone_invoke_import_async, 10);
+        }
+    }
+
+    if (WasmEnableThreads && !ENVIRONMENT_IS_WORKER) {
+        // give thread chance to load before we run more synchronous code on UI thread
+        postpone_invoke_import_async();
+    }
+    else {
+        bound_fn(args);
+        // this works together with AllocHGlobal in JSFunctionBinding.DispatchJSImportAsync
+        Module._free(args as any);
+    }
+}
+
+export function mono_wasm_invoke_import_sync(args: JSMarshalerArguments, signature: JSFunctionSignature) {
+    if (!WasmEnableThreads) return;
+    assert_js_interop();
+
+    const function_handle = get_signature_handle(signature);
+
+    let bound_fn = js_import_wrapper_by_fn_handle[function_handle];
+    if (bound_fn == undefined) {
+        // it was not bound yet, let's do it now
+        bound_fn = bind_js_import(signature);
+    }
+    mono_assert(bound_fn, () => `Imported function handle expected ${function_handle}`);
+
+    bound_fn(args);
+}
+
 function bind_js_import(signature: JSFunctionSignature): Function {
+    assert_js_interop();
     const mark = startMeasure();
 
     const version = get_signature_version(signature);
@@ -67,15 +120,9 @@ function bind_js_import(signature: JSFunctionSignature): Function {
             };
             has_cleanup = true;
         }
-        else if (marshaler_type == MarshalerType.Task) {
-            assert_synchronization_context();
-        }
     }
     const res_sig = get_sig(signature, 1);
     const res_marshaler_type = get_signature_type(res_sig);
-    if (res_marshaler_type == MarshalerType.Task) {
-        assert_synchronization_context();
-    }
     const res_converter = bind_arg_marshal_to_cs(res_sig, res_marshaler_type, 1);
 
     const closure: BindingClosure = {
@@ -129,11 +176,11 @@ function bind_js_import(signature: JSFunctionSignature): Function {
 function bind_fn_0V(closure: BindingClosure) {
     const fn = closure.fn;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_0V(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
-            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+            mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
             // call user function
             fn();
         } catch (ex) {
@@ -149,11 +196,11 @@ function bind_fn_1V(closure: BindingClosure) {
     const fn = closure.fn;
     const marshaler1 = closure.arg_marshalers[0]!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1V(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
-            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+            mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
             const arg1 = marshaler1(args);
             // call user function
             fn(arg1);
@@ -171,11 +218,11 @@ function bind_fn_1R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1R(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
-            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+            mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
             const arg1 = marshaler1(args);
             // call user function
             const js_result = fn(arg1);
@@ -195,11 +242,11 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_2R(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
-            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+            mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
             const arg1 = marshaler1(args);
             const arg2 = marshaler2(args);
             // call user function
@@ -222,11 +269,11 @@ function bind_fn(closure: BindingClosure) {
     const has_cleanup = closure.has_cleanup;
     const fn = closure.fn;
     const fqn = closure.fqn;
-    if (!MonoWasmThreads) (<any>closure) = null;
+    if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
         const mark = startMeasure();
         try {
-            mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
+            mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
             const js_args = new Array(args_count);
             for (let index = 0; index < args_count; index++) {
                 const marshaler = arg_marshalers[index]!;
@@ -293,7 +340,11 @@ function mono_wasm_lookup_js_import(function_name: string, js_module_name: strin
     const parts = function_name.split(".");
     if (js_module_name) {
         scope = importedModules.get(js_module_name);
-        mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() first.`);
+        if (WasmEnableThreads) {
+            mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() on the UI or JSWebWorker thread first.`);
+        } else {
+            mono_assert(scope, () => `ES6 module ${js_module_name} was not imported yet, please call JSHost.ImportAsync() first.`);
+        }
     }
     else if (parts[0] === "INTERNAL") {
         scope = INTERNAL;
@@ -348,9 +399,9 @@ export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 
 export function dynamic_import(module_name: string, module_url: string): Promise<any> {
+    assert_js_interop();
     mono_assert(module_name && typeof module_name === "string", "module_name must be string");
     mono_assert(module_url && typeof module_url === "string", "module_url must be string");
-    assert_synchronization_context();
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
     if (newPromise) {
@@ -408,9 +459,18 @@ export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmR
     }
 }
 
-export function assert_bindings(): void {
+export function assert_js_interop(): void {
     loaderHelpers.assert_runtime_running();
-    if (MonoWasmThreads) {
+    if (WasmEnableThreads) {
+        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready && runtimeHelpers.proxy_context_gc_handle, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+    } else {
+        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
+    }
+}
+
+export function assert_c_interop(): void {
+    loaderHelpers.assert_runtime_running();
+    if (WasmEnableThreads) {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");

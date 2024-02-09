@@ -411,9 +411,23 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         // instruction selection due to different memory placement at runtime.
         if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
         {
-            // We will use lea so displacement and not immediate will be relocatable
-            size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
-            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            if (EA_IS_CNS_TLSGD_RELOC(origAttr))
+            {
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
+                GetEmitter()->emitIns_Data16();
+            }
+            if (!EA_IS_CNS_SEC_RELOC(origAttr))
+            {
+                // We will use lea so displacement and not immediate will be relocatable
+                size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
+                GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            }
+            else
+            {
+                // For section constant, the immediate will be relocatable
+                GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
+            }
         }
         else
         {
@@ -614,6 +628,18 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (targetType == TYP_BYREF)
             {
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+            }
+
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                }
+                else if (con->IsIconHandle(GTF_ICON_TLSGD_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+                }
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
@@ -1044,7 +1070,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         // all have RMW semantics if VEX support is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW, INS_OPTS_NONE);
 
         genProduceReg(treeNode);
         return;
@@ -1453,6 +1479,13 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_test, reg, reg, genActualType(op));
     inst_JMP(EJ_jne, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2047,12 +2080,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_XCHG:
         case GT_XADD:
-            genLockedInstructions(treeNode->AsOp());
-            break;
-
         case GT_XORR:
         case GT_XAND:
-            NYI("Interlocked.Or and Interlocked.And aren't implemented for x86 yet.");
+            genLockedInstructions(treeNode->AsOp());
             break;
 
         case GT_MEMORYBARRIER:
@@ -3035,6 +3065,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             genCodeForCpObj(storeBlkNode->AsBlk());
             break;
 
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(storeBlkNode);
+            break;
+
 #ifdef TARGET_AMD64
         case GenTreeBlk::BlkOpKindHelper:
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
@@ -3311,6 +3346,60 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode  = initBlkNode->Addr();
+    GenTree* const zeroNode = initBlkNode->Data();
+
+    genConsumeReg(dstNode);
+    genConsumeReg(zeroNode);
+
+    const regNumber dstReg  = dstNode->GetRegNum();
+    const regNumber zeroReg = zeroNode->GetRegNum();
+
+    //  xor      zeroReg, zeroReg
+    //  mov      qword ptr [dstReg], zeroReg
+    //  mov      offsetReg, <block size>
+    //.LOOP:
+    //  mov      qword ptr [dstReg + offsetReg], zeroReg
+    //  sub      offsetReg, 8
+    //  jne      .LOOP
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
+    GetEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, 0);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+
+        GetEmitter()->emitIns_ARX_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, offsetReg, 1, 0);
+        GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, TARGET_POINTER_SIZE);
+        inst_JMP(EJ_jne, loop);
+
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
 }
 
 #ifdef TARGET_AMD64
@@ -4354,7 +4443,8 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
 //
 void CodeGen::genLockedInstructions(GenTreeOp* node)
 {
-    assert(node->OperIs(GT_XADD, GT_XCHG));
+    assert(node->OperIs(GT_XADD, GT_XCHG, GT_XORR, GT_XAND));
+    assert(node->OperIs(GT_XCHG) || !varTypeIsSmall(node->TypeGet()));
 
     GenTree* addr = node->gtGetOp1();
     GenTree* data = node->gtGetOp2();
@@ -4362,9 +4452,59 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
 
     assert(addr->isUsedFromReg());
     assert(data->isUsedFromReg());
-    assert((size == EA_4BYTE) || (size == EA_PTRSIZE) || (size == EA_GCREF));
+    assert((size <= EA_PTRSIZE) || (size == EA_GCREF));
 
     genConsumeOperands(node);
+
+    if (node->OperIs(GT_XORR, GT_XAND))
+    {
+        const instruction ins = node->OperIs(GT_XORR) ? INS_or : INS_and;
+
+        if (node->IsUnusedValue())
+        {
+            // If value is not used we can emit a short form:
+            //
+            //    lock
+            //    or/and  dword ptr [addrReg], val
+            //
+            instGen(INS_lock);
+            GetEmitter()->emitIns_AR_R(ins, size, data->GetRegNum(), addr->GetRegNum(), 0);
+        }
+        else
+        {
+            // When value is used (it's the original value of the memory location)
+            // we fallback to cmpxchg-loop idiom.
+
+            // for cmpxchg we need to keep the original value in RAX
+            assert(node->GetRegNum() == REG_RAX);
+
+            //    mov     RAX, dword ptr [addrReg]
+            //.LOOP:
+            //    mov     tmp, RAX
+            //    or/and  tmp, val
+            //    lock
+            //    cmpxchg dword ptr [addrReg], tmp
+            //    jne    .LOOP
+            //    ret
+
+            // Extend liveness of addr
+            gcInfo.gcMarkRegPtrVal(addr->GetRegNum(), addr->TypeGet());
+
+            const regNumber tmpReg = node->GetSingleTempReg();
+            GetEmitter()->emitIns_R_AR(INS_mov, size, REG_RAX, addr->GetRegNum(), 0);
+            BasicBlock* loop = genCreateTempLabel();
+            genDefineTempLabel(loop);
+            GetEmitter()->emitIns_Mov(INS_mov, size, tmpReg, REG_RAX, false);
+            GetEmitter()->emitIns_R_R(ins, size, tmpReg, data->GetRegNum());
+            instGen(INS_lock);
+            GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, tmpReg, addr->GetRegNum(), 0);
+            inst_JMP(EJ_jne, loop);
+
+            gcInfo.gcMarkRegSetNpt(genRegMask(addr->GetRegNum()));
+            genProduceReg(node);
+        }
+        return;
+    }
 
     // If the destination register is different from the data register then we need
     // to first move the data to the target register. Make sure we don't overwrite
@@ -4380,7 +4520,15 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
         instGen(INS_lock);
     }
 
-    GetEmitter()->emitIns_AR_R(ins, size, node->GetRegNum(), addr->GetRegNum(), 0);
+    regNumber targetReg = node->GetRegNum();
+    GetEmitter()->emitIns_AR_R(ins, size, targetReg, addr->GetRegNum(), 0);
+
+    if (varTypeIsSmall(node->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(node->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, targetReg, /* canSkip */ false);
+    }
+
     genProduceReg(node);
 }
 
@@ -4396,6 +4544,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
+    emitAttr  size       = emitTypeSize(tree->TypeGet());
 
     GenTree* location  = tree->Addr();      // arg1
     GenTree* value     = tree->Data();      // arg2
@@ -4416,10 +4565,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     // location is Rm
     instGen(INS_lock);
 
-    GetEmitter()->emitIns_AR_R(INS_cmpxchg, emitTypeSize(targetType), value->GetRegNum(), location->GetRegNum(), 0);
+    GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, value->GetRegNum(), location->GetRegNum(), 0);
 
     // Result is in RAX
-    inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    if (varTypeIsSmall(tree->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(tree->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, REG_RAX, /* canSkip */ false);
+    }
+    else
+    {
+        inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    }
 
     genProduceReg(tree);
 }
@@ -6050,17 +6207,17 @@ void CodeGen::genCall(GenTreeCall* call)
         {
             case CORINFO_HELP_MON_ENTER:
             case CORINFO_HELP_MON_ENTER_STATIC:
-                noway_assert(compiler->syncStartEmitCookie == NULL);
+                noway_assert(compiler->syncStartEmitCookie == nullptr);
                 compiler->syncStartEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncStartEmitCookie != NULL);
+                noway_assert(compiler->syncStartEmitCookie != nullptr);
                 break;
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_MON_EXIT_STATIC:
-                noway_assert(compiler->syncEndEmitCookie == NULL);
+                noway_assert(compiler->syncEndEmitCookie == nullptr);
                 compiler->syncEndEmitCookie =
                     GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
-                noway_assert(compiler->syncEndEmitCookie != NULL);
+                noway_assert(compiler->syncEndEmitCookie != nullptr);
                 break;
             default:
                 break;
@@ -6246,29 +6403,54 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
         else
         {
-            // We have already generated code for gtControlExpr evaluating it into a register.
-            // We just need to emit "call reg" in this case.
-            assert(genIsValidIntReg(target->GetRegNum()));
-
-            // For fast tailcalls this is happening in epilog, so we should
-            // have already consumed target in genCall.
-            if (!call->IsFastTailCall())
+            if (!compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (call->gtFlags & GTF_TLS_GET_ADDR) == 0)
             {
-                genConsumeReg(target);
-            }
+                // We have already generated code for gtControlExpr evaluating it into a register.
+                // We just need to emit "call reg" in this case.
+                assert(genIsValidIntReg(target->GetRegNum()));
 
-            // clang-format off
-            genEmitCall(emitter::EC_INDIR_R,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        nullptr // addr
-                        X86_ARG(argSizeForEmitter),
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        di,
-                        target->GetRegNum(),
-                        call->IsFastTailCall());
-            // clang-format on
+                // For fast tailcalls this is happening in epilog, so we should
+                // have already consumed target in genCall.
+                if (!call->IsFastTailCall())
+                {
+                    genConsumeReg(target);
+                }
+
+                // clang-format off
+                genEmitCall(emitter::EC_INDIR_R,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            nullptr // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
+            }
+            else
+            {
+                GenTree* tlsGetAddr = (GenTree*)call->gtCallMethHnd;
+
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
+                GetEmitter()->emitIns_Data16();
+                GetEmitter()->emitIns_Data16();
+
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN,
+                            (CORINFO_METHOD_HANDLE)1,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            (void*)tlsGetAddr->AsIntCon()->gtIconVal // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
+            }
         }
     }
     else
@@ -7319,7 +7501,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
         // is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
     }
 
     genProduceReg(treeNode);
@@ -7431,7 +7613,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // is not available
 
     bool isRMW = !compiler->canUseVexEncoding();
-    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW);
+    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
 
     // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
     // will interpret ULONG value as LONG.  Hence we need to adjust the
@@ -7952,7 +8134,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             regNumber targetReg = treeNode->GetRegNum();
             bool      isRMW     = !compiler->canUseVexEncoding();
 
-            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW);
+            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW, INS_OPTS_NONE);
             break;
         }
 
@@ -9037,7 +9219,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
 void CodeGen::genAmd64EmitterUnitTestsSse2()
 {
-    assert(verbose);
     emitter* theEmitter = GetEmitter();
 
     //

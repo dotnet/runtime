@@ -107,6 +107,9 @@
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="clrgcexp.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgcexp.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgcexp.dylib" IsNative="true" />    
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
@@ -132,7 +135,7 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.amd64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
-    <!-- NativeAOT specific files -->
+    <!-- NativeAOT/Unix specific files -->
     <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" /> <!-- The bootstrapper lib used to be a static library, now it's an object file. -->
     <PlatformManifestFileEntry Include="libbootstrapperdll.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libbootstrapper.o" IsNative="true" />
@@ -141,9 +144,33 @@
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="libstandalonegc-disabled.a " IsNative="true" />
-    <PlatformManifestFileEntry Include="libstandalonegc-enabled.a " IsNative="true" />
+    <PlatformManifestFileEntry Include="libstandalonegc-disabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libstandalonegc-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
+    <!-- NativeAOT/Windows specific files -->
+    <PlatformManifestFileEntry Include="bootstrapper.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="bootstrapper.GuardCF.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="bootstrapperdll.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="bootstrapperdll.GuardCF.obj" IsNative="true" />
+    <PlatformManifestFileEntry Include="eventpipe-disabled.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="eventpipe-disabled.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="eventpipe-enabled.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="eventpipe-enabled.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="Runtime.ServerGC.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="Runtime.ServerGC.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="Runtime.WorkstationGC.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="Runtime.VxsortEnabled.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="Runtime.VxsortEnabled.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="Runtime.VxsortDisabled.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="standalonegc-disabled.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="standalonegc-disabled.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="standalonegc-enabled.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="standalonegc-enabled.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Globalization.Native.Aot.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Globalization.Native.Aot.GuardCF.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.lib" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.IO.Compression.Native.Aot.GuardCF.lib" IsNative="true" />
+    <!-- NativeAOT managed specific files -->
     <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
     <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
     <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
@@ -207,7 +234,6 @@
     <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet-legacy.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
@@ -216,6 +242,7 @@
     <PlatformManifestFileEntry Include="icudt_optimal.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_optimal_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_hybrid.dat" IsNative="true" />
+    <PlatformManifestFileEntry Include="segmentation-rules.json" IsNative="true" />
     <PlatformManifestFileEntry Include="package.json" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />

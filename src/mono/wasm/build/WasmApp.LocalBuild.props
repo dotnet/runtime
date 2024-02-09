@@ -22,7 +22,7 @@
   <Import Project="$(_WasmTargetsDir)$(_TargetsBaseName).props" />
 
   <PropertyGroup>
-    <_TargetFrameworkForNETCoreTasks>net8.0</_TargetFrameworkForNETCoreTasks>
+    <_NetCoreAppToolCurrent>net9.0</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
@@ -34,10 +34,10 @@
 
     <MicrosoftNetCoreAppRuntimePackLocationToUse>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.$(RuntimeIdentifier)', $(RuntimeConfig)))</MicrosoftNetCoreAppRuntimePackLocationToUse>
 
-    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(TasksConfiguration)', '$(_TargetFrameworkForNETCoreTasks)'))</WasmAppBuilderDir>
-    <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', '$(TasksConfiguration)', '$(_TargetFrameworkForNETCoreTasks)', 'publish'))</WasmBuildTasksDir>
-    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(TasksConfiguration)', '$(_TargetFrameworkForNETCoreTasks)'))</MonoAOTCompilerDir>
-    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', '$(TasksConfiguration)', '$(_TargetFrameworkForNETCoreTasks)'))</MonoTargetsTasksDir>
+    <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', '$(TasksConfiguration)', '$(_NetCoreAppToolCurrent)'))</WasmAppBuilderDir>
+    <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', '$(TasksConfiguration)', '$(_NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
+    <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', '$(TasksConfiguration)', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', '$(TasksConfiguration)', '$(_NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
 
     <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfig)'))</MonoArtifactsPath>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())', 'mono-aot-cross'))</_MonoAotCrossCompilerPath>

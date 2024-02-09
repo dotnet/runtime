@@ -28,6 +28,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
     <IlcPgoOptimize Condition="'$(IlcPgoOptimize)' == '' and '$(OptimizationPreference)' == 'Speed'">true</IlcPgoOptimize>
     <RunILLink>false</RunILLink>
+    <IlcTreatWarningsAsErrors Condition="'$(IlcTreatWarningsAsErrors)' == ''">$(TreatWarningsAsErrors)</IlcTreatWarningsAsErrors>
     <_IsiOSLikePlatform Condition="'$(_targetOS)' == 'maccatalyst' or $(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos'))">true</_IsiOSLikePlatform>
     <_IsApplePlatform Condition="'$(_targetOS)' == 'osx' or '$(_IsiOSLikePlatform)' == 'true'">true</_IsApplePlatform>
   </PropertyGroup>
@@ -71,7 +72,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
-    <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_IsApplePlatform)' == 'true'">.dsym</NativeSymbolExt>
+    <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_IsApplePlatform)' == 'true'">.dSYM</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_targetOS)' == 'win'">.pdb</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == ''">.dbg</NativeSymbolExt>
 
@@ -268,6 +269,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="'$(_targetOS)' == 'win' and $(IlcMultiModule) != 'true' and '$(IlcGenerateWin32Resources)' != 'false' and '$(NativeLib)' != 'Static'" Include="--win32resourcemodule:%(ManagedBinary.Filename)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)).Replace(`%0A`, ``).Replace(`%0D`, ``))"' />
+      <IlcArg Condition="$(IlcTreatWarningsAsErrors) == 'true'" Include="--warnaserror" />
+      <IlcArg Condition="$(WarningsAsErrors) != ''" Include='--warnaserr:"$([MSBuild]::Escape($(WarningsAsErrors)).Replace(`%0A`, ``).Replace(`%0D`, ``))"' />
+      <IlcArg Condition="$(WarningsNotAsErrors) != ''" Include='--nowarnaserr:"$([MSBuild]::Escape($(WarningsNotAsErrors)).Replace(`%0A`, ``).Replace(`%0D`, ``))"' />
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
       <IlcArg Condition="$(SuppressTrimAnalysisWarnings) == 'true'" Include="--notrimwarn" />
       <IlcArg Condition="$(SuppressAotAnalysisWarnings) == 'true'" Include="--noaotwarn" />

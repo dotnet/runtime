@@ -75,6 +75,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/GenericCycleDetection/Depth3Test/*">
           <Issue>https://github.com/dotnet/runtime/issues/88586</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
@@ -656,9 +659,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/IJW/FixupCallsHostWhenLoaded/FixupCallsHostWhenLoaded/*">
             <Issue>https://github.com/dotnet/runtime/issues/38096</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
-            <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
@@ -1955,6 +1955,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)Interop/MonoAPI/MonoMono/InstallEHCallback/*">
           <Issue>https://github.com/dotnet/runtime/issues/67047</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
@@ -2546,9 +2549,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/UnmanagedCallersOnlyBasic/UnmanagedCallersOnlyBasicTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
@@ -2588,16 +2588,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/aliasing_retbuf/aliasing_retbuf/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/gc_poll/InsertGCPoll/**">
@@ -2773,7 +2764,7 @@
     </ItemGroup>
 
     <!-- These are known failures on mono-arm64 on OSX -->
-    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true'" >
+    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true' and '$(RuntimeVariant)' == 'monointerpreter'" >
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
             <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
         </ExcludeList>
@@ -3221,6 +3212,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
             <Issue>needs native libraries</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'android'" >
@@ -3664,6 +3658,18 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'linux'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
+            <Issue>Not supported</Issue>
+        </ExcludeList>
+   </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'riscv64'">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/gc_poll/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54906</Issue>
         </ExcludeList>
     </ItemGroup>
 

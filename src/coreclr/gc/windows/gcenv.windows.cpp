@@ -559,7 +559,7 @@ uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 // Get id of the process
 uint32_t GCToOSInterface::GetCurrentProcessId()
 {
-    return ::GetCurrentThreadId();
+    return ::GetCurrentProcessId();
 }
 
 // Set ideal processor for the current thread

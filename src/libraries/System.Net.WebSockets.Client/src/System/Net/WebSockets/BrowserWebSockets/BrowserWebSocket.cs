@@ -14,16 +14,18 @@ namespace System.Net.WebSockets
     /// </summary>
     internal sealed class BrowserWebSocket : WebSocket
     {
-#if FEATURE_WASM_THREADS
-        private readonly object _thisLock = new object();
-#endif
+        private readonly object _lockObject = new object();
 
         private WebSocketCloseStatus? _closeStatus;
         private string? _closeStatusDescription;
         private JSObject? _innerWebSocket;
         private WebSocketState _state;
+        private bool _closeSent;
+        private bool _closeReceived;
         private bool _disposed;
         private bool _aborted;
+        private bool _shouldAbort;
+        private bool _cancelled;
         private int[] responseStatus = new int[3];
         private MemoryHandle? responseStatusHandle;
 
@@ -33,29 +35,30 @@ namespace System.Net.WebSockets
         {
             get
             {
-#if FEATURE_WASM_THREADS
-                lock (_thisLock)
+                lock (_lockObject)
                 {
-#endif
-                    if (_innerWebSocket == null || _disposed || (_state != WebSocketState.Connecting && _state != WebSocketState.Open && _state != WebSocketState.CloseSent))
+                    if (_innerWebSocket == null || _disposed || _state == WebSocketState.Aborted || _state == WebSocketState.Closed)
                     {
                         return _state;
                     }
-#if FEATURE_WASM_THREADS
-                } //lock
-#endif
-
-#if FEATURE_WASM_THREADS
-                return FastState = _innerWebSocket!.SynchronizationContext.Send(static (BrowserWebSocket self) =>
-                {
-                    lock (self._thisLock)
+                    var st = GetReadyStateLocked(_innerWebSocket!);
+                    if (st == WebSocketState.Closed || st == WebSocketState.CloseSent)
                     {
-                        return GetReadyState(self._innerWebSocket!);
-                    } //lock
-                }, this);
-#else
-                return FastState = GetReadyState(_innerWebSocket!);
-#endif
+                        if (_closeReceived && _closeSent)
+                        {
+                            st = WebSocketState.Closed;
+                        }
+                        else if (_closeReceived && !_closeSent)
+                        {
+                            st = WebSocketState.CloseReceived;
+                        }
+                        else if (!_closeReceived && _closeSent)
+                        {
+                            st = WebSocketState.CloseSent;
+                        }
+                    }
+                    return FastState = st;
+                } // lock
             }
         }
 
@@ -63,50 +66,68 @@ namespace System.Net.WebSockets
         {
             get
             {
-#if FEATURE_WASM_THREADS
-                lock (_thisLock)
+                lock (_lockObject)
                 {
-#endif
                     return _state;
-#if FEATURE_WASM_THREADS
-                } //lock
-#endif
+                } // lock
             }
             set
             {
-#if FEATURE_WASM_THREADS
-                lock (_thisLock)
+                lock (_lockObject)
                 {
-#endif
                     _state = value;
-#if FEATURE_WASM_THREADS
-                } //lock
-#endif
+                } // lock
             }
         }
 
-        public override WebSocketCloseStatus? CloseStatus => _closeStatus;
-        public override string? CloseStatusDescription => _closeStatusDescription;
+        public override WebSocketCloseStatus? CloseStatus
+        {
+            get
+            {
+                lock (_lockObject)
+                {
+                    if (_closeStatus != null)
+                    {
+                        return _closeStatus;
+                    }
+                    if (_disposed || _aborted || _cancelled)
+                    {
+                        return null;
+                    }
+                    return GetCloseStatusLocked();
+                }
+            }
+        }
+
+        public override string? CloseStatusDescription
+        {
+            get
+            {
+                lock (_lockObject)
+                {
+                    if (_closeStatusDescription != null)
+                    {
+                        return _closeStatusDescription;
+                    }
+                    if (_disposed || _aborted || _cancelled)
+                    {
+                        return null;
+                    }
+                    return GetCloseStatusDescriptionLocked();
+                }
+            }
+        }
+
         public override string? SubProtocol
         {
             get
             {
-#if FEATURE_WASM_THREADS
-                lock (_thisLock)
+                ThrowIfDisposed();
+                lock (_lockObject)
                 {
-#endif
-                    ThrowIfDisposed();
                     if (_innerWebSocket == null) throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
-#if FEATURE_WASM_THREADS
-                } //lock
-#endif
-
-#if FEATURE_WASM_THREADS
-                return _innerWebSocket.SynchronizationContext.Send(BrowserInterop.GetProtocol, _innerWebSocket);
-#else
-                return BrowserInterop.GetProtocol(_innerWebSocket);
-#endif
-
+                    return BrowserInterop.GetProtocol(_innerWebSocket);
+                } // lock
             }
         }
 
@@ -114,45 +135,24 @@ namespace System.Net.WebSockets
 
         internal Task ConnectAsync(Uri uri, List<string>? requestedSubProtocols, CancellationToken cancellationToken)
         {
-            ThrowIfDisposed();
-            if (FastState != WebSocketState.None)
+            lock (_lockObject)
             {
-                throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
-            }
-#if FEATURE_WASM_THREADS
-            JSHost.CurrentOrMainJSSynchronizationContext.Send(_ =>
-            {
-                lock (_thisLock)
-                {
-                    ThrowIfDisposed();
-                    FastState = WebSocketState.Connecting;
-                    CreateCore(uri, requestedSubProtocols);
-                }
-            }, null);
+                cancellationToken.ThrowIfCancellationRequested();
+                ThrowIfDisposed();
 
-            return JSHost.CurrentOrMainJSSynchronizationContext.Post(() =>
-            {
-                return ConnectAsyncCore(cancellationToken);
-            });
-#else
-            FastState = WebSocketState.Connecting;
+                if (FastState != WebSocketState.None)
+                {
+                    throw new InvalidOperationException(SR.net_WebSockets_AlreadyStarted);
+                }
+                FastState = WebSocketState.Connecting;
+            } // lock
             CreateCore(uri, requestedSubProtocols);
             return ConnectAsyncCore(cancellationToken);
-#endif
         }
 
         public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            ThrowIfDisposed();
-
-            // fast check of previous _state instead of GetReadyState(), the readyState would be validated on JS side
-            if (FastState != WebSocketState.Open)
-            {
-                throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
-            }
-
+            // this validation should be synchronous
             if (messageType != WebSocketMessageType.Binary && messageType != WebSocketMessageType.Text)
             {
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_Argument_InvalidMessageType,
@@ -166,247 +166,135 @@ namespace System.Net.WebSockets
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-#if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Post(() =>
-            {
-                Task promise;
-                lock (_thisLock)
-                {
-                    ThrowIfDisposed();
-                    promise = SendAsyncCore(buffer, messageType, endOfMessage, cancellationToken);
-                } //lock will unlock synchronously before promise is resolved!
-
-                return promise;
-            });
-#else
+            ThrowIfDisposed();
             return SendAsyncCore(buffer, messageType, endOfMessage, cancellationToken);
-#endif
         }
 
         public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromException<WebSocketReceiveResult>(new OperationCanceledException(cancellationToken));
-            }
-            ThrowIfDisposed();
-            // fast check of previous _state instead of GetReadyState(), the readyState would be validated on JS side
-            var fastState = FastState;
-            if (fastState != WebSocketState.Open && fastState != WebSocketState.CloseSent)
-            {
-                throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, fastState, "Open, CloseSent"));
-            }
-
+            // this validation should be synchronous
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
-#if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Post(() =>
-            {
-                Task<WebSocketReceiveResult> promise;
-                lock (_thisLock)
-                {
-                    ThrowIfDisposed();
-                    promise = ReceiveAsyncCore(buffer, cancellationToken);
-                } //lock will unlock synchronously before task is resolved!
-                return promise;
-            });
-#else
+            ThrowIfDisposed();
             return ReceiveAsyncCore(buffer, cancellationToken);
-#endif
         }
 
         public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
+            // this validation should be synchronous
+            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
+
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
-            var fastState = FastState;
-            if (fastState == WebSocketState.None || fastState == WebSocketState.Closed)
-            {
-                throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, fastState, "Connecting, Open, CloseSent, Aborted"));
-            }
-
-#if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Post(() =>
-            {
-                Task promise;
-                lock (_thisLock)
-                {
-                    ThrowIfDisposed();
-#endif
-                    var state = State;
-                    if (state == WebSocketState.None || state == WebSocketState.Closed)
-                    {
-                        throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, state, "Connecting, Open, CloseSent, Aborted"));
-                    }
-                    if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.Aborted)
-                    {
-                        return Task.CompletedTask;
-                    }
-#if FEATURE_WASM_THREADS
-                    promise = CloseAsyncCore(closeStatus, statusDescription, false, cancellationToken);
-                } //lock will unlock synchronously before task is resolved!
-                return promise;
-            });
-#else
             return CloseAsyncCore(closeStatus, statusDescription, false, cancellationToken);
-#endif
         }
 
         public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken)
         {
+            // this validation should be synchronous
+            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
+
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
 
-            WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
-
-            var fastState = FastState;
-            if (fastState == WebSocketState.None || fastState == WebSocketState.Closed)
-            {
-                throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, fastState, "Connecting, Open, CloseSent, Aborted"));
-            }
-
-#if FEATURE_WASM_THREADS
-            return _innerWebSocket!.SynchronizationContext.Post(() =>
-            {
-                Task promise;
-                lock (_thisLock)
-                {
-                    ThrowIfDisposed();
-#endif
-                    var state = State;
-                    if (state == WebSocketState.None || state == WebSocketState.Closed)
-                    {
-                        throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, state, "Connecting, Open, CloseSent, Aborted"));
-                    }
-                    if (state != WebSocketState.Open && state != WebSocketState.Connecting && state != WebSocketState.Aborted && state != WebSocketState.CloseSent)
-                    {
-                        return Task.CompletedTask;
-                    }
-
-#if FEATURE_WASM_THREADS
-                    promise = CloseAsyncCore(closeStatus, statusDescription, state != WebSocketState.Aborted, cancellationToken);
-                } //lock will unlock synchronously before task is resolved!
-                return promise;
-            });
-#else
-            return CloseAsyncCore(closeStatus, statusDescription, state != WebSocketState.Aborted, cancellationToken);
-#endif
+            return CloseAsyncCore(closeStatus, statusDescription, true, cancellationToken);
         }
 
         public override void Abort()
         {
-#if FEATURE_WASM_THREADS
-            if (_disposed)
+            lock (_lockObject)
             {
-                return;
-            }
-            _innerWebSocket?.SynchronizationContext.Send(static (BrowserWebSocket self) =>
-            {
-                lock (self._thisLock)
+                if (_disposed || _aborted)
                 {
-                    AbortCore(self, self.State);
+                    return;
                 }
-            }, this);
-#else
-            AbortCore(this, this.State);
-#endif
+                var fastState = FastState;
+                if (fastState == WebSocketState.Closed || fastState == WebSocketState.Aborted)
+                {
+                    return;
+                }
+
+                FastState = WebSocketState.Aborted;
+                _aborted = true;
+
+                // We can call this cross-thread from inside the lock, because there are no callbacks which would lock the same lock
+                // This will reject/resolve some promises
+                BrowserInterop.WebSocketAbort(_innerWebSocket!);
+            }
         }
 
         public override void Dispose()
         {
-#if FEATURE_WASM_THREADS
-            if (_disposed)
+            WebSocketState state;
+            lock (_lockObject)
             {
-                return;
-            }
-            _innerWebSocket?.SynchronizationContext.Send(static (BrowserWebSocket self) =>
-            {
-                lock (self._thisLock)
+                if (_disposed)
                 {
-                    DisposeCore(self);
+                    return;
                 }
-            }, this);
+                _disposed = true;
+                state = State;
+
+                if (state < WebSocketState.Closed && state != WebSocketState.None)
+                {
+                    _shouldAbort = true;
+                    FastState = WebSocketState.Aborted;
+                }
+                else if (state != WebSocketState.Aborted)
+                {
+                    FastState = WebSocketState.Closed;
+                }
+
+            } // lock
+
+            static void Cleanup(object? _state)
+            {
+                var self = (BrowserWebSocket)_state!;
+                var state = self.State;
+                lock (self._lockObject)
+                {
+                    if (self._shouldAbort && !self._aborted)
+                    {
+                        self._aborted = true;
+                        self._shouldAbort = false;
+
+                        // We can call this inside the lock, because there are no callbacks which would lock the same lock
+                        // This will reject/resolve some promises
+                        BrowserInterop.WebSocketAbort(self._innerWebSocket!);
+                    }
+                }
+                self._innerWebSocket?.Dispose();
+                self.responseStatusHandle?.Dispose();
+            }
+
+#if FEATURE_WASM_MANAGED_THREADS
+            // if this is finalizer thread, we need to postpone the abort -> dispose
+            _innerWebSocket?.SynchronizationContext.Post(Cleanup, this);
 #else
-            DisposeCore(this);
+            Cleanup(this);
 #endif
         }
 
         private void ThrowIfDisposed()
         {
-#if FEATURE_WASM_THREADS
-            lock (_thisLock)
+            lock (_lockObject)
             {
-#endif
                 ObjectDisposedException.ThrowIf(_disposed, this);
-#if FEATURE_WASM_THREADS
-            } //lock
-#endif
+            } // lock
         }
 
-        #region methods always called on one thread only, exclusively
-
-        private static void DisposeCore(BrowserWebSocket self)
-        {
-            if (!self._disposed)
-            {
-                var state = self.State;
-                self._disposed = true;
-                if (state < WebSocketState.Aborted && state != WebSocketState.None)
-                {
-                    AbortCore(self, state);
-                }
-                if (self.FastState != WebSocketState.Aborted)
-                {
-                    self.FastState = WebSocketState.Closed;
-                }
-                self._innerWebSocket?.Dispose();
-                self._innerWebSocket = null;
-                self.responseStatusHandle?.Dispose();
-            }
-        }
-
-        private static void AbortCore(BrowserWebSocket self, WebSocketState currentState)
-        {
-            if (!self._disposed && currentState != WebSocketState.Closed)
-            {
-                self.FastState = WebSocketState.Aborted;
-                self._aborted = true;
-                if (self._innerWebSocket != null)
-                {
-                    BrowserInterop.WebSocketAbort(self._innerWebSocket!);
-                }
-            }
-        }
 
         private void CreateCore(Uri uri, List<string>? requestedSubProtocols)
         {
             try
             {
                 string[]? subProtocols = requestedSubProtocols?.ToArray();
-                var onClose = (int code, string reason) =>
-                {
-                    _closeStatus = (WebSocketCloseStatus)code;
-                    _closeStatusDescription = reason;
-#if FEATURE_WASM_THREADS
-                    lock (_thisLock)
-                    {
-#endif
-                        WebSocketState state = State;
-                        if (state == WebSocketState.Connecting || state == WebSocketState.Open || state == WebSocketState.CloseSent)
-                        {
-                            FastState = WebSocketState.Closed;
-                        }
-#if FEATURE_WASM_THREADS
-                    } //lock
-#endif
-                };
 
                 Memory<int> responseMemory = new Memory<int>(responseStatus);
 
                 responseStatusHandle = responseMemory.Pin();
-                _innerWebSocket = BrowserInterop.UnsafeCreate(uri.ToString(), subProtocols, responseStatusHandle.Value, onClose);
+                _innerWebSocket = BrowserInterop.UnsafeCreate(uri.ToString(), subProtocols, responseStatusHandle.Value);
             }
             catch (Exception)
             {
@@ -417,55 +305,52 @@ namespace System.Net.WebSockets
 
         private async Task ConnectAsyncCore(CancellationToken cancellationToken)
         {
-#if FEATURE_WASM_THREADS
-            lock (_thisLock)
+            Task openTask;
+
+            lock (_lockObject)
             {
-#endif
                 if (_aborted)
                 {
                     FastState = WebSocketState.Closed;
                     throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure);
                 }
                 ThrowIfDisposed();
-#if FEATURE_WASM_THREADS
-            } //lock
-#endif
+
+                openTask = BrowserInterop.WebSocketOpen(_innerWebSocket!);
+            } // lock
 
             try
             {
-                var openTask = BrowserInterop.WebSocketOpen(_innerWebSocket!);
+                await CancellationHelper(openTask!, cancellationToken, WebSocketState.Connecting).ConfigureAwait(false);
 
-                await CancelationHelper(openTask!, cancellationToken, FastState).ConfigureAwait(true);
-#if FEATURE_WASM_THREADS
-                lock (_thisLock)
+                lock (_lockObject)
                 {
-#endif
-                    if (State == WebSocketState.Connecting)
+                    WebSocketState state = State;
+                    if (state == WebSocketState.Connecting)
                     {
                         FastState = WebSocketState.Open;
                     }
-#if FEATURE_WASM_THREADS
-                } //lock
-#endif
+                } // lock
             }
             catch (OperationCanceledException ex)
             {
-#if FEATURE_WASM_THREADS
-                lock (_thisLock)
+                lock (_lockObject)
                 {
-#endif
                     FastState = WebSocketState.Closed;
                     if (_aborted)
                     {
                         throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, ex);
                     }
-#if FEATURE_WASM_THREADS
-                } //lock
-#endif
+                } // lock
+
                 throw;
             }
             catch (Exception)
             {
+                lock (_lockObject)
+                {
+                    FastState = WebSocketState.Closed;
+                }
                 Dispose();
                 throw;
             }
@@ -473,161 +358,282 @@ namespace System.Net.WebSockets
 
         private async Task SendAsyncCore(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
         {
+            WebSocketState previousState = WebSocketState.None;
+            Task? sendTask;
+            MemoryHandle? pinBuffer = null;
+
             try
             {
-                var sendTask = BrowserInterop.UnsafeSendSync(_innerWebSocket!, buffer, messageType, endOfMessage);
-                if (sendTask != null)
+                lock (_lockObject)
                 {
-                    await CancelationHelper(sendTask, cancellationToken, FastState).ConfigureAwait(true);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ThrowIfDisposed();
+
+                    previousState = FastState;
+                    if (previousState != WebSocketState.Open && previousState != WebSocketState.CloseReceived)
+                    {
+                        throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
+                    }
+
+                    if (buffer.Count == 0)
+                    {
+                        sendTask = BrowserInterop.WebSocketSend(_innerWebSocket!, IntPtr.Zero, 0, (int)messageType, endOfMessage);
+                    }
+                    else
+                    {
+                        Memory<byte> bufferMemory = buffer.AsMemory();
+                        pinBuffer = bufferMemory.Pin();
+                        sendTask = BrowserInterop.UnsafeSend(_innerWebSocket!, pinBuffer.Value, bufferMemory.Length, messageType, endOfMessage);
+                    }
                 }
-#if FEATURE_WASM_THREADS
-                // return synchronously, not supported with MT
-                else
+
+                if (sendTask != null)  // this is optimization for single-threaded build, see resolvedPromise() in web-socket.ts. Null means synchronously resolved.
                 {
-                    Environment.FailFast("BrowserWebSocket.SendAsyncCore: Unexpected synchronous result");
+                    await CancellationHelper(sendTask, cancellationToken, previousState, pinBuffer).ConfigureAwait(false);
                 }
-#endif
             }
             catch (JSException ex)
             {
                 if (ex.Message.StartsWith("InvalidState:"))
                 {
-                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, State, "Open"), ex);
+                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Open"), ex);
                 }
                 throw new WebSocketException(WebSocketError.NativeError, ex);
+            }
+            finally
+            {
+                // must be after await!
+                pinBuffer?.Dispose();
             }
         }
 
         private async Task<WebSocketReceiveResult> ReceiveAsyncCore(ArraySegment<byte> buffer, CancellationToken cancellationToken)
         {
+            WebSocketState previousState = WebSocketState.None;
+            Task? receiveTask;
+            MemoryHandle? pinBuffer = null;
             try
             {
-                Memory<byte> bufferMemory = buffer.AsMemory();
-                using (MemoryHandle pinBuffer = bufferMemory.Pin())
+                lock (_lockObject)
                 {
-                    var receiveTask = BrowserInterop.ReceiveUnsafeSync(_innerWebSocket!, pinBuffer, bufferMemory.Length);
-                    if (receiveTask != null)
-                    {
-                        await CancelationHelper(receiveTask, cancellationToken, FastState).ConfigureAwait(true);
-                    }
-#if FEATURE_WASM_THREADS
-                    // return synchronously, not supported with MT
-                    else
-                    {
-                        Environment.FailFast("BrowserWebSocket.ReceiveAsyncCore: Unexpected synchronous result");
-                    }
-#endif
+                    cancellationToken.ThrowIfCancellationRequested();
+                    ThrowIfDisposed();
 
-
-#if FEATURE_WASM_THREADS
-                    lock (_thisLock)
+                    previousState = FastState;
+                    if (previousState != WebSocketState.Open && previousState != WebSocketState.CloseSent)
                     {
-#endif
-                        return ConvertResponse(this);
-#if FEATURE_WASM_THREADS
-                    } //lock
-#endif
+                        throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Open, CloseSent"));
+                    }
+
+                    Memory<byte> bufferMemory = buffer.AsMemory();
+                    pinBuffer = bufferMemory.Pin();
+                    receiveTask = BrowserInterop.ReceiveUnsafe(_innerWebSocket!, pinBuffer.Value, bufferMemory.Length);
                 }
+
+                if (receiveTask != null)  // this is optimization for single-threaded build, see resolvedPromise() in web-socket.ts. Null means synchronously resolved.
+                {
+                    await CancellationHelper(receiveTask, cancellationToken, previousState, pinBuffer).ConfigureAwait(false);
+                }
+
+                return ConvertResponse();
             }
             catch (JSException ex)
             {
                 if (ex.Message.StartsWith("InvalidState:"))
                 {
-                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, State, "Open, CloseSent"), ex);
+                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Open, CloseSent"), ex);
                 }
                 throw new WebSocketException(WebSocketError.NativeError, ex);
             }
+            finally
+            {
+                // must be after await!
+                pinBuffer?.Dispose();
+            }
         }
 
-        private static WebSocketReceiveResult ConvertResponse(BrowserWebSocket self)
+        private WebSocketReceiveResult ConvertResponse()
         {
             const int countIndex = 0;
             const int typeIndex = 1;
             const int endIndex = 2;
 
-            WebSocketMessageType messageType = (WebSocketMessageType)self.responseStatus[typeIndex];
+            int count;
+            WebSocketMessageType messageType;
+            bool isEnd = responseStatus[endIndex] != 0;
+            lock (_lockObject)
+            {
+                messageType = (WebSocketMessageType)responseStatus[typeIndex];
+                count = responseStatus[countIndex];
+                if (messageType == WebSocketMessageType.Close)
+                {
+                    _closeReceived = true;
+                    FastState = _closeSent ? WebSocketState.Closed : WebSocketState.CloseReceived;
+                    ForceReadCloseStatusLocked();
+                }
+            } // lock
+
             if (messageType == WebSocketMessageType.Close)
             {
-                return new WebSocketReceiveResult(self.responseStatus[countIndex], messageType, self.responseStatus[endIndex] != 0, self.CloseStatus, self.CloseStatusDescription);
-            }
-            return new WebSocketReceiveResult(self.responseStatus[countIndex], messageType, self.responseStatus[endIndex] != 0);
-        }
-
-        private async Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, bool waitForCloseReceived, CancellationToken cancellationToken)
-        {
-            _closeStatus = closeStatus;
-            _closeStatusDescription = statusDescription;
-
-            var closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, waitForCloseReceived);
-            if (closeTask != null)
-            {
-                await CancelationHelper(closeTask, cancellationToken, FastState).ConfigureAwait(true);
-            }
-#if FEATURE_WASM_THREADS
-            // return synchronously, not supported with MT
-            else
-            {
-                Environment.FailFast("BrowserWebSocket.CloseAsyncCore: Unexpected synchronous result");
-            }
-#endif
-
-#if FEATURE_WASM_THREADS
-            lock (_thisLock)
-            {
-#endif
-                var state = State;
-                if (state == WebSocketState.Open || state == WebSocketState.Connecting || state == WebSocketState.CloseSent)
+                switch (_closeStatus ?? WebSocketCloseStatus.NormalClosure)
                 {
-                    FastState = waitForCloseReceived ? WebSocketState.Closed : WebSocketState.CloseSent;
+                    case WebSocketCloseStatus.NormalClosure:
+                    case WebSocketCloseStatus.Empty:
+                        return new WebSocketReceiveResult(count, messageType, isEnd, _closeStatus, _closeStatusDescription);
+                    case WebSocketCloseStatus.InvalidMessageType:
+                    case WebSocketCloseStatus.InvalidPayloadData:
+                        throw new WebSocketException(WebSocketError.InvalidMessageType, _closeStatusDescription);
+                    case WebSocketCloseStatus.EndpointUnavailable:
+                        throw new WebSocketException(WebSocketError.NotAWebSocket, _closeStatusDescription);
+                    case WebSocketCloseStatus.ProtocolError:
+                        throw new WebSocketException(WebSocketError.UnsupportedProtocol, _closeStatusDescription);
+                    case WebSocketCloseStatus.InternalServerError:
+                        throw new WebSocketException(WebSocketError.Faulted, _closeStatusDescription);
+                    default:
+                        throw new WebSocketException(WebSocketError.NativeError, (int)_closeStatus!.Value, _closeStatusDescription);
                 }
-#if FEATURE_WASM_THREADS
-            } //lock
-#endif
+            }
+            return new WebSocketReceiveResult(count, messageType, isEnd);
         }
 
-        private async Task CancelationHelper(Task jsTask, CancellationToken cancellationToken, WebSocketState previousState)
+        private async Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, bool fullClose, CancellationToken cancellationToken)
         {
-            if (jsTask.IsCompletedSuccessfully)
+            Task? closeTask;
+            WebSocketState previousState;
+            lock (_lockObject)
             {
-                return;
+                cancellationToken.ThrowIfCancellationRequested();
+
+                previousState = FastState;
+                if (_aborted)
+                {
+                    return;
+                }
+                if (!_closeReceived)
+                {
+                    _closeStatus = closeStatus;
+                    _closeStatusDescription = statusDescription;
+                }
+                if (previousState == WebSocketState.None || previousState == WebSocketState.Closed)
+                {
+                    throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, previousState, "Connecting, Open, CloseSent, Aborted"));
+                }
+
+                _closeSent = true;
+
+                closeTask = BrowserInterop.WebSocketClose(_innerWebSocket!, (int)closeStatus, statusDescription, fullClose);
             }
+
+            if (closeTask != null) // this is optimization for single-threaded build, see resolvedPromise() in web-socket.ts. Null means synchronously resolved.
+            {
+                await CancellationHelper(closeTask, cancellationToken, previousState).ConfigureAwait(false);
+            }
+
+            if (fullClose)
+            {
+                lock (_lockObject)
+                {
+                    _closeReceived = true;
+                    ForceReadCloseStatusLocked();
+                    _ = State;
+                }
+            }
+        }
+
+        private async Task CancellationHelper(Task promise, CancellationToken cancellationToken, WebSocketState previousState, IDisposable? disposable = null)
+        {
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (promise.IsCompletedSuccessfully)
+                {
+                    disposable?.Dispose();
+                    return;
+                }
+                if (promise.IsCompleted)
+                {
+                    // don't have to register for cancelation
+                    await promise.ConfigureAwait(false);
+                    return;
+                }
+
                 using (var receiveRegistration = cancellationToken.Register(static s =>
                 {
                     CancelablePromise.CancelPromise((Task)s!);
-                }, jsTask))
+                }, promise))
                 {
-                    await jsTask.ConfigureAwait(true);
+                    await promise.ConfigureAwait(false);
                     return;
                 }
             }
-            catch (JSException ex)
+            catch (Exception ex)
             {
-                if (State == WebSocketState.Aborted)
+                lock (_lockObject)
                 {
-                    throw new OperationCanceledException(nameof(WebSocketState.Aborted), ex);
+                    var state = State;
+                    ForceReadCloseStatusLocked();
+                    if (state == WebSocketState.Aborted)
+                    {
+                        throw new OperationCanceledException(nameof(WebSocketState.Aborted), ex);
+                    }
+                    if (ex is OperationCanceledException || cancellationToken.IsCancellationRequested || ex.Message == "Error: OperationCanceledException")
+                    {
+                        if(state != WebSocketState.Closed)
+                        {
+                            FastState = WebSocketState.Aborted;
+                        }
+                        _cancelled = true;
+                        throw new OperationCanceledException("The operation was cancelled.", ex, cancellationToken);
+                    }
+                    if (previousState == WebSocketState.Connecting)
+                    {
+                        throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, ex);
+                    }
+                    throw new WebSocketException(WebSocketError.NativeError, ex);
                 }
-
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    FastState = WebSocketState.Aborted;
-                    throw new OperationCanceledException(cancellationToken);
-                }
-                if (ex.Message == "Error: OperationCanceledException")
-                {
-                    FastState = WebSocketState.Aborted;
-                    throw new OperationCanceledException("The operation was cancelled.", ex, cancellationToken);
-                }
-                if (previousState == WebSocketState.Connecting)
-                {
-                    throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, ex);
-                }
-                throw new WebSocketException(WebSocketError.NativeError, ex);
+            }
+            finally
+            {
+                disposable?.Dispose();
             }
         }
 
-        private static WebSocketState GetReadyState(JSObject innerWebSocket)
+        // needs to be called with locked _lockObject
+        private void ForceReadCloseStatusLocked()
+        {
+            if (!_disposed && _closeStatus == null)
+            {
+                GetCloseStatusLocked();
+                GetCloseStatusDescriptionLocked();
+            }
+        }
+
+        // needs to be called with locked _lockObject
+        private WebSocketCloseStatus? GetCloseStatusLocked()
+        {
+            ThrowIfDisposed();
+            var closeStatus = BrowserInterop.GetCloseStatus(_innerWebSocket);
+            if (closeStatus != null && _closeStatus == null)
+            {
+                _closeStatus = closeStatus;
+            }
+            return _closeStatus;
+        }
+
+        // needs to be called with locked _lockObject
+        private string? GetCloseStatusDescriptionLocked()
+        {
+            ThrowIfDisposed();
+            var closeStatusDescription = BrowserInterop.GetCloseStatusDescription(_innerWebSocket);
+            if (closeStatusDescription != null && _closeStatusDescription == null)
+            {
+                _closeStatusDescription = closeStatusDescription;
+            }
+            return _closeStatusDescription;
+        }
+
+        // needs to be called with locked _lockObject
+        private static WebSocketState GetReadyStateLocked(JSObject innerWebSocket)
         {
             var readyState = BrowserInterop.GetReadyState(innerWebSocket);
             // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
@@ -641,6 +647,5 @@ namespace System.Net.WebSockets
             };
         }
 
-        #endregion
     }
 }

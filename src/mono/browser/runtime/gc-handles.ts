@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { js_import_wrapper_by_fn_handle } from "./invoke-js";
+import { assert_js_interop, js_import_wrapper_by_fn_handle } from "./invoke-js";
 import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
 import { GCHandle, GCHandleNull, JSHandle, WeakRefInternal } from "./types/internal";
@@ -70,6 +70,7 @@ export function mono_wasm_get_jsobj_from_js_handle(js_handle: JSHandle): any {
 }
 
 export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
+    assert_js_interop();
     if (js_obj[cs_owned_js_handle_symbol]) {
         return js_obj[cs_owned_js_handle_symbol];
     }
@@ -90,6 +91,7 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
 }
 
 export function register_with_jsv_handle(js_obj: any, jsv_handle: JSHandle) {
+    assert_js_interop();
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
     _cs_owned_objects_by_jsv_handle[0 - <any>jsv_handle] = js_obj;
 
@@ -118,6 +120,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle): void {
 }
 
 export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
+    assert_js_interop();
     // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
     owner[js_owned_gc_handle_symbol] = gc_handle;
 
@@ -134,6 +137,7 @@ export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
 }
 
 export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipManaged?: boolean): void {
+    assert_js_interop();
     // The JS object associated with this gc_handle has been collected by the JS GC.
     // As such, it's not possible for this gc_handle to be invoked by JS anymore, so
     //  we can release the tracking weakref (it's null now, by definition),
@@ -147,7 +151,9 @@ export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipMana
         }
     }
     if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle) && !skipManaged) {
-        runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle(gc_handle);
+        if (loaderHelpers.is_runtime_running()) {
+            runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle(gc_handle);
+        }
     }
     if (is_gcv_handle(gc_handle)) {
         free_gcv_handle(gc_handle);
@@ -161,7 +167,7 @@ export function assert_not_disposed(result: any): GCHandle {
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
-    if (loaderHelpers.is_exited()) {
+    if (!loaderHelpers.is_runtime_running()) {
         // We're shutting down, so don't bother doing anything else.
         return;
     }
@@ -181,7 +187,7 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
 }
 
 export function assertNoProxies(): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
     mono_assert(_js_owned_object_table.size === 0, "There should be no proxies on this thread.");
     mono_assert(_cs_owned_objects_by_js_handle.length === 1, "There should be no proxies on this thread.");
     mono_assert(_cs_owned_objects_by_jsv_handle.length === 1, "There should be no proxies on this thread.");

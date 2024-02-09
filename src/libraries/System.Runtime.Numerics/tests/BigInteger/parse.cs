@@ -37,7 +37,8 @@ namespace System.Numerics.Tests
         public static void RunParseToStringTests(CultureInfo culture)
         {
             Test();
-            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 byte[] tempByteArray1 = new byte[0];
@@ -101,7 +102,9 @@ namespace System.Numerics.Tests
         public void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
             Test();
-            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
                 Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
@@ -114,10 +117,16 @@ namespace System.Numerics.Tests
         public void Parse_EmptySubspan_Fails()
         {
             Test();
-            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
             void Test()
             {
-                Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out BigInteger result));
+                BigInteger result;
+
+                Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out result));
+                Assert.Equal(0, result);
+
+                Assert.False(BigInteger.TryParse([], out result));
                 Assert.Equal(0, result);
             }
         }
@@ -139,6 +148,16 @@ namespace System.Numerics.Tests
             Assert.Equal(new BigInteger(-2), result);
             Assert.Equal(-2, result);
 
+            Assert.True(BigInteger.TryParse("F", NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-1, result);
+
+            for (int i = 0; i < 40; i++)
+            {
+                string test = "F" + new string('0', i);
+                Assert.True(BigInteger.TryParse(test, NumberStyles.HexNumber, null, out result));
+                Assert.Equal(BigInteger.MinusOne << (4 * i), result);
+            }
+
             Assert.Throws<FormatException>(() =>
             {
                 BigInteger.Parse("zzz", NumberStyles.HexNumber);
@@ -148,6 +167,46 @@ namespace System.Numerics.Tests
             {
                 BigInteger.Parse("1", NumberStyles.AllowHexSpecifier | NumberStyles.AllowCurrencySymbol);
             });
+        }
+
+        [Theory]
+        [InlineData("1", -1L)]
+        [InlineData("01", 1L)]
+        [InlineData("10000000000000000000000000000000", (long)int.MinValue)]
+        [InlineData("010000000000000000000000000000001", 0x080000001L)]
+        [InlineData("111111111111111111111111111111110", -2L)]
+        [InlineData("0111111111111111111111111111111111", 0x1FFFFFFFFL)]
+        public void Parse_BinSpecialCases(string input, long expectedValue)
+        {
+            Assert.True(BigInteger.TryParse(input, NumberStyles.BinaryNumber, null, out BigInteger result));
+            Assert.Equal(expectedValue, result);
+        }
+
+        public static IEnumerable<object[]> RegressionIssueRuntime94610_TestData()
+        {
+            yield return new object[]
+            {
+                new string('9', 865),
+            };
+
+            yield return new object[]
+            {
+                new string('9', 20161),
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(RegressionIssueRuntime94610_TestData))]
+        public void RegressionIssueRuntime94610(string text)
+        {
+            // Regression test for: https://github.com/dotnet/runtime/issues/94610
+            Test();
+            BigIntTools.Utils.RunWithFakeThreshold(Number.s_naiveThreshold, 0, Test);
+
+            void Test()
+            {
+                VerifyParseToString(text, NumberStyles.Integer, true);
+            }
         }
 
         private static void RunFormatProviderParseStrings()
@@ -429,6 +488,12 @@ namespace System.Numerics.Tests
             for (int i = 0; i < s_samples; i++)
             {
                 VerifyParseToString(GetBinaryDigitSequence(1, 100, random) + GetRandomInvalidChar(random) + GetBinaryDigitSequence(1, 10, random), ns, false);
+            }
+
+            // Power of 2
+            for (int i = 0; i < 70; i++)
+            {
+                VerifyParseToString("1" + new string('0', i), ns, true);
             }
         }
 
@@ -782,7 +847,7 @@ namespace System.Numerics.Tests
         {
             string result = string.Empty;
             int size = random.Next(min, max);
-            
+
             for (int i = 0; i < size; i++)
             {
                 result += random.Next(0, 2);

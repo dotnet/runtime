@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions

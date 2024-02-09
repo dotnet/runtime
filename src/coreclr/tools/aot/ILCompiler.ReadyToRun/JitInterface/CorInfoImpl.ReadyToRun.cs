@@ -3357,5 +3357,21 @@ namespace Internal.JitInterface
                 throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
             }
         }
+
+        private bool notifyMethodInfoUsage(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            Debug.Assert(method != null);
+            // If ftn isn't within the current version bubble we can't rely on methodInfo being
+            // stable e.g. mark calls as no-return if their IL has no rets.
+            return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void getThreadLocalStaticInfo_NativeAOT(CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo)
+        {
+            // Implemented for NativeAOT only for now.
+        }
+#pragma warning restore CA1822 // Mark members as static
     }
 }

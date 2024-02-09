@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="iid">The IID (Interface ID) to query for.</param>
         /// <param name="ppObj">The resulting interface.</param>
         /// <returns>Returns an HRESULT represents the success of the operation.</returns>
-        /// <seealso cref="Marshal.QueryInterface(nint, ref readonly Guid, out nint)"/>
+        /// <seealso cref="Marshal.QueryInterface(nint, in Guid, out nint)"/>
         public int QueryInterface(void* instancePtr, in Guid iid, out void* ppObj);
 
         /// <summary>

@@ -209,7 +209,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         [StackTraceHidden]
         [DebuggerStepThrough]
-        private static object? ChkCastAny(void* toTypeHnd, object? obj)
+        internal static object? ChkCastAny(void* toTypeHnd, object? obj)
         {
             CastResult result;
 

@@ -7,21 +7,6 @@
 #pragma hdrstop
 #endif
 
-// Obtain constant pointer from a tree
-static void* GetConstantPointer(Compiler* comp, GenTree* tree)
-{
-    void* cns = nullptr;
-    if (tree->gtEffectiveVal()->IsCnsIntOrI())
-    {
-        cns = (void*)tree->gtEffectiveVal()->AsIntCon()->IconValue();
-    }
-    else if (comp->vnStore->IsVNConstant(tree->gtVNPair.GetLiberal()))
-    {
-        cns = (void*)comp->vnStore->CoercedConstantValue<ssize_t>(tree->gtVNPair.GetLiberal());
-    }
-    return cns;
-}
-
 // Save expression to a local and append it as the last statement in exprBlock
 static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprBlock, DebugInfo& debugInfo)
 {
@@ -32,6 +17,55 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
 
     return comp->gtNewLclVarNode(tmpNum);
 };
+
+//------------------------------------------------------------------------------
+// SplitAtTreeAndReplaceItWithLocal : Split block at the given tree and replace it with a local
+//    See comments in gtSplitTree and fgSplitBlockBeforeTree
+//    TODO: use this function in more places in this file.
+//
+// Arguments:
+//    comp        - Compiler instance
+//    block       - Block to split
+//    stmt        - Statement containing the tree to split at
+//    tree        - Tree to split at
+//    topBlock    - [out] Top block after the split
+//    bottomBlock - [out] Bottom block after the split
+//
+// Return Value:
+//    Number of the local that replaces the tree
+//
+static unsigned SplitAtTreeAndReplaceItWithLocal(
+    Compiler* comp, BasicBlock* block, Statement* stmt, GenTree* tree, BasicBlock** topBlock, BasicBlock** bottomBlock)
+{
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    block                    = comp->fgSplitBlockBeforeTree(block, stmt, tree, &newFirstStmt, &callUse);
+    assert(prevBb != nullptr && block != nullptr);
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        comp->fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    // Grab a temp to store the result.
+    const unsigned tmpNum         = comp->lvaGrabTemp(true DEBUGARG("replacement local"));
+    comp->lvaTable[tmpNum].lvType = tree->TypeGet();
+
+    // Replace the original call with that temp
+    *callUse = comp->gtNewLclvNode(tmpNum, tree->TypeGet());
+
+    comp->fgMorphStmtBlockOps(block, stmt);
+    comp->gtUpdateStmtSideEffects(stmt);
+
+    *topBlock    = prevBb;
+    *bottomBlock = block;
+    return tmpNum;
+}
 
 //------------------------------------------------------------------------------
 // gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
@@ -60,7 +94,6 @@ GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* 
     // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
     // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
     impInlineRoot()->setMethodHasExpRuntimeLookup();
-    helperCall->SetExpRuntimeLookup();
     if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
     {
         JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
@@ -118,13 +151,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 {
     BasicBlock* block = *pBlock;
 
-    if (!call->IsHelperCall() || !call->IsExpRuntimeLookup())
+    if (!call->IsRuntimeLookupHelperCall(this))
     {
         return false;
     }
 
-    // Clear ExpRuntimeLookup flag so we won't miss any runtime lookup that needs partial expansion
-    call->ClearExpRuntimeLookup();
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED);
 
     if (call->IsTailCall())
     {
@@ -137,14 +169,16 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     //
     //   type = call(genericCtx, signatureCns);
     //
-    void* signature = GetConstantPointer(this, call->gtArgs.GetArgByIndex(1)->GetNode());
-    if (signature == nullptr)
+    const GenTree* signatureNode = call->gtArgs.GetArgByIndex(1)->GetNode();
+    if (!signatureNode->IsCnsIntOrI())
     {
-        // Technically, it is possible (e.g. it was CSE'd and then VN was erased), but for Debug mode we
-        // want to catch such cases as we really don't want to emit just a fallback call - it's too slow
+        // We expect the signature to be a constant node here (it's marked as DONT_CSE)
+        // It's still correct if JIT decides to violate this assumption, but we really
+        // don't want it to happen, hence, the assert.
         assert(!"can't restore signature argument value");
         return false;
     }
+    void* signature = reinterpret_cast<void*>(signatureNode->AsIntCon()->IconValue());
 
     JITDUMP("Expanding runtime lookup for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum)
     DISPTREE(call)
@@ -286,7 +320,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // Fallback basic block
     GenTree*    fallbackValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), call);
     BasicBlock* fallbackBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->GetFalseTarget(), true);
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fallbackValueDef, debugInfo, nullcheckBb->Next(), true);
 
     assert(fallbackBb->JumpsToNext());
     fallbackBb->SetFlags(BBF_NONE_QUIRK);
@@ -297,6 +331,9 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     // Fast-path basic block
     GenTree*    fastpathValueDef = gtNewStoreLclVarNode(rtLookupLcl->GetLclNum(), fastPathValueClone);
     BasicBlock* fastPathBb       = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, fastpathValueDef, debugInfo, block);
+
+    // Set nullcheckBb's false jump target
+    nullcheckBb->SetFalseTarget(fastPathBb);
 
     BasicBlock* sizeCheckBb = nullptr;
     if (needsSizeCheck)
@@ -339,6 +376,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
         // sizeCheckBb fails - jump to fallbackBb
         sizeCheckBb = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo, fallbackBb);
+        sizeCheckBb->SetFalseTarget(nullcheckBb);
     }
 
     //
@@ -397,17 +435,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
     }
 
-    //
-    // Update loop info
-    //
-    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-    if (needsSizeCheck)
-    {
-        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    }
-
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
     assert(BasicBlock::sameEHRegion(prevBb, nullcheckBb));
@@ -438,6 +465,14 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
+    // Always expand for NativeAOT because the slow TLS access helper will not be generated by NativeAOT
+    const bool isNativeAOT = IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+    if (isNativeAOT)
+    {
+        return fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCallNativeAOT>(
+            false /* expand rarely run blocks for NativeAOT */);
+    }
+
     if (opts.OptimizationDisabled())
     {
         JITDUMP("Optimizations aren't allowed - bail out.\n")
@@ -457,6 +492,236 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 }
 
 //------------------------------------------------------------------------------
+// fgExpandThreadLocalAccessForCallNativeAOT : Expand the access of tlsRoot needed
+//  to access fields marked with [ThreadLocal].
+//
+// Arguments:
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
+//
+//
+// Returns:
+//    true if we expanded any field access, false otherwise.
+//
+bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    BasicBlock*     block  = *pBlock;
+    CorInfoHelpFunc helper = call->GetHelperNum();
+
+    const bool isExpTLSFieldAccess = (helper == CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR);
+    if (!call->IsHelperCall() || !isExpTLSFieldAccess)
+    {
+        return false;
+    }
+
+    JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
+
+    CORINFO_THREAD_STATIC_INFO_NATIVEAOT threadStaticInfo;
+    memset(&threadStaticInfo, 0, sizeof(CORINFO_THREAD_STATIC_INFO_NATIVEAOT));
+
+    info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo);
+
+    JITDUMP("tlsRootObject= %p\n", dspPtr(threadStaticInfo.tlsRootObject.addr));
+    JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticInfo.tlsIndexObject.addr));
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", dspOffset(threadStaticInfo.offsetOfThreadLocalStoragePointer));
+    JITDUMP("threadStaticBaseSlow= %p\n", dspPtr(threadStaticInfo.threadStaticBaseSlow.addr));
+
+    // Split block right before the call tree
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    DebugInfo   debugInfo    = stmt->GetDebugInfo();
+    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    *pBlock                  = block;
+    var_types callType       = call->TypeGet();
+    assert(prevBb != nullptr && block != nullptr);
+
+    unsigned finalLclNum = lvaGrabTemp(true DEBUGARG("Final offset"));
+    // Note, `tlsRoot` refers to the TLS blob object, which is an unpinned managed object,
+    // thus the type of the local is TYP_REF
+    lvaTable[finalLclNum].lvType = TYP_REF;
+    GenTree* finalLcl            = gtNewLclVarNode(finalLclNum);
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse.
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+#ifdef TARGET_64BIT
+    // prevBb (BBJ_NONE):                                               [weight: 1.0]
+    //      ...
+    //
+    // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
+    //      fastPathValue = [tlsRootAddress]
+    //      if (fastPathValue != nullptr)
+    //          goto fastPathBb;
+    //
+    // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
+    //      tlsRoot = HelperCall();
+    //      goto block;
+    //
+    // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
+    //      tlsRoot = fastPathValue;
+    //
+    // block (...):                                                     [weight: 1.0]
+    //      use(tlsRoot);
+    // ...
+
+    GenTree*             tlsRootAddr   = nullptr;
+    CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
+
+    if (TargetOS::IsWindows)
+    {
+        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+        GenTree* tlsValue = gtNewIconHandleNode(threadStaticInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue          = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
+
+        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
+        dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
+
+        // Add the dllRef to produce thread local storage reference for coreclr
+        tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+
+        // Base of coreclr's thread local storage
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        // This resolves to an offset which is TYP_INT
+        GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
+        tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
+
+        // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
+        tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+    }
+    else if (TargetOS::IsUnix)
+    {
+        // Code sequence to access thread local variable on linux/x64:
+        //      data16
+        //      lea      rdi, 0x7FE5C418CD28  ; tlsRootObject
+        //      data16 data16
+        //      call     _tls_get_addr
+        //
+        // This sequence along with `data16` prefix is expected by the linker so it
+        // will patch these with TLS access.
+        GenTree* tls_get_addr_val =
+            gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
+        tls_get_addr_val->SetContained();
+
+        // GenTreeCall* tlsRefCall = gtNewCallNode(CT_ tls_get_addr_val, TYP_I_IMPL);
+        GenTreeCall* tlsRefCall = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+        tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
+        // //
+
+        // This is an indirect call which takes an argument.
+        // Populate and set the ABI appropriately.
+        assert(tlsRootObject.handle != 0);
+        GenTree* tlsArg = gtNewIconNode((size_t)tlsRootObject.handle, TYP_I_IMPL);
+        tlsArg->gtFlags |= GTF_ICON_TLSGD_OFFSET;
+        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
+
+        fgMorphArgs(tlsRefCall);
+
+        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+        tlsRootAddr = tlsRefCall;
+    }
+    else
+    {
+        unreached();
+    }
+
+    // Cache the TlsRootAddr value
+    unsigned tlsRootAddrLclNum         = lvaGrabTemp(true DEBUGARG("TlsRootAddr access"));
+    lvaTable[tlsRootAddrLclNum].lvType = TYP_I_IMPL;
+    GenTree* tlsRootAddrDef            = gtNewStoreLclVarNode(tlsRootAddrLclNum, tlsRootAddr);
+    GenTree* tlsRootAddrUse            = gtNewLclVarNode(tlsRootAddrLclNum);
+
+    // See comments near finalLclNum above regarding TYP_REF
+    GenTree* tlsRootVal = gtNewIndir(TYP_REF, tlsRootAddrUse, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    GenTree* tlsRootDef = gtNewStoreLclVarNode(finalLclNum, tlsRootVal);
+
+    GenTree* tlsRootNullCond = gtNewOperNode(GT_NE, TYP_INT, gtCloneExpr(finalLcl), gtNewIconNode(0, TYP_I_IMPL));
+    tlsRootNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, tlsRootNullCond);
+
+    // tlsRootNullCondBB
+    BasicBlock* tlsRootNullCondBB = fgNewBBFromTreeAfter(BBJ_COND, prevBb, tlsRootAddrDef, debugInfo);
+    fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootNullCond));
+    fgInsertStmtAfter(tlsRootNullCondBB, tlsRootNullCondBB->firstStmt(), fgNewStmtFromTree(tlsRootDef));
+
+    CORINFO_CONST_LOOKUP threadStaticSlowHelper = threadStaticInfo.threadStaticBaseSlow;
+
+    // See comments near finalLclNum above regarding TYP_REF
+    GenTreeCall* slowHelper =
+        gtNewIndCallNode(gtNewIconHandleNode((size_t)threadStaticSlowHelper.addr, GTF_ICON_TLS_HDL), TYP_REF);
+    GenTree* helperArg = gtClone(tlsRootAddrUse);
+    slowHelper->gtArgs.PushBack(this, NewCallArg::Primitive(helperArg));
+    fgMorphArgs(slowHelper);
+
+    // fallbackBb
+    GenTree*    fallbackValueDef = gtNewStoreLclVarNode(finalLclNum, slowHelper);
+    BasicBlock* fallbackBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, tlsRootNullCondBB, fallbackValueDef, debugInfo, block, true);
+
+    GenTree*    fastPathValueDef = gtNewStoreLclVarNode(finalLclNum, gtCloneExpr(finalLcl));
+    BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
+
+    *callUse = finalLcl;
+
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    //
+    // Update preds in all new blocks
+    //
+    fgAddRefPred(fallbackBb, tlsRootNullCondBB);
+    fgAddRefPred(fastPathBb, tlsRootNullCondBB);
+
+    fgAddRefPred(block, fallbackBb);
+    fgAddRefPred(block, fastPathBb);
+
+    tlsRootNullCondBB->SetTrueTarget(fastPathBb);
+    tlsRootNullCondBB->SetFalseTarget(fallbackBb);
+
+    // Inherit the weights
+    block->inheritWeight(prevBb);
+    tlsRootNullCondBB->inheritWeight(prevBb);
+    fastPathBb->inheritWeight(prevBb);
+
+    // fallback will just execute first time
+    fallbackBb->bbSetRunRarely();
+
+    fgRemoveRefPred(block, prevBb);
+    fgAddRefPred(tlsRootNullCondBB, prevBb);
+    prevBb->SetTarget(tlsRootNullCondBB);
+
+    // All blocks are expected to be in the same EH region
+    assert(BasicBlock::sameEHRegion(prevBb, block));
+    assert(BasicBlock::sameEHRegion(prevBb, tlsRootNullCondBB));
+    assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+    JITDUMP("tlsRootNullCondBB: " FMT_BB "\n", tlsRootNullCondBB->bbNum);
+    JITDUMP("fallbackBb: " FMT_BB "\n", fallbackBb->bbNum);
+    JITDUMP("fastPathBb: " FMT_BB "\n", fastPathBb->bbNum);
+#else
+    unreached();
+
+#endif // TARGET_64BIT
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // fgExpandThreadLocalAccessForCall : Expand the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
 //  or CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED, that access fields marked with [ThreadLocal].
 //
@@ -468,7 +733,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //
 //
 // Returns:
-//    PhaseStatus indicating what, if anything, was changed.
+//    true if we expanded any field access, false otherwise.
 //
 // Notes:
 //    A cache is stored in thread local storage (TLS) of coreclr. It maps the typeIndex (embedded in
@@ -481,6 +746,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
+    assert(!opts.IsReadyToRun());
+
     BasicBlock* block = *pBlock;
 
     CorInfoHelpFunc helper = call->GetHelperNum();
@@ -490,8 +757,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     {
         return false;
     }
-
-    assert(!opts.IsReadyToRun());
 
     if (TargetOS::IsUnix)
     {
@@ -568,19 +833,17 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     fgMorphStmtBlockOps(block, stmt);
     gtUpdateStmtSideEffects(stmt);
 
-    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* tlsValue                        = nullptr;
-    unsigned tlsLclNum                       = lvaGrabTemp(true DEBUGARG("TLS access"));
-    lvaTable[tlsLclNum].lvType               = TYP_I_IMPL;
-    GenTree* maxThreadStaticBlocksValue      = nullptr;
-    GenTree* threadStaticBlocksValue         = nullptr;
-    GenTree* tlsValueDef                     = nullptr;
+    GenTree* tlsValue                   = nullptr;
+    unsigned tlsLclNum                  = lvaGrabTemp(true DEBUGARG("TLS access"));
+    lvaTable[tlsLclNum].lvType          = TYP_I_IMPL;
+    GenTree* maxThreadStaticBlocksValue = nullptr;
+    GenTree* threadStaticBlocksValue    = nullptr;
+    GenTree* tlsValueDef                = nullptr;
 
     if (TargetOS::IsWindows)
     {
         size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
         GenTree* dllRef        = nullptr;
-
         if (tlsIndexValue != 0)
         {
             dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
@@ -700,6 +963,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     threadStaticBlocksValue = gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
+    GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
     GenTree* maxThreadStaticBlocksCond =
         gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
@@ -780,11 +1044,13 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewStoreLclVarNode(threadStaticBlockLclNum, gtCloneExpr(threadStaticBlockBaseLclValueUse));
     BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, fastPathValueDef, debugInfo, block, true);
 
-    // Set maxThreadStaticBlocksCondBB's true jump target
+    // Set maxThreadStaticBlocksCondBB's jump targets
     maxThreadStaticBlocksCondBB->SetTrueTarget(fallbackBb);
+    maxThreadStaticBlocksCondBB->SetFalseTarget(threadStaticBlockNullCondBB);
 
-    // Set threadStaticBlockNullCondBB's true jump target
+    // Set threadStaticBlockNullCondBB's jump targets
     threadStaticBlockNullCondBB->SetTrueTarget(fastPathBb);
+    threadStaticBlockNullCondBB->SetFalseTarget(fallbackBb);
 
     //
     // Update preds in all new blocks
@@ -811,14 +1077,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 
     // fallback will just execute first time
     fallbackBb->bbSetRunRarely();
-
-    //
-    // Update loop info if loop table is known to be valid
-    //
-    maxThreadStaticBlocksCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-    fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -861,8 +1119,7 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 
     if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
     {
-        fgReorderBlocks(/* useProfileData */ false);
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        fgRenumberBlocks();
     }
 
     return result;
@@ -1095,8 +1352,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     // Fallback basic block
     // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
     // that only accepts a single argument
-    BasicBlock* helperCallBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->GetFalseTarget(), true);
+    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, call, debugInfo, isInitedBb->Next(), true);
     assert(helperCallBb->JumpsToNext());
     helperCallBb->SetFlags(BBF_NONE_QUIRK);
 
@@ -1172,6 +1428,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     fgAddRefPred(isInitedBb, prevBb);
 
     // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
+    isInitedBb->SetFalseTarget(helperCallBb);
     fgAddRefPred(helperCallBb, isInitedBb);
 
     //
@@ -1181,13 +1438,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->bbSetRunRarely();
-
-    //
-    // Update loop info if loop table is known to be valid
-    //
-
-    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
-    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1370,12 +1620,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
-    // Split block right before the call tree (this is a standard pattern we use in helperexpansion.cpp)
-    BasicBlock* prevBb       = block;
-    GenTree**   callUse      = nullptr;
-    Statement*  newFirstStmt = nullptr;
-    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
-    assert(prevBb != nullptr && block != nullptr);
+    BasicBlock*    prevBb;
+    const unsigned resultLclNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &prevBb, &block);
+
     *pBlock = block;
 
     // If we suddenly need to use these arguments, we'll have to reload them from the call
@@ -1383,26 +1630,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     srcLen = nullptr;
     srcPtr = nullptr;
 
-    // Block ops inserted by the split need to be morphed here since we are after morph.
-    // We cannot morph stmt yet as we may modify it further below, and the morphing
-    // could invalidate callUse
-    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
-    {
-        fgMorphStmtBlockOps(block, newFirstStmt);
-        newFirstStmt = newFirstStmt->GetNextStmt();
-    }
-
     // We don't need this flag anymore.
     call->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
-
-    // Grab a temp to store the result.
-    // The result corresponds the number of bytes written to dstPtr (int32).
-    assert(call->TypeIs(TYP_INT));
-    const unsigned resultLclNum   = lvaGrabTemp(true DEBUGARG("local for result"));
-    lvaTable[resultLclNum].lvType = TYP_INT;
-    *callUse                      = gtNewLclvNode(resultLclNum, TYP_INT);
-    fgMorphStmtBlockOps(block, stmt);
-    gtUpdateStmtSideEffects(stmt);
 
     // srcLenU8 is the length of the string literal in chars (UTF16)
     // but we're going to use the same value as the "bytesWritten" result in the fast path and in the length check.
@@ -1451,7 +1680,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // In theory, we could just emit the const U8 data to the data section and use GT_BLK here
     // but that would be a bit less efficient since we would have to load the data from memory.
     //
-    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->GetFalseTarget());
+    BasicBlock* fastpathBb = fgNewBBafter(BBJ_ALWAYS, lengthCheckBb, true, lengthCheckBb->Next());
     assert(fastpathBb->JumpsToNext());
     fastpathBb->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
 
@@ -1514,6 +1743,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     assert(prevBb->JumpsToNext());
     fgAddRefPred(lengthCheckBb, prevBb);
     // lengthCheckBb has two successors: block and fastpathBb
+    lengthCheckBb->SetFalseTarget(fastpathBb);
     fgAddRefPred(fastpathBb, lengthCheckBb);
     fgAddRefPred(block, lengthCheckBb);
     // fastpathBb flows into block
@@ -1525,12 +1755,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     lengthCheckBb->inheritWeight(prevBb);
     fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
-
-    //
-    // Update bbNatLoopNum for all new blocks
-    //
-    lengthCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-    fastpathBb->bbNatLoopNum    = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1544,5 +1768,655 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     }
 
     JITDUMP("ReadUtf8: succesfully expanded!\n")
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// fgLateCastExpansion: Partially inline various cast helpers, e.g.:
+//
+//    tmp = CORINFO_HELP_ISINSTANCEOFINTERFACE(clsHandle, obj);
+//
+// into:
+//
+//    tmp = obj;
+//    if ((obj != null) && (obj->pMT != likelyClassHandle))
+//    {
+//        tmp = CORINFO_HELP_ISINSTANCEOFINTERFACE(clsHandle, obj);
+//    }
+//
+// The goal is to move cast expansion logic from the importer to this phase, for now,
+// this phase only supports "isinst" and for profiled casts only.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+PhaseStatus Compiler::fgLateCastExpansion()
+{
+    if (!doesMethodHaveExpandableCasts() || opts.OptimizationDisabled())
+    {
+        // Nothing to expand in the current method
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // TODO-InlineCast: should we still inline some trivial cases even in cold blocks?
+    const bool skipForRarelyRunBlocks = true;
+    return fgExpandHelper<&Compiler::fgLateCastExpansionForCall>(skipForRarelyRunBlocks);
+}
+
+enum class TypeCheckFailedAction
+{
+    ReturnNull,
+    CallHelper,
+    CallHelper_Specialized,
+    CallHelper_AlwaysThrows
+};
+
+enum class TypeCheckPassedAction
+{
+    ReturnObj,
+    ReturnNull,
+};
+
+// Some arbitrary limit on the number of guesses we can make
+// The actual number of guesses is usually much smaller
+#define MAX_CAST_GUESSES 8
+
+//------------------------------------------------------------------------------
+// PickCandidatesForTypeCheck: picks classes to use as fast type checks against
+//    the object being casted. The function also defines the strategy to follow
+//    if the type checks fail or pass.
+//
+// Arguments:
+//    comp               - Compiler instance
+//    castHelper         - Cast helper call to expand
+//    candidates         - [out] Classes (guesses) to use in the fast path (up to MAX_CAST_GUESSES)
+//    commonCls          - [out] Common denominator class for the fast and the fallback paths.
+//    likelihoods        - [out] Likelihoods of successful type checks [0..100]
+//    typeCheckFailed    - [out] Action to perform if the type check fails
+//    typeCheckPassed    - [out] Action to perform if the type check passes
+//
+// Returns:
+//    Likely class handle or NO_CLASS_HANDLE
+//
+static int PickCandidatesForTypeCheck(Compiler*              comp,
+                                      GenTreeCall*           castHelper,
+                                      CORINFO_CLASS_HANDLE*  candidates,
+                                      CORINFO_CLASS_HANDLE*  commonCls,
+                                      unsigned*              likelihoods,
+                                      TypeCheckFailedAction* typeCheckFailed,
+                                      TypeCheckPassedAction* typeCheckPassed)
+{
+    if (!castHelper->IsHelperCall() || ((castHelper->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) == 0))
+    {
+        // It's not eligible for expansion (already expanded in importer)
+        // To be removed once we move cast expansion here completely.
+        return 0;
+    }
+
+    // Helper calls are never tail calls
+    assert(!castHelper->IsTailCall());
+
+    // is it "castclass" or "isinst"?
+    bool isCastClass;
+
+    const unsigned helper = castHelper->GetHelperNum();
+    switch (helper)
+    {
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTCLASS:
+            isCastClass = true;
+            break;
+
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            isCastClass = false;
+            break;
+
+        // These are never expanded:
+        // CORINFO_HELP_ISINSTANCEOF_EXCEPTION
+        // CORINFO_HELP_CHKCASTCLASS_SPECIAL
+        // CORINFO_HELP_READYTORUN_ISINSTANCEOF,
+        // CORINFO_HELP_READYTORUN_CHKCAST,
+
+        // Other helper calls are not cast helpers
+
+        default:
+            return 0;
+    }
+
+    // First, let's grab the expected class we're casting to/checking instance of:
+    // E.g. "call CORINFO_HELP_ISINSTANCEOFCLASS(castToCls, obj)"
+    GenTree*             clsArg    = castHelper->gtArgs.GetUserArgByIndex(0)->GetNode();
+    CORINFO_CLASS_HANDLE castToCls = comp->gtGetHelperArgClassHandle(clsArg);
+    if (castToCls == NO_CLASS_HANDLE)
+    {
+        // clsArg doesn't represent a class handle - bail out
+        // TODO-InlineCast: if CSE becomes a problem - move the whole phase after assertion prop,
+        // so we can still rely on VN to get the class handle.
+        JITDUMP("clsArg is not a constant handle - bail out.\n");
+        return 0;
+    }
+
+    // Assume that in the slow path (fallback) we'll always invoke the helper.
+    // In some cases we can optimize this further e.g. either mark it additionally
+    // as no-return (BBJ_THROW) or simply return null.
+    *typeCheckFailed = TypeCheckFailedAction::CallHelper;
+
+    // In most cases, a successful type check will return the object itself
+    // there is just one exception - see below in PGO handling.
+    *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
+
+    // A common denominator class for the fast and the fallback paths
+    // can be used as a class for LCL_VAR storing the result of the expansion.
+    // in most cases it's just the generic "cast to" class.
+    *commonCls = castToCls;
+
+    const unsigned isAbstractFlags = CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT;
+
+    //
+    // Now we need to figure out what classes to use for the fast path, we have 4 options:
+    //  1) If "cast to" class is already exact we can go ahead and make some decisions
+    //  2) If VM can tell us the exact class for this class/interface via getExactClasses - use it
+    //     e.g. NativeAOT can promise us that for e.g. "foo is IMyInterface" foo can only ever be
+    //     MyImpl and no other implementation of IMyInterface can be loaded dynamically.
+    //  3) If we have PGO data and there is a dominating candidate - use it.
+    //  4) Try to speculate and make optimistic guesses
+    //
+    // NOTE: only 2) supports multiple candidates at the moment.
+    //
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 1) If "cast to" class is already exact we can go ahead and make some decisions
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const bool isCastToExact = comp->info.compCompHnd->isExactType(castToCls);
+    if (isCastToExact && ((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY)))
+    {
+        // obj is string
+        // obj is string[]
+        //
+        if ((helper == CORINFO_HELP_CHKCASTCLASS))
+        {
+            // (string)obj
+            //
+            // Fallback for this expansion always throws InvalidCastException
+            // TODO: can we do the same for string[]? (importer did not)
+            *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
+
+            // Assume that exceptions are rare
+            likelihoods[0] = 100;
+
+            // Update the common denominator class to be more exact as
+            // the fallback always throws anyway, so we don't have to worry about what it returns.
+            *commonCls = castToCls;
+        }
+        else
+        {
+            // 50% chance of successful type check (speculative guess)
+            likelihoods[0] = 50;
+        }
+        candidates[0] = castToCls;
+        return 1;
+    }
+    if (isCastToExact && ((helper == CORINFO_HELP_ISINSTANCEOFARRAY) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS)))
+    {
+        // obj is string
+        // obj is string[]
+        //
+        // Fallbacks for these expansions simply return null
+        // TODO: should we keep the helper call for ISINSTANCEOFARRAY like we do for CHKCASTARRAY above?
+        // The logic is copied from the importer.
+        *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
+
+        // We're done, there is no need in consulting with PGO data
+        candidates[0] = castToCls;
+        // 50% chance of successful type check (speculative guess)
+        likelihoods[0] = 50;
+        return 1;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 2) If VM can tell us the exact class for this "cast to" class - use it.
+    //    Just make sure the class is truly exact.
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Let's re-use GDV's threshold on how many guesses we can make (can be 3 by default).
+    const int maxTypeChecks = min(comp->getGDVMaxTypeChecks(), MAX_CAST_GUESSES);
+
+    CORINFO_CLASS_HANDLE exactClasses[MAX_CAST_GUESSES] = {};
+    const int numExactClasses = comp->info.compCompHnd->getExactClasses(castToCls, maxTypeChecks, exactClasses);
+    bool      allTrulyExact   = true;
+    for (int i = 0; i < numExactClasses; i++)
+    {
+        // TODO-InlineCast: we shouldn't need isExactType check, otherwise we skip cases like this:
+        //
+        // if (obj is IMyInterface) { ... }
+        //
+        // class MyClass : IMyInterface
+        // class MySubClass : MyClass
+        //
+        // (and both classes are the only ones implementing the interface)
+        //
+        if (!comp->info.compCompHnd->isExactType(exactClasses[i]))
+        {
+            allTrulyExact = false;
+            break;
+        }
+    }
+
+    if ((numExactClasses > 0) && allTrulyExact)
+    {
+        // We know all exact classes, but we don't know the likelihoods
+        // TODO-InlineCast: check if we also have PGO data around (a rare case for getExactClasses,
+        // since it's NativeAOT-only at the moment, and we rarely have static profile data for it).
+        for (int i = 0; i < numExactClasses; i++)
+        {
+            likelihoods[i] = 100 / (numExactClasses + 1);
+            // E.g. 3 classes - 25%,25%,25% and 25% for the fallback
+            // A small integer rounding error is not a big deal here.
+        }
+
+        memcpy(candidates, exactClasses, numExactClasses * sizeof(CORINFO_CLASS_HANDLE));
+        if ((helper == CORINFO_HELP_CHKCASTINTERFACE) || (helper == CORINFO_HELP_CHKCASTCLASS))
+        {
+            // Fallback call is only needed for castclass and only to throw InvalidCastException
+            *typeCheckFailed = TypeCheckFailedAction::CallHelper_AlwaysThrows;
+
+            // Since the fallback is cold, recalculate the likelihoods
+            for (int i = 0; i < numExactClasses; i++)
+            {
+                likelihoods[i] = 100 / numExactClasses;
+                // E.g. 3 classes - 33%,33%,33%
+            }
+
+            if (numExactClasses == 1)
+            {
+                // Update the common denominator class to be more exact
+                // since the fallback always throws, and we have just one possible candidate.
+                *commonCls = exactClasses[0];
+            }
+        }
+        else if ((helper == CORINFO_HELP_ISINSTANCEOFINTERFACE) || (helper == CORINFO_HELP_ISINSTANCEOFCLASS))
+        {
+            // Fallback for isinst simply returns null here
+            *typeCheckFailed = TypeCheckFailedAction::ReturnNull;
+
+            if (numExactClasses == 1)
+            {
+                // Update the common denominator class to be more exact
+                // since the fallback is just null, and we have just one possible candidate.
+                *commonCls = exactClasses[0];
+            }
+        }
+        return numExactClasses;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 3) Consult with PGO data
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    CORINFO_CLASS_HANDLE likelyClasses[MAX_CAST_GUESSES]     = {};
+    unsigned             likelyLikelihoods[MAX_CAST_GUESSES] = {};
+    int                  likelyClassCount                    = 0;
+    comp->pickGDV(castHelper, castHelper->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
+                  likelyLikelihoods);
+
+    if (likelyClassCount > 0)
+    {
+        // TODO-InlineCast: support multiple candidates, for now always pick the first one
+        // It's already supported, but it requires some careful performance testing to enable.
+        //
+        likelihoods[0] = likelyLikelihoods[0];
+        candidates[0]  = likelyClasses[0];
+
+        // Protect from stale static PGO data if a candidate becomes abstract/interface
+        if ((likelyClasses[0] == NO_CLASS_HANDLE) ||
+            (comp->info.compCompHnd->getClassAttribs(likelyClasses[0]) & isAbstractFlags) != 0)
+        {
+            return 0;
+        }
+
+        // We don't fully trust PGO data, so let's check it via compareTypesForCast
+        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(candidates[0], castToCls);
+        if (castResult == TypeCompareState::May)
+        {
+            // TODO-InlineCast: do we need to check for May here? Conservatively assume that we do.
+            JITDUMP("compareTypesForCast returned May for this candidate\n");
+            return 0;
+        }
+        if (castResult == TypeCompareState::Must)
+        {
+            // return actual object on successful type check
+            *typeCheckPassed = TypeCheckPassedAction::ReturnObj;
+            return 1;
+        }
+        if (castResult == TypeCompareState::MustNot)
+        {
+            // Our likely candidate never passes the type check (may happen with PGO-driven expansion),
+            if (!isCastClass)
+            {
+                // return null on successful type check
+                *typeCheckPassed = TypeCheckPassedAction::ReturnNull;
+                return 1;
+            }
+            // give up on castclass - it's going to throw InvalidCastException anyway
+            return 0;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 4) Last chance: speculative guesses
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    switch (helper)
+    {
+        case CORINFO_HELP_CHKCASTINTERFACE:
+            // Nothing to speculate here, e.g. (IDisposable)obj
+            return 0;
+
+        case CORINFO_HELP_CHKCASTARRAY:
+            // CHKCASTARRAY against exact classes is already handled above, so it's not exact here.
+            //
+            //   (int[])obj - can we use int[] as a guess? No! It's an overhead if obj is uint[]
+            //                or any int-backed enum
+            return 0;
+
+        case CORINFO_HELP_CHKCASTCLASS:
+            // CHKCASTCLASS against exact classes is already handled above, so it's not exact here.
+            //
+            // let's use castToCls as a guess, we might regress some cases, but at least we know that unrelated
+            // types are going to throw InvalidCastException, so we can assume the overhead happens rarely.
+            candidates[0] = castToCls;
+            // 50% chance of successful type check (speculative guess)
+            likelihoods[0] = 50;
+            //
+            // A small optimization - use a slightly faster fallback which assumes that we've already checked
+            // for null and for castToCls itself, so it won't do it again.
+            *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
+            return 1;
+
+        case CORINFO_HELP_CHKCASTANY:
+            // Same as CORINFO_HELP_CHKCASTCLASS above, the only difference - let's check castToCls for
+            // being non-abstract and non-interface first as it makes no sense to speculate on those.
+            if ((comp->info.compCompHnd->getClassAttribs(castToCls) & isAbstractFlags) != 0)
+            {
+                return 0;
+            }
+            candidates[0] = castToCls;
+            // 50% chance of successful type check (speculative guess)
+            likelihoods[0] = 50;
+            return 1;
+
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            // Nothing to speculate here, e.g. obj is IDisposable
+            return 0;
+
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+            // ISINSTANCEOFARRAY against exact classes is already handled above, so it's not exact here.
+            //
+            //  obj is int[] - can we use int[] as a guess? No! It's an overhead if obj is uint[]
+            //                 or any int-backed enum[]
+            return 0;
+
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+            // ISINSTANCEOFCLASS against exact classes is already handled above, so it's not exact here.
+            //
+            //  obj is MyClass - can we use MyClass as a guess? No! It's an overhead for any other type except
+            //                   MyClass and its subclasses - chances of hitting that overhead are too high.
+            //
+            return 0;
+
+        case CORINFO_HELP_ISINSTANCEOFANY:
+            // ditto + type variance, etc.
+            return 0;
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------------
+// fgLateCastExpansionForCall : Expand specific cast helper, see
+//    fgLateCastExpansion's comments.
+//
+// Arguments:
+//    block - Block containing the cast helper to expand
+//    stmt  - Statement containing the cast helper
+//    call  - The cast helper
+//
+// Returns:
+//    True if expanded, false otherwise.
+//
+bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    TypeCheckFailedAction typeCheckFailedAction;
+    TypeCheckPassedAction typeCheckPassedAction;
+    CORINFO_CLASS_HANDLE  commonCls;
+    CORINFO_CLASS_HANDLE  expectedExactClasses[MAX_CAST_GUESSES] = {};
+    unsigned              likelihoods[MAX_CAST_GUESSES]          = {};
+
+    const int numOfCandidates = PickCandidatesForTypeCheck(this, call, expectedExactClasses, &commonCls, likelihoods,
+                                                           &typeCheckFailedAction, &typeCheckPassedAction);
+    if (numOfCandidates == 0)
+    {
+        return false;
+    }
+
+    BasicBlock* block = *pBlock;
+    JITDUMP("Expanding cast helper call in " FMT_BB "...\n", block->bbNum);
+    DISPTREE(call);
+    JITDUMP("\n");
+
+    DebugInfo debugInfo = stmt->GetDebugInfo();
+
+    BasicBlock*    firstBb;
+    BasicBlock*    lastBb;
+    const unsigned tmpNum = SplitAtTreeAndReplaceItWithLocal(this, block, stmt, call, &firstBb, &lastBb);
+
+    // TODO-InlineCast: we can't set tmp's class because it's assigned to obj before we can make any assumptions
+    // we need to slightly reshape the expansion to make it work. Although, it's possible that there is no value
+    // in class in this late phase.
+    // lvaSetClass(tmpNum, commonCls);
+
+    GenTree* tmpNode = gtNewLclvNode(tmpNum, call->TypeGet());
+    *pBlock          = lastBb;
+
+    // We're going to expand this "isinst" like this:
+    //
+    // prevBb:                                      [weight: 1.0]
+    //     ...
+    //
+    // nullcheckBb (BBJ_COND):                      [weight: 1.0]
+    //     tmp = obj;
+    //     if (tmp == null)
+    //         goto lastBb;
+    //
+    // typeCheckBb (BBJ_COND):                      [weight: 0.5]
+    //     if (tmp->pMT == likelyCls)
+    //         goto typeCheckSucceedBb;
+    //     goto (either next type check or fallbackBb)
+    //
+    // < there can be multiple typeCheckBbs >
+    //
+    // fallbackBb (BBJ_ALWAYS):                     [weight: <profile> or 0]
+    //     tmp = helper_call(expectedCls, obj);
+    //     goto lastBb;
+    //     // NOTE: as an optimization we can omit the call and return null instead
+    //     // or mark the call as no-return in certain cases.
+    //
+    //
+    // typeCheckSucceedBb (BBJ_ALWAYS):             [weight: <profile>]
+    //     no-op (or tmp = null; in case of 'MustNot')
+    //
+    // lastBb (BBJ_any):                            [weight: 1.0]
+    //     use(tmp);
+    //
+
+    // Block 1: nullcheckBb
+    // TODO-InlineCast: assertionprop should leave us a mark that objArg is never null, so we can omit this check
+    // it's too late to rely on upstream phases to do this for us (unless we do optRepeat).
+    GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, tmpNode, gtNewNull());
+    nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
+    BasicBlock* nullcheckBb = fgNewBBFromTreeAfter(BBJ_COND, firstBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
+                                                   debugInfo, lastBb, true);
+
+    // The very first statement in the whole expansion is to assign obj to tmp.
+    // We assume it's the value we're going to return in most cases.
+    GenTree*   originalObj = gtCloneExpr(call->gtArgs.GetUserArgByIndex(1)->GetNode());
+    Statement* assignTmp   = fgNewStmtAtBeg(nullcheckBb, gtNewTempStore(tmpNum, originalObj), debugInfo);
+    gtSetStmtInfo(assignTmp);
+    fgSetStmtSeq(assignTmp);
+
+    // Block 2: typeCheckBb(s)
+    // TODO-InlineCast: if likelyCls == expectedCls we can consider saving to a local to re-use.
+
+    BasicBlock* typeChecksBbs[MAX_CAST_GUESSES] = {};
+    BasicBlock* lastTypeCheckBb                 = nullcheckBb;
+    for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
+    {
+        GenTree* likelyClsNode = gtNewIconEmbClsHndNode(expectedExactClasses[candidateId]);
+        GenTree* mtCheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewMethodTableLookup(gtCloneExpr(tmpNode)), likelyClsNode);
+        mtCheck->gtFlags |= GTF_RELOP_JMP_USED;
+        GenTree* jtrue             = gtNewOperNode(GT_JTRUE, TYP_VOID, mtCheck);
+        typeChecksBbs[candidateId] = fgNewBBFromTreeAfter(BBJ_COND, lastTypeCheckBb, jtrue, debugInfo, lastBb, true);
+        lastTypeCheckBb            = typeChecksBbs[candidateId];
+    }
+
+    // Block 3: fallbackBb
+    BasicBlock* fallbackBb;
+    if (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows)
+    {
+        // fallback call is used only to throw InvalidCastException
+        call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, lastTypeCheckBb, call, debugInfo, nullptr, true);
+    }
+    else if (typeCheckFailedAction == TypeCheckFailedAction::ReturnNull)
+    {
+        // if fallback call is not needed, we just assign null to tmp
+        GenTree* fallbackTree = gtNewTempStore(tmpNum, gtNewNull());
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, lastBb, true);
+    }
+    else
+    {
+        if (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_Specialized)
+        {
+            // A slightly faster fallback which assumes that we've already checked
+            // for null and for castToCls itself.
+            call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL);
+        }
+        GenTree* fallbackTree = gtNewTempStore(tmpNum, call);
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, lastTypeCheckBb, fallbackTree, debugInfo, lastBb, true);
+    }
+
+    // Block 4: typeCheckSucceedBb
+    GenTree* typeCheckSucceedTree;
+    if (typeCheckPassedAction == TypeCheckPassedAction::ReturnNull)
+    {
+        typeCheckSucceedTree = gtNewTempStore(tmpNum, gtNewNull());
+    }
+    else
+    {
+        assert(typeCheckPassedAction == TypeCheckPassedAction::ReturnObj);
+        // No-op because tmp was already assigned to obj
+        typeCheckSucceedTree = gtNewNothingNode();
+    }
+    BasicBlock* typeCheckSucceedBb =
+        fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
+
+    //
+    // Wire up the blocks
+    //
+    firstBb->SetTarget(nullcheckBb);
+    nullcheckBb->SetTrueTarget(lastBb);
+    nullcheckBb->SetFalseTarget(typeChecksBbs[0]);
+
+    // Tricky case - wire up multiple type check blocks (in most cases there is only one)
+    for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
+    {
+        BasicBlock* curTypeCheckBb = typeChecksBbs[candidateId];
+
+        // All type checks jump straight to the typeCheckSucceedBb on success
+        curTypeCheckBb->SetTrueTarget(typeCheckSucceedBb);
+        fgAddRefPred(typeCheckSucceedBb, curTypeCheckBb);
+
+        // or ...
+        if (candidateId == numOfCandidates - 1)
+        {
+            // ... jump to the fallbackBb on last type check's failure
+            curTypeCheckBb->SetFalseTarget(fallbackBb);
+            fgAddRefPred(fallbackBb, curTypeCheckBb);
+        }
+        else
+        {
+            // ... jump to the next type check on failure
+            curTypeCheckBb->SetFalseTarget(typeChecksBbs[candidateId + 1]);
+            fgAddRefPred(typeChecksBbs[candidateId + 1], curTypeCheckBb);
+        }
+    }
+
+    fgRemoveRefPred(lastBb, firstBb);
+    fgAddRefPred(nullcheckBb, firstBb);
+    fgAddRefPred(typeChecksBbs[0], nullcheckBb);
+    fgAddRefPred(lastBb, nullcheckBb);
+    fgAddRefPred(lastBb, typeCheckSucceedBb);
+    if (typeCheckFailedAction != TypeCheckFailedAction::CallHelper_AlwaysThrows)
+    {
+        // if fallbackBb is BBJ_THROW then it has no successors
+        fgAddRefPred(lastBb, fallbackBb);
+    }
+
+    //
+    // Re-distribute weights
+    //
+    nullcheckBb->inheritWeight(firstBb);
+    unsigned totalLikelihood = 0;
+    for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
+    {
+        unsigned    likelihood     = likelihoods[candidateId];
+        BasicBlock* curTypeCheckBb = typeChecksBbs[candidateId];
+        if (candidateId == 0)
+        {
+            // We assume obj is 50%/50% null/not-null (TODO-InlineCast: rely on PGO)
+            // and rely on profile for the slow path.
+            curTypeCheckBb->inheritWeightPercentage(nullcheckBb, 50);
+        }
+        else
+        {
+            BasicBlock* prevTypeCheckBb = typeChecksBbs[candidateId - 1];
+            curTypeCheckBb->inheritWeightPercentage(prevTypeCheckBb, likelihood);
+        }
+        totalLikelihood += likelihood;
+    }
+    fallbackBb->inheritWeightPercentage(lastTypeCheckBb, fallbackBb->KindIs(BBJ_THROW) ? 0 : 100 - totalLikelihood);
+    typeCheckSucceedBb->inheritWeightPercentage(typeChecksBbs[0], totalLikelihood);
+    lastBb->inheritWeight(firstBb);
+
+    //
+    // Validate EH regions
+    //
+    assert(BasicBlock::sameEHRegion(firstBb, lastBb));
+    assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
+    assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
+    assert(BasicBlock::sameEHRegion(firstBb, lastTypeCheckBb));
+
+    // call guarantees that obj is never null, we can drop the nullcheck
+    // by converting it to a BBJ_ALWAYS to typeCheckBb.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) != 0)
+    {
+        fgRemoveStmt(nullcheckBb, nullcheckBb->lastStmt());
+        nullcheckBb->SetKindAndTarget(BBJ_ALWAYS, typeChecksBbs[0]);
+        fgRemoveRefPred(lastBb, nullcheckBb);
+    }
+
+    // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
+    if (fgCanCompactBlocks(firstBb, nullcheckBb))
+    {
+        fgCompactBlocks(firstBb, nullcheckBb);
+    }
+
     return true;
 }

@@ -5,7 +5,7 @@
 
 \begin{document}
 
-\begin{Name}{3}{libunwind}{David Mosberger-Tang}{Programming Library}{Introduction to libunwind}libunwind -- a (mostly) platform-independent unwind API
+\begin{Name}{3libunwind}{libunwind}{David Mosberger-Tang}{Programming Library}{Introduction to libunwind}libunwind -- a (mostly) platform-independent unwind API
 \end{Name}
 
 \section{Synopsis}
@@ -69,14 +69,14 @@
 within a running program.  This is called \emph{local} unwinding.  Say
 you want to unwind the stack while executing in some function
 \Func{F}().  In this function, you would call \Func{unw\_getcontext}()
-to get a snapshot of the CPU registers (machine-state).  Then you
+to get a snapshot of the CPU registers (machine state).  Then you
 initialize an \emph{unwind~cursor} based on this snapshot.  This is
 done with a call to \Func{unw\_init\_local}().  The cursor now points
 to the current frame, that is, the stack frame that corresponds to the
 current activation of function \Func{F}().  The unwind cursor can then
 be moved ``up'' (towards earlier stack frames) by calling
 \Func{unw\_step}().  By repeatedly calling this routine, you can
-uncover the entire call-chain that led to the activation of function
+uncover the entire call chain that led to the activation of function
 \Func{F}().  A positive return value from \Func{unw\_step}() indicates
 that there are more frames in the chain, zero indicates that the end
 of the chain has been reached, and any negative value indicates that
@@ -93,7 +93,7 @@ to \Var{prev} right before calling \Func{unw\_step}().  With this
 approach, the program could move one step ``down'' simply by copying
 back \Var{prev} to \Var{curr} whenever that is necessary.  In the most
 extreme case, a program could maintain a separate cursor for each call
-frame and that way it could move up and down the callframe-chain at
+frame and that way it could move up and down the callframe chain at
 will.
 
 Given an unwind cursor, it is possible to read and write the CPU
@@ -135,11 +135,11 @@ select this optimized version, simply define the macro
 \Const{UNW\_LOCAL\_ONLY} before including the headerfile
 \File{$<$libunwind.h$>$}.  It is perfectly OK for a single program to
 employ both local-only and generic unwinding.  That is, whether or not
-\Const{UNW\_LOCAL\_ONLY} is defined is a choice that each source-file
-(compilation-unit) can make on its own.  Independent of the setting(s)
+\Const{UNW\_LOCAL\_ONLY} is defined is a choice that each source file
+(compilation unit) can make on its own.  Independent of the setting(s)
 of \Const{UNW\_LOCAL\_ONLY}, you'll always link the same library into
 the program (normally \Opt{-l}\File{unwind}).  Furthermore, the
-portion of \Prog{libunwind} that manages unwind-info for dynamically
+portion of \Prog{libunwind} that manages unwind info for dynamically
 generated code is not affected by the setting of
 \Const{UNW\_LOCAL\_ONLY}.
 
@@ -175,10 +175,10 @@ one that is running \Prog{libunwind}.  Remote unwinding is typically
 used by debuggers and instruction-set simulators, for example.
 
 Before you can unwind a remote process, you need to create a new
-address-space object for that process.  This is achieved with the
+address space object for that process.  This is achieved with the
 \Func{unw\_create\_addr\_space}() routine.  The routine takes two
 arguments: a pointer to a set of \emph{accessor} routines and an
-integer that specifies the byte-order of the target process.  The
+integer that specifies the byte order of the target process.  The
 accessor routines provide \Func{libunwind} with the means to
 communicate with the remote process.  In particular, there are
 callbacks to read and write the process's memory, its registers, and
@@ -186,7 +186,7 @@ to access unwind information which may be needed by \Func{libunwind}.
 
 With the address space created, unwinding can be initiated by a call
 to \Func{unw\_init\_remote}().  This routine is very similar to
-\Func{unw\_init\_local}(), except that it takes an address-space
+\Func{unw\_init\_local}(), except that it takes an address space
 object and an opaque pointer as arguments.  The routine uses these
 arguments to fetch the initial machine state.  \Prog{Libunwind} never
 uses the opaque pointer on its own, but instead just passes it on to
@@ -195,7 +195,7 @@ select, e.g., the thread within a process that is to be unwound.
 
 Once a cursor has been initialized with \Func{unw\_init\_remote}(),
 unwinding works exactly like in the local case.  That is, you can use
-\Func{unw\_step}() to move ``up'' in the call-chain, read and write
+\Func{unw\_step}() to move ``up'' in the call chain, read and write
 registers, or resume execution at a particular stack frame by calling
 \Func{unw\_resume}.
 
@@ -242,14 +242,14 @@ that multiple threads may use \Prog{libunwind} simultaneously.
 However, any given cursor may be accessed by only one thread at
 any given time.
 
-To ensure thread-safety, some \Prog{libunwind} routines may have to
+To ensure thread safety, some \Prog{libunwind} routines may have to
 use locking.  Such routines \emph{must~not} be called from signal
 handlers (directly or indirectly) and are therefore \emph{not}
 signal-safe.  The manual page for each \Prog{libunwind} routine
 identifies whether or not it is signal-safe, but as a general rule,
 any routine that may be needed for \emph{local} unwinding is
 signal-safe (e.g., \Func{unw\_step}() for local unwinding is
-signal-safe).  For remote-unwinding, \emph{none} of the
+signal-safe).  For remote unwinding, \emph{none} of the
 \Prog{libunwind} routines are guaranteed to be signal-safe.
 
 
@@ -265,14 +265,14 @@ high-level language exception handling may not work as expected.
 
 The interface for registering and canceling dynamic unwind info has
 been designed for maximum efficiency, so as to minimize the
-performance impact on JIT-compilers.  In particular, both routines are
+performance impact on JIT compilers.  In particular, both routines are
 guaranteed to execute in ``constant time'' (O(1)) and the
-data-structure encapsulating the dynamic unwind info has been designed
+data structure encapsulating the dynamic unwind info has been designed
 to facilitate sharing, such that similar procedures can share much of
 the underlying information.
 
 For more information on the \Prog{libunwind} support for dynamically
-generated code, see \SeeAlso{libunwind-dynamic(3)}.
+generated code, see \SeeAlso{libunwind-dynamic}(3libunwind).
 
 
 \section{Caching of Unwind Info}
@@ -282,7 +282,7 @@ information it needs to perform unwinding.  If a process changes
 during its lifetime, this creates a risk of \Prog{libunwind} using
 stale data.  For example, this would happen if \Prog{libunwind} were
 to cache information about a shared library which later on gets
-unloaded (e.g., via \Cmd{dlclose}{3}).
+unloaded (e.g., via \Cmd{dlclose}{3libunwind}).
 
 To prevent the risk of using stale data, \Prog{libunwind} provides two
 facilities: first, it is possible to flush the cached information
@@ -290,7 +290,7 @@ associated with a specific address range in the target process (or the
 entire address space, if desired).  This functionality is provided by
 \Func{unw\_flush\_cache}().  The second facility is provided by
 \Func{unw\_set\_caching\_policy}(), which lets a program
-select the exact caching policy in use for a given address-space
+select the exact caching policy in use for a given address space
 object.  In particular, by selecting the policy
 \Const{UNW\_CACHE\_NONE}, it is possible to turn off caching
 completely, therefore eliminating the risk of stale data altogether
@@ -308,9 +308,9 @@ local unwinding only.  The cache size can be dynamically changed with
   the unwind target runs on platform \Var{PLAT}.  For example, to unwind
   an IA-64 program, the header file \File{libunwind-ia64.h} should be
   included.
-\item[\Opt{-l}\File{unwind}] Linker-switch to add when building a
+\item[\Opt{-l}\File{unwind}] Linker switch to add when building a
   program that does native (same platform) unwinding.
-\item[\Opt{-l}\File{unwind-}\Var{PLAT}] Linker-switch to add when
+\item[\Opt{-l}\File{unwind-}\Var{PLAT}] Linker switch to add when
   building a program that unwinds a program on platform \Var{PLAT}.
   For example, to (cross-)unwind an IA-64 program, the linker switch
   \File{-lunwind-ia64} should be added.  Note: multiple such switches
@@ -320,33 +320,33 @@ local unwinding only.  The cache size can be dynamically changed with
 
 \section{See Also}
 
-\SeeAlso{libunwind-dynamic(3)},
-\SeeAlso{libunwind-ia64(3)},
-\SeeAlso{libunwind-ptrace(3)},
-\SeeAlso{libunwind-setjmp(3)},
-\SeeAlso{unw\_create\_addr\_space(3)},
-\SeeAlso{unw\_destroy\_addr\_space(3)},
-\SeeAlso{unw\_flush\_cache(3)},
-\SeeAlso{unw\_get\_accessors(3)},
-\SeeAlso{unw\_get\_fpreg(3)},
-\SeeAlso{unw\_get\_proc\_info(3)},
-\SeeAlso{unw\_get\_proc\_name(3)},
-\SeeAlso{unw\_get\_reg(3)},
-\SeeAlso{unw\_getcontext(3)},
-\SeeAlso{unw\_init\_local(3)},
-\SeeAlso{unw\_init\_remote(3)},
-\SeeAlso{unw\_is\_fpreg(3)},
-\SeeAlso{unw\_is\_signal\_frame(3)},
-\SeeAlso{unw\_regname(3)},
-\SeeAlso{unw\_resume(3)},
-\SeeAlso{unw\_set\_caching\_policy(3)},
-\SeeAlso{unw\_set\_cache\_size(3)},
-\SeeAlso{unw\_set\_fpreg(3)},
-\SeeAlso{unw\_set\_reg(3)},
-\SeeAlso{unw\_step(3)},
-\SeeAlso{unw\_strerror(3)},
-\SeeAlso{\_U\_dyn\_register(3)},
-\SeeAlso{\_U\_dyn\_cancel(3)}
+\SeeAlso{libunwind-dynamic}(3libunwind),
+\SeeAlso{libunwind-ia64}(3libunwind),
+\SeeAlso{libunwind-ptrace}(3libunwind),
+\SeeAlso{libunwind-setjmp}(3libunwind),
+\SeeAlso{unw\_create\_addr\_space}(3libunwind),
+\SeeAlso{unw\_destroy\_addr\_space}(3libunwind),
+\SeeAlso{unw\_flush\_cache}(3libunwind),
+\SeeAlso{unw\_get\_accessors}(3libunwind),
+\SeeAlso{unw\_get\_fpreg}(3libunwind),
+\SeeAlso{unw\_get\_proc\_info}(3libunwind),
+\SeeAlso{unw\_get\_proc\_name}(3libunwind),
+\SeeAlso{unw\_get\_reg}(3libunwind),
+\SeeAlso{unw\_getcontext}(3libunwind),
+\SeeAlso{unw\_init\_local}(3libunwind),
+\SeeAlso{unw\_init\_remote}(3libunwind),
+\SeeAlso{unw\_is\_fpreg}(3libunwind),
+\SeeAlso{unw\_is\_signal\_frame}(3libunwind),
+\SeeAlso{unw\_regname}(3libunwind),
+\SeeAlso{unw\_resume}(3libunwind),
+\SeeAlso{unw\_set\_caching\_policy}(3libunwind),
+\SeeAlso{unw\_set\_cache\_size}(3libunwind),
+\SeeAlso{unw\_set\_fpreg}(3libunwind),
+\SeeAlso{unw\_set\_reg}(3libunwind),
+\SeeAlso{unw\_step}(3libunwind),
+\SeeAlso{unw\_strerror}(3libunwind),
+\SeeAlso{\_U\_dyn\_register}(3libunwind),
+\SeeAlso{\_U\_dyn\_cancel}(3libunwind)
 
 \section{Author}
 

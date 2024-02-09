@@ -913,14 +913,9 @@ namespace System.Text.RegularExpressions
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (_capnames?[uncapname] is int tmpCapnum)
-                                        {
-                                            uncapnum = tmpCapnum;
-                                        }
-                                        else
-                                        {
+                                        uncapnum = _capnames?[uncapname] is int tmpCapnum ?
+                                            tmpCapnum :
                                             throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, uncapname));
-                                        }
 
                                         // check if we have bogus character after the name
                                         if (_pos < _pattern.Length && _pattern[_pos] != close)
@@ -954,7 +949,7 @@ namespace System.Text.RegularExpressions
                             ch = _pattern[_pos];
 
                             // check if the alternation condition is a backref
-                            if (ch >= '0' && ch <= '9')
+                            if (ch is >= '0' and <= '9')
                             {
                                 int capnum = ScanDecimal();
                                 if (_pos < _pattern.Length && _pattern[_pos++] == ')')
@@ -1314,7 +1309,7 @@ namespace System.Text.RegularExpressions
 
             // Try to parse backreference: \1 or \{1} or \{cap}
 
-            if (ch >= '0' && ch <= '9')
+            if (ch is >= '0' and <= '9')
             {
                 if (!angled && (_options & RegexOptions.ECMAScript) != 0)
                 {
@@ -1580,7 +1575,7 @@ namespace System.Text.RegularExpressions
         {
             char ch = _pattern[_pos++];
 
-            if (ch >= '0' && ch <= '7')
+            if (ch is >= '0' and <= '7')
             {
                 --_pos;
                 return ScanOctal();

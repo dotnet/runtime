@@ -161,6 +161,8 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PT
 
 #else // !FEATURE_EH_FUNCLETS
 
+#include "exceptionhandling.h"
+
 enum RhEHClauseKind
 {
     RH_EH_CLAUSE_TYPED = 0,
@@ -196,14 +198,8 @@ enum class ExKind : uint8_t
 
 struct PAL_SEHException;
 
-struct ExInfo
+struct ExInfo : public ExceptionTrackerBase
 {
-    struct DAC_EXCEPTION_POINTERS
-    {
-        PTR_EXCEPTION_RECORD    ExceptionRecord;
-        PTR_CONTEXT             ContextRecord;
-    };
-
     ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind);
 
     // Releases all the resources owned by the ExInfo
@@ -218,8 +214,20 @@ struct ExInfo
         DWORD_PTR              dwHandlerStartPC,
         StackFrame             sf);
 
-    // Previous ExInfo in the chain of exceptions rethrown from their catch / finally handlers
-    PTR_ExInfo m_pPrevExInfo;
+    static void PopExInfos(Thread *pThread, void *targetSp);
+
+    // Padding to make the ExInfo offsets that the managed EH code needs to access
+    // the same for debug / release and Unix / Windows.
+#ifdef TARGET_UNIX
+    // sizeof(EHWatsonBucketTracker)
+    BYTE m_padding[2 * sizeof(void*) + sizeof(DWORD)];
+#else // TARGET_UNIX
+#ifndef _DEBUG
+    //  sizeof(EHWatsonBucketTracker::m_DebugFlags)
+    BYTE m_padding[sizeof(DWORD)];
+#endif // _DEBUG
+#endif // TARGET_UNIX
+
     // Context used by the stack frame iterator
     CONTEXT* m_pExContext;
     // actual exception object reference
@@ -233,14 +241,9 @@ struct ExInfo
     // Stack frame iterator used to walk stack frames while handling the exception
     StackFrameIterator m_frameIter;
     volatile size_t m_notifyDebuggerSP;
-    // Stack trace of the current exception
-    StackTraceInfo m_stackTraceInfo;
     // Initial explicit frame
     Frame* m_pFrame;
 
-    // Low and high bounds of the stack unwound by the exception. They are updated during 2nd pass only.
-    StackFrame          m_sfLowBound;
-    StackFrame          m_sfHighBound;
     // Stack frame of the caller of the currently running exception handling clause (catch, finally, filter)
     CallerStackFrame    m_csfEHClause;
     // Stack frame of the caller of the code that encloses the currently running exception handling clause
@@ -249,8 +252,6 @@ struct ExInfo
     StackFrame          m_sfCallerOfActualHandlerFrame;
     // The exception handling clause for the catch handler that was identified during pass 1
     EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
-    // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
-    DAC_EXCEPTION_POINTERS m_ptrs;
 
 #ifdef TARGET_UNIX
     // Set to TRUE to take ownership of the EXCEPTION_RECORD and CONTEXT_RECORD in the m_ptrs. When set, the
@@ -261,59 +262,17 @@ struct ExInfo
     void *m_propagateExceptionContext;
 #endif // TARGET_UNIX
 
-    // thrown exception object handle
-    OBJECTHANDLE    m_hThrowable;
-
     // The following fields are for profiler / debugger use only
     EE_ILEXCEPTION_CLAUSE m_CurrentClause;
-    // Stores information necessary to intercept an exception
-    DebuggerExState m_DebuggerExState;
-    // Information for the funclet we are calling
-    EHClauseInfo   m_EHClauseInfo;
-    // Flags representing exception handling state (exception is rethrown, unwind has started, various debugger notifications sent etc)
-    ExceptionFlags m_ExceptionFlags;
-    // Code of the current exception
-    DWORD          m_ExceptionCode;
     // Method to report to the debugger / profiler when stack frame iterator leaves a frame
     MethodDesc    *m_pMDToReportFunctionLeave;
-    // Set to TRUE when the first chance notification was delivered for the current exception
-    BOOL           m_fDeliveredFirstChanceNotification;
     // CONTEXT and REGDISPLAY used by the StackFrameIterator for stack walking
     CONTEXT        m_exContext;
     REGDISPLAY     m_regDisplay;
 
-    inline BOOL DeliveredFirstChanceNotification()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fDeliveredFirstChanceNotification;
-    }
-
-    inline void SetFirstChanceNotificationStatus(BOOL fDelivered)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_fDeliveredFirstChanceNotification = fDelivered;
-    }
-
-#ifndef TARGET_UNIX
-    // Used to track Watson bucketing information for an exception.
-    EHWatsonBucketTracker m_WatsonBucketTracker;
-
-    inline PTR_EHWatsonBucketTracker GetWatsonBucketTracker()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExInfo, this, m_WatsonBucketTracker));
-    }
-#endif // !TARGET_UNIX
-
 #if defined(TARGET_UNIX)
     void TakeExceptionPointersOwnership(PAL_SEHException* ex);
 #endif // TARGET_UNIX
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif // DACCESS_COMPILE
 
 };
 

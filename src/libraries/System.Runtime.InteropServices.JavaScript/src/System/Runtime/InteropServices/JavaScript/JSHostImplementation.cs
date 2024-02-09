@@ -87,13 +87,14 @@ namespace System.Runtime.InteropServices.JavaScript
         public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken)
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
-            var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
+            var wrappedTask = CancellationHelper(modulePromise, cancellationToken);
             return await wrappedTask.ConfigureAwait(
                 ConfigureAwaitOptions.ContinueOnCapturedContext |
                 ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
-        public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static async Task<JSObject> CancellationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
             {
@@ -146,12 +147,15 @@ namespace System.Runtime.InteropServices.JavaScript
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             signature.ImportHandle = (int)Interlocked.Increment(ref JSFunctionBinding.nextImportHandle);
 #else
             signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
 #endif
 
+#if DEBUG
+            signature.FunctionName = functionName;
+#endif
             for (int i = 0; i < argsCount; i++)
             {
                 var type = signature.Sigs[i] = types[i + 1]._signatureType;
@@ -204,38 +208,7 @@ namespace System.Runtime.InteropServices.JavaScript
             AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
         }
 
-#if FEATURE_WASM_THREADS
-        public static void InstallWebWorkerInterop(bool isMainThread)
-        {
-            var ctx = new JSSynchronizationContext(isMainThread);
-            ctx.previousSynchronizationContext = SynchronizationContext.Current;
-            SynchronizationContext.SetSynchronizationContext(ctx);
-
-            var proxyContext = ctx.ProxyContext;
-            JSProxyContext.CurrentThreadContext = proxyContext;
-            JSProxyContext.ExecutionContext = proxyContext;
-            if (isMainThread)
-            {
-                JSProxyContext.MainThreadContext = proxyContext;
-            }
-
-            ctx.AwaitNewData();
-
-            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
-        }
-
-        public static void UninstallWebWorkerInterop()
-        {
-            var ctx = JSProxyContext.CurrentThreadContext;
-            if (ctx == null) throw new InvalidOperationException();
-            var syncContext = ctx.SynchronizationContext;
-            if (SynchronizationContext.Current == syncContext)
-            {
-                SynchronizationContext.SetSynchronizationContext(syncContext.previousSynchronizationContext);
-            }
-            ctx.Dispose();
-        }
-
+#if FEATURE_WASM_MANAGED_THREADS
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
         private static extern ref bool GetThreadExternalEventloop(Thread @this);
 

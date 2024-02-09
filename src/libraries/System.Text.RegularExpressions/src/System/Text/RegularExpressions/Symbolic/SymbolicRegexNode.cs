@@ -184,7 +184,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="listKind">kind of node to consider as the list builder</param>
         public List<SymbolicRegexNode<TSet>> ToList(List<SymbolicRegexNode<TSet>>? list = null, SymbolicRegexNodeKind listKind = SymbolicRegexNodeKind.Concat)
         {
-            Debug.Assert(listKind == SymbolicRegexNodeKind.Concat || listKind == SymbolicRegexNodeKind.Alternate);
+            Debug.Assert(listKind is SymbolicRegexNodeKind.Concat or SymbolicRegexNodeKind.Alternate);
             list ??= new List<SymbolicRegexNode<TSet>>();
             AppendToList(this, list, listKind);
             return list;
@@ -1061,7 +1061,7 @@ namespace System.Text.RegularExpressions.Symbolic
         // -When backtracking is being simulated calling into PruneLowerPriorityThanNullability
         private SymbolicRegexNode<TSet> CreateDerivativeWrapper(SymbolicRegexBuilder<TSet> builder, TSet elem, uint context)
         {
-            if (this._kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
+            if (_kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
             {
                 // This node kind can only occur at the top level and indicates that backtracking simulation is turned off
                 Debug.Assert(_left is not null);
@@ -1216,7 +1216,7 @@ namespace System.Text.RegularExpressions.Symbolic
             // been simplified to nothing, and int.MaxValue is treated as infinity.
             int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
             // Do not decrement the lower bound if it equals int.MaxValue
-            int newlower = _lower == 0 || _lower == int.MaxValue ? _lower : _lower - 1;
+            int newlower = _lower is 0 or int.MaxValue ? _lower : _lower - 1;
 
             // The continued loop becomes epsilon when newlower == newupper == 0
             return builder.CreateLoop(_left, IsLazy, newlower, newupper);
@@ -1440,7 +1440,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 alternativesAndEffects.Add((this, currentEffects.Count > 0 ?
                     currentEffects.ToArray() :
-                    Array.Empty<DerivativeEffect>()));
+                    []));
                 return;
             }
 
@@ -1489,14 +1489,14 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (IsLazy)
                         alternativesAndEffects.Add((builder.Epsilon, currentEffects.Count > 0 ?
                             currentEffects.ToArray() :
-                            Array.Empty<DerivativeEffect>()));
+                            []));
                     // Recurse into the body
                     _left.StripAndMapEffects(builder, context, alternativesAndEffects, currentEffects);
                     // For eager loops the body is preferred, so output the epsilon last
                     if (!IsLazy)
                         alternativesAndEffects.Add((builder.Epsilon, currentEffects.Count > 0 ?
                             currentEffects.ToArray() :
-                            Array.Empty<DerivativeEffect>()));
+                            []));
                     break;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
@@ -2297,7 +2297,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_lower >= 0 && _upper > 0 && _upper >= _lower);
                     if (_upper == int.MaxValue)
                     {
-                        if (_lower == 0 || _lower == int.MaxValue)
+                        if (_lower is 0 or int.MaxValue)
                         {
                             // infinite loop has the same size as a *-loop
                             return _left.CountSingletons();

@@ -33,15 +33,19 @@ The .NET Foundation licenses this file to you under the MIT license.
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
-      <CrossCompileRid Condition="$(_hostOS) != $(_originalTargetOS) or !$(RuntimeIdentifier.EndsWith('-$(_hostArchitecture)'))">$(RuntimeIdentifier)</CrossCompileRid>
+      <CrossCompileRid Condition="'$(_hostOS)' != '$(_originalTargetOS)' or '$(_hostArchitecture)' != '$(_targetArchitecture)'">$(RuntimeIdentifier)</CrossCompileRid>
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' != 'true'">aarch64</CrossCompileArch>
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(_IsApplePlatform)' == 'true'">arm64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm'))">arm</CrossCompileArch>
+
+      <CrossCompileAbi>gnu</CrossCompileAbi>
+      <CrossCompileAbi Condition="$(CrossCompileRid.EndsWith('-arm'))">gnueabihf</CrossCompileAbi>
 
       <TargetTriple />
-      <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('linux-musl')) or $(CrossCompileRid.StartsWith('alpine')))">$(CrossCompileArch)-alpine-linux-musl</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and $(CrossCompileRid.StartsWith('linux-bionic'))">$(CrossCompileArch)-linux-android21</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
@@ -56,6 +60,48 @@ The .NET Foundation licenses this file to you under the MIT license.
       <StandaloneGCSupportName>libstandalonegc-disabled</StandaloneGCSupportName>
       <StandaloneGCSupportName Condition="'$(IlcStandaloneGCSupport)' == 'true'">libstandalonegc-enabled</StandaloneGCSupportName>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst' and '$(_targetArchitecture)' == 'x64'">13.5</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">14.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">11.0</AppleMinOSVersion>
+
+      <_AppleSdkName Condition="'$(_targetOS)' == 'ios'">iphoneos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_targetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_targetOS)' == 'tvos'">appletvos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_targetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_targetOS)' == 'maccatalyst'">macosx</_AppleSdkName>
+
+      <_AppleTripleOS Condition="'$(_targetOS)' == 'maccatalyst' or $(_targetOS.StartsWith('ios'))">ios</_AppleTripleOS>
+      <_AppleTripleOS Condition="$(_targetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
+
+      <_AppleTripleAbi Condition="'$(_targetOS)' == 'ios' or '$(_targetOS)' == 'tvos'">macho</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="'$(_targetOS)' == 'maccatalyst'">macabi</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="$(_targetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
+
+      <TargetTriple>$(CrossCompileArch)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
+      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(NativeLib)' == 'Shared'">@rpath/$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
+    </PropertyGroup>
+
+    <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(CrossCompileArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
+      Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' CrossCompileArch = '$(CrossCompileArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
+
+    <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
+      <Xcrun Condition="'$(Xcrun)' == ''">xcrun</Xcrun>
+      <_WhereXcrun>0</_WhereXcrun>
+    </PropertyGroup>
+
+    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsiOSLikePlatform)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
+    </Exec>
+    <Error Condition="'$(_WhereXcrun)' != '0' and '$(_IsiOSLikePlatform)' == 'true'"
+      Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
+
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' == '' and '$(_IsiOSLikePlatform)' == 'true'" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
+    </Exec>
+    <Error Condition="!Exists('$(SysRoot)') and '$(_IsiOSLikePlatform)' == 'true'"
+      Text="Apple SDK was not found in: '$(SysRoot)'" />
 
     <ItemGroup>
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
@@ -96,6 +142,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <StaticICULibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(StaticOpenSslLinking)' != 'true' and Exists('$(IlcSdkPath)nonportable.txt')">
+      <NativeSystemLibrary Include="ssl" />
+      <NativeSystemLibrary Include="crypto" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(StaticOpenSslLinking)' == 'true' and '$(NativeLib)' != 'Static'">
       <NativeLibrary Include="$(IntermediateOutputPath)libs/System.Security.Cryptography.Native/build/libSystem.Security.Cryptography.Native.OpenSsl.a" />
       <DirectPInvoke Include="libSystem.Security.Cryptography.Native.OpenSsl" />
@@ -130,13 +181,15 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-gz=zlib" Condition="'$(CompressSymbols)' != 'false'" />
       <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
       <LinkerArg Include="@(NativeLibrary)" />
-      <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
-      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(_IsApplePlatform)' != 'true' and '$(TargetTriple)' != ''" />
+      <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" />
+      <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" />
+      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(_targetOS)' != 'osx' and '$(TargetTriple)' != ''" />
       <LinkerArg Include="-arch $(CrossCompileArch)" Condition="'$(_IsApplePlatform)' == 'true' and '$(CrossCompileArch)' != ''" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" Condition="'$(StaticExecutable)' != 'true' and !$([MSBuild]::IsOSPlatform('Windows'))" />
       <LinkerArg Include="-Wl,-rpath,&quot;$(IlcRPath)&quot;" Condition="'$(StaticExecutable)' != 'true' and $([MSBuild]::IsOSPlatform('Windows'))" />
+      <LinkerArg Include="-Wl,-install_name,&quot;$(SharedLibraryInstallName)&quot;" Condition="'$(_IsiOSLikePlatform)' == 'true' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-Wl,--build-id=sha1" Condition="'$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,-e0x0" Condition="'$(NativeLib)' == 'Shared' and '$(_IsApplePlatform)' != 'true'" />

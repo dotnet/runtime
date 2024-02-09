@@ -1211,7 +1211,7 @@ namespace System.Linq.Tests
                 e => new LinkedList<int>(e) // Implements IList<T>.
             };
 
-            var r = new Random(unchecked((int)0x984bf1a3));
+            var r = new Random(42);
 
             for (int i = 0; i <= 5; i++)
             {

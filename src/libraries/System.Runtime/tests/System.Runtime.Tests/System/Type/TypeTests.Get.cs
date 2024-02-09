@@ -55,7 +55,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(GetInterface_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/94189", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void GetInterface_Invoke_ReturnsExpected(Type type, string name, bool ignoreCase, Type expected)
         {
             if (!ignoreCase)

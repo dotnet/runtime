@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviors, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI } from ".";
+import type { AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI, SingleAssetBehaviors } from ".";
 import type { PThreadLibrary } from "../pthreads/shared/emscripten-internals";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
@@ -67,7 +67,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
         return ptr as T;
 }
 
-// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
+// when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
     linkerEnabled?: boolean,
     assets?: AssetEntryInternal[],
@@ -78,11 +78,19 @@ export type MonoConfigInternal = MonoConfig & {
     appendElementOnExit?: boolean
     assertAfterExit?: boolean // default true for shell/nodeJS
     interopCleanupOnExit?: boolean
+    dumpThreadsOnNonZeroExit?: boolean
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
-    exitAfterSnapshot?: number
+    exitOnUnhandledError?: boolean
     loadAllSatelliteResources?: boolean
+    runtimeId?: number
+
+    // related to config hash
+    preferredIcuAsset?: string | null,
+    resourcesHash?: string,
+    GitHash?: string,
+    ProductVersion?: string,
 };
 
 export type RunArguments = {
@@ -118,7 +126,7 @@ export type LoaderHelpers = {
     scriptDirectory: string
     scriptUrl: string
     modulesUniqueQuery?: string
-    preferredIcuAsset: string | null,
+    preferredIcuAsset?: string | null,
     invariantMode: boolean,
 
     actual_downloaded_assets_count: number,
@@ -130,7 +138,6 @@ export type LoaderHelpers = {
     allDownloadsQueued: PromiseAndController<void>,
     wasmCompilePromise: PromiseAndController<WebAssembly.Module>,
     runtimeModuleLoaded: PromiseAndController<void>,
-    memorySnapshotSkippedOrDone: PromiseAndController<void>,
 
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
@@ -140,8 +147,9 @@ export type LoaderHelpers = {
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
     assertIsControllablePromise: <T>(promise: Promise<T>) => asserts promise is ControllablePromise<T>,
     mono_download_assets: () => Promise<void>,
-    resolve_single_asset_path: (behavior: AssetBehaviors) => AssetEntryInternal,
+    resolve_single_asset_path: (behavior: SingleAssetBehaviors) => AssetEntryInternal,
     setup_proxy_console: (id: string, console: Console, origin: string) => void
+    set_thread_prefix: (prefix: string) => void
     fetch_like: (url: string, init?: RequestInit) => Promise<Response>;
     locateFile: (path: string, prefix?: string) => string,
     out(message: string): void;
@@ -151,6 +159,7 @@ export type LoaderHelpers = {
     retrieve_asset_download(asset: AssetEntry): Promise<ArrayBuffer>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
     logDownloadStatsToConsole: () => void;
+    installUnhandledErrorHandler: () => void;
     purgeUnusedCacheEntriesAsync: () => Promise<void>;
 
     loadBootResource?: LoadBootResourceCallback;
@@ -165,8 +174,8 @@ export type LoaderHelpers = {
     simd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
+    emscriptenBuildOptions: EmscriptenBuildOptions,
     gitHash: string,
-    moduleGitHash: string,
     config: MonoConfigInternal;
     diagnosticTracing: boolean;
 
@@ -179,16 +188,13 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    loadedMemorySnapshotSize?: number,
     enablePerfMeasure: boolean;
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
-    mono_wasm_exit?: (code: number) => void,
-    abort: (reason: any) => void,
+    nativeExit: (code: number) => void,
+    nativeAbort: (reason: any) => void,
     javaScriptExports: JavaScriptExports,
-    storeMemorySnapshotPending: boolean,
-    memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     getMemory(): WebAssembly.Memory,
@@ -214,8 +220,10 @@ export type RuntimeHelpers = {
     stringify_as_error_with_stack?: (error: any) => string,
     instantiate_asset: (asset: AssetEntry, url: string, bytes: Uint8Array) => void,
     instantiate_symbols_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
+    instantiate_segmentation_rules_asset: (pendingAsset: AssetEntryInternal) => Promise<void>,
     jiterpreter_dump_stats?: (x: boolean) => string,
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
+    dumpThreads: () => void,
 }
 
 export type AOTProfilerOptions = {
@@ -230,64 +238,24 @@ export type BrowserProfilerOptions = {
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 export type DotnetModuleInternal = EmscriptenModule & DotnetModuleConfig & EmscriptenModuleInternal;
 
-// see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
-export const enum MarshalType {
-    NULL = 0,
-    INT = 1,
-    FP64 = 2,
-    STRING = 3,
-    VT = 4,
-    DELEGATE = 5,
-    TASK = 6,
-    OBJECT = 7,
-    BOOL = 8,
-    ENUM = 9,
-    URI = 22,
-    SAFEHANDLE = 23,
-    ARRAY_BYTE = 10,
-    ARRAY_UBYTE = 11,
-    ARRAY_UBYTE_C = 12,
-    ARRAY_SHORT = 13,
-    ARRAY_USHORT = 14,
-    ARRAY_INT = 15,
-    ARRAY_UINT = 16,
-    ARRAY_FLOAT = 17,
-    ARRAY_DOUBLE = 18,
-    FP32 = 24,
-    UINT32 = 25,
-    INT64 = 26,
-    UINT64 = 27,
-    CHAR = 28,
-    STRING_INTERNED = 29,
-    VOID = 30,
-    ENUM64 = 31,
-    POINTER = 32,
-    SPAN_BYTE = 33,
-}
-
-// see src/mono/wasm/driver.c MARSHAL_ERROR_xxx and Runtime.cs
-export const enum MarshalError {
-    BUFFER_TOO_SMALL = 512,
-    NULL_CLASS_POINTER = 513,
-    NULL_TYPE_POINTER = 514,
-    UNSUPPORTED_TYPE = 515,
-    FIRST = BUFFER_TOO_SMALL
-}
-
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
 export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
 
+// these are values from the last re-link with emcc/workload
+export type EmscriptenBuildOptions = {
+    wasmEnableSIMD: boolean,
+    wasmEnableEH: boolean,
+    enableAotProfiler: boolean,
+    enableBrowserProfiler: boolean,
+    runAOTCompilation: boolean,
+    wasmEnableThreads: boolean,
+    gitHash: string,
+};
 export type EmscriptenInternals = {
     isPThread: boolean,
-    linkerDisableLegacyJsInterop: boolean,
-    linkerWasmEnableSIMD: boolean,
-    linkerWasmEnableEH: boolean,
-    linkerEnableAotProfiler: boolean,
-    linkerEnableBrowserProfiler: boolean,
-    linkerRunAOTCompilation: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
     gitHash: string,
@@ -339,7 +307,7 @@ export interface JavaScriptExports {
     release_js_owned_object_by_gc_handle(gc_handle: GCHandle): void;
 
     // the marshaled signature is: void CompleteTask<T>(GCHandle holder, Exception? exceptionResult, T? result)
-    complete_task(holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs): void;
+    complete_task(holder_gc_handle: GCHandle, isCanceling: boolean, error?: any, data?: any, res_converter?: MarshalerToCs): void;
 
     // the marshaled signature is: TRes? CallDelegate<T1,T2,T3TRes>(GCHandle callback, T1? arg1, T2? arg2, T3? arg3)
     call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any,
@@ -451,6 +419,16 @@ export interface WasmRootBuffer {
 }
 
 export declare interface EmscriptenModuleInternal {
+    HEAP8: Int8Array,
+    HEAP16: Int16Array;
+    HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
+    HEAPU8: Uint8Array;
+    HEAPU16: Uint16Array;
+    HEAPU32: Uint32Array;
+    HEAPF32: Float32Array;
+    HEAPF64: Float64Array;
+
     __locateFile?: (path: string, prefix?: string) => string;
     locateFile?: (path: string, prefix?: string) => string;
     mainScriptUrlOrBlob?: string;
@@ -490,7 +468,7 @@ export interface PromiseAndController<T> {
     promise_control: PromiseController<T>;
 }
 
-export type passEmscriptenInternalsType = (internals: EmscriptenInternals) => void;
+export type passEmscriptenInternalsType = (internals: EmscriptenInternals, emscriptenBuildOptions: EmscriptenBuildOptions) => void;
 export type setGlobalObjectsType = (globalObjects: GlobalObjects) => void;
 export type initializeExportsType = (globalObjects: GlobalObjects) => RuntimeAPI;
 export type initializeReplacementsType = (replacements: EmscriptenReplacements) => void;
@@ -515,4 +493,22 @@ export type NativeModuleExportsInternal = {
 
 export type WeakRefInternal<T extends object> = WeakRef<T> & {
     dispose?: () => void
+}
+
+/// a symbol that we use as a key on messages on the global worker-to-main channel to identify our own messages
+/// we can't use an actual JS Symbol because those don't transfer between workers.
+export const monoMessageSymbol = "__mono_message__";
+
+export const enum WorkerToMainMessageType {
+    monoRegistered = "monoRegistered",
+    monoAttached = "monoAttached",
+    updateInfo = "updateInfo",
+    enabledInterop = "notify_enabled_interop",
+    monoUnRegistered = "monoUnRegistered",
+    pthreadCreated = "pthreadCreated",
+    preload = "preload",
+}
+
+export const enum MainToWorkerMessageType {
+    applyConfig = "apply_mono_config",
 }

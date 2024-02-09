@@ -309,6 +309,10 @@ namespace ILLink.Shared.TrimAnalysis
 		/// </summary>
 		AssemblyName_get_EscapedCodeBase,
 		/// <summary>
+		/// <see cref="System.Reflection.RuntimeReflectionExtensions.GetMethodInfo(System.Delegate)"/>
+		/// </summary>
+		RuntimeReflectionExtensions_GetMethodInfo,
+		/// <summary>
 		/// <see cref="System.Reflection.RuntimeReflectionExtensions.GetRuntimeEvent(System.Type, string)"/>
 		/// </summary>
 		RuntimeReflectionExtensions_GetRuntimeEvent,
@@ -335,6 +339,10 @@ namespace ILLink.Shared.TrimAnalysis
 		/// <summary>
 		/// <see cref="System.Nullable.GetUnderlyingType(System.Type)"/>
 		/// </summary>
-		Nullable_GetUnderlyingType
+		Nullable_GetUnderlyingType,
+		/// <summary>
+		/// <see cref="System.Delegate.Method"/>
+		/// </summary>
+		Delegate_get_Method,
 	}
 }

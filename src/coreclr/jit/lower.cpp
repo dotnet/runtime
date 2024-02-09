@@ -500,8 +500,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_NEG:
 #ifdef TARGET_ARM64
         {
-            GenTree* next = TryLowerNegToMulLongOp(node->AsOp());
-            if (next != nullptr)
+            GenTree* next;
+            if (TryLowerNegToMulLongOp(node->AsOp(), &next))
             {
                 return next;
             }
@@ -640,8 +640,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             CheckImmedAndMakeContained(node, node->AsOp()->gtOp2);
             break;
 #elif defined(TARGET_XARCH)
-        case GT_XORR:
-        case GT_XAND:
         case GT_XADD:
             if (node->IsUnusedValue())
             {
@@ -965,7 +963,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
     // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetCond(jumpTab[jumpCnt - 1]);
+    originalSwitchBB->SetCond(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
 
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
@@ -1074,6 +1072,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             {
                 BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true, currentBlock->Next());
                 newBlock->SetFlags(BBF_NONE_QUIRK);
+                currentBlock->SetFalseTarget(newBlock);
                 comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
                 currentBlock   = newBlock;
                 currentBBRange = &LIR::AsRange(currentBlock);
@@ -1100,7 +1099,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetCond(jumpTab[i]);
+                currentBlock->SetCond(jumpTab[i], currentBlock->Next());
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1312,10 +1311,7 @@ bool Lowering::TryLowerSwitchToBitTest(
     {
         // GenCondition::C generates JC so we jump to bbCase1 when the bit is set
         bbSwitchCondition = GenCondition::C;
-        bbSwitch->SetCond(bbCase1);
-
-        comp->fgAddRefPred(bbCase0, bbSwitch);
-        comp->fgAddRefPred(bbCase1, bbSwitch);
+        bbSwitch->SetCond(bbCase1, bbCase0);
     }
     else
     {
@@ -1323,11 +1319,11 @@ bool Lowering::TryLowerSwitchToBitTest(
 
         // GenCondition::NC generates JNC so we jump to bbCase0 when the bit is not set
         bbSwitchCondition = GenCondition::NC;
-        bbSwitch->SetCond(bbCase0);
-
-        comp->fgAddRefPred(bbCase0, bbSwitch);
-        comp->fgAddRefPred(bbCase1, bbSwitch);
+        bbSwitch->SetCond(bbCase0, bbCase1);
     }
+
+    comp->fgAddRefPred(bbCase0, bbSwitch);
+    comp->fgAddRefPred(bbCase1, bbSwitch);
 
     var_types bitTableType = (bitCount <= (genTypeSize(TYP_INT) * 8)) ? TYP_INT : TYP_LONG;
     GenTree*  bitTableIcon = comp->gtNewIconNode(bitTable, bitTableType);
@@ -1681,9 +1677,10 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     {
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if (call->IsVarargs() || comp->opts.compUseSoftFP)
+        if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
         {
             // For vararg call or on armel, reg args should be all integer.
+            // For arg type and arg reg mismatch, reg arg should be integer on riscv64
             // Insert copies as needed to move float value to integer register.
             GenTree* newNode = LowerFloatArg(ppArg, callArg);
             if (newNode != nullptr)
@@ -1714,7 +1711,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //------------------------------------------------------------------------
-// LowerFloatArg: Lower float call arguments on the arm/LoongArch64 platform.
+// LowerFloatArg: Lower float call arguments on the arm/LoongArch64/RiscV64 platform.
 //
 // Arguments:
 //    arg  - The arg node
@@ -2206,7 +2203,8 @@ GenTree* Lowering::LowerCall(GenTree* node)
     JITDUMP("\n");
 
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
-    assert(!call->IsExpRuntimeLookup());
+    assert(!call->IsRuntimeLookupHelperCall(comp) ||
+           (call->gtCallDebugFlags & GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED) != 0);
 
     // Also, always expand static cctor helper for NativeAOT, see
     // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
@@ -4188,7 +4186,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
 
     JITDUMP("lowering GT_JMP\n");
     DISPNODE(jmp);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
     // If PInvokes are in-lined, we have to remember to execute PInvoke method epilog anywhere that
     // a method returns.
@@ -4205,7 +4203,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 
     JITDUMP("lowering GT_RETURN\n");
     DISPNODE(ret);
-    JITDUMP("============");
+    JITDUMP("============\n");
 
     GenTree* retVal = ret->gtGetOp1();
     // There are two kinds of retyping:
@@ -4275,7 +4273,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     }
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
-    if (comp->compMethodRequiresPInvokeFrame() && (comp->compCurBB == comp->genReturnBB))
+    if (comp->compMethodRequiresPInvokeFrame())
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
@@ -4283,7 +4281,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
 }
 
 //----------------------------------------------------------------------------------------------
-// LowerStoreLocCommon: platform idependent part of local var or field store lowering.
+// LowerStoreLocCommon: platform independent part of local var or field store lowering.
 //
 // Arguments:
 //     lclStore - The store lcl node to lower.
@@ -5373,7 +5371,7 @@ void Lowering::InsertPInvokeMethodEpilog(BasicBlock* returnBB DEBUGARG(GenTree* 
     JITDUMP("======= Inserting PInvoke method epilog\n");
 
     // Method doing PInvoke calls has exactly one return block unless it has "jmp" or tail calls.
-    assert(((returnBB == comp->genReturnBB) && returnBB->KindIs(BBJ_RETURN)) || returnBB->endsWithTailCallOrJmp(comp));
+    assert(returnBB->KindIs(BBJ_RETURN) || returnBB->endsWithTailCallOrJmp(comp));
 
     LIR::Range& returnBlockRange = LIR::AsRange(returnBB);
 
@@ -6138,14 +6136,28 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     ssize_t  offset = 0;
     bool     rev    = false;
 
+    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
+
+    unsigned naturalMul = 0;
+#ifdef TARGET_ARM64
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
+    naturalMul = genTypeSize(targetType);
+#endif
+
     // Find out if an addressing mode can be constructed
-    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,     // address
-                                                       true,     // fold
-                                                       &rev,     // reverse ops
-                                                       &base,    // base addr
-                                                       &index,   // index val
-                                                       &scale,   // scaling
-                                                       &offset); // displacement
+    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,       // address
+                                                       true,       // fold
+                                                       naturalMul, // natural multiplier
+                                                       &rev,       // reverse ops
+                                                       &base,      // base addr
+                                                       &index,     // index val
+                                                       &scale,     // scaling
+                                                       &offset);   // displacement
 
 #ifdef TARGET_ARM64
     if (parent->OperIsIndir() && parent->AsIndir()->IsVolatile())
@@ -6158,21 +6170,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         {
             return false;
         }
-    }
-#endif
-
-    var_types targetType = parent->OperIsIndir() ? parent->TypeGet() : TYP_UNDEF;
-
-#ifdef TARGET_ARMARCH
-    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-    //
-    //   *(ulong*)(data + index * 8); - can be optimized
-    //   *(ulong*)(data + index * 7); - can not be optimized
-    //     *(int*)(data + index * 2); - can not be optimized
-    //
-    if ((scale > 0) && (genTypeSize(targetType) != scale))
-    {
-        return false;
     }
 #endif
 
@@ -6388,14 +6385,13 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #ifdef TARGET_ARM64
     if (node->OperIs(GT_ADD))
     {
-        GenTree* next = LowerAddForPossibleContainment(node);
-        if (next != nullptr)
+        GenTree* next;
+        if (TryLowerAddForPossibleContainment(node, &next))
         {
             return next;
         }
 
-        next = TryLowerAddSubToMulLongOp(node);
-        if (next != nullptr)
+        if (TryLowerAddSubToMulLongOp(node, &next))
         {
             return next;
         }
@@ -6497,7 +6493,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             divisorValue -= 1;
         }
 
-        divMod->SetOper(newOper);
+        divMod->ChangeOper(newOper);
         divisor->AsIntCon()->SetIconValue(divisorValue);
         ContainCheckNode(divMod);
         return true;
@@ -6509,7 +6505,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
             ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
         {
-            divMod->SetOper(GT_GE);
+            divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
             ContainCheckNode(divMod);
             return true;
@@ -6644,7 +6640,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
         if (isDiv && !postShift && (type == TYP_I_IMPL))
         {
-            divMod->SetOper(GT_MULHI);
+            divMod->ChangeOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
             divMod->SetUnsigned();
         }
@@ -6676,7 +6672,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
                 if (isDiv && (type == TYP_I_IMPL))
                 {
-                    divMod->SetOper(GT_RSZ);
+                    divMod->ChangeOper(GT_RSZ);
                     divMod->gtOp1 = mulhi;
                     divMod->gtOp2 = shiftBy;
                 }
@@ -6694,7 +6690,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, mulhi, divisor);
                 dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
-                divMod->SetOper(GT_SUB);
+                divMod->ChangeOper(GT_SUB);
                 divMod->gtOp1 = dividend;
                 divMod->gtOp2 = mul;
 
@@ -6702,7 +6698,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-                divMod->SetOper(GT_CAST);
+                divMod->ChangeOper(GT_CAST);
                 divMod->AsCast()->gtCastType = TYP_INT;
                 divMod->gtOp1                = mulhi;
                 divMod->gtOp2                = nullptr;
@@ -6792,7 +6788,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
-            divMod->SetOper(GT_EQ);
+            divMod->ChangeOper(GT_EQ);
             *nextNode = node;
             return true;
         }
@@ -6887,7 +6883,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
         if (isDiv)
         {
-            divMod->SetOperRaw(GT_ADD);
+            divMod->ChangeOper(GT_ADD);
             divMod->AsOp()->gtOp1 = adjusted;
             divMod->AsOp()->gtOp2 = signBit;
         }
@@ -6902,7 +6898,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
             BlockRange().InsertBefore(divMod, dividend, div, divisor, mul);
 
-            divMod->SetOperRaw(GT_SUB);
+            divMod->ChangeOper(GT_SUB);
             divMod->AsOp()->gtOp1 = dividend;
             divMod->AsOp()->gtOp2 = mul;
         }
@@ -7134,7 +7130,7 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
             DISPNODE(node);
-            JITDUMP("============");
+            JITDUMP("============\n");
 
             node->gtType = TYP_SIMD16;
         }
@@ -7205,7 +7201,7 @@ PhaseStatus Lowering::DoPhase()
     // local var liveness can delete code, which may create empty blocks
     if (comp->opts.OptimizationEnabled())
     {
-        bool modified = comp->fgUpdateFlowGraph();
+        bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
         modified |= comp->fgRemoveDeadBlocks();
 
         if (modified)
@@ -8866,6 +8862,15 @@ void Lowering::LowerLclHeap(GenTree* node)
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
+
+    if (blkNode->ContainsReferences() && !blkNode->OperIsCopyBlkOp())
+    {
+        // Make sure we don't use GT_STORE_DYN_BLK
+        assert(blkNode->OperIs(GT_STORE_BLK));
+
+        // and we only zero it (and that zero is better to be not hoisted/CSE'd)
+        assert(blkNode->Data()->IsIntegralConst(0));
+    }
 
     // Lose the type information stored in the source - we no longer need it.
     if (blkNode->Data()->OperIs(GT_BLK))
