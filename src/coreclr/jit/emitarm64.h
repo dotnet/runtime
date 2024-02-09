@@ -744,6 +744,12 @@ static bool isValidSimm5(ssize_t value)
     return (-0x10LL <= value) && (value <= 0xFLL);
 };
 
+// Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
+static bool isValidRot(ssize_t value)
+{
+    return (value == 0) || (value == 90) || (value == 180) || (value == 270);
+}
+
 // Returns true if 'value' represents a valid 'bitmask immediate' encoding.
 static bool isValidImmNRS(size_t value, emitAttr size)
 {
