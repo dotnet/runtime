@@ -400,11 +400,8 @@ struct PInvokeTransitionFrame
 #else // USE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
-#ifdef TARGET_ARM
-    TgtPTR_Void     m_ChainPointer; // R11, used by OS to walk stack quickly
-#endif
-#ifdef TARGET_ARM64
-    // On arm64, the FP and LR registers are pushed in that order when setting up frames
+#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+    // On arm32/arm64, the FP and LR registers are pushed in that order when setting up frames
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Void     m_RIP;
 #else

@@ -857,16 +857,20 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	guint16 param_count;
 	unsigned int gen_param_count = 0;
 	int call_conv;
+	uint8_t ext_callconv = 0;
+
 	guint8 *p = buf;
 	gboolean hasthis, explicit_this, has_gen_params, pinvoke;
 
-	flags = *p;
-	p ++;
+	flags = decode_value (p, &p);
 	has_gen_params = (flags & 0x10) != 0;
 	hasthis = (flags & 0x20) != 0;
-	explicit_this = (flags & 0x40) != 0;
-	pinvoke = (flags & 0x80) != 0;
+	pinvoke = (flags & 0x40) != 0;
+	explicit_this = (flags & 0x80) != 0;
 	call_conv = flags & 0x0F;
+
+	if ((flags & 0x100) != 0)
+		ext_callconv = GINT32_TO_UINT8 (decode_value (p, &p));
 
 	if (has_gen_params)
 		gen_param_count = decode_value (p, &p);
@@ -880,6 +884,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	sig->explicit_this = explicit_this;
 	sig->pinvoke = pinvoke;
 	sig->call_convention = call_conv;
+	sig->ext_callconv = ext_callconv;
 	sig->generic_param_count = gen_param_count;
 	sig->ret = decode_type (module, p, &p, error);
 	if (!sig->ret)
@@ -3390,10 +3395,13 @@ decode_exception_debug_info (MonoAotModule *amodule,
 			MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 			jit_mm_lock (jit_mm);
 			/* This could be set already since this function can be called more than once for the same method */
-			if (!g_hash_table_lookup (jit_mm->seq_points, method))
+			MonoSeqPointInfo *existing_seq_points = NULL;
+			if (!g_hash_table_lookup_extended (jit_mm->seq_points, method, NULL, (gpointer *)&existing_seq_points)) {
 				g_hash_table_insert (jit_mm->seq_points, method, seq_points);
-			else
+			} else {
 				mono_seq_point_info_free (seq_points);
+				seq_points = existing_seq_points;
+			}
 			jit_mm_unlock (jit_mm);
 		}
 

@@ -59,6 +59,26 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        /// <summary>Gets a new <see cref="Vector128{T}" /> with the elements set to their index.</summary>
+        /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+        public static Vector128<T> Indices
+        {
+            [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                Unsafe.SkipInit(out Vector128<T> result);
+
+                for (int i = 0; i < Count; i++)
+                {
+                    result.SetElementUnsafe(i, Scalar<T>.Convert(i));
+                }
+
+                return result;
+            }
+        }
+
         /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
