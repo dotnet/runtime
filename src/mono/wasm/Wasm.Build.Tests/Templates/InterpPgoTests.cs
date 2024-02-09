@@ -34,7 +34,7 @@ public class InterpPgoTests : WasmTemplateTestBase
 
         string id = $"browser_{config}_{GetRandomId()}";
         _testOutput.WriteLine("/// Creating project");
-        string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+        string projectFile = CreateWasmTemplateProject(id, "wasmbrowser", extraProperties: "<WasmDebugLevel>0</WasmDebugLevel>");
 
         _testOutput.WriteLine("/// Updating JS");
         UpdateBrowserMainJs((js) => {
@@ -53,6 +53,7 @@ public class InterpPgoTests : WasmTemplateTestBase
             //  then call INTERNAL.interp_pgo_save_data() to save the interp PGO table
             js = js.Replace(
                 "const text = exports.MyClass.Greeting();",
+                "console.log(`WASM debug level ${getConfig().debugLevel}`);\n" + 
                 "let text = '';\n" +
                 $"for (let i = 0; i < {iterationCount}; i++) {{ text = exports.MyClass.Greeting(); }};\n" +
                 "await INTERNAL.interp_pgo_save_data();"
@@ -74,7 +75,7 @@ public class InterpPgoTests : WasmTemplateTestBase
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                     .WithWorkingDirectory(_projectDir!);
         await using var runner = new BrowserRunner(_testOutput);
-        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} -p:WasmDebugLevel=0 --no-build --project \"{projectFile}\" --forward-console");
+        var url = await runner.StartServerAndGetUrlAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFile}\" --forward-console");
         IBrowser browser = await runner.SpawnBrowserAsync(url);
         IBrowserContext context = await browser.NewContextAsync();
 
