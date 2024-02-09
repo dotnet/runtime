@@ -81,6 +81,9 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Utilities\TypeNameParser.cs</Link>
     </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
+      <Link>Utilities\TypeNameParserHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.Helpers.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.Helpers</Link>
     </Compile>

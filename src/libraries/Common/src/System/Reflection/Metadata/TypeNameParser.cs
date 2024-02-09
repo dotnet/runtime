@@ -4,7 +4,6 @@
 #if SYSTEM_PRIVATE_CORELIB
 #define NET8_0_OR_GREATER
 #endif
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -14,6 +13,8 @@ using StringBuilder = System.Text.ValueStringBuilder;
 using StringBuilder = System.Text.StringBuilder;
 #endif
 
+using static System.Reflection.Metadata.TypeNameParserHelpers;
+
 #nullable enable
 
 namespace System.Reflection.Metadata
@@ -21,12 +22,7 @@ namespace System.Reflection.Metadata
     [DebuggerDisplay("{_inputString}")]
     internal ref struct TypeNameParser
     {
-        private const string EndOfTypeNameDelimiters = ".+";
-        private const string EndOfFullTypeNameDelimiters = "[]&*,+";
-#if NET8_0_OR_GREATER
-        private static readonly SearchValues<char> _endOfTypeNameDelimitersSearchValues = SearchValues.Create(EndOfTypeNameDelimiters);
-        private static readonly SearchValues<char> _endOfFullTypeNameDelimitersSearchValues = SearchValues.Create(EndOfFullTypeNameDelimiters);
-#endif
+        private const int MaxArrayRank = 32;
         private static readonly TypeNameParserOptions _defaults = new();
         private readonly bool _throwOnError;
         private readonly TypeNameParserOptions _parseOptions;
@@ -95,7 +91,7 @@ namespace System.Reflection.Metadata
             }
 
             List<int>? nestedNameLengths = null;
-            if (!TryGetTypeNameLengthWithNestedNameLengths(_inputString, ref nestedNameLengths, out int fullTypeNameLength, out int genericArgCount))
+            if (!TryGetTypeNameInfo(_inputString, ref nestedNameLengths, out int fullTypeNameLength, out int genericArgCount))
             {
                 return null;
             }
@@ -152,6 +148,7 @@ namespace System.Reflection.Metadata
                     return null;
                 }
 
+                // TODO adsitnik: don't allocate an array that would require reaching the max depth limit
                 (genericArgs ??= new TypeName[genericArgCount])[genericArgIndex++] = genericArg;
 
                 if (TryStripFirstCharAndTrailingSpaces(ref _inputString, ','))
@@ -203,7 +200,11 @@ namespace System.Reflection.Metadata
                     return null;
                 }
 
-                if (previousDecorator == TypeName.ByRef) // it's illegal for managed reference to be followed by any other decorator
+                if (previousDecorator == ByRef) // it's illegal for managed reference to be followed by any other decorator
+                {
+                    return null;
+                }
+                else if (parsedDecorator > MaxArrayRank)
                 {
                     return null;
                 }
@@ -241,14 +242,7 @@ namespace System.Reflection.Metadata
                 while (TryParseNextDecorator(ref capturedBeforeProcessing, out int parsedModifier))
                 {
                     // we are not reusing the input string, as it could have contain whitespaces that we want to exclude
-                    string trimmedModifier = parsedModifier switch
-                    {
-                        TypeName.ByRef => "&",
-                        TypeName.Pointer => "*",
-                        TypeName.SZArray => "[]",
-                        1 => "[*]",
-                        _ => ArrayRankToString(parsedModifier)
-                    };
+                    string trimmedModifier = GetRankOrModifierStringRepresentation(parsedModifier);
                     nameSb.Append(trimmedModifier);
                     fullNameSb.Append(trimmedModifier);
 
@@ -257,65 +251,6 @@ namespace System.Reflection.Metadata
             }
 
             return result;
-        }
-
-        private static bool TryGetTypeNameLengthWithNestedNameLengths(ReadOnlySpan<char> input, ref List<int>? nestedNameLengths,
-            out int totalLength, out int genericArgCount)
-        {
-            bool isNestedType;
-            totalLength = 0;
-            genericArgCount = 0;
-            do
-            {
-                int length = GetFullTypeNameLength(input.Slice(totalLength), out isNestedType);
-                if (length <= 0) // it's possible only for a pair of unescaped '+' characters
-                {
-                    return false;
-                }
-
-                genericArgCount += GetGenericArgumentCount(input.Slice(totalLength, length));
-
-                if (isNestedType)
-                {
-                    // do not validate the type name now, it will be validated as a whole nested type name later
-                    (nestedNameLengths ??= new()).Add(length);
-                    totalLength += 1; // skip the '+' sign in next search
-                }
-                totalLength += length;
-            } while (isNestedType);
-
-            return true;
-        }
-
-        // Normalizes "not found" to input length, since caller is expected to slice.
-        private static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
-        {
-            // NET 6+ guarantees that MemoryExtensions.IndexOfAny has worst-case complexity
-            // O(m * i) if a match is found, or O(m * n) if a match is not found, where:
-            //   i := index of match position
-            //   m := number of needles
-            //   n := length of search space (haystack)
-            //
-            // Downlevel versions of .NET do not make this guarantee, instead having a
-            // worst-case complexity of O(m * n) even if a match occurs at the beginning of
-            // the search space. Since we're running this in a loop over untrusted user
-            // input, that makes the total loop complexity potentially O(m * n^2), where
-            // 'n' is adversary-controlled. To avoid DoS issues here, we'll loop manually.
-
-#if NET8_0_OR_GREATER
-            int offset = input.IndexOfAny(_endOfFullTypeNameDelimitersSearchValues);
-#elif NET6_0_OR_GREATER
-            int offset = input.IndexOfAny(EndOfTypeNameDelimiters);
-#else
-            int offset;
-            for (offset = 0; offset < input.Length; offset++)
-            {
-                if (EndOfFullTypeNameDelimiters.IndexOf(input[offset]) >= 0) { break; }
-            }
-#endif
-            isNestedType = offset > 0 && offset < input.Length && input[offset] == '+';
-
-            return (int)Math.Min((uint)offset, (uint)input.Length);
         }
 
         /// <returns>false means the input was invalid and parsing has failed. Empty input is valid and returns true.</returns>
@@ -355,9 +290,6 @@ namespace System.Reflection.Metadata
             return true;
         }
 
-        private static ReadOnlySpan<char> TrimStart(ReadOnlySpan<char> input)
-            => input.TrimStart(' '); // TODO: the CLR parser should trim all whitespaces, but there seems to be no test coverage
-
         private static TypeName? GetContainingType(ReadOnlySpan<char> fullTypeName, List<int>? nestedNameLengths, AssemblyName? assemblyName)
         {
             if (nestedNameLengths is null)
@@ -369,7 +301,7 @@ namespace System.Reflection.Metadata
             int nameOffset = 0;
             foreach (int nestedNameLength in nestedNameLengths)
             {
-                Debug.Assert(nestedNameLength > 0, "TryGetTypeNameLengthWithNestedNameLengths should throw on zero lengths");
+                Debug.Assert(nestedNameLength > 0, "TryGetTypeNameInfo should return error on zero lengths");
                 ReadOnlySpan<char> fullName = fullTypeName.Slice(0, nameOffset + nestedNameLength);
                 ReadOnlySpan<char> name = GetName(fullName);
                 containingType = new(name.ToString(), fullName.ToString(), assemblyName, containingType: containingType);
@@ -377,22 +309,6 @@ namespace System.Reflection.Metadata
             }
 
             return containingType;
-        }
-
-        private static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
-        {
-#if NET8_0_OR_GREATER
-            int offset = fullName.LastIndexOfAny(_endOfTypeNameDelimitersSearchValues);
-#elif NET6_0_OR_GREATER
-            int offset = fullName.LastIndexOfAny(EndOfTypeNameDelimiters);
-#else
-            int offset = fullName.Length - 1;
-            for (; offset >= 0; offset--)
-            {
-                if (EndOfTypeNameDelimiters.IndexOf(fullName[offset]) >= 0) { break; }
-            }
-#endif
-            return offset < 0 ? fullName : fullName.Slice(offset + 1);
         }
 
         private bool TryDive(ref int depth)
@@ -405,44 +321,6 @@ namespace System.Reflection.Metadata
             return true;
         }
 
-        // Are there any captured generic args? We'll look for "[[" and "[" that is not followed by "]", "*" and ",".
-        private static bool IsBeginningOfGenericAgs(ref ReadOnlySpan<char> span, out bool doubleBrackets)
-        {
-            doubleBrackets = false;
-
-            if (!span.IsEmpty && span[0] == '[')
-            {
-                // There are no spaces allowed before the first '[', but spaces are allowed after that.
-                ReadOnlySpan<char> trimmed = TrimStart(span.Slice(1));
-                if (!trimmed.IsEmpty)
-                {
-                    if (trimmed[0] == '[')
-                    {
-                        doubleBrackets = true;
-                        span = TrimStart(trimmed.Slice(1));
-                        return true;
-                    }
-                    if (!(trimmed[0] is ',' or '*' or ']')) // [] or [*] or [,] or [,,,, ...]
-                    {
-                        span = trimmed;
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        private static bool TryStripFirstCharAndTrailingSpaces(ref ReadOnlySpan<char> span, char value)
-        {
-            if (!span.IsEmpty && span[0] == value)
-            {
-                span = TrimStart(span.Slice(1));
-                return true;
-            }
-            return false;
-        }
-
         private static bool TryParseNextDecorator(ref ReadOnlySpan<char> input, out int rankOrModifier)
         {
             // Then try pulling a single decorator.
@@ -452,13 +330,13 @@ namespace System.Reflection.Metadata
 
             if (TryStripFirstCharAndTrailingSpaces(ref input, '*'))
             {
-                rankOrModifier = TypeName.Pointer;
+                rankOrModifier = TypeNameParserHelpers.Pointer;
                 return true;
             }
 
             if (TryStripFirstCharAndTrailingSpaces(ref input, '&'))
             {
-                rankOrModifier = TypeName.ByRef;
+                rankOrModifier = ByRef;
                 return true;
             }
 
@@ -475,7 +353,7 @@ namespace System.Reflection.Metadata
                 if (TryStripFirstCharAndTrailingSpaces(ref input, ']'))
                 {
                     // End of array marker
-                    rankOrModifier = rank == 1 && !hasSeenAsterisk ? TypeName.SZArray : rank;
+                    rankOrModifier = rank == 1 && !hasSeenAsterisk ? SZArray : rank;
                     return true;
                 }
 
@@ -502,93 +380,6 @@ namespace System.Reflection.Metadata
             input = originalInput; // ensure 'ref input' not mutated
             rankOrModifier = 0;
             return false;
-        }
-
-        private static string ArrayRankToString(int arrayRank)
-        {
-#if NET8_0_OR_GREATER
-            return string.Create(2 + arrayRank - 1, arrayRank, (buffer, rank) =>
-            {
-                buffer[0] = '[';
-                for (int i = 1; i < rank; i++)
-                    buffer[i] = ',';
-                buffer[^1] = ']';
-            });
-#else
-            StringBuilder sb = new(2 + arrayRank - 1);
-            sb.Append('[');
-            for (int i = 1; i < arrayRank; i++)
-                sb.Append(',');
-            sb.Append(']');
-            return sb.ToString();
-#endif
-        }
-
-        private static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, TypeName[]? genericArgs)
-        {
-            if (genericArgs is null)
-            {
-                return fullTypeName.ToString();
-            }
-
-            int size = fullTypeName.Length + 1;
-            foreach (TypeName genericArg in genericArgs)
-            {
-                size += 3 + genericArg.AssemblyQualifiedName.Length;
-            }
-
-            StringBuilder result = new(size);
-#if NET8_0_OR_GREATER
-            result.Append(fullTypeName);
-#else
-            for (int i = 0; i < fullTypeName.Length; i++)
-            {
-                result.Append(fullTypeName[i]);
-            }
-#endif
-            result.Append('[');
-            foreach (TypeName genericArg in genericArgs)
-            {
-                result.Append('[');
-                result.Append(genericArg.AssemblyQualifiedName);
-                result.Append(']');
-                result.Append(',');
-            }
-            result[result.Length - 1] = ']'; // replace ',' with ']'
-
-            return result.ToString();
-        }
-
-        private static int GetGenericArgumentCount(ReadOnlySpan<char> fullTypeName)
-        {
-            const int ShortestPossibleGenericTypeName = 3; // single letter followed by a backtick and one digit
-            if (fullTypeName.Length < ShortestPossibleGenericTypeName || !IsAsciiDigit(fullTypeName[fullTypeName.Length - 1]))
-            {
-                return 0;
-            }
-
-            int backtickIndex = fullTypeName.Length - 2; // we already know it's true for the last one
-            for (; backtickIndex >= 0; backtickIndex--)
-            {
-                if (fullTypeName[backtickIndex] == '`')
-                    return int.Parse(fullTypeName.Slice(backtickIndex + 1)
-#if NET8_0_OR_GREATER
-                        );
-#else
-                        .ToString());
-#endif
-                else if (!IsAsciiDigit(fullTypeName[backtickIndex]))
-                    break;
-            }
-
-            return 0;
-
-            static bool IsAsciiDigit(char ch) =>
-#if NET8_0_OR_GREATER
-                char.IsAsciiDigit(ch);
-#else
-                ch >= '0' && ch <= '9';
-#endif
         }
     }
 }

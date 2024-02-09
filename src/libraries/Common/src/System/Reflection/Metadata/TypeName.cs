@@ -16,12 +16,10 @@ namespace System.Reflection.Metadata
 #endif
     sealed class TypeName
     {
-        internal const int SZArray = -1;
-        internal const int Pointer = -2;
-        internal const int ByRef = -3;
-
-        // Positive value is array rank.
-        // Negative value is modifier encoded using constants above.
+        /// <summary>
+        /// Positive value is array rank.
+        /// Negative value is modifier encoded using constants defined in <see cref="TypeNameParserHelpers"/>.
+        /// </summary>
         private readonly int _rankOrModifier;
         private readonly TypeName[]? _genericArguments;
         private string? _assemblyQualifiedName;
@@ -87,7 +85,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this type represents any kind of array, regardless of the array's
         /// rank or its bounds.
         /// </summary>
-        public bool IsArray => _rankOrModifier == SZArray || _rankOrModifier > 0;
+        public bool IsArray => _rankOrModifier == TypeNameParserHelpers.SZArray || _rankOrModifier > 0;
 
         /// <summary>
         /// Returns true if this type represents a constructed generic type (e.g., "List&lt;int&gt;").
@@ -115,7 +113,7 @@ namespace System.Reflection.Metadata
         /// Returns true if this is a managed pointer type (e.g., "ref int").
         /// Managed pointer types are sometimes called byref types (<seealso cref="Type.IsByRef"/>)
         /// </summary>
-        public bool IsManagedPointerType => _rankOrModifier == ByRef; // name inconsistent with Type.IsByRef
+        public bool IsManagedPointerType => _rankOrModifier == TypeNameParserHelpers.ByRef; // name inconsistent with Type.IsByRef
 
         /// <summary>
         /// Returns true if this is a nested type (e.g., "Namespace.Containing+Nested").
@@ -126,13 +124,13 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Returns true if this type represents a single-dimensional, zero-indexed array (e.g., "int[]").
         /// </summary>
-        public bool IsSzArrayType => _rankOrModifier == SZArray; // name could be more user-friendly
+        public bool IsSzArrayType => _rankOrModifier == TypeNameParserHelpers.SZArray; // name could be more user-friendly
 
         /// <summary>
         /// Returns true if this type represents an unmanaged pointer (e.g., "int*" or "void*").
         /// Unmanaged pointer types are often just called pointers (<seealso cref="Type.IsPointer"/>)
         /// </summary>
-        public bool IsUnmanagedPointerType => _rankOrModifier == Pointer; // name inconsistent with Type.IsPointer
+        public bool IsUnmanagedPointerType => _rankOrModifier == TypeNameParserHelpers.Pointer; // name inconsistent with Type.IsPointer
 
         /// <summary>
         /// Returns true if this type represents a variable-bound array; that is, an array of rank greater
@@ -201,7 +199,7 @@ namespace System.Reflection.Metadata
         public int GetArrayRank()
             => _rankOrModifier switch
             {
-                SZArray => 1,
+                TypeNameParserHelpers.SZArray => 1,
                 _ when _rankOrModifier > 0 => _rankOrModifier,
                 _ => throw new ArgumentException("SR.Argument_HasToBeArrayClass") // TODO: use actual resource (used by Type.GetArrayRank)
             };

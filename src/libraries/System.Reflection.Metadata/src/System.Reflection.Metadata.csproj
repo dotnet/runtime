@@ -255,6 +255,7 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs" Link="System\Reflection\AssemblyNameParser.cs" />
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs" Link="System\Reflection\Metadata\TypeName.cs" />
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs" Link="System\Reflection\Metadata\TypeNameParser.cs" />
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs" Link="System\Reflection\Metadata\TypeNameParserHelpers.cs" />
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserOptions.cs" Link="System\Reflection\Metadata\TypeNameParserOptions.cs" />
   </ItemGroup>
 

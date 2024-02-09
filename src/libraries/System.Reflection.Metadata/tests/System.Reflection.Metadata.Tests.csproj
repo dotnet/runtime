@@ -25,6 +25,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs"
+             Link="System\Reflection\Metadata\TypeNameParserHelpers.cs" />
 
     <Compile Include="Metadata\BlobContentIdTests.cs" />
     <Compile Include="Metadata\BlobTests.cs" />
@@ -36,6 +38,7 @@
     <Compile Include="Metadata\Ecma335\MetadataRootBuilderTests.cs" />
     <Compile Include="Metadata\Ecma335\PortablePdbBuilderTests.cs" />
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
+    <Compile Include="Metadata\TypeNameParserHelpersTests.cs" />
     <Compile Include="Metadata\TypeNameParserTests.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyDefinitionTests.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyReferenceTests.cs" />

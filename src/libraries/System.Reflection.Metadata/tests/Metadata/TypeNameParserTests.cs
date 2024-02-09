@@ -48,6 +48,15 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("TooFewGenericArgumentsDoubleSquareBracket'3[a,b]")]
         [InlineData("TooFewGenericArgumentsDoubleSquareBracketTwoDigits'10[[1],[2],[3],[4],[5],[6],[7],[8],[9]]")]
         [InlineData("TooFewGenericArgumentsSingleSquareBracketTwoDigits'10[1,2,3,4,5,6,7,8,9]")]
+        [InlineData("`1")] // back tick as first char followed by numbers (short)
+        [InlineData("`111")] // back tick as first char followed by numbers (longer)
+        [InlineData("MoreThanMaxArrayLength`2147483592")]
+        [InlineData("NegativeGenericArgumentCount`-123")]
+        [InlineData("MoreThanMaxArrayRank[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]")]
+        [InlineData("NonGenericTypeUsingGenericSyntax[[type1], [type2]]")]
+        [InlineData("NonGenericTypeUsingGenericSyntax[[type1, assembly1], [type2, assembly2]]")]
+        [InlineData("NonGenericTypeUsingGenericSyntax[type1,type2]")]
+        [InlineData("NonGenericTypeUsingGenericSyntax[[]]")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));

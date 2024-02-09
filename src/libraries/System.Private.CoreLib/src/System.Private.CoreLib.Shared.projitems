@@ -1471,6 +1471,9 @@
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParser.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs">
+      <Link>Common\System\Reflection\Metadata\TypeNameParserHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserOptions.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParserOptions.cs</Link>
     </Compile>

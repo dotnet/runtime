@@ -193,11 +193,14 @@
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeName.cs">
       <Link>Utilities\TypeName.cs</Link>
     </Compile>
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParserOptions.cs">
-      <Link>Utilities\TypeNameParserOptions.cs</Link>
-    </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParser.cs">
       <Link>Utilities\TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
+      <Link>Utilities\TypeNameParserHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\Metadata\TypeNameParserOptions.cs">
+      <Link>Utilities\TypeNameParserOptions.cs</Link>
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Reflection\TypeNameParser.Helpers.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.Helpers</Link>
