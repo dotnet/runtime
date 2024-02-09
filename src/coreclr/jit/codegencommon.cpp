@@ -4564,8 +4564,8 @@ void CodeGen::genZeroInitFltRegs(const regMaskFloat& initFltRegs,
                                  const regNumber&    initReg)
 {
     assert(compiler->compGeneratingProlog);
-    assert(Compiler::IsFloatRegMask(initFltRegs));
-    assert(Compiler::IsFloatRegMask(initDblRegs));
+    assert(compiler->IsFloatRegMask(initFltRegs));
+    assert(compiler->IsFloatRegMask(initDblRegs));
 
     // The first float/double reg that is initialized to 0. So they can be used to
     // initialize the remaining registers.
@@ -5206,8 +5206,10 @@ void CodeGen::genReserveProlog(BasicBlock* block)
 
 void CodeGen::genReserveEpilog(BasicBlock* block)
 {
-    regMaskTP gcrefRegsArg = gcInfo.gcRegGCrefSetCur;
-    regMaskTP byrefRegsArg = gcInfo.gcRegByrefSetCur;
+    regMaskGpr gcrefRegsArg = gcInfo.gcRegGCrefSetCur;
+    regMaskGpr byrefRegsArg = gcInfo.gcRegByrefSetCur;
+    assert(compiler->IsGprRegMask(gcrefRegsArg));
+    assert(compiler->IsGprRegMask(byrefRegsArg));
 
     /* The return value is special-cased: make sure it goes live for the epilog */
 
@@ -6804,7 +6806,7 @@ regMaskGpr CodeGen::genPushRegs(regMaskGpr regs, regMaskGpr* byrefRegs, regMaskG
         return RBM_NONE;
     }
 
-    assert(Compiler::IsGprRegMask(regs));
+    assert(compiler->IsGprRegMask(regs));
 
 #if FEATURE_FIXED_OUT_ARGS
 
@@ -6876,7 +6878,7 @@ void CodeGen::genPopRegs(regMaskGpr regs, regMaskGpr byrefRegs, regMaskGpr noRef
         return;
     }
 
-    assert(Compiler::IsGprRegMask(regs));
+    assert(compiler->IsGprRegMask(regs));
 #if FEATURE_FIXED_OUT_ARGS
 
     NYI("Don't call genPopRegs with real regs!");

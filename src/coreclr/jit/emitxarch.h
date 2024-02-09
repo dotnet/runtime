@@ -524,15 +524,15 @@ instrDesc* emitNewInstrAmdCns(emitAttr attr, ssize_t dsp, int cns);
 
 instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
-                               regMaskTP        gcrefRegs,
-                               regMaskTP        byrefRegs,
+                               regMaskGpr       gcrefRegs,
+                               regMaskGpr       byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
-                               regMaskTP        gcrefRegs,
-                               regMaskTP        byrefRegs,
+                               regMaskGpr       gcrefRegs,
+                               regMaskGpr       byrefRegs,
                                emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 void emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
@@ -897,8 +897,8 @@ void emitIns_Call(EmitCallType          callType,
                   emitAttr              retSize
                   MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP      ptrVars,
-                  regMaskTP             gcrefRegs,
-                  regMaskTP             byrefRegs,
+                  regMaskGpr            gcrefRegs,
+                  regMaskGpr            byrefRegs,
                   const DebugInfo& di = DebugInfo(),
                   regNumber             ireg     = REG_NA,
                   regNumber             xreg     = REG_NA,

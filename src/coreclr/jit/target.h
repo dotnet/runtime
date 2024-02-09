@@ -228,6 +228,7 @@ typedef unsigned __int64 regMaskOnlyOne;
 // registers. Once we identify all the places with `regMaskOnlyOne`,
 // `regMaskFloat`, `regMaskGpr`, we will revisit `regMaskAny` and try
 // to either:
+// 0. Revisit regMaskAny and see if they should be "regMaskAny"
 // 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
 // 2. Have a data structure like struct to pass all these together
 typedef unsigned __int64 regMaskAny;
@@ -607,7 +608,7 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
+inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
     defined(TARGET_RISCV64)

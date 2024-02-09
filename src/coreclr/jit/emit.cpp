@@ -2062,8 +2062,8 @@ void emitter::emitEndProlog()
 void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
                                       BasicBlock*             igBB,
                                       VARSET_VALARG_TP        GCvars,
-                                      regMaskTP               gcrefRegs,
-                                      regMaskTP               byrefRegs,
+                                      regMaskGpr              gcrefRegs,
+                                      regMaskGpr              byrefRegs,
                                       bool                    last)
 {
     assert(igBB != nullptr);
@@ -2891,8 +2891,8 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  */
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
-                            regMaskTP        gcrefRegs,
-                            regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block))
+                            regMaskGpr        gcrefRegs,
+                            regMaskGpr byrefRegs DEBUG_ARG(BasicBlock* block))
 {
     /* Create a new IG if the current one is non-empty */
 
@@ -3603,11 +3603,13 @@ void emitter::emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSiz
 emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
                                                  ssize_t          disp,
                                                  VARSET_VALARG_TP GCvars,
-                                                 regMaskTP        gcrefRegs,
-                                                 regMaskTP        byrefRegs,
+                                                 regMaskGpr       gcrefRegs,
+                                                 regMaskGpr       byrefRegs,
                                                  emitAttr         retSizeIn
                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
 {
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
     bool gcRefRegsInScratch = ((gcrefRegs & RBM_CALLEE_TRASH) != 0);
@@ -3686,11 +3688,14 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 
 emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
                                                  VARSET_VALARG_TP GCvars,
-                                                 regMaskTP        gcrefRegs,
-                                                 regMaskTP        byrefRegs,
+                                                 regMaskGpr       gcrefRegs,
+                                                 regMaskGpr       byrefRegs,
                                                  emitAttr         retSizeIn
                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
 {
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
+
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
     // Allocate a larger descriptor if new GC values need to be saved
@@ -3848,14 +3853,17 @@ void emitter::emitDispGCDeltaTitle(const char* title)
 //    prevRegs - The live GC registers before the recent instruction.
 //    curRegs  - The live GC registers after the recent instruction.
 //
-void emitter::emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs)
+void emitter::emitDispGCRegDelta(const char* title, regMaskGpr prevRegs, regMaskGpr curRegs)
 {
+    assert(emitComp->IsGprRegMask(prevRegs));
+    assert(emitComp->IsGprRegMask(curRegs));
+
     if (prevRegs != curRegs)
     {
         emitDispGCDeltaTitle(title);
-        regMaskTP sameRegs    = prevRegs & curRegs;
-        regMaskTP removedRegs = prevRegs - sameRegs;
-        regMaskTP addedRegs   = curRegs - sameRegs;
+        regMaskGpr sameRegs    = prevRegs & curRegs;
+        regMaskGpr removedRegs = prevRegs - sameRegs;
+        regMaskGpr addedRegs   = curRegs - sameRegs;
         if (removedRegs != RBM_NONE)
         {
             printf(" -");
@@ -7296,7 +7304,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             /* Update the set of live GC ref registers */
 
             {
-                regMaskTP GCregs = ig->igGCregs;
+                regMaskGpr GCregs = ig->igGCregs;
 
                 if (GCregs != emitThisGCrefRegs)
                 {
@@ -8906,8 +8914,9 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
  *  Record a new set of live GC ref registers.
  */
 
-void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
+void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskGpr regs, BYTE* addr)
 {
+    assert(emitComp->IsGprRegMask(regs));
     assert(emitIssuing);
 
     // Don't track GC changes in epilogs
@@ -8916,14 +8925,14 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
         return;
     }
 
-    regMaskTP life;
-    regMaskTP dead;
-    regMaskTP chg;
+    regMaskGpr life;
+    regMaskGpr dead;
+    regMaskGpr chg;
 
     assert(needsGC(gcType));
 
-    regMaskTP& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
-    regMaskTP& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
+    regMaskGpr& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
+    regMaskGpr& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
     assert(emitThisXXrefRegs != regs);
 
     if (emitFullGCinfo)
@@ -8944,7 +8953,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
 
         do
         {
-            regMaskTP bit = genFindLowestBit(chg);
+            regMaskGpr bit = genFindLowestBit(chg);
             regNumber reg = genRegNumFromMask(bit);
 
             if (life & bit)
@@ -8977,8 +8986,9 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
  *  Record the fact that the given register now contains a live GC ref.
  */
 
-void emitter::emitGCregLiveSet(GCtype gcType, regMaskTP regMask, BYTE* addr, bool isThis)
+void emitter::emitGCregLiveSet(GCtype gcType, regMaskGpr regMask, BYTE* addr, bool isThis)
 {
+    assert(emitComp->IsGprRegMask(regMask));
     assert(emitIssuing);
     assert(needsGC(gcType));
 
@@ -9008,7 +9018,7 @@ void emitter::emitGCregLiveSet(GCtype gcType, regMaskTP regMask, BYTE* addr, boo
  *  Record the fact that the given register no longer contains a live GC ref.
  */
 
-void emitter::emitGCregDeadSet(GCtype gcType, regMaskTP regMask, BYTE* addr)
+void emitter::emitGCregDeadSet(GCtype gcType, regMaskGpr regMask, BYTE* addr)
 {
     assert(emitIssuing);
     assert(needsGC(gcType));
@@ -9247,8 +9257,8 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 
     regMaskTP regMask = genRegMask(reg);
 
-    regMaskTP& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
-    regMaskTP& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
+    regMaskGpr& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
+    regMaskGpr& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
 
     if ((emitThisXXrefRegs & regMask) == 0)
     {
@@ -9285,7 +9295,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
  *  Record the fact that the given set of registers no longer contain live GC refs.
  */
 
-void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
+void emitter::emitGCregDeadUpdMask(regMaskGpr regs, BYTE* addr)
 {
     assert(emitIssuing);
 
@@ -9297,7 +9307,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
     // First, handle the gcref regs going dead
 
-    regMaskTP gcrefRegs = emitThisGCrefRegs & regs;
+    regMaskGpr gcrefRegs = emitThisGCrefRegs & regs;
 
     // "this" can never go dead in synchronized methods, except in the epilog
     // after the call to CORINFO_HELP_MON_EXIT.
@@ -9317,7 +9327,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
     // Second, handle the byref regs going dead
 
-    regMaskTP byrefRegs = emitThisByrefRegs & regs;
+    regMaskGpr byrefRegs = emitThisByrefRegs & regs;
 
     if (byrefRegs)
     {
@@ -10364,7 +10374,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 // Return value:
 //   the saved set of registers.
 //
-regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
+regMaskAny emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
     bool isNoGCHelper = emitNoGChelper(methHnd);
@@ -10373,7 +10383,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
         CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
 
         // Get the set of registers that this call kills and remove it from the saved set.
-        regMaskTP savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc);
+        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc);
 
 #ifdef DEBUG
         if (emitComp->verbose)
@@ -10410,7 +10420,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // Return Value:
 //   Mask of GC register kills
 //
-regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
+regMaskAny emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
     assert(emitNoGChelper(helper));
     regMaskTP result;

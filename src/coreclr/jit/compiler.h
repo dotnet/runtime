@@ -8443,27 +8443,20 @@ public:
     // Infrastructure functions: start/stop/reserve/emit.
     //
 
-//#ifdef TARGET_ARM64
-    static bool IsGprRegMask(regMaskTP regMask)
+    bool IsGprRegMask(regMaskTP regMask)
     {
-#ifdef TARGET_AMD64
-        // TODO: We need compiler object for TARGET_AMD64
-        return true;
-#else
         return (regMask & ~RBM_ALLFLOAT) == regMask;
-#endif
     }
 
-    static bool IsFloatRegMask(regMaskTP regMask)
+    bool IsFloatRegMask(regMaskTP regMask)
     {
-#ifdef TARGET_AMD64
-        // TODO: We need compiler object for TARGET_AMD64
-        return true;
-#else
         return (regMask & RBM_ALLFLOAT) == regMask;
-#endif
     }
-//#endif
+
+    bool IsOnlyOneRegMask(regMaskTP regMask)
+    {
+        return IsGprRegMask(regMask) != IsFloatRegMask(regMask);
+    }
 
     void unwindBegProlog();
     void unwindEndProlog();

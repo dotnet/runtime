@@ -80,16 +80,16 @@ void emitDispSvePattern(insSvePattern pattern, bool addComma);
 private:
 instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
-                               regMaskTP        gcrefRegs,
-                               regMaskTP        byrefRegs,
+                               regMaskGpr       gcrefRegs,
+                               regMaskGpr       byrefRegs,
                                emitAttr         retSize,
                                emitAttr         secondRetSize);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
-                               regMaskTP        gcrefRegs,
-                               regMaskTP        byrefRegs,
+                               regMaskGpr       gcrefRegs,
+                               regMaskGpr       byrefRegs,
                                emitAttr         retSize,
                                emitAttr         secondRetSize);
 
@@ -1398,8 +1398,8 @@ void emitIns_Call(EmitCallType          callType,
                   emitAttr         retSize,
                   emitAttr         secondRetSize,
                   VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
+                  regMaskGpr       gcrefRegs,
+                  regMaskGpr       byrefRegs,
                   const DebugInfo& di,
                   regNumber        ireg,
                   regNumber        xreg,

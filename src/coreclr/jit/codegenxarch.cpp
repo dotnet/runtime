@@ -10025,7 +10025,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 //
 unsigned CodeGen::genPopCalleeSavedRegistersFromMask(regMaskGpr rsPopRegs)
 {
-    assert(Compiler::IsGprRegMask(rsPopRegs));
+    assert(compiler->IsGprRegMask(rsPopRegs));
 
     unsigned popCount = 0;
     if ((rsPopRegs & RBM_EBX) != 0)

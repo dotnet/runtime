@@ -4670,8 +4670,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            int              argSize,
                            emitAttr         retSize,
                            VARSET_VALARG_TP ptrVars,
-                           regMaskTP        gcrefRegs,
-                           regMaskTP        byrefRegs,
+                           regMaskGpr       gcrefRegs,
+                           regMaskGpr       byrefRegs,
                            const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
@@ -4680,7 +4680,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            bool             isJump /* = false */)
 {
     /* Sanity check the arguments depending on callType */
-
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
     assert(callType < EC_COUNT);
     assert((callType != EC_FUNC_TOKEN) || (addr != nullptr && ireg == REG_NA));
     assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT));
@@ -4693,7 +4694,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    regMaskAny savedSet = emitGetGCRegsSavedOrModified(methHnd);
     gcrefRegs &= savedSet;
     byrefRegs &= savedSet;
 
@@ -5764,8 +5765,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         int       imm;
         BYTE*     addr;
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
+        regMaskGpr gcrefRegs;
+        regMaskGpr byrefRegs;
 
         case IF_T1_A: // T1_A    ................
             sz   = SMALL_IDSC_SIZE;

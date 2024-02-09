@@ -202,8 +202,8 @@ void CodeGen::genCodeForBBlist()
         // here. That would require handling the changes in recordVarLocationsAtStartOfBB().
 
         regMaskAny newLiveRegSet  = RBM_NONE;
-        regMaskTP newRegGCrefSet = RBM_NONE;
-        regMaskTP newRegByrefSet = RBM_NONE;
+        regMaskGpr newRegGCrefSet = RBM_NONE;
+        regMaskGpr newRegByrefSet = RBM_NONE;
 #ifdef DEBUG
         VARSET_TP removedGCVars(VarSetOps::MakeEmpty(compiler));
         VARSET_TP addedGCVars(VarSetOps::MakeEmpty(compiler));
@@ -480,8 +480,8 @@ void CodeGen::genCodeForBBlist()
 
         /* Make sure we didn't bungle pointer register tracking */
 
-        regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
-        regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
+        regMaskGpr ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
+        regMaskGpr nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
 
         // If return is a GC-type, clear it.  Note that if a common
         // epilog is generated (genReturnBB) it has a void return

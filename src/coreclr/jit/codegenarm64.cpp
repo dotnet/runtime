@@ -838,7 +838,7 @@ int CodeGen::genGetSlotSizeForRegsInMask(regMaskOnlyOne regsMask)
 //
 void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset)
 {
-    assert(Compiler::IsGprRegMask(regsMask) != Compiler::IsFloatRegMask(regsMask));
+    assert(compiler->IsOnlyOneRegMask(regsMask));
 
     const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
 
@@ -4333,10 +4333,14 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     // FP swap is not yet implemented (and should have NYI'd in LSRA)
     assert(!varTypeIsFloating(type1));
 
-    regNumber oldOp1Reg     = lcl1->GetRegNum();
-    regMaskAny oldOp1RegMask = genRegMask(oldOp1Reg);
-    regNumber oldOp2Reg     = lcl2->GetRegNum();
-    regMaskAny oldOp2RegMask = genRegMask(oldOp2Reg);
+    regNumber oldOp1Reg = lcl1->GetRegNum();
+    regNumber oldOp2Reg = lcl2->GetRegNum();
+
+    regMaskGpr oldOp1RegMask = genRegMask(oldOp1Reg);    
+    regMaskGpr oldOp2RegMask = genRegMask(oldOp2Reg);
+
+    assert(compiler->IsGprRegMask(oldOp1RegMask));
+    assert(compiler->IsGprRegMask(oldOp2RegMask));
 
     // We don't call genUpdateVarReg because we don't have a tree node with the new register.
     varDsc1->SetRegNum(oldOp2Reg);
@@ -5546,7 +5550,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
-    assert(Compiler::IsGprRegMask(maskArgRegsLiveIn));
+    assert(compiler->IsGprRegMask(maskArgRegsLiveIn));
 
     if (frameSize == 0)
     {

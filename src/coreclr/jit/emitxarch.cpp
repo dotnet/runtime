@@ -9469,8 +9469,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            emitAttr              retSize
                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                            VARSET_VALARG_TP      ptrVars,
-                           regMaskTP             gcrefRegs,
-                           regMaskTP             byrefRegs,
+                           regMaskGpr            gcrefRegs,
+                           regMaskGpr            byrefRegs,
                            const DebugInfo&      di,
                            regNumber             ireg,
                            regNumber             xreg,
@@ -9480,6 +9480,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
+    assert(emitComp->IsGprRegMask(gcrefRegs));
+    assert(emitComp->IsGprRegMask(byrefRegs));
 
     assert(callType < EC_COUNT);
     if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
@@ -9495,7 +9499,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((unsigned)abs((signed)argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    regMaskAny savedSet = emitGetGCRegsSavedOrModified(methHnd);
     gcrefRegs &= savedSet;
     byrefRegs &= savedSet;
 
@@ -16329,8 +16333,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         BYTE* addr;
         bool  recCall;
 
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
+        regMaskGpr gcrefRegs;
+        regMaskGpr byrefRegs;
 
         /********************************************************************/
         /*                        No operands                               */

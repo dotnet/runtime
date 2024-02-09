@@ -1946,7 +1946,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 void CodeGen::genPushFltRegs(regMaskFloat regMask)
 {
     assert(regMask != 0);                      // Don't call unless we have some registers to push
-    assert(Compiler::IsFloatRegMask(regMask)); // Only floating point registers should be in regMask
+    assert(compiler->IsFloatRegMask(regMask)); // Only floating point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
@@ -1965,7 +1965,7 @@ void CodeGen::genPushFltRegs(regMaskFloat regMask)
 void CodeGen::genPopFltRegs(regMaskFloat regMask)
 {
     assert(regMask != 0);                        // Don't call uness we have some registers to pop
-    assert(Compiler::IsFloatRegMask(regMask)); // Only floasting point registers should be in regMask
+    assert(compiler->IsFloatRegMask(regMask)); // Only floasting point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
     int       slots  = genCountBits(regMask);
@@ -2109,7 +2109,7 @@ regMaskGpr CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskFloat m
     if (maskCalleeSavedFloat != RBM_NONE)
         return RBM_NONE;
 
-    assert(Compiler::IsFloatRegMask(maskCalleeSavedFloat));
+    assert(compiler->IsFloatRegMask(maskCalleeSavedFloat));
 
     // Allocate space for small frames by pushing extra registers. It generates smaller and faster code
     // that extra sub sp,XXX/add sp,XXX.

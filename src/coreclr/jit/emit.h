@@ -246,11 +246,11 @@ struct insPlaceholderGroupData
     insGroup*               igPhNext;
     BasicBlock*             igPhBB;
     VARSET_TP               igPhInitGCrefVars;
-    regMaskTP               igPhInitGCrefRegs;
-    regMaskTP               igPhInitByrefRegs;
+    regMaskGpr              igPhInitGCrefRegs;
+    regMaskGpr              igPhInitByrefRegs;
     VARSET_TP               igPhPrevGCrefVars;
-    regMaskTP               igPhPrevGCrefRegs;
-    regMaskTP               igPhPrevByrefRegs;
+    regMaskGpr              igPhPrevGCrefRegs;
+    regMaskGpr              igPhPrevByrefRegs;
     insGroupPlaceholderType igPhType;
 }; // end of struct insPlaceholderGroupData
 
@@ -2137,8 +2137,8 @@ protected:
 
         VARSET_TP idcGCvars;    // ... updated GC vars or
         ssize_t   idcDisp;      // ... big addrmode disp
-        regMaskTP idcGcrefRegs; // ... gcref registers
-        regMaskTP idcByrefRegs; // ... byref registers
+        regMaskGpr idcGcrefRegs; // ... gcref registers
+        regMaskGpr idcByrefRegs; // ... byref registers
         unsigned  idcArgCnt;    // ... lots of args or (<0 ==> caller pops args)
 
 #if MULTIREG_HAS_SECOND_GC_RET
@@ -2250,11 +2250,11 @@ protected:
     VARSET_TP  debugPrevGCrefVars;
     VARSET_TP  debugThisGCrefVars;
     regPtrDsc* debugPrevRegPtrDsc;
-    regMaskTP  debugPrevGCrefRegs;
-    regMaskTP  debugPrevByrefRegs;
+    regMaskGpr  debugPrevGCrefRegs;
+    regMaskGpr  debugPrevByrefRegs;
     void       emitDispInsIndent();
     void emitDispGCDeltaTitle(const char* title);
-    void emitDispGCRegDelta(const char* title, regMaskTP prevRegs, regMaskTP curRegs);
+    void emitDispGCRegDelta(const char* title, regMaskGpr prevRegs, regMaskGpr curRegs);
     void emitDispGCVarDelta();
     void emitDispRegPtrListDelta();
     void emitDispGCInfoDelta();
@@ -2646,12 +2646,12 @@ private:
     // out, and GCrefRegs is always saved.
 
     VARSET_TP emitPrevGCrefVars;
-    regMaskTP emitPrevGCrefRegs;
-    regMaskTP emitPrevByrefRegs;
+    regMaskGpr emitPrevGCrefRegs;
+    regMaskGpr emitPrevByrefRegs;
 
     VARSET_TP emitInitGCrefVars;
-    regMaskTP emitInitGCrefRegs;
-    regMaskTP emitInitByrefRegs;
+    regMaskGpr emitInitGCrefRegs;
+    regMaskGpr emitInitByrefRegs;
 
     // If this is set, we ignore comparing emitPrev* and emitInit* to determine
     // whether to save GC state (to save space in the IG), and always save it.
@@ -2669,8 +2669,8 @@ private:
     // used due to bugs.
 
     VARSET_TP emitThisGCrefVars;
-    regMaskTP emitThisGCrefRegs; // Current set of registers holding GC references
-    regMaskTP emitThisByrefRegs; // Current set of registers holding BYREF references
+    regMaskGpr emitThisGCrefRegs; // Current set of registers holding GC references
+    regMaskGpr emitThisByrefRegs; // Current set of registers holding BYREF references
 
     bool emitThisGCrefVset; // Is "emitThisGCrefVars" up to date?
 
@@ -2680,7 +2680,7 @@ private:
     void emitSetSecondRetRegGCType(instrDescCGCA* id, emitAttr secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
 
-    static void emitEncodeCallGCregs(regMaskTP regs, instrDesc* id);
+    static void emitEncodeCallGCregs(regMaskGpr regs, instrDesc* id);
     static unsigned emitDecodeCallGCregs(instrDesc* id);
 
     unsigned emitNxtIGnum;
@@ -2853,8 +2853,8 @@ private:
     // Sets the emitter's record of the currently live GC variables
     // and registers.
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
-                       regMaskTP        gcrefRegs,
-                       regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
+                       regMaskGpr        gcrefRegs,
+                       regMaskGpr byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
@@ -3135,10 +3135,10 @@ public:
     bool emitFullGCinfo;  // full GC pointer maps?
     bool emitFullyInt;    // fully interruptible code?
 
-    regMaskTP emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd);
+    regMaskAny emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd);
 
     // Gets a register mask that represent the kill set for a NoGC helper call.
-    regMaskTP emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper);
+    regMaskAny emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper);
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned emitCntStackDepth; // 0 in prolog/epilog, One DWORD elsewhere
@@ -3193,7 +3193,7 @@ public:
     /* Liveness of stack variables, and registers */
 
     void emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr);
-    void emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr);
+    void emitUpdateLiveGCregs(GCtype gcType, regMaskGpr regs, BYTE* addr);
 
 #ifdef DEBUG
     const char* emitGetFrameReg();
@@ -3202,10 +3202,10 @@ public:
 #endif
 
     void emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr);
-    void emitGCregLiveSet(GCtype gcType, regMaskTP mask, BYTE* addr, bool isThis);
-    void emitGCregDeadUpdMask(regMaskTP, BYTE* addr);
+    void emitGCregLiveSet(GCtype gcType, regMaskGpr mask, BYTE* addr, bool isThis);
+    void emitGCregDeadUpdMask(regMaskGpr, BYTE* addr);
     void emitGCregDeadUpd(regNumber reg, BYTE* addr);
-    void emitGCregDeadSet(GCtype gcType, regMaskTP mask, BYTE* addr);
+    void emitGCregDeadSet(GCtype gcType, regMaskGpr mask, BYTE* addr);
 
     void emitGCvarLiveUpd(int offs, int varNum, GCtype gcType, BYTE* addr DEBUG_ARG(unsigned actualVarNum));
     void emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp = -1);

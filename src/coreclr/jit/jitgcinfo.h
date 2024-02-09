@@ -89,14 +89,14 @@ public:
 
     void gcResetForBB();
 
-    void gcMarkRegSetGCref(regMaskTP regMask DEBUGARG(bool forceOutput = false));
-    void gcMarkRegSetByref(regMaskTP regMask DEBUGARG(bool forceOutput = false));
-    void gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput = false));
+    void gcMarkRegSetGCref(regMaskGpr regMask DEBUGARG(bool forceOutput = false));
+    void gcMarkRegSetByref(regMaskGpr regMask DEBUGARG(bool forceOutput = false));
+    void gcMarkRegSetNpt(regMaskAny regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegPtrVal(regNumber reg, var_types type);
 
 #ifdef DEBUG
-    void gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
-    void gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool forceOutput = false));
+    void gcDspGCrefSetChanges(regMaskAny gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
+    void gcDspByrefSetChanges(regMaskAny gcRegByrefSetNew DEBUGARG(bool forceOutput = false));
 #endif // DEBUG
 
     /*****************************************************************************/
@@ -107,8 +107,8 @@ public:
     //  values.
     //
 
-    regMaskTP gcRegGCrefSetCur; // current regs holding GCrefs
-    regMaskTP gcRegByrefSetCur; // current regs holding Byrefs
+    regMaskGpr gcRegGCrefSetCur; // current regs holding GCrefs
+    regMaskGpr gcRegByrefSetCur; // current regs holding Byrefs
 
     VARSET_TP gcTrkStkPtrLcls; // set of tracked stack ptr lcls (GCref and Byref) - no args
     VARSET_TP gcVarPtrSetCur;  // currently live part of "gcTrkStkPtrLcls"
@@ -392,7 +392,7 @@ private:
 
 public:
     // This method updates the appropriate reg masks when a variable is moved.
-    void gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc);
+    void gcUpdateForRegVarMove(regMaskAny srcMask, regMaskAny dstMask, LclVarDsc* varDsc);
 
 private:
     ReturnKind getReturnKind();
