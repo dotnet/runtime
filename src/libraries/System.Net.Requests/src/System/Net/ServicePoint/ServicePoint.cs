@@ -16,6 +16,15 @@ namespace System.Net
 
         internal TcpKeepAlive? KeepAlive { get; set; }
 
+        internal int CurrentAddressIndex { get; set; }
+
+        internal DateTime LastDnsResolve { get; set; }
+
+        internal bool NeedDnsResolve => LastDnsResolve
+            .CompareTo(DateTime.Now.AddMilliseconds(-ServicePointManager.DnsRefreshTimeout)) >= 0;
+
+        internal IPAddress[]? CachedAddresses { get; set; }
+
         internal ServicePoint(Uri address)
         {
             Debug.Assert(address != null);
