@@ -2036,7 +2036,7 @@ private:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskFloat get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
@@ -2047,14 +2047,14 @@ private:
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP rbmAllMask;
-    regMaskTP rbmMskCalleeTrash;
+    regMaskPredicate rbmAllMask;
+    regMaskPredicate rbmMskCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE regMaskPredicate get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskPredicate get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }

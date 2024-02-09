@@ -201,8 +201,10 @@ void Compiler::unwindBegPrologCFI()
 #endif // FEATURE_EH_FUNCLETS
 }
 
-void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
+void Compiler::unwindPushPopMaskCFI(regMaskOnlyOne regMask, bool isFloat)
 {
+    assert(IsOnlyOneRegMask(regMask));
+
 #if TARGET_ARM
     regNumber regNum = isFloat ? REG_PREV(REG_FP_LAST) : REG_INT_LAST;
     regMaskTP regBit = isFloat ? genRegMask(regNum) | genRegMask(REG_NEXT(regNum)) : genRegMask(regNum);

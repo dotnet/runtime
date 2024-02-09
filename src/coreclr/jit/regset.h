@@ -43,7 +43,7 @@ public:
     RegSet(Compiler* compiler, GCInfo& gcInfo);
 
 #ifdef TARGET_ARM
-    regMaskTP rsMaskPreSpillRegs(bool includeAlignment) const
+    regMaskAny rsMaskPreSpillRegs(bool includeAlignment) const
     {
         return includeAlignment ? (rsMaskPreSpillRegArg | rsMaskPreSpillAlign) : rsMaskPreSpillRegArg;
     }

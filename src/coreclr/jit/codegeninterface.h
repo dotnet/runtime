@@ -74,7 +74,7 @@ public:
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskAny rbmAllMask;
+    regMaskPredicate rbmAllMask;
     regMaskPredicate rbmMskCalleeTrash;
 
     // Call this function after the equivalent fields in Compiler have been initialized.

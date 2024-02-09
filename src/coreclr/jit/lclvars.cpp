@@ -5358,7 +5358,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 }
 
 #ifdef TARGET_ARM
-bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskTP preSpillMask)
+bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskAny preSpillMask)
 {
     const LclVarDsc& desc = lvaTable[lclNum];
     return desc.lvIsRegArg && (preSpillMask & genRegMask(desc.GetArgReg()));
