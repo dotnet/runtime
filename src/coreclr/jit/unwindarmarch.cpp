@@ -213,8 +213,8 @@ void Compiler::unwindPushPopMaskInt(regMaskGpr maskInt, bool useOpsize16)
 
         if ((maskInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0)
         {
-            regMaskTP matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7);
-            regMaskTP valMask   = RBM_R4;
+            regMaskGpr matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7);
+            regMaskGpr valMask   = RBM_R4;
             while (val < 4)
             {
                 if (matchMask == valMask)
@@ -253,8 +253,8 @@ void Compiler::unwindPushPopMaskInt(regMaskGpr maskInt, bool useOpsize16)
         if (((maskInt & (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3)) == 0) &&
             ((maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)) == (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8)))
         {
-            regMaskTP matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11);
-            regMaskTP valMask   = RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8;
+            regMaskGpr matchMask = maskInt & (RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 | RBM_R11);
+            regMaskGpr valMask   = RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8;
             while (val < 4)
             {
                 if (matchMask == valMask)
@@ -283,10 +283,10 @@ void Compiler::unwindPushPopMaskInt(regMaskGpr maskInt, bool useOpsize16)
     }
 }
 
-void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
-{
+void Compiler::unwindPushPopMaskFloat(regMaskFloat maskFloat)
+{    
     // Only floating pointer registers can be specified in 'maskFloat'
-    assert((maskFloat & ~RBM_ALLFLOAT) == 0);
+    assert(IsFloatRegMask(maskFloat));
 
     // If the maskFloat is zero there is no unwind code to emit
     //
@@ -298,7 +298,7 @@ void Compiler::unwindPushPopMaskFloat(regMaskTP maskFloat)
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
     BYTE      val     = 0;
-    regMaskTP valMask = (RBM_F16 | RBM_F17);
+    regMaskFloat valMask = (RBM_F16 | RBM_F17);
 
     while (maskFloat != valMask)
     {

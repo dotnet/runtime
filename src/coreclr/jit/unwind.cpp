@@ -152,7 +152,7 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     FuncInfoDsc*   func     = funCurrentFunc();
     UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
-    regMaskTP relOffsetMask = RBM_CALLEE_SAVED
+    regMaskAny relOffsetMask = RBM_CALLEE_SAVED
 #if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
                               // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
                               // is excluded from the callee-save register list.
@@ -207,10 +207,10 @@ void Compiler::unwindPushPopMaskCFI(regMaskOnlyOne regMask, bool isFloat)
 
 #if TARGET_ARM
     regNumber regNum = isFloat ? REG_PREV(REG_FP_LAST) : REG_INT_LAST;
-    regMaskTP regBit = isFloat ? genRegMask(regNum) | genRegMask(REG_NEXT(regNum)) : genRegMask(regNum);
+    regMaskOnlyOne regBit = isFloat ? genRegMask(regNum) | genRegMask(REG_NEXT(regNum)) : genRegMask(regNum);
 #else
     regNumber regNum = isFloat ? REG_FP_LAST : REG_INT_LAST;
-    regMaskTP regBit = genRegMask(regNum);
+    regMaskOnlyOne regBit = genRegMask(regNum);
 #endif
 
     for (; regMask != 0 && regBit != RBM_NONE;)
