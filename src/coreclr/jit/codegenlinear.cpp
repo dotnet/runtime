@@ -2271,8 +2271,8 @@ void CodeGen::genProduceReg(GenTree* tree)
 // transfer gc/byref status of src reg to dst reg
 void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 {
-    regMaskTP srcMask = genRegMask(src);
-    regMaskTP dstMask = genRegMask(dst);
+    regMaskOnlyOne srcMask = genRegMask(src);
+    regMaskOnlyOne dstMask = genRegMask(dst);
 
     if (gcInfo.gcRegGCrefSetCur & srcMask)
     {

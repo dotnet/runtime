@@ -60,31 +60,31 @@ public:
     }
 
 #if defined(TARGET_AMD64)
-    regMaskTP rbmAllFloat;
-    regMaskTP rbmFltCalleeTrash;
+    regMaskFloat rbmAllFloat;
+    regMaskFloat rbmFltCalleeTrash;
 
-    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskFloat get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskFloat get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
-    regMaskTP rbmAllMask;
-    regMaskTP rbmMskCalleeTrash;
+    regMaskAny rbmAllMask;
+    regMaskPredicate rbmMskCalleeTrash;
 
     // Call this function after the equivalent fields in Compiler have been initialized.
     void CopyRegisterInfo();
 
-    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE regMaskAny get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskPredicate get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
@@ -158,11 +158,8 @@ protected:
     bool      genTempLiveChg;
 #endif
 
-    VARSET_TP genLastLiveSet;  // A one element map (genLastLiveSet-> genLastLiveMask)
-    regMaskTP genLastLiveMask; // these two are used in genLiveMask
-
-    regMaskTP genGetRegMask(const LclVarDsc* varDsc);
-    regMaskTP genGetRegMask(GenTree* tree);
+    regMaskOnlyOne genGetRegMask(const LclVarDsc* varDsc);
+    regMaskOnlyOne genGetRegMask(GenTree* tree);
 
     void genUpdateLife(GenTree* tree);
     void genUpdateLife(VARSET_VALARG_TP newLife);
