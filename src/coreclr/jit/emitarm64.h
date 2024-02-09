@@ -985,6 +985,11 @@ inline static bool isVectorRegister(regNumber reg)
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 
+inline static bool isLowVectorRegister(regNumber reg)
+{
+    return (reg >= FIRST_FP_ARGREG) && (reg <= LAST_FP_ARGREG);
+}
+
 inline static bool isFloatReg(regNumber reg)
 {
     return isVectorRegister(reg);
