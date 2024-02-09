@@ -83,11 +83,11 @@ public:
 
     void rsClearRegsModified();
 
-    void rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump = false));
+    void rsSetRegsModified(regMaskAny mask DEBUGARG(bool suppressDump = false));
 
-    void rsRemoveRegsModified(regMaskTP mask);
+    void rsRemoveRegsModified(regMaskGpr mask);
 
-    bool rsRegsModified(regMaskTP mask) const
+    bool rsRegsModified(regMaskGpr mask) const
     {
         assert(rsModifiedRegsMaskInitialized);
         return (rsModifiedRegsMask & mask) != 0;
@@ -95,7 +95,7 @@ public:
 
     void verifyRegUsed(regNumber reg);
 
-    void verifyRegistersUsed(regMaskTP regMask);
+    void verifyRegistersUsed(regMaskAny regMask);
 
 public:
     regMaskTP GetMaskVars() const // 'get' property function for rsMaskVars property
@@ -103,14 +103,14 @@ public:
         return _rsMaskVars;
     }
 
-    void SetMaskVars(regMaskTP newMaskVars); // 'put' property function for rsMaskVars property
+    void SetMaskVars(regMaskAny newMaskVars); // 'put' property function for rsMaskVars property
 
-    void AddMaskVars(regMaskTP addMaskVars) // union 'addMaskVars' with the rsMaskVars set
+    void AddMaskVars(regMaskAny addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {
         SetMaskVars(_rsMaskVars | addMaskVars);
     }
 
-    void RemoveMaskVars(regMaskTP removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
+    void RemoveMaskVars(regMaskAny removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
     {
         SetMaskVars(_rsMaskVars & ~removeMaskVars);
     }
@@ -128,7 +128,7 @@ private:
 #endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 public:                    // TODO-Cleanup: Should be private, but Compiler uses it
-    regMaskTP rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)
+    regMaskGpr rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)
 
 public: // The PreSpill masks are used in LclVars.cpp
 #ifdef TARGET_ARM

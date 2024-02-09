@@ -87,7 +87,7 @@ void RegSet::verifyRegUsed(regNumber reg)
 //     should simply validate that the register (or registers) have
 //     already been added to the modified set.
 
-void RegSet::verifyRegistersUsed(regMaskTP regMask)
+void RegSet::verifyRegistersUsed(regMaskAny regMask)
 {
     if (m_rsCompiler->opts.OptimizationDisabled())
     {
@@ -119,7 +119,7 @@ void RegSet::rsClearRegsModified()
     rsModifiedRegsMask = RBM_NONE;
 }
 
-void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
+void RegSet::rsSetRegsModified(regMaskAny mask DEBUGARG(bool suppressDump))
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
@@ -153,7 +153,7 @@ void RegSet::rsSetRegsModified(regMaskTP mask DEBUGARG(bool suppressDump))
     rsModifiedRegsMask |= mask;
 }
 
-void RegSet::rsRemoveRegsModified(regMaskTP mask)
+void RegSet::rsRemoveRegsModified(regMaskGpr mask)
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
@@ -187,7 +187,7 @@ void RegSet::rsRemoveRegsModified(regMaskTP mask)
     rsModifiedRegsMask &= ~mask;
 }
 
-void RegSet::SetMaskVars(regMaskTP newMaskVars)
+void RegSet::SetMaskVars(regMaskAny newMaskVars)
 {
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
@@ -203,10 +203,10 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
             m_rsCompiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
 
             // deadSet = old - new
-            regMaskTP deadSet = _rsMaskVars & ~newMaskVars;
+            regMaskAny deadSet = _rsMaskVars & ~newMaskVars;
 
             // bornSet = new - old
-            regMaskTP bornSet = newMaskVars & ~_rsMaskVars;
+            regMaskAny bornSet = newMaskVars & ~_rsMaskVars;
 
             if (deadSet != RBM_NONE)
             {
@@ -331,17 +331,11 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     }
 
     var_types tempType = RegSet::tmpNormalizeType(treeType);
-    regMaskTP mask;
     bool      floatSpill = false;
 
     if (isFloatRegType(treeType))
     {
         floatSpill = true;
-        mask       = genRegMaskFloat(reg ARM_ARG(treeType));
-    }
-    else
-    {
-        mask = genRegMask(reg);
     }
 
     rsNeededSpillReg = true;
@@ -943,7 +937,7 @@ regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
     regMaskSmall res = 0;
     for (int i = 0; i < CNT_CALLEE_SAVED; i++)
     {
-        if ((calleeSaveMask & ((regMaskTP)1 << i)) != 0)
+        if ((calleeSaveMask & ((regMaskAny)1 << i)) != 0)
         {
             res |= raRbmCalleeSaveOrder[i];
         }
