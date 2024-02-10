@@ -299,6 +299,8 @@ namespace Mono.Linker
 					if (potentialImplMethod == interfaceMethod &&
 						!potentialImplMethod.IsAbstract) {
 						AddDefaultInterfaceImplementation (interfaceMethod, type, (interfaceImpl, potentialImplMethod));
+						foundImpl = true;
+						break;
 					}
 
 					if (!potentialImplMethod.HasOverrides)
