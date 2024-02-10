@@ -20,7 +20,6 @@ import { wait_for_all_assets } from "./assets";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
-import { checkMemorySnapshotSize, getMemorySnapshot, storeMemorySnapshot } from "./snapshot";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
@@ -36,7 +35,6 @@ import { nativeAbort, nativeExit } from "./run";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
-    await checkMemorySnapshotSize();
 }
 
 // we are making emscripten startup async friendly
@@ -244,27 +242,15 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         await wait_for_all_assets();
 
-        // Threads early are not supported with memory snapshot. See below how we enable them later.
-        // Please disable startupMemoryCache in order to be able to diagnose or pause runtime startup.
-        if (WasmEnableThreads && !runtimeHelpers.config.startupMemoryCache) {
+        if (WasmEnableThreads) {
             await mono_wasm_init_threads();
         }
 
         // load runtime and apply environment settings (if necessary)
-        await mono_wasm_before_memory_snapshot();
+        await start_runtime();
 
         if (runtimeHelpers.config.interpreterPgo) {
             await interp_pgo_load_data();
-        }
-
-        if (runtimeHelpers.config.exitAfterSnapshot) {
-            const reason = runtimeHelpers.ExitStatus
-                ? new runtimeHelpers.ExitStatus(0)
-                : new Error("Snapshot taken, exiting because exitAfterSnapshot was set.");
-            reason.silent = true;
-
-            loaderHelpers.mono_exit(0, reason);
-            return;
         }
 
         if (!ENVIRONMENT_IS_WORKER) {
@@ -280,10 +266,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             }
             mono_assert(wds && FS.isDir(wds.mode), () => `FS.chdir: ${cwd} is not a directory`);
             FS.chdir(cwd);
-        }
-
-        if (WasmEnableThreads && runtimeHelpers.config.startupMemoryCache) {
-            await mono_wasm_init_threads();
         }
 
         bindings_init();
@@ -494,20 +476,6 @@ async function instantiate_wasm_module(
 
         mono_log_debug("instantiate_wasm_module done");
 
-        if (runtimeHelpers.loadedMemorySnapshotSize) {
-            try {
-                const wasmMemory = runtimeHelpers.getMemory();
-
-                // .grow() takes a delta compared to the previous size
-                wasmMemory.grow((runtimeHelpers.loadedMemorySnapshotSize! - wasmMemory.buffer.byteLength + 65535) >>> 16);
-                runtimeHelpers.updateMemoryViews();
-            } catch (err) {
-                mono_log_warn("failed to resize memory for the snapshot", err);
-                runtimeHelpers.loadedMemorySnapshotSize = undefined;
-            }
-            // now we know if the loading of memory succeeded or not, we can start loading the rest of the assets
-            loaderHelpers.memorySnapshotSkippedOrDone.promise_control.resolve();
-        }
         runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
         mono_log_error("instantiate_wasm_module() failed", err);
@@ -528,19 +496,8 @@ async function ensureUsedWasmFeatures() {
     }
 }
 
-async function mono_wasm_before_memory_snapshot() {
+async function start_runtime() {
     const mark = startMeasure();
-    if (runtimeHelpers.loadedMemorySnapshotSize) {
-        // get the bytes after we re-sized the memory, so that we don't have too much memory in use at the same time
-        const memoryBytes = await getMemorySnapshot();
-        const heapU8 = localHeapViewU8();
-        mono_assert(memoryBytes!.byteLength === heapU8.byteLength, "Loaded memory is not the expected size");
-        heapU8.set(new Uint8Array(memoryBytes!), 0);
-        mono_log_debug("Loaded WASM linear memory from browser cache");
-
-        // all things below are loaded from the snapshot
-        return;
-    }
 
     for (const k in runtimeHelpers.config.environmentVariables) {
         const v = runtimeHelpers.config.environmentVariables![k];
@@ -560,16 +517,10 @@ async function mono_wasm_before_memory_snapshot() {
 
     mono_wasm_load_runtime("unused", runtimeHelpers.config.debugLevel);
 
-    // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
-    if (runtimeHelpers.config.startupMemoryCache) {
-        await storeMemorySnapshot(localHeapViewU8().buffer);
-        runtimeHelpers.storeMemorySnapshotPending = false;
-    }
-
     if (runtimeHelpers.config.interpreterPgo)
         setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
 
-    endMeasure(mark, MeasuredBlock.memorySnapshot);
+    endMeasure(mark, MeasuredBlock.startRuntime);
 }
 
 async function maybeSaveInterpPgoTable() {

@@ -2493,6 +2493,34 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 }
 
 //-------------------------------------------------------------------------
+// IsRuntimeLookupHelperCall: Determine if this GT_CALL node represents a runtime lookup helper call.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeGetHelperNum
+//
+// Return Value:
+//     Returns true if this GT_CALL node represents a runtime lookup helper call.
+//
+bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
+{
+    if (!IsHelperCall())
+    {
+        return false;
+    }
+
+    switch (compiler->eeGetHelperNum(gtCallMethHnd))
+    {
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//-------------------------------------------------------------------------
 // IsSpecialIntrinsic: Determine if this GT_CALL node is a specific intrinsic.
 //
 // Arguments:
@@ -2546,6 +2574,12 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     if (c1->gtCallType != CT_INDIRECT)
     {
         if (c1->gtCallMethHnd != c2->gtCallMethHnd)
+        {
+            return false;
+        }
+
+        if (c1->IsHelperCall() && ((c1->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) !=
+                                   (c2->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL)))
         {
             return false;
         }
@@ -2706,6 +2740,14 @@ AGAIN:
     if ((op1->gtFlags & (GTF_UNSIGNED)) != (op2->gtFlags & (GTF_UNSIGNED)))
     {
         return false;
+    }
+    if (op1->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV))
+    {
+        if ((op1->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) !=
+            (op2->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)))
+        {
+            return false;
+        }
     }
 
     /* Figure out what kind of nodes we're comparing */

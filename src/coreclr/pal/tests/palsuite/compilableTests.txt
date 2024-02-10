@@ -85,9 +85,6 @@ c_runtime/strncpy/test1/paltest_strncpy_test1
 c_runtime/strpbrk/test1/paltest_strpbrk_test1
 c_runtime/strrchr/test1/paltest_strrchr_test1
 c_runtime/strstr/test1/paltest_strstr_test1
-c_runtime/strtod/test1/paltest_strtod_test1
-c_runtime/strtod/test2/paltest_strtod_test2
-c_runtime/strtoul/test1/paltest_strtoul_test1
 c_runtime/time/test1/paltest_time_test1
 c_runtime/tolower/test1/paltest_tolower_test1
 c_runtime/toupper/test1/paltest_toupper_test1
@@ -119,8 +116,6 @@ c_runtime/_putenv/test3/paltest_putenv_test3
 c_runtime/_putenv/test4/paltest_putenv_test4
 c_runtime/_rotl/test1/paltest_rotl_test1
 c_runtime/_rotr/test1/paltest_rotr_test1
-c_runtime/_stricmp/test1/paltest_stricmp_test1
-c_runtime/_strnicmp/test1/paltest_strnicmp_test1
 c_runtime/_vsnprintf_s/test1/paltest_vsnprintf_test1
 c_runtime/_vsnprintf_s/test10/paltest_vsnprintf_test10
 c_runtime/_vsnprintf_s/test11/paltest_vsnprintf_test11

@@ -2401,7 +2401,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
             {
                 ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
-                if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
+                if (IsVNHandle(fieldSeqVN, GTF_ICON_FIELD_SEQ))
                 {
                     FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
                     if (fieldSeq != nullptr)
@@ -5464,7 +5464,7 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeq* fieldSeq)
 //
 FieldSeq* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
 {
-    assert(IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ));
+    assert(IsVNHandle(vn, GTF_ICON_FIELD_SEQ));
 
     return reinterpret_cast<FieldSeq*>(ConstantValue<ssize_t>(vn));
 }
@@ -6103,14 +6103,19 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
     return c->m_attribs == CEA_Handle;
 }
 
+bool ValueNumStore::IsVNHandle(ValueNum vn, GenTreeFlags flag)
+{
+    return IsVNHandle(vn) && (GetHandleFlags(vn) == flag);
+}
+
 bool ValueNumStore::IsVNObjHandle(ValueNum vn)
 {
-    return IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_OBJ_HDL);
+    return IsVNHandle(vn, GTF_ICON_OBJ_HDL);
 }
 
 bool ValueNumStore::IsVNTypeHandle(ValueNum vn)
 {
-    return IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_CLASS_HDL);
+    return IsVNHandle(vn, GTF_ICON_CLASS_HDL);
 }
 
 //------------------------------------------------------------------------
@@ -8979,7 +8984,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     {
         printf("NoVN");
     }
-    else if (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ))
+    else if (IsVNHandle(vn, GTF_ICON_FIELD_SEQ))
     {
         comp->gtDispFieldSeq(FieldSeqVNToFieldSeq(vn), 0);
         printf(" ");
