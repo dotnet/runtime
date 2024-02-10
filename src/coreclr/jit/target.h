@@ -218,7 +218,8 @@ typedef unsigned __int64 regMaskPredicate;
 // Design:
 // 1. Reduce regMaskGpr to 32-bit
 // 2. singleRegMask > regMaskOnlyOne > (regMaskGpr, regMaskFloat, regMaskPredicate) > regMaskMixed
-// 3. Revisit `regMaskMixed` and see how we can pass m
+// 3. Revisit `regMaskMixed` and see how we can separate them into `regMaskGpr`, `regMaskFloat`, `regMaskPredicate`.
+// 4. Once #3 is solved, `regMaskOnlyOne` should be reduced to 32-bit and so can `regMaskFloat` and `regMaskPredicate`
 // 
 
 //
