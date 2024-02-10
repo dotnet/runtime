@@ -892,8 +892,7 @@
       },
       "eventType": "issue",
       "eventNames": [
-        "issues",
-        "project_card"
+        "issues"
       ],
       "actions": [
         {
@@ -933,8 +932,7 @@
       "eventType": "pull_request",
       "eventNames": [
         "pull_request",
-        "issues",
-        "project_card"
+        "issues"
       ],
       "actions": [
         {
@@ -1115,8 +1113,7 @@
       "eventType": "pull_request",
       "eventNames": [
         "pull_request",
-        "issues",
-        "project_card"
+        "issues"
       ],
       "taskName": "[Linkable-framework workgroup] Add linkable-framework label to new Prs that touch files with *ILLink* that not have it already",
       "actions": [
@@ -1181,8 +1178,7 @@
       "eventType": "pull_request",
       "eventNames": [
         "pull_request",
-        "issues",
-        "project_card"
+        "issues"
       ],
       "taskName": "[Linkable-framework workgroup] Add linkable-framework label to Prs that get changes pushed where they touch *ILLInk* files",
       "actions": [
@@ -1227,8 +1223,7 @@
       "eventType": "pull_request",
       "eventNames": [
         "pull_request",
-        "issues",
-        "project_card"
+        "issues"
       ],
       "taskName": "Auto-approve maestro PRs",
       "actions": [
@@ -1261,8 +1256,7 @@
       },
       "eventType": "issue",
       "eventNames": [
-        "issues",
-        "project_card"
+        "issues"
       ],
       "taskName": "Manual Issue Cleanup",
       "actions": [
