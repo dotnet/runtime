@@ -130,7 +130,6 @@ endif()
 
 set(SOURCES
   cruntime/malloc.cpp
-  cruntime/math.cpp
   cruntime/misc.cpp
   cruntime/thread.cpp
   cruntime/wchar.cpp

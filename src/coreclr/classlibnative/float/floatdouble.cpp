@@ -262,6 +262,8 @@ FCIMPL3_VII(void, COMDouble::SinCos, double x, double* pSin, double* pCos)
 #ifdef _MSC_VER
     *pSin = sin(x);
     *pCos = cos(x);
+#elif defined(__APPLE__)
+    __sincos(x, pSin, pCos);
 #else
     sincos(x, pSin, pCos);
 #endif

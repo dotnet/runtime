@@ -237,6 +237,8 @@ FCIMPL3_VII(void, COMSingle::SinCos, float x, float* pSin, float* pCos)
 #ifdef _MSC_VER
     *pSin = sinf(x);
     *pCos = cosf(x);
+#elif defined(__APPLE__)
+    __sincosf(x, pSin, pCos);
 #else
     sincosf(x, pSin, pCos);
 #endif
