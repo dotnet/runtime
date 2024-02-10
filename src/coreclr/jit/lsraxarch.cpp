@@ -759,8 +759,8 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskTP candidates)
 {
     int       srcCount      = 0;
-    regMaskTP op1Candidates = candidates;
-    regMaskTP op2Candidates = candidates;
+    regMaskGpr op1Candidates = candidates;
+    regMaskGpr op2Candidates = candidates;
 
 #ifdef TARGET_X86
     if (varTypeIsByte(node))
@@ -1478,7 +1478,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // or if are but the remainder is a power of 2 and less than the
                     // size of a register
 
-                    regMaskTP regMask = availableIntRegs;
+                    regMaskGpr regMask = availableIntRegs;
 #ifdef TARGET_X86
                     if ((size & 1) != 0)
                     {
@@ -1756,7 +1756,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             // If we have a remainder smaller than XMM_REGSIZE_BYTES, we need an integer temp reg.
             if ((loadSize % XMM_REGSIZE_BYTES) != 0)
             {
-                regMaskTP regMask = availableIntRegs;
+                regMaskGpr regMask = availableIntRegs;
 #ifdef TARGET_X86
                 // Storing at byte granularity requires a byteable register.
                 if ((loadSize & 1) != 0)
@@ -2803,7 +2803,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     const var_types srcType  = genActualType(src->TypeGet());
     const var_types castType = cast->gtCastType;
 
-    regMaskTP candidates = RBM_NONE;
+    regMaskGpr candidates = RBM_NONE;
 #ifdef TARGET_X86
     if (varTypeIsByte(castType))
     {

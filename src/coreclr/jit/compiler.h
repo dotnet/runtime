@@ -8453,6 +8453,13 @@ public:
         return (regMask & RBM_ALLFLOAT) == regMask;
     }
 
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+    bool IsPredicateRegMask(regMaskTP regMask)
+    {
+        return (regMask & RBM_ALLMASK) == regMask;
+    }
+#endif
+
     bool IsOnlyOneRegMask(regMaskTP regMask)
     {
         return IsGprRegMask(regMask) != IsFloatRegMask(regMask);

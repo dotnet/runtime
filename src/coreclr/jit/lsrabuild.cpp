@@ -1364,20 +1364,20 @@ RefPosition* LinearScan::buildInternalIntRegisterDefForNode(GenTree* tree, regMa
 // Returns:
 //   The def RefPosition created for this internal temp.
 //
-RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, regMaskFloat internalCands)
 {
     // The candidate set should contain only float registers.
-    assert((internalCands & ~availableFloatRegs) == RBM_NONE);
+    assert(compiler->IsFloatRegMask(internalCands));
 
     RefPosition* defRefPosition = defineNewInternalTemp(tree, FloatRegisterType, internalCands);
     return defRefPosition;
 }
 
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskPredicate internalCands)
 {
     // The candidate set should contain only float registers.
-    assert((internalCands & ~availableMaskRegs) == RBM_NONE);
+    assert(compiler->IsPredicateRegMask(internalCands));
 
     return defineNewInternalTemp(tree, MaskRegisterType, internalCands);
 }
@@ -3651,7 +3651,7 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
         }
     }
 
-    regMaskTP defCandidates = RBM_NONE;
+    regMaskOnlyOne defCandidates = RBM_NONE;
     var_types type          = varDsc->GetRegisterType();
 
 #ifdef TARGET_X86
@@ -3737,7 +3737,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
 
         if (isMultiRegSrc)
         {
-            regMaskTP srcCandidates = RBM_NONE;
+            regMaskGpr srcCandidates = RBM_NONE;
 #ifdef TARGET_X86
             var_types type = fieldVarDsc->TypeGet();
             if (varTypeIsByte(type))
@@ -3848,7 +3848,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     else
     {
         srcCount                = 1;
-        regMaskTP srcCandidates = RBM_NONE;
+        regMaskGpr srcCandidates = RBM_NONE;
 #ifdef TARGET_X86
         var_types type = varDsc->GetRegisterType(storeLoc);
         if (varTypeIsByte(type))
@@ -4276,7 +4276,7 @@ int LinearScan::BuildCmp(GenTree* tree)
 
     if (!tree->TypeIs(TYP_VOID))
     {
-        regMaskTP dstCandidates = RBM_NONE;
+        regMaskGpr dstCandidates = RBM_NONE;
 
 #ifdef TARGET_X86
         // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
@@ -4300,8 +4300,8 @@ int LinearScan::BuildCmp(GenTree* tree)
 //
 int LinearScan::BuildCmpOperands(GenTree* tree)
 {
-    regMaskTP op1Candidates = RBM_NONE;
-    regMaskTP op2Candidates = RBM_NONE;
+    regMaskGpr op1Candidates = RBM_NONE;
+    regMaskGpr op2Candidates = RBM_NONE;
     GenTree*  op1           = tree->gtGetOp1();
     GenTree*  op2           = tree->gtGetOp2();
 

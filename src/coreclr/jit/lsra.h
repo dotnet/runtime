@@ -716,7 +716,7 @@ public:
                      BasicBlock*      toBlock,
                      ResolveType      resolveType,
                      VARSET_VALARG_TP liveSet,
-                     regMaskTP        terminatorConsumedRegs);
+                     regMaskAny        terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -808,9 +808,10 @@ private:
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
 
-    regMaskTP getConstrainedRegMask(RefPosition* refPosition,
-                                    regMaskTP    regMaskActual,
-                                    regMaskTP    regMaskConstrain,
+    // TODO: Can have separate methods for each type
+    regMaskAny getConstrainedRegMask(RefPosition* refPosition,
+                                    regMaskAny    regMaskActual,
+                                    regMaskAny   regMaskConstrain,
                                     unsigned     minRegCount);
     regMaskTP stressLimitRegs(RefPosition* refPosition, regMaskTP mask);
 
@@ -940,7 +941,7 @@ private:
     static bool IsResolutionMove(GenTree* node);
     static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
 
-    void verifyFreeRegisters(regMaskTP regsToFree);
+    void verifyFreeRegisters(regMaskAny regsToFree);
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
@@ -1093,15 +1094,15 @@ private:
     // Given some tree node add refpositions for all the registers this node kills
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskTP killMask);
 
-    regMaskTP allRegs(RegisterType rt);
-    regMaskTP allByteRegs();
-    regMaskTP allSIMDRegs();
-    regMaskTP lowSIMDRegs();
-    regMaskTP internalFloatRegCandidates();
+    regMaskOnlyOne allRegs(RegisterType rt);
+    regMaskGpr allByteRegs();
+    regMaskFloat allSIMDRegs();
+    regMaskFloat lowSIMDRegs();
+    regMaskFloat internalFloatRegCandidates();
 
     void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(regMaskTP regsToFree);
+    void freeRegisters(regMaskAny regsToFree);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1221,11 +1222,14 @@ private:
 #if defined(TARGET_ARM64)
     bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     void assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
-    regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
+    regMaskFloat getConsecutiveCandidates(regMaskFloat  candidates,
+                                            RefPosition*   refPosition,
+                                            regMaskFloat* busyCandidates);
+    regMaskFloat filterConsecutiveCandidates(regMaskFloat  candidates,
                                           unsigned int registersNeeded,
-                                          regMaskTP*   allConsecutiveCandidates);
-    regMaskTP filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded);
+                                               regMaskFloat* allConsecutiveCandidates);
+    regMaskFloat filterConsecutiveCandidatesForSpill(regMaskFloat consecutiveCandidates,
+                                                               unsigned int registersNeeded);
 #endif // TARGET_ARM64
 
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
@@ -1258,10 +1262,10 @@ private:
 
         // Perform register selection and update currentInterval or refPosition
         template <bool hasConsecutiveRegister = false>
-        FORCEINLINE regMaskTP select(Interval*    currentInterval,
+        FORCEINLINE singleRegMask select(Interval*                currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
-        FORCEINLINE regMaskTP selectMinimal(Interval*    currentInterval,
+        FORCEINLINE singleRegMask selectMinimal(Interval*                currentInterval,
                                             RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
@@ -1303,34 +1307,34 @@ private:
 
         RegisterType regType = RegisterType::TYP_UNKNOWN;
 
-        regMaskTP candidates;
-        regMaskTP preferences     = RBM_NONE;
+        regMaskOnlyOne candidates;
+        regMaskOnlyOne preferences     = RBM_NONE;
         Interval* relatedInterval = nullptr;
 
-        regMaskTP    relatedPreferences = RBM_NONE;
+        regMaskOnlyOne relatedPreferences = RBM_NONE;
         LsraLocation rangeEndLocation;
         LsraLocation relatedLastLocation;
         bool         preferCalleeSave = false;
         RefPosition* rangeEndRefPosition;
         RefPosition* lastRefPosition;
-        regMaskTP    callerCalleePrefs = RBM_NONE;
+        regMaskOnlyOne callerCalleePrefs = RBM_NONE;
         LsraLocation lastLocation;
 
-        regMaskTP foundRegBit;
+        singleRegMask foundRegBit;
 
-        regMaskTP prevRegBit = RBM_NONE;
+        singleRegMask prevRegBit = RBM_NONE;
 
         // These are used in the post-selection updates, and must be set for any selection.
-        regMaskTP freeCandidates;
-        regMaskTP matchingConstants;
-        regMaskTP unassignedSet;
+        regMaskOnlyOne freeCandidates;
+        regMaskOnlyOne matchingConstants;
+        regMaskOnlyOne unassignedSet;
 
         // Compute the sets for COVERS, OWN_PREFERENCE, COVERS_RELATED, COVERS_FULL and UNASSIGNED together,
         // as they all require similar computation.
-        regMaskTP coversSet;
-        regMaskTP preferenceSet;
-        regMaskTP coversRelatedSet;
-        regMaskTP coversFullSet;
+        regMaskOnlyOne coversSet;
+        regMaskOnlyOne preferenceSet;
+        regMaskOnlyOne coversRelatedSet;
+        regMaskOnlyOne coversFullSet;
         bool      coversSetsCalculated  = false;
         bool      found                 = false;
         bool      skipAllocation        = false;
@@ -1344,8 +1348,8 @@ private:
             return (prevRegBit & preferences) == foundRegBit;
         }
 
-        bool applySelection(int selectionScore, regMaskTP selectionCandidates);
-        bool applySingleRegSelection(int selectionScore, regMaskTP selectionCandidate);
+        bool             applySelection(int selectionScore, regMaskOnlyOne selectionCandidates);
+        bool applySingleRegSelection(int selectionScore, regMaskOnlyOne selectionCandidate);
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void calculateUnassignedSets();
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
@@ -1406,7 +1410,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      regMaskTP        terminatorConsumedRegs);
+                                      regMaskAny        terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
@@ -1791,12 +1795,13 @@ private:
     void updateSpillCost(regNumber reg, Interval* interval);
 
     FORCEINLINE void updateRegsFreeBusyState(RefPosition& refPosition,
-                                             regMaskTP    regsBusy,
-                                             regMaskTP*   regsToFree,
-                                             regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                             regMaskOnlyOne                 regsBusy,
+                                             regMaskOnlyOne*             regsToFree,
+                                             regMaskOnlyOne* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
-    regMaskTP m_RegistersWithConstants;
+     // TODO: This should be m_GprWithConstants, m_FloatRegsWithConstant, etc.
+    regMaskAny m_RegistersWithConstants;
     void clearConstantReg(regNumber reg, var_types regType)
     {
         m_RegistersWithConstants &= ~getRegMask(reg, regType);
@@ -1811,7 +1816,7 @@ private:
         regMaskTP regMask = getRegMask(reg, regType);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
-    regMaskTP getMatchingConstants(regMaskTP mask, Interval* currentInterval, RefPosition* refPosition);
+    regMaskOnlyOne getMatchingConstants(regMaskAny mask, Interval* currentInterval, RefPosition* refPosition);
 
     regMaskTP    fixedRegs;
     LsraLocation nextFixedRef[REG_COUNT];
@@ -2073,7 +2078,7 @@ private:
     // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
     // don't have one available, so make is static.
     //
-    static FORCEINLINE regMaskTP calleeSaveRegs(RegisterType rt)
+    static FORCEINLINE regMaskOnlyOne calleeSaveRegs(RegisterType rt)
     {
         static const regMaskTP varTypeCalleeSaveRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
@@ -2169,10 +2174,10 @@ public:
     void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
-    regMaskTP registerPreferences;
+    regMaskOnlyOne registerPreferences;
 
     // Registers that should be avoided for this interval
-    regMaskTP registerAversion;
+    regMaskOnlyOne registerAversion;
 
     // The relatedInterval is:
     //  - for any other interval, it is the interval to which this interval
@@ -2321,7 +2326,7 @@ public:
     // definitions. This method will return the current assigned register if any, or
     // the 'registerPreferences' otherwise.
     //
-    regMaskTP getCurrentPreferences()
+    regMaskOnlyOne getCurrentPreferences()
     {
         return (assignedReg == nullptr) ? registerPreferences : genRegMask(assignedReg->regNum);
     }
@@ -2433,7 +2438,7 @@ public:
     // Prior to the allocation pass, registerAssignment captures the valid registers
     // for this RefPosition.
     // After the allocation pass, this contains the actual assignment
-    regMaskTP registerAssignment;
+    regMaskOnlyOne registerAssignment;
 
     RefType refType;
 
