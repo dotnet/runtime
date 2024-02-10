@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class AdditionalDeps : DependencyResolutionBase, IClassFixture<AdditionalDeps.SharedTestState>
+    public class AdditionalDeps : IClassFixture<AdditionalDeps.SharedTestState>
     {
         private SharedTestState SharedState { get; }
 
@@ -137,7 +137,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
         }
 
-        public class SharedTestState : DependencyResolutionBase.SharedTestStateBase
+        public class SharedTestState : SharedTestStateBase
         {
             public DotNetCli DotNetWithNetCoreApp { get; }
 

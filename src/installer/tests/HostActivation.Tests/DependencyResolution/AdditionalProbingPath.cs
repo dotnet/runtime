@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
-    public class AdditionalProbingPath : DependencyResolutionBase, IClassFixture<AdditionalProbingPath.SharedTestState>
+    public class AdditionalProbingPath : IClassFixture<AdditionalProbingPath.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
         }
 
-        public class SharedTestState : DependencyResolutionBase.SharedTestStateBase
+        public class SharedTestState : SharedTestStateBase
         {
             public DotNetCli DotNetWithNetCoreApp { get; }
 
