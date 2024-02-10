@@ -194,8 +194,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(!tree->isContained());
     int       srcCount;
     int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
-    regMaskTP killMask      = RBM_NONE;
+    regMaskAny killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
@@ -668,7 +667,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             regNumber argReg  = tree->GetRegNum();
-            regMaskTP argMask = RBM_NONE;
+            regMaskOnlyOne argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {
                 argMask = genRegMask(argReg);
