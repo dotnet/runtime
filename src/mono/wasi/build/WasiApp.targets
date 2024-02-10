@@ -68,7 +68,6 @@
 
     <PropertyGroup>
       <_WasmOutputSymbolsToAppBundle Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(_IsPublishing)' == 'true'">true</_WasmOutputSymbolsToAppBundle>
-      <_WasmOutputSymbolsToAppBundle Condition="'$(_WasmOutputSymbolsToAppBundle)' == '' and '$(_IsPublishing)' == 'true'">false</_WasmOutputSymbolsToAppBundle>
       <_WasmOutputSymbolsToAppBundle Condition="'$(_WasmOutputSymbolsToAppBundle)' == ''">false</_WasmOutputSymbolsToAppBundle>
     </PropertyGroup>
 
