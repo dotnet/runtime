@@ -944,7 +944,7 @@ inline regNumber genRegNumFromMask(regMaskOnlyOne mask)
 //    the bit.
 //
 
-inline regNumber genFirstRegNumFromMaskAndToggle(regMaskAny& mask)
+inline regNumber genFirstRegNumFromMaskAndToggle(regMaskMixed& mask)
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -966,7 +966,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(regMaskAny& mask)
 //    The number of the first register contained in the mask.
 //
 
-inline regNumber genFirstRegNumFromMask(regMaskAny mask)
+inline regNumber genFirstRegNumFromMask(regMaskMixed mask)
 {
     assert(mask != 0); // Must have one bit set, so can't have a mask of zero
 
@@ -4431,12 +4431,12 @@ inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 
 #ifdef DEBUG
 
-inline void printRegMask(regMaskAny mask)
+inline void printRegMask(regMaskMixed mask)
 {
     printf(REG_MASK_ALL_FMT, mask);
 }
 
-inline char* regMaskToString(regMaskAny mask, Compiler* context)
+inline char* regMaskToString(regMaskMixed mask, Compiler* context)
 {
     const size_t cchRegMask = 24;
     char*        regmask    = new (context, CMK_Unknown) char[cchRegMask];

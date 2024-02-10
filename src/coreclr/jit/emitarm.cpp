@@ -4694,7 +4694,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((unsigned)abs(argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskAny savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    regMaskMixed savedSet = emitGetGCRegsSavedOrModified(methHnd);
     gcrefRegs &= savedSet;
     byrefRegs &= savedSet;
 

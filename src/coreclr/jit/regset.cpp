@@ -87,7 +87,7 @@ void RegSet::verifyRegUsed(regNumber reg)
 //     should simply validate that the register (or registers) have
 //     already been added to the modified set.
 
-void RegSet::verifyRegistersUsed(regMaskAny regMask)
+void RegSet::verifyRegistersUsed(regMaskMixed regMask)
 {
     if (m_rsCompiler->opts.OptimizationDisabled())
     {
@@ -119,7 +119,7 @@ void RegSet::rsClearRegsModified()
     rsModifiedRegsMask = RBM_NONE;
 }
 
-void RegSet::rsSetRegsModified(regMaskAny mask DEBUGARG(bool suppressDump))
+void RegSet::rsSetRegsModified(regMaskMixed mask DEBUGARG(bool suppressDump))
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
@@ -187,7 +187,7 @@ void RegSet::rsRemoveRegsModified(regMaskGpr mask)
     rsModifiedRegsMask &= ~mask;
 }
 
-void RegSet::SetMaskVars(regMaskAny newMaskVars)
+void RegSet::SetMaskVars(regMaskMixed newMaskVars)
 {
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
@@ -203,10 +203,10 @@ void RegSet::SetMaskVars(regMaskAny newMaskVars)
             m_rsCompiler->GetEmitter()->emitDispRegSet(_rsMaskVars);
 
             // deadSet = old - new
-            regMaskAny deadSet = _rsMaskVars & ~newMaskVars;
+            regMaskMixed deadSet = _rsMaskVars & ~newMaskVars;
 
             // bornSet = new - old
-            regMaskAny bornSet = newMaskVars & ~_rsMaskVars;
+            regMaskMixed bornSet = newMaskVars & ~_rsMaskVars;
 
             if (deadSet != RBM_NONE)
             {
@@ -937,7 +937,7 @@ regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
     regMaskSmall res = 0;
     for (int i = 0; i < CNT_CALLEE_SAVED; i++)
     {
-        if ((calleeSaveMask & ((regMaskAny)1 << i)) != 0)
+        if ((calleeSaveMask & ((regMaskMixed)1 << i)) != 0)
         {
             res |= raRbmCalleeSaveOrder[i];
         }

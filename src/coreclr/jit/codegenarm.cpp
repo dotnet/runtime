@@ -2173,7 +2173,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskAny maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskMixed maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
     regMaskFloat maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
     regMaskGpr maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 
@@ -2490,7 +2490,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
-        regMaskAny rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
+        regMaskMixed rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
         unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
         unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
@@ -2646,9 +2646,9 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
     regNumber rAddr;
     regNumber rCnt = REG_NA; // Invalid
-    regMaskAny regMask;
+    regMaskMixed regMask;
 
-    regMaskAny availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
+    regMaskMixed availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
                                                         // currently live
     availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for

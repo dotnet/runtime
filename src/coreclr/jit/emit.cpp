@@ -3476,7 +3476,7 @@ const char* emitter::emitGetFrameReg()
  *  Display a register set in a readable form.
  */
 
-void emitter::emitDispRegSet(regMaskAny regs)
+void emitter::emitDispRegSet(regMaskMixed regs)
 {
     regNumber reg;
     bool      sp = false;
@@ -10374,7 +10374,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 // Return value:
 //   the saved set of registers.
 //
-regMaskAny emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
+regMaskMixed emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
     bool isNoGCHelper = emitNoGChelper(methHnd);
@@ -10420,10 +10420,10 @@ regMaskAny emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // Return Value:
 //   Mask of GC register kills
 //
-regMaskAny emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
+regMaskMixed emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
     assert(emitNoGChelper(helper));
-    regMaskAny result;
+    regMaskMixed result;
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_REF:

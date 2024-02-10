@@ -1059,14 +1059,14 @@ bool GenTree::NeedsConsecutiveRegisters() const
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskAny GenTree::gtGetContainedRegMask()
+regMaskMixed GenTree::gtGetContainedRegMask()
 {
     if (!isContained())
     {
         return isUsedFromReg() ? gtGetRegMask() : RBM_NONE;
     }
 
-    regMaskAny mask = 0;
+    regMaskMixed mask = 0;
     for (GenTree* operand : Operands())
     {
         mask |= operand->gtGetContainedRegMask();
@@ -1083,9 +1083,9 @@ regMaskAny GenTree::gtGetContainedRegMask()
 // Return Value:
 //    Reg Mask of GenTree node.
 //
-regMaskAny GenTree::gtGetRegMask() const
+regMaskMixed GenTree::gtGetRegMask() const
 {
-    regMaskAny resultMask;
+    regMaskMixed resultMask;
 
     if (IsMultiRegCall())
     {
@@ -2085,9 +2085,9 @@ void CallArgs::Remove(CallArg* arg)
 // Return Value:
 //    Reg mask of gtOtherRegs of call node.
 //
-regMaskAny GenTreeCall::GetOtherRegMask() const
+regMaskMixed GenTreeCall::GetOtherRegMask() const
 {
-    regMaskAny resultMask = RBM_NONE;
+    regMaskMixed resultMask = RBM_NONE;
 
 #if FEATURE_MULTIREG_RET
     for (unsigned i = 0; i < MAX_RET_REG_COUNT - 1; ++i)
@@ -27067,9 +27067,9 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 //    of return registers and wants to know the set of return registers.
 //
 // static
-regMaskAny ReturnTypeDesc::GetABIReturnRegs() const
+regMaskMixed ReturnTypeDesc::GetABIReturnRegs() const
 {
-    regMaskAny resultMask = RBM_NONE;
+    regMaskMixed resultMask = RBM_NONE;
 
     unsigned count = GetReturnRegCount();
     for (unsigned i = 0; i < count; ++i)
@@ -27094,7 +27094,7 @@ regMaskAny ReturnTypeDesc::GetABIReturnRegs() const
 // Return Value:
 //    Count of available temporary registers in given set.
 //
-unsigned GenTree::AvailableTempRegCount(regMaskAny mask /* = (regMaskAny)-1 */) const
+unsigned GenTree::AvailableTempRegCount(regMaskMixed mask /* = (regMaskMixed)-1 */) const
 {
     return genCountBits(gtRsvdRegs & mask);
 }
@@ -27111,9 +27111,9 @@ unsigned GenTree::AvailableTempRegCount(regMaskAny mask /* = (regMaskAny)-1 */) 
 // Return Value:
 //    Available temporary register in given mask.
 //
-regNumber GenTree::GetSingleTempReg(regMaskAny mask /* = (regMaskAny)-1 */)
+regNumber GenTree::GetSingleTempReg(regMaskMixed mask /* = (regMaskMixed)-1 */)
 {
-    regMaskAny availableSet = gtRsvdRegs & mask;
+    regMaskMixed availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) == 1);
     regNumber tempReg = genRegNumFromMask(availableSet);
     INDEBUG(gtRsvdRegs &= ~availableSet;) // Remove the register from the set, so it can't be used again.
@@ -27132,9 +27132,9 @@ regNumber GenTree::GetSingleTempReg(regMaskAny mask /* = (regMaskAny)-1 */)
 // Return Value:
 //    Available temporary register in given mask.
 //
-regNumber GenTree::ExtractTempReg(regMaskAny mask /* = (regMaskAny)-1 */)
+regNumber GenTree::ExtractTempReg(regMaskMixed mask /* = (regMaskMixed)-1 */)
 {
-    regMaskAny availableSet = gtRsvdRegs & mask;
+    regMaskMixed availableSet = gtRsvdRegs & mask;
     assert(genCountBits(availableSet) >= 1);
     regNumber tempReg = genFirstRegNumFromMask(availableSet);
     gtRsvdRegs ^= genRegMask(tempReg);

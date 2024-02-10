@@ -699,7 +699,7 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //    refType     - the type of refposition
 //    isLastUse   - true IFF this is a last use of the register
 //
-void LinearScan::addRefsForPhysRegMask(regMaskAny mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
+void LinearScan::addRefsForPhysRegMask(regMaskMixed mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
 {
     assert(refType == RefTypeKill);
 
@@ -714,7 +714,7 @@ void LinearScan::addRefsForPhysRegMask(regMaskAny mask, LsraLocation currentLoc,
     // modified until codegen, which is too late.
     compiler->codeGen->regSet.rsSetRegsModified(mask DEBUGARG(true));
 
-    for (regMaskAny candidates = mask; candidates != RBM_NONE;)
+    for (regMaskMixed candidates = mask; candidates != RBM_NONE;)
     {
         regNumber reg = genFirstRegNumFromMaskAndToggle(candidates);
         // This assumes that these are all "special" RefTypes that
@@ -740,11 +740,11 @@ void LinearScan::addRefsForPhysRegMask(regMaskAny mask, LsraLocation currentLoc,
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskAny LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
+regMaskMixed LinearScan::getKillSetForStoreInd(GenTreeStoreInd* tree)
 {
     assert(tree->OperIs(GT_STOREIND));
 
-    regMaskAny killMask = RBM_NONE;
+    regMaskMixed killMask = RBM_NONE;
 
     GCInfo::WriteBarrierForm writeBarrierForm = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -840,9 +840,9 @@ regMaskGpr LinearScan::getKillSetForModDiv(GenTreeOp* node)
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskAny LinearScan::getKillSetForCall(GenTreeCall* call)
+regMaskMixed LinearScan::getKillSetForCall(GenTreeCall* call)
 {
-    regMaskAny killMask = RBM_CALLEE_TRASH;
+    regMaskMixed killMask = RBM_CALLEE_TRASH;
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
@@ -895,10 +895,10 @@ regMaskAny LinearScan::getKillSetForCall(GenTreeCall* call)
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskAny LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
+regMaskMixed LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIsStoreBlk());
-    regMaskAny killMask = RBM_NONE;
+    regMaskMixed killMask = RBM_NONE;
 
     bool isCopyBlk = varTypeIsStruct(blkNode->Data());
     switch (blkNode->gtBlkOpKind)
@@ -994,7 +994,7 @@ regMaskGpr LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskAny LinearScan::getKillSetForReturn()
+regMaskMixed LinearScan::getKillSetForReturn()
 {
     return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE)
                                                 : RBM_NONE;
@@ -1008,7 +1008,7 @@ regMaskAny LinearScan::getKillSetForReturn()
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskAny LinearScan::getKillSetForProfilerHook()
+regMaskMixed LinearScan::getKillSetForProfilerHook()
 {
     return compiler->compIsProfilerHookNeeded() ? compiler->compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
                                                 : RBM_NONE;
@@ -1023,9 +1023,9 @@ regMaskAny LinearScan::getKillSetForProfilerHook()
 //
 // Return Value:    a register mask of the registers killed
 //
-regMaskAny LinearScan::getKillSetForNode(GenTree* tree)
+regMaskMixed LinearScan::getKillSetForNode(GenTree* tree)
 {
-    regMaskAny killMask = RBM_NONE;
+    regMaskMixed killMask = RBM_NONE;
     switch (tree->OperGet())
     {
         case GT_LSH:
@@ -1123,7 +1123,7 @@ regMaskAny LinearScan::getKillSetForNode(GenTree* tree)
 //    This method can add kills even if killMask is RBM_NONE, if this tree is one of the
 //    special cases that signals that we can't permit callee save registers to hold GC refs.
 
-bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskAny killMask)
+bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskMixed killMask)
 {
     bool insertedKills = false;
 
@@ -1838,7 +1838,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 // The use position of v02 cannot be allocated a reg since it is marked delay-reg free and
                 // {eax,edx} are getting killed before the def of GT_DIV.  For this reason, minRegCount for
                 // the use position of v02 also needs to take into account the kill set of its consuming node.
-                regMaskAny killMask = getKillSetForNode(tree);
+                regMaskMixed killMask = getKillSetForNode(tree);
                 if (killMask != RBM_NONE)
                 {
                     minRegCountForRef += genCountBits(killMask);
@@ -2492,7 +2492,7 @@ void           LinearScan::buildIntervals()
         // into the scratch register, so it will be killed here.
         if (compiler->compShouldPoisonFrame() && compiler->fgFirstBBisScratch() && block == compiler->fgFirstBB)
         {
-            regMaskAny killed;
+            regMaskMixed killed;
 #if defined(TARGET_XARCH)
             // Poisoning uses EAX for small vars and rep stosd that kills edi, ecx and eax for large vars.
             killed = RBM_EDI | RBM_ECX | RBM_EAX;
@@ -2781,7 +2781,7 @@ void           LinearScan::buildIntervals()
         availableRegCount = REG_INT_COUNT;
     }
 
-    if (availableRegCount < (sizeof(regMaskAny) * 8))
+    if (availableRegCount < (sizeof(regMaskMixed) * 8))
     {
         // Mask out the bits that are between 64 ~ availableRegCount
         actualRegistersMask = (1ULL << availableRegCount) - 1;
@@ -3072,7 +3072,7 @@ void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandid
 //    The def and kill functionality is folded into a single method so that the
 //    save and restores of upper vector registers can be bracketed around the def.
 //
-void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskAny killMask)
+void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskMixed killMask)
 {
     assert(killMask == getKillSetForNode(tree));
 
@@ -3140,7 +3140,7 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 
     // Find the registers that we should remove from the preference set because
     // they are occupied with argument values.
-    regMaskAny unpref   = placedArgRegs;
+    regMaskMixed unpref   = placedArgRegs;
     unsigned  varIndex = interval->getVarIndex(compiler);
     for (size_t i = 0; i < numPlacedArgLocals; i++)
     {
@@ -4258,7 +4258,7 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
     BuildUse(addr, addrCandidates);
     BuildUse(src, srcCandidates);
 
-    regMaskAny killMask = getKillSetForStoreInd(tree->AsStoreInd());
+    regMaskMixed killMask = getKillSetForStoreInd(tree->AsStoreInd());
     buildKillPositionsForNode(tree, currentLoc + 1, killMask);
     return 2;
 }

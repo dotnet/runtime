@@ -9499,7 +9499,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((unsigned)abs((signed)argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskAny savedSet = emitGetGCRegsSavedOrModified(methHnd);
+    regMaskMixed savedSet = emitGetGCRegsSavedOrModified(methHnd);
     gcrefRegs &= savedSet;
     byrefRegs &= savedSet;
 
@@ -15006,7 +15006,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                         // instruction, if writing a GC ref even through reading a long, will go live here.
                         // These situations typically occur due to unsafe casting, such as with Span<T>.
 
-                        regMaskAny regMask;
+                        regMaskMixed regMask;
                         regMask = genRegMask(reg1) | genRegMask(reg2);
 
                         // r1/r2 could have been a GCREF as GCREF + int=BYREF

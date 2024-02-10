@@ -5358,7 +5358,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
 }
 
 #ifdef TARGET_ARM
-bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskAny preSpillMask)
+bool Compiler::lvaIsPreSpilled(unsigned lclNum, regMaskMixed preSpillMask)
 {
     const LclVarDsc& desc = lvaTable[lclNum];
     return desc.lvIsRegArg && (preSpillMask & genRegMask(desc.GetArgReg()));
@@ -5556,8 +5556,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToArgs()
     unsigned argLcls = 0;
 
     // Take care of pre spill registers first.
-    regMaskAny preSpillMask = codeGen->regSet.rsMaskPreSpillRegs(false);
-    regMaskAny tempMask     = RBM_NONE;
+    regMaskMixed preSpillMask = codeGen->regSet.rsMaskPreSpillRegs(false);
+    regMaskMixed tempMask     = RBM_NONE;
     for (unsigned i = 0, preSpillLclNum = lclNum; i < argSigLen; ++i, ++preSpillLclNum)
     {
         if (lvaIsPreSpilled(preSpillLclNum, preSpillMask))

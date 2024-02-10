@@ -91,12 +91,12 @@ public:
 
     void gcMarkRegSetGCref(regMaskGpr regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegSetByref(regMaskGpr regMask DEBUGARG(bool forceOutput = false));
-    void gcMarkRegSetNpt(regMaskAny regMask DEBUGARG(bool forceOutput = false));
+    void gcMarkRegSetNpt(regMaskMixed regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegPtrVal(regNumber reg, var_types type);
 
 #ifdef DEBUG
-    void gcDspGCrefSetChanges(regMaskAny gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
-    void gcDspByrefSetChanges(regMaskAny gcRegByrefSetNew DEBUGARG(bool forceOutput = false));
+    void gcDspGCrefSetChanges(regMaskMixed gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));
+    void gcDspByrefSetChanges(regMaskMixed gcRegByrefSetNew DEBUGARG(bool forceOutput = false));
 #endif // DEBUG
 
     /*****************************************************************************/
@@ -392,7 +392,7 @@ private:
 
 public:
     // This method updates the appropriate reg masks when a variable is moved.
-    void gcUpdateForRegVarMove(regMaskAny srcMask, regMaskAny dstMask, LclVarDsc* varDsc);
+    void gcUpdateForRegVarMove(regMaskMixed srcMask, regMaskMixed dstMask, LclVarDsc* varDsc);
 
 private:
     ReturnKind getReturnKind();

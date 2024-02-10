@@ -43,7 +43,7 @@ public:
     RegSet(Compiler* compiler, GCInfo& gcInfo);
 
 #ifdef TARGET_ARM
-    regMaskAny rsMaskPreSpillRegs(bool includeAlignment) const
+    regMaskMixed rsMaskPreSpillRegs(bool includeAlignment) const
     {
         return includeAlignment ? (rsMaskPreSpillRegArg | rsMaskPreSpillAlign) : rsMaskPreSpillRegArg;
     }
@@ -68,14 +68,14 @@ private:
 
 private:
     bool      rsNeededSpillReg;   // true if this method needed to spill any registers
-    regMaskAny rsModifiedRegsMask; // mask of the registers modified by the current function.
+    regMaskMixed rsModifiedRegsMask; // mask of the registers modified by the current function.
 
 #ifdef DEBUG
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
 #endif                                  // DEBUG
 
 public:
-    regMaskAny rsGetModifiedRegsMask() const
+    regMaskMixed rsGetModifiedRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
         return rsModifiedRegsMask;
@@ -83,7 +83,7 @@ public:
 
     void rsClearRegsModified();
 
-    void rsSetRegsModified(regMaskAny mask DEBUGARG(bool suppressDump = false));
+    void rsSetRegsModified(regMaskMixed mask DEBUGARG(bool suppressDump = false));
 
     void rsRemoveRegsModified(regMaskGpr mask);
 
@@ -95,22 +95,22 @@ public:
 
     void verifyRegUsed(regNumber reg);
 
-    void verifyRegistersUsed(regMaskAny regMask);
+    void verifyRegistersUsed(regMaskMixed regMask);
 
 public:
-    regMaskAny GetMaskVars() const // 'get' property function for rsMaskVars property
+    regMaskMixed GetMaskVars() const // 'get' property function for rsMaskVars property
     {
         return _rsMaskVars;
     }
 
-    void SetMaskVars(regMaskAny newMaskVars); // 'put' property function for rsMaskVars property
+    void SetMaskVars(regMaskMixed newMaskVars); // 'put' property function for rsMaskVars property
 
-    void AddMaskVars(regMaskAny addMaskVars) // union 'addMaskVars' with the rsMaskVars set
+    void AddMaskVars(regMaskMixed addMaskVars) // union 'addMaskVars' with the rsMaskVars set
     {
         SetMaskVars(_rsMaskVars | addMaskVars);
     }
 
-    void RemoveMaskVars(regMaskAny removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
+    void RemoveMaskVars(regMaskMixed removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
     {
         SetMaskVars(_rsMaskVars & ~removeMaskVars);
     }
@@ -121,10 +121,10 @@ public:
     }
 
 private:
-    regMaskAny _rsMaskVars; // backing store for rsMaskVars property
+    regMaskMixed _rsMaskVars; // backing store for rsMaskVars property
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    regMaskAny rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
+    regMaskMixed rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
 #endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64
 
 public:                    // TODO-Cleanup: Should be private, but Compiler uses it

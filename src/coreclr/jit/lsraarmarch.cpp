@@ -375,7 +375,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    regMaskAny killMask = getKillSetForCall(call);
+    regMaskMixed killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
     // No args are placed in registers anymore.
@@ -491,7 +491,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     int dstCount = argNode->gtNumRegs;
 
     regNumber argReg  = argNode->GetRegNum();
-    regMaskAny argMask = RBM_NONE;
+    regMaskMixed argMask = RBM_NONE;
     for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         regNumber thisArgReg = (regNumber)((unsigned)argReg + i);
@@ -827,7 +827,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     }
 
     buildInternalRegisterUses();
-    regMaskAny killMask = getKillSetForBlockStore(blkNode);
+    regMaskMixed killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
     return useCount;
 }

@@ -128,7 +128,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
 #if defined(TARGET_XARCH)
     // Shouldn't be used before it is set in genFnProlog()
-    compiler->compCalleeFPRegsSavedMask = (regMaskAny)-1;
+    compiler->compCalleeFPRegsSavedMask = (regMaskMixed)-1;
 #endif // defined(TARGET_XARCH)
 #endif // DEBUG
 
@@ -623,7 +623,7 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 // Return Value:
 //   Mask of register kills -- registers whose values are no longer guaranteed to be the same.
 //
-regMaskAny Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
+regMaskMixed Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
@@ -748,7 +748,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
         {
             // TODO-Cleanup: Move the code from compUpdateLifeVar to genUpdateRegLife that updates the
             // gc sets
-            regMaskAny regMask = varDsc->lvRegMask();
+            regMaskMixed regMask = varDsc->lvRegMask();
             if (isGCRef)
             {
                 codeGen->gcInfo.gcRegGCrefSetCur &= ~regMask;
@@ -793,7 +793,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
                 VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
             }
             codeGen->genUpdateRegLife(varDsc, true /*isBorn*/, false /*isDying*/ DEBUGARG(nullptr));
-            regMaskAny regMask = varDsc->lvRegMask();
+            regMaskMixed regMask = varDsc->lvRegMask();
             if (isGCRef)
             {
                 codeGen->gcInfo.gcRegGCrefSetCur |= regMask;
@@ -5360,7 +5360,7 @@ void CodeGen::genFinalizeFrame()
         // We always save FP.
         noway_assert(isFramePointerUsed());
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        regMaskAny okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
+        regMaskMixed okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
         if (RBM_ENC_CALLEE_SAVED != 0)
         {
             regSet.rsSetRegsModified(RBM_ENC_CALLEE_SAVED);
@@ -5397,7 +5397,7 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskAny maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskMixed maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
 #ifdef TARGET_ARMARCH
     if (isFramePointerUsed())
@@ -8096,7 +8096,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
         // First set the source registers as busy if they haven't been spilled.
         // (Note that this is just for verification that we don't have circular dependencies.)
-        regMaskAny busyRegs = RBM_NONE;
+        regMaskMixed busyRegs = RBM_NONE;
         for (unsigned i = 0; i < regCount; ++i)
         {
             if ((op1->GetRegSpillFlagByIdx(i) & GTF_SPILLED) == 0)
@@ -8309,7 +8309,7 @@ unsigned CodeGenInterface::getCurrentStackLevel() const
 //   This function emits code to poison address exposed non-zero-inited local variables. We expect this function
 //   to be called when emitting code for the scratch BB that comes right after the prolog.
 //   The variables are poisoned using 0xcdcdcdcd.
-void CodeGen::genPoisonFrame(regMaskAny regLiveIn)
+void CodeGen::genPoisonFrame(regMaskMixed regLiveIn)
 {
     assert(compiler->compShouldPoisonFrame());
 #if defined(TARGET_XARCH)

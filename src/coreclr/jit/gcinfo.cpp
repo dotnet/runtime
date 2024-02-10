@@ -83,7 +83,7 @@ void GCInfo::gcResetForBB()
  *  Print the changes in the gcRegGCrefSetCur sets.
  */
 
-void GCInfo::gcDspGCrefSetChanges(regMaskAny gcRegGCrefSetNew DEBUGARG(bool forceOutput))
+void GCInfo::gcDspGCrefSetChanges(regMaskMixed gcRegGCrefSetNew DEBUGARG(bool forceOutput))
 {
     if (compiler->verbose)
     {
@@ -112,7 +112,7 @@ void GCInfo::gcDspGCrefSetChanges(regMaskAny gcRegGCrefSetNew DEBUGARG(bool forc
  *  Print the changes in the gcRegByrefSetCur sets.
  */
 
-void GCInfo::gcDspByrefSetChanges(regMaskAny gcRegByrefSetNew DEBUGARG(bool forceOutput))
+void GCInfo::gcDspByrefSetChanges(regMaskMixed gcRegByrefSetNew DEBUGARG(bool forceOutput))
 {
     if (compiler->verbose)
     {
@@ -188,12 +188,12 @@ void GCInfo::gcMarkRegSetByref(regMaskGpr regMask DEBUGARG(bool forceOutput))
  *  non-pointer values.
  */
 
-void GCInfo::gcMarkRegSetNpt(regMaskAny regMask DEBUGARG(bool forceOutput))
+void GCInfo::gcMarkRegSetNpt(regMaskMixed regMask DEBUGARG(bool forceOutput))
 {
     /* NOTE: don't unmark any live register variables */
 
-    regMaskAny gcRegByrefSetNew = gcRegByrefSetCur & ~(regMask & ~regSet->GetMaskVars());
-    regMaskAny gcRegGCrefSetNew = gcRegGCrefSetCur & ~(regMask & ~regSet->GetMaskVars());
+    regMaskMixed gcRegByrefSetNew = gcRegByrefSetCur & ~(regMask & ~regSet->GetMaskVars());
+    regMaskMixed gcRegGCrefSetNew = gcRegGCrefSetCur & ~(regMask & ~regSet->GetMaskVars());
 
     INDEBUG(gcDspGCrefSetChanges(gcRegGCrefSetNew, forceOutput));
     INDEBUG(gcDspByrefSetChanges(gcRegByrefSetNew, forceOutput));
@@ -722,7 +722,7 @@ void GCInfo::gcRegPtrSetInit()
 //    It is also called by LinearScan::recordVarLocationAtStartOfBB() which is in turn called by
 //    CodeGen::genCodeForBBList() at the block boundary.
 
-void GCInfo::gcUpdateForRegVarMove(regMaskAny srcMask, regMaskAny dstMask, LclVarDsc* varDsc)
+void GCInfo::gcUpdateForRegVarMove(regMaskMixed srcMask, regMaskMixed dstMask, LclVarDsc* varDsc)
 {
     var_types type    = varDsc->TypeGet();
     bool      isGCRef = (type == TYP_REF);

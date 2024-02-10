@@ -615,7 +615,7 @@ public:
     // This is the main driver
     virtual PhaseStatus doLinearScan();
 
-    static bool isSingleRegister(regMaskAny regMask)
+    static bool isSingleRegister(regMaskMixed regMask)
     {
         return (genExactlyOneBit(regMask));
     }
@@ -716,7 +716,7 @@ public:
                      BasicBlock*      toBlock,
                      ResolveType      resolveType,
                      VARSET_VALARG_TP liveSet,
-                     regMaskAny        terminatorConsumedRegs);
+                     regMaskMixed        terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -809,11 +809,11 @@ private:
     }
 
     // TODO: Can have separate methods for each type
-    regMaskAny getConstrainedRegMask(RefPosition* refPosition,
-                                    regMaskAny    regMaskActual,
-                                    regMaskAny   regMaskConstrain,
+    regMaskMixed getConstrainedRegMask(RefPosition* refPosition,
+                                    regMaskMixed    regMaskActual,
+                                    regMaskMixed   regMaskConstrain,
                                     unsigned     minRegCount);
-    regMaskAny stressLimitRegs(RefPosition* refPosition, regMaskAny mask);
+    regMaskMixed stressLimitRegs(RefPosition* refPosition, regMaskMixed mask);
 
     // This controls the heuristics used to select registers
     // These can be combined.
@@ -878,7 +878,7 @@ private:
     {
         return (LsraBlockBoundaryLocations)(lsraStressMask & LSRA_BLOCK_BOUNDARY_MASK);
     }
-    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskAny availableRegs);
+    regNumber rotateBlockStartLocation(Interval* interval, regNumber targetReg, regMaskMixed availableRegs);
 
     // This controls whether we always insert a GT_RELOAD instruction after a spill
     // Note that this can be combined with LSRA_SPILL_ALWAYS (or not)
@@ -941,7 +941,7 @@ private:
     static bool IsResolutionMove(GenTree* node);
     static bool IsResolutionNode(LIR::Range& containingRange, GenTree* node);
 
-    void verifyFreeRegisters(regMaskAny regsToFree);
+    void verifyFreeRegisters(regMaskMixed regsToFree);
     void verifyFinalAllocation();
     void verifyResolutionMove(GenTree* resolutionNode, LsraLocation currentLocation);
 #else  // !DEBUG
@@ -1035,7 +1035,7 @@ private:
     void insertZeroInitRefPositions();
 
     // add physreg refpositions for a tree node, based on calling convention and instruction selection predictions
-    void addRefsForPhysRegMask(regMaskAny mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
+    void addRefsForPhysRegMask(regMaskMixed mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1072,14 +1072,14 @@ private:
     }
 
     // Helpers for getKillSetForNode().
-    regMaskAny getKillSetForStoreInd(GenTreeStoreInd* tree);
+    regMaskMixed getKillSetForStoreInd(GenTreeStoreInd* tree);
     regMaskGpr getKillSetForShiftRotate(GenTreeOp* tree);
     regMaskGpr getKillSetForMul(GenTreeOp* tree);
-    regMaskAny getKillSetForCall(GenTreeCall* call);
+    regMaskMixed getKillSetForCall(GenTreeCall* call);
     regMaskGpr getKillSetForModDiv(GenTreeOp* tree);
-    regMaskAny getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskAny getKillSetForReturn();
-    regMaskAny getKillSetForProfilerHook();
+    regMaskMixed getKillSetForBlockStore(GenTreeBlk* blkNode);
+    regMaskMixed getKillSetForReturn();
+    regMaskMixed getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskGpr getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
@@ -1088,11 +1088,11 @@ private:
 // This is used only for an assert, and for stress, so it is only defined under DEBUG.
 // Otherwise, the Build methods should obtain the killMask from the appropriate method above.
 #ifdef DEBUG
-    regMaskAny getKillSetForNode(GenTree* tree);
+    regMaskMixed getKillSetForNode(GenTree* tree);
 #endif
 
     // Given some tree node add refpositions for all the registers this node kills
-    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskAny killMask);
+    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskMixed killMask);
 
     regMaskOnlyOne allRegs(RegisterType rt);
     regMaskGpr allByteRegs();
@@ -1102,7 +1102,7 @@ private:
 
     void makeRegisterInactive(RegRecord* physRegRecord);
     void freeRegister(RegRecord* physRegRecord);
-    void freeRegisters(regMaskAny regsToFree);
+    void freeRegisters(regMaskMixed regsToFree);
 
     // Get the type that this tree defines.
     var_types getDefType(GenTree* tree)
@@ -1410,7 +1410,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      regMaskAny        terminatorConsumedRegs);
+                                      regMaskMixed        terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
@@ -1478,8 +1478,8 @@ private:
     static const int MAX_ROWS_BETWEEN_TITLES = 50;
     int              rowCountSinceLastTitle;
     // Current mask of registers being printed in the dump.
-    regMaskAny lastDumpedRegisters;
-    regMaskAny registersToDump;
+    regMaskMixed lastDumpedRegisters;
+    regMaskMixed registersToDump;
     int       lastUsedRegNumIndex;
     bool shouldDumpReg(regNumber regNum)
     {
@@ -1662,14 +1662,14 @@ private:
 
     // A temporary VarToRegMap used during the resolution of critical edges.
     VarToRegMap          sharedCriticalVarToRegMap;
-    PhasedVar<regMaskAny> actualRegistersMask;
+    PhasedVar<regMaskMixed> actualRegistersMask;
     PhasedVar<regMaskGpr> availableIntRegs;
     PhasedVar<regMaskFloat> availableFloatRegs;
     PhasedVar<regMaskFloat> availableDoubleRegs;
 #if defined(TARGET_XARCH)
     PhasedVar<regMaskPredicate> availableMaskRegs;
 #endif
-    PhasedVar<regMaskAny>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector, predicate
+    PhasedVar<regMaskMixed>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector, predicate
 
 #if defined(TARGET_XARCH)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
@@ -1681,7 +1681,7 @@ private:
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
     // CALL node and is used to avoid preferring these registers for locals
     // which would otherwise force a spill.
-    regMaskAny placedArgRegs;
+    regMaskMixed placedArgRegs;
 
     struct PlacedLocal
     {
@@ -1730,7 +1730,7 @@ private:
     // Register status
     //-----------------------------------------------------------------------
 
-    regMaskAny m_AvailableRegs; //TODO: Should be separate for gpr, vector, predicate
+    regMaskMixed m_AvailableRegs; //TODO: Should be separate for gpr, vector, predicate
     regNumber getRegForType(regNumber reg, var_types regType)
     {
 #ifdef TARGET_ARM
@@ -1767,7 +1767,7 @@ private:
         regMaskOnlyOne regMask = getRegMask(reg, regType);
         return (m_AvailableRegs & regMask) == regMask;
     }
-    void setRegsInUse(regMaskAny regMask)
+    void setRegsInUse(regMaskMixed regMask)
     {
         m_AvailableRegs &= ~regMask;
     }
@@ -1776,7 +1776,7 @@ private:
         regMaskOnlyOne regMask = getRegMask(reg, regType);
         setRegsInUse(regMask);
     }
-    void makeRegsAvailable(regMaskAny regMask)
+    void makeRegsAvailable(regMaskMixed regMask)
     {
         m_AvailableRegs |= regMask;
     }
@@ -1801,7 +1801,7 @@ private:
                                                  DEBUG_ARG(regNumber assignedReg));
 
      // TODO: This should be m_GprWithConstants, m_FloatRegsWithConstant, etc.
-    regMaskAny m_RegistersWithConstants;
+    regMaskMixed m_RegistersWithConstants;
     void clearConstantReg(regNumber reg, var_types regType)
     {
         m_RegistersWithConstants &= ~getRegMask(reg, regType);
@@ -1816,9 +1816,9 @@ private:
         regMaskOnlyOne regMask = getRegMask(reg, regType);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
-    regMaskOnlyOne getMatchingConstants(regMaskAny mask, Interval* currentInterval, RefPosition* refPosition);
+    regMaskOnlyOne getMatchingConstants(regMaskMixed mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskAny    fixedRegs; //TODO: Should be also seperate
+    regMaskMixed    fixedRegs; //TODO: Should be also seperate
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
@@ -1847,9 +1847,9 @@ private:
     }
     weight_t spillCost[REG_COUNT];
 
-    regMaskAny regsBusyUntilKill; //TODO: Likewise, probably have this global 32-bit and set it point to the specific version like gpr, vector, etc.
-    regMaskAny regsInUseThisLocation;
-    regMaskAny regsInUseNextLocation;
+    regMaskMixed regsBusyUntilKill; //TODO: Likewise, probably have this global 32-bit and set it point to the specific version like gpr, vector, etc.
+    regMaskMixed regsInUseThisLocation;
+    regMaskMixed regsInUseNextLocation;
 #ifdef TARGET_ARM64
     regMaskFloat consecutiveRegsInUseThisLocation;
 #endif
@@ -1965,7 +1965,7 @@ private:
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
     RefPosition* BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates = RBM_NONE);
-    void         BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskAny killMask);
+    void         BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskMixed killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

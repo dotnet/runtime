@@ -6096,7 +6096,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskAny killMask = RBM_CALLEE_TRASH;
+    regMaskMixed killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
@@ -6613,7 +6613,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
-        regMaskAny tempMask = varDsc->lvRegMask();
+        regMaskMixed tempMask = varDsc->lvRegMask();
         regSet.RemoveMaskVars(tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
         if (compiler->lvaIsGCTracked(varDsc))
@@ -8441,7 +8441,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     regNumber simdTmpReg      = REG_NA;
     if (putArgStk->AvailableTempRegCount() != 0)
     {
-        regMaskAny rsvdRegs = putArgStk->gtRsvdRegs;
+        regMaskMixed rsvdRegs = putArgStk->gtRsvdRegs;
         if ((rsvdRegs & RBM_ALLINT) != 0)
         {
             intTmpReg = putArgStk->GetSingleTempReg(RBM_ALLINT);
@@ -9144,7 +9144,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
     addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
     regNumber callTarget           = REG_NA;
-    regMaskAny killMask             = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regMaskMixed killMask             = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (!addr)
     {
@@ -9672,7 +9672,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // registers that profiler callback kills.
     if (compiler->lvaKeepAliveAndReportThis() && compiler->lvaGetDesc(compiler->info.compThisArg)->lvIsInReg())
     {
-        regMaskAny thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
+        regMaskMixed thisPtrMask = genRegMask(compiler->lvaGetDesc(compiler->info.compThisArg)->GetRegNum());
         noway_assert((RBM_PROFILER_LEAVE_TRASH & thisPtrMask) == 0);
     }
 
@@ -9788,7 +9788,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // Emit appropriate unwind.
     //
     PatchpointInfo* const patchpointInfo             = compiler->info.compPatchpointInfo;
-    regMaskAny const      tier0CalleeSaves           = (regMaskAny)patchpointInfo->CalleeSaveRegisters();
+    regMaskMixed const      tier0CalleeSaves           = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
     regMaskGpr            tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     int const             tier0IntCalleeSaveUsedSize = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
 
@@ -9868,7 +9868,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // Figure out which set of int callee saves still needs saving.
     //
     PatchpointInfo* const patchpointInfo              = compiler->info.compPatchpointInfo;
-    regMaskAny const      tier0CalleeSaves            = (regMaskAny)patchpointInfo->CalleeSaveRegisters();
+    regMaskMixed const      tier0CalleeSaves            = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
     regMaskGpr            tier0IntCalleeSaves         = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     unsigned const        tier0IntCalleeSaveUsedSize  = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
     regMaskGpr const      osrIntCalleeSaves           = rsPushRegs & RBM_OSR_INT_CALLEE_SAVED;
@@ -10202,7 +10202,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             //
             PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
 
-            regMaskAny const tier0CalleeSaves           = (regMaskAny)patchpointInfo->CalleeSaveRegisters();
+            regMaskMixed const tier0CalleeSaves           = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
             regMaskGpr const tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
             regMaskGpr const osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
             regMaskGpr const allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
@@ -10734,7 +10734,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(isFramePointerUsed());
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
                                                                           // finalized
-    assert(compiler->compCalleeFPRegsSavedMask != (regMaskAny)-1); // The float registers to be preserved is finalized
+    assert(compiler->compCalleeFPRegsSavedMask != (regMaskMixed)-1); // The float registers to be preserved is finalized
 
     // Even though lvaToInitialSPRelativeOffset() depends on compLclFrameSize,
     // that's ok, because we're figuring out an offset in the parent frame.

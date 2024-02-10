@@ -217,7 +217,8 @@ typedef unsigned __int64 regMaskPredicate;
 
 // Design:
 // 1. Reduce regMaskGpr to 32-bit
-// 2. singleRegMask > regMaskOnlyOne > (regMaskGpr, regMaskFloat, regMaskPredicate) > regMaskAny
+// 2. singleRegMask > regMaskOnlyOne > (regMaskGpr, regMaskFloat, regMaskPredicate) > regMaskMixed
+// 3. Revisit `regMaskMixed` and see how we can pass m
 // 
 
 //
@@ -229,14 +230,14 @@ typedef unsigned __int64 regMaskPredicate;
 // converted to "unsigned"
 typedef unsigned __int64 regMaskOnlyOne;
 
-// `regMaskAny` tells that the mask can contain any of the gpr/vector
+// `regMaskMixed` tells that the mask can contain any of the gpr/vector
 // registers. Once we identify all the places with `regMaskOnlyOne`,
-// `regMaskFloat`, `regMaskGpr`, we will revisit `regMaskAny` and try
+// `regMaskFloat`, `regMaskGpr`, we will revisit `regMaskMixed` and try
 // to either:
-// 0. Revisit regMaskAny and see if they should be "regMaskAny"
+// 0. Revisit regMaskMixed and see if they should be "regMaskMixed"
 // 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
 // 2. Have a data structure like struct to pass all these together
-typedef unsigned __int64 regMaskAny; //TODO: Rename this to regMaskMixed
+typedef unsigned __int64 regMaskMixed; //TODO: Rename this to regMaskMixed
 
 // TODO: For LSRA, the select() method should be regMaskOnlyOne because we will be
 // allocating either GPR or Vector or Mask but not all
@@ -249,7 +250,7 @@ typedef unsigned       regMaskTP;
 #define regMaskFloat regMaskTP
 #define regMaskPredicate regMaskTP
 #define regMaskOnlyOne regMaskTP
-#define regMaskAny regMaskTP
+#define regMaskMixed regMaskTP
 #define singleRegMask regMaskTP
 #endif
 
@@ -376,7 +377,7 @@ const char* getRegName(regNumber reg);
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
-extern void dspRegMask(regMaskAny regMask, size_t minSiz = 0);
+extern void dspRegMask(regMaskMixed regMask, size_t minSiz = 0);
 #endif
 
 #if CPU_HAS_BYTE_REGS
@@ -606,7 +607,7 @@ inline singleRegMask genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskAny result = 1ULL << reg;
+    regMaskMixed result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
@@ -665,7 +666,7 @@ inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TY
 inline regMaskOnlyOne genRegMask(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
-    regMaskAny regMask = RBM_NONE;
+    regMaskMixed regMask = RBM_NONE;
 
     if (varTypeUsesIntReg(type))
     {

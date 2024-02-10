@@ -1005,9 +1005,9 @@ public:
         return lvIsRegCandidate() && (GetRegNum() != REG_STK);
     }
 
-    regMaskAny lvRegMask() const
+    regMaskMixed lvRegMask() const
     {
-        regMaskAny regMask = RBM_NONE;
+        regMaskMixed regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
             if (varTypeUsesFloatReg(this))
@@ -3866,7 +3866,7 @@ public:
 
     unsigned lvaGetMaxSpillTempSize();
 #ifdef TARGET_ARM
-    bool lvaIsPreSpilled(unsigned lclNum, regMaskAny preSpillMask);
+    bool lvaIsPreSpilled(unsigned lclNum, regMaskMixed preSpillMask);
 #endif // TARGET_ARM
     void lvaAssignFrameOffsets(FrameLayoutState curState);
     void lvaFixVirtualFrameOffsets();
@@ -8422,7 +8422,7 @@ public:
 
     // Gets a register mask that represent the kill set for a helper call since
     // not all JIT Helper calls follow the standard ABI on the target architecture.
-    regMaskAny compHelperCallKillSet(CorInfoHelpFunc helper);
+    regMaskMixed compHelperCallKillSet(CorInfoHelpFunc helper);
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -10806,7 +10806,7 @@ public:
 
     bool compJitHaltMethod();
 
-    void dumpRegMask(regMaskAny regs) const;
+    void dumpRegMask(regMaskMixed regs) const;
 
 #endif
 
@@ -11130,7 +11130,7 @@ private:
     regMaskPredicate rbmAllMask;
     regMaskPredicate rbmMskCalleeTrash;
     unsigned  cntCalleeTrashMask;
-    regMaskAny varTypeCalleeTrashRegs[TYP_COUNT];
+    regMaskMixed varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:
     FORCEINLINE regMaskPredicate get_RBM_ALLMASK() const

@@ -3433,7 +3433,7 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskAny killMask = RBM_CALLEE_TRASH;
+    regMaskMixed killMask = RBM_CALLEE_TRASH;
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
@@ -3576,7 +3576,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     if (call->IsFastTailCall())
     {
-        regMaskAny trashedByEpilog = RBM_CALLEE_SAVED;
+        regMaskMixed trashedByEpilog = RBM_CALLEE_SAVED;
 
         // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
@@ -4898,7 +4898,7 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskAny rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskMixed rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))

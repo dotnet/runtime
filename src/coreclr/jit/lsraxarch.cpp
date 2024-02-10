@@ -47,7 +47,7 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(!tree->isContained());
     int       srcCount;
     int       dstCount      = 0;
-    regMaskAny killMask      = RBM_NONE;
+    regMaskMixed killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
@@ -1344,7 +1344,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    regMaskAny killMask = getKillSetForCall(call);
+    regMaskMixed killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
     // No args are placed in registers anymore.
@@ -1636,7 +1636,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif
 
     buildInternalRegisterUses();
-    regMaskAny killMask = getKillSetForBlockStore(blkNode);
+    regMaskMixed killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
 
     return useCount;
@@ -1929,7 +1929,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(RBM_RAX | RBM_RDX));
     buildInternalRegisterUses();
 
-    regMaskAny killMask = getKillSetForModDiv(tree->AsOp());
+    regMaskMixed killMask = getKillSetForModDiv(tree->AsOp());
     BuildDefsWithKills(tree, 1, dstCandidates, killMask);
     return srcCount;
 }
@@ -3042,7 +3042,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
     assert(compiler->IsGprRegMask(dstCandidates));
 
-    regMaskAny killMask = getKillSetForMul(tree->AsOp());
+    regMaskMixed killMask = getKillSetForMul(tree->AsOp());
     BuildDefsWithKills(tree, dstCount, dstCandidates, killMask);
     return srcCount;
 }

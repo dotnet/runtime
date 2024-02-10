@@ -282,7 +282,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  *  Displays a range of registers
  *   -- This is a helper used by dspRegMask
  */
-const char* dspRegRange(regMaskAny regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
+const char* dspRegRange(regMaskMixed regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
 #ifdef TARGET_XARCH
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
@@ -435,7 +435,7 @@ const char* dspRegRange(regMaskAny regMask, size_t& minSiz, const char* sep, reg
  *  Displays a register set.
  *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
  */
-void dspRegMask(regMaskAny regMask, size_t minSiz)
+void dspRegMask(regMaskMixed regMask, size_t minSiz)
 {
     const char* sep = "";
 

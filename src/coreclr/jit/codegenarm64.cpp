@@ -36,7 +36,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskAny rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskMixed rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
     if (isFramePointerUsed())
     {
@@ -45,7 +45,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     rsRestoreRegs |= RBM_LR; // We must save/restore the return address (in the LR register)
 
-    regMaskAny regsToRestoreMask = rsRestoreRegs;
+    regMaskMixed regsToRestoreMask = rsRestoreRegs;
 
     const int totalFrameSize = genTotalFrameSize();
 
@@ -904,7 +904,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDel
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskAny regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskMixed regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
 {
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
@@ -1019,7 +1019,7 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int sp
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskAny regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskMixed regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
 {
     assert(spDelta >= 0);
     unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
@@ -1598,7 +1598,7 @@ void CodeGen::genFuncletEpilog()
         }
     }
 
-    regMaskAny regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
+    regMaskMixed regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
     if ((genFuncletInfo.fiFrameType == 1) || (genFuncletInfo.fiFrameType == 2) || (genFuncletInfo.fiFrameType == 3))
     {
         regsToRestoreMask &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end
@@ -1735,7 +1735,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
 
-    regMaskAny rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
+    regMaskMixed rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
     assert((rsMaskSaveRegs & RBM_LR) != 0);
     assert((rsMaskSaveRegs & RBM_FP) != 0);
 
@@ -5102,7 +5102,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
 
         regMaskGpr callTargetMask = genRegMask(callTargetReg);
-        regMaskAny callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+        regMaskMixed callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
         // assert that all registers in callTargetMask are in the callKillSet
         noway_assert((callTargetMask & callKillSet) == callTargetMask);
@@ -5124,7 +5124,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                false                                             /* isJump */
                                );
 
-    regMaskAny killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regMaskMixed killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
 }
 

@@ -201,7 +201,7 @@ void CodeGen::genCodeForBBlist()
         // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
         // here. That would require handling the changes in recordVarLocationsAtStartOfBB().
 
-        regMaskAny newLiveRegSet  = RBM_NONE;
+        regMaskMixed newLiveRegSet  = RBM_NONE;
         regMaskGpr newRegGCrefSet = RBM_NONE;
         regMaskGpr newRegByrefSet = RBM_NONE;
 #ifdef DEBUG

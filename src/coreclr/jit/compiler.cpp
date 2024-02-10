@@ -3382,12 +3382,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Make sure we copy the register info and initialize the
     // trash regs after the underlying fields are initialized
 
-    const regMaskAny vtCalleeTrashRegs[TYP_COUNT]{
+    const regMaskMixed vtCalleeTrashRegs[TYP_COUNT]{
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
     };
-    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskAny) * TYP_COUNT);
+    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskMixed) * TYP_COUNT);
 
     codeGen->CopyRegisterInfo();
 #endif // TARGET_XARCH
@@ -3631,7 +3631,7 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 // Arguments:
 //   regs - The set of registers to display
 //
-void Compiler::dumpRegMask(regMaskAny regs) const
+void Compiler::dumpRegMask(regMaskMixed regs) const
 {
     if (regs == RBM_ALLINT)
     {
@@ -5773,11 +5773,11 @@ void Compiler::generatePatchpointInfo()
     // Record callee save registers.
     // Currently only needed for x64.
     //
-    regMaskAny rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskMixed rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
     rsPushRegs |= RBM_FPBASE;
     patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask((regMaskAny)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMPEXEC(dspRegMask((regMaskMixed)patchpointInfo->CalleeSaveRegisters()));
     JITDUMP("\n");
 #endif
 
@@ -9336,7 +9336,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *      cVN,         dVN            : Display a ValueNum (call vnPrint()).
  *
  * The following don't require a Compiler* to work:
- *      dRegMask                    : Display a regMaskAny (call dspRegMask(mask)).
+ *      dRegMask                    : Display a regMaskMixed (call dspRegMask(mask)).
  *      dBlockList                  : Display a BasicBlockList*.
  *
  * The following find an object in the IR and return it, as well as setting a global variable with the value that can
@@ -10287,7 +10287,7 @@ JITDBGAPI void __cdecl dVN(ValueNum vn)
     cVN(JitTls::GetCompiler(), vn);
 }
 
-JITDBGAPI void __cdecl dRegMask(regMaskAny mask)
+JITDBGAPI void __cdecl dRegMask(regMaskMixed mask)
 {
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== dRegMask %u\n", sequenceNumber++);
