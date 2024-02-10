@@ -13274,34 +13274,27 @@ namespace System.Numerics.Tensors
             throw new NotSupportedException();
         }
 
+        // TODO: The uses of these ApplyScalar methods are all as part of operators when handling edge cases (NaN, Infinity, really large inputs, etc.)
+        // Currently, these edge cases are not handled in a vectorized way and instead fall back to scalar processing. We can look into
+        // handling those in a vectorized manner as well.
+
         private static Vector128<float> ApplyScalar<TOperator>(Vector128<float> floats) where TOperator : IUnaryOperator<float, float> =>
-            Vector128.Create(
-                TOperator.Invoke(floats[0]), TOperator.Invoke(floats[1]), TOperator.Invoke(floats[2]), TOperator.Invoke(floats[3]));
+            Vector128.Create(TOperator.Invoke(floats[0]), TOperator.Invoke(floats[1]), TOperator.Invoke(floats[2]), TOperator.Invoke(floats[3]));
 
         private static Vector256<float> ApplyScalar<TOperator>(Vector256<float> floats) where TOperator : IUnaryOperator<float, float> =>
-            Vector256.Create(
-                TOperator.Invoke(floats[0]), TOperator.Invoke(floats[1]), TOperator.Invoke(floats[2]), TOperator.Invoke(floats[3]),
-                TOperator.Invoke(floats[4]), TOperator.Invoke(floats[5]), TOperator.Invoke(floats[6]), TOperator.Invoke(floats[7]));
+            Vector256.Create(ApplyScalar<TOperator>(floats.GetLower()), ApplyScalar<TOperator>(floats.GetUpper()));
 
         private static Vector512<float> ApplyScalar<TOperator>(Vector512<float> floats) where TOperator : IUnaryOperator<float, float> =>
-            Vector512.Create(
-                TOperator.Invoke(floats[0]), TOperator.Invoke(floats[1]), TOperator.Invoke(floats[2]), TOperator.Invoke(floats[3]),
-                TOperator.Invoke(floats[4]), TOperator.Invoke(floats[5]), TOperator.Invoke(floats[6]), TOperator.Invoke(floats[7]),
-                TOperator.Invoke(floats[8]), TOperator.Invoke(floats[9]), TOperator.Invoke(floats[10]), TOperator.Invoke(floats[11]),
-                TOperator.Invoke(floats[12]), TOperator.Invoke(floats[13]), TOperator.Invoke(floats[14]), TOperator.Invoke(floats[15]));
+            Vector512.Create(ApplyScalar<TOperator>(floats.GetLower()), ApplyScalar<TOperator>(floats.GetUpper()));
 
         private static Vector128<double> ApplyScalar<TOperator>(Vector128<double> doubles) where TOperator : IUnaryOperator<double, double> =>
-            Vector128.Create(
-                TOperator.Invoke(doubles[0]), TOperator.Invoke(doubles[1]));
+            Vector128.Create(TOperator.Invoke(doubles[0]), TOperator.Invoke(doubles[1]));
 
         private static Vector256<double> ApplyScalar<TOperator>(Vector256<double> doubles) where TOperator : IUnaryOperator<double, double> =>
-            Vector256.Create(
-                TOperator.Invoke(doubles[0]), TOperator.Invoke(doubles[1]), TOperator.Invoke(doubles[2]), TOperator.Invoke(doubles[3]));
+            Vector256.Create(ApplyScalar<TOperator>(doubles.GetLower()), ApplyScalar<TOperator>(doubles.GetUpper()));
 
         private static Vector512<double> ApplyScalar<TOperator>(Vector512<double> doubles) where TOperator : IUnaryOperator<double, double> =>
-            Vector512.Create(
-                TOperator.Invoke(doubles[0]), TOperator.Invoke(doubles[1]), TOperator.Invoke(doubles[2]), TOperator.Invoke(doubles[3]),
-                TOperator.Invoke(doubles[4]), TOperator.Invoke(doubles[5]), TOperator.Invoke(doubles[6]), TOperator.Invoke(doubles[7]));
+            Vector512.Create(ApplyScalar<TOperator>(doubles.GetLower()), ApplyScalar<TOperator>(doubles.GetUpper()));
 
         /// <summary>Creates a span of <typeparamref name="TTo"/> from a <typeparamref name="TTo"/> when they're the same type.</summary>
         private static unsafe ReadOnlySpan<TTo> Rename<TFrom, TTo>(ReadOnlySpan<TFrom> span)
@@ -16075,7 +16068,7 @@ namespace System.Numerics.Tensors
 
             public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Vector128<uint> uxMasked = x.AsUInt32() & Vector128.Create(SignMask);
+                Vector128<uint> uxMasked = Vector128.Abs(x).AsUInt32();
                 if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<CosOperatorSingle>(x);
@@ -16102,7 +16095,7 @@ namespace System.Numerics.Tensors
 
             public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Vector256<uint> uxMasked = x.AsUInt32() & Vector256.Create(0x7FFFFFFFu);
+                Vector256<uint> uxMasked = Vector256.Abs(x).AsUInt32();
                 if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<CosOperatorSingle>(x);
@@ -16129,7 +16122,7 @@ namespace System.Numerics.Tensors
 
             public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Vector512<uint> uxMasked = x.AsUInt32() & Vector512.Create(SignMask);
+                Vector512<uint> uxMasked = Vector512.Abs(x).AsUInt32();
                 if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<CosOperatorSingle>(x);
@@ -16178,7 +16171,7 @@ namespace System.Numerics.Tensors
 
             public static Vector128<double> Invoke(Vector128<double> x)
             {
-                Vector128<ulong> uxMasked = x.AsUInt64() & Vector128.Create(SignMask);
+                Vector128<ulong> uxMasked = Vector128.Abs(x).AsUInt64();
                 if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<CosOperatorDouble>(x);
@@ -16210,7 +16203,7 @@ namespace System.Numerics.Tensors
 
             public static Vector256<double> Invoke(Vector256<double> x)
             {
-                Vector256<ulong> uxMasked = x.AsUInt64() & Vector256.Create(SignMask);
+                Vector256<ulong> uxMasked = Vector256.Abs(x).AsUInt64();
                 if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<CosOperatorDouble>(x);
@@ -16242,7 +16235,7 @@ namespace System.Numerics.Tensors
 
             public static Vector512<double> Invoke(Vector512<double> x)
             {
-                Vector512<ulong> uxMasked = x.AsUInt64() & Vector512.Create(SignMask);
+                Vector512<ulong> uxMasked = Vector512.Abs(x).AsUInt64();
                 if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<CosOperatorDouble>(x);
@@ -16533,9 +16526,8 @@ namespace System.Numerics.Tensors
 
             public static Vector128<float> Invoke(Vector128<float> x)
             {
-                Vector128<uint> ux = x.AsUInt32();
-                Vector128<uint> sign = ux & Vector128.Create(~SignMask);
-                Vector128<uint> uxMasked = ux & Vector128.Create(SignMask);
+                Vector128<uint> sign = x.AsUInt32() & Vector128.Create(~SignMask);
+                Vector128<uint> uxMasked = Vector128.Abs(x).AsUInt32();
 
                 if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
                 {
@@ -16563,9 +16555,8 @@ namespace System.Numerics.Tensors
 
             public static Vector256<float> Invoke(Vector256<float> x)
             {
-                Vector256<uint> ux = x.AsUInt32();
-                Vector256<uint> sign = ux & Vector256.Create(~SignMask);
-                Vector256<uint> uxMasked = ux & Vector256.Create(SignMask);
+                Vector256<uint> sign = x.AsUInt32() & Vector256.Create(~SignMask);
+                Vector256<uint> uxMasked = Vector256.Abs(x).AsUInt32();
 
                 if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
                 {
@@ -16593,16 +16584,15 @@ namespace System.Numerics.Tensors
 
             public static Vector512<float> Invoke(Vector512<float> x)
             {
-                Vector512<uint> ux = x.AsUInt32();
-                Vector512<uint> sign = ux & Vector512.Create(~SignMask);
-                Vector512<uint> uxMasked = ux & Vector512.Create(SignMask);
+                Vector512<uint> sign = x.AsUInt32() & Vector512.Create(~SignMask);
+                Vector512<uint> uxMasked = Vector512.Abs(x).AsUInt32();
 
                 if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<SinOperatorSingle>(x);
                 }
 
-                Vector512<float> r = (ux & Vector512.Create(SignMask)).AsSingle();
+                Vector512<float> r = uxMasked.AsSingle();
                 Vector512<float> almHuge = Vector512.Create(AlmHuge);
                 Vector512<float> dn = (r * Vector512.Create(1 / float.Pi)) + almHuge;
                 Vector512<uint> odd = dn.AsUInt32() << 31;
@@ -16645,9 +16635,8 @@ namespace System.Numerics.Tensors
 
             public static Vector128<double> Invoke(Vector128<double> x)
             {
-                Vector128<ulong> ux = x.AsUInt64();
-                Vector128<ulong> sign = ux & Vector128.Create(~SignMask);
-                Vector128<ulong> uxMasked = ux & Vector128.Create(SignMask);
+                Vector128<ulong> sign = x.AsUInt64() & Vector128.Create(~SignMask);
+                Vector128<ulong> uxMasked = Vector128.Abs(x).AsUInt64();
 
                 if (Vector128.GreaterThanAny(uxMasked, Vector128.Create(MaxVectorizedValue)))
                 {
@@ -16680,16 +16669,15 @@ namespace System.Numerics.Tensors
 
             public static Vector256<double> Invoke(Vector256<double> x)
             {
-                Vector256<ulong> ux = x.AsUInt64();
-                Vector256<ulong> sign = ux & Vector256.Create(~SignMask);
-                Vector256<ulong> uxMasked = ux & Vector256.Create(SignMask);
+                Vector256<ulong> sign = x.AsUInt64() & Vector256.Create(~SignMask);
+                Vector256<ulong> uxMasked = Vector256.Abs(x).AsUInt64();
 
                 if (Vector256.GreaterThanAny(uxMasked, Vector256.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<SinOperatorDouble>(x);
                 }
 
-                Vector256<double> r = (ux & Vector256.Create(SignMask)).AsDouble();
+                Vector256<double> r = uxMasked.AsDouble();
                 Vector256<double> almHuge = Vector256.Create(AlmHuge);
                 Vector256<double> dn = (r * Vector256.Create(1 / double.Pi)) + almHuge;
                 Vector256<ulong> odd = dn.AsUInt64() << 63;
@@ -16715,16 +16703,15 @@ namespace System.Numerics.Tensors
 
             public static Vector512<double> Invoke(Vector512<double> x)
             {
-                Vector512<ulong> ux = x.AsUInt64();
-                Vector512<ulong> sign = ux & Vector512.Create(~SignMask);
-                Vector512<ulong> uxMasked = ux & Vector512.Create(SignMask);
+                Vector512<ulong> sign = x.AsUInt64() & Vector512.Create(~SignMask);
+                Vector512<ulong> uxMasked = Vector512.Abs(x).AsUInt64();
 
                 if (Vector512.GreaterThanAny(uxMasked, Vector512.Create(MaxVectorizedValue)))
                 {
                     return ApplyScalar<SinOperatorDouble>(x);
                 }
 
-                Vector512<double> r = (ux & Vector512.Create(SignMask)).AsDouble();
+                Vector512<double> r = uxMasked.AsDouble();
                 Vector512<double> almHuge = Vector512.Create(AlmHuge);
                 Vector512<double> dn = (r * Vector512.Create(1 / double.Pi)) + almHuge;
                 Vector512<ulong> odd = dn.AsUInt64() << 63;
