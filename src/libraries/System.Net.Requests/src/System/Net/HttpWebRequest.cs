@@ -1184,8 +1184,6 @@ namespace System.Net
                 _sendRequestMessage.Headers.ExpectContinue = true;
             }
 
-            _sendRequestMessage.Version = ProtocolVersion;
-
             _sendRequestMessage.Headers.TransferEncodingChunked = SendChunked;
 
             if (KeepAlive)

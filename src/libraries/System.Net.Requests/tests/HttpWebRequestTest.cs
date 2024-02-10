@@ -2091,11 +2091,10 @@ namespace System.Net.Tests
                 },
                 async (server) => 
                 {
-                    Exception? exception = await Record.ExceptionAsync(() => server.AcceptConnectionAsync(_ =>
+                    await server.AcceptConnectionAsync(_ =>
                     {
                         return Task.CompletedTask;
-                    }));
-                    Assert.Null(exception);
+                    });
                 }
             );
         }

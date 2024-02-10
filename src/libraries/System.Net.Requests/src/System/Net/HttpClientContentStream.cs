@@ -102,18 +102,6 @@ namespace System.Net
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        public override void WriteByte(byte value) => throw new NotSupportedException();
-
-        public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException();
-
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) => throw new NotSupportedException();
-
-        public override void EndWrite(IAsyncResult asyncResult) => throw new NotSupportedException();
-
         public override long Length => throw new NotSupportedException();
         public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();

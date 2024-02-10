@@ -48,11 +48,6 @@ namespace System.Net
             }
         }
 
-        // We're already sending data as StreamContent,
-        // so we buffer data in memory and flush it in three cases:
-        // - When GetResponse called.
-        // - When RequestStream is getting disposed.
-        // - When user calls Flush.
         public override void Flush()
         {
             ThrowIfDisposed();
@@ -103,7 +98,7 @@ namespace System.Net
         {
             ThrowIfDisposed();
             ValidateBufferArguments(buffer, offset, count);
-                _streamBuffer.Write(new(buffer, offset, count));
+            _streamBuffer.Write(new(buffer, offset, count));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
