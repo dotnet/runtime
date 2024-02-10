@@ -1368,7 +1368,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         // find the time interval that includes the GCs in question
         double startTime = INFINITY;
         double endTime = 0.0;
-        for (unsigned int i = s_gcFilterStart; i <= s_gcFilterEnd; i++)
+        for (unsigned long i = s_gcFilterStart; i <= s_gcFilterEnd; i++)
         {
             startTime = min(startTime, s_gcStartEnd[i].startTime);
             if (s_gcStartEnd[i].endTime != 0.0)
