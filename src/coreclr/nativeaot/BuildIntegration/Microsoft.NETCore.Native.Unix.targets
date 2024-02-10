@@ -85,9 +85,8 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <PropertyGroup Condition="'$(_targetOS)' == 'osx'">
       <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">11.0</AppleMinOSVersion>
-      <CrossCompileArch Condition="'$(CrossCompileArch)' == '' and $(RuntimeIdentifier.EndsWith('-x64'))">x86_64</CrossCompileArch>
-      <CrossCompileArch Condition="'$(CrossCompileArch)' == '' and $(RuntimeIdentifier.EndsWith('-arm64'))">arm64</CrossCompileArch>
-      <TargetTriple Condition="'$(CrossCompileArch)' == ''">$(CrossCompileArch)-apple-macos$(AppleMinOSVersion)</TargetTriple>
+      <TargetTriple Condition="'$(_targetArchitecture)' == 'x64'">x86_64-apple-macos$(AppleMinOSVersion)</TargetTriple>
+      <TargetTriple Condition="'$(_targetArchitecture)' == 'arm64'">arm64-apple-macos$(AppleMinOSVersion)</TargetTriple>
     </PropertyGroup>
 
     <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(CrossCompileArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
