@@ -3085,7 +3085,7 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 //    RBM_NONE if compatible with EVEX (or not a floating/SIMD register),
 //    lowSIMDRegs() (XMM0-XMM16) otherwise.
 //
-inline regMaskTP LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
+inline regMaskFloat LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 {
 #if defined(TARGET_AMD64)
     if (!(varTypeIsFloating(tree->gtType) || varTypeIsSIMD(tree->gtType)))
