@@ -4317,6 +4317,9 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 valType = lvaGetDesc(effectiveVal->AsLclVar()->GetLclNum())->TypeGet();
             }
 
+            bool requiresUnaligned = info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <
+                info.compCompHnd->getClassAlignmentRequirement(toTypeHnd);
+
             // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
             if (varTypeIsSmall(toType))
             {
@@ -4330,7 +4333,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 }
             }
             else if (((toType != TYP_STRUCT) && (genActualType(valType) == toType)) ||
-                     ClassLayout::AreCompatible(fromLayout, toLayout))
+                     (!requiresUnaligned && ClassLayout::AreCompatible(fromLayout, toLayout)))
             {
                 return op1;
             }
@@ -4396,8 +4399,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
             }
 
-            if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <
-                info.compCompHnd->getClassAlignmentRequirement(toTypeHnd))
+            if (requiresUnaligned)
             {
                 indirFlags |= GTF_IND_UNALIGNED;
             }
