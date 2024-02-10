@@ -1476,10 +1476,8 @@ Interval* LinearScan::getUpperVectorInterval(unsigned varIndex)
 //        But we will use as a proxy any node that kills floating point registers.
 //        (Note that some calls are masquerading as other nodes at this point so we can't just check for calls.)
 //
-void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskFloat fpCalleeKillSet)
+void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskMixed fpCalleeKillSet)
 {
-    assert(compiler->IsFloatRegMask(fpCalleeKillSet));
-
     if ((tree != nullptr) && tree->IsCall())
     {
         if (tree->AsCall()->IsNoReturn() || compiler->fgIsThrow(tree))
