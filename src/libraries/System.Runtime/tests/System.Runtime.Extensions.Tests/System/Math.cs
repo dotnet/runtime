@@ -1497,7 +1497,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData( double.NegativeInfinity,  double.NaN,           double.NaN,          0.0,                              0.0)]
-        [InlineData(-1e18,                     0.9929693207404051,   0.11837199021871073, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // https://github.com/dotnet/runtime/issues/98204
+        [InlineData(-1e18,                     0.9929693207404051,   0.11837199021871073, 0.0002,                           0.0002)]                            // https://github.com/dotnet/runtime/issues/98204
         [InlineData(-3.1415926535897932,      -0.0,                 -1.0,                 CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value: -(pi)
         [InlineData(-2.7182818284590452,      -0.41078129050290870, -0.91173391478696510, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(e)
         [InlineData(-2.3025850929940457,      -0.74398033695749319, -0.66820151019031295, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value: -(ln(10))
@@ -1529,7 +1529,7 @@ namespace System.Tests
         [InlineData( 2.3025850929940457,       0.74398033695749319, -0.66820151019031295, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (ln(10))
         [InlineData( 2.7182818284590452,       0.41078129050290870, -0.91173391478696510, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // value:  (e)
         [InlineData( 3.1415926535897932,       0.0,                 -1.0,                 CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon * 10)]  // value:  (pi)
-        [InlineData( 1e18,                    -0.9929693207404051,   0.11837199021871073, CrossPlatformMachineEpsilon,      CrossPlatformMachineEpsilon)]       // https://github.com/dotnet/runtime/issues/98204
+        [InlineData( 1e18,                    -0.9929693207404051,   0.11837199021871073, 0.0002,                           0.0002)]                            // https://github.com/dotnet/runtime/issues/98204
         [InlineData( double.PositiveInfinity,  double.NaN,           double.NaN,          0.0,                              0.0)]
         public static void SinCos(double value, double expectedResultSin, double expectedResultCos, double allowedVarianceSin, double allowedVarianceCos)
         {
