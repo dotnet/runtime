@@ -1862,6 +1862,10 @@
             ]
           },
           {
+            "name": "isIssue",
+            "parameters": {}
+          },
+          {
             "name": "isOpen",
             "parameters": {}
           }
@@ -1917,6 +1921,10 @@
             "parameters": {
               "label": "untriaged"
             }
+          },
+          {
+            "name": "isIssue",
+            "parameters": {}
           },
           {
             "name": "isOpen",
@@ -2422,6 +2430,10 @@
             "parameters": {
               "label": "no-recent-activity"
             }
+          },
+          {
+            "name": "isIssue",
+            "parameters": {}
           }
         ]
       }
