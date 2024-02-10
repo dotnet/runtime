@@ -6074,17 +6074,31 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    // When it's a PInvoke call and the call type is USER function, we issue VZEROUPPER here
-    // if the function contains 256bit AVX instructions, this is to avoid AVX-256 to Legacy SSE
-    // transition penalty, assuming the user function contains legacy SSE instruction.
-    // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
-    // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
-    // when there's preceding 256-bit AVX to legacy SSE transition penalty.
-    // This applies to 512bit AVX512 instructions as well.
-    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && (GetEmitter()->Contains256bitOrMoreAVX()))
+    if (compiler->canUseVexEncoding())
     {
-        assert(compiler->canUseVexEncoding());
-        instGen(INS_vzeroupper);
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        bool needsZeroupper = false;
+
+        // TODO-XArch-CQ: We should emit vzeroupper before R2R calls if they aren't known to require AVX+
+        // TODO-XArch-CQ: We should emit vzeroupper before JIT helpers known to use floating-point
+
+        if (call->IsPInvoke() && (call->gtCallType != CT_HELPER))
+        {
+            // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
+            // may use the legacy encoding.
+
+            needsZeroupper = true;
+        }
+
+        if (needsZeroupper)
+        {
+            instGen(INS_vzeroupper);
+        }
     }
 
     genCallInstruction(call X86_ARG(stackArgBytes));
@@ -11188,11 +11202,24 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
-    genVzeroupperIfNeeded(false);
     regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
+
+    if (GetEmitter()->Contains256bitOrMoreAVX())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        // Since this function used 256-bit or more AVX, we need to ensure we emit a vzeroupper.
+        // TODO-CQ: We should be able to check the return type and skip this if it is TYP_SIMD32 or TYP_SIMD64
+
+        instGen(INS_vzeroupper);
+    }
 
     // fast path return
     if (regMask == RBM_NONE)
@@ -11244,7 +11271,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     // fast path return
     if (regMask == RBM_NONE)
     {
-        genVzeroupperIfNeeded();
         return;
     }
 
@@ -11286,37 +11312,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
             regMask &= ~regBit;
             offset -= XMM_REGSIZE_BYTES;
         }
-    }
-    genVzeroupperIfNeeded();
-}
-
-// Generate Vzeroupper instruction as needed to zero out upper 128b-bit of all YMM registers so that the
-// AVX/Legacy SSE transition penalties can be avoided. This function is been used in genPreserveCalleeSavedFltRegs
-// (prolog) and genRestoreCalleeSavedFltRegs (epilog). Issue VZEROUPPER in Prolog if the method contains
-// 128-bit or 256-bit AVX code, to avoid legacy SSE to AVX transition penalty, which could happen when native
-// code contains legacy SSE code calling into JIT AVX code (e.g. reverse pinvoke). Issue VZEROUPPER in Epilog
-// if the method contains 256-bit AVX code, to avoid AVX to legacy SSE transition penalty.
-//
-// Params
-//   check256bitOnly  - true to check if the function contains 256-bit AVX instruction and generate Vzeroupper
-//      instruction, false to check if the function contains AVX instruction (either 128-bit or 256-bit).
-//
-void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
-{
-    bool emitVzeroUpper = false;
-    if (check256bitOnly)
-    {
-        emitVzeroUpper = GetEmitter()->Contains256bitOrMoreAVX();
-    }
-    else
-    {
-        emitVzeroUpper = GetEmitter()->ContainsAVX();
-    }
-
-    if (emitVzeroUpper)
-    {
-        assert(compiler->canUseVexEncoding());
-        instGen(INS_vzeroupper);
     }
 }
 
