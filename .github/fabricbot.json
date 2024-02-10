@@ -926,6 +926,10 @@
             "parameters": {
               "label": "breaking-change"
             }
+          },
+          {
+            "name": "isPr",
+            "parameters": {}
           }
         ]
       },
@@ -1105,6 +1109,10 @@
             ]
           },
           {
+            "name": "isPr",
+            "parameters": {}
+          },
+          {
             "name": "isOpen",
             "parameters": {}
           }
@@ -1162,6 +1170,10 @@
                 }
               }
             ]
+          },
+          {
+            "name": "isPr",
+            "parameters": {}
           },
           {
             "name": "isOpen",
@@ -1601,6 +1613,10 @@
             }
           },
           {
+            "name": "isPr",
+            "parameters": {}
+          },
+          {
             "operator": "and",
             "operands": [
               {
@@ -1764,6 +1780,10 @@
                 }
               }
             ]
+          },
+          {
+            "name": "isPr",
+            "parameters": {}
           },
           {
             "name": "isAction",
@@ -1930,6 +1950,10 @@
         "operator": "and",
         "operands": [
           {
+            "name": "isPr",
+            "parameters": {}
+          },
+          {
             "name": "isAction",
             "parameters": {
               "action": "synchronize"
@@ -1989,6 +2013,10 @@
             }
           },
           {
+            "name": "isPr",
+            "parameters": {}
+          },
+          {
             "name": "isOpen",
             "parameters": {}
           }
@@ -2038,6 +2066,10 @@
             "parameters": {
               "action": "submitted"
             }
+          },
+          {
+            "name": "isPr",
+            "parameters": {}
           },
           {
             "name": "isOpen",
@@ -2425,6 +2457,10 @@
         "operator": "and",
         "operands": [
           {
+            "name": "isPr",
+            "parameters": {}
+          },
+          {
             "name": "isOpen",
             "parameters": {}
           },
@@ -2485,6 +2521,10 @@
             }
           },
           {
+            "name": "isPr",
+            "parameters": {}
+          },
+          {
             "name": "isOpen",
             "parameters": {}
           }
@@ -2526,6 +2566,10 @@
             "parameters": {
               "label": "no-recent-activity"
             }
+          },
+          {
+            "name": "isPr",
+            "parameters": {}
           },
           {
             "name": "isOpen",
