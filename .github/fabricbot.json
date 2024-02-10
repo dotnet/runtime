@@ -1620,17 +1620,6 @@
                   {
                     "name": "activitySenderHasPermissions",
                     "parameters": {
-                      "permissions": "maintain"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "activitySenderHasPermissions",
-                    "parameters": {
                       "permissions": "write"
                     }
                   }
