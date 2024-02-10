@@ -1479,10 +1479,6 @@
                 "parameters": {
                   "action": "reopened"
                 }
-              },
-              {
-                "name": "removedFromMilestone",
-                "parameters": {}
               }
             ]
           },
@@ -1547,7 +1543,7 @@
                 }
               },
               {
-                "name": "addedToMilestone",
+                "name": "isInMilestone",
                 "parameters": {}
               }
             ]
