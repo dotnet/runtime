@@ -5721,7 +5721,7 @@ void CodeGen::genFnProlog()
         if (isInReg)
         {
             regNumber regForVar = varDsc->GetRegNum();
-            regMaskAny regMask   = genRegMask(regForVar);
+            singleRegMask regMask   = genRegMask(regForVar);
             if (!genIsValidFloatReg(regForVar))
             {
                 initRegs |= regMask;
@@ -8112,7 +8112,7 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             regNumber targetReg = genRegCopy(treeNode, i);
             if (targetReg != sourceReg)
             {
-                regMaskAny targetRegMask = genRegMask(targetReg);
+                singleRegMask targetRegMask = genRegMask(targetReg);
                 assert((busyRegs & targetRegMask) == 0);
                 // Clear sourceReg from the busyRegs, and add targetReg.
                 busyRegs &= ~genRegMask(sourceReg);

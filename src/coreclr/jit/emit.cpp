@@ -3490,7 +3490,7 @@ void emitter::emitDispRegSet(regMaskAny regs)
             break;
         }
 
-        regMaskAny curReg = genRegMask(reg);
+        singleRegMask curReg = genRegMask(reg);
         if ((regs & curReg) == 0)
         {
             continue;
@@ -9255,7 +9255,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 
     assert(needsGC(gcType));
 
-    regMaskAny regMask = genRegMask(reg);
+    singleRegMask regMask = genRegMask(reg);
 
     regMaskGpr& emitThisXXrefRegs = (gcType == GCT_GCREF) ? emitThisGCrefRegs : emitThisByrefRegs;
     regMaskGpr& emitThisYYrefRegs = (gcType == GCT_GCREF) ? emitThisByrefRegs : emitThisGCrefRegs;
@@ -9357,7 +9357,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
         return;
     }
 
-    regMaskAny regMask = genRegMask(reg);
+    singleRegMask regMask = genRegMask(reg);
 
     if ((emitThisGCrefRegs & regMask) != 0)
     {

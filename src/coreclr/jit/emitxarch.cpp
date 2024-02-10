@@ -14663,7 +14663,7 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
         case IF_RRW:
         {
 #ifdef DEBUG
-            regMaskAny regMask = genRegMask(reg);
+            singleRegMask regMask = genRegMask(reg);
 #endif
             if (id->idGCref())
             {
@@ -17936,7 +17936,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         // The target of the 3-operand imul is implicitly encoded. Make sure
         // that we detected the implicit register and cleared its GC-status.
 
-        regMaskAny regMask = genRegMask(inst3opImulReg(ins));
+        singleRegMask regMask = genRegMask(inst3opImulReg(ins));
         assert((regMask & (emitThisGCrefRegs | emitThisByrefRegs)) == 0);
     }
 

@@ -1745,7 +1745,7 @@ private:
     regMaskOnlyOne getRegMask(regNumber reg, var_types regType)
     {
         reg               = getRegForType(reg, regType);
-        regMaskOnlyOne regMask = genRegMask(reg);
+        singleRegMask regMask = genRegMask(reg);
 #ifdef TARGET_ARM
         if (regType == TYP_DOUBLE)
         {

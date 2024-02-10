@@ -209,7 +209,7 @@ void GCInfo::gcMarkRegSetNpt(regMaskAny regMask DEBUGARG(bool forceOutput))
 
 void GCInfo::gcMarkRegPtrVal(regNumber reg, var_types type)
 {
-    regMaskAny regMask = genRegMask(reg);
+    singleRegMask regMask = genRegMask(reg);
 
     switch (type)
     {

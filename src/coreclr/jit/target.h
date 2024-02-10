@@ -215,6 +215,11 @@ typedef unsigned __int64 regMaskGpr;
 typedef unsigned __int64 regMaskFloat;
 typedef unsigned __int64 regMaskPredicate;
 
+// Design:
+// 1. Reduce regMaskGpr to 32-bit
+// 2. singleRegMask > regMaskOnlyOne > (regMaskGpr, regMaskFloat, regMaskPredicate) > regMaskAny
+// 
+
 //
 // We will add a "//TODO: regMaskOnlyOne" through out the code
 // that we know that the existing `regMaskTP` contains data that
@@ -386,7 +391,7 @@ inline bool isByteReg(regNumber reg)
 }
 #endif
 
-inline regMaskAny genRegMask(regNumber reg);
+inline singleRegMask genRegMask(regNumber reg);
 inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
@@ -593,7 +598,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
 
 extern const regMaskSmall regMasks[REG_COUNT];
 
-inline regMaskOnlyOne genRegMask(regNumber reg)
+inline singleRegMask genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
 #ifdef TARGET_AMD64

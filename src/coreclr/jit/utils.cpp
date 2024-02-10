@@ -306,7 +306,7 @@ const char* dspRegRange(regMaskAny regMask, size_t& minSiz, const char* sep, reg
 
     for (regNumber regNum = regFirst; regNum <= regLast; regNum = REG_NEXT(regNum))
     {
-        regMaskAny regBit = genRegMask(regNum);
+        singleRegMask regBit = genRegMask(regNum);
 
         if ((regMask & regBit) != 0)
         {

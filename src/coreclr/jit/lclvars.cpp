@@ -5785,7 +5785,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         // On ARM we spill the registers in codeGen->regSet.rsMaskPreSpillRegArg
         // in the prolog, so we have to do SetStackOffset() here
         //
-        regMaskAny regMask = genRegMask(varDsc->GetArgReg());
+        singleRegMask regMask = genRegMask(varDsc->GetArgReg());
         if (codeGen->regSet.rsMaskPreSpillRegArg & regMask)
         {
             // Signature: void foo(struct_8, int, struct_4)

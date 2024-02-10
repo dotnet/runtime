@@ -3834,7 +3834,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
         // Therefore manually update life of varDsc->GetRegNum().
-        regMaskAny tempMask = genRegMask(varDsc->GetRegNum());
+        singleRegMask tempMask = genRegMask(varDsc->GetRegNum());
         regSet.RemoveMaskVars(tempMask);
         gcInfo.gcMarkRegSetNpt(tempMask);
         if (compiler->lvaIsGCTracked(varDsc))

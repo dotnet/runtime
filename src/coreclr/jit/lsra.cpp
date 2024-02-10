@@ -296,7 +296,7 @@ regMaskOnlyOne LinearScan::getMatchingConstants(regMaskAny mask, Interval* curre
     while (candidates != RBM_NONE)
     {
         regNumber regNum       = genFirstRegNumFromMask(candidates);
-        regMaskAny candidateBit = genRegMask(regNum);
+        singleRegMask candidateBit = genRegMask(regNum);
         candidates ^= candidateBit;
 
         RegRecord* physRegRecord = getRegisterRecord(regNum);
@@ -3233,7 +3233,7 @@ bool LinearScan::isRefPositionActive(RefPosition* refPosition, LsraLocation refL
 //
 bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord)
 {
-    regMaskAny    candidateBit = genRegMask(physRegRecord->regNum);
+    singleRegMask    candidateBit = genRegMask(physRegRecord->regNum);
     LsraLocation refLocation  = refPosition->nodeLocation;
     // We shouldn't be calling this if we haven't already determined that the register is not
     // busy until the next kill.
@@ -3451,7 +3451,7 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 // Assign the given physical register interval to the given interval
 void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
-    regMaskAny assignedRegMask = genRegMask(regRec->regNum);
+    singleRegMask assignedRegMask = genRegMask(regRec->regNum);
     compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(true));
 
     interval->assignedReg = regRec;

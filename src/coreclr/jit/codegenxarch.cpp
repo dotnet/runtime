@@ -9811,7 +9811,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     //
     for (regNumber reg = REG_INT_LAST; tier0IntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
     {
-        regMaskAny regBit = genRegMask(reg);
+        regMaskGpr regBit = genRegMask(reg);
 
         if ((regBit & tier0IntCalleeSaves) != 0)
         {
@@ -9902,7 +9902,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     //
     for (regNumber reg = REG_INT_LAST; osrAdditionalIntCalleeSaves != RBM_NONE; reg = REG_PREV(reg))
     {
-        regMaskAny regBit = genRegMask(reg);
+        regMaskGpr regBit = genRegMask(reg);
 
         if ((regBit & osrAdditionalIntCalleeSaves) != 0)
         {
@@ -9967,7 +9967,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // and all the other code that expects it to be in this order.
     for (regNumber reg = REG_INT_LAST; rsPushRegs != RBM_NONE; reg = REG_PREV(reg))
     {
-        regMaskAny regBit = genRegMask(reg);
+        regMaskGpr regBit = genRegMask(reg);
 
         if ((regBit & rsPushRegs) != 0)
         {
@@ -11217,7 +11217,7 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 
     for (regNumber reg = REG_FLT_CALLEE_SAVED_FIRST; regMask != RBM_NONE; reg = REG_NEXT(reg))
     {
-        regMaskAny regBit = genRegMask(reg);
+        regMaskFloat regBit = genRegMask(reg);
         if ((regBit & regMask) != 0)
         {
             // ABI requires us to preserve lower 128-bits of YMM register.
@@ -11281,7 +11281,7 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 
     for (regNumber reg = REG_FLT_CALLEE_SAVED_FIRST; regMask != RBM_NONE; reg = REG_NEXT(reg))
     {
-        regMaskAny regBit = genRegMask(reg);
+        regMaskFloat regBit = genRegMask(reg);
         if ((regBit & regMask) != 0)
         {
             // ABI requires us to restore lower 128-bits of YMM register.
