@@ -3577,7 +3577,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
 		/*
-		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation. 
+		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation.
 		 * Emit a wrapper that throws a NotSupportedException.
 		 */
 		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
@@ -3757,7 +3757,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	}
 
 	goto leave;
-	
+
 	emit_exception_for_error:
 		mono_error_cleanup (emitted_error);
 		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
@@ -5834,7 +5834,6 @@ mono_marshal_load_type_info (MonoClass* klass)
 		if (m_class_is_inlinearray (klass)) {
 			// Limit the max size of array instance to 1MiB
 			const guint32 struct_max_size = 1024 * 1024;
-			guint32 initial_size = size;
 			size *= m_class_inlinearray_value (klass);
 			g_assert ((size > 0) && (size <= struct_max_size));
 		}
