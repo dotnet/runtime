@@ -42,6 +42,7 @@ Abstract:
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <ctype.h>
 #include <sys/stat.h>
@@ -3982,8 +3983,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define exit          PAL_exit
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
-#define strtoul       PAL_strtoul
-#define strtoull      PAL_strtoull
 #define fprintf       PAL_fprintf
 #define vfprintf      PAL_vfprintf
 #define rand          PAL_rand
@@ -4023,12 +4022,10 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define sincosf       PAL_sincosf
 #define malloc        PAL_malloc
 #define free          PAL_free
-#define _strdup       PAL__strdup
 #define _open         PAL__open
 #define _pread        PAL__pread
 #define _close        PAL__close
 #define _flushall     PAL__flushall
-#define strnlen       PAL_strnlen
 
 #ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
@@ -4073,7 +4070,7 @@ PALIMPORT long long int __cdecl atoll(const char *) MATH_THROW_DECL;
 PALIMPORT size_t __cdecl strlen(const char *);
 PALIMPORT int __cdecl strcmp(const char*, const char *);
 PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);
-PALIMPORT int __cdecl _strnicmp(const char *, const char *, size_t);
+PALIMPORT int __cdecl strncasecmp(const char *, const char *, size_t);
 PALIMPORT char * __cdecl strcat(char *, const char *);
 PALIMPORT char * __cdecl strncat(char *, const char *, size_t);
 PALIMPORT char * __cdecl strcpy(char *, const char *);
@@ -4083,11 +4080,13 @@ PALIMPORT char * __cdecl strrchr(const char *, int);
 PALIMPORT char * __cdecl strpbrk(const char *, const char *);
 PALIMPORT char * __cdecl strstr(const char *, const char *);
 PALIMPORT char * __cdecl strtok_r(char *, const char *, char **);
+PALIMPORT char * __cdecl strdup(const char*);
 PALIMPORT int __cdecl atoi(const char *);
-PALIMPORT ULONG __cdecl strtoul(const char *, char **, int);
+PALIMPORT unsigned long __cdecl strtoul(const char *, char **, int);
 PALIMPORT ULONGLONG __cdecl strtoull(const char *, char **, int);
 PALIMPORT double __cdecl atof(const char *);
 PALIMPORT double __cdecl strtod(const char *, char **);
+PALIMPORT size_t strnlen(const char *, size_t);
 PALIMPORT int __cdecl isprint(int);
 PALIMPORT int __cdecl isspace(int);
 PALIMPORT int __cdecl isalpha(int);
@@ -4114,7 +4113,7 @@ PALIMPORT int remove(const char*);
 
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);
-PALIMPORT DLLEXPORT int __cdecl _stricmp(const char *, const char *);
+PALIMPORT DLLEXPORT int __cdecl strcasecmp(const char *, const char *);
 PALIMPORT char * __cdecl _gcvt_s(char *, int, double, int);
 PALIMPORT int __cdecl __iscsym(int);
 PALIMPORT DLLEXPORT int __cdecl _wcsicmp(const WCHAR *, const WCHAR*);
@@ -4143,6 +4142,21 @@ PALIMPORT DLLEXPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
 PALIMPORT errno_t __cdecl _wcslwr_s(WCHAR *, size_t sz);
 PALIMPORT DLLEXPORT errno_t __cdecl _i64tow_s(long long, WCHAR *, size_t, int);
 PALIMPORT int __cdecl _wtoi(const WCHAR *);
+
+inline int _stricmp(const char* a, const char* b)
+{
+    return strcasecmp(a, b);
+}
+
+inline int _strnicmp(const char* a, const char* b, size_t c)
+{
+    return strncasecmp(a, b, c);
+}
+
+inline char* _strdup(const char* a)
+{
+    return strdup(a);
+}
 
 #ifdef __cplusplus
 extern "C++" {
@@ -4297,7 +4311,6 @@ inline __int64 abs(SSIZE_T _X) {
 PALIMPORT DLLEXPORT void * __cdecl malloc(size_t);
 PALIMPORT DLLEXPORT void   __cdecl free(void *);
 PALIMPORT DLLEXPORT void * __cdecl realloc(void *, size_t);
-PALIMPORT char * __cdecl _strdup(const char *);
 
 #if defined(_MSC_VER)
 #define alloca _alloca
