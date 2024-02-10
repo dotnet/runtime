@@ -722,8 +722,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-    assert(compiler->IsGprRegMask(rbmAllFloat));
-    assert(compiler->IsGprRegMask(rbmFltCalleeTrash));
+    assert(compiler->IsFloatRegMask(rbmAllFloat));
+    assert(compiler->IsFloatRegMask(rbmFltCalleeTrash));
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
