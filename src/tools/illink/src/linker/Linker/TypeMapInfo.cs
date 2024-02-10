@@ -172,9 +172,7 @@ namespace Mono.Linker
 					}
 
 					// Look for a default implementation last.
-					foreach (var defaultImpl in GetDefaultInterfaceImplementations (type, resolvedInterfaceMethod)) {
-						AddDefaultInterfaceImplementation (resolvedInterfaceMethod, type, defaultImpl);
-					}
+					FindAndAddDefaultInterfaceImplementations (type, resolvedInterfaceMethod);
 				}
 			}
 		}
@@ -276,7 +274,7 @@ namespace Mono.Linker
 		// Note that this returns a list to potentially cover the diamond case (more than one
 		// most specific implementation of the given interface methods). ILLink needs to preserve
 		// all the implementations so that the proper exception can be thrown at runtime.
-		IEnumerable<InterfaceImplementation> GetDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
+		void FindAndAddDefaultInterfaceImplementations (TypeDefinition type, MethodDefinition interfaceMethod)
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
@@ -290,7 +288,7 @@ namespace Mono.Linker
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethod &&
 						!potentialImplMethod.IsAbstract) {
-						yield return interfaceImpl;
+						AddDefaultInterfaceImplementation (interfaceMethod, type, interfaceImpl);
 					}
 
 					if (!potentialImplMethod.HasOverrides)
@@ -299,7 +297,7 @@ namespace Mono.Linker
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var @override in potentialImplMethod.Overrides) {
 						if (context.TryResolve (@override) == interfaceMethod) {
-							yield return interfaceImpl;
+							AddDefaultInterfaceImplementation (interfaceMethod, type, interfaceImpl);
 							foundImpl = true;
 							break;
 						}
@@ -313,8 +311,7 @@ namespace Mono.Linker
 				// We haven't found a MethodImpl on the current interface, but one of the interfaces
 				// this interface requires could still provide it.
 				if (!foundImpl) {
-					foreach (var impl in GetDefaultInterfaceImplementations (potentialImplInterface, interfaceMethod))
-						yield return impl;
+					FindAndAddDefaultInterfaceImplementations (potentialImplInterface, interfaceMethod);
 				}
 			}
 		}
