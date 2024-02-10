@@ -4318,7 +4318,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             }
 
             bool requiresUnaligned = info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <
-                info.compCompHnd->getClassAlignmentRequirement(toTypeHnd);
+                                     info.compCompHnd->getClassAlignmentRequirement(toTypeHnd);
 
             // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
             if (varTypeIsSmall(toType))
