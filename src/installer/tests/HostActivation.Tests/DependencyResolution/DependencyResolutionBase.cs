@@ -2,36 +2,35 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
     public abstract class DependencyResolutionBase
     {
-        protected const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
-
-        public abstract class SharedTestStateBase : TestArtifact
+        public abstract class SharedTestStateBase : IDisposable
         {
-            private static string GetBaseDir(string name)
-            {
-                string baseDir = Path.Combine(TestArtifactsPath, name);
-                return SharedFramework.CalculateUniqueTestDirectory(baseDir);
-            }
+            public string Location { get; }
+
+            private readonly TestArtifact _baseDirectory;
+            private readonly List<TestApp> _apps = new List<TestApp>();
 
             public SharedTestStateBase()
-                : base(GetBaseDir("dependencyResolution"))
             {
+                _baseDirectory = TestArtifact.Create("dependencyResolution");
+                Location = _baseDirectory.Location;
             }
 
             public DotNetBuilder DotNet(string name)
             {
-                return new DotNetBuilder(Location, TestContext.BuiltDotNet.BinPath, name);
+                return new DotNetBuilder(_baseDirectory.Location, TestContext.BuiltDotNet.BinPath, name);
             }
 
             public TestApp CreateFrameworkReferenceApp(string fxName, string fxVersion, Action<NetCoreAppBuilder> customizer = null)
             {
                 // Prepare the app mock - we're not going to run anything really, so we just need the basic files
-                TestApp testApp = CreateTestApp(Location, "FrameworkReferenceApp");
+                TestApp testApp = CreateTestApp(_baseDirectory.Location, "FrameworkReferenceApp");
                 testApp.PopulateFrameworkDependent(fxName, fxVersion, customizer);
                 return testApp;
             }
@@ -49,7 +48,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     testApp = new TestApp(path);
                 }
 
-                RegisterCopy(testApp);
+                _apps.Add(testApp);
                 return testApp;
             }
 
@@ -68,6 +67,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 TestApp testApp = CreateTestApp(null, name);
                 testApp.PopulateSelfContained(TestApp.MockedComponent.CoreClr, customizer);
                 return testApp;
+            }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (!disposing)
+                    return;
+
+                foreach (TestApp app in _apps)
+                {
+                    app.Dispose();
+                }
+
+                _apps.Clear();
+                _baseDirectory.Dispose();
             }
         }
     }

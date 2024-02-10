@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 _nativeHostingState = new NativeHosting.SharedTestStateBase();
             }
 
-            protected virtual TestApp CreateTestFrameworkReferenceApp() => CreateFrameworkReferenceApp(MicrosoftNETCoreApp, "4.0.0");
+            protected virtual TestApp CreateTestFrameworkReferenceApp() => CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, "4.0.0");
 
             protected virtual void CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(NetCoreAppBuilder builder)
             {
@@ -94,12 +94,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .Execute();
             }
 
-            public override void Dispose()
+            protected override void Dispose(bool disposing)
             {
-                base.Dispose();
-
                 FrameworkReferenceApp.Dispose();
                 _nativeHostingState.Dispose();
+                base.Dispose(disposing);
             }
         }
     }

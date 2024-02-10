@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -24,6 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         protected string DirectoryToDelete { get; init; }
 
         private readonly List<TestArtifact> _copies = new List<TestArtifact>();
+        private readonly Mutex _subdirMutex = new Mutex();
 
         public TestArtifact(string location)
         {
@@ -69,9 +71,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return artifact;
         }
 
-        protected void RegisterCopy(TestArtifact artifact)
+        /// <summary>
+        /// Locate the first non-existent subdirectory of the form <name>-<count>
+        /// </summary>
+        /// <param name="name">Name of the directory</param>
+        /// <returns>Path to the created directory</returns>
+        public string GetUniqueSubdirectory(string name)
         {
-            _copies.Add(artifact);
+            _subdirMutex.WaitOne();
+            int count = 0;
+            string dir;
+            do
+            {
+                dir = Path.Combine(Location, $"{name}-{count}");
+                count++;
+            } while (Directory.Exists(dir));
+
+            _subdirMutex.ReleaseMutex();
+            return dir;
         }
 
         public virtual void Dispose()

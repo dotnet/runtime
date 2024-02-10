@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
                     .Build();
 
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
                     .WithProject(DependencyName, "1.0.0", p => p
                         .WithAssemblyGroup(null, g => g.WithAsset($"{DependencyName}.dll"))));
 

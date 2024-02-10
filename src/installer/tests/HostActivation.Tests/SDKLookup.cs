@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             SharedState = sharedState;
 
-            string exeDotNetPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(sharedState.BaseDir, "exe"));
+            string exeDotNetPath = sharedState.BaseArtifact.GetUniqueSubdirectory("exe");
             ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, TestContext.BuiltDotNet.BinPath, null);
             ExecutableDotNet = ExecutableDotNetBuilder
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             ExecutableSelectedMessage = $"Using .NET SDK dll=[{Path.Combine(ExecutableDotNet.BinPath, "sdk")}";
 
             // Note: no need to delete the directory, it will be removed once the entire class is done
-            //       since everything is under the BaseDir from the shared state
+            //       since everything is under the BaseArtifact from the shared state
         }
 
         [Fact]
@@ -1019,25 +1019,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public sealed class SharedTestState : IDisposable
         {
-            public string BaseDir { get; }
+            public TestArtifact BaseArtifact { get; }
 
             public string CurrentWorkingDir { get; }
 
-            private readonly TestArtifact _baseDirArtifact;
-
             public SharedTestState()
             {
-                // The dotnetSDKLookup dir will contain some folders and files that will be
-                // necessary to perform the tests
-                string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetSDKLookup");
-                BaseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
-                _baseDirArtifact = new TestArtifact(BaseDir);
+                BaseArtifact = TestArtifact.Create(nameof(SDKLookup));
 
                 // The tested locations will be the cwd and the exe dir. cwd is no longer supported.
                 // All dirs will be placed inside the base folder
                 // Executable location is created per test as each test adds a different set of SDK versions
 
-                var currentWorkingSdk = new DotNetBuilder(BaseDir, TestContext.BuiltDotNet.BinPath, "current")
+                var currentWorkingSdk = new DotNetBuilder(BaseArtifact.Location, TestContext.BuiltDotNet.BinPath, "current")
                     .AddMockSDK("10000.0.0", "9999.0.0")
                     .Build();
                 CurrentWorkingDir = currentWorkingSdk.BinPath;
@@ -1045,7 +1039,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public void Dispose()
             {
-                _baseDirArtifact.Dispose();
+                BaseArtifact.Dispose();
             }
         }
     }

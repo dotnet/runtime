@@ -33,9 +33,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 true);
 
             // ./host/fxr/<version>/hostfxr.dll - this is the component being tested
+            string hostfxrDir = Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath));
+            Directory.CreateDirectory(hostfxrDir);
             File.Copy(
                 builtDotNetCli.GreatestVersionHostFxrFilePath,
-                Path.Combine(_path, "host", "fxr", Path.GetFileName(builtDotNetCli.GreatestVersionHostFxrPath), Binaries.HostFxr.FileName));
+                Path.Combine(hostfxrDir, Binaries.HostFxr.FileName));
         }
 
         /// <summary>
