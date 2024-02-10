@@ -209,6 +209,8 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
+typedef unsigned __int64 singleRegMask;
+
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 typedef unsigned __int64 regMaskGpr;
@@ -231,8 +233,10 @@ typedef unsigned __int64 regMaskOnlyOne;
 // 0. Revisit regMaskAny and see if they should be "regMaskAny"
 // 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
 // 2. Have a data structure like struct to pass all these together
-typedef unsigned __int64 regMaskAny;
-// TODO: should have `regMaskSingleReg` to represent genRegMask(regNumber) return value
+typedef unsigned __int64 regMaskAny; //TODO: Rename this to regMaskMixed
+
+// TODO: For LSRA, the select() method should be regMaskOnlyOne because we will be
+// allocating either GPR or Vector or Mask but not all
 #else
 // x86 and arm
 typedef unsigned       regMaskTP;
@@ -588,7 +592,7 @@ inline bool floatRegCanHoldType(regNumber reg, var_types type)
 
 extern const regMaskSmall regMasks[REG_COUNT];
 
-inline regMaskAny genRegMask(regNumber reg)
+inline regMaskOnlyOne genRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
 #ifdef TARGET_AMD64
@@ -652,7 +656,7 @@ inline regMaskFloat genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TY
 //    For registers that are used in pairs, the caller will be handling
 //    each member of the pair separately.
 //
-inline regMaskAny genRegMask(regNumber regNum, var_types type)
+inline regMaskOnlyOne genRegMask(regNumber regNum, var_types type)
 {
 #if defined(TARGET_ARM)
     regMaskAny regMask = RBM_NONE;
