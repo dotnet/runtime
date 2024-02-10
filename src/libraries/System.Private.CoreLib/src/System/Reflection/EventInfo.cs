@@ -92,7 +92,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return right is not null && right.Equals(left);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(EventInfo? left, EventInfo? right) => !(left == right);

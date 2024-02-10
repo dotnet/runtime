@@ -67,7 +67,7 @@ namespace System.Reflection
                 return true;
             }
 
-            return right is not null && right.Equals(left);
+            return left is not null && left.Equals(right);
         }
 
         public static bool operator !=(PropertyInfo? left, PropertyInfo? right) => !(left == right);
