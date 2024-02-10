@@ -12791,7 +12791,7 @@ emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info)
 
 	while (current_unwind_node < last_unwind_node) {
 		guint8 node_count = 0;
-		switch (current_unwind_node->UnwindOp) {
+		switch (current_unwind_node->UnwindCode.UnwindOp) {
 		case UWOP_PUSH_NONVOL:
 		case UWOP_ALLOC_SMALL:
 		case UWOP_SET_FPREG:
@@ -12807,7 +12807,7 @@ emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info)
 			node_count = 3;
 			break;
 		case UWOP_ALLOC_LARGE:
-			if (current_unwind_node->OpInfo == 0)
+			if (current_unwind_node->UnwindCode.OpInfo == 0)
 				node_count = 2;
 			else
 				node_count = 3;
@@ -14229,7 +14229,7 @@ static void
 acfg_free (MonoAotCompile *acfg)
 {
 #ifdef ENABLE_LLVM
-	if (acfg->aot_opts.llvm)
+	if (mono_use_llvm || acfg->aot_opts.llvm)
 		mono_llvm_free_aot_module ();
 #endif
 

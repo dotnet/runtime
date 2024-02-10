@@ -2750,10 +2750,17 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector512<T> resultIndex =
+#if NET9_0_OR_GREATER
+                    sizeof(T) == sizeof(long) ? Vector512<long>.Indices.As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector512<int>.Indices.As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector512<short>.Indices.As<short, T>() :
+                    Vector512<byte>.Indices.As<byte, T>();
+#else
                     sizeof(T) == sizeof(long) ? Vector512.Create(0L, 1, 2, 3, 4, 5, 6, 7).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<short, T>() :
                     Vector512.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63).As<byte, T>();
+#endif
                 Vector512<T> currentIndex = resultIndex;
                 Vector512<T> increment = CreateVector512T(Vector512<T>.Count);
 
@@ -2834,10 +2841,17 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector256<T> resultIndex =
+#if NET9_0_OR_GREATER
+                    sizeof(T) == sizeof(long) ? Vector256<long>.Indices.As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector256<int>.Indices.As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector256<short>.Indices.As<short, T>() :
+                    Vector256<byte>.Indices.As<byte, T>();
+#else
                     sizeof(T) == sizeof(long) ? Vector256.Create(0L, 1, 2, 3).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<short, T>() :
                     Vector256.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<byte, T>();
+#endif
                 Vector256<T> currentIndex = resultIndex;
                 Vector256<T> increment = CreateVector256T(Vector256<T>.Count);
 
@@ -2918,10 +2932,17 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector128<T> resultIndex =
+#if NET9_0_OR_GREATER
+                    sizeof(T) == sizeof(long) ? Vector128<long>.Indices.As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector128<int>.Indices.As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector128<short>.Indices.As<short, T>() :
+                    Vector128<byte>.Indices.As<byte, T>();
+#else
                     sizeof(T) == sizeof(long) ? Vector128.Create(0L, 1).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector128.Create(0, 1, 2, 3).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector128.Create(0, 1, 2, 3, 4, 5, 6, 7).As<short, T>() :
                     Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<byte, T>();
+#endif
                 Vector128<T> currentIndex = resultIndex;
                 Vector128<T> increment = CreateVector128T(Vector128<T>.Count);
 
