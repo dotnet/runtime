@@ -2180,6 +2180,56 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                                                      // iiiiii
             break;
 
+        case IF_SVE_GG_3A: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                           // element size
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            break;
+
+        case IF_SVE_GH_3B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                           // element size
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            break;
+
+        case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                             // element size
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            break;
+
+        case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                           // element size
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
+            break;
+
+        case IF_SVE_GH_3A: // ........i..mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                           // element size
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1())); // ddddd
+            assert(isVectorRegister(id->idReg2())); // nnnnn
+            assert(isVectorRegister(id->idReg3())); // mmmmm
+            // TODO: Verify 'i'.
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
+            break;
+
         default:
             printf("unexpected format %s\n", emitIfName(id->idInsFmt()));
             assert(!"Unexpected format");
@@ -12260,6 +12310,21 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_GP_3A;
             break;
 
+        case INS_sve_luti2:
+            assert(insOptsScalable(opt));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidUimm2(imm));
+            fmt = IF_SVE_GG_3A;
+            break;
+
+        case INS_sve_luti4:
+            assert(!"not implemented");
+            // TODO: Handle other formats: IF_SVE_GH_3B_B, IF_SVE_GH_3A
+            fmt = IF_SVE_GH_3B;
+            break;
+
         default:
             unreached();
             break;
@@ -18585,6 +18650,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 2-bits at bit locations '23-22'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm2_23_to_22(ssize_t imm)
+{
+    assert(isValidUimm2(imm));
+    return (code_t)imm << 22;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 1 bit at bit location '11'.
  */
 
@@ -21897,6 +21973,31 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeSimm9h9l_21_to_16_and_12_to_10(imm); // iii
                                                                   // iiiiii
             dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_GG_3A:   // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                             // element size
+        case IF_SVE_GH_3B:   // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                             // element size
+        case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                             // element size
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
+            code |= insEncodeUimm2_23_to_22(imm);          // ii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                           // element size
+            assert(!"not implemented");
+            break;
+
+        case IF_SVE_GH_3A: // ........i..mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                           // element size
+            assert(!"not implemented");
             break;
 
         default:
@@ -25256,6 +25357,55 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg4(), id->idInsOpt(), false);
             break;
+
+        // <Zd>.B, { <Zn>.B }, <Zm>[<index>]
+        case IF_SVE_GG_3A:   // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                             // element size
+            imm = emitGetInsSC(id);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                   // ddddd
+            emitDispSveConsecutiveRegList(id->idReg1(), 1, id->idInsOpt(), true); // nnnnn
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), false);                  // mmmmm
+            emitDispElementIndex(imm, false);                                     // ii
+            break;
+
+        //// <Zd>.H, { <Zn1>.H, <Zn2>.H }, <Zm>[<index>]
+        //case IF_SVE_GH_3B:   // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+        //                     // element size
+        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+        //    printf("{ ");
+        //    emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // nnnnn
+        //    emitDispSveReg((regNumber)(((unsigned)id->idReg2() + 1) % 32), id->idInsOpt(), false);
+        //    printf(" }, ");
+        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
+        //                                                                // ii
+        //    break;
+
+        //// <Zd>.H, { <Zn>.H }, <Zm>[<index>]
+        //case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+        //                     // element size
+        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true);         // ddddd
+        //    emitDispSveRegList(id->idReg2(), 1, id->idInsOpt(), true);  // nnnnn
+        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
+        //                                                                // ii
+        //    break;
+
+        //// <Zd>.H, { <Zn>.H }, <Zm>[<index>]
+        //case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+        //                   // element size
+        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true);         // ddddd
+        //    emitDispSveRegList(id->idReg2(), 1, id->idInsOpt(), true);  // nnnnn
+        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
+        //                                                                // ii
+        //    break;
+
+        //// <Zd>.B, { <Zn>.B }, <Zm>[<index>]
+        //case IF_SVE_GH_3A: // ........i..mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+        //                   // element size
+        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true);         // ddddd
+        //    emitDispSveRegList(id->idReg2(), 1, id->idInsOpt(), true);  // nnnnn
+        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
+        //                                                                // ii
+        //    break;
 
         default:
             printf("unexpected format %s", emitIfName(id->idInsFmt()));
@@ -28802,6 +28952,36 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_GG_3A: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                           // element size
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+            break;
+
+        case IF_SVE_GH_3B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                           // element size
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+            break;
+
+        case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                             // element size
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+            break;
+
+        case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                           // element size
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+            break;
+
+        case IF_SVE_GH_3A: // ........i..mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                           // element size
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
 
         default:

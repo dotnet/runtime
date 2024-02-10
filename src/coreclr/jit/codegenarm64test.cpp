@@ -7339,6 +7339,37 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_UNPREDICATED);
     theEmitter->emitIns_R_R_I(INS_sve_str, EA_SCALABLE, REG_V2, REG_R3, 255, INS_OPTS_NONE,
                               INS_SCALABLE_OPTS_UNPREDICATED);
+
+    // https://github.com/llvm/llvm-project/blob/main/llvm/test/MC/AArch64/FP8_SVE2/luti2.s
+    // https://github.com/llvm/llvm-project/blob/main/llvm/test/MC/AArch64/FP8_SVE2/luti4.s
+    
+    // IF_SVE_GG_3A
+    // luti2   z0.b, {z0.b}, z0[0]  // 01000101-00100000-10110000-00000000
+    // CHECK-INST: luti2   z0.b, { z0.b }, z0[0]
+    // CHECK-ENCODING: [0x00,0xb0,0x20,0x45]
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 0,
+                                INS_OPTS_SCALABLE_B); // LUTI2   <Zd>.B, {<Zn>.B }, <Zm>[<index>]
+    // luti2   z21.b, {z10.b}, z21[1]  // 01000101-01110101-10110001-01010101
+    // CHECK-INST: luti2   z21.b, { z10.b }, z21[1]
+    // CHECK-ENCODING: [0x55,0xb1,0x75,0x45]
+    theEmitter->emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_V21, REG_V10, REG_V21, 1,
+                                INS_OPTS_SCALABLE_B); // LUTI2   <Zd>.B, {<Zn>.B }, <Zm>[<index>]
+
+    //// IF_SVE_GH_3B
+    //theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+    //                            INS_OPTS_SCALABLE_H); // LUTI4   <Zd>.H, {<Zn1>.H, <Zn2>.H }, <Zm>[<index>]
+
+    //// IF_SVE_GH_3B_B
+    //theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+    //                            INS_OPTS_SCALABLE_H); // LUTI4   <Zd>.H, {<Zn>.H }, <Zm>[<index>]
+
+    //// IF_SVE_GG_3B
+    //theEmitter->emitIns_R_R_R_I(INS_sve_luti2, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+    //                            INS_OPTS_SCALABLE_H); // LUTI2   <Zd>.H, {<Zn>.H }, <Zm>[<index>]
+
+    //// IF_SVE_GH_3A
+    //theEmitter->emitIns_R_R_R_I(INS_sve_luti4, EA_SCALABLE, REG_V0, REG_V0, REG_V0, 3,
+    //                            INS_OPTS_SCALABLE_B); // LUTI4   <Zd>.B, {<Zn>.B }, <Zm>[<index>]
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)
