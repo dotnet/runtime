@@ -209,8 +209,6 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-typedef unsigned __int64 singleRegMask;
-
 #if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 typedef unsigned __int64 regMaskGpr;
@@ -237,6 +235,8 @@ typedef unsigned __int64 regMaskAny; //TODO: Rename this to regMaskMixed
 
 // TODO: For LSRA, the select() method should be regMaskOnlyOne because we will be
 // allocating either GPR or Vector or Mask but not all
+typedef unsigned __int64 singleRegMask;
+
 #else
 // x86 and arm
 typedef unsigned       regMaskTP;
@@ -245,6 +245,7 @@ typedef unsigned       regMaskTP;
 #define regMaskPredicate regMaskTP
 #define regMaskOnlyOne regMaskTP
 #define regMaskAny regMaskTP
+#define singleRegMask regMaskTP
 #endif
 
 #if REGMASK_BITS == 8

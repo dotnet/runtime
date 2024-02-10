@@ -13158,7 +13158,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
 template <bool needsConsecutiveRegisters>
-regMaskOnlyOne LinearScan::RegisterSelection::select(Interval*    currentInterval,
+singleRegMask LinearScan::RegisterSelection::select(Interval*                currentInterval,
                                                 RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
 #ifdef DEBUG
@@ -13623,7 +13623,8 @@ Selection_Done:
 //  select the REG_ORDER heuristics (if there are any free candidates) or REG_NUM (if all registers
 //  are busy).
 //
-regMaskOnlyOne LinearScan::RegisterSelection::selectMinimal(Interval*    currentInterval,
+singleRegMask LinearScan::RegisterSelection::selectMinimal(
+    Interval* currentInterval,
                                                        RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
     assert(!linearScan->enregisterLocalVars);
