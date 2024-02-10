@@ -8462,7 +8462,7 @@ public:
 
     bool IsOnlyOneRegMask(regMaskTP regMask)
     {
-        return IsGprRegMask(regMask) != IsFloatRegMask(regMask);
+        return (regMask == RBM_NONE) || (IsGprRegMask(regMask) != IsFloatRegMask(regMask));
     }
 
     void unwindBegProlog();
