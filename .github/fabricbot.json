@@ -1194,52 +1194,6 @@
   {
     "taskType": "trigger",
     "capabilityId": "IssueResponder",
-    "subCapability": "PullRequestResponder",
-    "version": "1.0",
-    "config": {
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "dotnet-maestro[bot]"
-            }
-          },
-          {
-            "name": "isAction",
-            "parameters": {
-              "action": "opened"
-            }
-          },
-          {
-            "name": "titleContains",
-            "parameters": {
-              "titlePattern": "dotnet-optimization"
-            }
-          }
-        ]
-      },
-      "eventType": "pull_request",
-      "eventNames": [
-        "pull_request",
-        "issues"
-      ],
-      "taskName": "Auto-approve maestro PRs",
-      "actions": [
-        {
-          "name": "approvePullRequest",
-          "parameters": {
-            "comment": "Auto-approve dotnet-optimization PR"
-          }
-        }
-      ]
-    },
-    "disabled": true
-  },
-  {
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
