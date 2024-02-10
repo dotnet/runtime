@@ -11328,12 +11328,44 @@ GenTree* Compiler::fgOptimizeBitwiseAnd(GenTreeOp* andOp)
     GenTree* op1 = andOp->gtGetOp1();
     GenTree* op2 = andOp->gtGetOp2();
 
+    // "X & X" -> "X"
+    if (((op2->IsLocal() || op2->IsInvariant()) && GenTree::Compare(op1->gtEffectiveVal(), op2)))
+    {
+        return op1;
+    }
+
     // Fold "cmp & 1" to just "cmp".
     if (andOp->TypeIs(TYP_INT) && op1->OperIsCompare() && op2->IsIntegralConst(1))
     {
         DEBUG_DESTROY_NODE(op2);
         DEBUG_DESTROY_NODE(andOp);
 
+        return op1;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeBitwiseOr: optimizes the "or" operation.
+//
+// Arguments:
+//   andOp - the GT_OR tree to optimize.
+//
+// Return Value:
+//   The optimized tree. Otherwise, "nullptr", guaranteeing no state change.
+//
+GenTree* Compiler::fgOptimizeBitwiseOr(GenTreeOp* andOp)
+{
+    assert(andOp->OperIs(GT_OR));
+    assert(!optValnumCSE_phase);
+
+    GenTree* op1 = andOp->gtGetOp1();
+    GenTree* op2 = andOp->gtGetOp2();
+
+    // "X | X" -> "X"
+    if (((op2->IsLocal() || op2->IsInvariant()) && GenTree::Compare(op1->gtEffectiveVal(), op2)))
+    {
         return op1;
     }
 
