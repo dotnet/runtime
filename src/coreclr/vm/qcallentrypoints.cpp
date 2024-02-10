@@ -215,6 +215,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MultiCoreJIT_InternalStartProfile)
 #endif
     DllImportEntry(LoaderAllocator_Destroy)
+    DllImportEntry(CustomMarshaler_GetMarshalerObject)
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
@@ -295,7 +296,22 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetEndComSlot)
     DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
+    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToNative)
+    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToNative)
+    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToManaged)
+    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToManaged)
+    DllImportEntry(MngdNativeArrayMarshaler_ClearNativeContents)
+    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToNative)
+    DllImportEntry(MngdFixedArrayMarshaler_ConvertSpaceToManaged)
+    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToManaged)
+    DllImportEntry(MngdFixedArrayMarshaler_ClearNativeContents)
 #ifdef FEATURE_COMINTEROP
+    DllImportEntry(MngdSafeArrayMarshaler_CreateMarshaler)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToNative)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToNative)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToManaged)
+    DllImportEntry(MngdSafeArrayMarshaler_ConvertContentsToManaged)
+    DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
     DllImportEntry(OAVariant_ChangeType)
 #endif // FEATURE_COMINTEROP
     DllImportEntry(NativeLibrary_LoadFromPath)

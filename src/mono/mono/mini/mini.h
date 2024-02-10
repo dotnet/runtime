@@ -2962,6 +2962,7 @@ MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, 
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
+gboolean    mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared

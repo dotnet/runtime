@@ -104,9 +104,9 @@ count                   Number of characters to compare
 
 Remarks
 
-The _strnicmp function lexicographically compares, at most, the first
+The _wcsnicmp function lexicographically compares, at most, the first
 count characters of string1 and string2. The comparison is performed
-without regard to case; _strnicmp is a case-insensitive version of
+without regard to case; _wcsnicmp is a case-insensitive version of
 strncmp. The comparison ends if a terminating null character is
 reached in either string before count characters are compared. If the
 strings are equal when a terminating null character is reached in

@@ -239,33 +239,30 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
-    // Ignore any assignments of NULL.
+    // Ignore any assignments of NULL or nongc object
     GenTree* const data = store->Data()->gtSkipReloadOrCopy();
-    if (data->IsIntegralConst(0))
+    if (data->IsIntegralConst(0) || data->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
         return WBF_NoBarrier;
     }
 
     if ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
     {
-        // This indirection is not storing to the heap.
-        // This case occurs for stack-allocated objects
-        // and for some types of CSE'd frozen object handles.
+        // This indirection is known to not store to the heap.
         return WBF_NoBarrier;
     }
 
-    // Write-barriers are no-op for frozen objects (as values)
-    if (data->IsIconHandle(GTF_ICON_OBJ_HDL))
+    if ((store->gtFlags & GTF_IND_TGT_HEAP) != 0)
     {
-        // Ignore frozen objects
-        return WBF_NoBarrier;
+        // This indirection is known to store to the heap.
+        return WBF_BarrierUnchecked;
     }
 
     WriteBarrierForm wbf = gcWriteBarrierFormFromTargetAddress(store->Addr());
 
     if (wbf == WBF_BarrierUnknown)
     {
-        wbf = ((store->gtFlags & GTF_IND_TGT_HEAP) != 0) ? WBF_BarrierUnchecked : WBF_BarrierChecked;
+        wbf = WBF_BarrierChecked;
     }
 
     return wbf;

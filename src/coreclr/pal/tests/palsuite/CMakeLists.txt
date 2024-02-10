@@ -173,9 +173,6 @@ add_executable_clr(paltests
   c_runtime/strpbrk/test1/test1.cpp
   c_runtime/strrchr/test1/test1.cpp
   c_runtime/strstr/test1/test1.cpp
-  c_runtime/strtod/test1/test1.cpp
-  c_runtime/strtod/test2/test2.cpp
-  c_runtime/strtoul/test1/test1.cpp
   c_runtime/tan/test1/test1.cpp
   c_runtime/tanf/test1/test1.cpp
   c_runtime/tanh/test1/test1.cpp
@@ -217,8 +214,6 @@ add_executable_clr(paltests
   c_runtime/_putenv/test4/test4.cpp
   c_runtime/_rotl/test1/test1.cpp
   c_runtime/_rotr/test1/test1.cpp
-  c_runtime/_stricmp/test1/test1.cpp
-  c_runtime/_strnicmp/test1/test1.cpp
   c_runtime/_vsnprintf_s/test1/test1.cpp
   c_runtime/_vsnprintf_s/test10/test10.cpp
   c_runtime/_vsnprintf_s/test11/test11.cpp
