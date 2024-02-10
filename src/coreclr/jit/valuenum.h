@@ -491,6 +491,11 @@ public:
         m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
     }
 
+    bool EmbeddedHandleMapLookup(ssize_t embeddedHandle, ssize_t* compileTimeHandle)
+    {
+        return m_embeddedToCompileTimeHandleMap.TryGetValue(embeddedHandle, compileTimeHandle);
+    }
+
     void AddToFieldAddressToFieldSeqMap(ValueNum fldAddr, FieldSeq* fldSeq)
     {
         m_fieldAddressToFieldSeqMap.AddOrUpdate(fldAddr, fldSeq);
@@ -1020,8 +1025,14 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a specific handle constant.
+    bool IsVNHandle(ValueNum vn, GenTreeFlags flag);
+
     // Returns true iff the VN represents an object handle constant.
     bool IsVNObjHandle(ValueNum vn);
+
+    // Returns true iff the VN represents a Type handle constant.
+    bool IsVNTypeHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
@@ -1084,7 +1095,7 @@ private:
         switch (c->m_typ)
         {
             case TYP_REF:
-                assert(0 <= offset && offset <= 1); // Null or exception.
+                assert((offset <= 1) || IsVNObjHandle(vn)); // Null, exception or nongc obj handle
                 FALLTHROUGH;
 
             case TYP_BYREF:

@@ -102,9 +102,9 @@ namespace System.Numerics.Tensors
                     Vector512<T> xVec = Vector512.LoadUnsafe(ref xRef, (uint)i);
                     Vector512<T> yVec = Vector512.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector512<T>.Count;
                 }
@@ -120,9 +120,9 @@ namespace System.Numerics.Tensors
                     xVec &= remainderMask;
                     yVec &= remainderMask;
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
                 }
 
                 // Sum(X * Y) / (|X| * |Y|)
@@ -148,9 +148,9 @@ namespace System.Numerics.Tensors
                     Vector256<T> xVec = Vector256.LoadUnsafe(ref xRef, (uint)i);
                     Vector256<T> yVec = Vector256.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector256<T>.Count;
                 }
@@ -166,9 +166,9 @@ namespace System.Numerics.Tensors
                     xVec &= remainderMask;
                     yVec &= remainderMask;
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
                 }
 
                 // Sum(X * Y) / (|X| * |Y|)
@@ -194,9 +194,9 @@ namespace System.Numerics.Tensors
                     Vector128<T> xVec = Vector128.LoadUnsafe(ref xRef, (uint)i);
                     Vector128<T> yVec = Vector128.LoadUnsafe(ref yRef, (uint)i);
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
 
                     i += Vector128<T>.Count;
                 }
@@ -212,9 +212,9 @@ namespace System.Numerics.Tensors
                     xVec &= remainderMask;
                     yVec &= remainderMask;
 
-                    dotProductVector = FusedMultiplyAdd(xVec, yVec, dotProductVector);
-                    xSumOfSquaresVector = FusedMultiplyAdd(xVec, xVec, xSumOfSquaresVector);
-                    ySumOfSquaresVector = FusedMultiplyAdd(yVec, yVec, ySumOfSquaresVector);
+                    dotProductVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, yVec, dotProductVector);
+                    xSumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(xVec, xVec, xSumOfSquaresVector);
+                    ySumOfSquaresVector = MultiplyAddEstimateOperator<T>.Invoke(yVec, yVec, ySumOfSquaresVector);
                 }
 
                 // Sum(X * Y) / (|X| * |Y|)
@@ -228,9 +228,9 @@ namespace System.Numerics.Tensors
             T dotProduct = T.Zero, xSumOfSquares = T.Zero, ySumOfSquares = T.Zero;
             for (int i = 0; i < x.Length; i++)
             {
-                dotProduct = FusedMultiplyAdd(x[i], y[i], dotProduct);
-                xSumOfSquares = FusedMultiplyAdd(x[i], x[i], xSumOfSquares);
-                ySumOfSquares = FusedMultiplyAdd(y[i], y[i], ySumOfSquares);
+                dotProduct = MultiplyAddEstimateOperator<T>.Invoke(x[i], y[i], dotProduct);
+                xSumOfSquares = MultiplyAddEstimateOperator<T>.Invoke(x[i], x[i], xSumOfSquares);
+                ySumOfSquares = MultiplyAddEstimateOperator<T>.Invoke(y[i], y[i], ySumOfSquares);
             }
 
             // Sum(X * Y) / (|X| * |Y|)
@@ -260,7 +260,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TTransformOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TTransformOperator.Vectorizable)
             {
                 T result;
 
@@ -280,7 +280,7 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TTransformOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TTransformOperator.Vectorizable)
             {
                 T result;
 
@@ -300,7 +300,7 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TTransformOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TTransformOperator.Vectorizable)
             {
                 T result;
 
@@ -848,7 +848,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static T VectorizedSmall(ref T xRef, nuint remainder)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    return VectorizedSmall1(ref xRef, remainder);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return VectorizedSmall2(ref xRef, remainder);
+                }
+                else if (sizeof(T) == 4)
                 {
                     return VectorizedSmall4(ref xRef, remainder);
                 }
@@ -857,6 +865,292 @@ namespace System.Numerics.Tensors
                     Debug.Assert(sizeof(T) == 8);
                     return VectorizedSmall8(ref xRef, remainder);
                 }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall1(ref T xRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 1);
+                T result = TAggregationOperator.IdentityValue;
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 14)));
+                        goto case 14;
+
+                    case 14:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 13)));
+                        goto case 13;
+
+                    case 13:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 12)));
+                        goto case 12;
+
+                    case 12:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 11)));
+                        goto case 11;
+
+                    case 11:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 10)));
+                        goto case 10;
+
+                    case 10:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 9)));
+                        goto case 9;
+
+                    case 9:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 8)));
+                        goto case 8;
+
+                    case 8:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 7)));
+                        goto case 7;
+
+                    case 7:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 6)));
+                        goto case 6;
+
+                    case 6:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 5)));
+                        goto case 5;
+
+                    case 5:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 4)));
+                        goto case 4;
+
+                    case 4:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 3)));
+                        goto case 3;
+
+                    case 3:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)));
+                        goto case 2;
+
+                    case 2:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)));
+                        goto case 1;
+
+                    case 1:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall2(ref T xRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 2);
+                T result = TAggregationOperator.IdentityValue;
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 6)));
+                        goto case 6;
+
+                    case 6:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 5)));
+                        goto case 5;
+
+                    case 5:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 4)));
+                        goto case 4;
+
+                    case 4:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 3)));
+                        goto case 3;
+
+                    case 3:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)));
+                        goto case 2;
+
+                    case 2:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)));
+                        goto case 1;
+
+                    case 1:
+                        result = TAggregationOperator.Invoke(result, TTransformOperator.Invoke(xRef));
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+
+                return result;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -876,29 +1170,23 @@ namespace System.Numerics.Tensors
                     case 9:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
                         Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 8:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -907,29 +1195,23 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -973,58 +1255,46 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
                         Vector256<T> end = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
                     case 3:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
                         Vector128<T> end = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 2:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1071,7 +1341,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TBinaryOperator.Vectorizable)
             {
                 T result;
 
@@ -1091,7 +1361,7 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TBinaryOperator.Vectorizable)
             {
                 T result;
 
@@ -1111,7 +1381,7 @@ namespace System.Numerics.Tensors
                 return result;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TBinaryOperator.Vectorizable)
             {
                 T result;
 
@@ -1726,7 +1996,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static T VectorizedSmall(ref T xRef, ref T yRef, nuint remainder)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    return VectorizedSmall1(ref xRef, ref yRef, remainder);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    return VectorizedSmall2(ref xRef, ref yRef, remainder);
+                }
+                else if (sizeof(T) == 4)
                 {
                     return VectorizedSmall4(ref xRef, ref yRef, remainder);
                 }
@@ -1735,6 +2013,304 @@ namespace System.Numerics.Tensors
                     Debug.Assert(sizeof(T) == 8);
                     return VectorizedSmall8(ref xRef, ref yRef, remainder);
                 }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall1(ref T xRef, ref T yRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 1);
+                T result = TAggregationOperator.IdentityValue;
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 14), Unsafe.Add(ref yRef, 14)));
+                        goto case 14;
+
+                    case 14:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 13), Unsafe.Add(ref yRef, 13)));
+                        goto case 13;
+
+                    case 13:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 12), Unsafe.Add(ref yRef, 12)));
+                        goto case 12;
+
+                    case 12:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 11), Unsafe.Add(ref yRef, 11)));
+                        goto case 11;
+
+                    case 11:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 10), Unsafe.Add(ref yRef, 10)));
+                        goto case 10;
+
+                    case 10:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 9), Unsafe.Add(ref yRef, 9)));
+                        goto case 9;
+
+                    case 9:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 8), Unsafe.Add(ref yRef, 8)));
+                        goto case 8;
+
+                    case 8:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 7), Unsafe.Add(ref yRef, 7)));
+                        goto case 7;
+
+                    case 7:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 6), Unsafe.Add(ref yRef, 6)));
+                        goto case 6;
+
+                    case 6:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 5), Unsafe.Add(ref yRef, 5)));
+                        goto case 5;
+
+                    case 5:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 4), Unsafe.Add(ref yRef, 4)));
+                        goto case 4;
+
+                    case 4:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 3), Unsafe.Add(ref yRef, 3)));
+                        goto case 3;
+
+                    case 3:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2), Unsafe.Add(ref yRef, 2)));
+                        goto case 2;
+
+                    case 2:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1), Unsafe.Add(ref yRef, 1)));
+                        goto case 1;
+
+                    case 1:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+
+                return result;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static T VectorizedSmall2(ref T xRef, ref T yRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 2);
+                T result = TAggregationOperator.IdentityValue;
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+
+                        end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+
+                        end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
+
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+
+                        result = TAggregationOperator.Invoke(beg);
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 6), Unsafe.Add(ref yRef, 6)));
+                        goto case 6;
+
+                    case 6:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 5), Unsafe.Add(ref yRef, 5)));
+                        goto case 5;
+
+                    case 5:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 4), Unsafe.Add(ref yRef, 4)));
+                        goto case 4;
+
+                    case 4:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 3), Unsafe.Add(ref yRef, 3)));
+                        goto case 3;
+
+                    case 3:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2), Unsafe.Add(ref yRef, 2)));
+                        goto case 2;
+
+                    case 2:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1), Unsafe.Add(ref yRef, 1)));
+                        goto case 1;
+
+                    case 1:
+                        result = TAggregationOperator.Invoke(result, TBinaryOperator.Invoke(xRef, yRef));
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+
+                return result;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1754,7 +2330,6 @@ namespace System.Numerics.Tensors
                     case 9:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
@@ -1763,23 +2338,18 @@ namespace System.Numerics.Tensors
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 8:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1788,7 +2358,6 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
@@ -1797,23 +2366,18 @@ namespace System.Numerics.Tensors
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -1859,7 +2423,6 @@ namespace System.Numerics.Tensors
                     case 5:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
@@ -1868,30 +2431,24 @@ namespace System.Numerics.Tensors
 
                         end = Vector256.ConditionalSelect(CreateRemainderMaskVector256<T>((int)(remainder % (uint)Vector256<T>.Count)), end, Vector256.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 4:
                     {
                         Debug.Assert(Vector256.IsHardwareAccelerated);
-                        Vector256<T> vresult = Vector256.Create(TAggregationOperator.IdentityValue);
 
                         Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
                                                                   Vector256.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
                     case 3:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
@@ -1900,23 +2457,18 @@ namespace System.Numerics.Tensors
 
                         end = Vector128.ConditionalSelect(CreateRemainderMaskVector128<T>((int)(remainder % (uint)Vector128<T>.Count)), end, Vector128.Create(TAggregationOperator.IdentityValue));
 
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
-                        vresult = TAggregationOperator.Invoke(vresult, end);
-
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(TAggregationOperator.Invoke(beg, end));
                         break;
                     }
 
                     case 2:
                     {
                         Debug.Assert(Vector128.IsHardwareAccelerated);
-                        Vector128<T> vresult = Vector128.Create(TAggregationOperator.IdentityValue);
 
                         Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
                                                                   Vector128.LoadUnsafe(ref yRef));
-                        vresult = TAggregationOperator.Invoke(vresult, beg);
 
-                        result = TAggregationOperator.Invoke(vresult);
+                        result = TAggregationOperator.Invoke(beg);
                         break;
                     }
 
@@ -2198,10 +2750,17 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector512<T> resultIndex =
+#if NET9_0_OR_GREATER
+                    sizeof(T) == sizeof(long) ? Vector512<long>.Indices.As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector512<int>.Indices.As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector512<short>.Indices.As<short, T>() :
+                    Vector512<byte>.Indices.As<byte, T>();
+#else
                     sizeof(T) == sizeof(long) ? Vector512.Create(0L, 1, 2, 3, 4, 5, 6, 7).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector512.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<short, T>() :
                     Vector512.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63).As<byte, T>();
+#endif
                 Vector512<T> currentIndex = resultIndex;
                 Vector512<T> increment = CreateVector512T(Vector512<T>.Count);
 
@@ -2282,10 +2841,17 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector256<T> resultIndex =
+#if NET9_0_OR_GREATER
+                    sizeof(T) == sizeof(long) ? Vector256<long>.Indices.As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector256<int>.Indices.As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector256<short>.Indices.As<short, T>() :
+                    Vector256<byte>.Indices.As<byte, T>();
+#else
                     sizeof(T) == sizeof(long) ? Vector256.Create(0L, 1, 2, 3).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector256.Create(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<short, T>() :
                     Vector256.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31).As<byte, T>();
+#endif
                 Vector256<T> currentIndex = resultIndex;
                 Vector256<T> increment = CreateVector256T(Vector256<T>.Count);
 
@@ -2366,10 +2932,17 @@ namespace System.Numerics.Tensors
 
                 ref T xRef = ref MemoryMarshal.GetReference(x);
                 Vector128<T> resultIndex =
+#if NET9_0_OR_GREATER
+                    sizeof(T) == sizeof(long) ? Vector128<long>.Indices.As<long, T>() :
+                    sizeof(T) == sizeof(int) ? Vector128<int>.Indices.As<int, T>() :
+                    sizeof(T) == sizeof(short) ? Vector128<short>.Indices.As<short, T>() :
+                    Vector128<byte>.Indices.As<byte, T>();
+#else
                     sizeof(T) == sizeof(long) ? Vector128.Create(0L, 1).As<long, T>() :
                     sizeof(T) == sizeof(int) ? Vector128.Create(0, 1, 2, 3).As<int, T>() :
                     sizeof(T) == sizeof(short) ? Vector128.Create(0, 1, 2, 3, 4, 5, 6, 7).As<short, T>() :
                     Vector128.Create((byte)0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15).As<byte, T>();
+#endif
                 Vector128<T> currentIndex = resultIndex;
                 Vector128<T> increment = CreateVector128T(Vector128<T>.Count);
 
@@ -2509,7 +3082,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<TInput>.IsSupported && Vector512<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() >= 4 && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
+            if (Vector512.IsHardwareAccelerated && Vector512<TInput>.IsSupported && Vector512<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
             {
                 if (remainder >= (uint)Vector512<TInput>.Count)
                 {
@@ -2527,7 +3100,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<TInput>.IsSupported && Vector256<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() >= 4 && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
+            if (Vector256.IsHardwareAccelerated && Vector256<TInput>.IsSupported && Vector256<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
             {
                 if (remainder >= (uint)Vector256<TInput>.Count)
                 {
@@ -2545,7 +3118,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<TInput>.IsSupported && Vector128<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() >= 4 && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
+            if (Vector128.IsHardwareAccelerated && Vector128<TInput>.IsSupported && Vector128<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
             {
                 if (remainder >= (uint)Vector128<TInput>.Count)
                 {
@@ -3213,7 +3786,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref TInput xRef, ref TOutput dRef, nuint remainder)
             {
-                if (sizeof(TInput) == 4)
+                if (sizeof(TInput) == 1)
+                {
+                    VectorizedSmall1(ref xRef, ref dRef, remainder);
+                }
+                else if (sizeof(TInput) == 2)
+                {
+                    VectorizedSmall2(ref xRef, ref dRef, remainder);
+                }
+                else if (sizeof(TInput) == 4)
                 {
                     VectorizedSmall4(ref xRef, ref dRef, remainder);
                 }
@@ -3221,6 +3802,286 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(sizeof(TInput) == 8);
                     VectorizedSmall8(ref xRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall1(ref TInput xRef, ref TOutput dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(TInput) == 1);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<TOutput> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<TInput>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<TOutput>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<TOutput> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<TInput>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<TOutput>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        Unsafe.Add(ref dRef, 14) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 14));
+                        goto case 14;
+
+                    case 14:
+                        Unsafe.Add(ref dRef, 13) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 13));
+                        goto case 13;
+
+                    case 13:
+                        Unsafe.Add(ref dRef, 12) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 12));
+                        goto case 12;
+
+                    case 12:
+                        Unsafe.Add(ref dRef, 11) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 11));
+                        goto case 11;
+
+                    case 11:
+                        Unsafe.Add(ref dRef, 10) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 10));
+                        goto case 10;
+
+                    case 10:
+                        Unsafe.Add(ref dRef, 9) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 9));
+                        goto case 9;
+
+                    case 9:
+                        Unsafe.Add(ref dRef, 8) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 8));
+                        goto case 8;
+
+                    case 8:
+                        Unsafe.Add(ref dRef, 7) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 7));
+                        goto case 7;
+
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TUnaryOperator.Invoke(xRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall2(ref TInput xRef, ref TOutput dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(TInput) == 2);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<TOutput> end = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<TInput>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<TOutput>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<TOutput> beg = TUnaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<TOutput> end = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<TInput>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<TOutput>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<TOutput> beg = TUnaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TUnaryOperator.Invoke(Unsafe.Add(ref xRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TUnaryOperator.Invoke(xRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
                 }
             }
 
@@ -3533,7 +4394,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TStatefulUnaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -3551,7 +4412,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TStatefulUnaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -3569,7 +4430,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TStatefulUnaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TStatefulUnaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -4237,7 +5098,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    VectorizedSmall1(ref xRef, ref dRef, remainder, op);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    VectorizedSmall2(ref xRef, ref dRef, remainder, op);
+                }
+                else if (sizeof(T) == 4)
                 {
                     VectorizedSmall4(ref xRef, ref dRef, remainder, op);
                 }
@@ -4245,6 +5114,286 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(sizeof(T) == 8);
                     VectorizedSmall8(ref xRef, ref dRef, remainder, op);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall1(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                Debug.Assert(sizeof(T) == 1);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        Unsafe.Add(ref dRef, 14) = op.Invoke(Unsafe.Add(ref xRef, 14));
+                        goto case 14;
+
+                    case 14:
+                        Unsafe.Add(ref dRef, 13) = op.Invoke(Unsafe.Add(ref xRef, 13));
+                        goto case 13;
+
+                    case 13:
+                        Unsafe.Add(ref dRef, 12) = op.Invoke(Unsafe.Add(ref xRef, 12));
+                        goto case 12;
+
+                    case 12:
+                        Unsafe.Add(ref dRef, 11) = op.Invoke(Unsafe.Add(ref xRef, 11));
+                        goto case 11;
+
+                    case 11:
+                        Unsafe.Add(ref dRef, 10) = op.Invoke(Unsafe.Add(ref xRef, 10));
+                        goto case 10;
+
+                    case 10:
+                        Unsafe.Add(ref dRef, 9) = op.Invoke(Unsafe.Add(ref xRef, 9));
+                        goto case 9;
+
+                    case 9:
+                        Unsafe.Add(ref dRef, 8) = op.Invoke(Unsafe.Add(ref xRef, 8));
+                        goto case 8;
+
+                    case 8:
+                        Unsafe.Add(ref dRef, 7) = op.Invoke(Unsafe.Add(ref xRef, 7));
+                        goto case 7;
+
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = op.Invoke(Unsafe.Add(ref xRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = op.Invoke(Unsafe.Add(ref xRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = op.Invoke(Unsafe.Add(ref xRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = op.Invoke(Unsafe.Add(ref xRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = op.Invoke(Unsafe.Add(ref xRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = op.Invoke(Unsafe.Add(ref xRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = op.Invoke(xRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall2(ref T xRef, ref T dRef, nuint remainder, TStatefulUnaryOperator op)
+            {
+                Debug.Assert(sizeof(T) == 2);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        Vector256<T> end = op.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = op.Invoke(Vector256.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        Vector128<T> end = op.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = op.Invoke(Vector128.LoadUnsafe(ref xRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = op.Invoke(Unsafe.Add(ref xRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = op.Invoke(Unsafe.Add(ref xRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = op.Invoke(Unsafe.Add(ref xRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = op.Invoke(Unsafe.Add(ref xRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = op.Invoke(Unsafe.Add(ref xRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = op.Invoke(Unsafe.Add(ref xRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = op.Invoke(xRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
                 }
             }
 
@@ -4689,7 +5838,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TBinaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -4707,7 +5856,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TBinaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -4725,7 +5874,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TBinaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -5487,7 +6636,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    VectorizedSmall1(ref xRef, ref yRef, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    VectorizedSmall2(ref xRef, ref yRef, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 4)
                 {
                     VectorizedSmall4(ref xRef, ref yRef, ref dRef, remainder);
                 }
@@ -5495,6 +6652,318 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(sizeof(T) == 8);
                     VectorizedSmall8(ref xRef, ref yRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall1(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 1);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        Unsafe.Add(ref dRef, 14) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 14),
+                                                                         Unsafe.Add(ref yRef, 14));
+                        goto case 14;
+
+                    case 14:
+                        Unsafe.Add(ref dRef, 13) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 13),
+                                                                         Unsafe.Add(ref yRef, 13));
+                        goto case 13;
+
+                    case 13:
+                        Unsafe.Add(ref dRef, 12) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 12),
+                                                                         Unsafe.Add(ref yRef, 12));
+                        goto case 12;
+
+                    case 12:
+                        Unsafe.Add(ref dRef, 11) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 11),
+                                                                         Unsafe.Add(ref yRef, 11));
+                        goto case 11;
+
+                    case 11:
+                        Unsafe.Add(ref dRef, 10) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 10),
+                                                                         Unsafe.Add(ref yRef, 10));
+                        goto case 10;
+
+                    case 10:
+                        Unsafe.Add(ref dRef, 9) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 9),
+                                                                         Unsafe.Add(ref yRef, 9));
+                        goto case 9;
+
+                    case 9:
+                        Unsafe.Add(ref dRef, 8) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 8),
+                                                                         Unsafe.Add(ref yRef, 8));
+                        goto case 8;
+
+                    case 8:
+                        Unsafe.Add(ref dRef, 7) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 7),
+                                                                         Unsafe.Add(ref yRef, 7));
+                        goto case 7;
+
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                         Unsafe.Add(ref yRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                         Unsafe.Add(ref yRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                         Unsafe.Add(ref yRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                         Unsafe.Add(ref yRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                         Unsafe.Add(ref yRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                         Unsafe.Add(ref yRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TBinaryOperator.Invoke(xRef, yRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall2(ref T xRef, ref T yRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 2);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        Vector256<T> end = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                  Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                  Vector256.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        Vector128<T> end = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                  Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                  Vector128.LoadUnsafe(ref yRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                         Unsafe.Add(ref yRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                         Unsafe.Add(ref yRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                         Unsafe.Add(ref yRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                         Unsafe.Add(ref yRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                         Unsafe.Add(ref yRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                         Unsafe.Add(ref yRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TBinaryOperator.Invoke(xRef, yRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
                 }
             }
 
@@ -5727,7 +7196,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -5745,7 +7214,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -5763,7 +7232,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && TTransformOperator.Vectorizable && TBinaryOperator.Vectorizable)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -6513,7 +7982,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref T xRef, T y, ref T dRef, nuint remainder)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    VectorizedSmall1(ref xRef, y, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    VectorizedSmall2(ref xRef, y, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 4)
                 {
                     VectorizedSmall4(ref xRef, y, ref dRef, remainder);
                 }
@@ -6521,6 +7998,326 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(sizeof(T) == 8);
                     VectorizedSmall8(ref xRef, y, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall1(ref T xRef, T y, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 1);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> yVec = Vector256.Create(y);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  yVec);
+                        Vector256<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count)),
+                                                                  yVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  Vector256.Create(y));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> yVec = Vector128.Create(y);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            yVec);
+                        Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
+                                                                                            yVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            Vector128.Create(y));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        Unsafe.Add(ref dRef, 14) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 14)),
+                                                                          y);
+                        goto case 14;
+
+                    case 14:
+                        Unsafe.Add(ref dRef, 13) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 13)),
+                                                                          y);
+                        goto case 13;
+
+                    case 13:
+                        Unsafe.Add(ref dRef, 12) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 12)),
+                                                                          y);
+                        goto case 12;
+
+                    case 12:
+                        Unsafe.Add(ref dRef, 11) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 11)),
+                                                                          y);
+                        goto case 11;
+
+                    case 11:
+                        Unsafe.Add(ref dRef, 10) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 10)),
+                                                                          y);
+                        goto case 10;
+
+                    case 10:
+                        Unsafe.Add(ref dRef, 9) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 9)),
+                                                                         y);
+                        goto case 9;
+
+                    case 9:
+                        Unsafe.Add(ref dRef, 8) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 8)),
+                                                                         y);
+                        goto case 8;
+
+                    case 8:
+                        Unsafe.Add(ref dRef, 7) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 7)),
+                                                                         y);
+                        goto case 7;
+
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 6)),
+                                                                         y);
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 5)),
+                                                                         y);
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 4)),
+                                                                         y);
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 3)),
+                                                                         y);
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)),
+                                                                         y);
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)),
+                                                                         y);
+                        goto case 1;
+
+                    case 1:
+                        dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall2(ref T xRef, T y, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 2);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> yVec = Vector256.Create(y);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  yVec);
+                        Vector256<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count)),
+                                                                  yVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector256.LoadUnsafe(ref xRef)),
+                                                                  Vector256.Create(y));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> yVec = Vector128.Create(y);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            yVec);
+                        Vector128<T> end = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count)),
+                                                                                            yVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TBinaryOperator.Invoke(TTransformOperator.Invoke(Vector128.LoadUnsafe(ref xRef)),
+                                                                                            Vector128.Create(y));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 6)),
+                                                                         y);
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 5)),
+                                                                         y);
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 4)),
+                                                                         y);
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 3)),
+                                                                         y);
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 2)),
+                                                                         y);
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TBinaryOperator.Invoke(TTransformOperator.Invoke(Unsafe.Add(ref xRef, 1)),
+                                                                         y);
+                        goto case 1;
+
+                    case 1:
+                        dRef = TBinaryOperator.Invoke(TTransformOperator.Invoke(xRef), y);
+                        goto case 0;
+
+                    case 0:
+                        break;
                 }
             }
 
@@ -6740,7 +8537,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -6758,7 +8555,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -6776,7 +8573,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -7632,7 +9429,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    VectorizedSmall1(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    VectorizedSmall2(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 4)
                 {
                     VectorizedSmall4(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
                 }
@@ -7640,6 +9445,350 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(sizeof(T) == 8);
                     VectorizedSmall8(ref xRef, ref yRef, ref zRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall1(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 1);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       Vector256.LoadUnsafe(ref yRef),
+                                                                       Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        Unsafe.Add(ref dRef, 14) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 14),
+                                                                          Unsafe.Add(ref yRef, 14),
+                                                                          Unsafe.Add(ref zRef, 14));
+                        goto case 14;
+
+                    case 14:
+                        Unsafe.Add(ref dRef, 13) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 13),
+                                                                          Unsafe.Add(ref yRef, 13),
+                                                                          Unsafe.Add(ref zRef, 13));
+                        goto case 13;
+
+                    case 13:
+                        Unsafe.Add(ref dRef, 12) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 12),
+                                                                          Unsafe.Add(ref yRef, 12),
+                                                                          Unsafe.Add(ref zRef, 12));
+                        goto case 12;
+
+                    case 12:
+                        Unsafe.Add(ref dRef, 11) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 11),
+                                                                          Unsafe.Add(ref yRef, 11),
+                                                                          Unsafe.Add(ref zRef, 11));
+                        goto case 11;
+
+                    case 11:
+                        Unsafe.Add(ref dRef, 10) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 10),
+                                                                          Unsafe.Add(ref yRef, 10),
+                                                                          Unsafe.Add(ref zRef, 10));
+                        goto case 10;
+
+                    case 10:
+                        Unsafe.Add(ref dRef, 9) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 9),
+                                                                          Unsafe.Add(ref yRef, 9),
+                                                                          Unsafe.Add(ref zRef, 9));
+                        goto case 9;
+
+                    case 9:
+                        Unsafe.Add(ref dRef, 8) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 8),
+                                                                          Unsafe.Add(ref yRef, 8),
+                                                                          Unsafe.Add(ref zRef, 8));
+                        goto case 8;
+
+                    case 8:
+                        Unsafe.Add(ref dRef, 7) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 7),
+                                                                          Unsafe.Add(ref yRef, 7),
+                                                                          Unsafe.Add(ref zRef, 7));
+                        goto case 7;
+
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                          Unsafe.Add(ref yRef, 6),
+                                                                          Unsafe.Add(ref zRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                          Unsafe.Add(ref yRef, 5),
+                                                                          Unsafe.Add(ref zRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                          Unsafe.Add(ref yRef, 4),
+                                                                          Unsafe.Add(ref zRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                          Unsafe.Add(ref yRef, 3),
+                                                                          Unsafe.Add(ref zRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          Unsafe.Add(ref yRef, 2),
+                                                                          Unsafe.Add(ref zRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          Unsafe.Add(ref yRef, 1),
+                                                                          Unsafe.Add(ref zRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall2(ref T xRef, ref T yRef, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 2);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                       Vector256.LoadUnsafe(ref yRef),
+                                                                       Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                       Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                       Vector128.LoadUnsafe(ref yRef),
+                                                                       Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                          Unsafe.Add(ref yRef, 6),
+                                                                          Unsafe.Add(ref zRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                          Unsafe.Add(ref yRef, 5),
+                                                                          Unsafe.Add(ref zRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                          Unsafe.Add(ref yRef, 4),
+                                                                          Unsafe.Add(ref zRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                          Unsafe.Add(ref yRef, 3),
+                                                                          Unsafe.Add(ref zRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          Unsafe.Add(ref yRef, 2),
+                                                                          Unsafe.Add(ref zRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          Unsafe.Add(ref yRef, 1),
+                                                                          Unsafe.Add(ref zRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, zRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
                 }
             }
 
@@ -7863,7 +10012,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -7881,7 +10030,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -7899,7 +10048,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -8743,7 +10892,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    VectorizedSmall1(ref xRef, ref yRef, z, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    VectorizedSmall2(ref xRef, ref yRef, z, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 4)
                 {
                     VectorizedSmall4(ref xRef, ref yRef, z, ref dRef, remainder);
                 }
@@ -8751,6 +10908,358 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(sizeof(T) == 8);
                     VectorizedSmall8(ref xRef, ref yRef, z, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall1(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 1);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> zVec = Vector256.Create(z);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   zVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.Create(z));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> zVec = Vector128.Create(z);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                   zVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                     // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   Vector128.Create(z));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        Unsafe.Add(ref dRef, 14) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 14),
+                                                                          Unsafe.Add(ref yRef, 14),
+                                                                          z);
+                        goto case 14;
+
+                    case 14:
+                        Unsafe.Add(ref dRef, 13) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 13),
+                                                                          Unsafe.Add(ref yRef, 13),
+                                                                          z);
+                        goto case 13;
+
+                    case 13:
+                        Unsafe.Add(ref dRef, 12) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 12),
+                                                                          Unsafe.Add(ref yRef, 12),
+                                                                          z);
+                        goto case 12;
+
+                    case 12:
+                        Unsafe.Add(ref dRef, 11) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 11),
+                                                                          Unsafe.Add(ref yRef, 11),
+                                                                          z);
+                        goto case 11;
+
+                    case 11:
+                        Unsafe.Add(ref dRef, 10) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 10),
+                                                                          Unsafe.Add(ref yRef, 10),
+                                                                          z);
+                        goto case 10;
+
+                    case 10:
+                        Unsafe.Add(ref dRef, 9) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 9),
+                                                                          Unsafe.Add(ref yRef, 9),
+                                                                          z);
+                        goto case 9;
+
+                    case 9:
+                        Unsafe.Add(ref dRef, 8) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 8),
+                                                                          Unsafe.Add(ref yRef, 8),
+                                                                          z);
+                        goto case 8;
+
+                    case 8:
+                        Unsafe.Add(ref dRef, 7) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 7),
+                                                                          Unsafe.Add(ref yRef, 7),
+                                                                          z);
+                        goto case 7;
+
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                          Unsafe.Add(ref yRef, 6),
+                                                                          z);
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                          Unsafe.Add(ref yRef, 5),
+                                                                          z);
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                          Unsafe.Add(ref yRef, 4),
+                                                                          z);
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                          Unsafe.Add(ref yRef, 3),
+                                                                          z);
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          Unsafe.Add(ref yRef, 2),
+                                                                          z);
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          Unsafe.Add(ref yRef, 1),
+                                                                          z);
+                        goto case 1;
+
+                    case 1:
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, z);
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall2(ref T xRef, ref T yRef, T z, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 2);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> zVec = Vector256.Create(z);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   Vector256.LoadUnsafe(ref yRef, remainder - (uint)Vector256<T>.Count),
+                                                                   zVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.LoadUnsafe(ref yRef),
+                                                                   Vector256.Create(z));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> zVec = Vector128.Create(z);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   zVec);
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   Vector128.LoadUnsafe(ref yRef, remainder - (uint)Vector128<T>.Count),
+                                                                   zVec);
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                     // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.LoadUnsafe(ref yRef),
+                                                                   Vector128.Create(z));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                          Unsafe.Add(ref yRef, 6),
+                                                                          z);
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                          Unsafe.Add(ref yRef, 5),
+                                                                          z);
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                          Unsafe.Add(ref yRef, 4),
+                                                                          z);
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                          Unsafe.Add(ref yRef, 3),
+                                                                          z);
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          Unsafe.Add(ref yRef, 2),
+                                                                          z);
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          Unsafe.Add(ref yRef, 1),
+                                                                          z);
+                        goto case 1;
+
+                    case 1:
+                        dRef = TTernaryOperator.Invoke(xRef, yRef, z);
+                        goto case 0;
+
+                    case 0:
+                        break;
                 }
             }
 
@@ -8982,7 +11491,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -9000,7 +11509,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -9018,7 +11527,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && Unsafe.SizeOf<T>() >= 4)
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -9862,7 +12371,15 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static void VectorizedSmall(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
             {
-                if (sizeof(T) == 4)
+                if (sizeof(T) == 1)
+                {
+                    VectorizedSmall1(ref xRef, y, ref zRef, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 2)
+                {
+                    VectorizedSmall2(ref xRef, y, ref zRef, ref dRef, remainder);
+                }
+                else if (sizeof(T) == 4)
                 {
                     VectorizedSmall4(ref xRef, y, ref zRef, ref dRef, remainder);
                 }
@@ -9870,6 +12387,358 @@ namespace System.Numerics.Tensors
                 {
                     Debug.Assert(sizeof(T) == 8);
                     VectorizedSmall8(ref xRef, y, ref zRef, ref dRef, remainder);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall1(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 1);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 63:
+                    case 62:
+                    case 61:
+                    case 60:
+                    case 59:
+                    case 58:
+                    case 57:
+                    case 56:
+                    case 55:
+                    case 54:
+                    case 53:
+                    case 52:
+                    case 51:
+                    case 50:
+                    case 49:
+                    case 48:
+                    case 47:
+                    case 46:
+                    case 45:
+                    case 44:
+                    case 43:
+                    case 42:
+                    case 41:
+                    case 40:
+                    case 39:
+                    case 38:
+                    case 37:
+                    case 36:
+                    case 35:
+                    case 34:
+                    case 33:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> yVec = Vector256.Create(y);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 32:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.Create(y),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> yVec = Vector128.Create(y);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.Create(y),
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 15:
+                        Unsafe.Add(ref dRef, 14) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 14),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 14));
+                        goto case 14;
+
+                    case 14:
+                        Unsafe.Add(ref dRef, 13) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 13),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 13));
+                        goto case 13;
+
+                    case 13:
+                        Unsafe.Add(ref dRef, 12) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 12),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 12));
+                        goto case 12;
+
+                    case 12:
+                        Unsafe.Add(ref dRef, 11) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 11),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 11));
+                        goto case 11;
+
+                    case 11:
+                        Unsafe.Add(ref dRef, 10) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 10),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 10));
+                        goto case 10;
+
+                    case 10:
+                        Unsafe.Add(ref dRef, 9) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 9),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 9));
+                        goto case 9;
+
+                    case 9:
+                        Unsafe.Add(ref dRef, 8) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 8),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 8));
+                        goto case 8;
+
+                    case 8:
+                        Unsafe.Add(ref dRef, 7) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 7),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 7));
+                        goto case 7;
+
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TTernaryOperator.Invoke(xRef, y, zRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void VectorizedSmall2(ref T xRef, T y, ref T zRef, ref T dRef, nuint remainder)
+            {
+                Debug.Assert(sizeof(T) == 2);
+
+                switch (remainder)
+                {
+                    // Two Vector256's worth of data, with at least one element overlapping.
+                    case 31:
+                    case 30:
+                    case 29:
+                    case 28:
+                    case 27:
+                    case 26:
+                    case 25:
+                    case 24:
+                    case 23:
+                    case 22:
+                    case 21:
+                    case 20:
+                    case 19:
+                    case 18:
+                    case 17:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> yVec = Vector256.Create(y);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        Vector256<T> end = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef, remainder - (uint)Vector256<T>.Count),
+                                                                   yVec,
+                                                                   Vector256.LoadUnsafe(ref zRef, remainder - (uint)Vector256<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector256<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector256's worth of data.
+                    case 16:
+                    {
+                        Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                        Vector256<T> beg = TTernaryOperator.Invoke(Vector256.LoadUnsafe(ref xRef),
+                                                                   Vector256.Create(y),
+                                                                   Vector256.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Two Vector128's worth of data, with at least one element overlapping.
+                    case 15:
+                    case 14:
+                    case 13:
+                    case 12:
+                    case 11:
+                    case 10:
+                    case 9:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> yVec = Vector128.Create(y);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        Vector128<T> end = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef, remainder - (uint)Vector128<T>.Count),
+                                                                   yVec,
+                                                                   Vector128.LoadUnsafe(ref zRef, remainder - (uint)Vector128<T>.Count));
+
+                        beg.StoreUnsafe(ref dRef);
+                        end.StoreUnsafe(ref dRef, remainder - (uint)Vector128<T>.Count);
+
+                        break;
+                    }
+
+                    // One Vector128's worth of data.
+                    case 8:
+                    {
+                        Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                        Vector128<T> beg = TTernaryOperator.Invoke(Vector128.LoadUnsafe(ref xRef),
+                                                                   Vector128.Create(y),
+                                                                   Vector128.LoadUnsafe(ref zRef));
+                        beg.StoreUnsafe(ref dRef);
+
+                        break;
+                    }
+
+                    // Cases that are smaller than a single vector. No SIMD; just jump to the length and fall through each
+                    // case to unroll the whole processing.
+                    case 7:
+                        Unsafe.Add(ref dRef, 6) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 6),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 6));
+                        goto case 6;
+
+                    case 6:
+                        Unsafe.Add(ref dRef, 5) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 5),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 5));
+                        goto case 5;
+
+                    case 5:
+                        Unsafe.Add(ref dRef, 4) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 4),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 4));
+                        goto case 4;
+
+                    case 4:
+                        Unsafe.Add(ref dRef, 3) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 3),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 3));
+                        goto case 3;
+
+                    case 3:
+                        Unsafe.Add(ref dRef, 2) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 2),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 2));
+                        goto case 2;
+
+                    case 2:
+                        Unsafe.Add(ref dRef, 1) = TTernaryOperator.Invoke(Unsafe.Add(ref xRef, 1),
+                                                                          y,
+                                                                          Unsafe.Add(ref zRef, 1));
+                        goto case 1;
+
+                    case 1:
+                        dRef = TTernaryOperator.Invoke(xRef, y, zRef);
+                        goto case 0;
+
+                    case 0:
+                        break;
                 }
             }
 
@@ -10062,80 +12931,6 @@ namespace System.Numerics.Tensors
                     }
                 }
             }
-        }
-
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static T FusedMultiplyAdd<T>(T x, T y, T addend) where T : INumberBase<T>
-        {
-            if (typeof(T) == typeof(Half))
-            {
-                Half result = Half.FusedMultiplyAdd(Unsafe.As<T, Half>(ref x), Unsafe.As<T, Half>(ref y), Unsafe.As<T, Half>(ref addend));
-                return Unsafe.As<Half, T>(ref result);
-            }
-
-            if (typeof(T) == typeof(float))
-            {
-                float result = float.FusedMultiplyAdd(Unsafe.As<T, float>(ref x), Unsafe.As<T, float>(ref y), Unsafe.As<T, float>(ref addend));
-                return Unsafe.As<float, T>(ref result);
-            }
-
-            if (typeof(T) == typeof(double))
-            {
-                double result = double.FusedMultiplyAdd(Unsafe.As<T, double>(ref x), Unsafe.As<T, double>(ref y), Unsafe.As<T, double>(ref addend));
-                return Unsafe.As<double, T>(ref result);
-            }
-
-            return (x * y) + addend;
-        }
-
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<T> FusedMultiplyAdd<T>(Vector128<T> x, Vector128<T> y, Vector128<T> addend) where T : INumberBase<T>
-        {
-            if (Fma.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), addend.AsSingle()).As<float, T>();
-                if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), addend.AsDouble()).As<double, T>();
-            }
-
-            if (AdvSimd.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(addend.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
-            }
-
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(addend.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
-            }
-
-            return (x * y) + addend;
-        }
-
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<T> FusedMultiplyAdd<T>(Vector256<T> x, Vector256<T> y, Vector256<T> addend) where T : INumberBase<T>
-        {
-            if (Fma.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), addend.AsSingle()).As<float, T>();
-                if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), addend.AsDouble()).As<double, T>();
-            }
-
-            return (x * y) + addend;
-        }
-
-        /// <summary>Performs (x * y) + z. It will be rounded as one ternary operation if such an operation is accelerated on the current hardware.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<T> FusedMultiplyAdd<T>(Vector512<T> x, Vector512<T> y, Vector512<T> addend) where T : INumberBase<T>
-        {
-            if (Avx512F.IsSupported)
-            {
-                if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), addend.AsSingle()).As<float, T>();
-                if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), addend.AsDouble()).As<double, T>();
-            }
-
-            return (x * y) + addend;
         }
 
         /// <summary>Aggregates all of the elements in the <paramref name="x"/> into a single value.</summary>
@@ -12014,12 +14809,151 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>(x * y) + z</summary>
+        internal readonly struct MultiplyAddEstimateOperator<T> : ITernaryOperator<T> where T : INumberBase<T>
+        {
+            public static T Invoke(T x, T y, T z)
+            {
+                // TODO https://github.com/dotnet/runtime/issues/98053: Use T.MultiplyAddEstimate when it's available.
+
+                if (Fma.IsSupported || AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(Half))
+                    {
+                        Half result = Half.FusedMultiplyAdd(Unsafe.As<T, Half>(ref x), Unsafe.As<T, Half>(ref y), Unsafe.As<T, Half>(ref z));
+                        return Unsafe.As<Half, T>(ref result);
+                    }
+
+                    if (typeof(T) == typeof(float))
+                    {
+                        float result = float.FusedMultiplyAdd(Unsafe.As<T, float>(ref x), Unsafe.As<T, float>(ref y), Unsafe.As<T, float>(ref z));
+                        return Unsafe.As<float, T>(ref result);
+                    }
+
+                    if (typeof(T) == typeof(double))
+                    {
+                        double result = double.FusedMultiplyAdd(Unsafe.As<T, double>(ref x), Unsafe.As<T, double>(ref y), Unsafe.As<T, double>(ref z));
+                        return Unsafe.As<double, T>(ref result);
+                    }
+                }
+
+                return (x * y) + z;
+            }
+
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                if (AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(z.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(z.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
+                }
+
+                return (x * y) + z;
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return (x * y) + z;
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
+            {
+                if (Avx512F.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return (x * y) + z;
+            }
+        }
+
+        /// <summary>(x * y) + z</summary>
         internal readonly struct FusedMultiplyAddOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
         {
-            public static T Invoke(T x, T y, T z) => FusedMultiplyAdd(x, y, z);
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => FusedMultiplyAdd(x, y, z);
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => FusedMultiplyAdd(x, y, z);
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z) => FusedMultiplyAdd(x, y, z);
+            public static T Invoke(T x, T y, T z) => T.FusedMultiplyAdd(x, y, z);
+
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                if (AdvSimd.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return AdvSimd.FusedMultiplyAdd(z.AsSingle(), x.AsSingle(), y.AsSingle()).As<float, T>();
+                }
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    if (typeof(T) == typeof(double)) return AdvSimd.Arm64.FusedMultiplyAdd(z.AsDouble(), x.AsDouble(), y.AsDouble()).As<double, T>();
+                }
+
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> xFloats = x.AsSingle();
+                    Vector128<float> yFloats = y.AsSingle();
+                    Vector128<float> zFloats = z.AsSingle();
+                    return Vector128.Create(
+                        float.FusedMultiplyAdd(xFloats[0], yFloats[0], zFloats[0]),
+                        float.FusedMultiplyAdd(xFloats[1], yFloats[1], zFloats[1]),
+                        float.FusedMultiplyAdd(xFloats[2], yFloats[2], zFloats[2]),
+                        float.FusedMultiplyAdd(xFloats[3], yFloats[3], zFloats[3])).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector128<double> xDoubles = x.AsDouble();
+                    Vector128<double> yDoubles = y.AsDouble();
+                    Vector128<double> zDoubles = z.AsDouble();
+                    return Vector128.Create(
+                        double.FusedMultiplyAdd(xDoubles[0], yDoubles[0], zDoubles[0]),
+                        double.FusedMultiplyAdd(xDoubles[1], yDoubles[1], zDoubles[1])).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z)
+            {
+                if (Fma.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Fma.MultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Fma.MultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return Vector256.Create(
+                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
+                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y, Vector512<T> z)
+            {
+                if (Avx512F.IsSupported)
+                {
+                    if (typeof(T) == typeof(float)) return Avx512F.FusedMultiplyAdd(x.AsSingle(), y.AsSingle(), z.AsSingle()).As<float, T>();
+                    if (typeof(T) == typeof(double)) return Avx512F.FusedMultiplyAdd(x.AsDouble(), y.AsDouble(), z.AsDouble()).As<double, T>();
+                }
+
+                return Vector512.Create(
+                    Invoke(x.GetLower(), y.GetLower(), z.GetLower()),
+                    Invoke(x.GetUpper(), y.GetUpper(), z.GetUpper()));
+            }
         }
 
         /// <summary>(x * (1 - z)) + (y * z)</summary>
@@ -15455,9 +18389,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize for float
 
             public static int Invoke(T x) => T.ILogB(x);
-            public static Vector128<int> Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static Vector256<int> Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static Vector512<int> Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static Vector128<int> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<int> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<int> Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>double.ILogB(x)</summary>
@@ -15466,9 +18400,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static int Invoke(double x) => double.ILogB(x);
-            public static Vector128<int> Invoke(Vector128<double> lower, Vector128<double> upper) => throw new NotImplementedException();
-            public static Vector256<int> Invoke(Vector256<double> lower, Vector256<double> upper) => throw new NotImplementedException();
-            public static Vector512<int> Invoke(Vector512<double> lower, Vector512<double> upper) => throw new NotImplementedException();
+            public static Vector128<int> Invoke(Vector128<double> lower, Vector128<double> upper) => throw new NotSupportedException();
+            public static Vector256<int> Invoke(Vector256<double> lower, Vector256<double> upper) => throw new NotSupportedException();
+            public static Vector512<int> Invoke(Vector512<double> lower, Vector512<double> upper) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateChecked(x)</summary>
@@ -15477,9 +18411,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateChecked(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateSaturating(x)</summary>
@@ -15488,9 +18422,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateSaturating(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.CreateTruncating(x)</summary>
@@ -15499,9 +18433,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false;
 
             public static TTo Invoke(TFrom x) => TTo.CreateTruncating(x);
-            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotImplementedException();
-            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotImplementedException();
-            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotImplementedException();
+            public static Vector128<TTo> Invoke(Vector128<TFrom> x) => throw new NotSupportedException();
+            public static Vector256<TTo> Invoke(Vector256<TFrom> x) => throw new NotSupportedException();
+            public static Vector512<TTo> Invoke(Vector512<TFrom> x) => throw new NotSupportedException();
         }
 
         /// <summary>(uint)float</summary>
@@ -16145,9 +19079,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static (T, T) Invoke(T x) => T.SinCos(x);
-            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.SinCosPi(x)</summary>
@@ -16156,9 +19090,9 @@ namespace System.Numerics.Tensors
             public static bool Vectorizable => false; // TODO: vectorize
 
             public static (T, T) Invoke(T x) => T.SinCosPi(x);
-            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotImplementedException();
-            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotImplementedException();
-            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotImplementedException();
+            public static (Vector128<T> First, Vector128<T> Second) Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static (Vector256<T> First, Vector256<T> Second) Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static (Vector512<T> First, Vector512<T> Second) Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>Operator that takes one input value and returns a single value.</summary>

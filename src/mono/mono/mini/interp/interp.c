@@ -1345,9 +1345,21 @@ typedef enum {
 
 typedef struct {
 	int ilen, flen;
-	PInvokeArgType ret_type;
+	MonoType *ret_mono_type;
+	PInvokeArgType ret_pinvoke_type;
 	PInvokeArgType *arg_types;
 } BuildArgsFromSigInfo;
+
+static MonoType *
+filter_type_for_args_from_sig (MonoType *type) {
+#if defined(HOST_WASM)
+	MonoType *etype;
+	if (MONO_TYPE_ISSTRUCT (type) && mini_wasm_is_scalar_vtype (type, &etype))
+		// FIXME: Does this need to be recursive?
+		return etype;
+#endif
+	return type;
+}
 
 static BuildArgsFromSigInfo *
 get_build_args_from_sig_info (MonoMemoryManager *mem_manager, MonoMethodSignature *sig)
@@ -1360,7 +1372,7 @@ get_build_args_from_sig_info (MonoMemoryManager *mem_manager, MonoMethodSignatur
 	g_assert (!sig->hasthis);
 
 	for (int i = 0; i < sig->param_count; i++) {
-		MonoType *type = sig->params [i];
+		MonoType *type = filter_type_for_args_from_sig (sig->params [i]);
 		guint32 ptype;
 
 retry:
@@ -1442,7 +1454,9 @@ retry:
 	info->ilen = ilen;
 	info->flen = flen;
 
-	switch (sig->ret->type) {
+	info->ret_mono_type = filter_type_for_args_from_sig (sig->ret);
+
+	switch (info->ret_mono_type->type) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I1:
@@ -1463,17 +1477,17 @@ retry:
 		case MONO_TYPE_U8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
-			info->ret_type = PINVOKE_ARG_INT;
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
-			info->ret_type = PINVOKE_ARG_R8;
+			info->ret_pinvoke_type = PINVOKE_ARG_R8;
 			break;
 		case MONO_TYPE_VOID:
-			info->ret_type = PINVOKE_ARG_NONE;
+			info->ret_pinvoke_type = PINVOKE_ARG_NONE;
 			break;
 		default:
-			g_error ("build_args_from_sig: ret type not implemented yet: 0x%x\n", sig->ret->type);
+			g_error ("build_args_from_sig: ret type not implemented yet: 0x%x\n", info->ret_mono_type->type);
 	}
 
 	return info;
@@ -1563,7 +1577,7 @@ build_args_from_sig (InterpMethodArguments *margs, MonoMethodSignature *sig, Bui
 		}
 	}
 
-	switch (info->ret_type) {
+	switch (info->ret_pinvoke_type) {
 	case PINVOKE_ARG_INT:
 		margs->retval = (gpointer*)frame->retval;
 		margs->is_float_ret = 0;
@@ -1761,6 +1775,19 @@ ves_pinvoke_method (
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		int arg_index = -1;
+		gpointer data = mono_arch_get_swift_error (&ccontext, sig, &arg_index);
+
+		// Perform an indirect store at arg_index stack location
+		if (arg_index >= 0) {
+			g_assert (data);
+			stackval *result = (stackval*) STACK_ADD_BYTES (frame.stack, get_arg_offset (frame.imethod, sig, arg_index));
+			*(gpointer*)result->data.p = *(gpointer*)data;
+		}
+	}
+#endif
 	if (!context->has_resume_state) {
 		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig, call_info);
 	}
@@ -1768,8 +1795,8 @@ ves_pinvoke_method (
 	g_free (ccontext.stack);
 #else
 	// Only the vt address has been returned, we need to copy the entire content on interp stack
-	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (sig->ret))
-		stackval_from_data (sig->ret, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
+	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (call_info->ret_mono_type))
+		stackval_from_data (call_info->ret_mono_type, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
 
 	if (margs.iargs != margs.iargs_buf)
 		g_free (margs.iargs);
@@ -4239,7 +4266,7 @@ main_loop:
 				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 			}
 
-jit_call:		
+jit_call:
 			{
 				InterpMethodCodeType code_type = cmethod->code_type;
 

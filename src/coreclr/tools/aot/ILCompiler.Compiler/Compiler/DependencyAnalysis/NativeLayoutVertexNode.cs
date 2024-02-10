@@ -1433,7 +1433,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 MethodDesc implMethod = closestDefType.FindVirtualFunctionTargetMethodOnObjectType(declMethod);
 
-                if (implMethod.CanMethodBeInSealedVTable() && !implType.IsArrayTypeWithoutGenericInterfaces())
+                if (implMethod.CanMethodBeInSealedVTable(factory) && !implType.IsArrayTypeWithoutGenericInterfaces())
                 {
                     // Sealed vtable entries on other types in the hierarchy should not be reported (types read entries
                     // from their own sealed vtables, and not from the sealed vtables of base types).
