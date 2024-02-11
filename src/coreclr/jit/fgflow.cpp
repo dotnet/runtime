@@ -204,7 +204,7 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
 
         // Create new edge in the list in the correct ordered location.
         //
-        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, *listp);
+        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, block, *listp);
         flow->incrementDupCount();
         *listp = flow;
 

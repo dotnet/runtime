@@ -12,9 +12,9 @@
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-preview.2.24108.4">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-preview.2.24109.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>d3abc57b72e22d012e3601feea54b8e3dd64ff21</Sha>
+      <Sha>3ab438b1e45a1cde263a48a522d7082db14106c8</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="16.0.5-alpha.1.24105.1" CoherentParentDependency="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
@@ -100,14 +100,14 @@
       <Sha>b8c2293cd1cbd9d0fe6f32d7b5befbd526b5a175</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-preview.2.24108.4">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-preview.2.24109.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>d3abc57b72e22d012e3601feea54b8e3dd64ff21</Sha>
+      <Sha>3ab438b1e45a1cde263a48a522d7082db14106c8</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.0-preview.2.24108.4">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="9.0.0-preview.2.24109.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>d3abc57b72e22d012e3601feea54b8e3dd64ff21</Sha>
+      <Sha>3ab438b1e45a1cde263a48a522d7082db14106c8</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <!-- Intermediate is necessary for source build. -->

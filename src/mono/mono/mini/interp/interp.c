@@ -5813,15 +5813,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 			goto jit_call;
 		}
-		MINT_IN_CASE(MINT_NEWOBJ_VT_INLINED) {
-			guint16 ret_size = ip [3];
-			gpointer this_vt = locals + ip [2];
-
-			memset (this_vt, 0, ret_size);
-			LOCAL_VAR (ip [1], gpointer) = this_vt;
-			ip += 4;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_NEWOBJ_SLOW) {
 			guint32 const token = ip [3];
 			return_offset = ip [1];
@@ -5964,8 +5955,13 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_MARVIN_BLOCK) {
-			interp_intrins_marvin_block ((guint32*)(locals + ip [1]), (guint32*)(locals + ip [2]));
-			ip += 3;
+			guint32 *pp0 = (guint32*)(locals + ip [1]);
+			guint32 *pp1 = (guint32*)(locals + ip [2]);
+			guint32 *dest0 = (guint32*)(locals + ip [3]);
+			guint32 *dest1 = (guint32*)(locals + ip [4]);
+
+			interp_intrins_marvin_block (pp0, pp1, dest0, dest1);
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_ASCII_CHARS_TO_UPPERCASE) {
@@ -7958,6 +7954,8 @@ interp_parse_options (const char *options)
 			else if (strncmp (arg, "jiterp", 6) == 0)
 				opt = INTERP_OPT_JITERPRETER;
 #endif
+			else if (strncmp (arg, "ssa", 3) == 0)
+				opt = INTERP_OPT_SSA;
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 
@@ -8709,19 +8707,6 @@ interp_cleanup (void)
 #endif
 }
 
-static void
-register_interp_stats (void)
-{
-	mono_counters_init ();
-	mono_counters_register ("Total transform time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.transform_time);
-	mono_counters_register ("Methods transformed", MONO_COUNTER_INTERP | MONO_COUNTER_LONG, &mono_interp_stats.methods_transformed);
-	mono_counters_register ("Total cprop time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.cprop_time);
-	mono_counters_register ("Total super instructions time", MONO_COUNTER_INTERP | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &mono_interp_stats.super_instructions_time);
-	mono_counters_register ("Emitted instructions", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.emitted_instructions);
-	mono_counters_register ("Methods inlined", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inlined_methods);
-	mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);
-}
-
 #undef MONO_EE_CALLBACK
 #define MONO_EE_CALLBACK(ret, name, sig) interp_ ## name,
 
@@ -8749,8 +8734,6 @@ mono_ee_interp_init (const char *opts)
 		mono_interp_tiering_init ();
 
 	mini_install_interp_callbacks (&mono_interp_callbacks);
-
-	register_interp_stats ();
 
 #ifdef HOST_WASI
 	debugger_enabled = mini_get_debug_options ()->mdb_optimizations;

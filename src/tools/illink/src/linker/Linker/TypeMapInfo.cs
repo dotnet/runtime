@@ -30,6 +30,7 @@
 //
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 
@@ -42,7 +43,7 @@ namespace Mono.Linker
 		readonly LinkContext context;
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> base_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
 		protected readonly Dictionary<MethodDefinition, List<OverrideInformation>> override_methods = new Dictionary<MethodDefinition, List<OverrideInformation>> ();
-		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation)>> ();
+		protected readonly Dictionary<MethodDefinition, List<(TypeDefinition InstanceType, InterfaceImplementation ImplementationProvider, MethodDefinition DefaultImplementationMethod)>> default_interface_implementations = new Dictionary<MethodDefinition, List<(TypeDefinition, InterfaceImplementation, MethodDefinition)>> ();
 
 		public TypeMapInfo (LinkContext context)
 		{
@@ -84,9 +85,16 @@ namespace Mono.Linker
 			return bases;
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)>? GetDefaultInterfaceImplementations (MethodDefinition method)
+		/// <summary>
+		/// Returns a list of all default interface methods that implement <paramref name="method"/> for a type.
+		/// ImplementingType is the type that implements the interface,
+		/// InterfaceImpl is the <see cref="InterfaceImplementation" /> for the interface <paramref name="method" /> is declared on, and
+		/// DefaultInterfaceMethod is the method that implements <paramref name="method"/>.
+		/// </summary>
+		/// <param name="method">The interface method to find default implementations for</param>
+		public IEnumerable<(TypeDefinition ImplementingType, InterfaceImplementation InterfaceImpl, MethodDefinition DefaultImplementationMethod)>? GetDefaultInterfaceImplementations (MethodDefinition baseMethod)
 		{
-			default_interface_implementations.TryGetValue (method, out var ret);
+			default_interface_implementations.TryGetValue (baseMethod, out var ret);
 			return ret;
 		}
 
@@ -110,14 +118,15 @@ namespace Mono.Linker
 			methods.Add (new OverrideInformation (@base, @override, context, matchingInterfaceImplementation));
 		}
 
-		public void AddDefaultInterfaceImplementation (MethodDefinition @base, TypeDefinition implementingType, InterfaceImplementation matchingInterfaceImplementation)
+		public void AddDefaultInterfaceImplementation (MethodDefinition @base, TypeDefinition implementingType, (InterfaceImplementation, MethodDefinition) matchingInterfaceImplementation)
 		{
+			Debug.Assert(@base.DeclaringType.IsInterface);
 			if (!default_interface_implementations.TryGetValue (@base, out var implementations)) {
-				implementations = new List<(TypeDefinition, InterfaceImplementation)> ();
+				implementations = new List<(TypeDefinition, InterfaceImplementation, MethodDefinition)> ();
 				default_interface_implementations.Add (@base, implementations);
 			}
 
-			implementations.Add ((implementingType, matchingInterfaceImplementation));
+			implementations.Add ((implementingType, matchingInterfaceImplementation.Item1, matchingInterfaceImplementation.Item2));
 		}
 
 		protected virtual void MapType (TypeDefinition type)
@@ -278,6 +287,7 @@ namespace Mono.Linker
 		{
 			// Go over all interfaces, trying to find a method that is an explicit MethodImpl of the
 			// interface method in question.
+
 			foreach (var interfaceImpl in type.Interfaces) {
 				var potentialImplInterface = context.TryResolve (interfaceImpl.InterfaceType);
 				if (potentialImplInterface == null)
@@ -288,7 +298,9 @@ namespace Mono.Linker
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethod &&
 						!potentialImplMethod.IsAbstract) {
-						AddDefaultInterfaceImplementation (interfaceMethod, type, interfaceImpl);
+						AddDefaultInterfaceImplementation (interfaceMethod, type, (interfaceImpl, potentialImplMethod));
+						foundImpl = true;
+						break;
 					}
 
 					if (!potentialImplMethod.HasOverrides)
@@ -297,7 +309,7 @@ namespace Mono.Linker
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var @override in potentialImplMethod.Overrides) {
 						if (context.TryResolve (@override) == interfaceMethod) {
-							AddDefaultInterfaceImplementation (interfaceMethod, type, interfaceImpl);
+							AddDefaultInterfaceImplementation (interfaceMethod, type, (interfaceImpl, @potentialImplMethod));
 							foundImpl = true;
 							break;
 						}
