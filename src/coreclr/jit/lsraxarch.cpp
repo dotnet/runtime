@@ -3102,9 +3102,18 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 
     compiler->GetEmitter()->SetContainsAVX(true);
 
-    if (sizeOfSIMDVector >= 32)
+    if (sizeOfSIMDVector == 32)
     {
-        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncoding()));
+        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+    }
+
+    if (!compiler->canUseEvexEncoding())
+    {
+        return;
+    }
+
+    if (sizeOfSIMDVector == 64)
+    {
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
