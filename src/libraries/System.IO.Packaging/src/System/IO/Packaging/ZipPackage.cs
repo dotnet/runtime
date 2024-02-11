@@ -404,7 +404,11 @@ namespace System.IO.Packaging
                     break;
                 case CompressionOption.Maximum:
                     {
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+                        compressionLevel = CompressionLevel.SmallestSize;
+#else
                         compressionLevel = CompressionLevel.Optimal;
+#endif
                     }
                     break;
                 case CompressionOption.Fast:
@@ -414,7 +418,7 @@ namespace System.IO.Packaging
                     break;
                 case CompressionOption.SuperFast:
                     {
-                        compressionLevel = CompressionLevel.Fastest;
+                        compressionLevel = CompressionLevel.NoCompression;
                     }
                     break;
 

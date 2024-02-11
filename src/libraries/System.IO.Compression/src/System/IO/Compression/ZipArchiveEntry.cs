@@ -79,7 +79,7 @@ namespace System.IO.Compression
             _cdUnknownExtraFields = cd.ExtraFields;
             _fileComment = cd.FileComment;
 
-            _compressionLevel = null;
+            _compressionLevel = GetCompressionLevel(_generalPurposeBitFlag);
         }
 
         // Initializes new entry
@@ -91,6 +91,7 @@ namespace System.IO.Compression
             {
                 CompressionMethod = CompressionMethodValues.Stored;
             }
+            _generalPurposeBitFlag = MapDeflateCompressionOption(_generalPurposeBitFlag, _compressionLevel);
         }
 
         // Initializes new entry
@@ -104,7 +105,8 @@ namespace System.IO.Compression
             _versionMadeByPlatform = CurrentZipPlatform;
             _versionMadeBySpecification = ZipVersionNeededValues.Default;
             _versionToExtract = ZipVersionNeededValues.Default; // this must happen before following two assignment
-            _generalPurposeBitFlag = 0;
+            _compressionLevel = null;
+            _generalPurposeBitFlag = MapDeflateCompressionOption(0, _compressionLevel);
             CompressionMethod = CompressionMethodValues.Deflate;
             _lastModified = DateTimeOffset.Now;
 
@@ -126,8 +128,6 @@ namespace System.IO.Compression
             _cdUnknownExtraFields = null;
             _lhUnknownExtraFields = null;
             _fileComment = null;
-
-            _compressionLevel = null;
 
             if (_storedEntryNameBytes.Length > ushort.MaxValue)
                 throw new ArgumentException(SR.EntryNamesTooLong);
@@ -783,6 +783,35 @@ namespace System.IO.Compression
         }
 
         private bool SizesTooLarge() => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
+
+        private static CompressionLevel? GetCompressionLevel(BitFlagValues generalPurposeBitFlag)
+        {
+            // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
+            int deflateCompressionOption = (int)generalPurposeBitFlag & 0x6;
+
+            return deflateCompressionOption switch
+            {
+                0 => CompressionLevel.Optimal,
+                2 => CompressionLevel.SmallestSize,
+                4 => CompressionLevel.Fastest,
+                6 => CompressionLevel.NoCompression,
+                _ => null
+            };
+        }
+
+        private static BitFlagValues MapDeflateCompressionOption(BitFlagValues generalPurposeBitFlag, CompressionLevel? compressionLevel)
+        {
+            ushort deflateCompressionOptions = compressionLevel switch
+            {
+                CompressionLevel.Optimal => 0,
+                CompressionLevel.SmallestSize => 2,
+                CompressionLevel.Fastest => 4,
+                CompressionLevel.NoCompression => 6,
+                _ => 0
+            };
+
+            return (BitFlagValues)(((int)generalPurposeBitFlag & ~0x6) | deflateCompressionOptions);
+        }
 
         // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
         private bool WriteLocalFileHeader(bool isEmptyFile)
