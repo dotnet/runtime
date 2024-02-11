@@ -1805,6 +1805,7 @@ PhaseStatus Compiler::fgLateCastExpansion()
 
 enum class TypeCheckFailedAction
 {
+    Unknown,
     ReturnNull,
     CallHelper,
     CallHelper_Specialized,
@@ -1813,8 +1814,10 @@ enum class TypeCheckFailedAction
 
 enum class TypeCheckPassedAction
 {
+    Unknown,
     ReturnObj,
     ReturnNull,
+    NeverPasses,
 };
 
 // Some arbitrary limit on the number of guesses we can make
@@ -1846,6 +1849,9 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
                                       TypeCheckFailedAction* typeCheckFailed,
                                       TypeCheckPassedAction* typeCheckPassed)
 {
+    *typeCheckFailed = TypeCheckFailedAction::Unknown;
+    *typeCheckPassed = TypeCheckPassedAction::Unknown;
+
     if (!castHelper->IsHelperCall() || ((castHelper->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) == 0))
     {
         // It's not eligible for expansion (already expanded in importer)
@@ -1891,6 +1897,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     // First, let's grab the expected class we're casting to/checking instance of:
     // E.g. "call CORINFO_HELP_ISINSTANCEOFCLASS(castToCls, obj)"
     GenTree*             clsArg    = castHelper->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree*             objArg    = castHelper->gtArgs.GetUserArgByIndex(1)->GetNode();
     CORINFO_CLASS_HANDLE castToCls = comp->gtGetHelperArgClassHandle(clsArg);
     if (castToCls == NO_CLASS_HANDLE)
     {
@@ -1916,6 +1923,31 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     *commonCls = castToCls;
 
     const unsigned isAbstractFlags = CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT;
+
+    // See what we already know about the type of the object being cast.
+    bool                 fromClassIsExact   = false;
+    bool                 fromClassIsNonNull = false;
+    CORINFO_CLASS_HANDLE fromClass          = comp->gtGetClassHandle(objArg, &fromClassIsExact, &fromClassIsNonNull);
+    if ((fromClass != NO_CLASS_HANDLE) && fromClassIsExact)
+    {
+        if (fromClassIsNonNull)
+        {
+            // A hint for the expansion that the object is not null
+            castHelper->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
+        }
+
+        const TypeCompareState castResult = comp->info.compCompHnd->compareTypesForCast(fromClass, castToCls);
+        if (isCastClass && (castResult == TypeCompareState::MustNot))
+        {
+            // The cast is guaranteed to fail, the expansion logic can skip the type check entirely
+            *typeCheckPassed = TypeCheckPassedAction::NeverPasses;
+            return 0;
+        }
+
+        // TODO-InlineCast:
+        // isinst and MustNot         -> just return null
+        // isinst/castclass and Must  -> just return obj
+    }
 
     //
     // Now we need to figure out what classes to use for the fast path, we have 4 options:
@@ -2207,7 +2239,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     const int numOfCandidates = PickCandidatesForTypeCheck(this, call, expectedExactClasses, &commonCls, likelihoods,
                                                            &typeCheckFailedAction, &typeCheckPassedAction);
-    if (numOfCandidates == 0)
+    if ((numOfCandidates == 0) && (typeCheckPassedAction != TypeCheckPassedAction::NeverPasses))
     {
         return false;
     }
@@ -2292,9 +2324,17 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         lastTypeCheckBb            = typeChecksBbs[candidateId];
     }
 
+    bool castAlwaysFails = typeCheckPassedAction == TypeCheckPassedAction::NeverPasses;
+
     // Block 3: fallbackBb
     BasicBlock* fallbackBb;
-    if (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows)
+    if (castAlwaysFails)
+    {
+        // fallback call is used only to throw InvalidCastException
+        call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        fallbackBb = fgNewBBFromTreeAfter(BBJ_THROW, nullcheckBb, call, debugInfo, nullptr, true);
+    }
+    else if (typeCheckFailedAction == TypeCheckFailedAction::CallHelper_AlwaysThrows)
     {
         // fallback call is used only to throw InvalidCastException
         call->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
@@ -2326,19 +2366,19 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
     else
     {
-        assert(typeCheckPassedAction == TypeCheckPassedAction::ReturnObj);
         // No-op because tmp was already assigned to obj
         typeCheckSucceedTree = gtNewNothingNode();
     }
     BasicBlock* typeCheckSucceedBb =
-        fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
+        castAlwaysFails ? nullptr
+                        : fgNewBBFromTreeAfter(BBJ_ALWAYS, fallbackBb, typeCheckSucceedTree, debugInfo, lastBb);
 
     //
     // Wire up the blocks
     //
     firstBb->SetTarget(nullcheckBb);
     nullcheckBb->SetTrueTarget(lastBb);
-    nullcheckBb->SetFalseTarget(typeChecksBbs[0]);
+    nullcheckBb->SetFalseTarget(castAlwaysFails ? fallbackBb : typeChecksBbs[0]);
 
     // Tricky case - wire up multiple type check blocks (in most cases there is only one)
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
@@ -2366,10 +2406,18 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
 
     fgRemoveRefPred(lastBb, firstBb);
     fgAddRefPred(nullcheckBb, firstBb);
-    fgAddRefPred(typeChecksBbs[0], nullcheckBb);
     fgAddRefPred(lastBb, nullcheckBb);
-    fgAddRefPred(lastBb, typeCheckSucceedBb);
-    if (typeCheckFailedAction != TypeCheckFailedAction::CallHelper_AlwaysThrows)
+    if (castAlwaysFails)
+    {
+        fgAddRefPred(fallbackBb, nullcheckBb);
+    }
+    else
+    {
+        fgAddRefPred(typeChecksBbs[0], nullcheckBb);
+        fgAddRefPred(lastBb, typeCheckSucceedBb);
+    }
+
+    if (!fallbackBb->KindIs(BBJ_THROW))
     {
         // if fallbackBb is BBJ_THROW then it has no successors
         fgAddRefPred(lastBb, fallbackBb);
@@ -2397,8 +2445,19 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         }
         totalLikelihood += likelihood;
     }
-    fallbackBb->inheritWeightPercentage(lastTypeCheckBb, fallbackBb->KindIs(BBJ_THROW) ? 0 : 100 - totalLikelihood);
-    typeCheckSucceedBb->inheritWeightPercentage(typeChecksBbs[0], totalLikelihood);
+
+    if (fallbackBb->KindIs(BBJ_THROW))
+    {
+        fallbackBb->bbSetRunRarely();
+    }
+    else
+    {
+        fallbackBb->inheritWeightPercentage(lastTypeCheckBb, 100 - totalLikelihood);
+    }
+    if (!castAlwaysFails)
+    {
+        typeCheckSucceedBb->inheritWeightPercentage(typeChecksBbs[0], totalLikelihood);
+    }
     lastBb->inheritWeight(firstBb);
 
     //
@@ -2407,14 +2466,13 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     assert(BasicBlock::sameEHRegion(firstBb, lastBb));
     assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
-    assert(BasicBlock::sameEHRegion(firstBb, lastTypeCheckBb));
 
     // call guarantees that obj is never null, we can drop the nullcheck
     // by converting it to a BBJ_ALWAYS to typeCheckBb.
     if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) != 0)
     {
         fgRemoveStmt(nullcheckBb, nullcheckBb->lastStmt());
-        nullcheckBb->SetKindAndTarget(BBJ_ALWAYS, typeChecksBbs[0]);
+        nullcheckBb->SetKindAndTarget(BBJ_ALWAYS, castAlwaysFails ? fallbackBb : typeChecksBbs[0]);
         fgRemoveRefPred(lastBb, nullcheckBb);
     }
 
