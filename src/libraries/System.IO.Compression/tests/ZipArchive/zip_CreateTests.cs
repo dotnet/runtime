@@ -142,6 +142,65 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        // This test checks to ensure that setting the compression level of an archive entry sets the general-purpose
+        // bit flags correctly. It verifies that these have been set by reading from the MemoryStream manually, and by
+        // reopening the generated file to confirm that the compression levels match.
+        [Theory]
+        [InlineData(CompressionLevel.NoCompression, 6)]
+        [InlineData(CompressionLevel.Optimal, 0)]
+        [InlineData(CompressionLevel.SmallestSize, 2)]
+        [InlineData(CompressionLevel.Fastest, 4)]
+        public static void CreateArchiveEntriesWithBitFlags(CompressionLevel compressionLevel, ushort expectedGeneralBitFlags)
+        {
+            byte[] fileContent;
+
+            using (var testStream = new MemoryStream())
+            {
+                var testfilename = "testfile";
+                var testFileContent = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+
+                using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create))
+                {
+                    var utf8WithoutBom = new Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                    ZipArchiveEntry newEntry = zip.CreateEntry(testfilename, compressionLevel);
+                    using (var writer = new StreamWriter(newEntry.Open(), utf8WithoutBom))
+                    {
+                        writer.Write(testFileContent);
+                        writer.Flush();
+                    }
+
+                    ZipArchiveEntry secondNewEntry = zip.CreateEntry(testFileContent + "_post", CompressionLevel.NoCompression);
+                }
+
+                fileContent = testStream.ToArray();
+            }
+
+            // expected bit flags are at position 6 in the file header
+            var generalBitFlags = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(fileContent.AsSpan(6));
+
+            Assert.Equal(expectedGeneralBitFlags, generalBitFlags);
+
+            using (var reReadStream = new MemoryStream(fileContent))
+            {
+                using (var reReadZip = new ZipArchive(reReadStream, ZipArchiveMode.Read))
+                {
+                    var firstArchive = reReadZip.Entries[0];
+                    var secondArchive = reReadZip.Entries[1];
+                    var compressionLevelFieldInfo = typeof(ZipArchiveEntry).GetField("_compressionLevel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    var generalBitFlagsFieldInfo = typeof(ZipArchiveEntry).GetField("_generalPurposeBitFlag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                    var reReadCompressionLevel = (CompressionLevel)compressionLevelFieldInfo.GetValue(firstArchive);
+                    var reReadGeneralBitFlags = (ushort)generalBitFlagsFieldInfo.GetValue(firstArchive);
+
+                    Assert.Equal(compressionLevel, reReadCompressionLevel);
+                    Assert.Equal(expectedGeneralBitFlags, reReadGeneralBitFlags);
+
+                    reReadCompressionLevel = (CompressionLevel)compressionLevelFieldInfo.GetValue(secondArchive);
+                    Assert.Equal(CompressionLevel.NoCompression, reReadCompressionLevel);
+                }
+            }
+        }
+
         [Fact]
         public static void CreateNormal_VerifyDataDescriptor()
         {
