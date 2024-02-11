@@ -152,16 +152,17 @@ namespace System.IO.Compression.Tests
         [InlineData(CompressionLevel.Fastest, 4)]
         public static void CreateArchiveEntriesWithBitFlags(CompressionLevel compressionLevel, ushort expectedGeneralBitFlags)
         {
-            byte[] fileContent;
+            var testfilename = "testfile";
+            var testFileContent = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+            var utf8WithoutBom = new Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
+            byte[] zipFileContent;
 
             using (var testStream = new MemoryStream())
             {
-                var testfilename = "testfile";
-                var testFileContent = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
 
                 using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create))
                 {
-                    var utf8WithoutBom = new Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
                     ZipArchiveEntry newEntry = zip.CreateEntry(testfilename, compressionLevel);
                     using (var writer = new StreamWriter(newEntry.Open(), utf8WithoutBom))
                     {
@@ -172,15 +173,15 @@ namespace System.IO.Compression.Tests
                     ZipArchiveEntry secondNewEntry = zip.CreateEntry(testFileContent + "_post", CompressionLevel.NoCompression);
                 }
 
-                fileContent = testStream.ToArray();
+                zipFileContent = testStream.ToArray();
             }
 
             // expected bit flags are at position 6 in the file header
-            var generalBitFlags = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(fileContent.AsSpan(6));
+            var generalBitFlags = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(zipFileContent.AsSpan(6));
 
             Assert.Equal(expectedGeneralBitFlags, generalBitFlags);
 
-            using (var reReadStream = new MemoryStream(fileContent))
+            using (var reReadStream = new MemoryStream(zipFileContent))
             {
                 using (var reReadZip = new ZipArchive(reReadStream, ZipArchiveMode.Read))
                 {
@@ -197,6 +198,17 @@ namespace System.IO.Compression.Tests
 
                     reReadCompressionLevel = (CompressionLevel)compressionLevelFieldInfo.GetValue(secondArchive);
                     Assert.Equal(CompressionLevel.NoCompression, reReadCompressionLevel);
+
+                    using (var strm = firstArchive.Open())
+                    {
+                        var readBuffer = new byte[firstArchive.Length];
+
+                        strm.Read(readBuffer);
+
+                        var readText = Text.Encoding.UTF8.GetString(readBuffer);
+
+                        Assert.Equal(readText, testFileContent);
+                    }
                 }
             }
         }
