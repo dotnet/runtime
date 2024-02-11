@@ -1483,10 +1483,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.OverrideInformation.get_IsStaticInterfaceMethodPair</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.Steps.BaseStep.get_MarkingHelpers</Target>
   </Suppression>
   <Suppression>
