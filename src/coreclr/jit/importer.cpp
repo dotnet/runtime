@@ -5514,7 +5514,16 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
     }
 
-    const bool expandInline = canExpandInline && shouldExpandInline;
+    bool expandInline = canExpandInline && shouldExpandInline;
+
+    // Move expansion to the Late Cast Expansion phase.
+    if (op2->IsIconHandle(GTF_ICON_CLASS_HDL) && (helper != CORINFO_HELP_ISINSTANCEOFCLASS || !isClassExact))
+    {
+        // The only two cases left here are:
+        // 1) isinst <exact class> -- it seems it's profitable to expand such casts early (they don't need helpers)
+        // 2) late cast expansion doesn't yet support GT_RUNTIMELOOKUP as cast-to yet. (TODO-InlineCast)
+        expandInline = false;
+    }
 
     if (!expandInline)
     {
@@ -5529,7 +5538,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
 
         // Instrument this castclass/isinst
-        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
+        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
+            !compCurBB->isRunRarely())
         {
             // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
             if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)

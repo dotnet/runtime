@@ -1894,9 +1894,9 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     CORINFO_CLASS_HANDLE castToCls = comp->gtGetHelperArgClassHandle(clsArg);
     if (castToCls == NO_CLASS_HANDLE)
     {
-        // clsArg doesn't represent a class handle - bail out
-        // TODO-InlineCast: if CSE becomes a problem - move the whole phase after assertion prop,
-        // so we can still rely on VN to get the class handle.
+        // We don't expect the constant handle to be CSE'd here because importer
+        // sets GTF_DONT_CSE for it. The only case when this arg is not a constant is RUNTIMELOOKUP
+        // TODO-InlineCast: we should be able to handle RUNTIMELOOKUP as well.
         JITDUMP("clsArg is not a constant handle - bail out.\n");
         return 0;
     }
