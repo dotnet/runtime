@@ -821,11 +821,11 @@ namespace Mono.Linker.Steps
 		void ProcessDefaultImplementation (OverrideInformation ov)
 		{
 			Debug.Assert (ov.IsOverrideOfInterfaceMember);
-			if ((!ov.Override.IsStatic && !Annotations.IsInstantiated (ov.InterfaceImplementor!.Implementor))
-				|| ov.Override.IsStatic && !Annotations.IsRelevantToVariantCasting (ov.InterfaceImplementor!.Implementor))
+			if ((!ov.Override.IsStatic && !Annotations.IsInstantiated (ov.InterfaceImplementor.Implementor))
+				|| ov.Override.IsStatic && !Annotations.IsRelevantToVariantCasting (ov.InterfaceImplementor.Implementor))
 				return;
 
-			MarkInterfaceImplementation (ov.InterfaceImplementor!.InterfaceImplementation);
+			MarkInterfaceImplementation (ov.InterfaceImplementor.InterfaceImplementation);
 		}
 
 		void MarkMarshalSpec (IMarshalInfoProvider spec, in DependencyInfo reason)
@@ -2553,7 +2553,7 @@ namespace Mono.Linker.Steps
 		{
 			var @base = overrideInformation.Base;
 			var method = overrideInformation.Override;
-			Debug.Assert (@base.DeclaringType.IsInterface);
+			Debug.Assert (overrideInformation.IsOverrideOfInterfaceMember);
 			if (@base is null || method is null || @base.DeclaringType is null)
 				return false;
 
@@ -2562,7 +2562,7 @@ namespace Mono.Linker.Steps
 
 			// If the interface implementation is not marked, do not mark the implementation method
 			// A type that doesn't implement the interface isn't required to have methods that implement the interface.
-			InterfaceImplementation? iface = overrideInformation.InterfaceImplementor!.InterfaceImplementation;
+			InterfaceImplementation? iface = overrideInformation.InterfaceImplementor.InterfaceImplementation;
 			if (!((iface is not null && Annotations.IsMarked (iface))
 				|| IsInterfaceImplementationMarkedRecursively (method.DeclaringType, @base.DeclaringType)))
 				return false;

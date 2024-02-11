@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using Mono.Cecil;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker
 {
@@ -31,6 +32,7 @@ namespace Mono.Linker
 			}
 		}
 
+		[MemberNotNullWhen (true, nameof (InterfaceImplementor), nameof (MatchingInterfaceImplementation))]
 		public bool IsOverrideOfInterfaceMember {
 			get {
 				return InterfaceImplementor != null;
