@@ -2174,7 +2174,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             {
                 *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
             }
-            return 0;
+            return 1;
 
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             // Nothing to speculate here, e.g. obj is IDisposable
