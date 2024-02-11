@@ -2151,17 +2151,18 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             return 0;
 
         case CORINFO_HELP_CHKCASTARRAY:
-            // CHKCASTARRAY against exact classes is already handled above, so it's not exact here.
-            //
-            //   (int[])obj - can we use int[] as a guess? No! It's an overhead if obj is uint[]
-            //                or any int-backed enum
-            return 0;
-
         case CORINFO_HELP_CHKCASTCLASS:
-            // CHKCASTCLASS against exact classes is already handled above, so it's not exact here.
+        case CORINFO_HELP_CHKCASTANY:
+            // These casts against exact classes are already handled above, so it's not exact here.
             //
             // let's use castToCls as a guess, we might regress some cases, but at least we know that unrelated
             // types are going to throw InvalidCastException, so we can assume the overhead happens rarely.
+            //
+            if ((comp->info.compCompHnd->getClassAttribs(castToCls) & isAbstractFlags) != 0)
+            {
+                // The guess is abstract - it will never pass the type check
+                return 0;
+            }
             candidates[0] = castToCls;
             // 50% chance of successful type check (speculative guess)
             likelihoods[0] = 50;
@@ -2169,19 +2170,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             // A small optimization - use a slightly faster fallback which assumes that we've already checked
             // for null and for castToCls itself, so it won't do it again.
             *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
-            return 1;
-
-        case CORINFO_HELP_CHKCASTANY:
-            // Same as CORINFO_HELP_CHKCASTCLASS above, the only difference - let's check castToCls for
-            // being non-abstract and non-interface first as it makes no sense to speculate on those.
-            if ((comp->info.compCompHnd->getClassAttribs(castToCls) & isAbstractFlags) != 0)
-            {
-                return 0;
-            }
-            candidates[0] = castToCls;
-            // 50% chance of successful type check (speculative guess)
-            likelihoods[0] = 50;
-            return 1;
+            return 0;
 
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             // Nothing to speculate here, e.g. obj is IDisposable
