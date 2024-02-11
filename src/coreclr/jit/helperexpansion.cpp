@@ -2170,7 +2170,7 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             // A small optimization - use a slightly faster fallback which assumes that we've already checked
             // for null and for castToCls itself, so it won't do it again.
             *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
-            return 0;
+            return 1;
 
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             // Nothing to speculate here, e.g. obj is IDisposable
