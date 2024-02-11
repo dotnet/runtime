@@ -2561,6 +2561,8 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
 void AppDomain::LoadDomainAssembly(DomainAssembly *pFile,
                                FileLoadLevel targetLevel)
 {
+    INSTRUMENTED_METHOD("AppDomain::LoadDomainAssembly");
+
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
