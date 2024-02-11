@@ -2399,21 +2399,9 @@ double FloatingPointUtils::round(double x)
     // noting that we also need to copy back the original sign to
     // correctly handle -0.0
 
-    double temp = _copysign(IntegerBoundary, x);
-    return _copysign((x + temp) - temp, x);
+    double temp = copysign(IntegerBoundary, x);
+    return copysign((x + temp) - temp, x);
 }
-
-// Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
-// We will redirect the macro to this other functions if the macro is not defined for the platform.
-// This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
-// downcasting for the _copysign() call.
-#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
-
-#if !defined(_copysignf)
-#define _copysignf (float)_copysign
-#endif
-
-#endif
 
 // Rounds a single-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
@@ -2456,8 +2444,8 @@ float FloatingPointUtils::round(float x)
     // noting that we also need to copy back the original sign to
     // correctly handle -0.0
 
-    float temp = _copysignf(IntegerBoundary, x);
-    return _copysignf((x + temp) - temp, x);
+    float temp = copysignf(IntegerBoundary, x);
+    return copysignf((x + temp) - temp, x);
 }
 
 bool FloatingPointUtils::isNormal(double x)
@@ -2582,6 +2570,38 @@ bool FloatingPointUtils::isAllBitsSet(double val)
 {
     UINT64 bits = *reinterpret_cast<UINT64*>(&val);
     return bits == 0xFFFFFFFFFFFFFFFFULL;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return (~bits & 0x7F800000U) != 0;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return (~bits & 0x7FF0000000000000ULL) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -3200,6 +3220,32 @@ double FloatingPointUtils::normalize(double value)
 #else
     return value;
 #endif
+}
+
+int FloatingPointUtils::ilogb(double value)
+{
+    if (value == 0.0)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogb(value);
+}
+
+int FloatingPointUtils::ilogb(float value)
+{
+    if (value == 0.0f)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogbf(value);
 }
 
 //------------------------------------------------------------------------

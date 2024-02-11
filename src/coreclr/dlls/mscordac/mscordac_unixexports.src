@@ -70,7 +70,6 @@ nativeStringResourceTable_mscorrc
 #PAL__close
 
 #_wcsicmp
-#_stricmp
 #sprintf_s
 #vsprintf_s
 #_snprintf_s
