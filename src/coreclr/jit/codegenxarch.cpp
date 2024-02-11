@@ -6074,7 +6074,9 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    if (compiler->canUseVexEncoding())
+    var_types returnType = call->TypeGet();
+
+    if (call->IsPInvoke() && compiler->canUseVexEncoding())
     {
         // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
         //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
@@ -6084,15 +6086,32 @@ void CodeGen::genCall(GenTreeCall* call)
 
         bool needsZeroupper = false;
 
-        // TODO-XArch-CQ: We should emit vzeroupper before R2R calls if they aren't known to require AVX+
-        // TODO-XArch-CQ: We should emit vzeroupper before JIT helpers known to use floating-point
-
-        if (call->IsPInvoke() && (call->gtCallType != CT_HELPER))
+        switch (call->gtCallType)
         {
-            // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
-            // may use the legacy encoding.
+            case CT_USER_FUNC:
+            case CT_INDIRECT:
+            {
+                // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
+                // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
 
-            needsZeroupper = true;
+                needsZeroupper = true;
+                break;
+            }
+
+            case CT_HELPER:
+            {
+                // Most helpers are well known to not use any floating-point or SIMD logic internally, but
+                // a few do exist so we need to ensure they are handled. They are identified by taking or
+                // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
+
+                needsZeroupper = call->gtArgs.PassesFloatOrSimd() || varTypeUsesFloatReg(returnType);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
         }
 
         if (needsZeroupper)
@@ -6120,7 +6139,6 @@ void CodeGen::genCall(GenTreeCall* call)
     assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
 #endif
 
-    var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
     {
 #ifdef TARGET_X86

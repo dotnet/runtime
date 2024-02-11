@@ -4777,6 +4777,8 @@ class CallArgs
     // Updateable flag, set to 'true' after we've done any required alignment.
     bool m_alignmentDone : 1;
 #endif
+    // True if we pass any floating-point or SIMD value
+    bool m_passesFloatOrSimd : 1;
 
     void AddedWellKnownArg(WellKnownArg arg);
     void RemovedWellKnownArg(WellKnownArg arg);
@@ -4846,6 +4848,7 @@ public:
     bool HasRegArgs() const { return m_hasRegArgs; }
     bool HasStackArgs() const { return m_hasStackArgs; }
     bool NeedsTemps() const { return m_needsTemps; }
+    bool PassesFloatOrSimd() const { return m_passesFloatOrSimd; }
 
 #ifdef UNIX_X86_ABI
     void ComputeStackAlignment(unsigned curStackLevelInBytes)

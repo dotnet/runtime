@@ -1967,6 +1967,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
     bool callHasRetBuffArg = HasRetBuffer();
     bool callIsVararg      = IsVarArgs();
+    bool passesFloatOrSimd = false;
 
 #ifdef TARGET_ARM
     regMaskTP argSkippedRegMask    = RBM_NONE;
@@ -2241,6 +2242,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // where the "argx" node can legally have a type that is not ABI-compatible with the one in the signature.
         const var_types            argSigType  = arg.GetSignatureType();
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
+
+        passesFloatOrSimd |= varTypeUsesFloatReg(argSigType);
 
         // Setup any HFA information about the argument.
         bool      isHfaArg = false;
@@ -3027,6 +3030,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     }
 #endif
 
+    m_passesFloatOrSimd        = passesFloatOrSimd;
     m_abiInformationDetermined = true;
 }
 

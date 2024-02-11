@@ -1490,6 +1490,7 @@ CallArgs::CallArgs()
 #ifdef UNIX_X86_ABI
     , m_alignmentDone(false)
 #endif
+    , m_passesFloatOrSimd(false)
 {
 }
 
@@ -9782,6 +9783,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     m_hasStackArgs             = other->m_hasStackArgs;
     m_argsComplete             = other->m_argsComplete;
     m_needsTemps               = other->m_needsTemps;
+    m_passesFloatOrSimd        = other->m_passesFloatOrSimd;
 
     // Unix x86 flags related to stack alignment intentionally not copied as
     // they depend on where the call will be inserted.
