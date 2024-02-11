@@ -1792,7 +1792,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 //
 PhaseStatus Compiler::fgLateCastExpansion()
 {
-    if (!doesMethodHaveExpandableCasts() || opts.OptimizationDisabled())
+    if (!doesMethodHaveExpandableCasts() || opts.OptimizationDisabled() || lvaHaveManyLocals())
     {
         // Nothing to expand in the current method
         return PhaseStatus::MODIFIED_NOTHING;
@@ -2193,6 +2193,12 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 //
 bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
+    if (lvaHaveManyLocals())
+    {
+        // Not worth creating untracked local variables
+        return false;
+    }
+
     TypeCheckFailedAction typeCheckFailedAction;
     TypeCheckPassedAction typeCheckPassedAction;
     CORINFO_CLASS_HANDLE  commonCls;
