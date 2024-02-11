@@ -11225,20 +11225,6 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
 
-    if (GetEmitter()->Contains256bitOrMoreAVX())
-    {
-        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
-        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
-        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
-        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
-        //   register) and before any call to an unknown function.
-
-        // Since this function used 256-bit or more AVX, we need to ensure we emit a vzeroupper.
-        // TODO-CQ: We should be able to check the return type and skip this if it is TYP_SIMD32 or TYP_SIMD64
-
-        instGen(INS_vzeroupper);
-    }
-
     // fast path return
     if (regMask == RBM_NONE)
     {
@@ -11285,6 +11271,20 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
 
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
+
+    if (GetEmitter()->Contains256bitOrMoreAVX())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        // Since this function used 256-bit or more AVX, we need to ensure we emit a vzeroupper.
+        // TODO-CQ: We should be able to check the return type and skip this if it is TYP_SIMD32 or TYP_SIMD64
+
+        instGen(INS_vzeroupper);
+    }
 
     // fast path return
     if (regMask == RBM_NONE)
