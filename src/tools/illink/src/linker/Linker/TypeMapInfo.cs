@@ -169,14 +169,14 @@ namespace Mono.Linker
 						// Try to find an implementation with a name/sig match on the current type
 						MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
 						if (exactMatchOnType != null) {
-							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, new (type, interfaceImpl.OriginalImpl));
+							AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType, new (type, interfaceImpl.OriginalImpl, context.Resolve(interfaceImpl.OriginalImpl.InterfaceType)));
 							continue;
 						}
 
 						// Next try to find an implementation with a name/sig match in the base hierarchy
 						var @base = GetBaseMethodInTypeHierarchy (type, interfaceMethod);
 						if (@base != null) {
-							AnnotateMethods (resolvedInterfaceMethod, @base, new (type, interfaceImpl.OriginalImpl));
+							AnnotateMethods (resolvedInterfaceMethod, @base, new (type, interfaceImpl.OriginalImpl, context.Resolve(interfaceImpl.OriginalImpl.InterfaceType)));
 							continue;
 						}
 					}
@@ -230,7 +230,7 @@ namespace Mono.Linker
 					{
 						if (context.TryResolve (@interface.InterfaceType) ==  @override.DeclaringType)
 						{
-							AnnotateMethods(@override, method, new InterfaceImplementor(method.DeclaringType, @interface));
+							AnnotateMethods(@override, method, new InterfaceImplementor(method.DeclaringType, @interface, context.Resolve(@interface.InterfaceType)));
 							break;
 						}
 					}
@@ -315,7 +315,7 @@ namespace Mono.Linker
 				foreach (var potentialImplMethod in potentialImplInterface.Methods) {
 					if (potentialImplMethod == interfaceMethod &&
 						!potentialImplMethod.IsAbstract) {
-						AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl), potentialImplMethod);
+						AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl, context.Resolve(interfaceImpl.InterfaceType)), potentialImplMethod);
 						foundImpl = true;
 						break;
 					}
@@ -326,7 +326,7 @@ namespace Mono.Linker
 					// This method is an override of something. Let's see if it's the method we are looking for.
 					foreach (var @override in potentialImplMethod.Overrides) {
 						if (context.TryResolve (@override) == interfaceMethod) {
-							AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl), @potentialImplMethod);
+							AddDefaultInterfaceImplementation (interfaceMethod, new (type, interfaceImpl, context.Resolve(interfaceImpl.InterfaceType)), @potentialImplMethod);
 							foundImpl = true;
 							break;
 						}

@@ -10,12 +10,14 @@ namespace Mono.Linker
 	{
 		public TypeDefinition Implementor { get; }
 		public InterfaceImplementation InterfaceImplementation { get; }
+		public TypeDefinition? InterfaceType { get; }
 
-		public InterfaceImplementor (TypeDefinition implementor, InterfaceImplementation interfaceImplementation)
+		public InterfaceImplementor (TypeDefinition implementor, InterfaceImplementation interfaceImplementation, TypeDefinition? interfaceType)
 		{
 			Debug.Assert(implementor.Interfaces.Contains (interfaceImplementation));
 			Implementor = implementor;
 			InterfaceImplementation = interfaceImplementation;
+			InterfaceType = interfaceType;
 		}
 	}
 }

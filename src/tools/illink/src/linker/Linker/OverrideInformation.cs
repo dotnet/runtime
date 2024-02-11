@@ -26,17 +26,14 @@ namespace Mono.Linker
 						|| !@base.DeclaringType.IsInterface && interfaceImplementor == null);
 		}
 
-		public InterfaceImplementation? MatchingInterfaceImplementation {
-			get {
-				return InterfaceImplementor?.InterfaceImplementation;
-			}
-		}
+		public InterfaceImplementation? MatchingInterfaceImplementation
+			=> InterfaceImplementor?.InterfaceImplementation;
+
+		public TypeDefinition? InterfaceType
+			=> InterfaceImplementor?.InterfaceType;
 
 		[MemberNotNullWhen (true, nameof (InterfaceImplementor), nameof (MatchingInterfaceImplementation))]
-		public bool IsOverrideOfInterfaceMember {
-			get {
-				return InterfaceImplementor != null;
-			}
-		}
+		public bool IsOverrideOfInterfaceMember
+			=> InterfaceImplementor != null;
 	}
 }
