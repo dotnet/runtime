@@ -2749,16 +2749,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <!-- These are known failures on mono-arm64 on OSX -->
-    <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsOSX)' == 'true' and '$(RuntimeVariant)' == 'monointerpreter'" >
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_r/**">
-            <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/Vector3Interop_ro/**">
-            <Issue>https://github.com/dotnet/runtime/issues/96051</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetsAppleMobile)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
             <Issue>https://github.com/dotnet/runtime/issues/75756</Issue>

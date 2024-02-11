@@ -1662,6 +1662,8 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 
 	nregs = align_size / 8;
 	if (is_hfa (t, &nfields, &esize, field_offsets)) {
+		/* Use pinvoke size/alignment */
+		size = mini_type_stack_size_full (t, &align, TRUE);
 		/*
 		 * The struct might include nested float structs aligned at 8,
 		 * so need to keep track of the offsets of the individual fields.
@@ -1678,7 +1680,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 		} else {
 			ainfo->nfregs_to_skip = FP_PARAM_REGS > cinfo->fr ? FP_PARAM_REGS - cinfo->fr : 0;
 			cinfo->fr = FP_PARAM_REGS;
-			if (!(ios_abi && cinfo->pinvoke))
+			if (!ios_abi)
 				size = ALIGN_TO (size, 8);
 			ainfo->storage = ArgVtypeOnStack;
 			cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, align);
