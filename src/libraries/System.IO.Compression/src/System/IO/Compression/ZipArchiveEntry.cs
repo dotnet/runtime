@@ -86,7 +86,7 @@ namespace System.IO.Compression
 
             _fileComment = cd.FileComment;
 
-            _compressionLevel = GetCompressionLevel(_generalPurposeBitFlag);
+            _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag);
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -799,7 +799,7 @@ namespace System.IO.Compression
 
         private bool SizesTooLarge() => _compressedSize > uint.MaxValue || _uncompressedSize > uint.MaxValue;
 
-        private static CompressionLevel? GetCompressionLevel(BitFlagValues generalPurposeBitFlag)
+        private static CompressionLevel? MapCompressionLevel(BitFlagValues generalPurposeBitFlag)
         {
             // Information about the Deflate compression option is stored in bits 1 and 2 of the general purpose bit flags.
             int deflateCompressionOption = (int)generalPurposeBitFlag & 0x6;
