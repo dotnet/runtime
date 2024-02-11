@@ -2169,7 +2169,11 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
             //
             // A small optimization - use a slightly faster fallback which assumes that we've already checked
             // for null and for castToCls itself, so it won't do it again.
-            *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
+            //
+            if (helper == CORINFO_HELP_CHKCASTCLASS)
+            {
+                *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
+            }
             return 0;
 
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
