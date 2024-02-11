@@ -22,7 +22,7 @@ namespace Mono.Linker
 			Override = @override;
 			InterfaceImplementor = interfaceImplementor;
 			// Ensure we have an interface implementation if the base method is from an interface and the override method is on a class
-			Debug.Assert(@base.DeclaringType.IsInterface && (interfaceImplementor != null || @override.DeclaringType.IsInterface)
+			Debug.Assert(@base.DeclaringType.IsInterface && interfaceImplementor != null
 						|| !@base.DeclaringType.IsInterface && interfaceImplementor == null);
 		}
 
