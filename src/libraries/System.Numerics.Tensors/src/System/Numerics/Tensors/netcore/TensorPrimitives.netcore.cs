@@ -18683,11 +18683,54 @@ namespace System.Numerics.Tensors
         /// <summary>T.LeadingZeroCount(x)</summary>
         internal readonly struct LeadingZeroCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable =>
+                (Avx512CD.VL.IsSupported && (sizeof(T) == 4 || sizeof(T) == 8)) ||
+                (AdvSimd.IsSupported && (sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4));
+
             public static T Invoke(T x) => T.LeadingZeroCount(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (Avx512CD.VL.IsSupported)
+                {
+                    if (sizeof(T) == 4) return Avx512CD.VL.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
+                    if (sizeof(T) == 8) return Avx512CD.VL.LeadingZeroCount(x.AsUInt64()).As<ulong, T>();
+                }
+
+                if (AdvSimd.IsSupported)
+                {
+                    if (sizeof(T) == 1) return AdvSimd.LeadingZeroCount(x.AsByte()).As<byte, T>();
+                    if (sizeof(T) == 2) return AdvSimd.LeadingZeroCount(x.AsUInt16()).As<ushort, T>();
+                    if (sizeof(T) == 4) return AdvSimd.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
+                }
+
+                throw new NotSupportedException();
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (Avx512CD.VL.IsSupported)
+                {
+                    if (sizeof(T) == 4) return Avx512CD.VL.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
+                    if (sizeof(T) == 8) return Avx512CD.VL.LeadingZeroCount(x.AsUInt64()).As<ulong, T>();
+                }
+
+                return Vector256.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (Avx512CD.IsSupported)
+                {
+                    if (sizeof(T) == 4) return Avx512CD.LeadingZeroCount(x.AsUInt32()).As<uint, T>();
+                    if (sizeof(T) == 8) return Avx512CD.LeadingZeroCount(x.AsUInt64()).As<ulong, T>();
+                }
+
+                return Vector512.Create(Invoke(x.GetLower()), Invoke(x.GetUpper()));
+            }
         }
 
         /// <summary>T.TrailingZeroCount(x)</summary>
