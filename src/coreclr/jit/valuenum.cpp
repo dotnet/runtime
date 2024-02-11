@@ -2529,10 +2529,22 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     {
         if (func == VNF_CastClass)
         {
-            // In terms of values, a castclass always returns its second argument, the object being cast.
-            // The operation may also throw an exception
-            ValueNum vnExcSet = VNExcSetSingleton(VNForFuncNoFolding(TYP_REF, VNF_InvalidCastExc, arg1VN, arg0VN));
-            resultVN          = VNWithExc(arg1VN, vnExcSet);
+            if (arg1VN == VNForNull())
+            {
+                // CastClass(cls, null) -> null
+                resultVN = VNForNull();
+            }
+            else
+            {
+                // CastClass(cls, obj) -> obj (may throw InvalidCastException)
+                ValueNum vnExcSet = VNExcSetSingleton(VNForFuncNoFolding(TYP_REF, VNF_InvalidCastExc, arg1VN, arg0VN));
+                resultVN          = VNWithExc(arg1VN, vnExcSet);
+            }
+        }
+        else if ((func == VNF_IsInstanceOf) && (arg1VN == VNForNull()))
+        {
+            // IsInstanceOf(cls, null) -> null
+            resultVN = VNForNull();
         }
         else
         {
