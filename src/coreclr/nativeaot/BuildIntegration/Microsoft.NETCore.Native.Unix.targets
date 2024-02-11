@@ -83,6 +83,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(NativeLib)' == 'Shared'">@rpath/$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(_targetOS)' == 'osx'">
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">11.0</AppleMinOSVersion>
+      <TargetTriple Condition="'$(_targetArchitecture)' == 'x64'">x86_64-apple-macos$(AppleMinOSVersion)</TargetTriple>
+      <TargetTriple Condition="'$(_targetArchitecture)' == 'arm64'">arm64-apple-macos$(AppleMinOSVersion)</TargetTriple>
+    </PropertyGroup>
+
     <Error Condition="'$(_IsiOSLikePlatform)' == 'true' and ('$(_AppleSdkName)' == '' or '$(CrossCompileArch)' == '' or '$(_AppleTripleOS)' == ''  or '$(AppleMinOSVersion)' == '' or '$(_AppleTripleAbi)' == '')"
       Text="One of the required Apple SDK properties is empty and was not properly resolved: _AppleSdkName = '$(_AppleSdkName)' CrossCompileArch = '$(CrossCompileArch)' _AppleTripleOS = '$(_AppleTripleOS)' AppleMinOSVersion = '$(AppleMinOSVersion)' _AppleTripleAbi = '$(_AppleTripleAbi)'" />
 
@@ -183,8 +189,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" />
-      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(_targetOS)' != 'osx' and '$(TargetTriple)' != ''" />
-      <LinkerArg Include="-arch $(CrossCompileArch)" Condition="'$(_IsApplePlatform)' == 'true' and '$(CrossCompileArch)' != ''" />
+      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" Condition="'$(StaticExecutable)' != 'true' and !$([MSBuild]::IsOSPlatform('Windows'))" />

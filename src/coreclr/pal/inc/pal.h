@@ -4002,24 +4002,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define fgetpos       PAL_fgetpos
 #define fsetpos       PAL_fsetpos
 #define setvbuf       PAL_setvbuf
-#define acos          PAL_acos
-#define asin          PAL_asin
-#define atan2         PAL_atan2
-#define exp           PAL_exp
-#define ilogb         PAL_ilogb
-#define log           PAL_log
-#define log10         PAL_log10
-#define pow           PAL_pow
-#define sincos        PAL_sincos
-#define acosf         PAL_acosf
-#define asinf         PAL_asinf
-#define atan2f        PAL_atan2f
-#define expf          PAL_expf
-#define ilogbf        PAL_ilogbf
-#define logf          PAL_logf
-#define log10f        PAL_log10f
-#define powf          PAL_powf
-#define sincosf       PAL_sincosf
 #define malloc        PAL_malloc
 #define free          PAL_free
 #define _open         PAL__open
@@ -4223,9 +4205,7 @@ PALIMPORT int __cdecl abs(int);
 PALIMPORT long long __cdecl llabs(long long);
 #ifndef PAL_STDCPP_COMPAT
 
-PALIMPORT int __cdecl _finite(double);
-PALIMPORT int __cdecl _isnan(double);
-PALIMPORT double __cdecl _copysign(double, double);
+PALIMPORT double __cdecl copysign(double, double);
 PALIMPORT double __cdecl acos(double);
 PALIMPORT double __cdecl acosh(double) MATH_THROW_DECL;
 PALIMPORT double __cdecl asin(double);
@@ -4250,15 +4230,16 @@ PALIMPORT double __cdecl modf(double, double*);
 PALIMPORT double __cdecl pow(double, double);
 PALIMPORT double __cdecl sin(double);
 PALIMPORT void __cdecl sincos(double, double*, double*);
+#ifdef __APPLE__
+PALIMPORT void __cdecl __sincos(double, double*, double*);
+#endif
 PALIMPORT double __cdecl sinh(double);
 PALIMPORT double __cdecl sqrt(double);
 PALIMPORT double __cdecl tan(double);
 PALIMPORT double __cdecl tanh(double);
 PALIMPORT double __cdecl trunc(double);
 
-PALIMPORT int __cdecl _finitef(float);
-PALIMPORT int __cdecl _isnanf(float);
-PALIMPORT float __cdecl _copysignf(float, float);
+PALIMPORT float __cdecl copysignf(float, float);
 PALIMPORT float __cdecl acosf(float);
 PALIMPORT float __cdecl acoshf(float) MATH_THROW_DECL;
 PALIMPORT float __cdecl asinf(float);
@@ -4283,6 +4264,9 @@ PALIMPORT float __cdecl modff(float, float*);
 PALIMPORT float __cdecl powf(float, float);
 PALIMPORT float __cdecl sinf(float);
 PALIMPORT void __cdecl sincosf(float, float*, float*);
+#ifdef __APPLE__
+PALIMPORT void __cdecl __sincosf(float, float*, float*);
+#endif
 PALIMPORT float __cdecl sinhf(float);
 PALIMPORT float __cdecl sqrtf(float);
 PALIMPORT float __cdecl tanf(float);
