@@ -1,22 +1,18 @@
 name: dotnet-runtime-60
 base: core18
-version: 6.0.0-preview.2.21154.6
+version: 6.0.18
 summary: Cross-Platform .NET Core Runtime. 
 description: |
   .NET Core runtimes and libraries which are optimized for running .NET Core apps in production. See https://dot.net/core.
   .NET Core is a general purpose development platform maintained by Microsoft. 
 
+architectures:
+  - build-on: amd64
+    run-on: amd64
+
 grade: stable
 confinement: strict
-
-apps:
-  dotnet:
-    command: dotnet
-    plugs:
-      - network
-      - network-bind
-      - removable-media
-      - home
+base: core20
 
 slots:
   dotnet-runtime:
@@ -27,12 +23,12 @@ slots:
 parts:
   dotnet-runtime:
     plugin: dump
-    source: https://download.visualstudio.microsoft.com/download/pr/2c88db43-4d92-433d-b95f-81bc9118a67e/08ec34f28dca0af4e8cf551299aa4367/dotnet-runtime-6.0.0-preview.2.21154.6-linux-x64.tar.gz
-    source-checksum: sha512/88ba8c4fe252fb76e0c40a4dcd2fe3e9c2960f445dd97a8044be9900f3641f18b2687ec10a36545a141a1e6820bb61278d2047cacd93365954a124c92463b17b
+    source: https://download.visualstudio.microsoft.com/download/pr/53fce0ba-88f8-44e0-8174-16fb7d6f1a33/7e4ee56d0aa754deed6cf4db31dd9e25/dotnet-runtime-6.0.18-linux-x64.tar.gz
+    source-checksum: sha512/bcfc88238f901c14d203a33eff036106fcbcfc40de7e3717f61434dffd86b5444c176dec5beeddcf80e7193f77bf793ab1e2284c91d54b93931a4668ba77c634
     stage-packages:
-      - libicu60
-      - libssl1.0.0
-      - libcurl3
+      - libicu66
+      - libssl1.1
+      - libcurl4
       - libgssapi-krb5-2
       - liblttng-ust0
       - libstdc++6
@@ -41,3 +37,12 @@ parts:
       - libtinfo5
       - libdb5.3
       - libc6
+
+apps:
+  dotnet:
+    command: dotnet
+    plugs:
+      - network
+      - network-bind
+      - removable-media
+      - home
