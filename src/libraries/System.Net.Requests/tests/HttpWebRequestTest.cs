@@ -2167,10 +2167,12 @@ namespace System.Net.Tests
             );
         }
 
-        [Fact]
-        public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
+            RemoteExecutor.Invoke(async () =>
+            {
+                await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
@@ -2193,6 +2195,7 @@ namespace System.Net.Tests
                             await client.SendResponseAsync(statusCode: HttpStatusCode.InternalServerError, content: new string('a', 10));
                         });
                 });
+            }).Dispose();
         }
 
         [Fact]
@@ -2237,7 +2240,18 @@ namespace System.Net.Tests
         public async Task SendHttpRequest_BindIPEndPoint_Throws()
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            var disableSocketOption = (SocketOptionName name) =>
+            {
+                if (socket.GetSocketOption(SocketOptionLevel.Socket, name) is true)
+                {
+                    socket.SetSocketOption(SocketOptionLevel.Socket, name, false);
+                }
+            };
+            disableSocketOption(SocketOptionName.ReuseAddress);
+            disableSocketOption(SocketOptionName.ReuseUnicastPort);
             socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+            // URI shouldn't matter because it should throw exception before connection open.
             HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
             request.ServicePoint.BindIPEndPointDelegate =
                 (sp, ep, retryCount) => { return (IPEndPoint)socket.LocalEndPoint!; };
