@@ -243,4 +243,7 @@
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootAssembly Condition="'$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="StreamConformanceTests" />
+  </ItemGroup>
 </Project>

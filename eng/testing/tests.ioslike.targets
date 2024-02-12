@@ -163,6 +163,9 @@
       <_AppleItemsToPass Include="@(RuntimeHostConfigurationOption)"
                          OriginalItemName__="_AppleUsedRuntimeHostConfigurationOption" />
 
+      <_AppleItemsToPass Include="@(TrimmerRootAssembly)"
+                         OriginalItemName__="TrimmerRootAssembly" />
+
       <!-- Example of passing items to the project
 
           <_AppleItemsToPass Include="@(BundleFiles)" OriginalItemName__="BundleFiles" ConditionToUse__="'$(Foo)' != 'true'" />

@@ -73,11 +73,6 @@
       <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Security.Permissions'" />
       <AppleAssembliesToBundle TrimMode="Copy" Condition="'$(EnableSoftTrimming)' == 'true' and '%(FileName)' == 'System.Transactions.Local'" />
 
-      <!-- Even though we are trimming the test runner assembly, we want it to be treated
-          as a root -->
-      <TrimmerRootAssembly
-          Condition="$([System.String]::Copy('%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)').EndsWith('TestRunner.dll'))"
-          Include="%(AppleAssembliesToBundle.Identity)" />
       <TrimmerRootAssembly
           Condition="'%(AppleAssembliesToBundle.FileName)%(AppleAssembliesToBundle.Extension)' == '$(AssemblyName).dll'"
           Include="%(AppleAssembliesToBundle.Identity)" />
