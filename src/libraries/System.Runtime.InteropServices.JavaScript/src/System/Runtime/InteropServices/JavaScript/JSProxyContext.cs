@@ -30,7 +30,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsCurrentThread() => true;
+#pragma warning disable CA1822 // Mark members as static
+        public bool IsCurrentThread() => true;
+#pragma warning restore CA1822 // Mark members as static
 #else
         public nint ContextHandle;
         public nint JSNativeTID; // target thread where JavaScript is running
