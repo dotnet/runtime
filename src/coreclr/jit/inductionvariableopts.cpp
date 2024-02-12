@@ -899,6 +899,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* parent)
         {
             GenTree* node = *use;
+
             if (!node->OperIs(GT_CAST))
             {
                 return WALK_CONTINUE;
@@ -936,15 +937,20 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
     int                        savedSize = 0;
 
     loop->VisitLoopBlocks([&](BasicBlock* block) {
-        visitor.NumExtensions = 0;
-
         for (Statement* stmt : block->NonPhiStatements())
         {
             visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+
+            if (visitor.NumExtensions > 0)
+            {
+                JITDUMP("  Found %u zero extensions in " FMT_STMT "\n", visitor.NumExtensions, stmt->GetID());
+
+                savedSize += (int)visitor.NumExtensions * ExtensionSize;
+                savedCost += visitor.NumExtensions * block->getBBWeight(this) * ExtensionCost;
+                visitor.NumExtensions = 0;
+            }
         }
 
-        savedSize += (int)visitor.NumExtensions * ExtensionSize;
-        savedCost += visitor.NumExtensions * block->getBBWeight(this) * ExtensionCost;
         return BasicBlockVisit::Continue;
     });
 
@@ -1090,11 +1096,26 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
                         // No cast needed -- the backend allows TYP_INT uses of TYP_LONG locals.
                         break;
                     case GT_STORE_LCL_VAR:
+                    {
                         node->AsLclVarCommon()->SetLclNum(m_newLclNum);
-                        node->AsLclVarCommon()->gtType = TYP_LONG;
-                        node->AsLclVarCommon()->Data() =
-                            m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
+                        node->gtType = TYP_LONG;
+                        GenTree* data = node->AsLclVarCommon()->Data();
+                        if (data->OperIs(GT_ADD) && (data->gtGetOp1()->OperIs(GT_LCL_VAR) && (data->gtGetOp1()->AsLclVarCommon()->GetLclNum() == m_lclNum)) &&
+                            data->gtGetOp2()->OperIs(GT_CNS_INT))
+                        {
+                            data->gtType = TYP_LONG;
+                            data->gtGetOp1()->AsLclVarCommon()->SetLclNum(m_newLclNum);
+                            data->gtGetOp1()->gtType = TYP_LONG;
+                            data->gtGetOp2()->gtType = TYP_LONG;
+                            return fgWalkResult::WALK_SKIP_SUBTREES;
+                        }
+                        else
+                        {
+                            node->AsLclVarCommon()->Data() =
+                                m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
+                        }
                         break;
+                    }
                     case GT_LCL_FLD:
                     case GT_STORE_LCL_FLD:
                         assert(!"Unexpected field use for local not marked as DNER");
@@ -1148,6 +1169,7 @@ PhaseStatus Compiler::optInductionVariables()
 
     bool changed = false;
 
+#if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     m_dfsTree = fgComputeDfs();
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
     if (optCanonicalizeLoops())
@@ -1158,7 +1180,6 @@ PhaseStatus Compiler::optInductionVariables()
         changed   = true;
     }
 
-#ifdef TARGET_64BIT
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Widening primary induction variables:\n");
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
