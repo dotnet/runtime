@@ -700,18 +700,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7)
         {
-            byte* pResult = stackalloc byte[8]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-                e4,
-                e5,
-                e6,
-                e7,
-            };
-            return Unsafe.AsRef<Vector64<byte>>(pResult);
+            Unsafe.SkipInit(out Vector64<byte> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            result.SetElementUnsafe(4, e4);
+            result.SetElementUnsafe(5, e5);
+            result.SetElementUnsafe(6, e6);
+            result.SetElementUnsafe(7, e7);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -725,14 +723,12 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<short> Create(short e0, short e1, short e2, short e3)
         {
-            short* pResult = stackalloc short[4]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-            };
-            return Unsafe.AsRef<Vector64<short>>(pResult);
+            Unsafe.SkipInit(out Vector64<short> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -744,12 +740,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<int> Create(int e0, int e1)
         {
-            int* pResult = stackalloc int[2]
-            {
-                e0,
-                e1,
-            };
-            return Unsafe.AsRef<Vector64<int>>(pResult);
+            Unsafe.SkipInit(out Vector64<int> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{SByte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -768,18 +762,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7)
         {
-            sbyte* pResult = stackalloc sbyte[8]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-                e4,
-                e5,
-                e6,
-                e7,
-            };
-            return Unsafe.AsRef<Vector64<sbyte>>(pResult);
+            Unsafe.SkipInit(out Vector64<sbyte> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            result.SetElementUnsafe(4, e4);
+            result.SetElementUnsafe(5, e5);
+            result.SetElementUnsafe(6, e6);
+            result.SetElementUnsafe(7, e7);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -790,12 +782,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<float> Create(float e0, float e1)
         {
-            float* pResult = stackalloc float[2]
-            {
-                e0,
-                e1,
-            };
-            return Unsafe.AsRef<Vector64<float>>(pResult);
+            Unsafe.SkipInit(out Vector64<float> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -810,14 +800,12 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3)
         {
-            ushort* pResult = stackalloc ushort[4]
-            {
-                e0,
-                e1,
-                e2,
-                e3,
-            };
-            return Unsafe.AsRef<Vector64<ushort>>(pResult);
+            Unsafe.SkipInit(out Vector64<ushort> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            result.SetElementUnsafe(2, e2);
+            result.SetElementUnsafe(3, e3);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -830,12 +818,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector64<uint> Create(uint e0, uint e1)
         {
-            uint* pResult = stackalloc uint[2]
-            {
-                e0,
-                e1,
-            };
-            return Unsafe.AsRef<Vector64<uint>>(pResult);
+            Unsafe.SkipInit(out Vector64<uint> result);
+            result.SetElementUnsafe(0, e0);
+            result.SetElementUnsafe(1, e1);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
