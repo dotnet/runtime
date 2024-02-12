@@ -293,14 +293,22 @@ namespace ILCompiler
                         {
                             // Only the "branch taken" is live.
                             // The fallthrough marks the beginning of a visible (but not live) basic block.
+                            // Avoid creating dead basic blocks 1 byte in size because we can't place a jump there later.
                             offsetsToVisit.Push(destination);
-                            flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
+                            if (reader.Offset + 1 >= reader.Size || ((flags[reader.Offset + 1] & OpcodeFlags.BasicBlockStart) != 0))
+                                offsetsToVisit.Push(reader.Offset);
+                            else
+                                flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
                         }
                         else
                         {
                             // Only fallthrough is live.
                             // The "brach taken" marks the beginning of a visible (but not live) basic block.
-                            flags[destination] |= OpcodeFlags.VisibleBasicBlockStart;
+                            // Avoid creating dead basic blocks 1 byte in size because we can't place a jump there later.
+                            if (destination + 1 >= reader.Size || ((flags[destination + 1] & OpcodeFlags.BasicBlockStart) != 0))
+                                offsetsToVisit.Push(destination);
+                            else
+                                flags[destination] |= OpcodeFlags.VisibleBasicBlockStart;
                             offsetsToVisit.Push(reader.Offset);
                         }
                     }
@@ -320,14 +328,22 @@ namespace ILCompiler
                         {
                             // Only the "branch taken" is live.
                             // The fallthrough marks the beginning of a visible (but not live) basic block.
+                            // Avoid creating dead basic blocks 1 byte in size because we can't place a jump there later.
                             offsetsToVisit.Push(destination);
-                            flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
+                            if (reader.Offset + 1 >= reader.Size || ((flags[reader.Offset + 1] & OpcodeFlags.BasicBlockStart) != 0))
+                                offsetsToVisit.Push(reader.Offset);
+                            else
+                                flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
                         }
                         else
                         {
                             // Only fallthrough is live.
                             // The "brach taken" marks the beginning of a visible (but not live) basic block.
-                            flags[destination] |= OpcodeFlags.VisibleBasicBlockStart;
+                            // Avoid creating dead basic blocks 1 byte in size because we can't place a jump there later.
+                            if (destination + 1 >= reader.Size || ((flags[destination + 1] & OpcodeFlags.BasicBlockStart) != 0))
+                                offsetsToVisit.Push(destination);
+                            else
+                                flags[destination] |= OpcodeFlags.VisibleBasicBlockStart;
                             offsetsToVisit.Push(reader.Offset);
                         }
                     }
@@ -347,7 +363,13 @@ namespace ILCompiler
                             // RyuJIT is going to look at this basic block even though it's unreachable.
                             // Consider it visible so that we replace the tail with an endless loop.
                             if (reader.HasNext)
-                                flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
+                            {
+                                // Avoid creating dead basic blocks 1 byte in size because we can't place a jump there later.
+                                if (reader.Offset + 1 >= reader.Size || ((flags[reader.Offset + 1] & OpcodeFlags.BasicBlockStart) != 0))
+                                    offsetsToVisit.Push(reader.Offset);
+                                else
+                                    flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
+                            }
                         }
                     }
                     else if (opcode == ILOpcode.switch_)
@@ -373,7 +395,13 @@ namespace ILCompiler
                         // RyuJIT is going to look at this basic block even though it's unreachable.
                         // Consider it visible so that we replace the tail with an endless loop.
                         if (reader.HasNext)
-                            flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
+                        {
+                            // Avoid creating dead basic blocks 1 byte in size because we can't place a jump there later.
+                            if (reader.Offset + 1 >= reader.Size || ((flags[reader.Offset + 1] & OpcodeFlags.BasicBlockStart) != 0))
+                                offsetsToVisit.Push(reader.Offset);
+                            else
+                                flags[reader.Offset] |= OpcodeFlags.VisibleBasicBlockStart;
+                        }
                     }
                     else if (shouldInlineResourceStrings && opcode == ILOpcode.call)
                     {
@@ -434,13 +462,8 @@ namespace ILCompiler
                 // We append instead of prepend because RyuJIT's importer has trouble with junk unreachable bytes.
                 if (erase)
                 {
-                    if (position - basicBlockStart < 2)
-                    {
-                        // We cannot neutralize the basic block, so better leave the method alone.
-                        // The control would fall through to the next basic block.
-                        return method;
-                    }
-
+                    // Shouldn't have created a dead basic block 1 byte in size.
+                    Debug.Assert(position - basicBlockStart >= 2);
                     newBody[position - 2] = (byte)ILOpCode.Br_s;
                     newBody[position - 1] = unchecked((byte)-2);
                 }
