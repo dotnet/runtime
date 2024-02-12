@@ -1042,7 +1042,8 @@ private:
     void buildRefPositionsForNode(GenTree* tree, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskMixed fpCalleeKillSet);
+    void buildUpperVectorSaveRefPositions(GenTree*     tree,
+                                          LsraLocation currentLoc DEBUG_ARG(regMaskFloat fpCalleeKillSet));
     void buildUpperVectorRestoreRefPosition(
         Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
