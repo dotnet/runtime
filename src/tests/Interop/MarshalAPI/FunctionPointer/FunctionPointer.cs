@@ -181,7 +181,7 @@ public partial class FunctionPtr
         Assert.Equal(expectedValue, outVar);
     }
 
-    public static bool CanRunInvalidGenericFunctionPointerTest => !TestLibrary.Utilities.IsNativeAot && !(TestLibrary.Utilities.IsWindows && TestLibrary.Utilities.IsX86);
+    public static bool CanRunInvalidGenericFunctionPointerTest => !TestLibrary.Utilities.IsNativeAot;
 
     [ConditionalFact(nameof(CanRunInvalidGenericFunctionPointerTest))]
     public static void RunInvalidGenericFunctionPointerTest()
