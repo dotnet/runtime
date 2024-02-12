@@ -3547,23 +3547,11 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 	}
 
 	/*
-	 * In corelib code, methods which need to do a stack walk declare a StackCrawlMark local and pass it as an
-	 * arguments until it reaches an icall. Its hard to detect which methods do that especially with
-	 * StackCrawlMark.LookForMyCallersCaller, so for now, just hardcode the classes which contain the public
-	 * methods whose caller is needed.
+	 * Methods which do stack walks are marked with [System.Security.DynamicSecurityMethod] in the bcl.
+	 * This check won't work for StackCrawlMark.LookForMyCallersCaller, but thats not currently by the
+	 * stack walk code anyway.
 	 */
-	if (mono_is_corlib_image (m_class_get_image (cmethod->klass))) {
-		const char *cname = m_class_get_name (cmethod->klass);
-		if (!strcmp (cname, "Assembly") ||
-			!strcmp (cname, "AssemblyLoadContext") ||
-			(!strcmp (cname, "Activator"))) {
-			if (!strcmp (cmethod->name, "op_Equality"))
-				return FALSE;
-			return TRUE;
-		}
-	}
-
-	return FALSE;
+	return (cmethod->flags & METHOD_ATTRIBUTE_REQSECOBJ) != 0;
 }
 
 G_GNUC_UNUSED MonoInst*
@@ -4746,6 +4734,15 @@ mini_inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *
 	return inline_method (cfg, cmethod, fsig, sp, ip, real_offset, inline_always, NULL);
 }
 
+static gboolean
+aggressive_inline_method (MonoMethod *cmethod)
+{
+	gboolean aggressive_inline = m_method_is_aggressive_inlining (cmethod);
+	if (aggressive_inline)
+		aggressive_inline = !mono_simd_unsupported_aggressive_inline_intrinsic_type (cmethod);
+	return aggressive_inline;
+}
+
 /*
  * inline_method:
  *
@@ -4871,7 +4868,7 @@ inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig,
 	cfg->disable_inline = prev_disable_inline;
 	cfg->inline_depth --;
 
-	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))) {
+	if ((costs >= 0 && costs < 60) || inline_always || (costs >= 0 && aggressive_inline_method (cmethod))) {
 		if (cfg->verbose_level > 2)
 			printf ("INLINE END %s -> %s\n", mono_method_full_name (cfg->method, TRUE), mono_method_full_name (cmethod, TRUE));
 
@@ -6431,8 +6428,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	/* serialization and xdomain stuff may need access to private fields and methods */
 	dont_verify = FALSE;
  	dont_verify |= method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE; /* bug #77896 */
-	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP;
-	dont_verify |= method->wrapper_type == MONO_WRAPPER_COMINTEROP_INVOKE;
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
@@ -7061,11 +7056,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			emit_set_deopt_il_offset (cfg, GPTRDIFF_TO_INT (ip - cfg->cil_start));
 		} else {
 			if ((tblock = cfg->cil_offset_to_bb [ip - cfg->cil_start]) && (tblock != cfg->cbb)) {
-				link_bblock (cfg, cfg->cbb, tblock);
 				if (sp != stack_start) {
+					link_bblock (cfg, cfg->cbb, tblock);
 					handle_stack_args (cfg, stack_start, GPTRDIFF_TO_INT (sp - stack_start));
 					sp = stack_start;
 					CHECK_UNVERIFIABLE (cfg);
+				} else {
+					if (!(cfg->cbb->last_ins && cfg->cbb->last_ins->opcode == OP_NOT_REACHED))
+						link_bblock (cfg, cfg->cbb, tblock);
 				}
 				cfg->cbb->next_bb = tblock;
 				cfg->cbb = tblock;
@@ -7541,7 +7539,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				method->dynamic case; for other wrapper types assume the code knows
 				what its doing and added its own GC transitions */
 
-				gboolean skip_gc_trans = fsig->suppress_gc_transition;
+				gboolean skip_gc_trans = mono_method_signature_has_ext_callconv (fsig, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION);
 				if (!skip_gc_trans) {
 #if 0
 					fprintf (stderr, "generating wrapper for calli in method %s with wrapper type %s\n", method->name, mono_wrapper_type_to_str (method->wrapper_type));
@@ -10189,7 +10187,6 @@ calli_end:
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 					if (sp [0]->opcode == OP_LDADDR && m_class_is_simd_type (klass) && cfg->opt & MONO_OPT_SIMD) {
 						ins = mono_emit_simd_field_load (cfg, field, sp [0]);
 						if (ins) {
@@ -10197,7 +10194,6 @@ calli_end:
 							goto field_access_end;
 						}
 					}
-#endif
 
 					MonoInst *field_add_inst = sp [0];
 					if (mini_is_gsharedvt_klass (klass)) {
@@ -11172,6 +11168,13 @@ field_access_end:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
 			MonoJitICallInfo * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
+
+#ifndef MONO_ARCH_HAVE_SWIFTCALL
+			if (mono_method_signature_has_ext_callconv (method->signature, MONO_EXT_CALLCONV_SWIFTCALL)) {
+				// Swift calling convention is not supported on this platform.
+				emit_not_supported_failure (cfg);
+			}
+#endif
 
 			CHECK_STACK (jit_icall_info->sig->param_count);
 			sp -= jit_icall_info->sig->param_count;
@@ -13105,9 +13108,7 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 	stacktypes [(int)'i'] = STACK_PTR;
 	stacktypes [(int)'l'] = STACK_I8;
 	stacktypes [(int)'f'] = STACK_R8;
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	stacktypes [(int)'x'] = STACK_VTYPE;
-#endif
 
 #if SIZEOF_REGISTER == 4
 	/* Create MonoInsts for longs */

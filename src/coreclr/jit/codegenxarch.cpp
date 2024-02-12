@@ -1070,7 +1070,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         // all have RMW semantics if VEX support is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW, INS_OPTS_NONE);
 
         genProduceReg(treeNode);
         return;
@@ -1479,6 +1479,13 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_test, reg, reg, genActualType(op));
     inst_JMP(EJ_jne, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -7494,7 +7501,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
         // is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
     }
 
     genProduceReg(treeNode);
@@ -7606,7 +7613,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // is not available
 
     bool isRMW = !compiler->canUseVexEncoding();
-    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW);
+    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
 
     // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
     // will interpret ULONG value as LONG.  Hence we need to adjust the
@@ -8127,7 +8134,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             regNumber targetReg = treeNode->GetRegNum();
             bool      isRMW     = !compiler->canUseVexEncoding();
 
-            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW);
+            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW, INS_OPTS_NONE);
             break;
         }
 

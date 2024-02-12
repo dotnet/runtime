@@ -1862,9 +1862,19 @@ FCIMPLEND
 //*************************************************************************************************
 //*************************************************************************************************
 //*************************************************************************************************
-extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::TypeHandle pType, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE ReflectionSerialization_GetCreateUninitializedObjectInfo(
+    QCall::TypeHandle pType,
+    PCODE* ppfnAllocator,
+    void** pvAllocatorFirstArg)
 {
-    QCALL_CONTRACT;
+    CONTRACTL{
+        QCALL_CHECK;
+        PRECONDITION(CheckPointer(ppfnAllocator));
+        PRECONDITION(CheckPointer(pvAllocatorFirstArg));
+        PRECONDITION(*ppfnAllocator == NULL);
+        PRECONDITION(*pvAllocatorFirstArg == NULL);
+    }
+    CONTRACTL_END;
 
     BEGIN_QCALL;
 
@@ -1880,14 +1890,19 @@ extern "C" void QCALLTYPE ReflectionSerialization_GetUninitializedObject(QCall::
         COMPlusThrow(kNotSupportedException, W("NotSupported_ManagedActivation"));
 #endif // FEATURE_COMINTEROP
 
-    // If it is a nullable, return the underlying type instead.
+    // If it is a nullable, return the allocator for the underlying type instead.
     if (pMT->IsNullable())
         pMT = pMT->GetInstantiation()[0].GetMethodTable();
 
+    bool fHasSideEffectsUnused;
+    *ppfnAllocator = CEEJitInfo::getHelperFtnStatic(CEEInfo::getNewHelperStatic(pMT, &fHasSideEffectsUnused));
+    *pvAllocatorFirstArg = pMT;
+    
+    pMT->EnsureInstanceActive();
+
+    if (pMT->HasPreciseInitCctors())
     {
-        GCX_COOP();
-        // Allocation will invoke any precise static cctors as needed.
-        retObject.Set(pMT->Allocate());
+        pMT->CheckRunClassInitAsIfConstructingThrowing();
     }
 
     END_QCALL;

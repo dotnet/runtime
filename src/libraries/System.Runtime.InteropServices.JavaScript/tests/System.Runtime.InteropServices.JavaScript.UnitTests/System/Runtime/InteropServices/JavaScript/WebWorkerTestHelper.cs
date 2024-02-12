@@ -230,6 +230,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
+        public void AssertBlockingWait(Exception? exception)
+        {
+            switch (Type)
+            {
+                case ExecutorType.Main:
+                case ExecutorType.JSWebWorker:
+                    Assert.NotNull(exception);
+                    Assert.IsType<PlatformNotSupportedException>(exception);
+                    break;
+                case ExecutorType.NewThread:
+                case ExecutorType.ThreadPool:
+                    Assert.Null(exception);
+                    break;
+            }
+        }
+
         public void AssertInteropThread()
         {
             switch (Type)
@@ -330,7 +346,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 catch (Exception ex)
                 {
-                    tcs.TrySetException(ex);
+                    if(ex is AggregateException agg)
+                    {
+                        tcs.TrySetException(agg.InnerException);
+                    }
+                    else
+                    {
+                        tcs.TrySetException(ex);
+                    }
                 }
                 finally
                 {
@@ -338,6 +361,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
             });
             thread.Start();
+            tcs.Task.ContinueWith((t) => { thread.Join(); }, cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
             return tcs.Task;
         }
 

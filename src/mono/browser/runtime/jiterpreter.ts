@@ -884,9 +884,8 @@ function generate_wasm(
         //  independently jitting traces will not stomp on each other and all threads
         //  have a globally consistent view of which function pointer maps to each trace.
         rejected = false;
-        mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
-        let idx : number;
+        let idx: number;
         if (presetFunctionPointer) {
             const fnTable = getWasmFunctionTable();
             fnTable.set(presetFunctionPointer, fn);

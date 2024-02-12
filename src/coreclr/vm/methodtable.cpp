@@ -414,29 +414,6 @@ void MethodTable::SetClassInitError()
 }
 
 //==========================================================================================
-// mark the class as having been restored.
-void MethodTable::SetIsRestored()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-    PRECONDITION(!IsFullyLoaded());
-
-    InterlockedAnd((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, ~MethodTableAuxiliaryData::enum_flag_Unrestored);
-
-#ifndef DACCESS_COMPILE
-    if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
-    {
-        ETW::MethodLog::MethodTableRestored(this);
-    }
-#endif
-}
-
-//==========================================================================================
 // mark as COM object type (System.__ComObject and types deriving from it)
 void MethodTable::SetComObjectType()
 {
@@ -496,13 +473,6 @@ WORD MethodTable::GetNumMethods()
 }
 
 //==========================================================================================
-PTR_BaseDomain MethodTable::GetDomain()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
-}
-
-//==========================================================================================
 BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -515,7 +485,7 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
     if (rid != pMT->GetTypeDefRid())
         return FALSE;
 
-    // Types without RIDs are unrelated to each other. This case is taken for arrays. 
+    // Types without RIDs are unrelated to each other. This case is taken for arrays.
     if (rid == 0)
         return FALSE;
 
@@ -711,14 +681,14 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
 
     if (hasGenericStatics)
         prependedAllocationSpace = prependedAllocationSpace + sizeof(GenericsStaticsInfo);
-    
+
     cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
     if (cbAuxiliaryData.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
 
     BYTE* pAuxiliaryDataRegion = (BYTE *)
         pamTracker->Track(pAllocator->GetHighFrequencyHeap()->AllocMem(cbAuxiliaryData));
-    
+
     MethodTableAuxiliaryData * pMTAuxiliaryData;
     pMTAuxiliaryData = (MethodTableAuxiliaryData *)(pAuxiliaryDataRegion + prependedAllocationSpace);
 
@@ -983,7 +953,6 @@ BOOL MethodTable::FindDynamicallyAddedInterface(MethodTable *pInterface)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE(IsRestored());
     _ASSERTE(HasDynamicInterfaceMap());     // This should never be called on for a type that is not an extensible RCW.
 
     unsigned cDynInterfaces = GetNumDynamicallyAddedInterfaces();
@@ -1006,7 +975,6 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(IsRestored());
         PRECONDITION(HasDynamicInterfaceMap());    // This should never be called on for a type that is not an extensible RCW.
     }
     CONTRACTL_END;
@@ -1334,7 +1302,6 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->IsInterface());
-        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1350,7 +1317,7 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         if (CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
             return TRUE;
 
-        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting())
+        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
             return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
         InterfaceMapIterator it = IterateInterfaceMap();
@@ -1375,7 +1342,6 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         PRECONDITION(CheckPointer(pTargetMT));
         PRECONDITION(pTargetMT->HasVariance());
         PRECONDITION(pTargetMT->IsInterface() || pTargetMT->IsDelegate());
-        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1387,7 +1353,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
 
     // Shortcut for generic approx type scenario
     if (pMTInterfaceMapOwner != NULL &&
-        !pMTInterfaceMapOwner->ContainsGenericVariables() &&
+        !pMTInterfaceMapOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
         IsSpecialMarkerTypeForGenericCasting() &&
         GetTypeDefRid() == pTargetMT->GetTypeDefRid() &&
         GetModule() == pTargetMT->GetModule() &&
@@ -1414,7 +1380,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
         for (DWORD i = 0; i < inst.GetNumArgs(); i++)
         {
             TypeHandle thArg = inst[i];
-            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->ContainsGenericVariables())
+            if (IsSpecialMarkerTypeForGenericCasting() && pMTInterfaceMapOwner && !pMTInterfaceMapOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
             {
                 thArg = pMTInterfaceMapOwner;
             }
@@ -1517,7 +1483,6 @@ BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(IsRestored());
     }
     CONTRACTL_END
 
@@ -1874,7 +1839,7 @@ NOINLINE BOOL MethodTable::ImplementsInterface(MethodTable *pInterface)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
         return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
     return ImplementsInterfaceInline(pInterface);
@@ -1891,7 +1856,7 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
     }
     CONTRACTL_END;
 
-    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
         return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
     // look for exact match first (optimize for success)
@@ -4851,35 +4816,6 @@ OBJECTREF MethodTable::GetManagedClassObject()
 #endif //!DACCESS_COMPILE
 
 //==========================================================================================
-// This needs to stay consistent with AllocateNewMT() and MethodTable::Save()
-//
-// <TODO> protect this via some asserts as we've had one hard-to-track-down
-// bug already </TODO>
-//
-void MethodTable::GetSavedExtent(TADDR *pStart, TADDR *pEnd)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    TADDR start;
-
-    if (ContainsPointers())
-        start = dac_cast<TADDR>(this) - CGCDesc::GetCGCDescFromMT(this)->GetSize();
-    else
-        start = dac_cast<TADDR>(this);
-
-    TADDR end = dac_cast<TADDR>(this) + GetEndOffsetOfOptionalMembers();
-
-    _ASSERTE(start && end && (start < end));
-    *pStart = start;
-    *pEnd = end;
-}
-
-//==========================================================================================
 void MethodTable::CheckRestore()
 {
     CONTRACTL
@@ -5122,7 +5058,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     // First ensure that we're loaded to just below CLASS_DEPENDENCIES_LOADED
     ClassLoader::EnsureLoaded(this, (ClassLoadLevel) (level-1));
 
-    CONSISTENCY_CHECK(IsRestored());
     CONSISTENCY_CHECK(!HasApproxParent());
 
     if ((level == CLASS_LOADED) && !IsSharedByGenericInstantiations())
@@ -5613,13 +5548,10 @@ CorElementType MethodTable::GetInternalCorElementType()
     // DAC may be targeting a dump; dumps do not guarantee you can retrieve the EEClass from
     // the MethodTable so this is not expected to work in a DAC build.
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    if (IsRestored())
+    PTR_EEClass pClass = GetClass();
+    if (ret != pClass->GetInternalCorElementType())
     {
-        PTR_EEClass pClass = GetClass();
-        if (ret != pClass->GetInternalCorElementType())
-        {
-            _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
-        }
+        _ASSERTE(!"Mismatched results in MethodTable::GetInternalCorElementType");
     }
 #endif // defined(_DEBUG) && !defined(DACCESS_COMPILE)
     return ret;
@@ -6620,7 +6552,7 @@ UINT32 MethodTable::GetTypeID()
 
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
-    return GetDomain()->GetTypeID(pMT);
+    return AppDomain::GetCurrentDomain()->GetTypeID(pMT);
 }
 
 //==========================================================================================
@@ -6635,7 +6567,7 @@ UINT32 MethodTable::LookupTypeID()
     CONTRACTL_END;
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
-    return GetDomain()->LookupTypeID(pMT);
+    return AppDomain::GetCurrentDomain()->LookupTypeID(pMT);
 }
 
 //==========================================================================================
@@ -7198,8 +7130,6 @@ MethodTable * MethodTable::GetMethodTableMatchingParentClass(MethodTable * pWhic
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored());
-        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -7254,8 +7184,6 @@ Instantiation MethodTable::GetInstantiationOfParentClass(MethodTable *pWhichPare
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pWhichParent));
-        PRECONDITION(IsRestored());
-        PRECONDITION(pWhichParent->IsRestored());
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -9363,12 +9291,13 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
         GC_TRIGGERS;
         THROWS;
         PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
+        PRECONDITION(CheckPointer(pMTOwner));
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
-    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->ContainsGenericVariables())
+    if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
     {
         TypeHandle ownerAsInst[MaxGenericParametersForSpecialMarkerType];
         for (DWORD i = 0; i < MaxGenericParametersForSpecialMarkerType; i++)
