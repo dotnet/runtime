@@ -1965,7 +1965,7 @@ private:
     int          BuildAddrUses(GenTree* addr, regMaskOnlyOne candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
     RefPosition* BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates = RBM_NONE, int multiRegIdx = 0);
-    void         BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates = RBM_NONE);
+    void BuildDefs(GenTree* tree, int dstCount, regMaskMixed dstCandidates = RBM_NONE);
     void         BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskMixed killMask);
 
     int BuildReturn(GenTree* tree);

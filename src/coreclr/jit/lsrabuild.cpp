@@ -3018,10 +3018,8 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates, i
 // Notes:
 //    Adds the RefInfo for the definitions to the defList.
 //
-void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates)
+void LinearScan::BuildDefs(GenTree* tree, int dstCount, regMaskMixed dstCandidates)
 {
-    assert(compiler->IsOnlyOneRegMask(dstCandidates));
-
     bool fixedReg = false;
     if ((dstCount > 1) && (dstCandidates != RBM_NONE) && ((int)genCountBits(dstCandidates) == dstCount))
     {
