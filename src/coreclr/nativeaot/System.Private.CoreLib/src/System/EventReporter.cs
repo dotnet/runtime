@@ -88,7 +88,7 @@ namespace System
             //
             // An event entry comprises of string to be written and event header information.
             // The total permissible length of the string and event header is 32K.
-            const int MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA = 0x7C62; // decimal 31842
+            const int MAX_SIZE_EVENTLOG_ENTRY_STRING = 0x7C62; // decimal 31842
 
             // Continue to append to the buffer until we are full
             if (!_bufferFull)
@@ -96,7 +96,7 @@ namespace System
                 _description.AppendLine(s);
 
                 // Truncate the buffer if we have exceeded the limit based upon the OS we are on
-                if (_description.Length > MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA)
+                if (_description.Length > MAX_SIZE_EVENTLOG_ENTRY_STRING)
                 {
                     // Load the truncation message
                     string truncate = "\nThe remainder of the message was truncated.\n";
@@ -104,7 +104,7 @@ namespace System
                     int truncCount = truncate.Length;
 
                     // Go back "truncCount" characters from the end of the string.
-                    int ext = MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA - truncCount;
+                    int ext = MAX_SIZE_EVENTLOG_ENTRY_STRING - truncCount;
 
                     // Now look for a "\n" from the last position we got
                     for (; ext > 0 && _description[ext] != '\n'; ext--) ;

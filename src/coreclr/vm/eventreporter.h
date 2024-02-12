@@ -15,14 +15,11 @@
 #include "contract.h"
 #include "sstring.h"
 
-// Maximum size for a string in event log entry
-#define MAX_SIZE_EVENTLOG_ENTRY_STRING 0x8000 // decimal 32768
-
 // The (approx.) maximum size that EventLog appears to allow.
 //
 // An event entry comprises of string to be written and event header information.
 // The total permissible length of the string and event header is 32K.
-#define MAX_SIZE_EVENTLOG_ENTRY_STRING_WINVISTA 0x7C62 // decimal 31842
+#define MAX_SIZE_EVENTLOG_ENTRY_STRING 0x7C62 // decimal 31842
 
 class EventReporter
 {
