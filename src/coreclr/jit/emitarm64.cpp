@@ -22890,21 +22890,6 @@ void emitter::emitDispLowPredicateRegPair(regNumber reg, insOpts opt)
 }
 
 //------------------------------------------------------------------------
-// emitDispVectorRegPair: Display a pair of vector registers
-//
-void emitter::emitDispVectorRegPair(regNumber reg, insOpts opt)
-{
-    assert(isLowVectorRegister(reg));
-
-    printf("{ ");
-    const unsigned baseRegNum = ((unsigned)reg) - REG_PREDICATE_FIRST;
-    const unsigned regNum     = (baseRegNum * 2) + REG_PREDICATE_FIRST;
-    emitDispVectorReg((regNumber)regNum, opt, true);
-    emitDispVectorReg((regNumber)(regNum + 1), opt, false);
-    printf(" }, ");
-}
-
-//------------------------------------------------------------------------
 // emitDispVectorLengthSpecifier: Display the vector length specifier
 //
 void emitter::emitDispVectorLengthSpecifier(instrDesc* id)
@@ -25058,15 +25043,23 @@ void emitter::emitDispInsHelp(
 
         // <Zd>.H, {<Zn1>.S-<Zn2>.S }
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
+        {
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_H, true);
-            emitDispVectorRegPair(id->idReg2(), INS_OPTS_SCALABLE_S);
+            const unsigned  baseRegNum = id->idReg2() - REG_FP_FIRST;
+            const regNumber regNum     = (regNumber)((baseRegNum * 2) + REG_FP_FIRST);
+            emitDispSveConsecutiveRegList(regNum, 2, INS_OPTS_SCALABLE_S, false);
             break;
+        }
 
         // <Zd>.B, {<Zn1>.H-<Zn2>.H }
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
+        {
             emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_B, true);
-            emitDispVectorRegPair(id->idReg2(), INS_OPTS_SCALABLE_H);
+            const unsigned  baseRegNum = id->idReg2() - REG_FP_FIRST;
+            const regNumber regNum     = (regNumber)((baseRegNum * 2) + REG_FP_FIRST);
+            emitDispSveConsecutiveRegList(regNum, 2, INS_OPTS_SCALABLE_H, false);
             break;
+        }
 
         // <Zd>.<T>, <Zn>.<Tb>
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
