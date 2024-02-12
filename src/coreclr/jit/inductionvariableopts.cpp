@@ -804,10 +804,6 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
     }
 }
 
-unsigned buckets[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0 };
-static Histogram s_widening(buckets);
-static DumpOnShutdown sd("Num widenings", &s_widening);
-
 //------------------------------------------------------------------------
 // optCanSinkWidenedIV: Check to see if we are able to sink a store to the old
 // local into the exits of a loop if we decide to widen.
@@ -1163,7 +1159,6 @@ PhaseStatus Compiler::optInductionVariables()
     }
 
 #ifdef TARGET_64BIT
-    unsigned numWidenings = 0;
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Widening primary induction variables:\n");
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
@@ -1269,11 +1264,8 @@ PhaseStatus Compiler::optInductionVariables()
             });
 
             changed |= optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
-            numWidenings++;
         }
     }
-
-    s_widening.record(numWidenings);
 #endif
 
     fgInvalidateDfsTree();
