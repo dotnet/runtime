@@ -438,9 +438,9 @@
       <Uri>https://github.com/NuGet/NuGet.Client</Uri>
       <Sha>8fef55f5a55a3b4f2c96cd1a9b5ddc51d4b927f8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-preview.2.24103.2">
+    <Dependency Name="Microsoft.Dotnet.Sdk.Internal" Version="9.0.100-preview.2.24112.1">
       <Uri>https://github.com/dotnet/installer</Uri>
-      <Sha>3210d5ad3b47b6f2bbf029fb03eb1f73b87ade25</Sha>
+      <Sha>ab44b49a395ac6a524628cdd8c5d99614248c584</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
