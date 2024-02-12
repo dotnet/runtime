@@ -3,8 +3,7 @@
 
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.DotNet.Cli.Build;
+
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.CoreSetup.Test.HostActivation;
@@ -225,15 +224,12 @@ namespace HostActivation.Tests
         public void InstallLocationFile_MissingFile()
         {
             var app = sharedTestState.App.Copy();
-            string testArtifactsPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "missingInstallLocation"));
-            using (new TestArtifact(testArtifactsPath))
+            using (var testArtifact = TestArtifact.Create("missingInstallLocation"))
             using (var testOnlyProductBehavior = TestOnlyProductBehavior.Enable(app.AppExe))
             {
-                Directory.CreateDirectory(testArtifactsPath);
-
-                string installLocationDirectory = Path.Combine(testArtifactsPath, "installLocationOverride");
+                string installLocationDirectory = Path.Combine(testArtifact.Location, "installLocationOverride");
                 Directory.CreateDirectory(installLocationDirectory);
-                string defaultInstallLocation = Path.Combine(testArtifactsPath, "defaultInstallLocation");
+                string defaultInstallLocation = Path.Combine(testArtifact.Location, "defaultInstallLocation");
 
                 Command.Create(app.AppExe)
                     .CaptureStdErr()
@@ -252,7 +248,7 @@ namespace HostActivation.Tests
         [Fact]
         public void RegisteredInstallLocation_DotNetInfo_ListOtherArchitectures()
         {
-            using (var testArtifact = new TestArtifact(SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "listOtherArchs"))))
+            using (var testArtifact = TestArtifact.Create("listOtherArchs"))
             {
                 var dotnet = new DotNetBuilder(testArtifact.Location, TestContext.BuiltDotNet.BinPath, "exe").Build();
                 using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
