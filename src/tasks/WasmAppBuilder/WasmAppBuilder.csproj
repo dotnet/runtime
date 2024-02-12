@@ -22,6 +22,7 @@
     <Compile Include="..\Common\TempFileName.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonData.cs" />
     <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonBuilderHelper.cs" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
