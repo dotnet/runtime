@@ -40,6 +40,7 @@
     <Compile Include="Metadata\LargeTablesAndHeapsTests.cs" />
     <Compile Include="Metadata\TypeNameParserHelpersTests.cs" />
     <Compile Include="Metadata\TypeNameParserTests.cs" />
+    <Compile Include="Metadata\TypeNameParserSamples.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyDefinitionTests.cs" />
     <Compile Include="Metadata\TypeSystem\AssemblyReferenceTests.cs" />
     <Compile Include="Metadata\TypeSystem\ClassLayoutRow.cs" />
