@@ -48,7 +48,6 @@ c_runtime/strncpy/test1/paltest_strncpy_test1
 c_runtime/strpbrk/test1/paltest_strpbrk_test1
 c_runtime/strrchr/test1/paltest_strrchr_test1
 c_runtime/strstr/test1/paltest_strstr_test1
-c_runtime/time/test1/paltest_time_test1
 c_runtime/tolower/test1/paltest_tolower_test1
 c_runtime/toupper/test1/paltest_toupper_test1
 c_runtime/towlower/test1/paltest_towlower_test1

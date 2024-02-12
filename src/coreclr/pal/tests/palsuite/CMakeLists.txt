@@ -113,7 +113,6 @@ add_executable_clr(paltests
   c_runtime/strpbrk/test1/test1.cpp
   c_runtime/strrchr/test1/test1.cpp
   c_runtime/strstr/test1/test1.cpp
-  c_runtime/time/test1/test1.cpp
   c_runtime/tolower/test1/test1.cpp
   c_runtime/toupper/test1/test1.cpp
   c_runtime/towlower/test1/test1.cpp

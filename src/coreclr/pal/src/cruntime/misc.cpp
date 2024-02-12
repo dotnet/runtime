@@ -133,34 +133,6 @@ extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stderr()
     return stderr;
 }
 
-/*++
-Function:
-
-   time
-
-See MSDN for more details.
---*/
-PAL_time_t
-__cdecl
-PAL_time(PAL_time_t *tloc)
-{
-    time_t result;
-
-    PERF_ENTRY(time);
-    ENTRY( "time( tloc=%p )\n",tloc );
-
-    time_t t;
-    result = time(&t);
-    if (tloc != NULL)
-    {
-        *tloc = t;
-    }
-
-    LOGEXIT( "time returning %#lx\n",result );
-    PERF_EXIT(time);
-    return result;
-}
-
 PALIMPORT
 void __cdecl
 PAL_qsort(void *base, size_t nmemb, size_t size,
