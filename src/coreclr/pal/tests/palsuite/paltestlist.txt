@@ -9,8 +9,6 @@ c_runtime/fflush/test1/paltest_fflush_test1
 c_runtime/fgets/test1/paltest_fgets_test1
 c_runtime/fgets/test2/paltest_fgets_test2
 c_runtime/fgets/test3/paltest_fgets_test3
-c_runtime/floor/test1/paltest_floor_test1
-c_runtime/floorf/test1/paltest_floorf_test1
 c_runtime/fopen/test1/paltest_fopen_test1
 c_runtime/fopen/test2/paltest_fopen_test2
 c_runtime/fopen/test3/paltest_fopen_test3
@@ -33,15 +31,12 @@ c_runtime/iswspace/test1/paltest_iswspace_test1
 c_runtime/iswupper/test1/paltest_iswupper_test1
 c_runtime/isxdigit/test1/paltest_isxdigit_test1
 c_runtime/llabs/test1/paltest_llabs_test1
-c_runtime/log/test1/paltest_log_test1
 c_runtime/malloc/test1/paltest_malloc_test1
 c_runtime/malloc/test2/paltest_malloc_test2
 c_runtime/memchr/test1/paltest_memchr_test1
 c_runtime/memcmp/test1/paltest_memcmp_test1
 c_runtime/memmove/test1/paltest_memmove_test1
 c_runtime/memset/test1/paltest_memset_test1
-c_runtime/modf/test1/paltest_modf_test1
-c_runtime/modff/test1/paltest_modff_test1
 c_runtime/qsort/test1/paltest_qsort_test1
 c_runtime/qsort/test2/paltest_qsort_test2
 c_runtime/rand_srand/test1/paltest_rand_srand_test1
