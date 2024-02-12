@@ -140,7 +140,7 @@ function bind_fn_0V(closure: BindingClosure) {
         try {
             const args = alloc_stack_frame(2);
             // call C# side
-            invoke_method_and_handle_exception(method, args);
+            invoke_sync_method(method, args);
         } finally {
             Module.stackRestore(sp);
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
@@ -163,7 +163,7 @@ function bind_fn_1V(closure: BindingClosure) {
             marshaler1(args, arg1);
 
             // call C# side
-            invoke_method_and_handle_exception(method, args);
+            invoke_sync_method(method, args);
         } finally {
             Module.stackRestore(sp);
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
@@ -187,7 +187,7 @@ function bind_fn_1R(closure: BindingClosure) {
             marshaler1(args, arg1);
 
             // call C# side
-            invoke_method_and_handle_exception(method, args);
+            invoke_sync_method(method, args);
 
             const js_result = res_converter(args);
             return js_result;
@@ -217,7 +217,7 @@ function bind_fn_1RA(closure: BindingClosure) {
             let promise = res_converter(args);
 
             // call C# side
-            invoke_method_and_handle_exception(method, args);
+            invoke_sync_method(method, args);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -248,7 +248,7 @@ function bind_fn_2R(closure: BindingClosure) {
             marshaler2(args, arg2);
 
             // call C# side
-            invoke_method_and_handle_exception(method, args);
+            invoke_sync_method(method, args);
 
             const js_result = res_converter(args);
             return js_result;
@@ -280,7 +280,7 @@ function bind_fn_2RA(closure: BindingClosure) {
             let promise = res_converter(args);
 
             // call C# side
-            invoke_method_and_handle_exception(method, args);
+            invoke_sync_method(method, args);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -322,7 +322,7 @@ function bind_fn(closure: BindingClosure) {
             }
 
             // call C# side
-            invoke_method_and_handle_exception(method, args);
+            invoke_sync_method(method, args);
             if (is_async) {
                 // in case the C# side returned synchronously
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
@@ -348,7 +348,7 @@ type BindingClosure = {
     isDisposed: boolean,
 }
 
-export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
+export function invoke_sync_method(method: MonoMethod, args: JSMarshalerArguments): void {
     assert_js_interop();
     const fail_root = mono_wasm_new_root<MonoString>();
     try {

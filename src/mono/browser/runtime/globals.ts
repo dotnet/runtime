@@ -9,7 +9,7 @@
 import gitHash from "consts:gitHash";
 
 import { RuntimeAPI } from "./types/index";
-import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions } from "./types/internal";
+import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController, EmscriptenBuildOptions, GCHandle } from "./types/internal";
 import { mono_log_error } from "./logging";
 
 // these are our public API (except internal)
@@ -55,7 +55,7 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
     loaderHelpers = globalObjects.loaderHelpers;
     exportedRuntimeAPI = globalObjects.api;
 
-    Object.assign(runtimeHelpers, {
+    const rh: Partial<RuntimeHelpers> = {
         gitHash,
         allAssetsInMemory: createPromiseController<void>(),
         dotnetReady: createPromiseController<any>(),
@@ -64,16 +64,17 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         afterPreInit: createPromiseController<void>(),
         afterPreRun: createPromiseController<void>(),
         beforeOnRuntimeInitialized: createPromiseController<void>(),
-        afterMonoStarted: createPromiseController<void>(),
+        afterMonoStarted: createPromiseController<GCHandle | undefined>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
-        mono_wasm_exit: () => {
+        nativeExit: () => {
             throw new Error("Mono shutdown");
         },
-        abort: (reason: any) => {
+        nativeAbort: (reason: any) => {
             throw reason;
-        }
-    });
+        },
+    };
+    Object.assign(runtimeHelpers, rh);
 
     Object.assign(globalObjects.module.config!, {}) as any;
     Object.assign(globalObjects.api, {

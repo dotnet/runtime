@@ -261,10 +261,6 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             await threadsReady;
         }
 
-        if (runtimeHelpers.config.interpreterPgo) {
-            await interp_pgo_load_data();
-        }
-
         if (runtimeHelpers.config.interpreterPgo)
             setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
 
@@ -272,7 +268,11 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         Module.runtimeKeepalivePush();
 
         // load runtime and apply environment settings (if necessary)
-        await start_runtime();
+        start_runtime();
+
+        if (runtimeHelpers.config.interpreterPgo) {
+            await interp_pgo_load_data();
+        }
 
         if (!ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();

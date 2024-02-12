@@ -7,7 +7,7 @@ import { GCHandle, GCHandleNull, MarshalerToCs, MarshalerToJs, MarshalerType, Mo
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { alloc_stack_frame, get_arg, set_arg_type, set_gc_handle } from "./marshal";
-import { invoke_method_and_handle_exception } from "./invoke-cs";
+import { invoke_sync_method } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
@@ -59,7 +59,7 @@ export async function call_entry_point(entry_point: MonoMethod, program_args?: s
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
         // NOTE: at the moment this is synchronous call on the same thread and therefore we could marshal (null) result synchronously
-        invoke_method_and_handle_exception(managedExports.CallEntrypoint, args);
+        invoke_sync_method(managedExports.CallEntrypoint, args);
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -83,7 +83,7 @@ export function load_satellite_assembly(dll: Uint8Array): void {
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Array);
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
-        invoke_method_and_handle_exception(managedExports.LoadSatelliteAssembly, args);
+        invoke_sync_method(managedExports.LoadSatelliteAssembly, args);
     } finally {
         Module.stackRestore(sp);
     }
@@ -100,7 +100,7 @@ export function load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): voi
         set_arg_type(arg2, MarshalerType.Array);
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
         marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
-        invoke_method_and_handle_exception(managedExports.LoadLazyAssembly, args);
+        invoke_sync_method(managedExports.LoadLazyAssembly, args);
     } finally {
         Module.stackRestore(sp);
     }
@@ -116,7 +116,7 @@ export function release_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, gc_handle);
-        invoke_method_and_handle_exception(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
+        invoke_sync_method(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
     } finally {
         Module.stackRestore(sp);
     }
@@ -144,7 +144,7 @@ export function complete_task(holder_gc_handle: GCHandle, isCanceling: boolean, 
             mono_assert(res_converter, "res_converter missing");
             res_converter(arg3, data);
         }
-        invoke_method_and_handle_exception(managedExports.CompleteTask, args);
+        invoke_sync_method(managedExports.CompleteTask, args);
     } finally {
         Module.stackRestore(sp);
     }
@@ -175,7 +175,7 @@ export function call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_j
             arg3_converter(arg4, arg3_js);
         }
 
-        invoke_method_and_handle_exception(managedExports.CallDelegate, args);
+        invoke_sync_method(managedExports.CallDelegate, args);
 
         if (res_converter) {
             const res = get_arg(args, 1);
@@ -197,7 +197,7 @@ export function get_managed_stack_trace(exception_gc_handle: GCHandle) {
         set_arg_type(arg1, MarshalerType.Exception);
         set_gc_handle(arg1, exception_gc_handle);
 
-        invoke_method_and_handle_exception(managedExports.GetManagedStackTrace, args);
+        invoke_sync_method(managedExports.GetManagedStackTrace, args);
         const res = get_arg(args, 1);
         return marshal_string_to_js(res);
     } finally {
