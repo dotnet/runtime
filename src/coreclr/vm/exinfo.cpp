@@ -332,6 +332,11 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     pThread->GetExceptionState()->m_pCurrentTracker = this;
     memcpy(&m_exContext, pExceptionContext, sizeof(CONTEXT));
     m_exContext.ContextFlags = m_exContext.ContextFlags & (CONTEXT_FULL | CONTEXT_EXCEPTION_ACTIVE);
+    if (exceptionKind == ExKind::HardwareFault)
+    {
+        // Hardware exception handling needs to start on the FaultingExceptionFrame
+        SetIP(&m_exContext, 0);
+    }
 }
 
 #if defined(TARGET_UNIX)
