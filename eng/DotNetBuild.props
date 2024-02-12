@@ -57,6 +57,9 @@
       <!-- BaseOS is an expected known rid in the graph that TargetRid is compatible with.
            It's used to add TargetRid in the graph if the parent can't be detected. -->
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
+      <!-- Pass through special build modes controlled by properties -->
+      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true</InnerBuildArgs>
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overriden above -->
       <InnerBuildArgs Condition="'$(ArcadeBuildFromSource)' == 'true'">$(InnerBuildArgs) /p:ArcadeBuildFromSource=true</InnerBuildArgs>
