@@ -2244,9 +2244,8 @@ public:
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     bool IsEmbMaskOp()
     {
-        bool result = (gtFlags & GTF_HW_EM_OP) != 0;
-        assert(!result || (gtOper == GT_HWINTRINSIC));
-        return result;
+        assert(OperIsHWIntrinsic());
+        return (gtFlags & GTF_HW_EM_OP) != 0;
     }
 
     void MakeEmbMaskOp()
