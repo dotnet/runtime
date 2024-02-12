@@ -288,4 +288,16 @@
   <data name="InvalidOperation_TokenNotPopulated" xml:space="preserve">
     <value>MetadataToken for the member is not generated until the assembly saved.</value>
   </data>
+  <data name="Argument_BadSigFormat" xml:space="preserve">
+    <value>Incorrect signature format.</value>
+  </data>
+  <data name="Argument_HasToBeArrayClass" xml:space="preserve">
+    <value>Must be an array type.</value>
+  </data>
+  <data name="NotSupported_NonReflectedType" xml:space="preserve">
+    <value>Not supported in a non-reflected type.</value>
+  </data>
+  <data name="NotSupported_SymbolMethod" xml:space="preserve">
+    <value>Not supported in an array method of a type definition that is not complete.</value>
+  </data>
 </root>
