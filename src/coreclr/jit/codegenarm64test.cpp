@@ -7460,15 +7460,15 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_ldff1w, EA_SCALABLE, REG_V2, REG_P1, REG_V3, 124,
                                 INS_OPTS_SCALABLE_D); // LDFF1W  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
 
-    //// IF_SVE_IV_3A
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1d, EA_SCALABLE, REG_V0, REG_P0, REG_V0, 5,
-    //                            INS_OPTS_SCALABLE_B); // LD1D    {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1sw, EA_SCALABLE, REG_V0, REG_P0, REG_V0, 5,
-    //                            INS_OPTS_SCALABLE_B); // LD1SW   {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ldff1d, EA_SCALABLE, REG_V0, REG_P0, REG_V0, 5,
-    //                            INS_OPTS_SCALABLE_B); // LDFF1D  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ldff1sw, EA_SCALABLE, REG_V0, REG_P0, REG_V0, 5,
-    //                            INS_OPTS_SCALABLE_B); // LDFF1SW {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
+    // IF_SVE_IV_3A
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1d, EA_SCALABLE, REG_V1, REG_P2, REG_V3, 0,
+                                INS_OPTS_SCALABLE_D); // LD1D    {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1sw, EA_SCALABLE, REG_V6, REG_P5, REG_V4, 0,
+                                INS_OPTS_SCALABLE_D); // LD1SW   {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldff1d, EA_SCALABLE, REG_V7, REG_P3, REG_V1, 248,
+                                INS_OPTS_SCALABLE_D); // LDFF1D  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ldff1sw, EA_SCALABLE, REG_V2, REG_P0, REG_V4, 124,
+                                INS_OPTS_SCALABLE_D); // LDFF1SW {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
 
     //// IF_SVE_JI_3A_A
     //theEmitter->emitIns_R_R_R_I(INS_sve_st1b, EA_SCALABLE, REG_V0, REG_P0, REG_V0, 5,
