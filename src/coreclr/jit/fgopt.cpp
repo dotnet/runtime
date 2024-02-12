@@ -2471,23 +2471,38 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // add an unconditional block after this block to jump to the target block's fallthrough block
     //
     assert(!target->IsLast());
-    BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
+    BasicBlock* const next = fgNewBBafter(BBJ_ALWAYS, block, true, target->GetFalseTarget());
 
-    // Fix up block's flow
+    // Fix up block's flow.
+    // Assume edge likelihoods transfer over.
     //
+    FlowEdge* const targetTrueEdge  = fgGetPredForBlock(target->GetTrueTarget(), target);
+    FlowEdge* const targetFalseEdge = fgGetPredForBlock(target->GetFalseTarget(), target);
     block->SetCond(target->GetTrueTarget(), next);
-    fgAddRefPred(block->GetTrueTarget(), block);
+    fgAddRefPred(block->GetTrueTarget(), block, targetTrueEdge);
     fgRemoveRefPred(target, block);
 
-    // The new block 'next' will inherit its weight from 'block'
+    // Fix up target's flow and profile.
     //
     next->inheritWeight(block);
-    fgAddRefPred(next, block);
-    fgAddRefPred(next->GetTarget(), next);
+    fgAddRefPred(next, block, targetFalseEdge);
+    FlowEdge* const nextEdge = fgAddRefPred(next->GetTarget(), next);
+    nextEdge->setLikelihood(1.0);
 
     JITDUMP("fgOptimizeUncondBranchToSimpleCond(from " FMT_BB " to cond " FMT_BB "), created new uncond " FMT_BB "\n",
             block->bbNum, target->bbNum, next->bbNum);
     JITDUMP("   expecting opts to key off V%02u in " FMT_BB "\n", lclNum, block->bbNum);
+
+    if (target->hasProfileWeight() && block->hasProfileWeight())
+    {
+        // Remove weight from target since block now bypasses it...
+        //
+        weight_t targetWeight = target->bbWeight;
+        weight_t blockWeight  = block->bbWeight;
+        target->setBBProfileWeight(max(0, targetWeight - blockWeight));
+        JITDUMP("Decreased " FMT_BB " profile weight from " FMT_WT " to " FMT_WT "\n", target->bbNum, targetWeight,
+                target->bbWeight);
+    }
 
     return true;
 }
