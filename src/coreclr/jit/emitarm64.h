@@ -54,6 +54,7 @@ void emitDispSveExtendOpts(insOpts opt);
 void emitDispSveExtendOptsModN(insOpts opt, int n);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
+void emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm);
 void emitDispLSExtendOpts(insOpts opt);
 void emitDispReg(regNumber reg, emitAttr attr, bool addComma);
 void emitDispSveReg(regNumber reg, insOpts opt, bool addComma);
@@ -620,6 +621,9 @@ static code_t insEncodeUimm7_20_to_14(ssize_t imm);
 
 // Returns the encoding for the immediate value as 4-bits starting from 1, at bit locations '19-16'.
 static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_20_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
