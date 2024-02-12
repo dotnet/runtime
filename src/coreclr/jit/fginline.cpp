@@ -1534,7 +1534,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
                         bottomBlock->bbNum);
 
                 block->SetKindAndTarget(BBJ_ALWAYS, bottomBlock);
-                fgAddRefPred(bottomBlock, block);
+                FlowEdge* const newEdge = fgAddRefPred(bottomBlock, block);
+                newEdge->setLikelihood(1.0);
 
                 if (block == InlineeCompiler->fgLastBB)
                 {
@@ -1553,8 +1554,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         topBlock->SetNext(InlineeCompiler->fgFirstBB);
         topBlock->SetTarget(topBlock->Next());
         topBlock->SetFlags(BBF_NONE_QUIRK);
-        fgRemoveRefPred(bottomBlock, topBlock);
-        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
+        FlowEdge* const oldEdge = fgRemoveRefPred(bottomBlock, topBlock);
+        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock, oldEdge);
         InlineeCompiler->fgLastBB->SetNext(bottomBlock);
 
         //

@@ -4895,7 +4895,7 @@ namespace
             ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
-            ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
+            ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
 
             {
                 ilStubCreatorHelper.GetStubMethodDesc();

@@ -142,7 +142,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
     {
         if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallFinallyPairTail())
         {
-            res = new (this, CMK_FlowEdge) FlowEdge(bb, res);
+            res = new (this, CMK_FlowEdge) FlowEdge(bb, blk, res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
@@ -164,7 +164,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
                      filterBlk             = filterBlk->Next())
                 {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
                     assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
@@ -239,7 +239,7 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
                 for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
                      filterBlk             = filterBlk->Next())
                 {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
                     assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
@@ -297,7 +297,7 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    return JumpsToNext() && !hasAlign() && !compiler->fgInDifferentRegions(this, bbTarget);
+    return JumpsToNext() && (bbNext != compiler->fgFirstColdBlock);
 }
 
 //------------------------------------------------------------------------

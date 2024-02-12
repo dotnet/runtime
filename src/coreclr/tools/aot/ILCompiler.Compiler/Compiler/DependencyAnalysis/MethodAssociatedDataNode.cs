@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("_associatedData_").Append(nameMangler.GetMangledMethodName(_methodNode.Method));
         }
 
-        public static bool MethodHasAssociatedData(NodeFactory factory, IMethodNode methodNode)
+        public static bool MethodHasAssociatedData(IMethodNode methodNode)
         {
             // Instantiating unboxing stubs. We need to store their non-unboxing target pointer (looked up by runtime)
             ISpecialUnboxThunkNode unboxThunk = methodNode as ISpecialUnboxThunkNode;
@@ -63,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            Debug.Assert(MethodHasAssociatedData(factory, _methodNode));
+            Debug.Assert(MethodHasAssociatedData(_methodNode));
 
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialAlignment(1);
