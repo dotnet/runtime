@@ -8,17 +8,17 @@
       <Uri>https://github.com/dotnet/msquic</Uri>
       <Sha>7312355e44fd230b7aa26c7190f3870391751476</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.27">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.28">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>a9f209f82fadb1f694ae6932f92c32918e407ded</Sha>
+      <Sha>0b2571edc63476761a1db6160e34048c7d51505e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.300" Version="6.0.27">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.300" Version="6.0.28">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>a9f209f82fadb1f694ae6932f92c32918e407ded</Sha>
+      <Sha>0b2571edc63476761a1db6160e34048c7d51505e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.400" Version="6.0.27">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.400" Version="6.0.28">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>a9f209f82fadb1f694ae6932f92c32918e407ded</Sha>
+      <Sha>0b2571edc63476761a1db6160e34048c7d51505e</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0">
       <Uri>https://github.com/dotnet/wcf</Uri>
