@@ -8430,6 +8430,7 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_sve_bfcvtn:
         case INS_sve_fcvtnt:
         case INS_sve_fcvtnb:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(insOptsNone(opt));
             assert(isVectorRegister(reg1));    // ddddd
             assert(isLowVectorRegister(reg2)); // nnnn
@@ -12188,6 +12189,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
             if (opt == INS_OPTS_SCALABLE_B)
             {
+                unreached();               // TODO-SVE: Not yet supported.
                 assert(isValidUimm2(imm)); // ii
                 fmt = IF_SVE_GY_3B_D;
             }
@@ -12198,10 +12200,11 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             else
             {
+                unreached(); // TODO-SVE: Not yet supported.
                 assert(insOptsNone(opt));
                 assert(isValidUimm3(imm)); // i ii
 
-                // Simply emitDispInsHelp logic by setting insOpt
+                // Simplify emitDispInsHelp logic by setting insOpt
                 opt = INS_OPTS_SCALABLE_B;
                 fmt = IF_SVE_GY_3A;
             }
@@ -14091,6 +14094,7 @@ void emitter::emitIns_R_R_R_R_I(instruction ins,
             break;
 
         case INS_sve_psel:
+            unreached(); // TODO-SVE: Not yet supported.
             assert(insOptsScalableStandard(opt));
             assert(isPredicateRegister(reg1)); // DDDD
             assert(isPredicateRegister(reg2)); // NNNN
