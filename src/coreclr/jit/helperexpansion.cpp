@@ -94,7 +94,6 @@ GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* 
     // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
     // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
     impInlineRoot()->setMethodHasExpRuntimeLookup();
-    helperCall->SetExpRuntimeLookup();
     if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
     {
         JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
@@ -152,13 +151,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
 {
     BasicBlock* block = *pBlock;
 
-    if (!call->IsHelperCall() || !call->IsExpRuntimeLookup())
+    if (!call->IsRuntimeLookupHelperCall(this))
     {
         return false;
     }
 
-    // Clear ExpRuntimeLookup flag so we won't miss any runtime lookup that needs partial expansion
-    call->ClearExpRuntimeLookup();
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED);
 
     if (call->IsTailCall())
     {
@@ -2404,6 +2402,15 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     assert(BasicBlock::sameEHRegion(firstBb, nullcheckBb));
     assert(BasicBlock::sameEHRegion(firstBb, fallbackBb));
     assert(BasicBlock::sameEHRegion(firstBb, lastTypeCheckBb));
+
+    // call guarantees that obj is never null, we can drop the nullcheck
+    // by converting it to a BBJ_ALWAYS to typeCheckBb.
+    if ((call->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) != 0)
+    {
+        fgRemoveStmt(nullcheckBb, nullcheckBb->lastStmt());
+        nullcheckBb->SetKindAndTarget(BBJ_ALWAYS, typeChecksBbs[0]);
+        fgRemoveRefPred(lastBb, nullcheckBb);
+    }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
     if (fgCanCompactBlocks(firstBb, nullcheckBb))

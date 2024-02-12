@@ -74,8 +74,6 @@ typedef struct {
 	GHashTable *native_func_wrapper_indirect_cache; /* Indexed by MonoMethodSignature. Protected by the marshal lock */
 	GHashTable *synchronized_cache;
 	GHashTable *unbox_wrapper_cache;
-	GHashTable *cominterop_invoke_cache;
-	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
 	GHashTable *thunk_invoke_cache;
 	GHashTable *unsafe_accessor_cache;
 } MonoWrapperCaches;
