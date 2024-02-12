@@ -176,9 +176,9 @@
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.21416.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.21416.1</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
-    <MicrosoftNETWorkloadEmscriptenManifest60100Version>6.0.27</MicrosoftNETWorkloadEmscriptenManifest60100Version>
-    <MicrosoftNETWorkloadEmscriptenManifest60300Version>6.0.27</MicrosoftNETWorkloadEmscriptenManifest60300Version>
-    <MicrosoftNETWorkloadEmscriptenManifest60400Version>6.0.27</MicrosoftNETWorkloadEmscriptenManifest60400Version>
+    <MicrosoftNETWorkloadEmscriptenManifest60100Version>6.0.28</MicrosoftNETWorkloadEmscriptenManifest60100Version>
+    <MicrosoftNETWorkloadEmscriptenManifest60300Version>6.0.28</MicrosoftNETWorkloadEmscriptenManifest60300Version>
+    <MicrosoftNETWorkloadEmscriptenManifest60400Version>6.0.28</MicrosoftNETWorkloadEmscriptenManifest60400Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest60100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
