@@ -166,6 +166,19 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />
     </ItemGroup>
 
+    <Exec Command="xcodebuild -version" Condition="'$(_IsApplePlatform)' == 'true'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false' and '$(_IsApplePlatform)' == 'true'">
+      <CustomLinkerArg Condition="'$(_XcodeVersion)' &gt;= '15'" Include="-ld_classic" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_CommandProbe>command -v</_CommandProbe>
       <_CommandProbe Condition="$([MSBuild]::IsOSPlatform('Windows'))">where /Q</_CommandProbe>
