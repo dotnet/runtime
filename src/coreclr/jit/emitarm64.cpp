@@ -1605,6 +1605,42 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
+        case IF_SVE_DV_4A: // ........ix.xxxvv ..NNNN.MMMM.DDDD -- SVE broadcast predicate element
+        {
+            assert(insOptsScalableStandard(id->idInsOpt()));
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isPredicateRegister(id->idReg2())); // NNNN
+            assert(isPredicateRegister(id->idReg3())); // MMMM
+            assert(isGeneralRegister(id->idReg4()));   // vv
+            assert((REG_R12 <= id->idReg4()) && (id->idReg4() <= REG_R15));
+            const ssize_t imm = emitGetInsSC(id);
+
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm4(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm3(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidImm1(imm));
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
+
+            break;
+        }
+
         case IF_SVE_DW_2B: // ........xx...... .......iNNN.DDDD -- SVE extract mask predicate from predicate-as-counter
             assert(isValidImm1(emitGetInsSC(id))); // i
 
@@ -14054,6 +14090,40 @@ void emitter::emitIns_R_R_R_R_I(instruction ins,
             fmt = IF_SVE_GT_4A;
             break;
 
+        case INS_sve_psel:
+            assert(insOptsScalableStandard(opt));
+            assert(isPredicateRegister(reg1)); // DDDD
+            assert(isPredicateRegister(reg2)); // NNNN
+            assert(isPredicateRegister(reg3)); // MMMM
+            assert(isGeneralRegister(reg4));   // vv
+            assert((REG_R12 <= reg4) && (reg4 <= REG_R15));
+
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_B:
+                    assert(isValidUimm4(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm3(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidImm1(imm));
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
+
+            fmt = IF_SVE_DV_4A;
+            break;
+
         default:
             unreached();
             break;
@@ -17039,6 +17109,53 @@ void emitter::emitIns_Call(EmitCallType          callType,
             assert(!"Invalid size for vector register");
     }
     return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the field 'i1:tszh:tszl' at bit locations '23-22:20-18'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_tszh_tszl_and_imm(const insOpts opt, const ssize_t imm)
+{
+    code_t encoding = 0;
+
+    switch (opt)
+    {
+        case INS_OPTS_SCALABLE_B:
+            assert(isValidUimm4(imm));
+            encoding = 0x040000; // set the bit at location 18
+            // encode immediate at location 23-22:20-19
+            encoding |= ((imm & 0b1100) << 22);
+            encoding |= ((imm & 0b11) << 19);
+            break;
+
+        case INS_OPTS_SCALABLE_H:
+            assert(isValidUimm3(imm));
+            encoding = 0x080000; // set the bit at location 19
+            // encode immediate at location 23-22:20
+            encoding |= ((imm & 0b110) << 22);
+            encoding |= ((imm & 1) << 20);
+            break;
+
+        case INS_OPTS_SCALABLE_S:
+            assert(isValidUimm2(imm));
+            encoding = 0x100000;     // set the bit at location 20
+            encoding |= (imm << 22); // encode immediate at location 23:22
+            break;
+
+        case INS_OPTS_SCALABLE_D:
+            assert(isValidImm1(imm));
+            encoding = 0x400000;     // set the bit at location 22
+            encoding |= (imm << 23); // encode immediate at location 23
+            break;
+
+        default:
+            assert(!"Invalid size for vector register");
+            break;
+    }
+
+    return encoding;
 }
 
 /*****************************************************************************
@@ -21676,6 +21793,16 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_DV_4A: // ........ix.xxxvv ..NNNN.MMMM.DDDD -- SVE broadcast predicate element
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1());                                      // DDDD
+            code |= insEncodeReg_P_13_to_10(id->idReg2());                                    // NNNN
+            code |= insEncodeReg_P_8_to_5(id->idReg3());                                      // MMMM
+            code |= insEncodeReg_R_17_to_16(id->idReg4());                                    // vv
+            code |= insEncodeSveElemsize_tszh_tszl_and_imm(id->idInsOpt(), emitGetInsSC(id)); // ix xx
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_IH_3A:   // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
                              // immediate)
         case IF_SVE_IH_3A_A: // ............iiii ...gggnnnnnttttt -- SVE contiguous load (quadwords, scalar plus
@@ -24964,6 +25091,17 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), true); // DDDD
             emitDispReg(id->idReg2(), id->idOpSize(), true);                                    // nnnnn
             emitDispReg(id->idReg3(), id->idOpSize(), false);                                   // mmmmm
+            break;
+
+        // <Pd>, <Pn>, <Pm>.<T>[<Wv>, <imm>]
+        case IF_SVE_DV_4A: // ........ix.xxxvv ..NNNN.MMMM.DDDD -- SVE broadcast predicate element
+            emitDispPredicateReg(id->idReg1(), PREDICATE_NONE, id->idInsOpt(), true);   // DDDD
+            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);   // NNNN
+            emitDispPredicateReg(id->idReg3(), PREDICATE_SIZED, id->idInsOpt(), false); // MMMM
+            printf("[");
+            emitDispReg(id->idReg4(), EA_4BYTE, true); // vv
+            emitDispImm(emitGetInsSC(id), false);      // ix xx
+            printf("]");
             break;
 
         // <Pd>.<T>, <PNn>[<imm>]
@@ -28378,6 +28516,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_1C;
             break;
 
+        case IF_SVE_DV_4A:   // ........ix.xxxvv ..NNNN.MMMM.DDDD -- SVE broadcast predicate element
         case IF_SVE_FZ_2A:   // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
         case IF_SVE_GY_3A:   // ...........iimmm ....i.nnnnnddddd -- SVE BFloat16 floating-point dot product (indexed)
         case IF_SVE_GY_3B_D: // ...........iimmm ......nnnnnddddd -- SVE BFloat16 floating-point dot product (indexed)
