@@ -49,13 +49,6 @@ extern "C"
 }
 
 namespace CorUnix{
-
-    void *
-    InternalRealloc(
-        void *pvMemblock,
-        size_t szSize
-        );
-
     void *
     InternalMalloc(
         size_t szSize

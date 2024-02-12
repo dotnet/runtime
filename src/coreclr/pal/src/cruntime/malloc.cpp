@@ -30,46 +30,6 @@ SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 using namespace CorUnix;
 
-void *
-__cdecl
-PAL_realloc(
-    void* pvMemblock,
-    size_t szSize
-    )
-{
-    return InternalRealloc(pvMemblock, szSize);
-}
-
-void *
-CorUnix::InternalRealloc(
-    void* pvMemblock,
-    size_t szSize
-    )
-{
-    void *pvMem;
-
-    PERF_ENTRY(InternalRealloc);
-    ENTRY("realloc (memblock:%p size=%d)\n", pvMemblock, szSize);
-
-    if (szSize == 0)
-    {
-        // If pvMemblock is NULL, there's no reason to call free.
-        if (pvMemblock != NULL)
-        {
-            free(pvMemblock);
-        }
-        pvMem = NULL;
-    }
-    else
-    {
-        pvMem = realloc(pvMemblock, szSize);
-    }
-
-    LOGEXIT("realloc returns void * %p\n", pvMem);
-    PERF_EXIT(InternalRealloc);
-    return pvMem;
-}
-
 void
 __cdecl
 PAL_free(

@@ -108,7 +108,7 @@ CSimpleHandleManager::AllocateHandle(
         }
 
         /* grow handle table */
-        rghteTempTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(InternalRealloc(
+        rghteTempTable = reinterpret_cast<HANDLE_TABLE_ENTRY*>(realloc(
             m_rghteHandleTable,
             (m_dwTableSize + m_dwTableGrowthRate) * sizeof(HANDLE_TABLE_ENTRY)));
 
