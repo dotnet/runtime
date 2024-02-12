@@ -2182,7 +2182,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_GG_3A: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
                            // element size
-            assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
@@ -2190,19 +2189,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             break;
 
-        case IF_SVE_GH_3B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
-                           // element size
-            assert(insOptsScalable(id->idInsOpt()));
-            assert(isVectorRegister(id->idReg1())); // ddddd
-            assert(isVectorRegister(id->idReg2())); // nnnnn
-            assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidUimm2(emitGetInsSC(id))); // ii
-            assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
-            break;
-
+        case IF_SVE_GH_3B:   // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                             // element size
         case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
                              // element size
-            assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
@@ -2212,11 +2202,11 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
                            // element size
-            assert(insOptsScalable(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            assert(isValidUimm2(emitGetInsSC(id))); // ii
+            assert(isValidUimm3(emitGetInsSC(id))); // ii
+                                                    // i
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_H);
             break;
 
@@ -2226,7 +2216,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
             assert(isVectorRegister(id->idReg3())); // mmmmm
-            // TODO: Verify 'i'.
+            assert(isValidImm1(emitGetInsSC(id)));  // i
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_B);
             break;
 
@@ -11112,14 +11102,15 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
  *  Add an instruction referencing three registers and a constant.
  */
 
-void emitter::emitIns_R_R_R_I(instruction ins,
-                              emitAttr    attr,
-                              regNumber   reg1,
-                              regNumber   reg2,
-                              regNumber   reg3,
-                              ssize_t     imm,
-                              insOpts     opt /* = INS_OPTS_NONE */,
-                              emitAttr    attrReg2 /* = EA_UNKNOWN */)
+void emitter::emitIns_R_R_R_I(instruction     ins,
+                              emitAttr        attr,
+                              regNumber       reg1,
+                              regNumber       reg2,
+                              regNumber       reg3,
+                              ssize_t         imm,
+                              insOpts         opt /* = INS_OPTS_NONE */,
+                              emitAttr        attrReg2 /* = EA_UNKNOWN */,
+                              insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
@@ -12311,18 +12302,50 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             break;
 
         case INS_sve_luti2:
-            assert(insOptsScalable(opt));
+            assert(insScalableOptsNone(sopt));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
-            assert(isValidUimm2(imm));
-            fmt = IF_SVE_GG_3A;
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(isValidUimm3(imm));
+                fmt = IF_SVE_GG_3B;
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(isValidUimm2(imm));
+                fmt = IF_SVE_GG_3A;
+            }
             break;
 
         case INS_sve_luti4:
-            assert(!"not implemented");
-            // TODO: Handle other formats: IF_SVE_GH_3B_B, IF_SVE_GH_3A
-            fmt = IF_SVE_GH_3B;
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert(isVectorRegister(reg3));
+
+            if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert(isValidUimm2(imm));
+
+                if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
+                {
+                    fmt = IF_SVE_GH_3B;
+                }
+                else
+                {
+                    assert(insScalableOptsNone(sopt));
+                    fmt = IF_SVE_GH_3B_B;
+                }
+            }
+            else
+            {
+                assert(opt == INS_OPTS_SCALABLE_B);
+                assert(insScalableOptsNone(sopt));
+                assert(isValidImm1(imm));
+                fmt = IF_SVE_GH_3A;
+            }
             break;
 
         default:
@@ -18661,6 +18684,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value as 1-bit at bit locations '23'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm1_23(ssize_t imm)
+{
+    assert(isValidImm1(imm));
+    return (code_t)imm << 23;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value as 3-bits at bit locations '23-22' for high and '12' for low.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm)
+{
+    assert(isValidUimm3(imm));
+
+    code_t h = (code_t)(imm & 0x6) << 21; // encode high 2-bits at locations '23-22'
+    code_t l = (code_t)(imm & 0x1) << 12; // encode low 1-bit at locations '12'
+
+    return (h | l);
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 1 bit at bit location '11'.
  */
 
@@ -21992,12 +22041,25 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
         case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
                            // element size
-            assert(!"not implemented");
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());    // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());    // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3());  // mmmmm
+            code |= insEncodeUimm3h3l_23_to_22_and_12(imm); // ii
+                                                            // i
+            dst += emitOutput_Instr(dst, code);
             break;
 
         case IF_SVE_GH_3A: // ........i..mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
                            // element size
-            assert(!"not implemented");
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
+            code |= insEncodeUimm1_23(imm);                // i
+            dst += emitOutput_Instr(dst, code);
             break;
 
         default:
@@ -25359,53 +25421,25 @@ void emitter::emitDispInsHelp(
             break;
 
         // <Zd>.B, { <Zn>.B }, <Zm>[<index>]
-        case IF_SVE_GG_3A:   // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+        case IF_SVE_GG_3A: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                           // element size
+        // <Zd>.B, { <Zn>.B }, <Zm>[<index>]
+        case IF_SVE_GH_3A: // ........i..mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                           // element size
+        // <Zd>.H, { <Zn>.H }, <Zm>[<index>]
+        case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
+                           // element size
+        // <Zd>.H, { <Zn1>.H, <Zn2>.H }, <Zm>[<index>]
+        case IF_SVE_GH_3B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
+                           // element size
+        case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
                              // element size
             imm = emitGetInsSC(id);
-            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                   // ddddd
-            emitDispSveConsecutiveRegList(id->idReg1(), 1, id->idInsOpt(), true); // nnnnn
-            emitDispSveReg(id->idReg2(), id->idInsOpt(), false);                  // mmmmm
-            emitDispElementIndex(imm, false);                                     // ii
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);
+            emitDispSveConsecutiveRegList(id->idReg1(), 1, id->idInsOpt(), true);
+            emitDispSveReg(id->idReg2(), id->idInsOpt(), false);
+            emitDispElementIndex(imm, false);
             break;
-
-        //// <Zd>.H, { <Zn1>.H, <Zn2>.H }, <Zm>[<index>]
-        //case IF_SVE_GH_3B:   // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
-        //                     // element size
-        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
-        //    printf("{ ");
-        //    emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // nnnnn
-        //    emitDispSveReg((regNumber)(((unsigned)id->idReg2() + 1) % 32), id->idInsOpt(), false);
-        //    printf(" }, ");
-        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
-        //                                                                // ii
-        //    break;
-
-        //// <Zd>.H, { <Zn>.H }, <Zm>[<index>]
-        //case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
-        //                     // element size
-        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true);         // ddddd
-        //    emitDispSveRegList(id->idReg2(), 1, id->idInsOpt(), true);  // nnnnn
-        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
-        //                                                                // ii
-        //    break;
-
-        //// <Zd>.H, { <Zn>.H }, <Zm>[<index>]
-        //case IF_SVE_GG_3B: // ........ii.mmmmm ...i..nnnnnddddd -- SVE2 lookup table with 2-bit indices and 16-bit
-        //                   // element size
-        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true);         // ddddd
-        //    emitDispSveRegList(id->idReg2(), 1, id->idInsOpt(), true);  // nnnnn
-        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
-        //                                                                // ii
-        //    break;
-
-        //// <Zd>.B, { <Zn>.B }, <Zm>[<index>]
-        //case IF_SVE_GH_3A: // ........i..mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
-        //                   // element size
-        //    emitDispSveReg(id->idReg1(), id->idInsOpt(), true);         // ddddd
-        //    emitDispSveRegList(id->idReg2(), 1, id->idInsOpt(), true);  // nnnnn
-        //    emitDispSveRegIndex(id->idReg3(), emitGetInsSC(id), false); // mmmmm
-        //                                                                // ii
-        //    break;
 
         default:
             printf("unexpected format %s", emitIfName(id->idInsFmt()));
