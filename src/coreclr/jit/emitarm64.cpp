@@ -1094,6 +1094,52 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm4From1(emitGetInsSC(id)));
             break;
 
+        case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isVectorRegister(id->idReg2()));    // nnnnn
+            break;
+
+        case IF_SVE_CE_2B: // .........i...ii. ......nnnnn.DDDD -- SVE move predicate from vector
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isVectorRegister(id->idReg2()));    // nnnnn
+            assert(isValidUimm<3>(emitGetInsSC(id)));
+            break;
+
+        case IF_SVE_CE_2C: // ..............i. ......nnnnn.DDDD -- SVE move predicate from vector
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isVectorRegister(id->idReg2()));    // nnnnn
+            assert(isValidUimm<1>(emitGetInsSC(id)));  // i
+            break;
+
+        case IF_SVE_CE_2D: // .............ii. ......nnnnn.DDDD -- SVE move predicate from vector
+            assert(isPredicateRegister(id->idReg1())); // DDDD
+            assert(isVectorRegister(id->idReg2()));    // nnnnn
+            assert(isValidUimm<3>(emitGetInsSC(id)));  // ii
+            break;
+
+        case IF_SVE_CF_2A: // ................ .......NNNNddddd -- SVE move predicate into vector
+            assert(isVectorRegister(id->idReg1()));    // ddddd
+            assert(isPredicateRegister(id->idReg2())); // NNNN
+            break;
+
+        case IF_SVE_CF_2B: // .........i...ii. .......NNNNddddd -- SVE move predicate into vector
+            assert(isVectorRegister(id->idReg1()));    // ddddd
+            assert(isPredicateRegister(id->idReg2())); // NNNN
+            assert(isValidUimm<3>(emitGetInsSC(id)));
+            break;
+
+        case IF_SVE_CF_2C: // ..............i. .......NNNNddddd -- SVE move predicate into vector
+            assert(isVectorRegister(id->idReg1()));    // ddddd
+            assert(isPredicateRegister(id->idReg2())); // NNNN
+            assert(isValidUimm<1>(emitGetInsSC(id)));  // i
+            break;
+
+        case IF_SVE_CF_2D: // .............ii. .......NNNNddddd -- SVE move predicate into vector
+            assert(isVectorRegister(id->idReg1()));    // ddddd
+            assert(isPredicateRegister(id->idReg2())); // NNNN
+            assert(isValidUimm<2>(emitGetInsSC(id)));  // ii
+            break;
+
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt()));
@@ -8319,6 +8365,21 @@ void emitter::emitIns_R_R(instruction     ins,
             }
             break;
 
+        case INS_sve_pmov:
+            if (isPredicateRegister(reg1) && isVectorRegister(reg2))
+            {
+                fmt = IF_SVE_CE_2A;
+            }
+            else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
+            {
+                fmt = IF_SVE_CF_2A;
+            }
+            else
+            {
+                assert(!"invalid instruction");
+            }
+            break;
+
         case INS_sve_movs:
         {
             assert(opt == INS_OPTS_SCALABLE_B);
@@ -9201,6 +9262,48 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(isLowPredicateRegister(reg2)); // ggg
             assert(isValidVectorShiftAmount(imm, optGetSveElemsize(opt), isRightShift));
             fmt = IF_SVE_AM_2A;
+            break;
+
+        case INS_sve_pmov:
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidUimm3(imm));
+                    if (isPredicateRegister(reg1) && isVectorRegister(reg2))
+                    {
+                        fmt = IF_SVE_CE_2B;
+                    }
+                    else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
+                    {
+                        fmt = IF_SVE_CF_2B;
+                    }
+                    break;
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));
+                    if (isPredicateRegister(reg1) && isVectorRegister(reg2))
+                    {
+                        fmt = IF_SVE_CE_2D;
+                    }
+                    else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
+                    {
+                        fmt = IF_SVE_CF_2D;
+                    }
+                    break;
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidImm1(imm));
+                    if (isPredicateRegister(reg1) && isVectorRegister(reg2))
+                    {
+                        fmt = IF_SVE_CE_2C;
+                    }
+                    else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
+                    {
+                        fmt = IF_SVE_CF_2C;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            assert(fmt != IF_NONE && "invalid combination of size and register type specified");
             break;
 
         case INS_sve_sqrshrn:
@@ -17432,6 +17535,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         case IF_SVE_CZ_4A_A:
         case IF_SVE_CZ_4A_L:
+        case IF_SVE_CE_2A:
+        case IF_SVE_CE_2B:
+        case IF_SVE_CE_2C:
+        case IF_SVE_CE_2D:
         case IF_SVE_CF_2A:
         case IF_SVE_CF_2B:
         case IF_SVE_CF_2C:
@@ -21260,6 +21367,68 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1()); // DDDD
+            code |= insEncodeReg_V_9_to_5(id->idReg2()); // nnnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CE_2B: // .........i...ii. ......nnnnn.DDDD -- SVE move predicate from vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
+            code |= insEncodeReg_V_9_to_5(id->idReg2());                  // nnnnn
+            code |= insEncodeSplitUimm<22, 22, 18, 17>(emitGetInsSC(id)); // i...ii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CE_2C: // ..............i. ......nnnnn.DDDD -- SVE move predicate from vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1());     // DDDD
+            code |= insEncodeReg_V_9_to_5(id->idReg2());     // nnnnn
+            code |= insEncodeUimm<17, 17>(emitGetInsSC(id)); // i
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CE_2D: // .............ii. ......nnnnn.DDDD -- SVE move predicate from vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_3_to_0(id->idReg1());     // DDDD
+            code |= insEncodeReg_V_9_to_5(id->idReg2());     // nnnnn
+            code |= insEncodeUimm<18, 17>(emitGetInsSC(id)); // ii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CF_2A: // ................ .......NNNNddddd -- SVE move predicate into vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2()); // NNNN
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CF_2B: // .........i...ii. .......NNNNddddd -- SVE move predicate into vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());                  // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());                  // NNNN
+            code |= insEncodeSplitUimm<22, 22, 18, 17>(emitGetInsSC(id)); // i...ii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CF_2C: // ..............i. .......NNNNddddd -- SVE move predicate into vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());     // NNNN
+            code |= insEncodeUimm<17, 17>(emitGetInsSC(id)); // i
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_CF_2D: // .............ii. .......NNNNddddd -- SVE move predicate into vector
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());     // ddddd
+            code |= insEncodeReg_P_8_to_5(id->idReg2());     // NNNN
+            code |= insEncodeUimm<18, 17>(emitGetInsSC(id)); // ii
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_P_3_to_0(id->idReg1());                  // DDDD
@@ -22726,6 +22895,18 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 }
 
 //------------------------------------------------------------------------
+// emitDispSveReg: Display a scalable vector register name
+//
+void emitter::emitDispSveReg(regNumber reg, bool addComma)
+{
+    assert(isVectorRegister(reg));
+    printf("%s", emitSveRegName(reg));
+
+    if (addComma)
+        emitDispComma();
+}
+
+//------------------------------------------------------------------------
 // emitDispSveReg: Display a scalable vector register name with an arrangement suffix
 //
 void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
@@ -22734,6 +22915,20 @@ void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
     assert(isVectorRegister(reg));
     printf(emitSveRegName(reg));
     emitDispArrangement(opt);
+
+    if (addComma)
+        emitDispComma();
+}
+
+//------------------------------------------------------------------------
+// emitDispSveRegIndex: Display a scalable vector register with indexed element
+//
+void emitter::emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma)
+{
+    assert(isVectorRegister(reg));
+    printf("%s", emitSveRegName(reg));
+
+    printf("[%d]", static_cast<int>(index));
 
     if (addComma)
         emitDispComma();
@@ -24728,6 +24923,39 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                 // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true); // ggg
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                                // mmmmm
+            break;
+
+        case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_B, true); // DDDD
+            emitDispSveReg(id->idReg2(), false);                                                     // nnnnn
+            break;
+        case IF_SVE_CE_2B: // .........i...ii. ......nnnnn.DDDD -- SVE move predicate from vector
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_D, true); // DDDD
+            emitDispSveRegIndex(id->idReg2(), emitGetInsSC(id), false);                              // nnnnn
+            break;
+        case IF_SVE_CE_2C: // ..............i. ......nnnnn.DDDD -- SVE move predicate from vector
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_H, true); // DDDD
+            emitDispSveRegIndex(id->idReg2(), emitGetInsSC(id), false);                              // nnnnn
+            break;
+        case IF_SVE_CE_2D: // .............ii. ......nnnnn.DDDD -- SVE move predicate from vector
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_S, true); // DDDD
+            emitDispSveRegIndex(id->idReg2(), emitGetInsSC(id), false);                              // nnnnn
+            break;
+        case IF_SVE_CF_2A:                      // ................ .......NNNNddddd -- SVE move predicate into vector
+            emitDispSveReg(id->idReg1(), true); // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_B, false); // NNNN
+            break;
+        case IF_SVE_CF_2B: // .........i...ii. .......NNNNddddd -- SVE move predicate into vector
+            emitDispSveRegIndex(id->idReg1(), emitGetInsSC(id), true);                                // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_D, false); // NNNN
+            break;
+        case IF_SVE_CF_2C: // ..............i. .......NNNNddddd -- SVE move predicate into vector
+            emitDispSveRegIndex(id->idReg1(), emitGetInsSC(id), true);                                // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_H, false); // NNNN
+            break;
+        case IF_SVE_CF_2D: // .............ii. .......NNNNddddd -- SVE move predicate into vector
+            emitDispSveRegIndex(id->idReg2(), emitGetInsSC(id), true);                                // ddddd
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_S, false); // NNNN
             break;
 
         // <Pd>.<T>, <Pn>.<T>, <Pm>.<T>
@@ -28096,6 +28324,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_CE_2A: // ................ ......nnnnn.DDDD -- SVE move predicate from vector
+        case IF_SVE_CE_2B: // .........i...ii. ......nnnnn.DDDD -- SVE move predicate from vector
+        case IF_SVE_CE_2C: // ..............i. ......nnnnn.DDDD -- SVE move predicate from vector
+        case IF_SVE_CE_2D: // .............ii. ......nnnnn.DDDD -- SVE move predicate from vector
+        case IF_SVE_CF_2A: // ................ .......NNNNddddd -- SVE move predicate into vector
+        case IF_SVE_CF_2B: // .........i...ii. .......NNNNddddd -- SVE move predicate into vector
+        case IF_SVE_CF_2C: // ..............i. .......NNNNddddd -- SVE move predicate into vector
+        case IF_SVE_CF_2D: // .............ii. .......NNNNddddd -- SVE move predicate into vector
+            result.insThroughput = PERFSCORE_THROUGHPUT_140C; // @ToDo currently undocumented
+            result.insLatency    = PERFSCORE_LATENCY_140C;
             break;
 
         case IF_SVE_CI_3A: // ........xx..MMMM .......NNNN.DDDD -- SVE permute predicate elements

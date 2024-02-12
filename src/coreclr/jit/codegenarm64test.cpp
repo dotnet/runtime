@@ -4725,6 +4725,48 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_lsr, EA_SCALABLE, REG_V0, REG_P0, REG_V0, INS_OPTS_SCALABLE_S,
                               INS_SCALABLE_OPTS_WIDE); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
 
+    // IF_SVE_CE_2A
+    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_P2, REG_V12); // PMOV    <Pd>.B, <Zn>
+
+    // IF_SVE_CE_2B
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_P15, REG_V7, 7,
+                              INS_OPTS_SCALABLE_D); // PMOV    <Pd>.D, <Zn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_P7, REG_V16, 0,
+                              INS_OPTS_SCALABLE_D); // PMOV    <Pd>.D, <Zn>[<imm>]
+
+    // IF_SVE_CE_2C
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_P0, REG_V31, 1,
+                              INS_OPTS_SCALABLE_H); // PMOV    <Pd>.H, <Zn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V1, REG_P1, 0,
+                              INS_OPTS_SCALABLE_H); // PMOV    <Pd>.H, <Zn>[<imm>]
+
+    // IF_SVE_CE_2D
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_P3, REG_V9, 3,
+                              INS_OPTS_SCALABLE_S); // PMOV    <Pd>.S, <Zn>[<imm>]
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_P10, REG_V4, 0,
+                              INS_OPTS_SCALABLE_S); // PMOV    <Pd>.S, <Zn>[<imm>]
+
+    // IF_SVE_CF_2A
+    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_V11, REG_P12); // PMOV    <Zd>, <Pn>.B
+
+    // IF_SVE_CF_2B
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V6, REG_P8, 7,
+                              INS_OPTS_SCALABLE_D); // PMOV    <Zd>[<imm>], <Pn>.D
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V9, REG_P7, 0,
+                              INS_OPTS_SCALABLE_D); // PMOV    <Zd>[<imm>], <Pn>.D
+
+    // IF_SVE_CF_2C
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V8, REG_P4, 1,
+                              INS_OPTS_SCALABLE_H); // PMOV    <Zd>[<imm>], <Pn>.H
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V5, REG_P9, 0,
+                              INS_OPTS_SCALABLE_H); // PMOV    <Zd>[<imm>], <Pn>.H
+
+    // IF_SVE_CF_2D
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V14, REG_P2, 3,
+                              INS_OPTS_SCALABLE_S); // PMOV    <Zd>[<imm>], <Pn>.S
+    theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V3, REG_P15, 0,
+                              INS_OPTS_SCALABLE_S); // PMOV    <Zd>[<imm>], <Pn>.S
+
     // IF_SVE_CJ_2A
     theEmitter->emitIns_R_R(INS_sve_rev, EA_SCALABLE, REG_P1, REG_P2,
                             INS_OPTS_SCALABLE_B); // REV     <Pd>.<T>, <Pn>.<T>
