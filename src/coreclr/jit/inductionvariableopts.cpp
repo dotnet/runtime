@@ -1192,8 +1192,8 @@ PhaseStatus Compiler::optInductionVariables()
 
             DISPSTMT(stmt);
 
-            GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
-            LclVarDsc* lclDsc = lvaGetDesc(lcl);
+            GenTreeLclVarCommon* lcl    = stmt->GetRootNode()->AsLclVarCommon();
+            LclVarDsc*           lclDsc = lvaGetDesc(lcl);
             if (lclDsc->TypeGet() != TYP_INT)
             {
                 JITDUMP("  Type is %s, no widening to be done\n", varTypeName(lclDsc->TypeGet()));
