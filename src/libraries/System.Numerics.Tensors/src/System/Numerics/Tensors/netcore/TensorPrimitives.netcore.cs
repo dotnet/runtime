@@ -16078,11 +16078,11 @@ namespace System.Numerics.Tensors
                 Vector128<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked + Vector128.Create(float.Pi / 2), Vector128.Create(1 / float.Pi), almHuge);
                 Vector128<uint> odd = dn.AsUInt32() << 31;
                 dn = dn - almHuge - Vector128.Create(0.5f);
-                Vector128<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail1),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2),
-                                uxMasked)));
+
+                Vector128<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_9
                 Vector128<float> f2 = f * f;
@@ -16108,11 +16108,11 @@ namespace System.Numerics.Tensors
                 Vector256<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked + Vector256.Create(float.Pi / 2), Vector256.Create(1 / float.Pi), almHuge);
                 Vector256<uint> odd = dn.AsUInt32() << 31;
                 dn = dn - almHuge - Vector256.Create(0.5f);
-                Vector256<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail1),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2),
-                                uxMasked)));
+
+                Vector256<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_9
                 Vector256<float> f2 = f * f;
@@ -16138,11 +16138,11 @@ namespace System.Numerics.Tensors
                 Vector512<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked + Vector512.Create(float.Pi / 2), Vector512.Create(1 / float.Pi), almHuge);
                 Vector512<uint> odd = dn.AsUInt32() << 31;
                 dn = dn - almHuge - Vector512.Create(0.5f);
-                Vector512<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail1),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2),
-                                uxMasked)));
+
+                Vector512<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_9
                 Vector512<float> f2 = f * f;
@@ -16190,11 +16190,11 @@ namespace System.Numerics.Tensors
                 Vector128<double> dn = (uxMasked * Vector128.Create(1 / double.Pi)) + Vector128.Create(double.Pi / 2) + almHuge;
                 Vector128<ulong> odd = dn.AsUInt64() << 63;
                 dn = dn - almHuge - Vector128.Create(0.5);
-                Vector128<double> f =
-                    MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi),
-                        MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(Pi_Tail2),
-                            MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(Pi_Tail3),
-                                uxMasked)));
+
+                Vector128<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(-double.Pi), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector128.Create(Pi_Tail3), f);
 
                 // POLY_EVAL_ODD_17
                 Vector128<double> f2 = f * f;
@@ -16225,11 +16225,11 @@ namespace System.Numerics.Tensors
                 Vector256<double> dn = (uxMasked * Vector256.Create(1 / double.Pi)) + Vector256.Create(double.Pi / 2) + almHuge;
                 Vector256<ulong> odd = dn.AsUInt64() << 63;
                 dn = dn - almHuge - Vector256.Create(0.5);
-                Vector256<double> f =
-                    MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi),
-                        MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(Pi_Tail2),
-                            MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(Pi_Tail3),
-                                uxMasked)));
+
+                Vector256<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(-double.Pi), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector256.Create(Pi_Tail3), f);
 
                 // POLY_EVAL_ODD_17
                 Vector256<double> f2 = f * f;
@@ -16260,11 +16260,11 @@ namespace System.Numerics.Tensors
                 Vector512<double> dn = (uxMasked * Vector512.Create(1 / double.Pi)) + Vector512.Create(double.Pi / 2) + almHuge;
                 Vector512<ulong> odd = dn.AsUInt64() << 63;
                 dn = dn - almHuge - Vector512.Create(0.5);
-                Vector512<double> f =
-                    MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi),
-                        MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(Pi_Tail2),
-                            MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(Pi_Tail3),
-                                uxMasked)));
+
+                Vector512<double> f = uxMasked;
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(-double.Pi), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
+                f = MultiplyAddEstimateOperator<double>.Invoke(dn, Vector512.Create(Pi_Tail3), f);
 
                 // POLY_EVAL_ODD_17
                 Vector512<double> f2 = f * f;
@@ -16554,11 +16554,11 @@ namespace System.Numerics.Tensors
                 Vector128<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked, Vector128.Create(1 / float.Pi), almHuge);
                 Vector128<uint> odd = dn.AsUInt32() << 31;
                 dn -= almHuge;
-                Vector128<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail1),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2),
-                                uxMasked)));
+
+                Vector128<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_9
                 Vector128<float> f2 = f * f;
@@ -16584,11 +16584,11 @@ namespace System.Numerics.Tensors
                 Vector256<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked, Vector256.Create(1 / float.Pi), almHuge);
                 Vector256<uint> odd = dn.AsUInt32() << 31;
                 dn -= almHuge;
-                Vector256<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail1),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2),
-                                uxMasked)));
+
+                Vector256<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_9
                 Vector256<float> f2 = f * f;
@@ -16614,11 +16614,11 @@ namespace System.Numerics.Tensors
                 Vector512<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked, Vector512.Create(1 / float.Pi), almHuge);
                 Vector512<uint> odd = dn.AsUInt32() << 31;
                 dn -= almHuge;
-                Vector512<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail1),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2),
-                                uxMasked)));
+
+                Vector512<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail1), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
 
                 // POLY_EVAL_ODD_9
                 Vector512<float> f2 = f * f;
@@ -17018,11 +17018,11 @@ namespace System.Numerics.Tensors
                 Vector128<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked, Vector128.Create(2 / float.Pi), Vector128.Create(AlmHuge));
                 Vector128<uint> odd = dn.AsUInt32() << 31;
                 dn -= Vector128.Create(AlmHuge);
-                Vector128<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi / 2),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail3),
-                                uxMasked)));
+
+                Vector128<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(-float.Pi / 2), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail2), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector128.Create(Pi_Tail3), f);
 
                 // POLY_EVAL_ODD_15
                 Vector128<float> f2 = f * f;
@@ -17053,11 +17053,11 @@ namespace System.Numerics.Tensors
                 Vector256<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked, Vector256.Create(2 / float.Pi), Vector256.Create(AlmHuge));
                 Vector256<uint> odd = dn.AsUInt32() << 31;
                 dn -= Vector256.Create(AlmHuge);
-                Vector256<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi / 2),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail3),
-                                uxMasked)));
+
+                Vector256<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(-float.Pi / 2), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail2), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector256.Create(Pi_Tail3), f);
 
                 // POLY_EVAL_ODD_15
                 Vector256<float> f2 = f * f;
@@ -17088,11 +17088,11 @@ namespace System.Numerics.Tensors
                 Vector512<float> dn = MultiplyAddEstimateOperator<float>.Invoke(uxMasked, Vector512.Create(2 / float.Pi), Vector512.Create(AlmHuge));
                 Vector512<uint> odd = dn.AsUInt32() << 31;
                 dn -= Vector512.Create(AlmHuge);
-                Vector512<float> f =
-                    MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi / 2),
-                        MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2),
-                            MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail3),
-                                uxMasked)));
+
+                Vector512<float> f = uxMasked;
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(-float.Pi / 2), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail2), f);
+                f = MultiplyAddEstimateOperator<float>.Invoke(dn, Vector512.Create(Pi_Tail3), f);
 
                 // POLY_EVAL_ODD_15
                 Vector512<float> f2 = f * f;
