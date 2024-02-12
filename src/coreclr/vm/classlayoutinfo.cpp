@@ -1023,7 +1023,6 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     {
         // The intrinsic Vector<T> type has a special size. Copy the native size and alignment
         // from the managed size and alignment.
-        // Crossgen scenarios block Vector<T> from even being loaded, so only do this check when not in crossgen.
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
         {
             pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();
