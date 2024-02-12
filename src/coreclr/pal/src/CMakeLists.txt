@@ -129,7 +129,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
 endif()
 
 set(SOURCES
-  cruntime/malloc.cpp
   cruntime/misc.cpp
   cruntime/wchar.cpp
   debug/debug.cpp

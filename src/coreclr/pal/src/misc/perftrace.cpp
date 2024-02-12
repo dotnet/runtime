@@ -321,7 +321,7 @@ PERFInitialize(LPWSTR command_line, LPWSTR exe_path)
 
     if( ret == TRUE )
     {
-        pal_function_map = (char*)PAL_malloc(PAL_API_NUMBER);
+        pal_function_map = (char*)malloc(PAL_API_NUMBER);
         if(pal_function_map != NULL)
         {
             bRead = PERFReadSetting( );  // we don't quit even we failed to read the file.
@@ -376,21 +376,21 @@ BOOL PERFAllocThreadInfo(  )
         memory resources could be exhausted. If this ever becomes a problem, the memory allocated
         per thread should be freed when a thread exits. */
 
-    node = ( pal_thread_list_node * )PAL_malloc(sizeof(pal_thread_list_node));
+    node = ( pal_thread_list_node * )malloc(sizeof(pal_thread_list_node));
     if(node == NULL)
     {
         ret = FALSE;
         goto PERFAllocThreadInfoExit;
     }
 
-    local_info = (pal_perf_thread_info *)PAL_malloc(sizeof(pal_perf_thread_info));
+    local_info = (pal_perf_thread_info *)malloc(sizeof(pal_perf_thread_info));
     if (local_info == NULL)
     {
         ret = FALSE;
         goto PERFAllocThreadInfoExit;
     }
 
-    apiTable = (pal_perf_api_info *)PAL_malloc( PAL_API_NUMBER *  sizeof(pal_perf_api_info));
+    apiTable = (pal_perf_api_info *)malloc( PAL_API_NUMBER *  sizeof(pal_perf_api_info));
     if (apiTable == NULL)
     {
         ret = FALSE;
@@ -411,7 +411,7 @@ BOOL PERFAllocThreadInfo(  )
         apiTable[i].sum_of_square_duration = 0.0;
         if (pal_perf_histogram_size > 0)
         {
-            apiTable[i].histograms = (DWORD *)PAL_malloc(pal_perf_histogram_size*sizeof(DWORD));
+            apiTable[i].histograms = (DWORD *)malloc(pal_perf_histogram_size*sizeof(DWORD));
             if (apiTable[i].histograms == NULL)
             {
                 ret = FALSE;
@@ -425,7 +425,7 @@ BOOL PERFAllocThreadInfo(  )
         }
     }
 
-    log_buf = (char * )PAL_malloc( PAL_PERF_PROFILE_BUFFER_SIZE );
+    log_buf = (char * )malloc( PAL_PERF_PROFILE_BUFFER_SIZE );
 
     if(log_buf == NULL)
     {

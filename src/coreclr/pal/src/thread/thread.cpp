@@ -1564,7 +1564,7 @@ CorUnix::InternalSetThreadDescription(
         goto InternalSetThreadDescriptionExit;
     }
 
-    nameBuf = (char *)PAL_malloc(nameSize);
+    nameBuf = (char *)malloc(nameSize);
     if (nameBuf == NULL)
     {
         palError = ERROR_OUTOFMEMORY;

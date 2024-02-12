@@ -4,7 +4,6 @@ c_runtime/bsearch/test1/paltest_bsearch_test1
 c_runtime/bsearch/test2/paltest_bsearch_test2
 c_runtime/errno/test1/paltest_errno_test1
 c_runtime/errno/test2/paltest_errno_test2
-c_runtime/free/test1/paltest_free_test1
 c_runtime/isalnum/test1/paltest_isalnum_test1
 c_runtime/isalpha/test1/paltest_isalpha_test1
 c_runtime/isdigit/test1/paltest_isdigit_test1
@@ -15,16 +14,12 @@ c_runtime/iswdigit/test1/paltest_iswdigit_test1
 c_runtime/iswspace/test1/paltest_iswspace_test1
 c_runtime/iswupper/test1/paltest_iswupper_test1
 c_runtime/isxdigit/test1/paltest_isxdigit_test1
-c_runtime/llabs/test1/paltest_llabs_test1
-c_runtime/malloc/test1/paltest_malloc_test1
-c_runtime/malloc/test2/paltest_malloc_test2
 c_runtime/memchr/test1/paltest_memchr_test1
 c_runtime/memcmp/test1/paltest_memcmp_test1
 c_runtime/memmove/test1/paltest_memmove_test1
 c_runtime/memset/test1/paltest_memset_test1
 c_runtime/qsort/test1/paltest_qsort_test1
 c_runtime/qsort/test2/paltest_qsort_test2
-c_runtime/realloc/test1/paltest_realloc_test1
 c_runtime/sscanf_s/test1/paltest_sscanf_test1
 c_runtime/sscanf_s/test10/paltest_sscanf_test10
 c_runtime/sscanf_s/test11/paltest_sscanf_test11

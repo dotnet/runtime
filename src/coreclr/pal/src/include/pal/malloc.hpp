@@ -26,33 +26,23 @@ Abstract:
 #include <stdlib.h>
 #include <new>
 
-extern "C"
-{
-    void *
-    __cdecl
-    PAL_realloc(
-        void* pvMemblock,
-        size_t szSize
-        );
-
-    void *
-    __cdecl
-    PAL_malloc(
-        size_t szSize
-        );
-
-    void
-    __cdecl
-    free(
-        void *pvMem
-        );
-}
-
 namespace CorUnix{
-    void *
+    inline void *
     InternalMalloc(
         size_t szSize
-        );
+        )
+    {
+        void *pvMem;
+
+        if (szSize == 0)
+        {
+            // malloc may return null for a requested size of zero bytes. Force a nonzero size to get a valid pointer.
+            szSize = 1;
+        }
+
+        pvMem = (void*)malloc(szSize);
+        return pvMem;
+    }
 
     // Define common code for "new" style allocators below.
 #define INTERNAL_NEW_COMMON()                    \

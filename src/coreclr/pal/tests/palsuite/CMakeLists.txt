@@ -67,7 +67,6 @@ add_executable_clr(paltests
   c_runtime/atoi/test1/test1.cpp
   c_runtime/bsearch/test1/test1.cpp
   c_runtime/bsearch/test2/test2.cpp
-  c_runtime/free/test1/test1.cpp
   c_runtime/isalnum/test1/test1.cpp
   c_runtime/isalpha/test1/test1.cpp
   c_runtime/isdigit/test1/test1.cpp
@@ -80,15 +79,12 @@ add_executable_clr(paltests
   c_runtime/iswupper/test1/test1.cpp
   c_runtime/isxdigit/test1/test1.cpp
   c_runtime/llabs/test1/test1.cpp
-  c_runtime/malloc/test1/test1.cpp
-  c_runtime/malloc/test2/test2.cpp
   c_runtime/memchr/test1/test1.cpp
   c_runtime/memcmp/test1/test1.cpp
   c_runtime/memmove/test1/test1.cpp
   c_runtime/memset/test1/test1.cpp
   c_runtime/qsort/test1/test1.cpp
   c_runtime/qsort/test2/test2.cpp
-  c_runtime/realloc/test1/test1.cpp
   c_runtime/sscanf_s/test1/test1.cpp
   c_runtime/sscanf_s/test10/test10.cpp
   c_runtime/sscanf_s/test11/test11.cpp

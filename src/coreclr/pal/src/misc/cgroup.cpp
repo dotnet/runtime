@@ -126,7 +126,7 @@ private:
 
         len = strlen(hierarchy_mount);
         len += strlen(cgroup_path_relative_to_mount);
-        cgroup_path = (char*)PAL_malloc(len+1);
+        cgroup_path = (char*)malloc(len+1);
         if (cgroup_path == nullptr)
            goto done;
 
@@ -191,10 +191,10 @@ private:
                 filesystemType = nullptr;
                 free(options);
                 options = nullptr;
-                filesystemType = (char*)PAL_malloc(lineLen+1);
+                filesystemType = (char*)malloc(lineLen+1);
                 if (filesystemType == nullptr)
                     goto done;
-                options = (char*)PAL_malloc(lineLen+1);
+                options = (char*)malloc(lineLen+1);
                 if (options == nullptr)
                     goto done;
                 maxLineLen = lineLen;
@@ -227,10 +227,10 @@ private:
                 }
                 if (isSubsystemMatch)
                 {
-                    mountpath = (char*)PAL_malloc(lineLen+1);
+                    mountpath = (char*)malloc(lineLen+1);
                     if (mountpath == nullptr)
                         goto done;
-                    mountroot = (char*)PAL_malloc(lineLen+1);
+                    mountroot = (char*)malloc(lineLen+1);
                     if (mountroot == nullptr)
                         goto done;
 
@@ -279,10 +279,10 @@ private:
                 subsystem_list = nullptr;
                 free(cgroup_path);
                 cgroup_path = nullptr;
-                subsystem_list = (char*)PAL_malloc(lineLen+1);
+                subsystem_list = (char*)malloc(lineLen+1);
                 if (subsystem_list == nullptr)
                     goto done;
-                cgroup_path = (char*)PAL_malloc(lineLen+1);
+                cgroup_path = (char*)malloc(lineLen+1);
                 if (cgroup_path == nullptr)
                     goto done;
                 maxLineLen = lineLen;

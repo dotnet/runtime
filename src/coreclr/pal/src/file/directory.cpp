@@ -75,11 +75,11 @@ CreateDirectoryW(
         goto done;
     }
 
-    if (((mb_dir = (char *)PAL_malloc(mb_size)) == NULL) ||
+    if (((mb_dir = (char *)malloc(mb_size)) == NULL) ||
         (WideCharToMultiByte( CP_ACP, 0, lpPathName, -1, mb_dir, mb_size, NULL,
                               NULL) != mb_size))
     {
-        ASSERT("WideCharToMultiByte or PAL_malloc failure! LastError:%d errno:%d\n",
+        ASSERT("WideCharToMultiByte or malloc failure! LastError:%d errno:%d\n",
               GetLastError(), errno);
         dwLastError = ERROR_INTERNAL_ERROR;
         goto done;

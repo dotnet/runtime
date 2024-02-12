@@ -183,7 +183,7 @@ GetEnvironmentVariableW(
         goto done;
     }
 
-    inBuff = (CHAR *)PAL_malloc(inBuffSize);
+    inBuff = (CHAR *)malloc(inBuffSize);
     if (inBuff == nullptr)
     {
         ERROR("malloc failed\n");
@@ -193,7 +193,7 @@ GetEnvironmentVariableW(
 
     if (nSize)
     {
-        outBuff = (CHAR *)PAL_malloc(nSize*2);
+        outBuff = (CHAR *)malloc(nSize*2);
         if (outBuff == nullptr)
         {
             ERROR("malloc failed\n");
@@ -310,7 +310,7 @@ SetEnvironmentVariableW(
         goto done;
     }
 
-    name = (PCHAR)PAL_malloc(sizeof(CHAR)* nameSize);
+    name = (PCHAR)malloc(sizeof(CHAR)* nameSize);
     if (name == nullptr)
     {
         ERROR("malloc failed\n");
@@ -336,7 +336,7 @@ SetEnvironmentVariableW(
             goto done;
         }
 
-        value = (PCHAR)PAL_malloc(sizeof(CHAR)*valueSize);
+        value = (PCHAR)malloc(sizeof(CHAR)*valueSize);
 
         if (value == nullptr)
         {
@@ -414,7 +414,7 @@ GetEnvironmentStringsW(
         envNum += len;
     }
 
-    wenviron = (WCHAR *)PAL_malloc(sizeof(WCHAR)* (envNum + 1));
+    wenviron = (WCHAR *)malloc(sizeof(WCHAR)* (envNum + 1));
     if (wenviron == nullptr)
     {
         ERROR("malloc failed\n");
@@ -559,7 +559,7 @@ SetEnvironmentVariableA(
     {
         // All the conditions are met. Set the variable.
         int iLen = strlen(lpName) + strlen(lpValue) + 2;
-        LPSTR string = (LPSTR) PAL_malloc(iLen);
+        LPSTR string = (LPSTR) malloc(iLen);
         if (string == nullptr)
         {
             bRet = FALSE;

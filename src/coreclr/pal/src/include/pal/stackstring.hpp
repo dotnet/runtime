@@ -44,7 +44,7 @@ private:
             m_buffer = NULL;
         }
 
-        T * newBuffer = (T *)PAL_realloc(m_buffer, (count_allocated + 1) * sizeof(T));
+        T * newBuffer = (T *)realloc(m_buffer, (count_allocated + 1) * sizeof(T));
         if (NULL == newBuffer)
         {
             SetLastError(ERROR_NOT_ENOUGH_MEMORY);

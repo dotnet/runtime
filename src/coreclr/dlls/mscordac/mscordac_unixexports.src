@@ -47,8 +47,6 @@ nativeStringResourceTable_mscorrc
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
-#PAL_malloc
-#PAL_realloc
 #PAL_qsort
 #PAL__wcstoui64
 #PAL_wcstoul
