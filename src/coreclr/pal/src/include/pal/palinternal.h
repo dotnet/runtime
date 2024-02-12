@@ -281,6 +281,8 @@ function_name() to call the system's implementation
 #define malloc DUMMY_malloc
 #define time DUMMY_time
 #define getenv DUMMY_getenv
+#define qsort DUMMY_qsort
+#define bsearch DUMMY_bsearch
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX

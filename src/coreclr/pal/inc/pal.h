@@ -3980,9 +3980,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    To avoid name collisions, those functions have been renamed using
    defines */
 #ifndef PAL_STDCPP_COMPAT
-#define qsort         PAL_qsort
-#define bsearch       PAL_bsearch
-
 // Forward declare functions that are in header files we can't include yet
 int printf(const char *, ...);
 int vprintf(const char *, va_list);

@@ -65,8 +65,6 @@ add_executable_clr(paltests
   #composite/wfmo/mutex.cpp
   c_runtime/atof/test1/test1.cpp
   c_runtime/atoi/test1/test1.cpp
-  c_runtime/bsearch/test1/test1.cpp
-  c_runtime/bsearch/test2/test2.cpp
   c_runtime/isalnum/test1/test1.cpp
   c_runtime/isalpha/test1/test1.cpp
   c_runtime/isdigit/test1/test1.cpp
@@ -83,8 +81,6 @@ add_executable_clr(paltests
   c_runtime/memcmp/test1/test1.cpp
   c_runtime/memmove/test1/test1.cpp
   c_runtime/memset/test1/test1.cpp
-  c_runtime/qsort/test1/test1.cpp
-  c_runtime/qsort/test2/test2.cpp
   c_runtime/sscanf_s/test1/test1.cpp
   c_runtime/sscanf_s/test10/test10.cpp
   c_runtime/sscanf_s/test11/test11.cpp
