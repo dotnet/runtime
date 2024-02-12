@@ -25091,7 +25091,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_FV_2A: // ........xx...... .....rmmmmmddddd -- SVE2 complex integer add
         {
             // Rotation bit implies rotation is 270 if set, else rotation is 90
-            const ssize_t rot = (emitGetInsSC(id) == 0) ? 90 : 270;
+            const ssize_t rot = emitDecodeRotationImm90_or_270(emitGetInsSC(id));
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
             emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // mmmmm
