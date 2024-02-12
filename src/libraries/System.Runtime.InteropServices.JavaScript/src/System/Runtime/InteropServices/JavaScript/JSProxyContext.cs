@@ -30,7 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsCurrentThread() => true;
+        public static bool IsCurrentThread() => true;
 #else
         public nint ContextHandle;
         public nint JSNativeTID; // target thread where JavaScript is running
