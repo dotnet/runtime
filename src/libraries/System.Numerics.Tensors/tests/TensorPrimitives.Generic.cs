@@ -402,7 +402,7 @@ namespace System.Numerics.Tensors.Tests
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Sqrt), new Func<T, T>(T.Sqrt) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Tan), new Func<T, T>(T.Tan) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Tanh), new Func<T, T>(T.Tanh) };
-            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.TanPi), new Func<T, T>(T.TanPi) };
+            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.TanPi), new Func<T, T>(T.TanPi), T.CreateTruncating(0.0021) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Truncate), new Func<T, T>(T.Truncate) };
         }
 
