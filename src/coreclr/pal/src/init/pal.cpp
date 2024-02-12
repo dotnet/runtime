@@ -288,6 +288,14 @@ InitializeDefaultStackSize()
         }
     }
 
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (g_defaultStackSize == 0)
+    {
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif
+
 #ifdef ENSURE_PRIMARY_STACK_SIZE
     if (g_defaultStackSize == 0)
     {
