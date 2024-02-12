@@ -1792,7 +1792,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 //
 PhaseStatus Compiler::fgLateCastExpansion()
 {
-    if (!doesMethodHaveExpandableCasts() || opts.OptimizationDisabled() || lvaHaveManyLocals())
+    if (!doesMethodHaveExpandableCasts() || opts.OptimizationDisabled())
     {
         // Nothing to expand in the current method
         return PhaseStatus::MODIFIED_NOTHING;
@@ -1905,6 +1905,15 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         // sets GTF_DONT_CSE for it. The only case when this arg is not a constant is RUNTIMELOOKUP
         // TODO-InlineCast: we should be able to handle RUNTIMELOOKUP as well.
         JITDUMP("clsArg is not a constant handle - bail out.\n");
+        return 0;
+    }
+
+    if ((objArg->gtFlags & GTF_ALL_EFFECT) != 0 && comp->lvaHaveManyLocals())
+    {
+        // TODO: Revise this:
+        //  * Some casts are profitable even when ran out of tracked locals
+        //  * We might want to use a shared local in all casts (similar to what we do boxing)
+        JITDUMP("lvaHaveManyLocals() is true and objArg has side effects - bail out.")
         return 0;
     }
 
@@ -2218,13 +2227,6 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
 //
 bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    if (lvaHaveManyLocals())
-    {
-        // Not worth creating untracked local variables
-        // Perhaps, some cases can still be expanded
-        return false;
-    }
-
     TypeCheckFailedAction typeCheckFailedAction;
     TypeCheckPassedAction typeCheckPassedAction;
     CORINFO_CLASS_HANDLE  commonCls;
