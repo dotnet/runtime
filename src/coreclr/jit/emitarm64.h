@@ -611,6 +611,15 @@ static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
 static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
+
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
@@ -637,6 +646,9 @@ static code_t insEncodeUimm4From1_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeUimm5_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
+static code_t insEncodeUimm6_21_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 8-bits at bit locations '12-5'.
 static code_t insEncodeImm8_12_to_5(ssize_t imm);
@@ -727,6 +739,24 @@ static bool isValidUimm5_MultipleOf8(ssize_t value)
     return (0 <= value) && (value <= 248) && (value % 8 == 0);
 };
 
+// Returns true if 'value' is a legal signed multiple of 2 immediate 6 bit encoding (such as for LD1RH).
+static bool isValidUimm6_MultipleOf2(ssize_t value)
+{
+    return (0 <= value) && (value <= 126) && (value % 2 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 4 immediate 6 bit encoding (such as for LD1RSW).
+static bool isValidUimm6_MultipleOf4(ssize_t value)
+{
+    return (0 <= value) && (value <= 252) && (value % 4 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 8 immediate 6 bit encoding (such as for LD1RD).
+static bool isValidUimm6_MultipleOf8(ssize_t value)
+{
+    return (0 <= value) && (value <= 504) && (value % 8 == 0);
+};
+
 // Returns true if 'value' is a legal immediate 1 bit encoding (such as for PEXT).
 static bool isValidImm1(ssize_t value)
 {
@@ -761,6 +791,12 @@ static bool isValidUimm4From1(ssize_t value)
 static bool isValidUimm5(ssize_t value)
 {
     return (0 <= value) && (value <= 0x1FLL);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 6 bit encoding (such as for LD1RD).
+static bool isValidUimm6(ssize_t value)
+{
+    return (0 <= value) && (value <= 63);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).

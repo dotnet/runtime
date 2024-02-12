@@ -2249,6 +2249,20 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm5_MultipleOf8(emitGetInsSC(id)));
             break;
 
+        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isScalableVectorSize(elemsize));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isLowPredicateRegister(id->idReg2()));
+            assert(isGeneralRegister(id->idReg3()));
+            break;
+
+        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+            break;
+
         case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
                            // offsets)
         case IF_SVE_HY_3A_A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit
@@ -2264,12 +2278,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
-            break;
-
-        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             break;
 
         default:
@@ -11012,6 +11020,9 @@ void emitter::emitIns_R_R_R(instruction     ins,
             fmt = IF_SVE_HP_3A;
             break;
 
+        case INS_sve_prfb:
+            break;
+
         default:
             unreached();
             break;
@@ -12525,6 +12536,24 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(isScalableVectorSize(size));
             imm = emitEncodeRotationImm90_or_270(imm);
             fmt = IF_SVE_GP_3A;
+            break;
+
+        case INS_sve_ld1rd:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidUimm6_MultipleOf8(imm));
+            fmt = IF_SVE_IC_3A;
+            break;
+
+        case INS_sve_ld1rsw:
+            assert(opt == INS_OPTS_SCALABLE_D);
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidUimm6_MultipleOf4(imm));
+            fmt = IF_SVE_IC_3A;
             break;
 
         default:
@@ -18938,6 +18967,39 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  // Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6_MultipleOf2(imm));
+    return insEncodeUimm6_21_to_16(imm / 2);
+}
+
+/*****************************************************************************
+ *
+ *  // Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6_MultipleOf4(imm));
+    return insEncodeUimm6_21_to_16(imm / 4);
+}
+
+/*****************************************************************************
+ *
+ *  // Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6_MultipleOf8(imm));
+    return insEncodeUimm6_21_to_16(imm / 8);
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
  */
 
@@ -19036,6 +19098,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm5_20_to_16(ssize_t imm)
 {
     assert(isValidUimm5(imm));
+    return (code_t)imm << 16;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6(imm));
     return (code_t)imm << 16;
 }
 
@@ -22404,10 +22477,6 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
 
             switch (ins)
             {
-                case INS_sve_st1b:
-                    code |= insEncodeUimm5_20_to_16(imm); // iiiii
-                    break;
-
                 case INS_sve_st1h:
                     code |= insEncodeUimm5_MultipleOf2_20_to_16(imm); // iiiii
                     break;
@@ -22417,10 +22486,40 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                     break;
 
                 default:
+                    assert(ins == INS_sve_st1b);
                     code |= insEncodeUimm5_20_to_16(imm); // iiiii
                     break;
             }
 
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
+
+            switch (ins)
+            {
+                case INS_sve_ld1rd:
+                    code |= insEncodeUimm6_MultipleOf8_21_to_16(imm); // iiiiii
+                    break;
+
+                default:
+                    assert(ins == INS_sve_ld1rsw);
+                    code |= insEncodeUimm6_MultipleOf4_21_to_16(imm); // iiiiii
+                    break;
+            }
+
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+            code = emitInsCodeSve(ins, fmt);
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -22445,14 +22544,6 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             break;
 
         case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
-            code = emitInsCodeSve(ins, fmt);
-            dst += emitOutput_Instr(dst, code);
-            break;
-
-        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             code = emitInsCodeSve(ins, fmt);
             dst += emitOutput_Instr(dst, code);
             break;
@@ -22878,7 +22969,14 @@ void emitter::emitDispSveImmMulVl(regNumber reg1, ssize_t imm)
 void emitter::emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm)
 {
     printf("[");
-    emitDispSveReg(reg1, opt, imm != 0);
+    if (isVectorRegister(reg1))
+    {
+        emitDispSveReg(reg1, opt, imm != 0);
+    }
+    else
+    {
+        emitDispReg(reg1, EA_8BYTE, imm != 0);
+    }
     if (imm != 0)
     {
         // This does not have to be printed as hex.
@@ -25885,6 +25983,14 @@ void emitter::emitDispInsHelp(
         case IF_SVE_JI_3A_A: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit scatter store (vector plus immediate)
         // {<Zt>.D }, <Pg>, [<Zn>.D{, #<imm>}]
         case IF_SVE_JL_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit scatter store (vector plus immediate)
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+        case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             imm = emitGetInsSC(id);
             emitDispSveConsecutiveRegList(id->idReg1(), insGetSveReg1ListSize(id->idIns()), id->idInsOpt(), true);
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);
@@ -25924,16 +26030,6 @@ void emitter::emitDispInsHelp(
 
         // <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
         case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
-            break;
-
-        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             break;
 
         default:
@@ -29504,6 +29600,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
 
+        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            break;
+
         case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
                            // offsets)
             switch (ins)
@@ -29659,14 +29763,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
-            break;
-
-        case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-        case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
-            result.insThroughput = PERFSCORE_THROUGHPUT_3C;
-            result.insLatency    = PERFSCORE_LATENCY_6C;
             break;
 
         default:
