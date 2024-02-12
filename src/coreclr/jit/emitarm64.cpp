@@ -1711,6 +1711,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_FA_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
         case IF_SVE_FB_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
         case IF_SVE_FC_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
+        case IF_SVE_GV_3A: // ...........immmm ....rrnnnnnddddd -- SVE floating-point complex multiply-add (indexed)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));    // ddddd
             assert(isVectorRegister(id->idReg2()));    // nnnnn
@@ -12590,6 +12591,19 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
             }
             break;
 
+        case INS_sve_fcmla:
+            assert(opt == INS_OPTS_SCALABLE_S);
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isVectorRegister(reg2));    // nnnnn
+            assert(isLowVectorRegister(reg3)); // mmmm
+            assert(isValidImm1(imm1));         // i
+            assert(isValidRot(imm2));          // rr
+
+            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
+            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            fmt = IF_SVE_GV_3A;
+            break;
+
         default:
             unreached();
             break;
@@ -21583,6 +21597,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FA_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer dot product (indexed)
         case IF_SVE_FB_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex integer multiply-add (indexed)
         case IF_SVE_FC_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
+        case IF_SVE_GV_3A: // ...........immmm ....rrnnnnnddddd -- SVE floating-point complex multiply-add (indexed)
         {
             const ssize_t imm   = emitGetInsSC(id);
             const ssize_t rot   = (imm & 0b11);
@@ -25055,6 +25070,8 @@ void emitter::emitDispInsHelp(
         case IF_SVE_FC_3A: // ...........iimmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
         // SQRDCMLAH <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
         case IF_SVE_FC_3B: // ...........immmm ....rrnnnnnddddd -- SVE2 complex saturating multiply-add (indexed)
+        // FCMLA <Zda>.S, <Zn>.S, <Zm>.S[<imm>], <const>
+        case IF_SVE_GV_3A: // ...........immmm ....rrnnnnnddddd -- SVE floating-point complex multiply-add (indexed)
         {
             const ssize_t imm   = emitGetInsSC(id);
             const ssize_t rot   = (imm & 0b11);
@@ -28390,6 +28407,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_EB_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE broadcast integer immediate (unpredicated)
         case IF_SVE_EC_1A: // ........xx...... ..hiiiiiiiiddddd -- SVE integer add/subtract immediate (unpredicated)
         case IF_SVE_EB_1B: // ........xx...... ...........ddddd -- SVE broadcast integer immediate (unpredicated)
+        case IF_SVE_GV_3A: // ...........immmm ....rrnnnnnddddd -- SVE floating-point complex multiply-add (indexed)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
