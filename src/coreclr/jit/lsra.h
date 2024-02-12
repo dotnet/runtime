@@ -64,6 +64,26 @@ RegisterType regType(T type)
     }
 }
 
+template <class T>
+unsigned regTypeIndex(T type)
+{
+    if (varTypeUsesIntReg(type))
+    {
+        return 0;
+    }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    else if (varTypeUsesMaskReg(type))
+    {
+        return 2;
+    }
+#endif // TARGET_XARCH && FEATURE_SIMD
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        return 1;
+    }
+}
+
 //------------------------------------------------------------------------
 // useFloatReg: Check if the given var_type should be allocated to a FloatRegisterType
 //
@@ -1760,7 +1780,12 @@ private:
     void resetAvailableRegs()
     {
         m_AvailableRegs          = allAvailableRegs;
-        m_RegistersWithConstants = RBM_NONE;
+        m_RegistersWithConstants[0] = RBM_NONE;
+        m_RegistersWithConstants[1] = RBM_NONE;
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        m_RegistersWithConstants[2] = RBM_NONE;
+#endif
+
     }
 
     bool isRegAvailable(regNumber reg, var_types regType)
@@ -1801,21 +1826,25 @@ private:
                                              regMaskOnlyOne* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
-    // TODO: This should be m_GprWithConstants, m_FloatRegsWithConstant, etc.
-    regMaskMixed m_RegistersWithConstants;
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    regMaskOnlyOne m_RegistersWithConstants[3];
+#else
+    regMaskOnlyOne m_RegistersWithConstants[2];
+#endif
+
     void clearConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants &= ~getRegMask(reg, regType);
+        m_RegistersWithConstants[regTypeIndex(regType)] &= ~getRegMask(reg, regType);
     }
     void setConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants |= getRegMask(reg, regType);
+        m_RegistersWithConstants[regTypeIndex(regType)] |= getRegMask(reg, regType);
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
         reg                    = getRegForType(reg, regType);
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        return (m_RegistersWithConstants & regMask) == regMask;
+        return (m_RegistersWithConstants[regTypeIndex(regType)] & regMask) == regMask;
     }
     regMaskOnlyOne getMatchingConstants(regMaskMixed mask, Interval* currentInterval, RefPosition* refPosition);
 

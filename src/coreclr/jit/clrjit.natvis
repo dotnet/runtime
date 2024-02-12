@@ -138,15 +138,25 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
             <Exec>reg = reg >> 1</Exec>
           </Loop>
         </CustomListItems>
-        <Item Name="RegistersWithConstants mask">this-&gt;m_RegistersWithConstants</Item>
+        <Item Name="RegistersWithConstants Integer mask">this-&gt;m_RegistersWithConstants[0]</Item>
         <CustomListItems>
-          <Variable Name="reg" InitialValue="this->m_RegistersWithConstants" />
+          <Variable Name="reg" InitialValue="this->m_RegistersWithConstants[0]" />
           <Variable Name="regIndex" InitialValue="0" />
           <Loop Condition="reg != 0">
             <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
             <Exec>regIndex++</Exec>
             <Exec>reg = reg >> 1</Exec>
           </Loop>
+        </CustomListItems>
+        <Item Name="RegistersWithConstants Float mask">this-&gt;m_RegistersWithConstants[1]</Item>
+        <CustomListItems>
+            <Variable Name="reg" InitialValue="this->m_RegistersWithConstants[1]" />
+            <Variable Name="regIndex" InitialValue="0" />
+            <Loop Condition="reg != 0">
+                <Item Condition="(reg &amp; 1) != 0">((regNumber)regIndex),en</Item>
+                <Exec>regIndex++</Exec>
+                <Exec>reg = reg >> 1</Exec>
+            </Loop>
         </CustomListItems>
     </Expand>
   </Type>
