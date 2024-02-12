@@ -148,8 +148,19 @@ namespace System.Reflection.Metadata
                     return null;
                 }
 
-                // TODO adsitnik: don't allocate an array that would require reaching the max depth limit
-                (genericArgs ??= new TypeName[genericArgCount])[genericArgIndex++] = genericArg;
+                if (genericArgs is null)
+                {
+                    // Parsing the rest would hit the limit.
+                    // -1 because the first generic arg has been already parsed.
+                    if (maxObservedRecursionCheck + genericArgCount - 1 > _parseOptions.MaxRecursiveDepth)
+                    {
+                        recursiveDepth = _parseOptions.MaxRecursiveDepth;
+                        return null;
+                    }
+
+                    genericArgs = new TypeName[genericArgCount];
+                }
+                genericArgs[genericArgIndex++] = genericArg;
 
                 if (TryStripFirstCharAndTrailingSpaces(ref _inputString, ','))
                 {
@@ -216,7 +227,7 @@ namespace System.Reflection.Metadata
             {
 #if SYSTEM_PRIVATE_CORELIB
                 // backward compat: throw FileLoadException for non-empty invalid strings
-                if (!_throwOnError && _inputString.TrimStart().StartsWith(",")) // TODO: refactor
+                if (!_throwOnError && _inputString.TrimStart().StartsWith(",")) // TODO adsitnik: refactor
                 {
                     return null;
                 }
@@ -270,7 +281,7 @@ namespace System.Reflection.Metadata
                 int assemblyNameLength = (int)Math.Min((uint)_inputString.IndexOf(']'), (uint)_inputString.Length);
                 ReadOnlySpan<char> candidate = _inputString.Slice(0, assemblyNameLength);
                 AssemblyNameParser.AssemblyNameParts parts = default;
-                // TODO: make sure the parsing below is safe for untrusted input
+                // TODO adsitnik: make sure the parsing below is safe for untrusted input
                 if (!AssemblyNameParser.TryParse(candidate, ref parts))
                 {
                     return false;
@@ -280,7 +291,7 @@ namespace System.Reflection.Metadata
                 assemblyName = new();
                 assemblyName.Init(parts);
 #else
-                // TODO: fix the perf and avoid doing it twice (missing public ctors for System.Reflection.Metadata)
+                // TODO adsitnik: fix the perf and avoid doing it twice (missing public ctors for System.Reflection.Metadata)
                 assemblyName = new(candidate.ToString());
 #endif
                 _inputString = _inputString.Slice(assemblyNameLength);
@@ -319,67 +330,6 @@ namespace System.Reflection.Metadata
             }
             depth++;
             return true;
-        }
-
-        private static bool TryParseNextDecorator(ref ReadOnlySpan<char> input, out int rankOrModifier)
-        {
-            // Then try pulling a single decorator.
-            // Whitespace cannot precede the decorator, but it can follow the decorator.
-
-            ReadOnlySpan<char> originalInput = input; // so we can restore on 'false' return
-
-            if (TryStripFirstCharAndTrailingSpaces(ref input, '*'))
-            {
-                rankOrModifier = TypeNameParserHelpers.Pointer;
-                return true;
-            }
-
-            if (TryStripFirstCharAndTrailingSpaces(ref input, '&'))
-            {
-                rankOrModifier = ByRef;
-                return true;
-            }
-
-            if (TryStripFirstCharAndTrailingSpaces(ref input, '['))
-            {
-                // SZArray := []
-                // MDArray := [*] or [,] or [,,,, ...]
-
-                int rank = 1;
-                bool hasSeenAsterisk = false;
-
-            ReadNextArrayToken:
-
-                if (TryStripFirstCharAndTrailingSpaces(ref input, ']'))
-                {
-                    // End of array marker
-                    rankOrModifier = rank == 1 && !hasSeenAsterisk ? SZArray : rank;
-                    return true;
-                }
-
-                if (!hasSeenAsterisk)
-                {
-                    if (rank == 1 && TryStripFirstCharAndTrailingSpaces(ref input, '*'))
-                    {
-                        // [*]
-                        hasSeenAsterisk = true;
-                        goto ReadNextArrayToken;
-                    }
-                    else if (TryStripFirstCharAndTrailingSpaces(ref input, ','))
-                    {
-                        // [,,, ...]
-                        checked { rank++; }
-                        goto ReadNextArrayToken;
-                    }
-                }
-
-                // Don't know what this token is.
-                // Fall through to 'return false' statement.
-            }
-
-            input = originalInput; // ensure 'ref input' not mutated
-            rankOrModifier = 0;
-            return false;
         }
     }
 }

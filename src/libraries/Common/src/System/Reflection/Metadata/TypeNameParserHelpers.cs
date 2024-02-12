@@ -268,6 +268,67 @@ namespace System.Reflection.Metadata
             return true;
         }
 
+        internal static bool TryParseNextDecorator(ref ReadOnlySpan<char> input, out int rankOrModifier)
+        {
+            // Then try pulling a single decorator.
+            // Whitespace cannot precede the decorator, but it can follow the decorator.
+
+            ReadOnlySpan<char> originalInput = input; // so we can restore on 'false' return
+
+            if (TryStripFirstCharAndTrailingSpaces(ref input, '*'))
+            {
+                rankOrModifier = TypeNameParserHelpers.Pointer;
+                return true;
+            }
+
+            if (TryStripFirstCharAndTrailingSpaces(ref input, '&'))
+            {
+                rankOrModifier = ByRef;
+                return true;
+            }
+
+            if (TryStripFirstCharAndTrailingSpaces(ref input, '['))
+            {
+                // SZArray := []
+                // MDArray := [*] or [,] or [,,,, ...]
+
+                int rank = 1;
+                bool hasSeenAsterisk = false;
+
+            ReadNextArrayToken:
+
+                if (TryStripFirstCharAndTrailingSpaces(ref input, ']'))
+                {
+                    // End of array marker
+                    rankOrModifier = rank == 1 && !hasSeenAsterisk ? SZArray : rank;
+                    return true;
+                }
+
+                if (!hasSeenAsterisk)
+                {
+                    if (rank == 1 && TryStripFirstCharAndTrailingSpaces(ref input, '*'))
+                    {
+                        // [*]
+                        hasSeenAsterisk = true;
+                        goto ReadNextArrayToken;
+                    }
+                    else if (TryStripFirstCharAndTrailingSpaces(ref input, ','))
+                    {
+                        // [,,, ...]
+                        checked { rank++; }
+                        goto ReadNextArrayToken;
+                    }
+                }
+
+                // Don't know what this token is.
+                // Fall through to 'return false' statement.
+            }
+
+            input = originalInput; // ensure 'ref input' not mutated
+            rankOrModifier = 0;
+            return false;
+        }
+
         internal static bool TryStripFirstCharAndTrailingSpaces(ref ReadOnlySpan<char> span, char value)
         {
             if (!span.IsEmpty && span[0] == value)

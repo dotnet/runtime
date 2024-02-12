@@ -57,6 +57,10 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("NonGenericTypeUsingGenericSyntax[[type1, assembly1], [type2, assembly2]]")]
         [InlineData("NonGenericTypeUsingGenericSyntax[type1,type2]")]
         [InlineData("NonGenericTypeUsingGenericSyntax[[]]")]
+        [InlineData("ExtraCommaAfterFirstGenericArg`1[[type1, assembly1],]")]
+        [InlineData("MissingClosingSquareBrackets`1[[type1, assembly1")] // missing ]]
+        [InlineData("MissingClosingSquareBracket`1[[type1, assembly1]")] // missing ]
+        [InlineData("CantMakeByRefToByRef&&")]
         public void InvalidTypeNamesAreNotAllowed(string input)
         {
             Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan()));
@@ -125,6 +129,121 @@ namespace System.Reflection.Metadata.Tests
             {
                 if (hex >= '0' && hex <= '9') return (byte)(hex - '0');
                 else return (byte)(hex - 'a' + 10);
+            }
+        }
+
+        [Theory]
+        [InlineData(10, "*")] // pointer to pointer
+        [InlineData(10, "[]")] // array of arrays
+        [InlineData(100, "*")]
+        [InlineData(100, "[]")]
+        public void MaxRecursiveDepthIsRespected_TooManyDecorators(int maxDepth, string decorator)
+        {
+            TypeNameParserOptions options = new()
+            {
+                MaxRecursiveDepth = maxDepth
+            };
+
+            string notTooMany = $"System.Int32{string.Join("", Enumerable.Repeat(decorator, maxDepth - 1))}";
+            string tooMany = $"System.Int32{string.Join("", Enumerable.Repeat(decorator, maxDepth))}";
+
+            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(tooMany.AsSpan(), options));
+            Assert.False(TypeName.TryParse(tooMany.AsSpan(), out _, options));
+
+            TypeName parsed = TypeName.Parse(notTooMany.AsSpan(), options);
+            ValidateUnderlyingType(maxDepth, parsed, decorator);
+
+            Assert.True(TypeName.TryParse(notTooMany.AsSpan(), out parsed, options));
+            ValidateUnderlyingType(maxDepth, parsed, decorator);
+
+            static void ValidateUnderlyingType(int maxDepth, TypeName parsed, string decorator)
+            {
+                for (int i = 0; i < maxDepth - 1; i++)
+                {
+                    Assert.Equal(decorator == "*", parsed.IsUnmanagedPointerType);
+                    Assert.Equal(decorator == "[]", parsed.IsSzArrayType);
+                    Assert.False(parsed.IsConstructedGenericType);
+
+                    parsed = parsed.UnderlyingType;
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(100)]
+        public void MaxRecursiveDepthIsRespected_TooDeepGenerics(int maxDepth)
+        {
+            TypeNameParserOptions options = new()
+            {
+                MaxRecursiveDepth = maxDepth
+            };
+
+            string tooDeep = GetName(maxDepth);
+            string notTooDeep = GetName(maxDepth - 1);
+
+            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(tooDeep.AsSpan(), options));
+            Assert.False(TypeName.TryParse(tooDeep.AsSpan(), out _, options));
+
+            TypeName parsed = TypeName.Parse(notTooDeep.AsSpan(), options);
+            Validate(maxDepth, parsed);
+
+            Assert.True(TypeName.TryParse(notTooDeep.AsSpan(), out parsed, options));
+            Validate(maxDepth, parsed);
+
+            static string GetName(int depth)
+            {
+                // MakeGenericType is not used here, as it crashes for larger depths
+                string coreLibName = typeof(object).Assembly.FullName;
+                string fullName = typeof(int).AssemblyQualifiedName!;
+                for (int i = 0; i < depth; i++)
+                {
+                    fullName = $"System.Collections.Generic.List`1[[{fullName}]], {coreLibName}";
+                }
+                return fullName;
+            }
+
+            static void Validate(int maxDepth, TypeName parsed)
+            {
+                for (int i = 0; i < maxDepth - 1; i++)
+                {
+                    Assert.True(parsed.IsConstructedGenericType);
+                    parsed = parsed.GetGenericArguments()[0];
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(100)]
+        public void MaxRecursiveDepthIsRespected_TooManyGenericArguments(int maxDepth)
+        {
+            TypeNameParserOptions options = new()
+            {
+                MaxRecursiveDepth = maxDepth
+            };
+
+            string tooMany = GetName(maxDepth);
+            string notTooMany = GetName(maxDepth - 1);
+
+            Assert.Throws<InvalidOperationException>(() => TypeName.Parse(tooMany.AsSpan(), options));
+            Assert.False(TypeName.TryParse(tooMany.AsSpan(), out _, options));
+
+            TypeName parsed = TypeName.Parse(notTooMany.AsSpan(), options);
+            Validate(parsed, maxDepth);
+
+            Assert.True(TypeName.TryParse(notTooMany.AsSpan(), out parsed, options));
+            Validate(parsed, maxDepth);
+
+            static string GetName(int depth)
+                => $"Some.GenericType`{depth}[{string.Join(",", Enumerable.Repeat("System.Int32", depth))}]";
+
+            static void Validate(TypeName parsed, int maxDepth)
+            {
+                Assert.True(parsed.IsConstructedGenericType);
+                TypeName[] genericArgs = parsed.GetGenericArguments();
+                Assert.Equal(maxDepth - 1, genericArgs.Length);
+                Assert.All(genericArgs, arg => Assert.False(arg.IsConstructedGenericType));
             }
         }
 

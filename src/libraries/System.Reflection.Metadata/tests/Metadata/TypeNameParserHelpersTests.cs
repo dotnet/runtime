@@ -144,11 +144,35 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("*", true, TypeNameParserHelpers.Pointer, "")]
+        [InlineData(" *", false, default(int), " *")] // Whitespace cannot precede the decorator
+        [InlineData("*    *", true, TypeNameParserHelpers.Pointer, "*")] // but it can follow the decorator.
+        [InlineData("&", true, TypeNameParserHelpers.ByRef, "")]
+        [InlineData("\t&", false, default(int), "\t&")]
+        [InlineData("&\t\r\n[]", true, TypeNameParserHelpers.ByRef, "[]")]
+        [InlineData("[]", true, TypeNameParserHelpers.SZArray, "")]
+        [InlineData("\r\n[]", false, default(int), "\r\n[]")]
+        [InlineData("[]   []", true, TypeNameParserHelpers.SZArray, "[]")]
+        [InlineData("[,]", true, 2, "")]
+        [InlineData(" [,,,]", false, default(int), " [,,,]")]
+        [InlineData("[,,,,]   *[]", true, 5, "*[]")]
+        public void TryParseNextDecoratorParsesTheDecoratorAndConsumesFollowingWhitespaces(
+            string input, bool expectedResult, int expectedModifier, string expectedConsumedInput)
+        {
+            ReadOnlySpan<char> inputSpan = input.AsSpan();
+
+            Assert.Equal(expectedResult, TypeNameParserHelpers.TryParseNextDecorator(ref inputSpan, out int parsedModifier));
+            Assert.Equal(expectedModifier, parsedModifier);
+            Assert.Equal(expectedConsumedInput, inputSpan.ToString());
+        }
+
+        [Theory]
         [InlineData(" , ", ',', false, " , ")] // it can not start with a whitespace
         [InlineData("AB", ',', false, "AB")] // does not start with given character
         [InlineData(",       ", ',', true, "")] // trimming
         [InlineData(",[AB]", ',', true, "[AB]")] // nothing to trim
-        public void TryStripFirstCharAndTrailingSpacesWorksAsExpected(string input, char argument, bool expectedResult, string expectedConsumedInput)
+        public void TryStripFirstCharAndTrailingSpacesWorksAsExpected(
+            string input, char argument, bool expectedResult, string expectedConsumedInput)
         {
             ReadOnlySpan<char> inputSpan = input.AsSpan();
 
