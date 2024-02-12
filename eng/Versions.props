@@ -145,8 +145,6 @@
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
-    <!-- when building from source we need to use the current version of MetadataLoadContext -->
-    <SystemReflectionMetadataLoadContextToolsetVersion Condition="'$(DotNetBuildFromSource)' == 'true'">$(SystemReflectionMetadataLoadContextVersion)</SystemReflectionMetadataLoadContextToolsetVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.24108.2</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.24108.2</SystemComponentModelTypeConverterTestDataVersion>
