@@ -8676,12 +8676,16 @@ void emitter::emitIns_R_R(instruction     ins,
             break;
 
         case INS_sve_pmov:
-            if (isPredicateRegister(reg1) && isVectorRegister(reg2))
+            if (sopt == INS_SCALABLE_OPTS_TO_PREDICATE)
             {
+                assert(isPredicateRegister(reg1));
+                assert(isVectorRegister(reg2));
                 fmt = IF_SVE_CE_2A;
             }
-            else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
+            else if (sopt == INS_SCALABLE_OPTS_TO_VECTOR)
             {
+                assert(isVectorRegister(reg1));
+                assert(isPredicateRegister(reg2));
                 fmt = IF_SVE_CF_2A;
             }
             else
@@ -9708,8 +9712,10 @@ void emitter::emitIns_R_R_I(instruction     ins,
             break;
 
         case INS_sve_pmov:
-            if (isPredicateRegister(reg1) && isVectorRegister(reg2))
+            if (sopt == INS_SCALABLE_OPTS_TO_PREDICATE)
             {
+                assert(isPredicateRegister(reg1));
+                assert(isVectorRegister(reg2));
                 switch (opt)
                 {
                     case INS_OPTS_SCALABLE_D:
@@ -9728,8 +9734,10 @@ void emitter::emitIns_R_R_I(instruction     ins,
                         unreached();
                 }
             }
-            else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
+            else if (sopt == INS_SCALABLE_OPTS_TO_VECTOR)
             {
+                assert(isVectorRegister(reg1));
+                assert(isPredicateRegister(reg2));
                 switch (opt)
                 {
                     case INS_OPTS_SCALABLE_D:
@@ -27205,7 +27213,7 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_H, false); // NNNN
             break;
         case IF_SVE_CF_2D: // .............ii. .......NNNNddddd -- SVE move predicate into vector
-            emitDispSveRegIndex(id->idReg2(), emitGetInsSC(id), true);                                // ddddd
+            emitDispSveRegIndex(id->idReg1(), emitGetInsSC(id), true);                                // ddddd
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), INS_OPTS_SCALABLE_S, false); // NNNN
             break;
 
