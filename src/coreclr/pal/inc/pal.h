@@ -3981,7 +3981,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define realloc       PAL_realloc
-#define rand          PAL_rand
 #define time          PAL_time
 #define getenv        PAL_getenv
 #define qsort         PAL_qsort
@@ -4365,12 +4364,6 @@ PALIMPORT DLLEXPORT void * __cdecl bsearch(const void *, const void *, size_t, s
 
 PALIMPORT time_t __cdecl time(time_t *);
 
-#endif // !PAL_STDCPP_COMPAT
-
-/* Maximum value that can be returned by the rand function. */
-
-#ifndef PAL_STDCPP_COMPAT
-#define RAND_MAX 0x7fff
 #endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT int __cdecl rand(void);

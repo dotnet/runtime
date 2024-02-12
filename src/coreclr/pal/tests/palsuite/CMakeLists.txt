@@ -88,7 +88,6 @@ add_executable_clr(paltests
   c_runtime/memset/test1/test1.cpp
   c_runtime/qsort/test1/test1.cpp
   c_runtime/qsort/test2/test2.cpp
-  c_runtime/rand_srand/test1/test1.cpp
   c_runtime/realloc/test1/test1.cpp
   c_runtime/sscanf_s/test1/test1.cpp
   c_runtime/sscanf_s/test10/test10.cpp

@@ -24,7 +24,6 @@ c_runtime/memmove/test1/paltest_memmove_test1
 c_runtime/memset/test1/paltest_memset_test1
 c_runtime/qsort/test1/paltest_qsort_test1
 c_runtime/qsort/test2/paltest_qsort_test2
-c_runtime/rand_srand/test1/paltest_rand_srand_test1
 c_runtime/realloc/test1/paltest_realloc_test1
 c_runtime/sscanf_s/test1/paltest_sscanf_test1
 c_runtime/sscanf_s/test10/paltest_sscanf_test10

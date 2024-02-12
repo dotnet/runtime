@@ -136,31 +136,6 @@ extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stderr()
 /*++
 Function:
 
-   rand
-
-   The RAND_MAX value can vary by platform.
-
-See MSDN for more details.
---*/
-int
-__cdecl
-PAL_rand(void)
-{
-    int ret;
-    PERF_ENTRY(rand);
-    ENTRY("rand(void)\n");
-
-    ret = (rand() % (PAL_RAND_MAX + 1));
-
-    LOGEXIT("rand() returning %d\n", ret);
-    PERF_EXIT(rand);
-    return ret;
-}
-
-
-/*++
-Function:
-
    time
 
 See MSDN for more details.
