@@ -166,7 +166,7 @@ export interface t_Cwraps {
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
-    mono_wasm_load_runtime(unused: string, debugLevel: number): void;
+    mono_wasm_load_runtime(debugLevel: number): void;
     mono_wasm_change_debugger_log_level(value: number): void;
 
     mono_wasm_assembly_load(name: string): MonoAssembly;
