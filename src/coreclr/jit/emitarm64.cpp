@@ -9541,45 +9541,50 @@ void emitter::emitIns_R_R_I(instruction     ins,
             break;
 
         case INS_sve_pmov:
-            switch (opt)
+            if (isPredicateRegister(reg1) && isVectorRegister(reg2))
             {
-                case INS_OPTS_SCALABLE_D:
-                    assert(isValidUimm3(imm));
-                    if (isPredicateRegister(reg1) && isVectorRegister(reg2))
-                    {
+                switch (opt)
+                {
+                    case INS_OPTS_SCALABLE_D:
+                        assert(isValidUimm<3>(imm));
                         fmt = IF_SVE_CE_2B;
-                    }
-                    else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
-                    {
-                        fmt = IF_SVE_CF_2B;
-                    }
-                    break;
-                case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm2(imm));
-                    if (isPredicateRegister(reg1) && isVectorRegister(reg2))
-                    {
+                        break;
+                    case INS_OPTS_SCALABLE_S:
+                        assert(isValidUimm<2>(imm));
                         fmt = IF_SVE_CE_2D;
-                    }
-                    else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
-                    {
-                        fmt = IF_SVE_CF_2D;
-                    }
-                    break;
-                case INS_OPTS_SCALABLE_H:
-                    assert(isValidImm1(imm));
-                    if (isPredicateRegister(reg1) && isVectorRegister(reg2))
-                    {
+                        break;
+                    case INS_OPTS_SCALABLE_H:
+                        assert(isValidUimm<1>(imm));
                         fmt = IF_SVE_CE_2C;
-                    }
-                    else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
-                    {
-                        fmt = IF_SVE_CF_2C;
-                    }
-                    break;
-                default:
-                    break;
+                        break;
+                    default:
+                        unreached();
+                }
             }
-            assert(fmt != IF_NONE && "invalid combination of size and register type specified");
+            else if (isVectorRegister(reg1) && isPredicateRegister(reg2))
+            {
+                switch (opt)
+                {
+                    case INS_OPTS_SCALABLE_D:
+                        assert(isValidUimm<3>(imm));
+                        fmt = IF_SVE_CF_2B;
+                        break;
+                    case INS_OPTS_SCALABLE_S:
+                        assert(isValidUimm<2>(imm));
+                        fmt = IF_SVE_CF_2D;
+                        break;
+                    case INS_OPTS_SCALABLE_H:
+                        assert(isValidUimm<1>(imm));
+                        fmt = IF_SVE_CF_2C;
+                        break;
+                    default:
+                        unreached();
+                }
+            }
+            else
+            {
+                unreached();
+            }
             break;
 
         case INS_sve_sqrshrn:
@@ -24529,7 +24534,7 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 void emitter::emitDispSveReg(regNumber reg, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf("%s", emitSveRegName(reg));
+    printf(emitSveRegName(reg));
 
     if (addComma)
         emitDispComma();
@@ -24555,12 +24560,8 @@ void emitter::emitDispSveReg(regNumber reg, insOpts opt, bool addComma)
 void emitter::emitDispSveRegIndex(regNumber reg, ssize_t index, bool addComma)
 {
     assert(isVectorRegister(reg));
-    printf("%s", emitSveRegName(reg));
-
-    printf("[%d]", static_cast<int>(index));
-
-    if (addComma)
-        emitDispComma();
+    printf(emitSveRegName(reg));
+    emitDispElementIndex(index, addComma);
 }
 
 //------------------------------------------------------------------------

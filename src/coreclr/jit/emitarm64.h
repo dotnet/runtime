@@ -593,16 +593,23 @@ static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, em
 // for the 'dtypeh' and 'dtypel' fields.
 static code_t insEncodeSveElemsize_dtypeh_dtypel(instruction ins, insFormat fmt, emitAttr size, code_t code);
 
-// Encodes an immediate value in consecutive bits from most signficant position 'hi' to least significant
+// Encodes an immediate value in consecutive bits from most significant position 'hi' to least significant
 // position 'lo'.
 template <const size_t hi, const size_t lo>
 static code_t insEncodeUimm(size_t imm)
 {
-    static_assert(hi >= lo && hi < sizeof(code_t) * 8);
+    // lo <= hi < 32
+    static_assert((hi >= lo) && (hi < sizeof(code_t) * BITS_PER_BYTE));
+
     const size_t imm_bits = hi - lo + 1;
+    static_assert(imm_bits < sizeof(code_t) * BITS_PER_BYTE);
+
     const size_t imm_max  = 1 << imm_bits;
     assert(imm < imm_max);
-    return static_cast<code_t>(imm << lo);
+
+    code_t result = static_cast<code_t>(imm << lo);
+    assert((result >> lo) == imm);
+    return result;
 }
 
 // Encodes an immediate value across two ranges of consecutive bits, splitting the bits of the immediate
@@ -611,16 +618,18 @@ static code_t insEncodeUimm(size_t imm)
 template <const size_t hi1, const size_t lo1, const size_t hi2, const size_t lo2>
 static code_t insEncodeSplitUimm(size_t imm)
 {
-    static_assert(hi1 >= lo1 && lo1 > hi2 && hi2 >= lo2);
-    static_assert(hi1 < sizeof(code_t) * 8);
+    static_assert((hi1 >= lo1) && (lo1 > hi2) && (hi2 >= lo2));
+    static_assert(hi1 < sizeof(code_t) * BITS_PER_BYTE);
 
     const size_t hi_bits = hi1 - lo1 + 1;
     const size_t lo_bits = hi2 - lo2 + 1;
+
     const size_t imm_max = 1 << (hi_bits + lo_bits);
     assert(imm < imm_max);
 
     const size_t hi_max = 1 << hi_bits;
     const size_t lo_max = 1 << lo_bits;
+
     size_t       immhi  = (imm >> lo_bits) & (hi_max - 1);
     size_t       immlo  = imm & (lo_max - 1);
 
