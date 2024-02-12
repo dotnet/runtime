@@ -67,7 +67,7 @@ private:
     //
 
 private:
-    bool      rsNeededSpillReg;   // true if this method needed to spill any registers
+    bool         rsNeededSpillReg;   // true if this method needed to spill any registers
     regMaskMixed rsModifiedRegsMask; // mask of the registers modified by the current function.
 
 #ifdef DEBUG
@@ -110,7 +110,8 @@ public:
         SetMaskVars(_rsMaskVars | addMaskVars);
     }
 
-    void RemoveMaskVars(regMaskMixed removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset DiffD)
+    void RemoveMaskVars(regMaskMixed removeMaskVars) // remove 'removeMaskVars' from the rsMaskVars set (like bitset
+                                                     // DiffD)
     {
         SetMaskVars(_rsMaskVars & ~removeMaskVars);
     }
@@ -125,19 +126,19 @@ private:
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     regMaskMixed rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
-#endif                           // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif                              // TARGET_ARMARCH || TARGET_LOONGARCH64
 
-public:                    // TODO-Cleanup: Should be private, but Compiler uses it
+public:                     // TODO-Cleanup: Should be private, but Compiler uses it
     regMaskGpr rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)
 
 public: // The PreSpill masks are used in LclVars.cpp
 #ifdef TARGET_ARM
     regMaskGpr rsMaskPreSpillAlign;  // Mask of alignment padding added to prespill to keep double aligned args
-                                    // at aligned stack addresses.
+                                     // at aligned stack addresses.
     regMaskGpr rsMaskPreSpillRegArg; // mask of incoming registers that are spilled at the start of the prolog
-                                    // This includes registers used to pass a struct (or part of a struct)
-                                    // and all enregistered user arguments in a varargs call
-#endif                              // TARGET_ARM
+                                     // This includes registers used to pass a struct (or part of a struct)
+                                     // and all enregistered user arguments in a varargs call
+#endif                               // TARGET_ARM
 
 private:
     //-------------------------------------------------------------------------

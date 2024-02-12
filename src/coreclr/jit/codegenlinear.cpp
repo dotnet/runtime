@@ -202,8 +202,8 @@ void CodeGen::genCodeForBBlist()
         // here. That would require handling the changes in recordVarLocationsAtStartOfBB().
 
         regMaskMixed newLiveRegSet  = RBM_NONE;
-        regMaskGpr newRegGCrefSet = RBM_NONE;
-        regMaskGpr newRegByrefSet = RBM_NONE;
+        regMaskGpr   newRegGCrefSet = RBM_NONE;
+        regMaskGpr   newRegByrefSet = RBM_NONE;
 #ifdef DEBUG
         VARSET_TP removedGCVars(VarSetOps::MakeEmpty(compiler));
         VARSET_TP addedGCVars(VarSetOps::MakeEmpty(compiler));

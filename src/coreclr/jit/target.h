@@ -220,7 +220,7 @@ typedef unsigned __int64 regMaskPredicate;
 // 2. singleRegMask > regMaskOnlyOne > (regMaskGpr, regMaskFloat, regMaskPredicate) > regMaskMixed
 // 3. Revisit `regMaskMixed` and see how we can separate them into `regMaskGpr`, `regMaskFloat`, `regMaskPredicate`.
 // 4. Once #3 is solved, `regMaskOnlyOne` should be reduced to 32-bit and so can `regMaskFloat` and `regMaskPredicate`
-// 
+//
 
 //
 // We will add a "//TODO: regMaskOnlyOne" through out the code
@@ -238,7 +238,7 @@ typedef unsigned __int64 regMaskOnlyOne;
 // 0. Revisit regMaskMixed and see if they should be "regMaskMixed"
 // 1. Send separate parameter for `regMaskGpr` and `regMaskFloat`, etc.
 // 2. Have a data structure like struct to pass all these together
-typedef unsigned __int64 regMaskMixed; //TODO: Rename this to regMaskMixed
+typedef unsigned __int64 regMaskMixed; // TODO: Rename this to regMaskMixed
 
 // TODO: For LSRA, the select() method should be regMaskOnlyOne because we will be
 // allocating either GPR or Vector or Mask but not all
@@ -690,7 +690,7 @@ inline regMaskOnlyOne genRegMask(regNumber regNum, var_types type)
  *  These arrays list the callee-saved register numbers (and bitmaps, respectively) for
  *  the current architecture.
  */
-extern const regNumber raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
+extern const regNumber  raRegCalleeSaveOrder[CNT_CALLEE_SAVED];
 extern const regMaskGpr raRbmCalleeSaveOrder[CNT_CALLEE_SAVED];
 
 // This method takes a "compact" bitset of the callee-saved registers, and "expands" it to a full register mask.

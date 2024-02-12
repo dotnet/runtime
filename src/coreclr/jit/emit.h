@@ -2135,11 +2135,11 @@ protected:
     {
         instrDescCGCA() = delete;
 
-        VARSET_TP idcGCvars;    // ... updated GC vars or
-        ssize_t   idcDisp;      // ... big addrmode disp
+        VARSET_TP  idcGCvars;    // ... updated GC vars or
+        ssize_t    idcDisp;      // ... big addrmode disp
         regMaskGpr idcGcrefRegs; // ... gcref registers
         regMaskGpr idcByrefRegs; // ... byref registers
-        unsigned  idcArgCnt;    // ... lots of args or (<0 ==> caller pops args)
+        unsigned   idcArgCnt;    // ... lots of args or (<0 ==> caller pops args)
 
 #if MULTIREG_HAS_SECOND_GC_RET
         // This method handle the GC-ness of the second register in a 2 register returned struct on System V.
@@ -2250,8 +2250,8 @@ protected:
     VARSET_TP  debugPrevGCrefVars;
     VARSET_TP  debugThisGCrefVars;
     regPtrDsc* debugPrevRegPtrDsc;
-    regMaskGpr  debugPrevGCrefRegs;
-    regMaskGpr  debugPrevByrefRegs;
+    regMaskGpr debugPrevGCrefRegs;
+    regMaskGpr debugPrevByrefRegs;
     void       emitDispInsIndent();
     void emitDispGCDeltaTitle(const char* title);
     void emitDispGCRegDelta(const char* title, regMaskGpr prevRegs, regMaskGpr curRegs);
@@ -2645,11 +2645,11 @@ private:
     // in that tracking. See emitSavIG(): the important use of ByrefRegs is commented
     // out, and GCrefRegs is always saved.
 
-    VARSET_TP emitPrevGCrefVars;
+    VARSET_TP  emitPrevGCrefVars;
     regMaskGpr emitPrevGCrefRegs;
     regMaskGpr emitPrevByrefRegs;
 
-    VARSET_TP emitInitGCrefVars;
+    VARSET_TP  emitInitGCrefVars;
     regMaskGpr emitInitGCrefRegs;
     regMaskGpr emitInitByrefRegs;
 
@@ -2668,7 +2668,7 @@ private:
     // really the only one used; the others seem to be calculated, but not
     // used due to bugs.
 
-    VARSET_TP emitThisGCrefVars;
+    VARSET_TP  emitThisGCrefVars;
     regMaskGpr emitThisGCrefRegs; // Current set of registers holding GC references
     regMaskGpr emitThisByrefRegs; // Current set of registers holding BYREF references
 
@@ -2853,7 +2853,7 @@ private:
     // Sets the emitter's record of the currently live GC variables
     // and registers.
     void* emitAddLabel(VARSET_VALARG_TP GCvars,
-                       regMaskGpr        gcrefRegs,
+                       regMaskGpr       gcrefRegs,
                        regMaskGpr byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
 
     // Same as above, except the label is added and is conceptually "inline" in
@@ -3197,7 +3197,7 @@ public:
 
 #ifdef DEBUG
     const char* emitGetFrameReg();
-    void        emitDispRegSet(regMaskMixed regs);
+    void emitDispRegSet(regMaskMixed regs);
     void emitDispVarSet();
 #endif
 

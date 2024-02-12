@@ -5763,8 +5763,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     switch (fmt)
     {
-        int       imm;
-        BYTE*     addr;
+        int        imm;
+        BYTE*      addr;
         regMaskGpr gcrefRegs;
         regMaskGpr byrefRegs;
 

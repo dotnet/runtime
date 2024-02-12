@@ -1714,7 +1714,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     // On Arm arguments are prespilled on stack, which frees r0-r3.
     // For generating Enter callout we would need two registers and one of them has to be r0 to pass profiler handle.
     // The call target register could be any free register.
-    regNumber argReg     = REG_PROFILER_ENTER_ARG;
+    regNumber  argReg     = REG_PROFILER_ENTER_ARG;
     regMaskGpr argRegMask = genRegMask(argReg);
     assert((regSet.rsMaskPreSpillRegArg & argRegMask) != 0);
 
@@ -1891,7 +1891,10 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned   frameSize,
+                               regNumber  initReg,
+                               bool*      pInitRegZeroed,
+                               regMaskGpr maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1964,7 +1967,7 @@ void CodeGen::genPushFltRegs(regMaskFloat regMask)
 
 void CodeGen::genPopFltRegs(regMaskFloat regMask)
 {
-    assert(regMask != 0);                        // Don't call uness we have some registers to pop
+    assert(regMask != 0);                      // Don't call uness we have some registers to pop
     assert(compiler->IsFloatRegMask(regMask)); // Only floasting point registers should be in regMask
 
     regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
@@ -2175,7 +2178,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     regMaskMixed maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
     regMaskFloat maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
-    regMaskGpr maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
+    regMaskGpr   maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
 
     // First, pop float registers
 
@@ -2335,7 +2338,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindBegProlog();
 
     regMaskFloat maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskGpr maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
+    regMaskGpr   maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
 
     regMaskGpr maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
     maskPushRegsInt |= maskStackAlloc;
@@ -2431,7 +2434,7 @@ void CodeGen::genFuncletEpilog()
     assert(genFuncletInfo.fiSaveRegs & RBM_LR);
 
     regMaskFloat maskPopRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskGpr maskPopRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
+    regMaskGpr   maskPopRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
 
     regMaskGpr maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
     maskPopRegsInt |= maskStackAlloc;
@@ -2491,9 +2494,9 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
         regMaskMixed rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
-        unsigned  saveRegsCount   = genCountBits(rsMaskSaveRegs);
-        unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
-        unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
+        unsigned     saveRegsCount   = genCountBits(rsMaskSaveRegs);
+        unsigned     saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
+        unsigned     saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
         if (compiler->lvaMonAcquired != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
@@ -2644,8 +2647,8 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     //
     // <optional> str     rZero1,[rAddr]   // When cnt is odd
 
-    regNumber rAddr;
-    regNumber rCnt = REG_NA; // Invalid
+    regNumber    rAddr;
+    regNumber    rCnt = REG_NA; // Invalid
     regMaskMixed regMask;
 
     regMaskMixed availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers

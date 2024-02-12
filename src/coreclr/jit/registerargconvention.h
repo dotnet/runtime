@@ -22,7 +22,7 @@ struct InitVarDscInfo
     // Support back-filling of FP parameters. This is similar to code in gtMorphArgs() that
     // handles arguments.
     regMaskFloat fltArgSkippedRegMask;
-    bool      anyFloatStackArgs;
+    bool         anyFloatStackArgs;
 #endif // TARGET_ARM
 
 #if defined(TARGET_ARM) || defined(TARGET_RISCV64)

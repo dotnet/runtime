@@ -970,7 +970,7 @@ public:
 
     regMaskSmall gtRsvdRegs; // set of fixed trashed  registers
 
-    unsigned  AvailableTempRegCount(regMaskMixed mask = (regMaskMixed)-1) const;
+    unsigned AvailableTempRegCount(regMaskMixed mask = (regMaskMixed)-1) const;
     regNumber GetSingleTempReg(regMaskMixed mask = (regMaskMixed)-1);
     regNumber ExtractTempReg(regMaskMixed mask = (regMaskMixed)-1);
 

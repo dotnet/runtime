@@ -330,7 +330,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         treeType = tree->TypeGet();
     }
 
-    var_types tempType = RegSet::tmpNormalizeType(treeType);
+    var_types tempType   = RegSet::tmpNormalizeType(treeType);
     bool      floatSpill = false;
 
     if (isFloatRegType(treeType))
@@ -929,7 +929,7 @@ regNumber genRegArgNext(regNumber argReg)
  *  register numbers and corresponding bitmaps.
  */
 
-const regNumber raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
+const regNumber  raRegCalleeSaveOrder[] = {REG_CALLEE_SAVED_ORDER};
 const regMaskGpr raRbmCalleeSaveOrder[] = {RBM_CALLEE_SAVED_ORDER};
 
 regMaskSmall genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)

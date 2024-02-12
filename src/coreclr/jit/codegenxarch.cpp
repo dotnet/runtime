@@ -126,7 +126,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         }
     }
 
-    regNumber regGSCheck;
+    regNumber  regGSCheck;
     regMaskGpr regMaskGSCheck = RBM_NONE;
 
     if (!pushReg)
@@ -2373,7 +2373,10 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned   frameSize,
+                               regNumber  initReg,
+                               bool*      pInitRegZeroed,
+                               regMaskGpr maskArgRegsLiveIn)
 {
     assert(compiler->IsGprRegMask(maskArgRegsLiveIn));
     assert(compiler->compGeneratingProlog);
@@ -5798,9 +5801,9 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     // FP swap is not yet implemented (and should have NYI'd in LSRA)
     assert(varTypeUsesIntReg(type1));
 
-    regNumber oldOp1Reg     = lcl1->GetRegNum();
+    regNumber  oldOp1Reg     = lcl1->GetRegNum();
     regMaskGpr oldOp1RegMask = genRegMask(oldOp1Reg);
-    regNumber oldOp2Reg     = lcl2->GetRegNum();
+    regNumber  oldOp2Reg     = lcl2->GetRegNum();
     regMaskGpr oldOp2RegMask = genRegMask(oldOp2Reg);
 
     // We don't call genUpdateVarReg because we don't have a tree node with the new register.
@@ -6640,8 +6643,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif
 
     // Next move any un-enregistered register arguments back to their register.
-    regMaskGpr fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
-    unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
+    regMaskGpr fixedIntArgMask = RBM_NONE; // tracks the int arg regs occupying fixed args in case of a vararg method.
+    unsigned   firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         varDsc = compiler->lvaGetDesc(varNum);
@@ -6821,7 +6824,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
-                regNumber argReg     = intArgRegs[argNum];
+                regNumber  argReg     = intArgRegs[argNum];
                 regMaskGpr argRegMask = genRegMask(argReg);
 
                 if ((remainingIntArgMask & argRegMask) != 0)
@@ -9143,8 +9146,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
     addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
-    regNumber callTarget           = REG_NA;
-    regMaskMixed killMask             = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    regNumber    callTarget        = REG_NA;
+    regMaskMixed killMask          = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (!addr)
     {
@@ -9173,7 +9176,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             {
                 // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
                 // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
-                callTargetReg            = REG_DEFAULT_HELPER_CALL_TARGET;
+                callTargetReg             = REG_DEFAULT_HELPER_CALL_TARGET;
                 regMaskGpr callTargetMask = genRegMask(callTargetReg);
                 noway_assert((callTargetMask & killMask) == callTargetMask);
             }
@@ -9788,7 +9791,7 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // Emit appropriate unwind.
     //
     PatchpointInfo* const patchpointInfo             = compiler->info.compPatchpointInfo;
-    regMaskMixed const      tier0CalleeSaves           = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
+    regMaskMixed const    tier0CalleeSaves           = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
     regMaskGpr            tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     int const             tier0IntCalleeSaveUsedSize = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
 
@@ -9868,7 +9871,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // Figure out which set of int callee saves still needs saving.
     //
     PatchpointInfo* const patchpointInfo              = compiler->info.compPatchpointInfo;
-    regMaskMixed const      tier0CalleeSaves            = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
+    regMaskMixed const    tier0CalleeSaves            = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
     regMaskGpr            tier0IntCalleeSaves         = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
     unsigned const        tier0IntCalleeSaveUsedSize  = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
     regMaskGpr const      osrIntCalleeSaves           = rsPushRegs & RBM_OSR_INT_CALLEE_SAVED;
@@ -10203,14 +10206,14 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
 
             regMaskMixed const tier0CalleeSaves           = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
-            regMaskGpr const tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskGpr const osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskGpr const allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
-            unsigned const  tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
-            unsigned const  tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
-            unsigned const  osrCalleeSaveSize          = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
-            unsigned const  osrFramePointerSize        = isFramePointerUsed() ? REGSIZE_BYTES : 0;
-            unsigned const  osrAdjust =
+            regMaskGpr const   tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskGpr const   osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskGpr const   allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
+            unsigned const     tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
+            unsigned const     tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
+            unsigned const     osrCalleeSaveSize          = compiler->compCalleeRegsPushed * REGSIZE_BYTES;
+            unsigned const     osrFramePointerSize        = isFramePointerUsed() ? REGSIZE_BYTES : 0;
+            unsigned const     osrAdjust =
                 tier0FrameSize - tier0IntCalleeSaveUsedSize + osrCalleeSaveSize + osrFramePointerSize;
 
             JITDUMP("OSR epilog adjust factors: tier0 frame %u, tier0 callee saves -%u, osr callee saves %u, osr "

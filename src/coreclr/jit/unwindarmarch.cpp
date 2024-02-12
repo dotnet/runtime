@@ -284,7 +284,7 @@ void Compiler::unwindPushPopMaskInt(regMaskGpr maskInt, bool useOpsize16)
 }
 
 void Compiler::unwindPushPopMaskFloat(regMaskFloat maskFloat)
-{    
+{
     // Only floating pointer registers can be specified in 'maskFloat'
     assert(IsFloatRegMask(maskFloat));
 
@@ -297,7 +297,7 @@ void Compiler::unwindPushPopMaskFloat(regMaskFloat maskFloat)
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
-    BYTE      val     = 0;
+    BYTE         val     = 0;
     regMaskFloat valMask = (RBM_F16 | RBM_F17);
 
     while (maskFloat != valMask)

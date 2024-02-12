@@ -14479,8 +14479,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            emitAttr         retSize,
                            emitAttr         secondRetSize,
                            VARSET_VALARG_TP ptrVars,
-                           regMaskGpr        gcrefRegs,
-                           regMaskGpr        byrefRegs,
+                           regMaskGpr       gcrefRegs,
+                           regMaskGpr       byrefRegs,
                            const DebugInfo& di /* = DebugInfo() */,
                            regNumber        ireg /* = REG_NA */,
                            regNumber        xreg /* = REG_NA */,
@@ -18363,8 +18363,8 @@ BYTE* emitter::emitOutputVectorConstant(
 unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
 {
     const unsigned char callInstrSize = sizeof(code_t); // 4 bytes
-    regMaskGpr           gcrefRegs;
-    regMaskGpr           byrefRegs;
+    regMaskGpr          gcrefRegs;
+    regMaskGpr          byrefRegs;
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
 

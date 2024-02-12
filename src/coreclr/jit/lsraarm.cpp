@@ -192,10 +192,10 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int       srcCount;
-    int       dstCount      = 0;
+    int          srcCount;
+    int          dstCount      = 0;
     regMaskMixed killMask      = RBM_NONE;
-    bool      isLocalDefUse = false;
+    bool         isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
     clearBuildState();
@@ -666,7 +666,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BITCAST:
         {
             assert(dstCount == 1);
-            regNumber argReg  = tree->GetRegNum();
+            regNumber      argReg  = tree->GetRegNum();
             regMaskOnlyOne argMask = RBM_NONE;
             if (argReg != REG_COUNT)
             {

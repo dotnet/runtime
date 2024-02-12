@@ -154,14 +154,14 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 
     regMaskMixed relOffsetMask = RBM_CALLEE_SAVED
 #if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
-                              // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
-                              // is excluded from the callee-save register list.
-                              // Make sure the register gets PUSH unwind info in this case,
-                              // since it is pushed as a frame register.
-                              | RBM_FPBASE
+                                 // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+                                 // is excluded from the callee-save register list.
+                                 // Make sure the register gets PUSH unwind info in this case,
+                                 // since it is pushed as a frame register.
+                                 | RBM_FPBASE
 #endif
 #if defined(TARGET_ARM)
-                              | RBM_R11 | RBM_LR | RBM_PC
+                                 | RBM_R11 | RBM_LR | RBM_PC
 #endif
         ;
 
@@ -206,10 +206,10 @@ void Compiler::unwindPushPopMaskCFI(regMaskOnlyOne regMask, bool isFloat)
     assert(IsOnlyOneRegMask(regMask));
 
 #if TARGET_ARM
-    regNumber regNum = isFloat ? REG_PREV(REG_FP_LAST) : REG_INT_LAST;
+    regNumber      regNum = isFloat ? REG_PREV(REG_FP_LAST) : REG_INT_LAST;
     regMaskOnlyOne regBit = isFloat ? genRegMask(regNum) | genRegMask(REG_NEXT(regNum)) : genRegMask(regNum);
 #else
-    regNumber regNum = isFloat ? REG_FP_LAST : REG_INT_LAST;
+    regNumber      regNum = isFloat ? REG_FP_LAST : REG_INT_LAST;
     regMaskOnlyOne regBit = genRegMask(regNum);
 #endif
 

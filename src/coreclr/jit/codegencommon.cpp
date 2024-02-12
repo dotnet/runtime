@@ -2868,12 +2868,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     }
 #endif
 
-    unsigned  argMax;           // maximum argNum value plus 1, (including the RetBuffArg)
-    unsigned  argNum;           // current argNum, always in [0..argMax-1]
-    unsigned  fixedRetBufIndex; // argNum value used by the fixed return buffer argument (ARM64)
-    unsigned  regArgNum;        // index into the regArgTab[] table
+    unsigned       argMax;           // maximum argNum value plus 1, (including the RetBuffArg)
+    unsigned       argNum;           // current argNum, always in [0..argMax-1]
+    unsigned       fixedRetBufIndex; // argNum value used by the fixed return buffer argument (ARM64)
+    unsigned       regArgNum;        // index into the regArgTab[] table
     regMaskOnlyOne regArgMaskLive = regState->rsCalleeRegArgMaskLiveIn;
-    bool      doingFloat     = regState->rsIsFloat;
+    bool           doingFloat     = regState->rsIsFloat;
     assert(compiler->IsOnlyOneRegMask(regArgMaskLive));
     assert((doingFloat && compiler->IsFloatRegMask(regArgMaskLive)) || compiler->IsGprRegMask(regArgMaskLive));
 
@@ -3657,7 +3657,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 // We pick the lowest avail register number
                 regMaskFloat tempMask = genFindLowestBit(fpAvailMask);
-                xtraReg            = genRegNumFromMask(tempMask);
+                xtraReg               = genRegNumFromMask(tempMask);
             }
 #if defined(TARGET_X86)
             // This case shouldn't occur on x86 since NYI gets converted to an assert
@@ -5419,7 +5419,7 @@ void CodeGen::genFinalizeFrame()
 #if defined(TARGET_ARM)
     // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
     regMaskFloat maskPushRegsFloat = maskCalleeRegsPushed & RBM_ALLFLOAT;
-    regMaskGpr maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
+    regMaskGpr   maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
 
     if ((maskPushRegsFloat != RBM_NONE) ||
         (compiler->opts.MinOpts() && (regSet.rsMaskResvd & maskCalleeRegsPushed & RBM_OPT_RSVD)))
@@ -5645,7 +5645,7 @@ void CodeGen::genFnProlog()
     int  GCrefHi  = -INT_MAX;
     bool hasGCRef = false;
 
-    regMaskGpr initRegs    = RBM_NONE; // Registers which must be init'ed.
+    regMaskGpr   initRegs    = RBM_NONE; // Registers which must be init'ed.
     regMaskFloat initFltRegs = RBM_NONE; // FP registers which must be init'ed.
     regMaskFloat initDblRegs = RBM_NONE;
 
@@ -5720,7 +5720,7 @@ void CodeGen::genFnProlog()
 
         if (isInReg)
         {
-            regNumber regForVar = varDsc->GetRegNum();
+            regNumber     regForVar = varDsc->GetRegNum();
             singleRegMask regMask   = genRegMask(regForVar);
             if (!genIsValidFloatReg(regForVar))
             {
@@ -5836,7 +5836,7 @@ void CodeGen::genFnProlog()
     // will be skipped.
     bool           initRegZeroed = false;
     regMaskOnlyOne excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
-    regMaskGpr tempMask;
+    regMaskGpr     tempMask;
 
     // We should not use the special PINVOKE registers as the initReg
     // since they are trashed by the jithelper call to setup the PINVOKE frame

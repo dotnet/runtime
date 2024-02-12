@@ -2891,7 +2891,7 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
  */
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars,
-                            regMaskGpr        gcrefRegs,
+                            regMaskGpr       gcrefRegs,
                             regMaskGpr byrefRegs DEBUG_ARG(BasicBlock* block))
 {
     /* Create a new IG if the current one is non-empty */
@@ -8954,7 +8954,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskGpr regs, BYTE* addr)
         do
         {
             regMaskGpr bit = genFindLowestBit(chg);
-            regNumber reg = genRegNumFromMask(bit);
+            regNumber  reg = genRegNumFromMask(bit);
 
             if (life & bit)
             {

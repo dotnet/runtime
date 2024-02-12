@@ -11091,7 +11091,7 @@ private:
     //
     regMaskFloat rbmAllFloat;
     regMaskFloat rbmFltCalleeTrash;
-    unsigned  cntCalleeTrashFloat;
+    unsigned     cntCalleeTrashFloat;
 
 public:
     FORCEINLINE regMaskFloat get_RBM_ALLFLOAT() const
@@ -11129,8 +11129,8 @@ private:
     //
     regMaskPredicate rbmAllMask;
     regMaskPredicate rbmMskCalleeTrash;
-    unsigned  cntCalleeTrashMask;
-    regMaskMixed varTypeCalleeTrashRegs[TYP_COUNT];
+    unsigned         cntCalleeTrashMask;
+    regMaskMixed     varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:
     FORCEINLINE regMaskPredicate get_RBM_ALLMASK() const

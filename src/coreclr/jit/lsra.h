@@ -716,7 +716,7 @@ public:
                      BasicBlock*      toBlock,
                      ResolveType      resolveType,
                      VARSET_VALARG_TP liveSet,
-                     regMaskMixed        terminatorConsumedRegs);
+                     regMaskMixed     terminatorConsumedRegs);
 
     void resolveEdges();
 
@@ -785,19 +785,19 @@ private:
 #elif defined(TARGET_ARM)
     // On ARM, we may need two registers to set up the target register for a virtual call, so we need
     // to have at least the maximum number of arg registers, plus 2.
-    static const regMaskGpr LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
     static const regMaskFloat LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
 #elif defined(TARGET_ARM64)
-    static const regMaskGpr LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
     static const regMaskFloat LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
 #elif defined(TARGET_X86)
-    static const regMaskGpr LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskFloat LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
 #elif defined(TARGET_LOONGARCH64)
-    static const regMaskGpr LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
     static const regMaskFloat LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #elif defined(TARGET_RISCV64)
-    static const regMaskGpr LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+    static const regMaskGpr   LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
     static const regMaskFloat LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #else
 #error Unsupported or unset target architecture
@@ -810,9 +810,9 @@ private:
 
     // TODO: Can have separate methods for each type
     regMaskMixed getConstrainedRegMask(RefPosition* refPosition,
-                                    regMaskMixed    regMaskActual,
-                                    regMaskMixed   regMaskConstrain,
-                                    unsigned     minRegCount);
+                                       regMaskMixed regMaskActual,
+                                       regMaskMixed regMaskConstrain,
+                                       unsigned     minRegCount);
     regMaskMixed stressLimitRegs(RefPosition* refPosition, regMaskMixed mask);
 
     // This controls the heuristics used to select registers
@@ -1096,7 +1096,7 @@ private:
     bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskMixed killMask);
 
     regMaskOnlyOne allRegs(RegisterType rt);
-    regMaskGpr allByteRegs();
+    regMaskGpr   allByteRegs();
     regMaskFloat allSIMDRegs();
     regMaskFloat lowSIMDRegs();
     regMaskFloat internalFloatRegCandidates();
@@ -1158,12 +1158,12 @@ private:
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
 
-    RefPosition* newRefPosition(Interval*    theInterval,
-                                LsraLocation theLocation,
-                                RefType      theRefType,
-                                GenTree*     theTreeNode,
-                                regMaskOnlyOne   mask,
-                                unsigned     multiRegIdx = 0);
+    RefPosition* newRefPosition(Interval*      theInterval,
+                                LsraLocation   theLocation,
+                                RefType        theRefType,
+                                GenTree*       theTreeNode,
+                                regMaskOnlyOne mask,
+                                unsigned       multiRegIdx = 0);
 
     RefPosition* newRefPosition(
         regNumber reg, LsraLocation theLocation, RefType theRefType, GenTree* theTreeNode, regMaskOnlyOne mask);
@@ -1224,13 +1224,12 @@ private:
     bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     void assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     regMaskFloat getConsecutiveCandidates(regMaskFloat  candidates,
-                                            RefPosition*   refPosition,
-                                            regMaskFloat* busyCandidates);
+                                          RefPosition*  refPosition,
+                                          regMaskFloat* busyCandidates);
     regMaskFloat filterConsecutiveCandidates(regMaskFloat  candidates,
-                                          unsigned int registersNeeded,
-                                               regMaskFloat* allConsecutiveCandidates);
-    regMaskFloat filterConsecutiveCandidatesForSpill(regMaskFloat consecutiveCandidates,
-                                                               unsigned int registersNeeded);
+                                             unsigned int  registersNeeded,
+                                             regMaskFloat* allConsecutiveCandidates);
+    regMaskFloat filterConsecutiveCandidatesForSpill(regMaskFloat consecutiveCandidates, unsigned int registersNeeded);
 #endif // TARGET_ARM64
 
     regMaskOnlyOne getFreeCandidates(regMaskOnlyOne candidates ARM_ARG(var_types regType))
@@ -1263,11 +1262,11 @@ private:
 
         // Perform register selection and update currentInterval or refPosition
         template <bool hasConsecutiveRegister = false>
-        FORCEINLINE singleRegMask select(Interval*                currentInterval,
-                                     RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+        FORCEINLINE singleRegMask select(Interval*    currentInterval,
+                                         RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
-        FORCEINLINE singleRegMask selectMinimal(Interval*                currentInterval,
-                                            RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+        FORCEINLINE singleRegMask selectMinimal(Interval*    currentInterval,
+                                                RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
         // If the register is from unassigned set such that it was not already
         // assigned to the current interval
@@ -1310,16 +1309,16 @@ private:
 
         regMaskOnlyOne candidates;
         regMaskOnlyOne preferences     = RBM_NONE;
-        Interval* relatedInterval = nullptr;
+        Interval*      relatedInterval = nullptr;
 
         regMaskOnlyOne relatedPreferences = RBM_NONE;
-        LsraLocation rangeEndLocation;
-        LsraLocation relatedLastLocation;
-        bool         preferCalleeSave = false;
-        RefPosition* rangeEndRefPosition;
-        RefPosition* lastRefPosition;
+        LsraLocation   rangeEndLocation;
+        LsraLocation   relatedLastLocation;
+        bool           preferCalleeSave = false;
+        RefPosition*   rangeEndRefPosition;
+        RefPosition*   lastRefPosition;
         regMaskOnlyOne callerCalleePrefs = RBM_NONE;
-        LsraLocation lastLocation;
+        LsraLocation   lastLocation;
 
         singleRegMask foundRegBit;
 
@@ -1336,11 +1335,11 @@ private:
         regMaskOnlyOne preferenceSet;
         regMaskOnlyOne coversRelatedSet;
         regMaskOnlyOne coversFullSet;
-        bool      coversSetsCalculated  = false;
-        bool      found                 = false;
-        bool      skipAllocation        = false;
-        bool      coversFullApplied     = false;
-        bool      constAvailableApplied = false;
+        bool           coversSetsCalculated  = false;
+        bool           found                 = false;
+        bool           skipAllocation        = false;
+        bool           coversFullApplied     = false;
+        bool           constAvailableApplied = false;
 
         // If the selected register is already assigned to the current internal
         FORCEINLINE bool isAlreadyAssigned()
@@ -1349,7 +1348,7 @@ private:
             return (prevRegBit & preferences) == foundRegBit;
         }
 
-        bool             applySelection(int selectionScore, regMaskOnlyOne selectionCandidates);
+        bool applySelection(int selectionScore, regMaskOnlyOne selectionCandidates);
         bool applySingleRegSelection(int selectionScore, regMaskOnlyOne selectionCandidate);
         FORCEINLINE void calculateCoversSets();
         FORCEINLINE void calculateUnassignedSets();
@@ -1411,7 +1410,7 @@ private:
                                       BasicBlock*      toBlock,
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
-                                      regMaskMixed        terminatorConsumedRegs);
+                                      regMaskMixed     terminatorConsumedRegs);
 
 #ifdef TARGET_ARM64
     typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
@@ -1481,7 +1480,7 @@ private:
     // Current mask of registers being printed in the dump.
     regMaskMixed lastDumpedRegisters;
     regMaskMixed registersToDump;
-    int       lastUsedRegNumIndex;
+    int          lastUsedRegNumIndex;
     bool shouldDumpReg(regNumber regNum)
     {
         return (registersToDump & genRegMask(regNum)) != 0;
@@ -1662,15 +1661,16 @@ private:
     VarToRegMap* outVarToRegMaps;
 
     // A temporary VarToRegMap used during the resolution of critical edges.
-    VarToRegMap          sharedCriticalVarToRegMap;
+    VarToRegMap             sharedCriticalVarToRegMap;
     PhasedVar<regMaskMixed> actualRegistersMask;
-    PhasedVar<regMaskGpr> availableIntRegs;
+    PhasedVar<regMaskGpr>   availableIntRegs;
     PhasedVar<regMaskFloat> availableFloatRegs;
     PhasedVar<regMaskFloat> availableDoubleRegs;
 #if defined(TARGET_XARCH)
     PhasedVar<regMaskPredicate> availableMaskRegs;
 #endif
-    PhasedVar<regMaskMixed>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector, predicate
+    PhasedVar<regMaskMixed>* availableRegs[TYP_COUNT]; // TODO: probably separate this out based on gpr, vector,
+                                                       // predicate
 
 #if defined(TARGET_XARCH)
 #define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
@@ -1719,7 +1719,7 @@ private:
 #if defined(TARGET_AMD64)
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(TARGET_ARM64)
-    static const var_types LargeVectorSaveType  = TYP_DOUBLE;
+    static const var_types    LargeVectorSaveType  = TYP_DOUBLE;
 #endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
     // Set of large vector (TYP_SIMD32 on AVX) variables.
     VARSET_TP largeVectorVars;
@@ -1731,7 +1731,7 @@ private:
     // Register status
     //-----------------------------------------------------------------------
 
-    regMaskMixed m_AvailableRegs; //TODO: Should be separate for gpr, vector, predicate
+    regMaskMixed m_AvailableRegs; // TODO: Should be separate for gpr, vector, predicate
     regNumber getRegForType(regNumber reg, var_types regType)
     {
 #ifdef TARGET_ARM
@@ -1745,7 +1745,7 @@ private:
 
     regMaskOnlyOne getRegMask(regNumber reg, var_types regType)
     {
-        reg               = getRegForType(reg, regType);
+        reg                   = getRegForType(reg, regType);
         singleRegMask regMask = genRegMask(reg);
 #ifdef TARGET_ARM
         if (regType == TYP_DOUBLE)
@@ -1795,13 +1795,13 @@ private:
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
-    FORCEINLINE void updateRegsFreeBusyState(RefPosition& refPosition,
-                                             regMaskOnlyOne                 regsBusy,
-                                             regMaskOnlyOne*             regsToFree,
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition&    refPosition,
+                                             regMaskOnlyOne  regsBusy,
+                                             regMaskOnlyOne* regsToFree,
                                              regMaskOnlyOne* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
-     // TODO: This should be m_GprWithConstants, m_FloatRegsWithConstant, etc.
+    // TODO: This should be m_GprWithConstants, m_FloatRegsWithConstant, etc.
     regMaskMixed m_RegistersWithConstants;
     void clearConstantReg(regNumber reg, var_types regType)
     {
@@ -1813,13 +1813,13 @@ private:
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
-        reg               = getRegForType(reg, regType);
+        reg                    = getRegForType(reg, regType);
         regMaskOnlyOne regMask = getRegMask(reg, regType);
         return (m_RegistersWithConstants & regMask) == regMask;
     }
     regMaskOnlyOne getMatchingConstants(regMaskMixed mask, Interval* currentInterval, RefPosition* refPosition);
 
-    regMaskMixed    fixedRegs; //TODO: Should be also seperate
+    regMaskMixed fixedRegs; // TODO: Should be also seperate
     LsraLocation nextFixedRef[REG_COUNT];
     void updateNextFixedRef(RegRecord* regRecord, RefPosition* nextRefPosition);
     LsraLocation getNextFixedRef(regNumber regNum, var_types regType)
@@ -1848,7 +1848,8 @@ private:
     }
     weight_t spillCost[REG_COUNT];
 
-    regMaskMixed regsBusyUntilKill; //TODO: Likewise, probably have this global 32-bit and set it point to the specific version like gpr, vector, etc.
+    regMaskMixed regsBusyUntilKill; // TODO: Likewise, probably have this global 32-bit and set it point to the specific
+                                    // version like gpr, vector, etc.
     regMaskMixed regsInUseThisLocation;
     regMaskMixed regsInUseNextLocation;
 #ifdef TARGET_ARM64
@@ -1939,10 +1940,10 @@ private:
 
     RefPosition* BuildUse(GenTree* operand, regMaskOnlyOne candidates = RBM_NONE, int multiRegIdx = 0);
     void setDelayFree(RefPosition* use);
-    int          BuildBinaryUses(GenTreeOp* node, regMaskOnlyOne candidates = RBM_NONE);
-    int          BuildCastUses(GenTreeCast* cast, regMaskOnlyOne candidates);
+    int BuildBinaryUses(GenTreeOp* node, regMaskOnlyOne candidates = RBM_NONE);
+    int BuildCastUses(GenTreeCast* cast, regMaskOnlyOne candidates);
 #ifdef TARGET_XARCH
-    int              BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskOnlyOne candidates = RBM_NONE);
+    int BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskOnlyOne candidates = RBM_NONE);
     inline regMaskFloat BuildEvexIncompatibleMask(GenTree* tree);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -1957,16 +1958,16 @@ private:
     int BuildSimple(GenTree* tree);
     int BuildOperandUses(GenTree* node, regMaskOnlyOne candidates = RBM_NONE);
     void AddDelayFreeUses(RefPosition* refPosition, GenTree* rmwNode);
-    int BuildDelayFreeUses(GenTree*      node,
-                           GenTree*      rmwNode        = nullptr,
-                                    regMaskOnlyOne candidates     = RBM_NONE,
-                           RefPosition** useRefPosition = nullptr);
-    int          BuildIndirUses(GenTreeIndir* indirTree, regMaskOnlyOne candidates = RBM_NONE);
-    int          BuildAddrUses(GenTree* addr, regMaskOnlyOne candidates = RBM_NONE);
+    int BuildDelayFreeUses(GenTree*       node,
+                           GenTree*       rmwNode        = nullptr,
+                           regMaskOnlyOne candidates     = RBM_NONE,
+                           RefPosition**  useRefPosition = nullptr);
+    int BuildIndirUses(GenTreeIndir* indirTree, regMaskOnlyOne candidates = RBM_NONE);
+    int BuildAddrUses(GenTree* addr, regMaskOnlyOne candidates = RBM_NONE);
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
     RefPosition* BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void BuildDefs(GenTree* tree, int dstCount, regMaskMixed dstCandidates = RBM_NONE);
-    void         BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskMixed killMask);
+    void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskMixed killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

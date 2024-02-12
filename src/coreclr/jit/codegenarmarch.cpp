@@ -3850,8 +3850,8 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif
 
     // Next move any un-enregistered register arguments back to their register.
-    regMaskGpr fixedIntArgMask = RBM_NONE;    // tracks the int arg regs occupying fixed args in case of a vararg method.
-    unsigned  firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
+    regMaskGpr fixedIntArgMask = RBM_NONE; // tracks the int arg regs occupying fixed args in case of a vararg method.
+    unsigned   firstArgVarNum  = BAD_VAR_NUM; // varNum of the first argument in case of a vararg method.
     for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
     {
         varDsc = compiler->lvaGetDesc(varNum);
@@ -4088,7 +4088,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
-                regNumber argReg     = intArgRegs[argNum];
+                regNumber  argReg     = intArgRegs[argNum];
                 regMaskGpr argRegMask = genRegMask(argReg);
 
                 if ((remainingIntArgMask & argRegMask) != 0)
@@ -4947,7 +4947,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
 #if defined(TARGET_ARM)
     regMaskFloat maskPushRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskGpr maskPushRegsInt   = rsPushRegs & ~maskPushRegsFloat;
+    regMaskGpr   maskPushRegsInt   = rsPushRegs & ~maskPushRegsFloat;
 
     maskPushRegsInt |= genStackAllocRegisterMask(compiler->compLclFrameSize, maskPushRegsFloat);
 
@@ -5054,7 +5054,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
     regMaskFloat maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskGpr maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
+    regMaskGpr   maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
 
 #ifdef DEBUG
     if (verbose)

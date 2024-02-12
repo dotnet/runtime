@@ -929,7 +929,7 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskMixed regsToSaveMask, int l
     // Save integer registers at higher addresses than floating-point registers.
 
     regMaskFloat maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskGpr maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
+    regMaskGpr   maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
 
     if (maskSaveRegsFloat != RBM_NONE)
     {
@@ -1019,7 +1019,9 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int sp
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskMixed regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskMixed regsToRestoreMask,
+                                                 int          lowestCalleeSavedOffset,
+                                                 int          spDelta)
 {
     assert(spDelta >= 0);
     unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
@@ -1046,7 +1048,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskMixed regsToRestoreMask,
     // Save integer registers at higher addresses than floating-point registers.
 
     regMaskFloat maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskGpr maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+    regMaskGpr   maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
 
     // Restore in the opposite order of saving.
 
@@ -1371,7 +1373,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     compiler->unwindBegProlog();
 
     regMaskFloat maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskGpr maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
+    regMaskGpr   maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
 
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
     assert((maskSaveRegsInt & RBM_LR) != 0);
@@ -4336,7 +4338,7 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     regNumber oldOp1Reg = lcl1->GetRegNum();
     regNumber oldOp2Reg = lcl2->GetRegNum();
 
-    regMaskGpr oldOp1RegMask = genRegMask(oldOp1Reg);    
+    regMaskGpr oldOp1RegMask = genRegMask(oldOp1Reg);
     regMaskGpr oldOp2RegMask = genRegMask(oldOp2Reg);
 
     assert(compiler->IsGprRegMask(oldOp1RegMask));
@@ -5101,7 +5103,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
             callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
         }
 
-        regMaskGpr callTargetMask = genRegMask(callTargetReg);
+        regMaskGpr   callTargetMask = genRegMask(callTargetReg);
         regMaskMixed callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
         // assert that all registers in callTargetMask are in the callKillSet
@@ -5547,7 +5549,10 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned   frameSize,
+                               regNumber  initReg,
+                               bool*      pInitRegZeroed,
+                               regMaskGpr maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
     assert(compiler->IsGprRegMask(maskArgRegsLiveIn));
@@ -5610,8 +5615,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         availMask &= ~maskArgRegsLiveIn;   // Remove all of the incoming argument registers as they are currently live
         availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg
 
-        regNumber rOffset = initReg;
-        regNumber rLimit;
+        regNumber  rOffset = initReg;
+        regNumber  rLimit;
         regMaskGpr tempMask;
 
         // We pick the next lowest register number for rLimit

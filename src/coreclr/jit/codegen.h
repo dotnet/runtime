@@ -385,11 +385,11 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskMixed fiSaveRegs;                 // Set of registers saved in the funclet prolog (includes LR)
-        unsigned  fiFunctionCallerSPtoFPdelta; // Delta between caller SP and the frame pointer
-        unsigned  fiSpDelta;                   // Stack pointer delta
-        unsigned  fiPSP_slot_SP_offset;        // PSP slot offset from SP
-        int       fiPSP_slot_CallerSP_offset;  // PSP slot offset from Caller SP
+        regMaskMixed fiSaveRegs;                  // Set of registers saved in the funclet prolog (includes LR)
+        unsigned     fiFunctionCallerSPtoFPdelta; // Delta between caller SP and the frame pointer
+        unsigned     fiSpDelta;                   // Stack pointer delta
+        unsigned     fiPSP_slot_SP_offset;        // PSP slot offset from SP
+        int          fiPSP_slot_CallerSP_offset;  // PSP slot offset from Caller SP
     };
 
     FuncletFrameInfoDsc genFuncletInfo;
@@ -401,7 +401,7 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskMixed fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes LR)
+        regMaskMixed fiSaveRegs;             // Set of callee-saved registers saved in the funclet prolog (includes LR)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_FPLR_save_delta;         // FP/LR register save offset from SP (positive)
@@ -436,7 +436,7 @@ protected:
     // and used by all funclet prologs and epilogs, which must all be the same.
     struct FuncletFrameInfoDsc
     {
-        regMaskMixed fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        regMaskMixed fiSaveRegs;             // Set of callee-saved registers saved in the funclet prolog (includes RA)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
@@ -455,7 +455,7 @@ protected:
     // and used by all funclet prologs and epilogs, which must all be the same.
     struct FuncletFrameInfoDsc
     {
-        regMaskMixed fiSaveRegs;               // Set of callee-saved registers saved in the funclet prolog (includes RA)
+        regMaskMixed fiSaveRegs;             // Set of callee-saved registers saved in the funclet prolog (includes RA)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_CalleeSaved_delta;       // CalleeSaved register save offset from SP (positive)
@@ -479,8 +479,7 @@ protected:
 
 #endif // TARGET_XARCH
 
-    void genZeroInitFltRegs(const regMaskFloat& initFltRegs, const regMaskFloat& initDblRegs,
-                            const regNumber&             initReg);
+    void genZeroInitFltRegs(const regMaskFloat& initFltRegs, const regMaskFloat& initDblRegs, const regNumber& initReg);
 
     regNumber genGetZeroReg(regNumber initReg, bool* pInitRegZeroed);
 
@@ -679,10 +678,10 @@ protected:
     //
     //-------------------------------------------------------------------------
 
-    void      genSinglePush();
-    void      genSinglePop();
+    void       genSinglePush();
+    void       genSinglePop();
     regMaskGpr genPushRegs(regMaskGpr regs, regMaskGpr* byrefRegs, regMaskGpr* noRefRegs);
-    void      genPopRegs(regMaskGpr regs, regMaskGpr byrefRegs, regMaskGpr noRefRegs);
+    void genPopRegs(regMaskGpr regs, regMaskGpr byrefRegs, regMaskGpr noRefRegs);
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

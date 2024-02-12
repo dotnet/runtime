@@ -45,10 +45,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int       srcCount;
-    int       dstCount      = 0;
+    int          srcCount;
+    int          dstCount      = 0;
     regMaskMixed killMask      = RBM_NONE;
-    bool      isLocalDefUse = false;
+    bool         isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
     clearBuildState();
@@ -758,7 +758,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 // Support for building RefPositions for RMW nodes.
 int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskOnlyOne candidates)
 {
-    int       srcCount      = 0;
+    int        srcCount      = 0;
     regMaskGpr op1Candidates = candidates;
     regMaskGpr op2Candidates = candidates;
 
@@ -1017,9 +1017,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     // For shift operations, we need that the number
     // of bits moved gets stored in CL in case
     // the number of bits to shift is not a constant.
-    int       srcCount      = 0;
-    GenTree*  shiftBy       = tree->gtGetOp2();
-    GenTree*  source        = tree->gtGetOp1();
+    int        srcCount      = 0;
+    GenTree*   shiftBy       = tree->gtGetOp2();
+    GenTree*   source        = tree->gtGetOp1();
     regMaskGpr srcCandidates = RBM_NONE;
     regMaskGpr dstCandidates = RBM_NONE;
 
@@ -1130,7 +1130,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     const ReturnTypeDesc* retTypeDesc       = nullptr;
     int                   srcCount          = 0;
     int                   dstCount          = 0;
-    regMaskOnlyOne             dstCandidates     = RBM_NONE;
+    regMaskOnlyOne        dstCandidates     = RBM_NONE;
 
     assert(!call->isContained());
     if (call->TypeGet() != TYP_VOID)
@@ -1610,7 +1610,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
         assert(compiler->IsGprRegMask(sizeRegMask));
-        
+
         useCount++;
         BuildUse(blkNode->AsStoreDynBlk()->gtDynamicSize, sizeRegMask);
     }
@@ -1868,10 +1868,10 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildModDiv(GenTree* tree)
 {
-    GenTree*  op1           = tree->gtGetOp1();
-    GenTree*  op2           = tree->gtGetOp2();
+    GenTree*   op1           = tree->gtGetOp1();
+    GenTree*   op2           = tree->gtGetOp2();
     regMaskGpr dstCandidates = RBM_NONE;
-    int       srcCount      = 0;
+    int        srcCount      = 0;
 
     if (varTypeIsFloating(tree->TypeGet()))
     {
@@ -2860,7 +2860,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // FEATURE_SIMD
 
-    int       srcCount        = BuildIndirUses(indirTree);
+    int srcCount = BuildIndirUses(indirTree);
     if (indirTree->gtOper == GT_STOREIND)
     {
         GenTree* source = indirTree->gtGetOp2();
@@ -2982,8 +2982,8 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
-    int       srcCount      = BuildBinaryUses(tree->AsOp());
-    int       dstCount      = 1;
+    int        srcCount      = BuildBinaryUses(tree->AsOp());
+    int        dstCount      = 1;
     regMaskGpr dstCandidates = RBM_NONE;
 
     bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);

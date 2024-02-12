@@ -177,8 +177,8 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
 //      set.
 //
 regMaskFloat LinearScan::filterConsecutiveCandidates(regMaskFloat  candidates,
-                                                  unsigned int registersNeeded,
-                                                       regMaskFloat* allConsecutiveCandidates)
+                                                     unsigned int  registersNeeded,
+                                                     regMaskFloat* allConsecutiveCandidates)
 {
     if (BitOperations::PopCount(candidates) < registersNeeded)
     {
@@ -187,16 +187,16 @@ regMaskFloat LinearScan::filterConsecutiveCandidates(regMaskFloat  candidates,
         return RBM_NONE;
     }
 
-    regMaskFloat   currAvailableRegs = candidates;
-    regMaskFloat   overallResult     = RBM_NONE;
-    regMaskFloat   consecutiveResult = RBM_NONE;
+    regMaskFloat currAvailableRegs = candidates;
+    regMaskFloat overallResult     = RBM_NONE;
+    regMaskFloat consecutiveResult = RBM_NONE;
 
 // At this point, for 'n' registers requirement, if Rm, Rm+1, Rm+2, ..., Rm+k-1 are
 // available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
 // is safe to assign any of those registers, but not beyond that.
 #define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
-    regMaskFloat   selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
-    regMaskFloat selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
+    regMaskFloat selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                            \
+    regMaskFloat selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                      \
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
@@ -330,8 +330,8 @@ regMaskFloat LinearScan::filterConsecutiveCandidatesForSpill(regMaskFloat consec
     assert((registersNeeded >= 2) && (registersNeeded <= 4));
     regMaskFloat consecutiveResultForBusy = RBM_NONE;
     regMaskFloat unprocessedRegs          = consecutiveCandidates;
-    unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
-    int       maxSpillRegs        = registersNeeded;
+    unsigned     regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    int          maxSpillRegs        = registersNeeded;
     regMaskFloat registersNeededMask = (1ULL << registersNeeded) - 1;
     do
     {
@@ -340,7 +340,7 @@ regMaskFloat LinearScan::filterConsecutiveCandidatesForSpill(regMaskFloat consec
 
         // For the current range, find how many registers are free vs. busy
         regMaskFloat maskForCurRange        = RBM_NONE;
-        bool      shouldCheckForRounding = false;
+        bool         shouldCheckForRounding = false;
         switch (registersNeeded)
         {
             case 2:
@@ -414,8 +414,8 @@ regMaskFloat LinearScan::filterConsecutiveCandidatesForSpill(regMaskFloat consec
 //      allCandidates = 0x1C080D0F00000000, the consecutive register mask returned
 //      will be 0x400000300000000.
 //
-regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat    allCandidates,
-                                               RefPosition* refPosition,
+regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat  allCandidates,
+                                                  RefPosition*  refPosition,
                                                   regMaskFloat* busyCandidates)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
@@ -447,9 +447,9 @@ regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat    allCandidates,
             // register out of the `consecutiveResult` is available for the first RefPosition, then just use
             // that. This will avoid unnecessary copies.
 
-            regNumber firstRegNum  = REG_NA;
-            regNumber prevRegNum   = REG_NA;
-            int       foundCount   = 0;
+            regNumber    firstRegNum  = REG_NA;
+            regNumber    prevRegNum   = REG_NA;
+            int          foundCount   = 0;
             regMaskFloat foundRegMask = RBM_NONE;
 
             RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
@@ -529,7 +529,7 @@ regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat    allCandidates,
     // try_FAR_NEXT_REF(), etc. here which would complicate things. Instead, we just go with option# 1 and select
     // registers based on fewer number of registers that has to be spilled.
     //
-    regMaskFloat   overallResultForBusy;
+    regMaskFloat overallResultForBusy;
     regMaskFloat consecutiveResultForBusy =
         filterConsecutiveCandidates(allCandidates, registersNeeded, &overallResultForBusy);
 
@@ -582,10 +582,10 @@ regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat    allCandidates,
 int LinearScan::BuildNode(GenTree* tree)
 {
     assert(!tree->isContained());
-    int       srcCount;
-    int       dstCount      = 0;
+    int          srcCount;
+    int          dstCount      = 0;
     regMaskMixed killMask      = RBM_NONE;
-    bool      isLocalDefUse = false;
+    bool         isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
     clearBuildState();
