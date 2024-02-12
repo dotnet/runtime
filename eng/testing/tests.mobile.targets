@@ -124,7 +124,7 @@
            as a root -->
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('TestRunner.dll'))"
-          Include="%(ResolvedFileToPublish.FullPath)" />
+          Include="%(ResolvedFileToPublish.FileName)" />
     </ItemGroup>
 
     <ItemGroup>
