@@ -730,8 +730,8 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
 
             if (op1->OperIs(ScevOper::AddRec))
             {
-                // TODO: This requires some proof that it is ok, but currently
-                // we do not rely on this.
+                // TODO-Cleanup: This requires some proof that it is ok, but
+                // currently we do not rely on this.
                 return op1;
             }
 
@@ -821,11 +821,14 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
 //   into the old one in the exits where the IV variable is live.
 //
 //   We are able to sink when none of the exits are critical blocks, in the
-//   sense that all their predecessors must come from inside the loop.
+//   sense that all their predecessors must come from inside the loop. Loop
+//   exit canonicalization guarantees this for regular exit blocks, but
+//   exceptional exits may still have non-loop predecessors.
 //
-//   TODO-CQ: If we canonicalize loop exits we can guarantee this property for
-//   regular exits; that will allow us to always sink except when the loop is
-//   enclosed in a try region whose handler also uses the IV variable.
+//   Note that there may be natural loops that have not had their regular exits
+//   canonicalized at the time when IV opts run, in particular if RBO/assertion
+//   prop makes a previously unnatural loop natural. This function accounts for
+//   and rejects these cases.
 //
 bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
@@ -1086,7 +1089,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
                     }
                 }
             }
-            else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD) &&
+            else if (node->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_FLD) &&
                      (node->AsLclVarCommon()->GetLclNum() == m_lclNum))
             {
                 switch (node->OperGet())
@@ -1099,21 +1102,8 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statemen
                     {
                         node->AsLclVarCommon()->SetLclNum(m_newLclNum);
                         node->gtType = TYP_LONG;
-                        GenTree* data = node->AsLclVarCommon()->Data();
-                        if (data->OperIs(GT_ADD) && (data->gtGetOp1()->OperIs(GT_LCL_VAR) && (data->gtGetOp1()->AsLclVarCommon()->GetLclNum() == m_lclNum)) &&
-                            data->gtGetOp2()->OperIs(GT_CNS_INT))
-                        {
-                            data->gtType = TYP_LONG;
-                            data->gtGetOp1()->AsLclVarCommon()->SetLclNum(m_newLclNum);
-                            data->gtGetOp1()->gtType = TYP_LONG;
-                            data->gtGetOp2()->gtType = TYP_LONG;
-                            return fgWalkResult::WALK_SKIP_SUBTREES;
-                        }
-                        else
-                        {
-                            node->AsLclVarCommon()->Data() =
-                                m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
-                        }
+                        node->AsLclVarCommon()->Data() =
+                            m_compiler->gtNewCastNode(TYP_LONG, node->AsLclVarCommon()->Data(), true, TYP_LONG);
                         break;
                     }
                     case GT_LCL_FLD:
@@ -1167,18 +1157,21 @@ PhaseStatus Compiler::optInductionVariables()
     }
 #endif
 
+    if (!fgMightHaveNaturalLoops)
+    {
+        JITDUMP("  Skipping since this method has no natural loops\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     bool changed = false;
 
-#if defined(TARGET_64BIT) && defined(TARGET_XARCH)
+    // Currently we only do IV widening which is only profitable for x64
+    // because arm64 addressing modes can include the zero/sign-extension of
+    // the index for free.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_XARCH) && defined(TARGET_64BIT)
     m_dfsTree = fgComputeDfs();
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-    if (optCanonicalizeLoops())
-    {
-        fgInvalidateDfsTree();
-        m_dfsTree = fgComputeDfs();
-        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-        changed   = true;
-    }
 
     ScalarEvolutionContext scevContext(this);
     JITDUMP("Widening primary induction variables:\n");
@@ -1200,13 +1193,14 @@ PhaseStatus Compiler::optInductionVariables()
             DISPSTMT(stmt);
 
             GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
-            if (genActualType(lcl) != TYP_INT)
+            LclVarDsc* lclDsc = lvaGetDesc(lcl);
+            if (lclDsc->TypeGet() != TYP_INT)
             {
-                JITDUMP("  Type is %s, no widening to be done\n", varTypeName(genActualType(lcl)));
+                JITDUMP("  Type is %s, no widening to be done\n", varTypeName(lclDsc->TypeGet()));
                 continue;
             }
 
-            if (lvaGetDesc(lcl)->lvDoNotEnregister)
+            if (lclDsc->lvDoNotEnregister)
             {
                 JITDUMP("  V%02u is marked DNER\n", lcl->GetLclNum());
                 continue;
@@ -1251,15 +1245,11 @@ PhaseStatus Compiler::optInductionVariables()
             if (addRec->Start->OperIs(ScevOper::Constant))
             {
                 ScevConstant* cns = (ScevConstant*)addRec->Start;
-                initVal           = gtNewIconNode((int64_t)(uint32_t)(((ScevConstant*)addRec->Start)->Value), TYP_LONG);
+                initVal           = gtNewIconNode((int64_t)(uint32_t)cns->Value, TYP_LONG);
             }
             else
             {
-                LclVarDsc* lclDsc = lvaGetDesc(lcl);
-                initVal =
-                    gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(),
-                                                          lclDsc->lvNormalizeOnLoad() ? lclDsc->TypeGet() : TYP_INT),
-                                  true, TYP_LONG);
+                initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), TYP_INT), true, TYP_LONG);
             }
 
             JITDUMP("Adding initialization of new widened local to preheader:\n");
@@ -1287,9 +1277,9 @@ PhaseStatus Compiler::optInductionVariables()
             changed |= optSinkWidenedIV(lcl->GetLclNum(), newLclNum, loop);
         }
     }
-#endif
 
     fgInvalidateDfsTree();
+#endif
 
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
