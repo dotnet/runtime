@@ -123,16 +123,12 @@
     <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
     <StyleCopAnalyzersVersion>1.2.0-beta.507</StyleCopAnalyzersVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
-    <SystemCollectionsImmutableVersion>8.0.0</SystemCollectionsImmutableVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <SystemDataSqlClientVersion>4.8.6</SystemDataSqlClientVersion>
     <SystemDrawingCommonVersion>8.0.0</SystemDrawingCommonVersion>
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
     <SystemReflectionMetadataVersion>9.0.0-preview.2.24111.9</SystemReflectionMetadataVersion>
-    <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
-    <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
-    <SystemReflectionMetadataLoadContextVersion>9.0.0-preview.2.24111.9</SystemReflectionMetadataLoadContextVersion>
     <SystemSecurityAccessControlVersion>6.0.0</SystemSecurityAccessControlVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
@@ -144,6 +140,10 @@
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>9.0.0-preview.2.24111.9</runtimenativeSystemIOPortsVersion>
+    <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
+    <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
+    <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
+    <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.24108.2</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.24108.2</SystemComponentModelTypeConverterTestDataVersion>

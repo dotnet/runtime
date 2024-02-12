@@ -17,7 +17,7 @@
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" /> 
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

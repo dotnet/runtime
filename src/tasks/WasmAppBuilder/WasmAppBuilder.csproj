@@ -26,11 +26,11 @@
     <!-- excludeassets prevents the older version of MLC from MSBuild from trampling the newer version we need -->
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" ExcludeAssets="runtime" />
-    <!-- we need to explicitly reference MLC 8.0 or newer for function pointer support,
+    <!-- we need to explicitly reference System.Reflection.MetadataLoadContext 8.0 or newer for function pointer support,
          because the default version pulled in from MSBuild is 6.0. -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
-    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextVersion)" />
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextToolsetVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup>
