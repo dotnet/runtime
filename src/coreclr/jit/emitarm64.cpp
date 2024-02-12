@@ -1551,6 +1551,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isLowVectorRegister(id->idReg2())); // nnnn
             break;
 
+        case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ddddd
+            assert(isLowVectorRegister(id->idReg2())); // nnnn
+            break;
+
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // nnnnn
@@ -8378,6 +8384,16 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(isVectorRegister(reg1));    // ddddd
             assert(isLowVectorRegister(reg2)); // nnnn
             fmt = IF_SVE_FZ_2A;
+            break;
+
+        case INS_sve_fcvtn:
+        case INS_sve_bfcvtn:
+        case INS_sve_fcvtnt:
+        case INS_sve_fcvtnb:
+            assert(insOptsNone(opt));
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isLowVectorRegister(reg2)); // nnnn
+            fmt = IF_SVE_HG_2A;
             break;
 
         case INS_sve_sqxtnb:
@@ -24840,6 +24856,12 @@ void emitter::emitDispInsHelp(
             emitDispVectorRegPair(id->idReg2(), INS_OPTS_SCALABLE_S);
             break;
 
+        // <Zd>.B, {<Zn1>.H-<Zn2>.H }
+        case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_B, true);
+            emitDispVectorRegPair(id->idReg2(), INS_OPTS_SCALABLE_H);
+            break;
+
         // <Zd>.<T>, <Zn>.<Tb>
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                                  // ddddd
@@ -28258,6 +28280,32 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+            break;
+
+        case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
+            switch (ins)
+            {
+                case INS_sve_fcvtn:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_bfcvtn:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_fcvtnt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_3C;
+                    break;
+                case INS_sve_fcvtnb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         // Not available in Arm Neoverse N2 Software Optimization Guide.
