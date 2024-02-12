@@ -5410,6 +5410,11 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_ursqrte, EA_SCALABLE, REG_V3, REG_P0, REG_V5,
                               INS_OPTS_SCALABLE_S); // URSQRTE <Zd>.S, <Pg>/M, <Zn>.S
 
+    // IF_SVE_FZ_2A
+    theEmitter->emitIns_R_R(INS_sve_sqcvtn, EA_SCALABLE, REG_V0, REG_V1);   // SQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
+    theEmitter->emitIns_R_R(INS_sve_sqcvtun, EA_SCALABLE, REG_V6, REG_V7);  // SQCVTUN <Zd>.H, {<Zn1>.S-<Zn2>.S }
+    theEmitter->emitIns_R_R(INS_sve_uqcvtn, EA_SCALABLE, REG_V14, REG_V15); // UQCVTN <Zd>.H, {<Zn1>.S-<Zn2>.S }
+
     // IF_SVE_GA_2A
     theEmitter->emitIns_R_R_I(INS_sve_sqrshrn, EA_SCALABLE, REG_V0, REG_V0, 5,
                               INS_OPTS_SCALABLE_H); // SQRSHRN <Zd>.H, {<Zn1>.S-<Zn2>.S }, #<const>

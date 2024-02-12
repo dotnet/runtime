@@ -1545,6 +1545,12 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidGeneralDatasize(id->idOpSize())); // x
             break;
 
+        case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isVectorRegister(id->idReg1()));    // ddddd
+            assert(isLowVectorRegister(id->idReg2())); // nnnn
+            break;
+
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // nnnnn
@@ -8363,6 +8369,15 @@ void emitter::emitIns_R_R(instruction     ins,
             assert(isGeneralRegister(reg2));      // mmmmm
             assert(isValidGeneralDatasize(size)); // x
             fmt = IF_SVE_DS_2A;
+            break;
+
+        case INS_sve_sqcvtn:
+        case INS_sve_uqcvtn:
+        case INS_sve_sqcvtun:
+            assert(insOptsNone(opt));
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isLowVectorRegister(reg2)); // nnnn
+            fmt = IF_SVE_FZ_2A;
             break;
 
         case INS_sve_sqxtnb:
@@ -15988,7 +16003,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 {
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
-    assert((ureg >= 0) && (ureg <= 31));
+    assert((ureg >= 0) && (ureg <= 15));
     return ureg << 6;
 }
 
@@ -21411,6 +21426,14 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
+        case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1()); // ddddd
+            code |= insEncodeReg_V_9_to_6(id->idReg2()); // nnnn
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_GD_2A: // .........x.xx... ......nnnnnddddd -- SVE2 saturating extract narrow
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                                           // ddddd
@@ -22651,6 +22674,21 @@ void emitter::emitDispLowPredicateRegPair(regNumber reg, insOpts opt)
     const unsigned regNum     = (baseRegNum * 2) + REG_PREDICATE_FIRST;
     emitDispPredicateReg((regNumber)regNum, PREDICATE_SIZED, opt, true);
     emitDispPredicateReg((regNumber)(regNum + 1), PREDICATE_SIZED, opt, false);
+    printf(" }, ");
+}
+
+//------------------------------------------------------------------------
+// emitDispVectorRegPair: Display a pair of vector registers
+//
+void emitter::emitDispVectorRegPair(regNumber reg, insOpts opt)
+{
+    assert(isLowVectorRegister(reg));
+
+    printf("{ ");
+    const unsigned baseRegNum = ((unsigned)reg) - REG_PREDICATE_FIRST;
+    const unsigned regNum     = (baseRegNum * 2) + REG_PREDICATE_FIRST;
+    emitDispVectorReg((regNumber)regNum, opt, true);
+    emitDispVectorReg((regNumber)(regNum + 1), opt, false);
     printf(" }, ");
 }
 
@@ -24794,6 +24832,12 @@ void emitter::emitDispInsHelp(
         case IF_SVE_DS_2A: // .........x.mmmmm ......nnnnn..... -- SVE conditionally terminate scalars
             emitDispReg(id->idReg1(), id->idOpSize(), true);  // nnnnn
             emitDispReg(id->idReg2(), id->idOpSize(), false); // mmmmm
+            break;
+
+        // <Zd>.H, {<Zn1>.S-<Zn2>.S }
+        case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
+            emitDispSveReg(id->idReg1(), INS_OPTS_SCALABLE_H, true);
+            emitDispVectorRegPair(id->idReg2(), INS_OPTS_SCALABLE_S);
             break;
 
         // <Zd>.<T>, <Zn>.<Tb>
@@ -28209,6 +28253,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_DS_2A: // .........x.mmmmm ......nnnnn..... -- SVE conditionally terminate scalars
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency    = PERFSCORE_LATENCY_1C;
+            break;
+
+        case IF_SVE_FZ_2A: // ................ ......nnnn.ddddd -- SME2 multi-vec extract narrow
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+            result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
 
         // Not available in Arm Neoverse N2 Software Optimization Guide.

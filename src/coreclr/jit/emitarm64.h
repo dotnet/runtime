@@ -66,6 +66,7 @@ void emitDispPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool 
 void emitDispPredicateRegPair(regNumber reg, insOpts opt);
 void emitDispLowPredicateReg(regNumber reg, PredicateType ptype, insOpts opt, bool addComma);
 void emitDispLowPredicateRegPair(regNumber reg, insOpts opt);
+void emitDispVectorRegPair(regNumber reg, insOpts opt);
 void emitDispVectorLengthSpecifier(instrDesc* id);
 void emitDispArrangement(insOpts opt);
 void emitDispElemsize(emitAttr elemsize);
