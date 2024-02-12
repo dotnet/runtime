@@ -5516,12 +5516,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     bool expandInline = canExpandInline && shouldExpandInline;
 
-    // Move expansion to the Late Cast Expansion phase.
-    if (op2->IsIconHandle(GTF_ICON_CLASS_HDL) && (helper != CORINFO_HELP_ISINSTANCEOFCLASS || !isClassExact))
+    // Move expansion to the Late Cast Expansion phase (except the GT_RUNTIMELOOKUP case)
+    // TODO-InlineCast: implement that
+    if (op2->IsIconHandle(GTF_ICON_CLASS_HDL))
     {
-        // The only two cases left here are:
-        // 1) isinst <exact class> -- it seems it's profitable to expand such casts early (they don't need helpers)
-        // 2) late cast expansion doesn't yet support GT_RUNTIMELOOKUP as cast-to yet. (TODO-InlineCast)
         expandInline = false;
     }
 
