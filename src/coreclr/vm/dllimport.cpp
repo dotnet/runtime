@@ -5037,7 +5037,7 @@ namespace
                                     // For generic calli, we only support blittable types
                                     if (!pSigDesc->m_typeContext.IsEmpty() && SF_IsCALLIStub(dwStubFlags) && NDirect::MarshalingRequired(pStubMD))
                                     {
-                                        COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_UNSUPPORTED_SIG);
+                                        COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
                                     }
 
                                     CreateNDirectStubWorker(pss,
