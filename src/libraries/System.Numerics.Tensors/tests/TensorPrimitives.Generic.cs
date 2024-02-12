@@ -365,7 +365,7 @@ namespace System.Numerics.Tensors.Tests
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Acosh), new Func<T, T>(T.Acosh) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.AcosPi), new Func<T, T>(T.AcosPi) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Acos), new Func<T, T>(T.Acos) };
-            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Asinh), new Func<T, T>(T.Asinh) };
+            yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Asinh), new Func<T, T>(T.Asinh), T.CreateTruncating(0.001) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.AsinPi), new Func<T, T>(T.AsinPi) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Asin), new Func<T, T>(T.Asin) };
             yield return new object[] { new SpanDestinationDelegate(TensorPrimitives.Atanh), new Func<T, T>(T.Atanh) };

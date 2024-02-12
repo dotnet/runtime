@@ -15868,11 +15868,54 @@ namespace System.Numerics.Tensors
         internal readonly struct AcoshOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
             public static T Invoke(T x) => T.Acosh(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> f = x.AsSingle();
+                    return LogOperator<float>.Invoke(f + Vector128.Sqrt(MultiplyAddEstimateOperator<float>.Invoke(f, f, Vector128.Create(-1f)))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector128<double> d = x.AsDouble();
+                    return LogOperator<double>.Invoke(d + Vector128.Sqrt(MultiplyAddEstimateOperator<double>.Invoke(d, d, Vector128.Create(-1d)))).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector256<float> f = x.AsSingle();
+                    return LogOperator<float>.Invoke(f + Vector256.Sqrt(MultiplyAddEstimateOperator<float>.Invoke(f, f, Vector256.Create(-1f)))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector256<double> d = x.AsDouble();
+                    return LogOperator<double>.Invoke(d + Vector256.Sqrt(MultiplyAddEstimateOperator<double>.Invoke(d, d, Vector256.Create(-1d)))).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector512<float> f = x.AsSingle();
+                    return LogOperator<float>.Invoke(f + Vector512.Sqrt(MultiplyAddEstimateOperator<float>.Invoke(f, f, Vector512.Create(-1f)))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector512<double> d = x.AsDouble();
+                    return LogOperator<double>.Invoke(d + Vector512.Sqrt(MultiplyAddEstimateOperator<double>.Invoke(d, d, Vector512.Create(-1d)))).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.AcosPi(x)</summary>
@@ -15901,11 +15944,55 @@ namespace System.Numerics.Tensors
         internal readonly struct AsinhOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
             public static T Invoke(T x) => T.Asinh(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> f = x.AsSingle();
+                    return LogOperator<float>.Invoke(f + Vector128.Sqrt(MultiplyAddEstimateOperator<float>.Invoke(f, f, Vector128<float>.One))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector128<double> d = x.AsDouble();
+                    return LogOperator<double>.Invoke(d + Vector128.Sqrt(MultiplyAddEstimateOperator<double>.Invoke(d, d, Vector128<double>.One))).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector256<float> f = x.AsSingle();
+                    return LogOperator<float>.Invoke(f + Vector256.Sqrt(MultiplyAddEstimateOperator<float>.Invoke(f, f, Vector256<float>.One))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector256<double> d = x.AsDouble();
+                    return LogOperator<double>.Invoke(d + Vector256.Sqrt(MultiplyAddEstimateOperator<double>.Invoke(d, d, Vector256<double>.One))).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector512<float> f = x.AsSingle();
+                    return LogOperator<float>.Invoke(f + Vector512.Sqrt(MultiplyAddEstimateOperator<float>.Invoke(f, f, Vector512<float>.One))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector512<double> d = x.AsDouble();
+                    return LogOperator<double>.Invoke(d + Vector512.Sqrt(MultiplyAddEstimateOperator<double>.Invoke(d, d, Vector512<double>.One))).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.AsinPi(x)</summary>
@@ -15934,11 +16021,54 @@ namespace System.Numerics.Tensors
         internal readonly struct AtanhOperator<T> : IUnaryOperator<T, T>
             where T : IHyperbolicFunctions<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+
             public static T Invoke(T x) => T.Atanh(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector128<float> f = x.AsSingle();
+                    return (Vector128.Create(0.5f) * LogOperator<float>.Invoke((Vector128<float>.One + f) / (Vector128<float>.One - f))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector128<double> d = x.AsDouble();
+                    return (Vector128.Create(0.5d) * LogOperator<double>.Invoke((Vector128<double>.One + d) / (Vector128<double>.One - d))).As<double, T>();
+                }
+            }
+
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector256<float> f = x.AsSingle();
+                    return (Vector256.Create(0.5f) * LogOperator<float>.Invoke((Vector256<float>.One + f) / (Vector256<float>.One - f))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector256<double> d = x.AsDouble();
+                    return (Vector256.Create(0.5d) * LogOperator<double>.Invoke((Vector256<double>.One + d) / (Vector256<double>.One - d))).As<double, T>();
+                }
+            }
+
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (typeof(T) == typeof(float))
+                {
+                    Vector512<float> f = x.AsSingle();
+                    return (Vector512.Create(0.5f) * LogOperator<float>.Invoke((Vector512<float>.One + f) / (Vector512<float>.One - f))).As<float, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(double));
+                    Vector512<double> d = x.AsDouble();
+                    return (Vector512.Create(0.5d) * LogOperator<double>.Invoke((Vector512<double>.One + d) / (Vector512<double>.One - d))).As<double, T>();
+                }
+            }
         }
 
         /// <summary>T.AtanPi(x)</summary>
