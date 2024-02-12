@@ -21,7 +21,7 @@ public static class CoreClrConfigurationDetection
     public static bool IsGCStress3 => CompareGCStressModeAsLower(GetEnvironmentVariableValue("GCStress"), "0x3", "3");
     public static bool IsGCStressC => CompareGCStressModeAsLower(GetEnvironmentVariableValue("GCStress"), "0xC", "C");
 
-    public static bool IsGCStress => GetEnvironmentVariableValue("GCStress") != string.Empty;
+    public static bool IsGCStress => !string.Equals(GetEnvironmentVariableValue("GCStress"), "0", StringComparison.InvariantCulture);
 
     public static bool IsCheckedRuntime => AssemblyConfigurationEquals("Checked");
     public static bool IsReleaseRuntime => AssemblyConfigurationEquals("Release");

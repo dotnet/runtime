@@ -196,7 +196,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // Is this a back edge?
         if (predBlock->bbNum >= begBlk->bbNum)
         {
-            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, backedgeList);
+            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, begBlk, backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
@@ -2985,94 +2985,122 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 //
 void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader)
 {
-    if (loop->EntryEdges().size() == 1)
+    if (loop->EntryEdges().size() == 0)
     {
-        // TODO-Quirk: If we have just one entry block then get the weight from there.
-        // This doesn't really make sense for BBJ_COND, but it's what old loop
-        // finding used to do.
+        return;
+    }
 
-        BasicBlock* prevEntering = loop->EntryEdge(0)->getSourceBlock();
-        preheader->inheritWeight(prevEntering);
-        preheader->RemoveFlags(BBF_PROF_WEIGHT);
+    // The preheader is only considered to have profile weights when all the
+    // following conditions are true:
+    // - The loop header has a profile weight
+    // - All entering blocks have a profile weight
+    // - The successors of all entering blocks have a profile weight (so that
+    //   we can trust the computed taken/not taken ratio)
+    //
+    bool     hasProfWeight   = fgIsUsingProfileWeights();
+    weight_t preheaderWeight = BB_ZERO_WEIGHT;
 
-        if (!fgIsUsingProfileWeights() || !prevEntering->KindIs(BBJ_COND))
+    for (FlowEdge* entryEdge : loop->EntryEdges())
+    {
+        BasicBlock* prevEntering = entryEdge->getSourceBlock();
+
+        hasProfWeight &= prevEntering->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY;
+
+        if (!fgIsUsingProfileWeights() || !prevEntering->HasFlag(BBF_PROF_WEIGHT) ||
+            !loop->GetHeader()->HasFlag(BBF_PROF_WEIGHT) || prevEntering->KindIs(BBJ_ALWAYS))
         {
-            return;
+            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
+            continue;
         }
 
-        if ((prevEntering->bbWeight == BB_ZERO_WEIGHT) || (loop->GetHeader()->bbWeight == BB_ZERO_WEIGHT))
-        {
-            preheader->bbWeight = BB_ZERO_WEIGHT;
-            preheader->SetFlags(BBF_RUN_RARELY);
-            return;
-        }
+        bool succsHaveProfileWeights = true;
+        bool useEdgeWeights          = fgHaveValidEdgeWeights;
 
-        // Allow for either the fall-through or branch to target entry.
-        BasicBlock* skipLoopBlock;
-        if (prevEntering->FalseTargetIs(preheader))
-        {
-            skipLoopBlock = prevEntering->GetTrueTarget();
-        }
-        else
-        {
-            skipLoopBlock = prevEntering->GetFalseTarget();
-        }
-        assert(skipLoopBlock != loop->GetHeader());
-
-        bool allValidProfileWeights = (prevEntering->hasProfileWeight() && skipLoopBlock->hasProfileWeight() &&
-                                       loop->GetHeader()->hasProfileWeight());
-
-        if (!allValidProfileWeights)
-        {
-            return;
-        }
-
-        weight_t loopEnteredCount = 0;
-        weight_t loopSkippedCount = 0;
-        bool     useEdgeWeights   = fgHaveValidEdgeWeights;
+        weight_t loopEnterCount = 0;
+        weight_t loopSkipCount  = 0;
 
         if (useEdgeWeights)
         {
-            const FlowEdge* edgeToEntry    = fgGetPredForBlock(preheader, prevEntering);
-            const FlowEdge* edgeToSkipLoop = fgGetPredForBlock(skipLoopBlock, prevEntering);
-            assert(edgeToEntry != nullptr);
-            assert(edgeToSkipLoop != nullptr);
+            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
+                FlowEdge* edge       = fgGetPredForBlock(succ, prevEntering);
+                weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
 
-            loopEnteredCount = (edgeToEntry->edgeWeightMin() + edgeToEntry->edgeWeightMax()) / 2.0;
-            loopSkippedCount = (edgeToSkipLoop->edgeWeightMin() + edgeToSkipLoop->edgeWeightMax()) / 2.0;
+                if (succ == preheader)
+                {
+                    loopEnterCount += edgeWeight;
+                }
+                else
+                {
+                    succsHaveProfileWeights &= succ->hasProfileWeight();
+                    loopSkipCount += edgeWeight;
+                }
+                return BasicBlockVisit::Continue;
+            });
 
             // Watch out for cases where edge weights were not properly maintained
             // so that it appears no profile flow enters the loop.
             //
-            useEdgeWeights = !fgProfileWeightsConsistent(loopEnteredCount, BB_ZERO_WEIGHT);
+            useEdgeWeights = !fgProfileWeightsConsistent(loopEnterCount, BB_ZERO_WEIGHT);
         }
 
         if (!useEdgeWeights)
         {
-            loopEnteredCount = loop->GetHeader()->bbWeight;
-            loopSkippedCount = skipLoopBlock->bbWeight;
+            loopEnterCount = 0;
+            loopSkipCount  = 0;
+
+            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
+                if (succ == preheader)
+                {
+                    loopEnterCount += succ->bbWeight;
+                }
+                else
+                {
+                    succsHaveProfileWeights &= succ->hasProfileWeight();
+                    loopSkipCount += succ->bbWeight;
+                }
+
+                return BasicBlockVisit::Continue;
+            });
         }
 
-        weight_t loopTakenRatio = loopEnteredCount / (loopEnteredCount + loopSkippedCount);
+        if (!succsHaveProfileWeights)
+        {
+            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
+            hasProfWeight = false;
+            continue;
+        }
+
+        weight_t loopTakenRatio = loopEnterCount / (loopEnterCount + loopSkipCount);
 
         JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
-                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnteredCount,
-                loopSkippedCount, loopTakenRatio);
+                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnterCount,
+                loopSkipCount, loopTakenRatio);
 
-        // Calculate a good approximation of the preheader's block weight
-        weight_t preheaderWeight = (prevEntering->bbWeight * loopTakenRatio);
-        preheader->setBBProfileWeight(preheaderWeight);
-        assert(!preheader->isRunRarely());
+        weight_t enterContribution = prevEntering->bbWeight * loopTakenRatio;
+        preheaderWeight += enterContribution;
 
-        // Normalize edge weights
+        // Normalize prevEntering -> preheader edge
         FlowEdge* const edgeToPreheader = fgGetPredForBlock(preheader, prevEntering);
         assert(edgeToPreheader != nullptr);
-        edgeToPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, preheader);
+        edgeToPreheader->setEdgeWeights(enterContribution, enterContribution, preheader);
+    }
 
-        FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
-        edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
+    preheader->bbWeight = preheaderWeight;
+    if (hasProfWeight)
+    {
+        preheader->SetFlags(BBF_PROF_WEIGHT);
+    }
+
+    if (preheaderWeight == BB_ZERO_WEIGHT)
+    {
+        preheader->SetFlags(BBF_RUN_RARELY);
         return;
     }
+
+    // Normalize preheader -> header weight
+    FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
+    assert(edgeFromPreheader != nullptr);
+    edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
 }
 
 /*****************************************************************************

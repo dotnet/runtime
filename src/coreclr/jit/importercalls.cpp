@@ -3216,6 +3216,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1->gtType = TYP_REF;
                     retNode     = op1;
                 }
+                else if (GetRuntimeHandleUnderlyingType() == TYP_I_IMPL)
+                {
+                    // We'll try to expand it later.
+                    isSpecial = true;
+                }
                 break;
             }
 
@@ -5814,15 +5819,19 @@ void Compiler::pickGDV(GenTreeCall*           call,
 #ifdef DEBUG
     if ((verbose || JitConfig.EnableExtraSuperPmiQueries()) && (numberOfClasses > 0))
     {
-        bool                 isExact;
-        bool                 isNonNull;
-        CallArg*             thisArg            = call->gtArgs.GetThisArg();
-        CORINFO_CLASS_HANDLE declaredThisClsHnd = gtGetClassHandle(thisArg->GetNode(), &isExact, &isNonNull);
         JITDUMP("Likely classes for call [%06u]", dspTreeID(call));
-        if (declaredThisClsHnd != NO_CLASS_HANDLE)
+        if (!call->IsHelperCall())
         {
-            const char* baseClassName = eeGetClassName(declaredThisClsHnd);
-            JITDUMP(" on class %p (%s)", declaredThisClsHnd, baseClassName);
+            bool     isExact;
+            bool     isNonNull;
+            CallArg* thisArg = call->gtArgs.GetThisArg();
+            assert(thisArg != nullptr);
+            CORINFO_CLASS_HANDLE declaredThisClsHnd = gtGetClassHandle(thisArg->GetNode(), &isExact, &isNonNull);
+            if (declaredThisClsHnd != NO_CLASS_HANDLE)
+            {
+                const char* baseClassName = eeGetClassName(declaredThisClsHnd);
+                JITDUMP(" on class %p (%s)", declaredThisClsHnd, baseClassName);
+            }
         }
         JITDUMP("\n");
 
@@ -6884,7 +6893,6 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     switch (intrinsicName)
     {
         case NI_System_Math_Abs:
-        case NI_System_Math_Round:
         case NI_System_Math_Sqrt:
             return true;
 
@@ -8518,7 +8526,8 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 if (isNumber)
                 {
-                    std::swap(op1, op2);
+                    // Swap the operands so that the cnsNode is op1, this prevents
+                    // the unknown value (which could be NaN) from being selected.
 
                     retNode->AsHWIntrinsic()->Op(1) = op2;
                     retNode->AsHWIntrinsic()->Op(2) = op1;

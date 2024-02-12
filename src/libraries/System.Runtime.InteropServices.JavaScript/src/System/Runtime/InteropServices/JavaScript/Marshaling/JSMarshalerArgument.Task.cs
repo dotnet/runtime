@@ -64,11 +64,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (arg_2.slot.Type != MarshalerType.None)
                     {
                         arg_2.ToManaged(out Exception? fail);
-                        tcs.SetException(fail!);
+                        tcs.TrySetException(fail!);
                     }
                     else
                     {
-                        tcs.SetResult();
+                        tcs.TrySetResult();
                     }
                     // eventual exception is handled by caller
                 };
@@ -117,12 +117,12 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         arg_2.ToManaged(out Exception? fail);
                         if (fail == null) throw new InvalidOperationException(SR.FailedToMarshalException);
-                        tcs.SetException(fail);
+                        tcs.TrySetException(fail);
                     }
                     else
                     {
                         marshaler(ref arg_3, out T result);
-                        tcs.SetResult(result);
+                        tcs.TrySetResult(result);
                     }
                     // eventual exception is handled by caller
                 };
@@ -394,13 +394,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_MANAGED_THREADS
-            // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
-#else
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
-#endif
         }
 
         private static void ResolveVoidPromise(JSObject holder)
@@ -433,13 +428,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_MANAGED_THREADS
-            // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
-#else
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
-#endif
         }
 
         private static void ResolvePromise<T>(JSObject holder, T value, ArgumentToJSCallback<T> marshaler)
@@ -473,13 +463,8 @@ namespace System.Runtime.InteropServices.JavaScript
             // we can free the JSHandle here and the holder.resolve_or_reject will do the rest
             holder.DisposeImpl(skipJsCleanup: true);
 
-#if !FEATURE_WASM_MANAGED_THREADS
-            // order of operations with DisposeImpl matters
-            JSFunctionBinding.ResolveOrRejectPromise(args);
-#else
             // order of operations with DisposeImpl matters
             JSFunctionBinding.ResolveOrRejectPromise(holder.ProxyContext, args);
-#endif
         }
     }
 }

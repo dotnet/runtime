@@ -61,7 +61,8 @@ export const monoThreadInfo: PThreadInfo = {
     pthreadId: 0,
     reuseCount: 0,
     updateCount: 0,
-    threadName: "",
+    threadPrefix: "          -    ",
+    threadName: "emscripten-loaded",
 };
 
 /// This is the "public internal" API for runtime subsystems that wish to be notified about
@@ -96,7 +97,7 @@ export function mono_wasm_pthread_on_pthread_created(): void {
         monoThreadInfo.pthreadId = pthread_id;
         monoThreadInfo.reuseCount++;
         monoThreadInfo.updateCount++;
-        monoThreadInfo.threadName = `0x${pthread_id.toString(16).padStart(8, "0")}`;
+        monoThreadInfo.threadName = "pthread-assigned";
         update_thread_info();
 
         // don't do this callback for the main thread
@@ -153,26 +154,18 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread
     try {
         mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when attaching");
 
-        const name = monoThreadInfo.name = utf8ToString(thread_name);
+        const name = monoThreadInfo.threadName = utf8ToString(thread_name);
         monoThreadInfo.isAttached = true;
-        monoThreadInfo.isThreadPool = threadpool_thread !== 0;
+        monoThreadInfo.isThreadPoolWorker = threadpool_thread !== 0;
         monoThreadInfo.isExternalEventLoop = external_eventloop !== 0;
         monoThreadInfo.isBackground = background_thread !== 0;
         monoThreadInfo.isDebugger = debugger_thread !== 0;
 
         // FIXME: this is a hack to get constant length thread names
+        monoThreadInfo.threadName = name;
         monoThreadInfo.isTimer = name == ".NET Timer";
         monoThreadInfo.isLongRunning = name == ".NET Long Running Task";
         monoThreadInfo.isThreadPoolGate = name == ".NET TP Gate";
-        const threadType = monoThreadInfo.isTimer ? "timr"
-            : monoThreadInfo.isLongRunning ? "long"
-                : monoThreadInfo.isThreadPoolGate ? "gate"
-                    : monoThreadInfo.isDebugger ? "dbgr"
-                        : monoThreadInfo.isThreadPool ? "pool"
-                            : monoThreadInfo.isExternalEventLoop ? "jsww"
-                                : monoThreadInfo.isBackground ? "back"
-                                    : "norm";
-        monoThreadInfo.threadName = `0x${pthread_id.toString(16).padStart(8, "0")}-${threadType}`;
         update_thread_info();
         currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, pthread_self));
         postMessageToMain({
@@ -187,6 +180,17 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number, thread
     }
 }
 
+export function mono_wasm_pthread_set_name(name: CharPtr): void {
+    if (!WasmEnableThreads) return;
+    if (!ENVIRONMENT_IS_PTHREAD) return;
+    monoThreadInfo.threadName = utf8ToString(name);
+    update_thread_info();
+    postMessageToMain({
+        monoCmd: WorkerToMainMessageType.updateInfo,
+        info: monoThreadInfo,
+    });
+}
+
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
 export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: number): void {
     if (!WasmEnableThreads) return;
@@ -194,7 +198,6 @@ export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: number): v
         mono_assert(pthread_id === monoThreadInfo.pthreadId, "expected pthread_id to match when un-registering");
         postRunWorker();
         monoThreadInfo.isAttached = false;
-        monoThreadInfo.threadName = monoThreadInfo.threadName + "=>detached";
         update_thread_info();
         postMessageToMain({
             monoCmd: WorkerToMainMessageType.monoUnRegistered,
