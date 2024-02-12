@@ -2203,6 +2203,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWords(id->idInsOpt()));
+            assert(isScalableVectorSize(elemsize));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isLowPredicateRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            assert(isValidUimm5(emitGetInsSC(id)));
+            break;
+
         case IF_SVE_HX_3A_E: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
         case IF_SVE_IV_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)
         case IF_SVE_JI_3A_A: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit scatter store (vector plus immediate)
@@ -2213,7 +2222,6 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg1()));
             assert(isLowPredicateRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
-            assert(isValidUimm5(emitGetInsSC(id)));
             break;
 
         case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
@@ -11583,9 +11591,18 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(insOptsScalableWordsOrQuadwords(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
-            assert(isGeneralRegister(reg3));
-            assert(isValidSimm4(imm));
-            fmt = IF_SVE_IH_3A_F;
+
+            if (isGeneralRegister(reg3))
+            {
+                assert(isValidSimm4(imm));
+                fmt = IF_SVE_IH_3A_F;
+            }
+            else
+            {
+                assert(isVectorRegister(reg3));
+                assert(isValidUimm5_MultipleOf4(imm));
+                fmt = IF_SVE_HX_3A_E;
+            }
             break;
 
         case INS_sve_ld1sw:
@@ -11650,18 +11667,54 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(insOptsScalableWords(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
-            assert(isGeneralRegister(reg3));
-            assert(isValidSimm4(imm));
-            fmt = IF_SVE_IJ_3A_F;
+
+            if (isGeneralRegister(reg3))
+            {
+                assert(isValidSimm4(imm));
+                fmt = IF_SVE_IJ_3A_F;
+            }
+            else
+            {
+                assert(isVectorRegister(reg3));
+                assert(isValidUimm5_MultipleOf2(imm));
+                fmt = IF_SVE_HX_3A_E;
+            }
             break;
 
         case INS_sve_ld1h:
             assert(insOptsScalableAtLeastHalf(opt));
             assert(isVectorRegister(reg1));
             assert(isPredicateRegister(reg2));
-            assert(isGeneralRegister(reg3));
-            assert(isValidSimm4(imm));
-            fmt = IF_SVE_IJ_3A_G;
+
+            if (isGeneralRegister(reg3))
+            {
+                assert(isValidSimm4(imm));
+                fmt = IF_SVE_IJ_3A_G;
+            }
+            else
+            {
+                assert(isVectorRegister(reg3));
+                assert(isValidUimm5_MultipleOf2(imm));
+                fmt = IF_SVE_HX_3A_E;
+            }
+            break;
+
+        case INS_sve_ldff1h:
+        case INS_sve_ldff1sh:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidUimm5_MultipleOf2(imm));
+            fmt = IF_SVE_HX_3A_E;
+
+        case INS_sve_ldff1w:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));
+            assert(isPredicateRegister(reg2));
+            assert(isVectorRegister(reg3));
+            assert(isValidUimm5_MultipleOf4(imm));
+            fmt = IF_SVE_HX_3A_E;
             break;
 
         case INS_sve_ldnf1sw:
@@ -17019,6 +17072,44 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction at bit location '30'.
+ *  This only works on select formats.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_30(insFormat fmt, emitAttr size)
+{
+    switch (fmt)
+    {
+        case IF_SVE_HX_3A_B:
+        case IF_SVE_HX_3A_E:
+        case IF_SVE_IV_3A:
+        case IF_SVE_JI_3A_A:
+        case IF_SVE_JL_3A:
+            switch (size)
+            {
+                case EA_4BYTE:
+                    return 0;
+
+                case EA_8BYTE:
+                    return (1 << 30);
+
+                default:
+                    break;
+            }
+
+            assert(!"Invalid size for vector register");
+            return 0;
+
+        default:
+            break;
+    }
+
+    assert(!"Unexpected instruction format");
+    return 0;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding to select the elemsize for an Arm64 SVE vector instruction plus an immediate.
  *  This specifically encodes the field 'tszh:tszl' at bit locations '23-22:9-8'.
  */
@@ -18685,6 +18776,29 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(isValidSimm4_MultipleOf32(imm));
     return insEncodeSimm4_19_to_16(imm / 32);
 }
+
+/*****************************************************************************
+ *
+ *  // Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
+{
+    assert(isValidUimm5_MultipleOf2(imm));
+    return insEncodeUimm5_20_to_16(imm / 2);
+}
+
+/*****************************************************************************
+ *
+ *  // Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
+{
+    assert(isValidUimm5_MultipleOf4(imm));
+    return insEncodeUimm5_20_to_16(imm / 4);
+}
+
 
 /*****************************************************************************
  *
@@ -22093,22 +22207,37 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             break;
 
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
-        case IF_SVE_HX_3A_E: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
-        case IF_SVE_IV_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)
-        case IF_SVE_JI_3A_A: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit scatter store (vector plus immediate)
-        case IF_SVE_JL_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit scatter store (vector plus immediate)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
             code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
             code |= insEncodeReg_V_9_to_5(id->idReg3());   // nnnnn
             code |= insEncodeUimm5_20_to_16(imm);          // iiiii
+            code |= insEncodeSveElemsize_30(fmt, optGetSveElemsize(id->idInsOpt()));
+            dst += emitOutput_Instr(dst, code);
+            break;
 
-            if (id->idInsOpt() == INS_OPTS_SCALABLE_D)
+        case IF_SVE_HX_3A_E: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
+        case IF_SVE_IV_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)
+        case IF_SVE_JI_3A_A: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit scatter store (vector plus immediate)
+        case IF_SVE_JL_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit scatter store (vector plus immediate)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());      // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2());    // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg3());      // nnnnn
+            code |= insEncodeSveElemsize_30(fmt, optGetSveElemsize(id->idInsOpt()));
+
+            switch (ins)
             {
-                // set bit '30' to make this instruction a double-word
-                // this is only special for these formats
-                code |= (1 << 30);
+                case INS_sve_ld1w:
+                case INS_sve_ldff1w:
+                    code |= insEncodeUimm5_MultipleOf4_20_to_16(imm); // iiiii
+                    break;
+
+                default:
+                    code |= insEncodeUimm5_MultipleOf2_20_to_16(imm); // iiiii
+                    break;
             }
 
             dst += emitOutput_Instr(dst, code);
@@ -22571,7 +22700,10 @@ void emitter::emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm)
     emitDispSveReg(reg1, opt, imm != 0);
     if (imm != 0)
     {
-        emitDispImm(imm, false);
+        // This does not have to be printed as hex.
+        // We only do it because the capstone disassembly displays this immediate as hex.
+        // We could not modify capstone without affecting other cases.
+        emitDispImm(imm, false, /* alwaysHex */ (imm > 8));
     }
     printf("]");
 }

@@ -534,6 +534,10 @@ static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction at bit location '30'.
+// This only works on select formats.
+static code_t insEncodeSveElemsize_30(insFormat fmt, emitAttr size);
+
 // Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit location '16'.
 static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
@@ -597,6 +601,12 @@ static code_t insEncodeSimm4_MultipleOf16_19_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value that is a multiple of 32 as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm);
+
+// Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
 
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
@@ -695,6 +705,19 @@ static bool isValidSimm4_MultipleOf32(ssize_t value)
 {
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
 };
+
+// Returns true if 'value' is a legal signed multiple of 2 immediate 5 bit encoding (such as for LD1H).
+static bool isValidUimm5_MultipleOf2(ssize_t value)
+{
+    return (0 <= value) && (value <= 62) && (value % 2 == 0);
+};
+
+// Returns true if 'value' is a legal signed multiple of 4 immediate 5 bit encoding (such as for LD1W).
+static bool isValidUimm5_MultipleOf4(ssize_t value)
+{
+    return (0 <= value) && (value <= 124) && (value % 2 == 0);
+};
+
 
 // Returns true if 'value' is a legal immediate 1 bit encoding (such as for PEXT).
 static bool isValidImm1(ssize_t value)
