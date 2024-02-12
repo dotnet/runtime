@@ -1,9 +1,6 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 
-#This test is negative and will exit with exit(1).
-#Therefore, the harness would record it as a failure
-c_runtime/exit/test2,1
 # A successful DebugBreak test run dumps core or throws up an ASSERT
 # dialog box (or...) and returns an exit code != 0
 debug_api/debugbreak/test1,1

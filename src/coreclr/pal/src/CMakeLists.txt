@@ -131,7 +131,6 @@ endif()
 set(SOURCES
   cruntime/malloc.cpp
   cruntime/misc.cpp
-  cruntime/thread.cpp
   cruntime/wchar.cpp
   debug/debug.cpp
   exception/seh.cpp

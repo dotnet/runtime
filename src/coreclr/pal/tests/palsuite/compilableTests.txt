@@ -12,8 +12,6 @@ c_runtime/cosh/test1/paltest_cosh_test1
 c_runtime/coshf/test1/paltest_coshf_test1
 c_runtime/errno/test1/paltest_errno_test1
 c_runtime/errno/test2/paltest_errno_test2
-c_runtime/exit/test1/paltest_exit_test1
-c_runtime/exit/test2/paltest_exit_test2
 c_runtime/free/test1/paltest_free_test1
 c_runtime/isalnum/test1/paltest_isalnum_test1
 c_runtime/isalpha/test1/paltest_isalpha_test1

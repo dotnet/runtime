@@ -208,6 +208,7 @@ function_name() to call the system's implementation
 #define size_t DUMMY_size_t
 #define time_t PAL_time_t
 #define va_list DUMMY_va_list
+#define exit DUMMY_exit
 #define abs DUMMY_abs
 #define llabs DUMMY_llabs
 #define ceil DUMMY_ceil

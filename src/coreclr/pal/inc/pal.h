@@ -3980,7 +3980,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    To avoid name collisions, those functions have been renamed using
    defines */
 #ifndef PAL_STDCPP_COMPAT
-#define exit          PAL_exit
 #define realloc       PAL_realloc
 #define rand          PAL_rand
 #define time          PAL_time

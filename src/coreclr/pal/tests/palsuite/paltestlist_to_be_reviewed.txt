@@ -1,7 +1,6 @@
 This is a list of failing PAL tests that need to be reviewed because.
 They should either be fixed or deleted if they are no longer applicable.
 
-c_runtime/exit/test2/paltest_exit_test2
 c_runtime/ferror/test1/paltest_ferror_test1
 c_runtime/ferror/test2/paltest_ferror_test2
 c_runtime/fputs/test2/paltest_fputs_test2
