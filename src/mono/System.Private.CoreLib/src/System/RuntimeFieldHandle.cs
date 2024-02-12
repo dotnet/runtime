@@ -72,7 +72,9 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void SetValueInternal(FieldInfo fi, object? obj, object? value);
 
-        internal static void SetValue(RuntimeFieldInfo field, object? obj, object? value, RuntimeType? _, FieldAttributes _1, RuntimeType? _2, ref bool _3)
+#pragma warning disable IDE0060 // Remove unused parameter (isInitialized)
+        internal static void SetValue(RuntimeFieldInfo field, object? obj, object? value, RuntimeType? _, FieldAttributes _1, RuntimeType? _2, bool isInitialized)
+#pragma warning restore IDE0060
         {
             SetValueInternal(field, obj, value);
         }
