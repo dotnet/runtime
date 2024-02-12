@@ -368,6 +368,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 using var timer = new Timer(_ =>
                 {
                     Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                    Console.WriteLine("ThreadingTimer: ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
                     Assert.True(Thread.CurrentThread.IsThreadPoolThread);
                     tcs.SetResult();
                     hit = true;
@@ -376,6 +377,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await tcs.Task;
             }, cts.Token);
 
+            Console.WriteLine("ThreadingTimer: ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
             Assert.True(hit);
         }
 
@@ -451,7 +453,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 {
                     exception = ex;
                 }
-
+                Console.WriteLine("WaitAssertsOnJSInteropThreads: ManagedThreadId: " + Environment.CurrentManagedThreadId + " NativeThreadId: " + WebWorkerTestHelper.NativeThreadId);
                 executor.AssertBlockingWait(exception);
 
                 return Task.CompletedTask;
