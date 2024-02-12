@@ -58,11 +58,7 @@ extern errno_t strncpy_s( char* outDest, size_t inDestBufferSize, const char* in
 extern errno_t wcsncpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inSrc, size_t inCount );
 extern errno_t wcsncpy_s( WCHAR* outDest, size_t inDestBufferSize, const WCHAR* inSrc, size_t inCount );
 
-// strnlen is not required unless the source string is completely untrusted (e.g. anonymous input on a website)
-#ifndef SUPPRESS_STRNLEN
-    extern size_t PAL_strnlen( const char* inString, size_t inMaxSize );
-    extern size_t PAL_wcsnlen( const WCHAR* inString, size_t inMaxSize );
-#endif
+extern size_t PAL_wcsnlen( const WCHAR* inString, size_t inMaxSize );
 
 extern errno_t _itoa_s( int inValue, char* outBuffer, size_t inDestBufferSize, int inRadix );
 extern errno_t _itow_s( int inValue, WCHAR* outBuffer, size_t inDestBufferSize, int inRadix );

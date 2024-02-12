@@ -1189,25 +1189,36 @@ get_wrapper_shared_vtype (MonoType *t)
 
 	guint32 packing, packing_size;
 	gboolean has_explicit_size = FALSE;
-	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), &packing, &packing_size)) {
-		// FIXME: Support other sizes
-		if (packing == 0 && (packing_size == 8 || packing_size == 16)) {
-			has_explicit_size = TRUE;
-			switch (packing_size) {
-			case 8:
-				findex = 1;
-				args [0] = m_class_get_byval_arg (mono_get_int64_class ());
-				break;
-			case 16:
-				findex = 2;
-				args [0] = m_class_get_byval_arg (mono_get_int64_class ());
-				args [1] = m_class_get_byval_arg (mono_get_int64_class ());
-				break;
-			default:
-				g_assert_not_reached ();
-				break;
-			}
-		} else {
+	if (m_class_get_type_token (klass) && mono_metadata_packing_from_typedef (m_class_get_image (klass), m_class_get_type_token (klass), &packing, &packing_size) && packing == 0) {
+		has_explicit_size = TRUE;
+		switch (packing_size) {
+		case 1:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_byte_class ());
+			break;
+		case 2:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int16_class ());
+			break;
+		case 4:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int32_class ());
+			break;
+		case 8:
+			findex = 1;
+			args [0] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		case 16:
+			findex = 2;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		case 32:
+			findex = 4;
+			for (int i = 0; i < findex; ++i)
+				args [i] = m_class_get_byval_arg (mono_get_int64_class ());
+			break;
+		default:
 			return NULL;
 		}
 	}
