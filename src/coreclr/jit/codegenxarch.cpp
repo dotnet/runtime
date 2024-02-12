@@ -6074,9 +6074,7 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    var_types returnType = call->TypeGet();
-
-    if (call->IsPInvoke())
+    if (GetEmitter()->Contains256bitOrMoreAVX() && call->NeedsVzeroupper(compiler))
     {
         // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
         //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
@@ -6084,47 +6082,11 @@ void CodeGen::genCall(GenTreeCall* call)
         //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
         //   register) and before any call to an unknown function.
 
-        if (GetEmitter()->Contains256bitOrMoreAVX() && GetEmitter()->ContainsCallNeedingVzeroupper())
-        {
-            // This method contains a call that needs vzeroupper but also uses 256-bit or higher
-            // AVX itself. This means we couldn't optimize to only emitting a single vzeroupper in
-            // the method prologue and instead need to insert one before each call that needs it.
+        // This method contains a call that needs vzeroupper but also uses 256-bit or higher
+        // AVX itself. This means we couldn't optimize to only emitting a single vzeroupper in
+        // the method prologue and instead need to insert one before each call that needs it.
 
-            bool needsZeroupper = false;
-
-            switch (call->gtCallType)
-            {
-                case CT_USER_FUNC:
-                case CT_INDIRECT:
-                {
-                    // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
-                    // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
-
-                    needsZeroupper = true;
-                    break;
-                }
-
-                case CT_HELPER:
-                {
-                    // Most helpers are well known to not use any floating-point or SIMD logic internally, but
-                    // a few do exist so we need to ensure they are handled. They are identified by taking or
-                    // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
-
-                    needsZeroupper = call->gtArgs.PassesFloatOrSimd() || varTypeUsesFloatReg(returnType);
-                    break;
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
-            if (needsZeroupper)
-            {
-                instGen(INS_vzeroupper);
-            }
-        }
+        instGen(INS_vzeroupper);
     }
 
     genCallInstruction(call X86_ARG(stackArgBytes));
@@ -6146,6 +6108,7 @@ void CodeGen::genCall(GenTreeCall* call)
     assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
 #endif
 
+    var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
     {
 #ifdef TARGET_X86
@@ -11232,7 +11195,7 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
 
-    if (GetEmitter()->ContainsCallNeedingVzeroupper())
+    if (GetEmitter()->ContainsCallNeedingVzeroupper() && !GetEmitter()->Contains256bitOrMoreAVX())
     {
         // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
         //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
@@ -11240,15 +11203,12 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
         //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
         //   register) and before any call to an unknown function.
 
-        if (!GetEmitter()->Contains256bitOrMoreAVX())
-        {
-            // This method contains a call that needs vzeroupper but also doesn't use 256-bit or higher
-            // AVX itself. Thus we can optimize to only emitting a single vzeroupper in the function prologue
-            // This reduces the overall amount of codegen, particularly for more common paths not using any
-            // SIMD or floating-point.
+        // This method contains a call that needs vzeroupper but also doesn't use 256-bit or higher
+        // AVX itself. Thus we can optimize to only emitting a single vzeroupper in the function prologue
+        // This reduces the overall amount of codegen, particularly for more common paths not using any
+        // SIMD or floating-point.
 
-            instGen(INS_vzeroupper);
-        }
+        instGen(INS_vzeroupper);
     }
 
     // fast path return
@@ -11305,9 +11265,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
         //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
         //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
         //   register) and before any call to an unknown function.
-
-        // Since this function used 256-bit or more AVX, we need to ensure we emit a vzeroupper.
-        // TODO-CQ: We should be able to check the return type and skip this if it is TYP_SIMD32 or TYP_SIMD64
 
         instGen(INS_vzeroupper);
     }

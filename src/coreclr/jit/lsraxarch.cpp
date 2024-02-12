@@ -1341,53 +1341,14 @@ int LinearScan::BuildCall(GenTreeCall* call)
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
-    if (call->IsPInvoke() && compiler->canUseVexEncoding())
+    if (call->NeedsVzeroupper(compiler))
     {
-        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
-        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
-        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
-        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
-        //   register) and before any call to an unknown function.
+        // Much like for Contains256bitOrMoreAVX, we want to track if any
+        // call needs a vzeroupper inserted. This allows us to reduce
+        // the total number of vzeroupper being inserted for cases where
+        // no 256+ AVX is used directly by the method.
 
-        bool needsZeroupper = false;
-
-        switch (call->gtCallType)
-        {
-            case CT_USER_FUNC:
-            case CT_INDIRECT:
-            {
-                // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
-                // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
-
-                needsZeroupper = true;
-                break;
-            }
-
-            case CT_HELPER:
-            {
-                // Most helpers are well known to not use any floating-point or SIMD logic internally, but
-                // a few do exist so we need to ensure they are handled. They are identified by taking or
-                // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
-
-                needsZeroupper = call->gtArgs.PassesFloatOrSimd() || varTypeUsesFloatReg(registerType);
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
-
-        if (needsZeroupper)
-        {
-            // Much like for Contains256bitOrMoreAVX, we want to track if any
-            // call needs a vzeroupper inserted. This allows us to reduce
-            // the total number of vzeroupper being inserted for cases where
-            // no 256+ AVX is used directly by the method.
-
-            compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
-        }
+        compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
     }
 
     buildInternalRegisterUses();
