@@ -581,6 +581,10 @@ static code_t insEncodeSveElemsize_dtype(instruction ins, emitAttr size, code_t 
 // for the 'dtype' field.
 static code_t insEncodeSveElemsize_dtype_ld1w(instruction ins, insFormat fmt, emitAttr size, code_t code);
 
+// Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+// for the 'dtypeh' and 'dtypel' fields.
+static code_t insEncodeSveElemsize_dtypeh_dtypel(instruction ins, insFormat fmt, emitAttr size, code_t code);
+
 // Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
 static code_t insEncodeSimm4_19_to_16(ssize_t imm);
 

@@ -2259,6 +2259,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWords(id->idInsOpt()));
+            assert(isScalableVectorSize(elemsize));
+            assert(isVectorRegister(id->idReg1()));
+            assert(isLowPredicateRegister(id->idReg2()));
+            assert(isGeneralRegister(id->idReg3()));
+            break;
+
         case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
         case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             break;
@@ -12556,6 +12564,24 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_IC_3A;
             break;
 
+        case INS_sve_ld1rsh:
+            assert(insOptsScalableWords(opt));
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidUimm6_MultipleOf2(imm));
+            fmt = IF_SVE_IC_3A_A;
+            break;
+
+        case INS_sve_ld1rw:
+            assert(insOptsScalableWords(opt));
+            assert(isVectorRegister(reg1));
+            assert(isLowPredicateRegister(reg2));
+            assert(isGeneralRegister(reg3));
+            assert(isValidUimm6_MultipleOf4(imm));
+            fmt = IF_SVE_IC_3A_A;
+            break;
+
         default:
             unreached();
             break;
@@ -18844,6 +18870,97 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding to select the 1/2/4/8 byte elemsize for an Arm64 Sve vector instruction
+ *  for the 'dtypeh' and 'dtypel' fields.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtypeh_dtypel(instruction ins, insFormat fmt, emitAttr size, code_t code)
+{
+    switch (fmt)
+    {
+        case IF_SVE_IC_3A_A:
+            switch (size)
+            {
+                case EA_4BYTE:
+                    switch (ins)
+                    {
+                        case INS_sve_ld1rsh:
+                            return code | (1 << 13); // set bit '13'
+
+                        case INS_sve_ld1rw:
+                            return code | (1 << 14); // set bit '14'
+
+                        default:
+                            break;
+                    }
+                    break;
+
+                case EA_8BYTE:
+                    switch (ins)
+                    {
+                        case INS_sve_ld1rsh:
+                            return code;
+
+                        case INS_sve_ld1rw:
+                            return code | (1 << 14) | (1 << 13); // set bits '14' and '13'
+
+                        default:
+                            break;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IC_3A_B:
+            switch (size)
+            {
+                case EA_2BYTE:
+                    break;
+
+                case EA_4BYTE:
+                    break;
+
+                case EA_8BYTE:
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_IC_3A_C:
+            switch (size)
+            {
+                case EA_1BYTE:
+                    break;
+
+                case EA_2BYTE:
+                    break;
+
+                case EA_4BYTE:
+                    break;
+
+                case EA_8BYTE:
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    assert(!"Unexpected instruction format");
+    return code;
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 4-bits at bit locations '19-16'.
  */
 
@@ -22519,7 +22636,29 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_IC_3A_A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
         case IF_SVE_IC_3A_B: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
         case IF_SVE_IC_3A_C: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+            imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
+            code |= insEncodeReg_P_12_to_10(id->idReg2()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg3());   // nnnnn
+            code = insEncodeSveElemsize_dtypeh_dtypel(ins, fmt, optGetSveElemsize(id->idInsOpt()), code);
+
+            switch (ins)
+            {
+                case INS_sve_ld1rw:
+                    code |= insEncodeUimm6_MultipleOf4_21_to_16(imm); // iiiiii
+                    break;
+
+                case INS_sve_ld1rh:
+                case INS_sve_ld1rsh:
+                    code |= insEncodeUimm6_MultipleOf2_21_to_16(imm); // iiiiii
+                    break;
+
+                default:
+                    code |= insEncodeUimm6_21_to_16(imm); // iiiiii
+                    break;
+            }
+
             dst += emitOutput_Instr(dst, code);
             break;
 
