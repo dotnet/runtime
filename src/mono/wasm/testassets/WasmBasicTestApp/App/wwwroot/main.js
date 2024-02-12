@@ -79,7 +79,7 @@ try {
             break;
         case "LazyLoadingTest":
             if (params.get("loadRequiredAssembly") !== "false") {
-                await INTERNAL.loadLazyAssembly(`System.Text.Json${assemblyExtension}`);
+                await INTERNAL.loadLazyAssembly(`Json${assemblyExtension}`);
             }
             exports.LazyLoadingTest.Run();
             exit(0);

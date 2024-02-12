@@ -598,7 +598,7 @@ function download_resource(asset: AssetEntryInternal): LoadingResource {
         totalResources.add(asset.name!);
         response.response.then(() => {
             if (asset.behavior == "assembly") {
-                loaderHelpers.loadedAssemblies.push(asset.resolvedUrl!);
+                loaderHelpers.loadedAssemblies.push(asset.name);
             }
 
             resourcesLoaded++;

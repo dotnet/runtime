@@ -104,7 +104,6 @@ internal sealed class JObjectValueCreator
             case ElementType.U:
             case ElementType.Void:
             case (ElementType)ValueTypeId.VType:
-            case (ElementType)ValueTypeId.FixedArray:
                 ret = Create(value: "void", type: "void", description: "void");
                 break;
             case ElementType.Boolean:
@@ -418,5 +417,99 @@ internal sealed class JObjectValueCreator
                               className: className.ToString(),
                               objectId: "dotnet:array:" + objectId,
                               subtype: length.Rank == 1 ? "array" : null);
+    }
+
+    public async Task<JObject> CreateFixedArrayElement(MonoBinaryReader retDebuggerCmdReader, ElementType etype, string name, CancellationToken token)
+    {
+        JObject ret = null;
+        switch (etype)
+        {
+            case ElementType.I:
+            case ElementType.U:
+            case ElementType.Void:
+            case (ElementType)ValueTypeId.VType:
+                ret = Create(value: "void", type: "void", description: "void");
+                break;
+            case ElementType.Boolean:
+                {
+                    var value = retDebuggerCmdReader.ReadInt32();
+                    ret = CreateFromPrimitiveType(value == 1);
+                    break;
+                }
+            case ElementType.I1:
+                {
+                    var value = retDebuggerCmdReader.ReadSByte();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.I2:
+            case ElementType.I4:
+                {
+                    var value = retDebuggerCmdReader.ReadInt32();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.U1:
+                {
+                    var value = retDebuggerCmdReader.ReadUByte();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.U2:
+                {
+                    var value = retDebuggerCmdReader.ReadUShort();
+                    ret = CreateJObjectForNumber<int>(value);
+                    break;
+                }
+            case ElementType.U4:
+                {
+                    var value = retDebuggerCmdReader.ReadUInt32();
+                    ret = CreateJObjectForNumber<uint>(value);
+                    break;
+                }
+            case ElementType.R4:
+                {
+                    float value = retDebuggerCmdReader.ReadSingle();
+                    ret = CreateJObjectForNumber<float>(value);
+                    break;
+                }
+            case ElementType.Char:
+                {
+                    var value = retDebuggerCmdReader.ReadInt32();
+                    ret = CreateJObjectForChar(value);
+                    break;
+                }
+            case ElementType.I8:
+                {
+                    long value = retDebuggerCmdReader.ReadInt64();
+                    ret = CreateJObjectForNumber<long>(value);
+                    break;
+                }
+            case ElementType.U8:
+                {
+                    ulong value = retDebuggerCmdReader.ReadUInt64();
+                    ret = CreateJObjectForNumber<ulong>(value);
+                    break;
+                }
+            case ElementType.R8:
+                {
+                    double value = retDebuggerCmdReader.ReadDouble();
+                    ret = CreateJObjectForNumber<double>(value);
+                    break;
+                }
+            case ElementType.FnPtr:
+            case ElementType.Ptr:
+                {
+                    ret = await ReadAsPtrValue(etype, retDebuggerCmdReader, name, token);
+                    break;
+                }
+            default:
+                {
+                    _logger.LogDebug($"Could not evaluate CreateFixedArrayElement invalid type {etype}");
+                    break;
+                }
+        }
+        ret["name"] = name;
+        return ret;
     }
 }
