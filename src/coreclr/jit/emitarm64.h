@@ -534,9 +534,9 @@ static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
-// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction at bit location '30'.
+// Returns the encoding to select the 4/8 byte elemsize for an Arm64 Sve vector instruction at bit location '30' or '21'.
 // This only works on select formats.
-static code_t insEncodeSveElemsize_30(insFormat fmt, emitAttr size);
+static code_t insEncodeSveElemsize_30_or_21(insFormat fmt, emitAttr size);
 
 // Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit location '16'.
