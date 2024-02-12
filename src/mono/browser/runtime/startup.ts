@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
+import { DotnetModuleInternal, CharPtrNull, MonoConfigInternal } from "./types/internal";
 import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -515,7 +515,7 @@ async function start_runtime() {
     if (runtimeHelpers.config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
 
-    mono_wasm_load_runtime("unused", runtimeHelpers.config.debugLevel);
+    mono_wasm_load_runtime(runtimeHelpers.config);
 
     if (runtimeHelpers.config.interpreterPgo)
         setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
@@ -534,20 +534,21 @@ async function maybeSaveInterpPgoTable() {
     await interp_pgo_save_data();
 }
 
-export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
+export function mono_wasm_load_runtime(config: MonoConfigInternal): void {
     mono_log_debug("mono_wasm_load_runtime");
     try {
         const mark = startMeasure();
+        let debugLevel = config.debugLevel;
         if (debugLevel == undefined) {
             debugLevel = 0;
             if (runtimeHelpers.config.debugLevel) {
                 debugLevel = 0 + debugLevel;
             }
         }
-        if (!loaderHelpers.isDebuggingSupported()) {
+        if (!loaderHelpers.isDebuggingSupported() || !config.resources!.pdb) {
             debugLevel = 0;
         }
-        cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
+        cwraps.mono_wasm_load_runtime("unused", debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
     } catch (err: any) {
