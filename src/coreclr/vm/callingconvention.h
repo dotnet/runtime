@@ -419,26 +419,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         if (!(m_dwFlags & RETURN_FLAGS_COMPUTED))
-        {
-#ifdef TARGET_RISCV64
-            // On RISC-V computing all return flags is complicated due to ABI rules on enregistering small structs
-            // so just check struct size and be done with it.
-            TypeHandle valueType;
-            switch (this->GetReturnType(&valueType))
-            {
-                case ELEMENT_TYPE_TYPEDBYREF:
-                    return (sizeof(TypedByRef) > ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE);
-                case ELEMENT_TYPE_VALUETYPE:
-                    assert(!valueType.IsNull());
-                    assert(!valueType.IsTypeDesc());
-                    return (valueType.GetSize() > ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE);
-                default:
-                    return false;
-            }
-#else
             ComputeReturnFlags();
-#endif
-        }
         return (m_dwFlags & RETURN_HAS_RET_BUFFER);
     }
 
