@@ -38,10 +38,23 @@ internal sealed unsafe partial class MsQuicApi
 
         fixed (byte* pAppName = "System.Net.Quic"u8)
         {
+
+            QUIC_EXECUTION_PROFILE profile = QUIC_EXECUTION_PROFILE.LOW_LATENCY;
+
+            if (Environment.GetEnvironmentVariable("DOTNET_QUIC_EXECUTION_PROFILE") is string p)
+            {
+                if (Enum.TryParse(p, out QUIC_EXECUTION_PROFILE newProfile))
+                {
+                    profile = newProfile;
+                }
+            }
+
+            System.Console.WriteLine($"Execution profile: {profile}");
+
             var cfg = new QUIC_REGISTRATION_CONFIG
             {
                 AppName = (sbyte*)pAppName,
-                ExecutionProfile = QUIC_EXECUTION_PROFILE.LOW_LATENCY
+                ExecutionProfile = profile
             };
 
             QUIC_HANDLE* handle;
