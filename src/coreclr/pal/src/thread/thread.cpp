@@ -1616,7 +1616,7 @@ InternalSetThreadDescriptionExit:
     }
 
     if (NULL != nameBuf) {
-        PAL_free(nameBuf);
+        free(nameBuf);
     }
 
 #endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)

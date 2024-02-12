@@ -355,7 +355,7 @@ void PERFTerminate(  )
 
     PERFlushAllLogs();
     pthread_key_delete(PERF_tlsTableKey );
-    PAL_free(pal_function_map);
+    free(pal_function_map);
 }
 
 
@@ -454,11 +454,11 @@ PERFAllocThreadInfoExit:
     {
         if (node != NULL)
         {
-            PAL_free(node);
+            free(node);
         }
         if (local_info != NULL)
         {
-            PAL_free(local_info);
+            free(local_info);
         }
         if (apiTable != NULL)
         {
@@ -466,14 +466,14 @@ PERFAllocThreadInfoExit:
             {
                 if (apiTable[i].histograms != NULL)
                 {
-                    PAL_free(apiTable[i].histograms);
+                    free(apiTable[i].histograms);
                 }
             }
-            PAL_free(apiTable);
+            free(apiTable);
         }
         if (log_buf != NULL)
         {
-            PAL_free(log_buf);
+            free(log_buf);
         }
     }
     return ret;
@@ -554,26 +554,26 @@ PERFlushAllLogs( )
                 PERFUpdateProgramInfo(current->thread_info);
                 if (table1->histograms != NULL)
                 {
-                    PAL_free(table1->histograms);
+                    free(table1->histograms);
                 }
-                PAL_free(table1);
+                free(table1);
             }
             PERFFlushLog(current->thread_info, FALSE);
-            PAL_free(current->thread_info->pal_write_buf);
-            PAL_free(current->thread_info);
+            free(current->thread_info->pal_write_buf);
+            free(current->thread_info);
         }
-        PAL_free(current);
+        free(current);
     }
     PERFWriteCounters(table0);
     if (table0->histograms != NULL)
     {
-        PAL_free(table0->histograms);
+        free(table0->histograms);
     }
-    PAL_free(table0);
+    free(table0);
     PERFFlushLog(node->thread_info, FALSE);
-    PAL_free(node->thread_info->pal_write_buf);
-    PAL_free(node->thread_info);
-    PAL_free(node);
+    free(node->thread_info->pal_write_buf);
+    free(node->thread_info);
+    free(node);
 }
 
 static

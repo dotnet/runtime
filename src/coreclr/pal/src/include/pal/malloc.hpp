@@ -43,7 +43,7 @@ extern "C"
 
     void
     __cdecl
-    PAL_free(
+    free(
         void *pvMem
         );
 }

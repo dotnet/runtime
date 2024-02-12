@@ -55,7 +55,7 @@ public:
 
     static void Cleanup()
     {
-        PAL_free(s_cpu_cgroup_path);
+        free(s_cpu_cgroup_path);
     }
 
     static bool GetCpuLimit(UINT *val)
@@ -157,8 +157,8 @@ private:
         strcat_s(cgroup_path, len+1, cgroup_path_relative_to_mount + common_path_prefix_len);
 
     done:
-        PAL_free(hierarchy_root);
-        PAL_free(cgroup_path_relative_to_mount);
+        free(hierarchy_root);
+        free(cgroup_path_relative_to_mount);
         *pcgroup_path = cgroup_path;
         if (pcgroup_hierarchy_mount != nullptr)
         {
@@ -166,7 +166,7 @@ private:
         }
         else
         {
-            PAL_free(hierarchy_mount);
+            free(hierarchy_mount);
         }
     }
 
@@ -187,9 +187,9 @@ private:
         {
             if (filesystemType == nullptr || lineLen > maxLineLen)
             {
-                PAL_free(filesystemType);
+                free(filesystemType);
                 filesystemType = nullptr;
-                PAL_free(options);
+                free(options);
                 options = nullptr;
                 filesystemType = (char*)PAL_malloc(lineLen+1);
                 if (filesystemType == nullptr)
@@ -249,10 +249,10 @@ private:
             }
         }
     done:
-        PAL_free(mountpath);
-        PAL_free(mountroot);
-        PAL_free(filesystemType);
-        PAL_free(options);
+        free(mountpath);
+        free(mountroot);
+        free(filesystemType);
+        free(options);
         free(line);
         if (mountinfofile)
             fclose(mountinfofile);
@@ -275,9 +275,9 @@ private:
         {
             if (subsystem_list == nullptr || lineLen > maxLineLen)
             {
-                PAL_free(subsystem_list);
+                free(subsystem_list);
                 subsystem_list = nullptr;
-                PAL_free(cgroup_path);
+                free(cgroup_path);
                 cgroup_path = nullptr;
                 subsystem_list = (char*)PAL_malloc(lineLen+1);
                 if (subsystem_list == nullptr)
@@ -332,10 +332,10 @@ private:
             }
         }
     done:
-        PAL_free(subsystem_list);
+        free(subsystem_list);
         if (!result)
         {
-            PAL_free(cgroup_path);
+            free(cgroup_path);
             cgroup_path = nullptr;
         }
         free(line);

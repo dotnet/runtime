@@ -21,7 +21,7 @@ private:
     void DeleteBuffer()
     {
         if (m_innerBuffer != m_buffer)
-            PAL_free(m_buffer);
+            free(m_buffer);
 
         m_buffer = NULL;
         return;

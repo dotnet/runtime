@@ -67,12 +67,12 @@ _wtoi(
     {
         ASSERT("WideCharToMultiByte failed.  Error is %d\n",
               GetLastError());
-        PAL_free(tempStr);
+        free(tempStr);
         return -1;
     }
     ret = atoi(tempStr);
 
-    PAL_free(tempStr);
+    free(tempStr);
     LOGEXIT("_wtoi returns int %d\n", ret);
     PERF_EXIT(_wtoi);
     return ret;
@@ -310,7 +310,7 @@ PAL_wcstoul(
     }
 
 PAL_wcstoulExit:
-    PAL_free(s_nptr);
+    free(s_nptr);
     LOGEXIT("wcstoul returning unsigned long %lu\n", res);
     PERF_EXIT(wcstoul);
 
@@ -381,7 +381,7 @@ PAL__wcstoui64(
     }
 
 PAL__wcstoui64Exit:
-    PAL_free(s_nptr);
+    free(s_nptr);
     LOGEXIT("_wcstoui64 returning unsigned long long %llu\n", res);
     PERF_EXIT(_wcstoui64);
 
@@ -939,7 +939,7 @@ PAL_wcstod( const wchar_16 * nptr, wchar_16 **endptr )
         *endptr = lpEndOfExpression;
     }
 
-    PAL_free( lpStringRep );
+    free( lpStringRep );
     LOGEXIT( "wcstod returning %f.\n", RetVal );
     PERF_EXIT(wcstod);
     return RetVal;

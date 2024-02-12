@@ -580,7 +580,6 @@ def generateLttngFiles(etwmanifest, eventprovider_directory, runtimeFlavor, dryR
 #include "pal_mstypes.h"
 #include "pal_error.h"
 #include "pal.h"
-#define PAL_free free
 #include "pal/stackstring.hpp"
 """)
                 lttngimpl_file.write("#include \"" + lttngevntheadershortname + "\"\n\n")

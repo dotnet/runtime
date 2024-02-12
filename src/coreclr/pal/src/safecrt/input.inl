@@ -48,7 +48,7 @@
 
 #define _malloc_crt PAL_malloc
 #define _realloc_crt PAL_realloc
-#define _free_crt PAL_free
+#define _free_crt free
 
 #define _FASSIGN(flag, argument, number, dec_point, locale) _safecrt_fassign((flag), (argument), (number))
 #define _WFASSIGN(flag, argument, number, dec_point, locale) _safecrt_wfassign((flag), (argument), (number))

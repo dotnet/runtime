@@ -30,15 +30,6 @@ SET_DEFAULT_DEBUG_CHANNEL(CRT);
 
 using namespace CorUnix;
 
-void
-__cdecl
-PAL_free(
-    void *pvMem
-    )
-{
-    free(pvMem);
-}
-
 void *
 __cdecl
 PAL_malloc(

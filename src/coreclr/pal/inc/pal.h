@@ -3985,7 +3985,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define qsort         PAL_qsort
 #define bsearch       PAL_bsearch
 #define malloc        PAL_malloc
-#define free          PAL_free
 
 #ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr

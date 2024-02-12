@@ -93,7 +93,7 @@ done:
     }
     if (mb_dir != NULL)
     {
-        PAL_free(mb_dir);
+        free(mb_dir);
     }
     LOGEXIT("CreateDirectoryW returns BOOL %d\n", bRet);
     PERF_EXIT(CreateDirectoryW);
@@ -280,7 +280,7 @@ GetCurrentDirectoryA(PathCharString& lpBuffer)
 
     dwDirLen = strlen( current_dir );
     lpBuffer.Set(current_dir, dwDirLen);
-    PAL_free(current_dir);
+    free(current_dir);
 done:
 
     if ( dwLastError )
@@ -486,7 +486,7 @@ done:
     {
         SetLastError( dwLastError );
     }
-    PAL_free( unixPathName );
+    free( unixPathName );
     LOGEXIT("CreateDirectoryA returns BOOL %d\n", bRet);
     PERF_EXIT(CreateDirectoryA);
     return bRet;
