@@ -67,12 +67,8 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         afterMonoStarted: createPromiseController<GCHandle | undefined>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
-        nativeExit: () => {
-            throw new Error("Mono shutdown");
-        },
-        nativeAbort: (reason: any) => {
-            throw reason;
-        },
+        nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
+        nativeExit: (code: number) => { throw new Error("exit:" + code); }
     };
     Object.assign(runtimeHelpers, rh);
 
