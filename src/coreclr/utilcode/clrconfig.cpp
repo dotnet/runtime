@@ -201,7 +201,11 @@ namespace
                 // Validate the cache and no-cache logic result in the same answer
                 SString nameToConvert(name);
 
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix);
+#ifdef HOST_WINDOWS
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, &getenv);
+#else
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, &PAL_getenv);
+#endif
                 LPCSTR valueNoCache = nonCache.AsString();
 
                 _ASSERTE(SString::_stricmp(valueNoCache, temp.GetUTF8()) == 0);

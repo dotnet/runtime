@@ -280,6 +280,7 @@ function_name() to call the system's implementation
 #define free DUMMY_free
 #define malloc DUMMY_malloc
 #define time DUMMY_time
+#define getenv DUMMY_getenv
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX

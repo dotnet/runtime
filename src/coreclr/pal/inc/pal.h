@@ -3980,7 +3980,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    To avoid name collisions, those functions have been renamed using
    defines */
 #ifndef PAL_STDCPP_COMPAT
-#define getenv        PAL_getenv
 #define qsort         PAL_qsort
 #define bsearch       PAL_bsearch
 
@@ -4354,13 +4353,14 @@ PALIMPORT DLLEXPORT void * __cdecl bsearch(const void *, const void *, size_t, s
     int(__cdecl *)(const void *, const void *));
 
 PALIMPORT time_t __cdecl time(time_t *);
+PALIMPORT DLLEXPORT char * __cdecl getenv(const char *);
 
 #endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT int __cdecl rand(void);
 PALIMPORT void __cdecl srand(unsigned int);
 
-PALIMPORT DLLEXPORT char * __cdecl getenv(const char *);
+PALIMPORT DLLEXPORT char * __cdecl PAL_getenv(const char *);
 PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
