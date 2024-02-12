@@ -215,7 +215,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
-            assert(isGeneralRegister(id->idReg3()));
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+            {
+                assert(isGeneralRegister(id->idReg1()));
+                assert(id->idAddr()->iiaAddr != nullptr);
+            }
+            else
+            {
+                assert(isGeneralRegister(id->idReg3()));
+            }
             break;
 
         case IF_LS_1A: // LS_1A   .X......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
@@ -13575,7 +13583,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(xreg == REG_NA);
         if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
         {
-            // For NativeAOT linux/arm64, we need to also record the relocation of methHnd
+            // For NativeAOT linux/arm64, we need to also record the relocation of methHnd.
             // Since we do not have space to embed it in instrDesc, we store the register in
             // reg1 and instead use the `iiaAdd` to store the method handle. Likewise, during
             // emitOutputInstr, we retrieve the register from reg1 for this specific case.
