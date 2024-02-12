@@ -27,14 +27,17 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+    <!-- we need to explicitly reference System.Reflection.MetadataLoadContext 8.0 or newer for function pointer support,
+         because the default version pulled in from MSBuild is lower. -->
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextToolsetVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <!-- excludeassets prevents the older version of MLC from MSBuild from trampling the newer version we need -->
+    <!-- excludeassets prevents the older version of System.Reflection.MetadataLoadContext from MSBuild from trampling the newer version we need -->
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" ExcludeAssets="runtime" />
     <!-- we need to explicitly reference System.Reflection.MetadataLoadContext 8.0 or newer for function pointer support,
-         because the default version pulled in from MSBuild is 6.0. -->
+         because the default version pulled in from MSBuild is lower. -->
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(SystemReflectionMetadataLoadContextToolsetVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableToolsetVersion)" />
