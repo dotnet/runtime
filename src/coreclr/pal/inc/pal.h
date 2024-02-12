@@ -3985,11 +3985,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define qsort         PAL_qsort
 #define bsearch       PAL_bsearch
 
-#ifdef HOST_AMD64
-#define _mm_getcsr    PAL__mm_getcsr
-#define _mm_setcsr    PAL__mm_setcsr
-#endif // HOST_AMD64
-
 // Forward declare functions that are in header files we can't include yet
 int printf(const char *, ...);
 int vprintf(const char *, va_list);
@@ -4397,15 +4392,7 @@ PALAPI
 PAL_GetCpuTickCount();
 #endif // PAL_PERF
 
-/******************* PAL functions for SIMD extensions *****************/
-
-PALIMPORT
-unsigned int _mm_getcsr(void);
-
-PALIMPORT
-void _mm_setcsr(unsigned int i);
-
-/******************* PAL functions for CPU capability detection *******/
+/******************* PAL functions for exceptions *******/
 
 #ifdef __cplusplus
 

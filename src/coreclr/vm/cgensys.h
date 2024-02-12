@@ -84,7 +84,10 @@ BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDes
 
 #endif // DACCESS_COMPILE
 
-
+#if defined(TARGET_AMD64)
+extern "C" DWORD _mm_getcsr();
+extern "C" void _mm_setcsr(DWORD);
+#endif
 
 //
 // ResetProcessorStateHolder saves/restores processor state around calls to

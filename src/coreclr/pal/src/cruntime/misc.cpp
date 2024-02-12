@@ -221,19 +221,3 @@ PAL_bsearch(const void *key, const void *base, size_t nmemb, size_t size,
     PERF_EXIT(bsearch);
     return retval;
 }
-
-#ifdef HOST_AMD64
-
-PALIMPORT
-unsigned int PAL__mm_getcsr(void)
-{
-    return _mm_getcsr();
-}
-
-PALIMPORT
-void PAL__mm_setcsr(unsigned int i)
-{
-    _mm_setcsr(i);
-}
-
-#endif // HOST_AMD64

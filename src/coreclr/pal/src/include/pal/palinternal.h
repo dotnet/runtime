@@ -580,11 +580,6 @@ function_name() to call the system's implementation
 #undef towlower
 #undef towupper
 
-#ifdef HOST_AMD64
-#undef _mm_getcsr
-#undef _mm_setcsr
-#endif // HOST_AMD64
-
 #undef min
 #undef max
 
