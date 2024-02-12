@@ -139,8 +139,6 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            ThrowIfDisposed();
-
             if (disposing && !_disposed)
             {
                 _disposed = true;

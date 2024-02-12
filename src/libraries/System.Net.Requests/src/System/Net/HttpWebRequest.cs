@@ -1138,22 +1138,27 @@ namespace System.Net
             return stream;
         }
 
-        private Task<HttpResponseMessage> SendRequest(bool async, HttpContent content)
+        private Task<HttpResponseMessage> SendRequest(bool async, HttpContent? content = null)
         {
             if (RequestSubmitted)
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            if (AllowWriteStreamBuffering && _requestStream is not null)
-            {
-                content.Headers.ContentLength = _requestStream.GetBuffer().ReadBytesAvailable;
-            }
-
             _sendRequestMessage = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
             _sendRequestCts = new CancellationTokenSource();
             _httpClient = GetCachedOrCreateHttpClient(async, out _disposeRequired);
-            _sendRequestMessage.Content = content;
+
+            if (content is not null)
+            {
+                // Calculate Content-Length if we're buffering.
+                if (AllowWriteStreamBuffering && _requestStream is not null)
+                {
+                    content.Headers.ContentLength = _requestStream.GetBuffer().ReadBytesAvailable;
+                }
+
+                _sendRequestMessage.Content = content;
+            }
 
             if (_hostUri is not null)
             {
@@ -1171,6 +1176,7 @@ namespace System.Net
                 // are only allowed in the request headers collection and not in the request content headers collection.
                 if (IsWellKnownContentHeader(headerName))
                 {
+                    _sendRequestMessage.Content ??= new ByteArrayContent(Array.Empty<byte>());
                     _sendRequestMessage.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                 }
                 else
@@ -1209,30 +1215,13 @@ namespace System.Net
 
         private async Task<WebResponse> HandleResponse(bool async)
         {
-            try
-            {
-                _requestStream?.EndWriteOnStreamBuffer();
-            }
-            catch (ObjectDisposedException)
-            {
-                // If the request stream was disposed, don't do anything.
-            }
+            // If user code used requestStream and didn't dispose it (end write on StreamBuffer)
+            // We're ending it here.
+            _requestStream?.EndWriteOnStreamBuffer();
 
-            HttpContent content;
-            if (_requestStream is not null)
-            {
-                content = new StreamContent(new HttpClientContentStream(_requestStream.GetBuffer()));
-                if (AllowWriteStreamBuffering)
-                {
-                    content.Headers.ContentLength = _requestStream.GetBuffer().ReadBytesAvailable;
-                }
-            }
-            else
-            {
-                content = new ByteArrayContent(Array.Empty<byte>());
-            }
-
-            _sendRequestTask ??= SendRequest(async, content);
+            _sendRequestTask ??= _requestStream is not null ?
+                SendRequest(async, new StreamContent(new HttpClientContentStream(_requestStream.GetBuffer()))) :
+                SendRequest(async);
 
             try
             {
