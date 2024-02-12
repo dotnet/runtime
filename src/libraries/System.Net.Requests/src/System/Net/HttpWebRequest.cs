@@ -114,7 +114,7 @@ namespace System.Net
             public readonly RemoteCertificateValidationCallback? ServerCertificateValidationCallback;
             public readonly X509CertificateCollection? ClientCertificates;
             public readonly CookieContainer? CookieContainer;
-            public readonly ServicePoint ServicePoint;
+            public readonly ServicePoint? ServicePoint;
             public readonly TimeSpan ContinueTimeout;
 
             public HttpClientParameters(HttpWebRequest webRequest, bool async)
@@ -136,7 +136,7 @@ namespace System.Net
                 ServerCertificateValidationCallback = webRequest.ServerCertificateValidationCallback ?? ServicePointManager.ServerCertificateValidationCallback;
                 ClientCertificates = webRequest._clientCertificates;
                 CookieContainer = webRequest._cookieContainer;
-                ServicePoint = webRequest.ServicePoint;
+                ServicePoint = webRequest._servicePoint;
                 ContinueTimeout = TimeSpan.FromMilliseconds(webRequest.ContinueTimeout);
             }
 
@@ -1616,11 +1616,12 @@ namespace System.Net
                     handler.UseCookies = false;
                 }
 
-                ServicePoint servicePoint = parameters.ServicePoint;
-
-                handler.MaxConnectionsPerServer = servicePoint.ConnectionLimit;
-                handler.PooledConnectionIdleTimeout = servicePoint.MaxIdleTime == -1 ? Threading.Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(servicePoint.MaxIdleTime);
-                handler.PooledConnectionLifetime = servicePoint.ConnectionLeaseTimeout == -1 ? Threading.Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(servicePoint.ConnectionLeaseTimeout);
+                if (parameters.ServicePoint is { } servicePoint)
+                {
+                    handler.MaxConnectionsPerServer = servicePoint.ConnectionLimit;
+                    handler.PooledConnectionIdleTimeout = servicePoint.MaxIdleTime == -1 ? Threading.Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(servicePoint.MaxIdleTime);
+                    handler.PooledConnectionLifetime = servicePoint.ConnectionLeaseTimeout == -1 ? Threading.Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(servicePoint.ConnectionLeaseTimeout);
+                }
 
                 Debug.Assert(handler.UseProxy); // Default of handler.UseProxy is true.
                 Debug.Assert(handler.Proxy == null); // Default of handler.Proxy is null.
@@ -1662,7 +1663,10 @@ namespace System.Net
                 RemoteCertificateValidationCallback? rcvc = parameters.ServerCertificateValidationCallback;
                 handler.SslOptions.RemoteCertificateValidationCallback = (message, cert, chain, errors) =>
                 {
-                    servicePoint.Certificate = cert;
+                    if (parameters.ServicePoint is { } servicePoint)
+                    {
+                        servicePoint.Certificate = cert;
+                    }
                     if (rcvc is not null)
                     {
                         return rcvc(request!, cert, chain, errors);
@@ -1680,54 +1684,57 @@ namespace System.Net
                     {
                         //Start dns resolve
                         IPAddress[] addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
-                        if (servicePoint.ReceiveBufferSize != -1)
+                        if (parameters.ServicePoint is { } servicePoint)
                         {
-                            socket.ReceiveBufferSize = servicePoint.ReceiveBufferSize;
-                        }
-
-                        if (servicePoint.KeepAlive is { } keepAlive)
-                        {
-                            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
-                            socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
-                        }
-
-                        if (servicePoint.BindIPEndPointDelegate != null)
-                        {
-                            var bindHelper = () =>
+                            if (servicePoint.ReceiveBufferSize != -1)
                             {
-                                const int MaxRetries = 100;
-                                foreach (IPAddress address in addresses)
+                                socket.ReceiveBufferSize = servicePoint.ReceiveBufferSize;
+                            }
+
+                            if (servicePoint.KeepAlive is { } keepAlive)
+                            {
+                                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, keepAlive.Time);
+                                socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
+                            }
+
+                            if (servicePoint.BindIPEndPointDelegate is not null)
+                            {
+                                var bindHelper = () =>
                                 {
-                                    int retryCount = 0;
-                                    for (; retryCount < MaxRetries; retryCount++)
+                                    const int MaxRetries = 100;
+                                    foreach (IPAddress address in addresses)
                                     {
-                                        IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
-                                        if (endPoint == null) // Get other address to try
+                                        int retryCount = 0;
+                                        for (; retryCount < MaxRetries; retryCount++)
                                         {
-                                            break;
+                                            IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
+                                            if (endPoint is null) // Get other address to try
+                                            {
+                                                break;
+                                            }
+                                            try
+                                            {
+                                                socket.Bind(endPoint);
+                                                return; // Bind successful, exit loops.
+                                            }
+                                            catch
+                                            {
+                                                continue;
+                                            }
                                         }
-                                        try
-                                        {
-                                            socket.Bind(endPoint);
-                                            return; // Bind successful, exit loops.
-                                        }
-                                        catch
-                                        {
-                                            continue;
-                                        }
-                                    }
 
-                                    if (retryCount >= MaxRetries)
-                                    {
-                                        throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                        if (retryCount >= MaxRetries)
+                                        {
+                                            throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                        }
                                     }
-                                }
-                            };
-                            bindHelper();
+                                };
+                                bindHelper();
+                            }
+
+                            socket.NoDelay = !servicePoint.UseNagleAlgorithm;
                         }
-
-                        socket.NoDelay = !servicePoint.UseNagleAlgorithm;
 
                         if (parameters.Async)
                         {

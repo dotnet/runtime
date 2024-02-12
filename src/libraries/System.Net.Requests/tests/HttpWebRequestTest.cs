@@ -258,7 +258,7 @@ namespace System.Net.Tests
             Assert.Equal(64, HttpWebRequest.DefaultMaximumResponseHeadersLength);
             Assert.NotNull(HttpWebRequest.DefaultCachePolicy);
             Assert.Equal(RequestCacheLevel.BypassCache, HttpWebRequest.DefaultCachePolicy.Level);
-            Assert.Equal(0, HttpWebRequest.DefaultMaximumErrorResponseLength);
+            Assert.Equal(-1, HttpWebRequest.DefaultMaximumErrorResponseLength);
             Assert.NotNull(request.Proxy);
             Assert.Equal(remoteServer, request.RequestUri);
             Assert.True(request.SupportsCookieContainer);
@@ -2238,23 +2238,11 @@ namespace System.Net.Tests
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            await LoopbackServer.CreateClientAndServerAsync(
-                async (uri) =>
-                {
-                    HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    request.ServicePoint.BindIPEndPointDelegate =
-                        (sp, ep, retryCount) => { return (IPEndPoint)socket.LocalEndPoint!; };
-                    var exception = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
-                    Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
-                },
-                async (server) =>
-                {
-                    await server.AcceptConnectionAsync(
-                        async (client) =>
-                        {
-                            await client.SendResponseAsync();
-                        });
-                });
+            HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
+            request.ServicePoint.BindIPEndPointDelegate =
+                (sp, ep, retryCount) => { return (IPEndPoint)socket.LocalEndPoint!; };
+            var exception = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+            Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
         }
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
