@@ -1293,8 +1293,7 @@ FCIMPL1(void*, RuntimeFieldHandle::GetStaticFieldAddress, ReflectFieldObject *pF
     CONTRACTL_END;
 
     REFLECTFIELDREF refField = (REFLECTFIELDREF)ObjectToOBJECTREF(pFieldUNSAFE);
-    if (refField == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+    _ASSERTE(refField != NULL);
 
     FieldDesc* pFieldDesc = refField->GetField();
     _ASSERTE(pFieldDesc->IsStatic());
