@@ -225,6 +225,10 @@ namespace System.Reflection.Tests
             {
                 fieldInfo.SetValue(obj, value);
                 Assert.Equal(expected, fieldInfo.GetValue(obj));
+
+                // Perform a second time to rule out cases of slow-path vs. fast-path.
+                fieldInfo.SetValue(obj, value);
+                Assert.Equal(expected, fieldInfo.GetValue(obj));
             }
             finally
             {
