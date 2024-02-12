@@ -1228,7 +1228,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
         pMT->GetNumInstanceFieldBytes() <= ENREGISTERED_RETURNTYPE_MAXSIZE)
     {
         // To calculate how a small struct is enregistered RISC-V needs native layout info.
-        // Initializalize now so ArgIterator doesn't trigger undue class loads during GC stack walks.
+        // Initialize now so ArgIterator doesn't trigger undue class loads during GC stack walks.
         pMT->EnsureNativeLayoutInfoInitialized();
     }
 #endif
