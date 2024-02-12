@@ -1190,9 +1190,10 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_FH_3A: // ...........iimmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
         case IF_SVE_FI_3A: // .........i.iimmm ......nnnnnddddd -- SVE2 saturating multiply high (indexed)
         case IF_SVE_FJ_3A: // ...........iimmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
+        case IF_SVE_FK_3A: // .........i.iimmm ......nnnnnddddd -- SVE2 saturating multiply-add high (indexed)
         case IF_SVE_GU_3C: // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply-add (indexed)
         case IF_SVE_GX_3C: // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply (indexed)
-        case IF_SVE_FK_3A: // .........i.iimmm ......nnnnnddddd -- SVE2 saturating multiply-add high (indexed)
+        case IF_SVE_GZ_3A: // ...........iimmm ....i.nnnnnddddd -- SVE floating-point multiply-add long (indexed)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1())); // ddddd
             assert(isVectorRegister(id->idReg2())); // nnnnn
@@ -12328,6 +12329,23 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             fmt = IF_SVE_GP_3A;
             break;
 
+        case INS_sve_fmlalb:
+        case INS_sve_fmlalt:
+        case INS_sve_fmlslb:
+        case INS_sve_fmlslt:
+        case INS_sve_bfmlalb:
+        case INS_sve_bfmlalt:
+        case INS_sve_bfmlslb:
+        case INS_sve_bfmlslt:
+            assert(opt == INS_OPTS_SCALABLE_H);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmm
+            assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+            assert(isValidUimm3(imm)); // ii i
+            fmt = IF_SVE_GZ_3A;
+            break;
+
         default:
             unreached();
             break;
@@ -21220,6 +21238,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_FG_3A: // ...........iimmm ....i.nnnnnddddd -- SVE2 integer multiply-add long (indexed)
         case IF_SVE_FH_3A: // ...........iimmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
         case IF_SVE_FJ_3A: // ...........iimmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
+        case IF_SVE_GZ_3A: // ...........iimmm ....i.nnnnnddddd -- SVE floating-point multiply-add long (indexed)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ddddd
@@ -24601,6 +24620,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_EG_3A: // ...........iimmm ......nnnnnddddd -- SVE two-way dot product (indexed)
         case IF_SVE_FG_3A: // ...........iimmm ....i.nnnnnddddd -- SVE2 integer multiply-add long (indexed)
         case IF_SVE_FJ_3A: // ...........iimmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
+        case IF_SVE_GZ_3A: // ...........iimmm ....i.nnnnnddddd -- SVE floating-point multiply-add long (indexed)
         // <Zda>.S, <Zn>.B, <Zm>.B[<imm>]
         case IF_SVE_EY_3A: // ...........iimmm ......nnnnnddddd -- SVE integer dot product (indexed)
         case IF_SVE_EZ_3A: // ...........iimmm ......nnnnnddddd -- SVE mixed sign dot product (indexed)
@@ -27924,6 +27944,30 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
 
+        case IF_SVE_GZ_3A: // ...........iimmm ....i.nnnnnddddd -- SVE floating-point multiply-add long (indexed)
+            switch (ins)
+            {
+                case INS_sve_fmlalb:
+                case INS_sve_fmlalt:
+                case INS_sve_fmlslb:
+                case INS_sve_fmlslt:
+                case INS_sve_bfmlalb:
+                case INS_sve_bfmlalt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_sve_bfmlslb:
+                case INS_sve_bfmlslt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
         case IF_SVE_EZ_3A: // ...........iimmm ......nnnnnddddd -- SVE mixed sign dot product (indexed)
             result.insLatency    = PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -28285,18 +28329,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_HG_2A: // ................ ......nnnn.ddddd -- SVE2 FP8 downconverts
             switch (ins)
             {
-                case INS_sve_fcvtn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
-                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
-                    break;
-                case INS_sve_bfcvtn:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
-                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
-                    break;
                 case INS_sve_fcvtnt:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                     result.insLatency    = PERFSCORE_LATENCY_3C;
                     break;
+                case INS_sve_fcvtn:
+                case INS_sve_bfcvtn:
                 case INS_sve_fcvtnb:
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
                     result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
