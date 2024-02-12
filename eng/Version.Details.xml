@@ -347,7 +347,7 @@
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>9e482258d271e4c3baae8904d57afe0e368236e4</Sha>
+      <Sha>205ef031e0fe5152dede0bd9f99d0f6f9e7f1e45</Sha>
     </Dependency>
     <Dependency Name="System.Reflection.Metadata" Version="9.0.0-alpha.1.24072.1">
       <Uri>https://github.com/dotnet/runtime</Uri>
