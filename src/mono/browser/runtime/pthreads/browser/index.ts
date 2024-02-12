@@ -4,12 +4,13 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { MonoWorkerToMainMessage, PThreadInfo, pthreadPtr } from "../shared/types";
-import { MonoThreadMessage } from "../shared";
+import { MonoThreadMessage, mono_wasm_pthread_ptr, update_thread_info } from "../shared";
 import { PThreadWorker, allocateUnusedWorker, getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "../shared/emscripten-internals";
 import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
 import { MainToWorkerMessageType, PromiseAndController, PromiseController, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
 import { mono_log_info } from "../../logging";
 import { monoThreadInfo } from "../worker";
+import { mono_wasm_init_diagnostics } from "../../diagnostics";
 
 const threadPromises: Map<pthreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -81,6 +82,7 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
 
+    worker.info = Object.assign(worker.info, message.info, {});
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
             // this one shot port from setupPreloadChannelToMainThread
@@ -98,13 +100,13 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
             worker.thread = thread;
             worker.info.isRunning = true;
             resolveThreadPromises(pthreadId, thread);
-        // fall through
+            break;
         case WorkerToMainMessageType.monoRegistered:
         case WorkerToMainMessageType.monoAttached:
         case WorkerToMainMessageType.enabledInterop:
         case WorkerToMainMessageType.monoUnRegistered:
         case WorkerToMainMessageType.updateInfo:
-            worker.info = Object.assign(worker.info!, message.info, {});
+            // just worker.info updates above
             break;
         default:
             throw new Error(`Unhandled message from worker: ${message.monoCmd}`);
@@ -136,6 +138,17 @@ export function thread_available(): Promise<void> {
         return Promise.resolve();
     }
     return pendingWorkerLoad.promise;
+}
+
+export async function mono_wasm_init_threads() {
+    if (!WasmEnableThreads) return;
+    monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
+    monoThreadInfo.threadName = "UI Thread";
+    monoThreadInfo.isUI = true;
+    monoThreadInfo.isRunning = true;
+    update_thread_info();
+    await instantiateWasmPThreadWorkerPool();
+    await mono_wasm_init_diagnostics();
 }
 
 /// We call on the main thread this during startup to pre-allocate a pool of pthread workers.

@@ -16,7 +16,7 @@ import { monoStringToString } from "./strings";
 import { MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, VoidPtrNull, MonoObjectRefNull, MonoObjectNull, MarshalerType, MonoAssembly } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
 import cwraps from "./cwraps";
-import { assert_c_interop, assert_js_interop, wrap_error_root, wrap_no_error_root } from "./invoke-js";
+import { assert_js_interop, wrap_error_root, wrap_no_error_root } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { mono_log_debug } from "./logging";
 
@@ -353,24 +353,12 @@ export function invoke_method_and_handle_exception(method: MonoMethod, args: JSM
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
         set_args_context(args);
-        const fail = cwraps.mono_wasm_invoke_method_bound(method, args, fail_root.address);
+        const fail = cwraps.mono_wasm_invoke_method(method, args as any, fail_root.address);
         if (fail) runtimeHelpers.nativeAbort("ERR24: Unexpected error: " + monoStringToString(fail_root));
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
         }
-    }
-    finally {
-        fail_root.release();
-    }
-}
-
-export function invoke_method_raw(method: MonoMethod): void {
-    assert_c_interop();
-    const fail_root = mono_wasm_new_root<MonoString>();
-    try {
-        const fail = cwraps.mono_wasm_invoke_method_raw(method, fail_root.address);
-        if (fail) runtimeHelpers.nativeAbort("ERR24: Unexpected error: " + monoStringToString(fail_root));
     }
     finally {
         fail_root.release();

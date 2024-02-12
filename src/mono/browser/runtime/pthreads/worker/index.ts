@@ -135,6 +135,8 @@ export function mono_wasm_pthread_on_pthread_registered(pthread_id: number): voi
     if (!WasmEnableThreads) return;
     try {
         mono_assert(monoThreadInfo !== null && monoThreadInfo.pthreadId == pthread_id, "expected monoThreadInfo to be set already when registering");
+        monoThreadInfo.isRegistered = true;
+        update_thread_info();
         postMessageToMain({
             monoCmd: WorkerToMainMessageType.monoRegistered,
             info: monoThreadInfo,
@@ -198,6 +200,8 @@ export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: number): v
         mono_assert(pthread_id === monoThreadInfo.pthreadId, "expected pthread_id to match when un-registering");
         postRunWorker();
         monoThreadInfo.isAttached = false;
+        monoThreadInfo.isRegistered = false;
+        monoThreadInfo.threadName = "unregistered:(" + monoThreadInfo.threadName + ")";
         update_thread_info();
         postMessageToMain({
             monoCmd: WorkerToMainMessageType.monoUnRegistered,

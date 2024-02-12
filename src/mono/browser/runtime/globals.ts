@@ -64,6 +64,7 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         afterPreInit: createPromiseController<void>(),
         afterPreRun: createPromiseController<void>(),
         beforeOnRuntimeInitialized: createPromiseController<void>(),
+        afterMonoStarted: createPromiseController<void>(),
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
         mono_wasm_exit: () => {

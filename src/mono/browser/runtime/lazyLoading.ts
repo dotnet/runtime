@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { loaderHelpers, runtimeHelpers } from "./globals";
+import { loaderHelpers } from "./globals";
+import { load_lazy_assembly } from "./managed-exports";
 import { AssetEntry } from "./types";
 
 export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
@@ -51,7 +52,7 @@ export async function loadLazyAssembly(assemblyNameToLoad: string): Promise<bool
         pdb = null;
     }
 
-    runtimeHelpers.javaScriptExports.load_lazy_assembly(dll, pdb);
+    load_lazy_assembly(dll, pdb);
     return true;
 }
 

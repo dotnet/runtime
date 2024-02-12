@@ -296,11 +296,11 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // this is here temporarily, until JSWebWorker becomes public API
         [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Runtime.InteropServices.JavaScript.JSWebWorker", "System.Runtime.InteropServices.JavaScript")]
-        // the marshaled signature is:
-        // void InstallMainSynchronizationContext()
-        public static void InstallMainSynchronizationContext()
+        public static void InstallMainSynchronizationContext(nint* nativeTIDAndProxyContextGCHandlePtr)
         {
-            JSSynchronizationContext.InstallWebWorkerInterop(true, CancellationToken.None);
+            var jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(true, CancellationToken.None);
+            jsSynchronizationContext.ProxyContext.JSNativeTID = *nativeTIDAndProxyContextGCHandlePtr;
+            *nativeTIDAndProxyContextGCHandlePtr = jsSynchronizationContext.ProxyContext.ContextHandle;
         }
 
 #endif

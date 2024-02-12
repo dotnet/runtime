@@ -33,8 +33,8 @@ export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
 export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle): void {
     if (!WasmEnableThreads) return;
     bindings_init();
-    if (!runtimeHelpers.proxy_context_gc_handle) {
-        runtimeHelpers.proxy_context_gc_handle = context_gc_handle;
+    if (!runtimeHelpers.proxyGCHandle) {
+        runtimeHelpers.proxyGCHandle = context_gc_handle;
         mono_log_debug("Installed JSSynchronizationContext");
     }
     Module.runtimeKeepalivePush();
@@ -51,20 +51,20 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
 export function mono_wasm_uninstall_js_worker_interop(): void {
     if (!WasmEnableThreads) return;
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
-    mono_assert(runtimeHelpers.proxy_context_gc_handle, "JSSynchronizationContext is not installed on this worker.");
+    mono_assert(runtimeHelpers.proxyGCHandle, "JSSynchronizationContext is not installed on this worker.");
 
     forceDisposeProxies(true, runtimeHelpers.diagnosticTracing);
     Module.runtimeKeepalivePop();
 
-    runtimeHelpers.proxy_context_gc_handle = GCHandleNull;
+    runtimeHelpers.proxyGCHandle = GCHandleNull;
     runtimeHelpers.mono_wasm_bindings_is_ready = false;
     update_thread_info();
 }
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function update_thread_info(): void {
-    const threadType = monoThreadInfo.isUI ? "main"
-        : !monoThreadInfo.isAttached ? "emsc"
+    const threadType = !monoThreadInfo.isRegistered ? "emsc"
+        : monoThreadInfo.isUI ? "-UI-"
             : monoThreadInfo.isTimer ? "timr"
                 : monoThreadInfo.isLongRunning ? "long"
                     : monoThreadInfo.isThreadPoolGate ? "gate"
@@ -73,7 +73,7 @@ export function update_thread_info(): void {
                                 : monoThreadInfo.isExternalEventLoop ? "jsww"
                                     : monoThreadInfo.isBackground ? "back"
                                         : "norm";
-    monoThreadInfo.threadPrefix = `0x${monoThreadInfo.pthreadId.toString(16).padStart(8, "0")}-${threadType}`;
+    monoThreadInfo.threadPrefix = `${monoThreadInfo.isRegistered ? "0x" : "--"}${monoThreadInfo.pthreadId.toString(16).padStart(8, "0")}-${threadType}`;
 
     loaderHelpers.set_thread_prefix(monoThreadInfo.threadPrefix!);
     if (!loaderHelpers.config.forwardConsoleLogsToWS) {
