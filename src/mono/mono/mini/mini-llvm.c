@@ -4192,6 +4192,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
 		case LLVMArgAsFpArgs:
+		case LLVMArgWasmVtypeAsScalar:
 		{
 			MonoClass *klass = mono_class_from_mono_type_internal (ainfo->type);
 			if (mini_class_is_simd (ctx->cfg, klass)) {
@@ -4968,6 +4969,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
 		emit_store (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE), is_volatile);
+		load_name = "wasm_vtype_as_scalar";
+		should_promote_to_value = TRUE;
 		break;
 	}
 	default:
@@ -5421,6 +5424,7 @@ static LLVMValueRef
 concatenate_vectors (EmitContext *ctx, LLVMValueRef xs, LLVMValueRef ys)
 {
 	LLVMTypeRef t = LLVMTypeOf (xs);
+	g_assert (LLVMGetTypeKind (t) == LLVMVectorTypeKind);
 	unsigned int elems = LLVMGetVectorSize (t) * 2;
 	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	for (guint i = 0; i < elems; ++i)
@@ -6175,8 +6179,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					}
 					break;
 				case LLVMArgWasmVtypeAsScalar:
-					g_assert (addresses [ins->sreg1]);
-					retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+					if (!addresses [ins->sreg1]) {
+						/* SIMD value */
+						g_assert (lhs);
+						retval = LLVMBuildBitCast (builder, lhs, ret_type, "");
+					} else {
+						retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+					}
 					break;
 				}
 				LLVMBuildRet (builder, retval);
@@ -6225,8 +6234,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 					if (lhs) {
 						// Vector3: ret_type is Vector3, lhs is Vector3 represented as a Vector4 (three elements + zero). We need to extract only the first 3 elements from lhs.
-						int len = mono_class_value_size (klass, NULL) == 12 ? 3 : LLVMGetVectorSize (LLVMTypeOf (lhs));  
-						
+						int len = mono_class_value_size (klass, NULL) == 12 ? 3 : LLVMGetVectorSize (LLVMTypeOf (lhs));
+
 						for (int i = 0; i < len; i++) {
 							elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
 							retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
@@ -6841,7 +6850,7 @@ MONO_RESTORE_WARNING
 			// LLVM should fuse the individual Div and Rem instructions into one DIV/IDIV on x86
 			values [ins->dreg] = LLVMBuildTrunc (builder, LLVMBuildSDiv (builder, dividend, divisor, ""), part_type, "");
 			last_divrem = LLVMBuildTrunc (builder, LLVMBuildSRem (builder, dividend, divisor, ""), part_type, "");
-			break;	
+			break;
 		}
 		case OP_X86_IDIVREMU:
 		case OP_X86_LDIVREMU: {
@@ -6856,7 +6865,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef divisor = LLVMBuildZExt (builder, convert (ctx, arg3, part_type), full_type, "");
 			values [ins->dreg] = LLVMBuildTrunc (builder, LLVMBuildUDiv (builder, dividend, divisor, ""), part_type, "");
 			last_divrem = LLVMBuildTrunc (builder, LLVMBuildURem (builder, dividend, divisor, ""), part_type, "");
-			break;	
+			break;
 		}
 		case OP_X86_IDIVREM2:
 		case OP_X86_LDIVREM2: {
@@ -10671,7 +10680,7 @@ MONO_RESTORE_WARNING
 
 			// convert to 0/1
 			result = LLVMBuildICmp (builder, LLVMIntEQ, first_elem, LLVMConstAllOnes (LLVMInt64Type ()), "");
-			
+
 			values [ins->dreg] = LLVMBuildZExt (builder, result, LLVMInt8Type (), "");
 			break;
 		}
@@ -12020,7 +12029,7 @@ MONO_RESTORE_WARNING
 			gboolean scalar = ins->opcode == OP_NEGATION_SCALAR;
 			gboolean is_float = (ins->inst_c1 == MONO_TYPE_R4 || ins->inst_c1 == MONO_TYPE_R8);
 
-			LLVMValueRef result = lhs; 
+			LLVMValueRef result = lhs;
 			if (scalar)
 				result = scalar_from_vector (ctx, result);
 			if (is_float)
