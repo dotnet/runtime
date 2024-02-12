@@ -9313,7 +9313,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
-            assert((imm == 90) || (imm == 270));                   // r
+            assert(isValidRot90_or_270(imm));                      // r
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
 
             // Convert rot to bitwise representation: 0 if 90, 1 if 270
