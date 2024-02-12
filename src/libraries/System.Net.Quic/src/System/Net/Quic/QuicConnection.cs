@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -571,15 +572,56 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
-        try
+        X509Certificate2? certificate = null;
+        X509Chain? chain = null;
+
+        QUIC_BUFFER* certificatePtr = (QUIC_BUFFER*)data.Certificate;
+        QUIC_BUFFER* chainPtr = (QUIC_BUFFER*)data.Chain;
+
+        if (certificatePtr is not null)
         {
-            return _sslConnectionOptions.ValidateCertificate((QUIC_BUFFER*)data.Certificate, (QUIC_BUFFER*)data.Chain, out _remoteCertificate);
+            chain = new X509Chain();
+            if (MsQuicApi.UsesSChannelBackend)
+            {
+                certificate = new X509Certificate2((IntPtr)certificatePtr);
+            }
+            else
+            {
+                if (certificatePtr->Length > 0)
+                {
+                    certificate = new X509Certificate2(certificatePtr->Span);
+                }
+
+                if (chainPtr->Length > 0)
+                {
+                    X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
+                    additionalCertificates.Import(chainPtr->Span);
+                    chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                }
+            }
         }
-        catch (Exception ex)
+
+        _ = Task.Run(() =>
         {
-            _connectedTcs.TrySetException(ex);
-            return QUIC_STATUS_HANDSHAKE_FAILURE;
-        }
+            int result;
+            try
+            {
+                result = _sslConnectionOptions.ValidateCertificate(certificate, chain);
+                _remoteCertificate = certificate;
+            }
+            catch (Exception ex)
+            {
+                _connectedTcs.TrySetException(ex);
+                result = QUIC_STATUS_HANDSHAKE_FAILURE;
+            }
+
+            bool success = result == QUIC_STATUS_SUCCESS;
+
+            // return result;
+            MsQuicApi.Api.ConnectionCertificateValidationComplete(_handle, success, success ? QUIC_TLS_ALERT_CODES.SUCCESS : QUIC_TLS_ALERT_CODES.BAD_CERTIFICATE);
+        });
+
+        return QUIC_STATUS_PENDING;
     }
 
     private unsafe int HandleConnectionEvent(ref QUIC_CONNECTION_EVENT connectionEvent)
@@ -595,6 +637,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
             QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED => HandleEventPeerCertificateReceived(ref connectionEvent.PEER_CERTIFICATE_RECEIVED),
             _ => QUIC_STATUS_SUCCESS,
         };
+
+    private static readonly Meter s_meter = new Meter("System.Net.Quic.QuicConnection.Events");
+    private static readonly Histogram<double> s_eventProcessing = s_meter.CreateHistogram<double>("eventloop.process", "ms", "");
 
 #pragma warning disable CS3016
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
@@ -613,6 +658,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return QUIC_STATUS_INVALID_STATE;
         }
 
+        long timestamp = Stopwatch.GetTimestamp();
         try
         {
             // Process the event.
@@ -629,6 +675,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Error(instance, $"{instance} Exception while processing event {connectionEvent->Type}: {ex}");
             }
             return QUIC_STATUS_INTERNAL_ERROR;
+        }
+        finally
+        {
+            var elapsed = Stopwatch.GetElapsedTime(timestamp);
+            TagList tags = default;
+            tags.Add("Type", connectionEvent->Type.ToString());
+            s_eventProcessing.Record(elapsed.TotalMilliseconds, tags);
         }
     }
 

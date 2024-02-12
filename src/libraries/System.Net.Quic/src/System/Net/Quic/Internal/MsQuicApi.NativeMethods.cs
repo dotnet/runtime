@@ -375,4 +375,21 @@ internal sealed unsafe partial class MsQuicApi
             }
         }
     }
+
+    public int ConnectionCertificateValidationComplete(MsQuicSafeHandle connection, bool result, QUIC_TLS_ALERT_CODES alert)
+    {
+        bool success = false;
+        try
+        {
+            connection.DangerousAddRef(ref success);
+            return ApiTable->ConnectionCertificateValidationComplete(connection.QuicHandle, (byte)(result ? 1 : 0), alert);
+        }
+        finally
+        {
+            if (success)
+            {
+                connection.DangerousRelease();
+            }
+        }
+    }
 }
