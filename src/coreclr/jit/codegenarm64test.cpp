@@ -4726,8 +4726,10 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_WIDE); // LSR     <Zdn>.<T>, <Pg>/M, <Zdn>.<T>, <Zm>.D
 
     // IF_SVE_CE_2A
-    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_P2, REG_V12, INS_OPTS_NONE,
+    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_P2, REG_V12, INS_OPTS_SCALABLE_B,
                             INS_SCALABLE_OPTS_TO_PREDICATE); // PMOV    <Pd>.B, <Zn>
+    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_P7, REG_V2, INS_OPTS_SCALABLE_H,
+                            INS_SCALABLE_OPTS_TO_PREDICATE); // PMOV    <Pd>.H, <Zn>[0]
 
     // IF_SVE_CE_2B
     theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_P15, REG_V7, 7, INS_OPTS_SCALABLE_D,
@@ -4748,8 +4750,10 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_TO_PREDICATE); // PMOV    <Pd>.S, <Zn>[<imm>]
 
     // IF_SVE_CF_2A
-    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_V11, REG_P12, INS_OPTS_NONE,
+    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_V11, REG_P12, INS_OPTS_SCALABLE_B,
                             INS_SCALABLE_OPTS_TO_VECTOR); // PMOV    <Zd>, <Pn>.B
+    theEmitter->emitIns_R_R(INS_sve_pmov, EA_SCALABLE, REG_V2, REG_P7, INS_OPTS_SCALABLE_S,
+                            INS_SCALABLE_OPTS_TO_VECTOR); // PMOV    <Zd>[0], <Pn>.S
 
     // IF_SVE_CF_2B
     theEmitter->emitIns_R_R_I(INS_sve_pmov, EA_SCALABLE, REG_V6, REG_P8, 7, INS_OPTS_SCALABLE_D,
