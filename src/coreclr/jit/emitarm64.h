@@ -668,7 +668,7 @@ static bool isValidSimm4(ssize_t value)
 // Returns true if 'value' is a legal signed immediate 9 bit encoding (such as for LDR).
 static bool isValidSimm9(ssize_t value)
 {
-    return (-256 <= value) && (value <= 255);
+    return (-0x100 <= value) && (value <= 0xFF);
 };
 
 // Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
@@ -728,13 +728,13 @@ static bool isValidUimm3From1(ssize_t value)
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
 static bool isValidUimm4(ssize_t value)
 {
-    return (0 <= value) && (value <= 15);
+    return (0 <= value) && (value <= 0xF);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
 static bool isValidUimm4From1(ssize_t value)
 {
-    return (1 <= value) && (value <= 16);
+    return (1 <= value) && (value <= 0x10);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
@@ -764,7 +764,7 @@ static bool isValidUimm8(ssize_t value)
 // Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
 static bool isValidSimm8(ssize_t value)
 {
-    return (-128 <= value) && (value <= 127);
+    return (-0x80 <= value) && (value <= 0x7F);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
