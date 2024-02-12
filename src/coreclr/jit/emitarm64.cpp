@@ -1616,7 +1616,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isVectorRegister(id->idReg2()));                           // nnnnn
-            assert(isValidImm1(emitGetInsSC(id)));                            // r
+            assert(emitIsValidEncodedRotationImm90_or_270(emitGetInsSC(id))); // r
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
 
@@ -1753,7 +1753,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(insOptsScalableStandard(id->idInsOpt()));
             assert(isVectorRegister(id->idReg1()));                           // ddddd
             assert(isVectorRegister(id->idReg2()));                           // nnnnn
-            assert(isValidUimm2(emitGetInsSC(id)));                           // rr
+            assert(emitIsValidEncodedRotationImm0_to_270(emitGetInsSC(id)));  // rr
             assert(isVectorRegister(id->idReg3()));                           // mmmmm
             assert(isValidVectorElemsize(optGetSveElemsize(id->idInsOpt()))); // xx
             break;
@@ -9313,11 +9313,10 @@ void emitter::emitIns_R_R_I(instruction     ins,
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1));                        // ddddd
             assert(isVectorRegister(reg2));                        // nnnnn
-            assert(isValidRot90_or_270(imm));                      // r
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
 
             // Convert rot to bitwise representation: 0 if 90, 1 if 270
-            imm = emitEncodeRotationImm90_or_270(imm);
+            imm = emitEncodeRotationImm90_or_270(imm); // r
             fmt = IF_SVE_FV_2A;
             break;
 

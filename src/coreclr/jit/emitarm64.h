@@ -809,12 +809,6 @@ static bool isValidRot(ssize_t value)
     return (value == 0) || (value == 90) || (value == 180) || (value == 270);
 }
 
-// Returns true if 'value' is a rotation value of 90 or 270 (such as for CADD, SQCADD).
-static bool isValidRot90_or_270(ssize_t value)
-{
-    return (value == 90) || (value == 270);
-}
-
 // Returns true if 'value' represents a valid 'bitmask immediate' encoding.
 static bool isValidImmNRS(size_t value, emitAttr size)
 {
