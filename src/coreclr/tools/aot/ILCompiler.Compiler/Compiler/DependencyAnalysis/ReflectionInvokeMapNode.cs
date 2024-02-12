@@ -156,7 +156,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.IsDefaultConstructor)
                     flags |= InvokeTableFlags.IsDefaultConstructor;
 
-                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(method))
+                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(factory, method))
                     flags |= InvokeTableFlags.HasVirtualInvoke;
 
                 if (!method.IsAbstract)

@@ -15,6 +15,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using Microsoft.NET.Sdk.WebAssembly;
+using WasmAppBuilder;
 
 namespace Microsoft.WebAssembly.Build.Tasks;
 
@@ -93,6 +94,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     protected override bool ExecuteInternal()
     {
         var helper = new BootJsonBuilderHelper(Log);
+        var logAdapter = new LogAdapter(Log);
 
         if (!ValidateArguments())
             return false;
@@ -132,7 +134,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (UseWebcil)
             {
                 using TempFileName tmpWebcil = new();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil.Path, logger: Log);
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: assembly, outputPath: tmpWebcil.Path, logger: logAdapter);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(runtimeAssetsPath, Path.ChangeExtension(Path.GetFileName(assembly), Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))
@@ -230,7 +232,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             if (UseWebcil)
             {
                 using TempFileName tmpWebcil = new();
-                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil.Path, logger: Log);
+                var webcilWriter = Microsoft.WebAssembly.Build.Tasks.WebcilConverter.FromPortableExecutable(inputPath: args.fullPath, outputPath: tmpWebcil.Path, logger: logAdapter);
                 webcilWriter.ConvertToWebcil();
                 var finalWebcil = Path.Combine(cultureDirectory, Path.ChangeExtension(name, Utils.WebcilInWasmExtension));
                 if (Utils.CopyIfDifferent(tmpWebcil.Path, finalWebcil, useHash: true))

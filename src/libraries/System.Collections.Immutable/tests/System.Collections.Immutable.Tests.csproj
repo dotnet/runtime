@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <WasmXHarnessMonoArgs>--no-memory-snapshot</WasmXHarnessMonoArgs>
     <XunitShowProgress>true</XunitShowProgress>
     <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>

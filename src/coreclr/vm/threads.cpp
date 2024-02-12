@@ -7150,8 +7150,6 @@ void Thread::ClearContext()
     if (!m_pDomain)
         return;
 
-    // must set exposed context to null first otherwise object verification
-    // checks will fail AV when m_Context is null
     m_pDomain = NULL;
 #ifdef FEATURE_COMINTEROP
     m_fDisableComObjectEagerCleanup = false;

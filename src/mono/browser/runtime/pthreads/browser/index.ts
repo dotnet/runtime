@@ -3,11 +3,13 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { MonoWorkerToMainMessage, pthreadPtr } from "../shared/types";
+import { MonoWorkerToMainMessage, PThreadInfo, pthreadPtr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import { PThreadWorker, allocateUnusedWorker, getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "../shared/emscripten-internals";
 import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
 import { MainToWorkerMessageType, PromiseAndController, PromiseController, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
+import { mono_log_info } from "../../logging";
+import { monoThreadInfo } from "../worker";
 
 const threadPromises: Map<pthreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -101,6 +103,7 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
         case WorkerToMainMessageType.monoAttached:
         case WorkerToMainMessageType.enabledInterop:
         case WorkerToMainMessageType.monoUnRegistered:
+        case WorkerToMainMessageType.updateInfo:
             worker.info = Object.assign(worker.info!, message.info, {});
             break;
         default:
@@ -168,4 +171,36 @@ export function cancelThreads() {
             worker.postMessage({ cmd: "cancel" });
         }
     }
+}
+
+export function dumpThreads(): void {
+    if (!WasmEnableThreads) return;
+    mono_log_info("Dumping web worker info as seen by UI thread, it could be stale: ");
+    const emptyInfo = {
+        pthreadId: 0,
+        threadPrefix: "          -    ",
+        threadName: "????",
+        isRunning: false,
+        isAttached: false,
+        isExternalEventLoop: false,
+        reuseCount: 0,
+    };
+    const threadInfos: PThreadInfo[] = [
+        Object.assign({}, emptyInfo, monoThreadInfo), // UI thread
+    ];
+    for (const worker of getRunningWorkers()) {
+        threadInfos.push(Object.assign({}, emptyInfo, worker.info));
+    }
+    for (const worker of getUnusedWorkerPool()) {
+        threadInfos.push(Object.assign({}, emptyInfo, worker.info));
+    }
+    threadInfos.forEach((info, i) => {
+        const idx = (i + "").padStart(2, "0");
+        const isRunning = (info.isRunning + "").padStart(5, " ");
+        const isAttached = (info.isAttached + "").padStart(5, " ");
+        const isEventLoop = (info.isExternalEventLoop + "").padStart(5, " ");
+        const reuseCount = (info.reuseCount + "").padStart(3, " ");
+        // eslint-disable-next-line no-console
+        console.info(`${idx} | ${info.threadPrefix}: isRunning:${isRunning} isAttached:${isAttached} isEventLoop:${isEventLoop} reuseCount:${reuseCount} - ${info.threadName}`);
+    });
 }

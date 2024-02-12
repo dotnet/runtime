@@ -13,7 +13,6 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <WasmXHarnessMonoArgs>--no-memory-snapshot</WasmXHarnessMonoArgs>
     <XunitShowProgress>true</XunitShowProgress>
 
     <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->

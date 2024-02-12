@@ -375,6 +375,8 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_LSL_N,               // Variants with a LSL #N (eg {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2])
     INS_SCALABLE_OPTS_MOD_N,               // Variants with a <mod> #N (eg {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2])
 
+    INS_SCALABLE_OPTS_WITH_VECTOR_PAIR,    // Variants with {<Zn1>.<T>, <Zn2>.<T>} sve register pair (eg splice)
+
     // Removable once REG_V0 and REG_P0 are distinct
     INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)
     INS_SCALABLE_OPTS_UNPREDICATED_WIDE, // Variants without a predicate and wide elements (eg asr)

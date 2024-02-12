@@ -1,4 +1,4 @@
-﻿﻿Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.CoreLib", "..\..\coreclr\System.Private.CoreLib\System.Private.CoreLib.csproj", "{772C93D4-FC45-46AA-B09F-26F01B672EDC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{E5543842-139D-43BD-B604-E65EBB91649E}"

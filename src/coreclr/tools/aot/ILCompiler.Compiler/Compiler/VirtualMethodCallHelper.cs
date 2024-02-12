@@ -34,7 +34,7 @@ namespace ILCompiler
         /// </summary>
         public static int GetVirtualMethodSlot(NodeFactory factory, MethodDesc method, TypeDesc implType, bool countDictionarySlots = true)
         {
-            if (method.CanMethodBeInSealedVTable())
+            if (method.CanMethodBeInSealedVTable(factory))
             {
                 // If the method is a sealed newslot method, it will be put in the sealed vtable instead of the type's vtable. In this
                 // case, the slot index return should be the index in the sealed vtable, plus the total number of vtable slots.
@@ -72,7 +72,7 @@ namespace ILCompiler
                 int numSealedVTableEntries = 0;
                 for (int slot = 0; slot < virtualSlots.Count; slot++)
                 {
-                    if (virtualSlots[slot].CanMethodBeInSealedVTable())
+                    if (virtualSlots[slot].CanMethodBeInSealedVTable(factory))
                     {
                         numSealedVTableEntries++;
                         continue;
@@ -110,7 +110,7 @@ namespace ILCompiler
             IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(implType).Slots;
             for (int slot = 0; slot < virtualSlots.Count; slot++)
             {
-                if (virtualSlots[slot].CanMethodBeInSealedVTable())
+                if (virtualSlots[slot].CanMethodBeInSealedVTable(factory))
                     continue;
                 numVTableSlots++;
             }
@@ -163,7 +163,7 @@ namespace ILCompiler
                 foreach (var vtableMethod in baseVirtualSlots)
                 {
                     // Methods in the sealed vtable should be excluded from the count
-                    if (vtableMethod.CanMethodBeInSealedVTable())
+                    if (vtableMethod.CanMethodBeInSealedVTable(factory))
                         continue;
                     baseSlots++;
                 }
