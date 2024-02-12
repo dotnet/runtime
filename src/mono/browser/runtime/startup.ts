@@ -515,7 +515,7 @@ async function start_runtime() {
     if (runtimeHelpers.config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
 
-    mono_wasm_load_runtime(runtimeHelpers.config);
+    mono_wasm_load_runtime();
 
     if (runtimeHelpers.config.interpreterPgo)
         setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
@@ -534,21 +534,21 @@ async function maybeSaveInterpPgoTable() {
     await interp_pgo_save_data();
 }
 
-export function mono_wasm_load_runtime(config: MonoConfigInternal): void {
+export function mono_wasm_load_runtime(): void {
     mono_log_debug("mono_wasm_load_runtime");
     try {
         const mark = startMeasure();
-        let debugLevel = config.debugLevel;
+        let debugLevel = runtimeHelpers.config.debugLevel;
         if (debugLevel == undefined) {
             debugLevel = 0;
             if (runtimeHelpers.config.debugLevel) {
                 debugLevel = 0 + debugLevel;
             }
         }
-        if (!loaderHelpers.isDebuggingSupported() || !config.resources!.pdb) {
+        if (!loaderHelpers.isDebuggingSupported() || !runtimeHelpers.config.resources!.pdb) {
             debugLevel = 0;
         }
-        cwraps.mono_wasm_load_runtime("unused", debugLevel);
+        cwraps.mono_wasm_load_runtime(debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
     } catch (err: any) {
