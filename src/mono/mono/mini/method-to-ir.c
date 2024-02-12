@@ -3547,23 +3547,11 @@ method_needs_stack_walk (MonoCompile *cfg, MonoMethod *cmethod)
 	}
 
 	/*
-	 * In corelib code, methods which need to do a stack walk declare a StackCrawlMark local and pass it as an
-	 * arguments until it reaches an icall. Its hard to detect which methods do that especially with
-	 * StackCrawlMark.LookForMyCallersCaller, so for now, just hardcode the classes which contain the public
-	 * methods whose caller is needed.
+	 * Methods which do stack walks are marked with [System.Security.DynamicSecurityMethod] in the bcl.
+	 * This check won't work for StackCrawlMark.LookForMyCallersCaller, but thats not currently by the
+	 * stack walk code anyway.
 	 */
-	if (mono_is_corlib_image (m_class_get_image (cmethod->klass))) {
-		const char *cname = m_class_get_name (cmethod->klass);
-		if (!strcmp (cname, "Assembly") ||
-			!strcmp (cname, "AssemblyLoadContext") ||
-			(!strcmp (cname, "Activator"))) {
-			if (!strcmp (cmethod->name, "op_Equality"))
-				return FALSE;
-			return TRUE;
-		}
-	}
-
-	return FALSE;
+	return (cmethod->flags & METHOD_ATTRIBUTE_REQSECOBJ) != 0;
 }
 
 G_GNUC_UNUSED MonoInst*

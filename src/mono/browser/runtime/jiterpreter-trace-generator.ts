@@ -1098,18 +1098,6 @@ export function generateWasmBody(
                 break;
             }
 
-            case MintOpcode.MINT_NEWOBJ_VT_INLINED: {
-                const ret_size = getArgU16(ip, 3);
-                // memset (this_vt, 0, ret_size);
-                append_ldloca(builder, getArgU16(ip, 2), ret_size);
-                append_memset_dest(builder, 0, ret_size);
-                // LOCAL_VAR (ip [1], gpointer) = this_vt;
-                builder.local("pLocals");
-                append_ldloca(builder, getArgU16(ip, 2), ret_size);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
-            }
-
             case MintOpcode.MINT_NEWOBJ:
             case MintOpcode.MINT_NEWOBJ_VT:
             case MintOpcode.MINT_CALLVIRT_FAST:

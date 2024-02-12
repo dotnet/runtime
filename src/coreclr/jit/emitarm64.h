@@ -782,6 +782,12 @@ static bool isValidSimm5(ssize_t value)
     return (-0x10LL <= value) && (value <= 0xFLL);
 };
 
+// Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
+static bool isValidRot(ssize_t value)
+{
+    return (value == 0) || (value == 90) || (value == 180) || (value == 270);
+}
+
 // Returns true if 'value' represents a valid 'bitmask immediate' encoding.
 static bool isValidImmNRS(size_t value, emitAttr size)
 {
@@ -1021,6 +1027,11 @@ inline static bool isGeneralRegisterOrSP(regNumber reg)
 inline static bool isVectorRegister(regNumber reg)
 {
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
+}
+
+inline static bool isLowVectorRegister(regNumber reg)
+{
+    return (reg >= FIRST_FP_ARGREG) && (reg <= LAST_FP_ARGREG);
 }
 
 inline static bool isFloatReg(regNumber reg)
