@@ -25432,6 +25432,7 @@ void emitter::emitDispInsHelp(
         // <Zd>.H, { <Zn1>.H, <Zn2>.H }, <Zm>[<index>]
         case IF_SVE_GH_3B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
                            // element size
+        // <Zd>.H, {<Zn>.H }, <Zm>[<index>]
         case IF_SVE_GH_3B_B: // ........ii.mmmmm ......nnnnnddddd -- SVE2 lookup table with 4-bit indices and 16-bit
                              // element size
             imm = emitGetInsSC(id);
