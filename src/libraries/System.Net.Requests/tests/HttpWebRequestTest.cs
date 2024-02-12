@@ -2170,14 +2170,16 @@ namespace System.Net.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
         {
-            RemoteExecutor.Invoke(async () =>
+            RemoteExecutor.Invoke(async (async) =>
             {
                 await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     HttpWebRequest.DefaultMaximumErrorResponseLength = 5;
-                    var exception = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+                    var exception = bool.Parse(async) ?
+                        await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync()) :
+                        Assert.Throws<WebException>(() => request.GetResponse());
                     using (var responseStream = exception.Response.GetResponseStream())
                     {
                         Assert.Equal(5, responseStream.Length);
@@ -2195,7 +2197,7 @@ namespace System.Net.Tests
                             await client.SendResponseAsync(statusCode: HttpStatusCode.InternalServerError, content: new string('a', 10));
                         });
                 });
-            }).Dispose();
+            }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
         }
 
         [Fact]
@@ -2248,7 +2250,6 @@ namespace System.Net.Tests
                 }
             };
             disableSocketOption(SocketOptionName.ReuseAddress);
-            disableSocketOption(SocketOptionName.ReuseUnicastPort);
             socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
 
             // URI shouldn't matter because it should throw exception before connection open.
