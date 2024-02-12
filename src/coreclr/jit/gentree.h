@@ -2244,12 +2244,12 @@ public:
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     bool IsEmbMaskOp()
     {
-        assert(OperIsHWIntrinsic());
-        return (gtFlags & GTF_HW_EM_OP) != 0;
+        return OperIsHWIntrinsic() && ((gtFlags & GTF_HW_EM_OP) != 0);
     }
 
     void MakeEmbMaskOp()
     {
+        assert(OperIsHWIntrinsic());
         assert(!IsEmbMaskOp());
         gtFlags |= GTF_HW_EM_OP;
     }
