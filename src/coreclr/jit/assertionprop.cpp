@@ -1368,7 +1368,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     {
                         noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
-                        if (_isnan(op2->AsDblCon()->DconValue()))
+                        if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
@@ -1691,8 +1691,8 @@ bool Compiler::optAssertionVnInvolvesNan(AssertionDsc* assertion)
         if (vnStore->IsVNConstant(vns[i]))
         {
             var_types type = vnStore->TypeOfVN(vns[i]);
-            if ((type == TYP_FLOAT && _isnan(vnStore->ConstantValue<float>(vns[i])) != 0) ||
-                (type == TYP_DOUBLE && _isnan(vnStore->ConstantValue<double>(vns[i])) != 0))
+            if ((type == TYP_FLOAT && FloatingPointUtils::isNaN(vnStore->ConstantValue<float>(vns[i])) != 0) ||
+                (type == TYP_DOUBLE && FloatingPointUtils::isNaN(vnStore->ConstantValue<double>(vns[i])) != 0))
             {
                 return true;
             }
@@ -3825,40 +3825,62 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 }
 
 //------------------------------------------------------------------------
-// optAssertionProp_ModDiv: Convert DIV/MOD to UDIV/UMOD if both operands
-//    can be proven to be non-negative, e.g.:
-//
-//    if (x > 0)         // creates "x > 0" assertion
-//        return x / 8;  // DIV can be converted to UDIV
+// optAssertionProp_RangeProperties: Obtains range properties for an arbitrary tree
 //
 // Arguments:
-//    assertions - set of live assertions
-//    tree       - the DIV/MOD node to optimize
-//    stmt       - statement containing DIV/MOD
+//    assertions         - set of live assertions
+//    tree               - the integral tree to analyze
+//    isKnownNonZero     - [OUT] set to true if the tree is known to be non-zero
+//    isKnownNonNegative - [OUT] set to true if the tree is known to be non-negative
 //
-// Returns:
-//    Updated UDIV/UMOD node, or "nullptr"
-//
-GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
+                                                GenTree*         tree,
+                                                bool*            isKnownNonZero,
+                                                bool*            isKnownNonNegative)
 {
-    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::IsEmpty(apTraits, assertions))
+    *isKnownNonZero     = false;
+    *isKnownNonNegative = false;
+
+    if (optLocalAssertionProp || !varTypeIsIntegral(tree) || BitVecOps::MayBeUninit(assertions) ||
+        BitVecOps::IsEmpty(apTraits, assertions))
     {
-        return nullptr;
+        return;
     }
 
-    // For now, we're mainly interested in "X op CNS" pattern (where CNS > 0).
-    // Technically, we can check assertions for both operands, but it's not clear if it's worth it.
-    if (!tree->gtGetOp2()->IsNeverNegative(this))
+    // First, check simple properties without assertions.
+    *isKnownNonNegative = tree->IsNeverNegative(this);
+    *isKnownNonZero     = tree->IsNeverZero();
+
+    if (*isKnownNonZero && *isKnownNonNegative)
     {
-        return nullptr;
+        // TP: We already have both properties, no need to check assertions.
+        return;
     }
 
-    const ValueNum  dividendVN = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
+    const ValueNum  treeVN = vnStore->VNConservativeNormalValue(tree->gtVNPair);
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
         AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
+
+        // First, analyze possible X ==/!= CNS assertions.
+        if (curAssertion->IsConstantInt32Assertion() && (curAssertion->op1.vn == treeVN))
+        {
+            if ((curAssertion->assertionKind == OAK_NOT_EQUAL) && (curAssertion->op2.u1.iconVal == 0))
+            {
+                // X != 0 --> definitely non-zero
+                // We can't say anything about X's non-negativity
+                *isKnownNonZero = true;
+            }
+            else if (curAssertion->assertionKind != OAK_NOT_EQUAL)
+            {
+                // X == CNS --> definitely non-negative if CNS >= 0
+                // and definitely non-zero if CNS != 0
+                *isKnownNonNegative = curAssertion->op2.u1.iconVal >= 0;
+                *isKnownNonZero     = curAssertion->op2.u1.iconVal != 0;
+            }
+        }
 
         // OAK_[NOT]_EQUAL assertion with op1 being O1K_CONSTANT_LOOP_BND
         // representing "(X relop CNS) ==/!= 0" assertion.
@@ -3870,7 +3892,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
         ValueNumStore::ConstantBoundInfo info;
         vnStore->GetConstantBoundInfo(curAssertion->op1.vn, &info);
 
-        if (info.cmpOpVN != dividendVN)
+        if (info.cmpOpVN != treeVN)
         {
             continue;
         }
@@ -3893,27 +3915,70 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeO
 
         if ((info.constVal >= 0))
         {
-            bool isNotNegative = false;
             if (info.isUnsigned && ((cmpOper == GT_LT) || (cmpOper == GT_LE)))
             {
                 // (uint)X <= CNS means X is [0..CNS]
-                isNotNegative = true;
+                *isKnownNonNegative = true;
             }
             else if (!info.isUnsigned && ((cmpOper == GT_GE) || (cmpOper == GT_GT)))
             {
                 // X >= CNS means X is [CNS..unknown]
-                isNotNegative = true;
-            }
-
-            if (isNotNegative)
-            {
-                JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
-                tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
-                return optAssertionProp_Update(tree, tree, stmt);
+                *isKnownNonNegative = true;
+                *isKnownNonZero     = (cmpOper == GT_GT) || (info.constVal > 0);
             }
         }
     }
-    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// optAssertionProp_ModDiv: Optimizes DIV/UDIV/MOD/UMOD via assertions
+//    1) Convert DIV/MOD to UDIV/UMOD if both operands are proven to be never negative
+//    2) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_BY_ZERO if divisor is proven to be never zero
+//    3) Marks DIV/UDIV/MOD/UMOD with GTF_DIV_MOD_NO_OVERFLOW if both operands are proven to be never negative
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - the DIV/UDIV/MOD/UMOD node to optimize
+//    stmt       - statement containing DIV/UDIV/MOD/UMOD
+//
+// Returns:
+//    Updated DIV/UDIV/MOD/UMOD node, or nullptr
+//
+GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt)
+{
+    GenTree* op1 = tree->gtGetOp1();
+    GenTree* op2 = tree->gtGetOp2();
+
+    bool op1IsNotZero;
+    bool op2IsNotZero;
+    bool op1IsNotNegative;
+    bool op2IsNotNegative;
+    optAssertionProp_RangeProperties(assertions, op1, &op1IsNotZero, &op1IsNotNegative);
+    optAssertionProp_RangeProperties(assertions, op2, &op2IsNotZero, &op2IsNotNegative);
+
+    bool changed = false;
+    if (op1IsNotNegative && op2IsNotNegative && tree->OperIs(GT_DIV, GT_MOD))
+    {
+        JITDUMP("Converting DIV/MOD to unsigned UDIV/UMOD since both operands are never negative...\n")
+        tree->SetOper(tree->OperIs(GT_DIV) ? GT_UDIV : GT_UMOD, GenTree::PRESERVE_VN);
+        changed = true;
+    }
+
+    if (op2IsNotZero)
+    {
+        JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
+        tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+        changed = true;
+    }
+
+    if (op1IsNotNegative || op2IsNotNegative)
+    {
+        JITDUMP("DIV/MOD is proven to never overflow...\n")
+        tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
+        changed = true;
+    }
+
+    return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -4112,8 +4177,7 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
     //
     // Currently only GT_EQ or GT_NE are supported Relops for local AssertionProp
     //
-
-    if ((tree->gtOper != GT_EQ) && (tree->gtOper != GT_NE))
+    if (!tree->OperIs(GT_EQ, GT_NE))
     {
         return nullptr;
     }
@@ -4287,7 +4351,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // which will yield a false correctly. Instead if IL had "op1 != NaN", then we already
             // made op1 NaN which will yield a true correctly. Note that this is irrespective of the
             // assertion we have made.
-            allowReverse = (_isnan(constant) == 0);
+            allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeGet() == TYP_FLOAT)
         {
@@ -4295,7 +4359,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             op1->BashToConst(constant);
 
             // See comments for TYP_DOUBLE.
-            allowReverse = (_isnan(constant) == 0);
+            allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeGet() == TYP_REF)
         {
@@ -4599,13 +4663,16 @@ GenTree* Compiler::optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tr
 {
     assert(tree->OperIsIndir());
 
-    bool didNonNullProp = optNonNullAssertionProp_Ind(assertions, tree);
-    bool didNonHeapProp = optNonHeapAssertionProp_Ind(assertions, tree);
-    if (didNonNullProp || didNonHeapProp)
+    bool updated = optNonNullAssertionProp_Ind(assertions, tree);
+    if (tree->OperIs(GT_STOREIND))
+    {
+        updated |= optWriteBarrierAssertionProp_StoreInd(assertions, tree->AsStoreInd());
+    }
+
+    if (updated)
     {
         return optAssertionProp_Update(tree, tree, stmt);
     }
-
     return nullptr;
 }
 
@@ -4866,94 +4933,140 @@ bool Compiler::optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree*
 }
 
 //------------------------------------------------------------------------
-// optAssertionIsNonHeap: see if we can prove a tree's value will be not GC-tracked
-//   based on assertions
+// GetWriteBarrierForm: Determinate the exact type of write barrier required for the
+//    given address.
 //
 // Arguments:
-//   op         - tree to check
-//   assertions - set of live assertions
-//   pVnBased   - [out] set to true if value numbers were used
-//   pIndex     - [out] the assertion used in the proof
+//    vnStore - ValueNumStore object
+//    vn      - VN of the address
 //
 // Return Value:
-//   true if the tree's value will be not GC-tracked
+//    Exact type of write barrier required for the given address.
 //
-// Notes:
-//   Sets "pVnBased" if the assertion is value number based. If no matching
-//    assertions are found from the table, then returns "NO_ASSERTION_INDEX."
-//
-//   If both VN and assertion table yield a matching assertion, "pVnBased"
-//   is only set and the return value is "NO_ASSERTION_INDEX."
-//
-bool Compiler::optAssertionIsNonHeap(GenTree*         op,
-                                     ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased)
-                                         DEBUGARG(AssertionIndex* pIndex))
+static GCInfo::WriteBarrierForm GetWriteBarrierForm(ValueNumStore* vnStore, ValueNum vn)
 {
-    bool vnBased = (!optLocalAssertionProp && vnStore->IsVNObjHandle(op->gtVNPair.GetConservative()));
-#ifdef DEBUG
-    *pIndex   = NO_ASSERTION_INDEX;
-    *pVnBased = vnBased;
-#endif
-
-    if (vnBased)
+    const var_types type = vnStore->TypeOfVN(vn);
+    if (type == TYP_REF)
     {
-        return true;
+        return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+    }
+    if (type != TYP_BYREF)
+    {
+        return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
     }
 
-    if (op->IsIconHandle(GTF_ICON_OBJ_HDL))
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(vnStore->VNNormalValue(vn), &funcApp))
     {
-        return true;
+        if (funcApp.m_func == VNF_PtrToArrElem)
+        {
+            // Arrays are always on the heap
+            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+        }
+        if (funcApp.m_func == VNF_PtrToLoc)
+        {
+            // Pointer to a local
+            return GCInfo::WriteBarrierForm::WBF_NoBarrier;
+        }
+        if ((funcApp.m_func == VNF_PtrToStatic) && vnStore->IsVNHandle(funcApp.m_args[0], GTF_ICON_STATIC_BOX_PTR))
+        {
+            // Boxed static - always on the heap
+            return GCInfo::WriteBarrierForm::WBF_BarrierUnchecked;
+        }
+        if (funcApp.m_func == VNFunc(GT_ADD))
+        {
+            // Check arguments of the GT_ADD
+            // To make it conservative, we require one of the arguments to be a constant, e.g.:
+            //
+            //   addressOfLocal + cns    -> NoBarrier
+            //   cns + addressWithinHeap -> BarrierUnchecked
+            //
+            // Because "addressOfLocal + nativeIntVariable" could be in fact a pointer to the heap.
+            // if "nativeIntVariable == addressWithinHeap - addressOfLocal".
+            //
+            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[0]))
+            {
+                return GetWriteBarrierForm(vnStore, funcApp.m_args[1]);
+            }
+            if (vnStore->IsVNConstantNonHandle(funcApp.m_args[1]))
+            {
+                return GetWriteBarrierForm(vnStore, funcApp.m_args[0]);
+            }
+        }
     }
 
-    return false;
+    // TODO:
+    // * addr is ByRefLike - NoBarrier (https://github.com/dotnet/runtime/issues/9512)
+    //
+    return GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 }
 
 //------------------------------------------------------------------------
-// optNonHeapAssertionProp_Ind: Possibly prove an indirection not GC-tracked.
+// optWriteBarrierAssertionProp_StoreInd: This function assists gcIsWriteBarrierCandidate with help of
+//    assertions and VNs since CSE may "hide" addresses/values under locals, making it impossible for
+//    gcIsWriteBarrierCandidate to determine the exact type of write barrier required
+//    (it's too late for it to rely on VNs).
+//
+//    There are three cases we handle here:
+//     * Target is not on the heap - no write barrier is required
+//     * Target could be on the heap, but the value being stored doesn't require any write barrier
+//     * Target is definitely on the heap - checked (slower) write barrier is not required
 //
 // Arguments:
 //    assertions - Active assertions
-//    indir      - The indirection
+//    indir      - The STOREIND node
 //
 // Return Value:
-//    Whether the indirection was found to be not GC-tracked and marked as such.
+//    Whether the exact type of write barrier was determined and marked on the STOREIND node.
 //
-bool Compiler::optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir)
+bool Compiler::optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir)
 {
-    assert(indir->OperIsIndir());
+    const GenTree* value = indir->AsIndir()->Data();
+    const GenTree* addr  = indir->AsIndir()->Addr();
 
-    if (!indir->OperIs(GT_STOREIND) || (indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
+    if (optLocalAssertionProp || !indir->TypeIs(TYP_REF) || !value->TypeIs(TYP_REF) ||
+        ((indir->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0))
     {
         return false;
     }
 
-// We like CSE to happen for handles, as the codegen for loading a 64-bit constant can be pretty heavy
-// and this is particularly true on platforms with a fixed-width instruction encoding. However, this
-// pessimizes stores as we can no longer optimize around some object handles that would allow us to
-// bypass the write barrier.
-//
-// In order to handle that, we'll propagate the IND_TGT_NOT_HEAP flag onto the store if the handle is
-// directly or if the underlying value number is an applicable object handle.
+    GCInfo::WriteBarrierForm barrierType = GCInfo::WriteBarrierForm::WBF_BarrierUnknown;
 
-#ifdef DEBUG
-    bool           vnBased = false;
-    AssertionIndex index   = NO_ASSERTION_INDEX;
-#endif
-    if (optAssertionIsNonHeap(indir->AsIndir()->Data(), assertions DEBUGARG(&vnBased) DEBUGARG(&index)))
+    // First, analyze the value being stored
+    if (value->IsIntegralConst(0) || (value->gtVNPair.GetConservative() == ValueNumStore::VNForNull()))
     {
-#ifdef DEBUG
-        if (verbose)
-        {
-            (vnBased) ? printf("\nVN based non-heap prop in " FMT_BB ":\n", compCurBB->bbNum)
-                      : printf("\nNon-heap prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-            gtDispTree(indir, nullptr, nullptr, true);
-        }
-#endif
-        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        // The value being stored is null
+        barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
+    }
+    else if (value->IsIconHandle(GTF_ICON_OBJ_HDL) || vnStore->IsVNObjHandle(value->gtVNPair.GetConservative()))
+    {
+        // The value being stored is a handle
+        barrierType = GCInfo::WriteBarrierForm::WBF_NoBarrier;
+    }
+    else if ((indir->gtFlags & GTF_IND_TGT_HEAP) == 0)
+    {
+        // Next, analyze the address if we haven't already determined the barrier type from the value
+        //
+        // NOTE: we might want to inspect indirs with GTF_IND_TGT_HEAP flag as well - what if we can prove
+        // that they actually need no barrier? But that comes with a TP regression.
+        barrierType = GetWriteBarrierForm(vnStore, addr->gtVNPair.GetConservative());
+    }
 
+    JITDUMP("Trying to determine the exact type of write barrier for STOREIND [%d06]: ", dspTreeID(indir));
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_NoBarrier)
+    {
+        JITDUMP("is not needed at all.\n");
+        indir->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+        return true;
+    }
+    if (barrierType == GCInfo::WriteBarrierForm::WBF_BarrierUnchecked)
+    {
+        JITDUMP("unchecked is fine.\n");
+        indir->gtFlags |= GTF_IND_TGT_HEAP;
         return true;
     }
 
+    JITDUMP("unknown (checked).\n");
     return false;
 }
 
@@ -5267,6 +5380,8 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_MOD:
         case GT_DIV:
+        case GT_UMOD:
+        case GT_UDIV:
             return optAssertionProp_ModDiv(assertions, tree->AsOp(), stmt);
 
         case GT_BLK:

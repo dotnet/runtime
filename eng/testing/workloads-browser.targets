@@ -44,7 +44,7 @@
   <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,
        build the other nugets with the *same runtime* but different names.
   -->
-  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(_NuGetsToBuild)">
+  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(NuGetsToBuildForWorkloadTesting)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
     <PropertyGroup>
       <_IsMTNugetMissing Condition="'$(WasmEnableThreads)' != 'true'">true</_IsMTNugetMissing>
@@ -68,9 +68,9 @@
            Text="Expected to find either one or two in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
 
     <ItemGroup>
-      <!-- We need nugets for all wasm runtime flavors. The one corresponding the current 
-      property values is already built, the others need to be added to _NuGetsToBuild -->
-      <_NuGetsToBuild Include="$(_DefaultRuntimePackNuGetPath)"
+      <!-- We need nugets for all wasm runtime flavors. The one corresponding the current
+      property values is already built, the others need to be added to NuGetsToBuildForWorkloadTesting -->
+      <NuGetsToBuildForWorkloadTesting Include="$(_DefaultRuntimePackNuGetPath)"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(_IsMTNugetMissing)"
