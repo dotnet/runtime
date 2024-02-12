@@ -2405,7 +2405,6 @@ static constexpr unsigned kInstructionFunct2Mask = 0x06000000;
         case INS_lwu:
         case INS_ld:
         case INS_addiw:
-        case INS_fence_i:
         case INS_csrrw:
         case INS_csrrs:
         case INS_csrrc:
@@ -2445,7 +2444,8 @@ static constexpr unsigned kInstructionFunct2Mask = 0x06000000;
             assert(rd == REG_ZERO);
             assert(rs1 == REG_ZERO);
             ssize_t format = immediate >> 8;
-            assertCodeLength(format, 3);
+            assert((format == 0) || (format == 0x8));
+            assert((opcode & kInstructionFunct7Mask) == 0);
         }
         break;
         default:
