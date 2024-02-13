@@ -790,7 +790,7 @@ static void InvokeActivationHandler(CONTEXT *pWinContext)
     g_activationFunction(pWinContext);
 }
 
-DIABLE_ASAN
+DISABLE_ASAN
 static void HoldContextAndInvokeActivationHandler(CONTEXT* pWinContext)
 {
     // We need to disable ASAN for this function as we use the frame offset to find the context when stackwalking.
@@ -800,8 +800,6 @@ static void HoldContextAndInvokeActivationHandler(CONTEXT* pWinContext)
     int savedErrNo = errno; // Make sure that errno is not modified
     InvokeActivationHandler(&winContext);
     errno = savedErrNo;
-    // Activation function may have modified the context, so update it.
-    CONTEXTToNativeContext(&winContext, ucontext);
 }
 
 /*++
@@ -850,6 +848,8 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
         if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
         {
             HoldContextAndInvokeActivationHandler(&winContext);
+            // Activation function may have modified the context, so update it.
+            CONTEXTToNativeContext(&winContext, ucontext);
         }
     }
     else
@@ -954,7 +954,7 @@ void PAL_IgnoreProfileSignal(int signalNum)
 }
 
 DISABLE_ASAN
-static void CallSEHProcessException(CONTEXT* pContext, PAL_SEHException* pException)
+static bool CallSEHProcessException(CONTEXT* pContext, PAL_SEHException* pException, ucontext_t* ucontext)
 {
     // We need to disable ASAN for this function as we use the frame offset to find the context when stackwalking.
     // Some ASAN features use fake stacks, which is incompatible with this design.
@@ -963,7 +963,7 @@ static void CallSEHProcessException(CONTEXT* pContext, PAL_SEHException* pExcept
     if (SEHProcessException(pException))
     {
         // Exception handling may have modified the context, so update it.
-        CONTEXTToNativeContext(&winContext, ucontext);
+        CONTEXTToNativeContext(winContext, ucontext);
         return true;
     }
     return false;
@@ -1049,7 +1049,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     // The exception object takes ownership of the exceptionRecord and contextRecord
     PAL_SEHException exception(&exceptionRecord, &signalContextRecord, true);
 
-    return CallSEHProcessException(&signalContextRecord, &exception);
+    return CallSEHProcessException(&signalContextRecord, &exception, ucontext);
 #else // !HAVE_MACH_EXCEPTIONS
     return false;
 #endif // !HAVE_MACH_EXCEPTIONS
