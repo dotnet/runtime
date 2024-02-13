@@ -30,7 +30,6 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         var includedMethods = new List<string>();
         var backgroundExec = false;
         var untilFailed = false;
-        var minimumLogLevel = MinimumLogLevel.Info;
 
         for (int i = 1; i < args.Length; i++)
         {
@@ -81,7 +80,6 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         runner.IncludedNamespaces = includedNamespaces;
         runner.IncludedClasses = includedClasses;
         runner.IncludedMethods = includedMethods;
-            MinimumLogLevel = minimumLogLevel
 
         if (OperatingSystem.IsBrowser())
         {
