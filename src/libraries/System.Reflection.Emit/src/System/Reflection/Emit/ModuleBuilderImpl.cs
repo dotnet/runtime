@@ -538,6 +538,7 @@ namespace System.Reflection.Emit
                             MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
                         break;
                     case ConstructorInfo ctor:
+                        ctor = (ConstructorInfo)GetOriginalMemberIfConstructedType(ctor);
                         memberHandle = AddMemberReference(ctor.Name, GetTypeHandle(memberInfo.DeclaringType!), MetadataSignatureHelper.GetConstructorSignature(ctor.GetParameters(), this));
                         break;
                     case MethodInfo method:
@@ -964,8 +965,8 @@ namespace System.Reflection.Emit
         private static bool IsArrayMethodFromNotBakedTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
             arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl tb && tb._handle == default;
 
-        private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) =>
-            method.IsConstructedGenericMethod && method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default;
+        private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
+            (method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default || ContainsNotBakedTypeBuilder(method.GetGenericArguments()));
 
         internal EntityHandle TryGetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
