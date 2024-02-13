@@ -2804,11 +2804,11 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 				ins->klass = klass;
 			}
 			return ins;
-		} 
-// FIXME: Support Vector2 and Vector3 for WASM
-#ifndef TARGET_WASM 
-		else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
+		} else if (len == 3 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector3 (Vector2, float) */
+			if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->params [0])))
+				// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+				return NULL;
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 			MonoInst* vec_ins = args [1];
 			if (COMPILE_LLVM (cfg)) {
@@ -2820,12 +2820,18 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			return ins;
 		} else if (len == 4 && fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type) {
 			/* Vector4 (Vector3, float) */
+			if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->params [0])))
+				// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+				return NULL;
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 			ins = emit_vector_insert_element (cfg, klass, args [1], MONO_TYPE_R4, args [2], 3, FALSE);
 			ins->dreg = dreg;
 			return ins;
 		} else if (len == 4 && fsig->param_count == 3 && fsig->params [0]->type == MONO_TYPE_VALUETYPE && fsig->params [1]->type == etype->type && fsig->params [2]->type == etype->type) {
 			/* Vector4 (Vector2, float, float) */
+			if (!mini_class_is_simd (cfg, mono_class_from_mono_type_internal (fsig->params [0])))
+				// FIXME: Support Vector2 and Vector3 for WASM and AMD64
+				return NULL;
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 			MonoInst* vec_ins = args [1];
 			if (COMPILE_LLVM (cfg)) {
@@ -2837,7 +2843,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			ins->dreg = dreg;
 			return ins;
 		}
-#endif
 		break;
 	case SN_get_Item: {
 		// GetElement is marked as Intrinsic, but handling this in get_Item leads to better code
