@@ -329,20 +329,13 @@ namespace System.Reflection
 
         private void InitializeClass()
         {
-            try
+            if (_fieldInfo.DeclaringType is null)
             {
-                if (_fieldInfo.DeclaringType is null)
-                {
-                    RunModuleConstructor(_fieldInfo.Module);
-                }
-                else
-                {
-                    RunClassConstructor(_fieldInfo);
-                }
+                RunModuleConstructor(_fieldInfo.Module);
             }
-            catch (TypeInitializationException ex)
+            else
             {
-                throw new TargetInvocationException(ex);
+                RunClassConstructor(_fieldInfo);
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",

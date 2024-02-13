@@ -150,10 +150,12 @@ namespace System.Reflection.Tests
             static void TestThrows()
             {
                 FieldInfo fi = typeof(MyTypeThatThrowsInClassInitializer).GetField(nameof(MyTypeThatThrowsInClassInitializer.s_field));
-                for (int i = 0; i < 1; i++)
+                for (int i = 0; i < 3; i++)
                 {
-                    Assert.Throws<TargetInvocationException>(() => fi.GetValue(null));
-                    Assert.Throws<TargetInvocationException>(() => fi.SetValue(null, 100));
+                    // The actual exception may be TargetInvocationException or TypeInitializationException; there is no guarantee on when
+                    // exactly the class initializer is called (e.g. it could happen before the GetValue\SetValue operation actually runs).
+                    Assert.ThrowsAny<Exception>(() => fi.GetValue(null));
+                    Assert.ThrowsAny<Exception>(() => fi.SetValue(null, 100));
                 }
             }
 
@@ -163,8 +165,8 @@ namespace System.Reflection.Tests
                 SettingsForMyTypeThatThrowsInClassInitializer.s_shouldThrow = false;
 
                 FieldInfo fi = typeof(MyTypeThatThrowsInClassInitializer).GetField(nameof(MyTypeThatThrowsInClassInitializer.s_field));
-                Assert.Throws<TargetInvocationException>(() => fi.GetValue(null));
-                Assert.Throws<TargetInvocationException>(() => fi.SetValue(null, 100));
+                Assert.ThrowsAny<Exception>(() => fi.GetValue(null));
+                Assert.ThrowsAny<Exception>(() => fi.SetValue(null, 100));
             }
         }
 
@@ -819,8 +821,12 @@ namespace System.Reflection.Tests
             static MyTypeThatThrowsInClassInitializer()
             {
                 FieldInfo fi = typeof(MyTypeThatThrowsInClassInitializer).GetField(nameof(s_field));
+
+                // Ensure that the runtime doesn't treat this type has having been initialized due to successful GetValue().
                 for (int i = 0; i < 3; i++)
+                {
                     fi.GetValue(null);
+                }
 
                 if (SettingsForMyTypeThatThrowsInClassInitializer.s_shouldThrow)
                 {
