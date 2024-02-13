@@ -748,7 +748,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
                                OBJECTREF *target,
                                OBJECTREF *valueObj,
                                TypeHandle declaringType,
-                               CLR_BOOL *pDomainInitialized) {
+                               CLR_BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -786,19 +786,17 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
-    if (*pDomainInitialized == FALSE)
+    if (*pIsClassInitialized == FALSE)
     {
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
-            pDeclMT->CheckRunClassInitThrowing();
-
-            *pDomainInitialized = TRUE;
+            *pIsClassInitialized = pDeclMT->CheckRunClassInitThrowing();
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
 #ifdef _DEBUG
-    else if (*pDomainInitialized == TRUE && !declaringType.IsNull())
+    else if (*pIsClassInitialized == TRUE && !declaringType.IsNull())
        CONSISTENCY_CHECK(declaringType.GetMethodTable()->CheckActivated());
 #endif
 
@@ -973,7 +971,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
 
 // GetFieldValue
 // This method will return an ARG_SLOT containing the value of the field.
-OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pDomainInitialized) {
+OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -1011,22 +1009,19 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
-    if (*pDomainInitialized == FALSE)
+    if (*pIsClassInitialized == FALSE)
     {
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
-            pDeclMT->CheckRunClassInitThrowing();
-
-            *pDomainInitialized = TRUE;
+            *pIsClassInitialized = pDeclMT->CheckRunClassInitThrowing();
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
 #ifdef _DEBUG
-    else if (*pDomainInitialized == TRUE && !declaringType.IsNull())
+    else if (*pIsClassInitialized == TRUE && !declaringType.IsNull())
        CONSISTENCY_CHECK(declaringType.GetMethodTable()->CheckActivated());
 #endif
-
 
     if(Throwable != NULL)
     {

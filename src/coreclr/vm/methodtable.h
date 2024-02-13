@@ -813,7 +813,7 @@ public:
 public:
 
     // checks whether the class initialiser should be run on this class, and runs it if necessary
-    void CheckRunClassInitThrowing();
+    BOOL CheckRunClassInitThrowing();
 
     // checks whether or not the non-beforefieldinit class initializers have been run for all types in this type's
     // inheritance hierarchy, and runs them if necessary. This simulates the behavior of running class constructors

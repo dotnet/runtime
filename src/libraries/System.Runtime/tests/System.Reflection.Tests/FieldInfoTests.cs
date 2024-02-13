@@ -137,6 +137,37 @@ namespace System.Reflection.Tests
             Assert.Equal(11, ((MyStruct)obj).intField);
         }
 
+        [Fact]
+        public void ClassInitializerCalledOnceOnException()
+        {
+            TestThrows();
+            for (int j = 0; j < 100; j++) GC.Collect(); // Encourage the type to unload.
+            TestThrows();
+
+            for (int j = 0; j < 100; j++) GC.Collect(); // Encourage the type to unload.
+            InitializerNotCalledAfterThrow();
+
+            static void TestThrows()
+            {
+                FieldInfo fi = typeof(MyTypeThatThrowsInClassInitializer).GetField(nameof(MyTypeThatThrowsInClassInitializer.s_field));
+                for (int i = 0; i < 1; i++)
+                {
+                    Assert.Throws<TargetInvocationException>(() => fi.GetValue(null));
+                    Assert.Throws<TargetInvocationException>(() => fi.SetValue(null, 100));
+                }
+            }
+
+            static void InitializerNotCalledAfterThrow()
+            {
+                // Setting this stops the class initializer's code from throwing, but the runtime caches the previous exception so it never runs.
+                SettingsForMyTypeThatThrowsInClassInitializer.s_shouldThrow = false;
+
+                FieldInfo fi = typeof(MyTypeThatThrowsInClassInitializer).GetField(nameof(MyTypeThatThrowsInClassInitializer.s_field));
+                Assert.Throws<TargetInvocationException>(() => fi.GetValue(null));
+                Assert.Throws<TargetInvocationException>(() => fi.SetValue(null, 100));
+            }
+        }
+
         public static IEnumerable<object[]> GetValue_Invalid_TestData()
         {
             yield return new object[] { typeof(FieldInfoTests), nameof(FieldInfoTests.stringField), null, typeof(TargetException) };
@@ -779,6 +810,28 @@ namespace System.Reflection.Tests
             public unsafe delegate*<void> fcnPtr = (delegate*<void>)44;
 
             public MyStructWithFunctionPointers() { }
+        }
+
+        public class MyTypeThatThrowsInClassInitializer
+        {
+            public static int s_field;
+
+            static MyTypeThatThrowsInClassInitializer()
+            {
+                FieldInfo fi = typeof(MyTypeThatThrowsInClassInitializer).GetField(nameof(s_field));
+                //for (int i = 0; i < 3; i++)
+                    //fi.GetValue(null);
+
+                if (SettingsForMyTypeThatThrowsInClassInitializer.s_shouldThrow)
+                {
+                    throw new Exception();
+                }
+            }
+        }
+
+        public static class SettingsForMyTypeThatThrowsInClassInitializer
+        {
+            public static bool s_shouldThrow = true;
         }
     }
 }

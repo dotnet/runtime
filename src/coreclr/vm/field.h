@@ -526,7 +526,7 @@ public:
         }
     }
 
-    VOID    CheckRunClassInitThrowing()
+    BOOL CheckRunClassInitThrowing()
     {
         CONTRACTL
         {
@@ -536,7 +536,7 @@ public:
         }
         CONTRACTL_END;
 
-        GetEnclosingMethodTable()->CheckRunClassInitThrowing();
+        return GetEnclosingMethodTable()->CheckRunClassInitThrowing();
     }
 #endif //DACCESS_COMPILE
 

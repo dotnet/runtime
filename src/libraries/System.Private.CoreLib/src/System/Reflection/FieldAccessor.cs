@@ -116,7 +116,7 @@ namespace System.Reflection
 
         public object? GetValue(object? obj)
         {
-            bool domainInitialized;
+            bool isClassInitialized;
 
             unsafe
             {
@@ -171,9 +171,9 @@ namespace System.Reflection
                             VerifyTarget(obj);
                         }
 
-                        domainInitialized = false;
-                        object? ret = RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
-                        if (domainInitialized)
+                        isClassInitialized = false;
+                        object? ret = RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
+                        if (isClassInitialized)
                         {
                             Initialize();
                         }
@@ -186,8 +186,8 @@ namespace System.Reflection
                             VerifyTarget(obj);
                         }
 
-                        domainInitialized = true;
-                        return RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
+                        isClassInitialized = true;
+                        return RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
 
                     case FieldAccessorType.NoInvoke:
                         if (_fieldInfo.DeclaringType is not null && _fieldInfo.DeclaringType.ContainsGenericParameters)
@@ -207,7 +207,7 @@ namespace System.Reflection
 
         public void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
-            bool domainInitialized;
+            bool isClassInitialized;
 
             unsafe
             {
@@ -295,9 +295,9 @@ namespace System.Reflection
                                 VerifyInstanceField(obj, ref value, invokeAttr, binder, culture);
                             }
 
-                            domainInitialized = false;
-                            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
-                            if (domainInitialized)
+                            isClassInitialized = false;
+                            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
+                            if (isClassInitialized)
                             {
                                 Initialize();
                             }
@@ -323,19 +323,26 @@ namespace System.Reflection
                 VerifyInstanceField(obj, ref value, invokeAttr, binder, culture);
             }
 
-            domainInitialized = true;
-            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
+            isClassInitialized = true;
+            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
         }
 
         private void InitializeClass()
         {
-            if (_fieldInfo.DeclaringType is null)
+            try
             {
-                RunModuleConstructor(_fieldInfo.Module);
+                if (_fieldInfo.DeclaringType is null)
+                {
+                    RunModuleConstructor(_fieldInfo.Module);
+                }
+                else
+                {
+                    RunClassConstructor(_fieldInfo);
+                }
             }
-            else
+            catch (TypeInitializationException ex)
             {
-                RunClassConstructor(_fieldInfo);
+                throw new TargetInvocationException(ex);
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",
