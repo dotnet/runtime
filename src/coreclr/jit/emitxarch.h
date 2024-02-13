@@ -468,6 +468,16 @@ void SetContains256bitOrMoreAVX(bool value)
     contains256bitOrMoreAVXInstruction = value;
 }
 
+bool containsCallNeedingVzeroupper = false;
+bool ContainsCallNeedingVzeroupper() const
+{
+    return containsCallNeedingVzeroupper;
+}
+void SetContainsCallNeedingVzeroupper(bool value)
+{
+    containsCallNeedingVzeroupper = value;
+}
+
 bool IsDstDstSrcAVXInstruction(instruction ins) const;
 bool IsDstSrcSrcAVXInstruction(instruction ins) const;
 bool IsThreeOperandAVXInstruction(instruction ins) const;
