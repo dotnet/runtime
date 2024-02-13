@@ -7518,89 +7518,29 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R_I(INS_sve_ld1rw, EA_SCALABLE, REG_V5, REG_P4, REG_R3, 252,
                                 INS_OPTS_SCALABLE_D); // LD1RW   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
 
-    //// IF_SVE_IC_3A_B
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rh, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_H); // LD1RH   {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rsb, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_H); // LD1RSB  {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rh, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_S); // LD1RH   {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rsb, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_S); // LD1RSB  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rh, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_D); // LD1RH   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rsb, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_D); // LD1RSB  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    // IF_SVE_IC_3A_B
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rh, EA_SCALABLE, REG_V0, REG_P2, REG_R3, 0,
+                                INS_OPTS_SCALABLE_H); // LD1RH   {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rsb, EA_SCALABLE, REG_V6, REG_P5, REG_R4, 0,
+                                INS_OPTS_SCALABLE_H); // LD1RSB  {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rh, EA_SCALABLE, REG_V5, REG_P4, REG_R3, 126,
+                                INS_OPTS_SCALABLE_S); // LD1RH   {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rsb, EA_SCALABLE, REG_V2, REG_P1, REG_R0, 63,
+                                INS_OPTS_SCALABLE_S); // LD1RSB  {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rh, EA_SCALABLE, REG_V3, REG_P2, REG_R1, 126,
+                                INS_OPTS_SCALABLE_D); // LD1RH   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rsb, EA_SCALABLE, REG_V4, REG_P5, REG_R6, 63,
+                                INS_OPTS_SCALABLE_D); // LD1RSB  {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
 
-    //// IF_SVE_IC_3A_C
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_B); // LD1RB   {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_H); // LD1RB   {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_S); // LD1RB   {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-    //theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V0, REG_P0, REG_R0, 0,
-    //                            INS_OPTS_SCALABLE_B); // LD1RB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
-
-    // IF_SVE_HY_3A
-    //theEmitter->emitIns_R_R_R(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_S); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_S); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #3]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_S); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_S); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2]
-
-    //// IF_SVE_HY_3A_A
-    //theEmitter->emitIns_R_R_R(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #1]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #2]
-
-    //// IF_SVE_HY_3B
-    //theEmitter->emitIns_R_R_R(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #3]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #1]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #2]
-
-    //// IF_SVE_IB_3A
-    //theEmitter->emitIns_R_R_R(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Xm>]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
-
-    //// IF_SVE_HZ_2A_B
-    //theEmitter->emitIns_R_R_I(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
-
-    //// IF_SVE_IA_2A
-    //theEmitter->emitIns_R_R_I(INS_sve_prfb, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfd, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfh, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfw, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    // IF_SVE_IC_3A_C
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V1, REG_P2, REG_R3, 0,
+                                INS_OPTS_SCALABLE_B); // LD1RB   {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V5, REG_P4, REG_R3, 63,
+                                INS_OPTS_SCALABLE_H); // LD1RB   {<Zt>.H }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V6, REG_P7, REG_R8, 0,
+                                INS_OPTS_SCALABLE_S); // LD1RB   {<Zt>.S }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
+    theEmitter->emitIns_R_R_R_I(INS_sve_ld1rb, EA_SCALABLE, REG_V1, REG_P0, REG_R9, 63,
+                                INS_OPTS_SCALABLE_B); // LD1RB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)
