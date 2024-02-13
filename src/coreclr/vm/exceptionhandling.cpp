@@ -1190,9 +1190,11 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                 //
                 INDEBUG(pTracker = (ExceptionTracker*)POISONC);
 
+                INDEBUG(DWORD exceptionCode = pExceptionRecord->ExceptionCode);
+
                 // Note that we should only fail to fix up for SO.
                 bool fFixedUp = FixNonvolatileRegisters(uOriginalSP, pThread, pContextRecord, fAborting);
-                _ASSERTE(fFixedUp || (pExceptionRecord->ExceptionCode == STATUS_STACK_OVERFLOW)); // TODO-ASAN: Cache the exception code beforehand. Otherwise we get a heap-use-after-free when the assert fails.
+                _ASSERTE(fFixedUp || (exceptionCode == STATUS_STACK_OVERFLOW));
 
 
                 CONSISTENCY_CHECK(pThread->IsStackPointerBefore(dac_cast<TADDR>(GetSP(pContextRecord)), dac_cast<TADDR>(pLimitFrame)));

@@ -790,6 +790,20 @@ static void InvokeActivationHandler(CONTEXT *pWinContext)
     g_activationFunction(pWinContext);
 }
 
+DIABLE_ASAN
+static void HoldContextAndInvokeActivationHandler(CONTEXT* pWinContext)
+{
+    // We need to disable ASAN for this function as we use the frame offset to find the context when stackwalking.
+    // Some ASAN features use fake stacks, which is incompatible with this design.
+    CONTEXT* winContext = pWinContext;
+    g_inject_activation_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
+    int savedErrNo = errno; // Make sure that errno is not modified
+    InvokeActivationHandler(&winContext);
+    errno = savedErrNo;
+    // Activation function may have modified the context, so update it.
+    CONTEXTToNativeContext(&winContext, ucontext);
+}
+
 /*++
 Function :
     inject_activation_handler
@@ -835,13 +849,7 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 
         if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
         {
-            g_inject_activation_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
-            int savedErrNo = errno; // Make sure that errno is not modified
-            InvokeActivationHandler(&winContext);
-            errno = savedErrNo;
-
-            // Activation function may have modified the context, so update it.
-            CONTEXTToNativeContext(&winContext, ucontext);
+            HoldContextAndInvokeActivationHandler(&winContext);
         }
     }
     else
@@ -945,6 +953,21 @@ void PAL_IgnoreProfileSignal(int signalNum)
 #endif
 }
 
+DISABLE_ASAN
+static void CallSEHProcessException(CONTEXT* pContext, PAL_SEHException* pException)
+{
+    // We need to disable ASAN for this function as we use the frame offset to find the context when stackwalking.
+    // Some ASAN features use fake stacks, which is incompatible with this design.
+    CONTEXT* winContext = pContext;
+    g_hardware_exception_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
+    if (SEHProcessException(pException))
+    {
+        // Exception handling may have modified the context, so update it.
+        CONTEXTToNativeContext(&winContext, ucontext);
+        return true;
+    }
+    return false;
+}
 
 /*++
 Function :
@@ -970,12 +993,10 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 #if !HAVE_MACH_EXCEPTIONS
     sigset_t signal_set;
     CONTEXT signalContextRecord;
-    CONTEXT* signalContextRecordPtr = &signalContextRecord;
     EXCEPTION_RECORD exceptionRecord;
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
-    g_hardware_exception_context_locvar_offset = (int)((char*)&signalContextRecordPtr - (char*)__builtin_frame_address(0));
 
     if (code == (SIGSEGV | StackOverflowFlag))
     {
@@ -1028,14 +1049,10 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     // The exception object takes ownership of the exceptionRecord and contextRecord
     PAL_SEHException exception(&exceptionRecord, &signalContextRecord, true);
 
-    if (SEHProcessException(&exception))
-    {
-        // Exception handling may have modified the context, so update it.
-        CONTEXTToNativeContext(exception.ExceptionPointers.ContextRecord, ucontext);
-        return true;
-    }
-#endif // !HAVE_MACH_EXCEPTIONS
+    return CallSEHProcessException(&signalContextRecord, &exception);
+#else // !HAVE_MACH_EXCEPTIONS
     return false;
+#endif // !HAVE_MACH_EXCEPTIONS
 }
 
 /*++
