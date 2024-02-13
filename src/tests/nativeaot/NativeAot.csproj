@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <MergedWrapperProjectReference Include="StartupHook/StartupHook.csproj" />
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+  </PropertyGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>
