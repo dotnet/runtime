@@ -17064,6 +17064,38 @@ bool Compiler::gtSplitTree(
 }
 
 //------------------------------------------------------------------------
+// gtExtractSideEffList: Extracts side effects from sideEffectSource (if any)
+//    and wraps the input tree with a COMMA node with them.
+//
+// Arguments:
+//    tree             - the expression tree to wrap with side effects (if any)
+//    sideEffectSource - the expression tree to extract side effects from
+//    flags            - side effect flags to be considered
+//    ignoreRoot       - ignore side effects on the expression root node
+//
+// Return Value:
+//    The original tree wrapped with a COMMA node that contains the side effects
+//    or just the tree itself if sideEffectSource has no side effects.
+//
+GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
+                                         GenTree*     sideEffectSource,
+                                         GenTreeFlags sideEffectsFlags,
+                                         bool         ignoreRoot)
+{
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(sideEffectSource, &sideEffects, sideEffectsFlags, ignoreRoot);
+    if (sideEffects != nullptr)
+    {
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+        if (fgNodeThreading == NodeThreading::AllTrees)
+        {
+            fgSetTreeSeq(tree);
+        }
+    }
+    return tree;
+}
+
+//------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:

@@ -3515,6 +3515,11 @@ public:
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
                               bool         ignoreRoot   = false);
 
+    GenTree* gtWrapWithSideEffects(GenTree*     tree,
+                              GenTree*    sideEffectsSource,
+                              GenTreeFlags sideEffectsFlags = GTF_ALL_EFFECT,
+                              bool         ignoreRoot   = false);
+
     bool gtSplitTree(
         BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
 
@@ -7713,6 +7718,7 @@ public:
     fgWalkResult optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree* optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree* optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree* optVNStrengthReductionOnTree(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree* optExtractSideEffListFromConst(GenTree* tree);
 
     AssertionIndex GetAssertionCount()

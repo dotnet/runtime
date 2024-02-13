@@ -2664,6 +2664,60 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
+// optVNStrengthReductionOnTree:
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The tree node
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNStrengthReductionOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
+{
+    if (tree->IsHelperCall())
+    {
+        GenTreeCall* call = tree->AsCall();
+        switch (call->GetHelperNum())
+        {
+            // Fold "cast(cast(obj, cls), cls)" to "cast(obj, cls)"
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTANY:
+            case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_ISINSTANCEOFARRAY:
+            case CORINFO_HELP_ISINSTANCEOFCLASS:
+            case CORINFO_HELP_ISINSTANCEOFANY:
+            case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+            {
+                GenTree* clsArg   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+                GenTree* objArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+                ValueNum clsArgVN = clsArg->gtVNPair.GetConservative();
+                ValueNum objArgVN = objArg->gtVNPair.GetConservative();
+
+                VNFuncApp funcApp;
+                if (vnStore->GetVNFunc(objArgVN, &funcApp) &&
+                    ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf)) &&
+                    (funcApp.m_args[0] == clsArgVN))
+                {
+                    // The outer cast is redundant, remove it and preserve its side effects
+                    // We do ignoreRoot here because the actual cast node is proven to never any exceptions
+                    // (namely, InvalidCastException).
+                    return gtWrapWithSideEffects(objArg, call, GTF_ALL_EFFECT, true);
+                }
+            }
+            break;
+
+            default:
+                break;
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
 // optVNConstantPropOnTree: Substitutes tree with an evaluated constant while
 //                          managing side-effects.
 //
@@ -5098,33 +5152,22 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            GenTree* arg1 = call->gtArgs.GetArgByIndex(1)->GetNode();
-            if (arg1->gtOper != GT_LCL_VAR)
+            GenTree* objArg = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* clsArg = call->gtArgs.GetArgByIndex(0)->GetNode();
+
+            if (objArg->gtOper != GT_LCL_VAR)
             {
                 return nullptr;
             }
 
-            GenTree* arg2 = call->gtArgs.GetArgByIndex(0)->GetNode();
-
-            unsigned index = optAssertionIsSubtype(arg1, arg2, assertions);
+            unsigned index = optAssertionIsSubtype(objArg, clsArg, assertions);
             if (index != NO_ASSERTION_INDEX)
             {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                    gtDispTree(call, nullptr, nullptr, true);
-                }
-#endif
-                GenTree* list = nullptr;
-                gtExtractSideEffList(call, &list, GTF_SIDE_EFFECT, true);
-                if (list != nullptr)
-                {
-                    arg1 = gtNewOperNode(GT_COMMA, call->TypeGet(), list, arg1);
-                    fgSetTreeSeq(arg1);
-                }
+                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                DISPTREE(call);
 
-                return optAssertionProp_Update(arg1, call, stmt);
+                objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
+                return optAssertionProp_Update(objArg, call, stmt);
             }
 
             // Leave a hint for fgLateCastExpansion that obj is never null.
@@ -5132,7 +5175,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             INDEBUG(bool vnBased = false);
             // GTF_CALL_M_CAST_CAN_BE_EXPANDED check is to improve TP
             if (((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0) &&
-                optAssertionIsNonNull(arg1, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
+                optAssertionIsNonNull(objArg, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
             {
                 call->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
                 return optAssertionProp_Update(call, call, stmt);
@@ -6419,8 +6462,14 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
 
     if (newTree == nullptr)
     {
-        // Not propagated, keep going.
-        return WALK_CONTINUE;
+        // If it wasn't a constant, let's see if we can reduce the strength
+        // of the tree using VN.
+        newTree = optVNStrengthReductionOnTree(block, parent, tree);
+        if (newTree == nullptr)
+        {
+            // Not propagated, keep going.
+            return WALK_CONTINUE;
+        }
     }
 
     // TODO https://github.com/dotnet/runtime/issues/10450:
