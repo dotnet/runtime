@@ -266,7 +266,7 @@ export function prepareAssets() {
             }
         }
 
-        if (config.debugLevel != 0 && resources.pdb) {
+        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && resources.pdb) {
             for (const name in resources.pdb) {
                 assetsToLoad.push({
                     name,

@@ -12031,12 +12031,12 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else
             {
-                ssize_t dspIconVal =
-                    tree->IsIconHandle() ? dspPtr(tree->AsIntCon()->gtIconVal) : tree->AsIntCon()->gtIconVal;
+                ssize_t iconVal    = tree->AsIntCon()->gtIconVal;
+                ssize_t dspIconVal = tree->IsIconHandle() ? dspPtr(iconVal) : iconVal;
 
                 if (tree->TypeGet() == TYP_REF)
                 {
-                    if (tree->AsIntCon()->gtIconVal == 0)
+                    if (iconVal == 0)
                     {
                         printf(" null");
                     }
@@ -12046,12 +12046,12 @@ void Compiler::gtDispConst(GenTree* tree)
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
-                else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
+                else if ((iconVal > -1000) && (iconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
                 }
 #ifdef TARGET_64BIT
-                else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
+                else if ((iconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
                     if (dspIconVal >= 0)
                     {
@@ -12083,13 +12083,13 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" scope");
                             break;
                         case GTF_ICON_CLASS_HDL:
-                            printf(" class");
+                            printf(" class %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                             break;
                         case GTF_ICON_METHOD_HDL:
-                            printf(" method");
+                            printf(" method %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
                             break;
                         case GTF_ICON_FIELD_HDL:
-                            printf(" field");
+                            printf(" field %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
                             break;
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
@@ -16091,7 +16091,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // For unordered operations (i.e. the GTF_RELOP_NAN_UN flag is set)
             // the result is always true - return 1.
 
-            if (_isnan(d1) || _isnan(d2))
+            if (FloatingPointUtils::isNaN(d1) || FloatingPointUtils::isNaN(d2))
             {
                 JITDUMP("Double operator(s) is NaN\n");
 
