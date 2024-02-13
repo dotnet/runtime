@@ -43,7 +43,12 @@
         }
         // wait one second before sending
         await Task.Delay(1000);
-        await _hubConnection.SendAsync("SendMessage", transport, message);
+        await Task.Run(async () =>
+            await _hubConnection.SendAsync(
+                "SendMessage",
+                transport,
+                $"{Environment.CurrentManagedThreadId} {message} from {transport}")
+            );
     }
 
     private void GetQueryParameters()
@@ -90,7 +95,7 @@
         {
             chatMessages.Add(message);
             string changedMessage = $"Client confirms receiving message={message}";
-            TestOutputWriteLine($"[{transport}] {changedMessage}");
+            Console.WriteLine($"[{transport}] {changedMessage}");
             // on this message server calls "Environment.Exit(0)"
             await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExit", transport, changedMessage);
             Console.WriteLine("WASM EXIT 0");
@@ -102,10 +107,5 @@
     public ValueTask? DisposeAsync()
     {
         return _hubConnection?.DisposeAsync();
-    }
-
-    public void TestOutputWriteLine(string message)
-    {
-        Console.WriteLine("TestOutput -> " + message);
     }
 }

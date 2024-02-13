@@ -38,6 +38,15 @@ else
 
 app.UseHttpsRedirection();
 
+// Add headers to enable SharedArrayBuffer
+app.Use(async (context, next) =>
+{
+    var response = context.Response;
+    response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
+    response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
+
+    await next();
+});
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 

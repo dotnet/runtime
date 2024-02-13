@@ -44,7 +44,8 @@ public class SignalRClientTests : AppTestBase
         BuildProject(
             configuration: "Debug",
             binFrameworkDir: frameworkDir,
-            runtimeType: RuntimeVariant.MultiThreaded);
+            runtimeType: RuntimeVariant.MultiThreaded, 
+            assertAppBundle: false); // Temporary fix to avoid: found dotnet.native.9.0.0-dev.u27nwa5zma.js instead of dotnet.native.9.0.0.js
 
         var result = await RunSdkStyleApp(options);
         foreach (var a in result.TestOutput)
