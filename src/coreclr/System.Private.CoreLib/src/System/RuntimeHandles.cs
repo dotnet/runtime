@@ -1203,13 +1203,13 @@ namespace System
         internal static extern int GetToken(RtFieldInfo field);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, bool isInitialized);
+        internal static extern object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool domainInitialized);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, bool isInitialized);
+        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, RuntimeType? declaringType, ref bool domainInitialized);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);

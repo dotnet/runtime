@@ -116,6 +116,8 @@ namespace System.Reflection
 
         public object? GetValue(object? obj)
         {
+            bool domainInitialized;
+
             unsafe
             {
                 switch (_fieldAccessType)
@@ -169,8 +171,13 @@ namespace System.Reflection
                             VerifyTarget(obj);
                         }
 
-                        object? ret = RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, isInitialized: false);
-                        Initialize();
+                        domainInitialized = false;
+                        object? ret = RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
+                        if (domainInitialized)
+                        {
+                            Initialize();
+                        }
+
                         return ret;
 
                     case FieldAccessorType.SlowPath:
@@ -179,7 +186,8 @@ namespace System.Reflection
                             VerifyTarget(obj);
                         }
 
-                        return RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, isInitialized: true);
+                        domainInitialized = true;
+                        return RuntimeFieldHandle.GetValue(_fieldInfo, obj, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
 
                     case FieldAccessorType.NoInvoke:
                         if (_fieldInfo.DeclaringType is not null && _fieldInfo.DeclaringType.ContainsGenericParameters)
@@ -199,6 +207,8 @@ namespace System.Reflection
 
         public void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
+            bool domainInitialized;
+
             unsafe
             {
                 switch (_fieldAccessType)
@@ -285,8 +295,13 @@ namespace System.Reflection
                                 VerifyInstanceField(obj, ref value, invokeAttr, binder, culture);
                             }
 
-                            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, isInitialized: false);
-                            Initialize();
+                            domainInitialized = false;
+                            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
+                            if (domainInitialized)
+                            {
+                                Initialize();
+                            }
+
                             return;
                         }
 
@@ -308,7 +323,8 @@ namespace System.Reflection
                 VerifyInstanceField(obj, ref value, invokeAttr, binder, culture);
             }
 
-            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, isInitialized: true);
+            domainInitialized = true;
+            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref domainInitialized);
         }
 
         private void InitializeClass()

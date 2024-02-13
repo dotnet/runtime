@@ -97,7 +97,8 @@ namespace System.Reflection
         [DebuggerHidden]
         internal override void UnsafeSetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
-            RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, isInitialized: false);
+            bool domainInitialized = false;
+            RuntimeFieldHandle.SetValue(this, obj, value, null, Attributes, null, ref domainInitialized);
         }
 
         [DebuggerStepThrough]

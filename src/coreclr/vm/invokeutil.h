@@ -138,9 +138,9 @@ public:
     // SetValidField
     // Given an target object, a value object and a field this method will set the field
     //  on the target object.  The field must be validate before calling this.
-    static void SetValidField(CorElementType fldType, TypeHandle fldTH, FieldDesc* pField, OBJECTREF* target, OBJECTREF* value, TypeHandle declaringType, CLR_BOOL isInitialized);
+    static void SetValidField(CorElementType fldType, TypeHandle fldTH, FieldDesc* pField, OBJECTREF* target, OBJECTREF* value, TypeHandle declaringType, CLR_BOOL *pDomainInitialized);
 
-    static OBJECTREF GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL isInitialized);
+    static OBJECTREF GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pDomainInitialized);
 
     // ValidateObjectTarget
     // This method will validate the Object/Target relationship
