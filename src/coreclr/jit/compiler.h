@@ -7715,10 +7715,11 @@ protected:
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
-    fgWalkResult optVNStrengthReductionCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
+    fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree* optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
-    GenTree* optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree);
-    GenTree* optVNStrengthReductionOnTree(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree* optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree* optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree* optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree* optExtractSideEffListFromConst(GenTree* tree);
 
     AssertionIndex GetAssertionCount()

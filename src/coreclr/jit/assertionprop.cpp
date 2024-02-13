@@ -2664,60 +2664,95 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
-// optVNStrengthReductionOnTree: Substitutes tree with a less expensive tree using VN
+// optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
 //
 // Arguments:
 //    block  -  The block containing the tree.
 //    parent -  The parent node of the tree.
-//    tree   -  The tree node
+//    call   -  The call to fold
 //
 // Return Value:
 //    Returns a new tree or nullptr if nothing is changed.
 //
-GenTree* Compiler::optVNStrengthReductionOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
+GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call)
 {
-    if (tree->IsHelperCall())
+    switch (call->GetHelperNum())
     {
-        GenTreeCall* call = tree->AsCall();
-        switch (call->GetHelperNum())
+        //
+        // Fold "CAST(CAST(obj, cls), cls)" to "CAST(obj, cls)"
+        // where CAST is either ISINST or CASTCLASS.
+        //
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         {
-            // Fold "cast(cast(obj, cls), cls)" to "cast(obj, cls)"
-            case CORINFO_HELP_CHKCASTARRAY:
-            case CORINFO_HELP_CHKCASTANY:
-            case CORINFO_HELP_CHKCASTINTERFACE:
-            case CORINFO_HELP_CHKCASTCLASS:
-            case CORINFO_HELP_ISINSTANCEOFARRAY:
-            case CORINFO_HELP_ISINSTANCEOFCLASS:
-            case CORINFO_HELP_ISINSTANCEOFANY:
-            case CORINFO_HELP_ISINSTANCEOFINTERFACE:
-            {
-                GenTree* clsArg   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-                GenTree* objArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-                ValueNum clsArgVN = clsArg->gtVNPair.GetConservative();
-                ValueNum objArgVN = objArg->gtVNPair.GetConservative();
+            GenTree* castClsArg   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* castObjArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
+            ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
 
-                VNFuncApp funcApp;
-                if (vnStore->GetVNFunc(objArgVN, &funcApp) &&
-                    ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf)) &&
-                    (funcApp.m_args[0] == clsArgVN))
+            VNFuncApp funcApp;
+            if (vnStore->GetVNFunc(castObjArgVN, &funcApp) &&
+                ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf)))
+            {
+                ValueNum innerCastClsVN = funcApp.m_args[0];
+                if (innerCastClsVN == castClsArgVN)
                 {
                     // The outer cast is redundant, remove it and preserve its side effects
                     // We do ignoreRoot here because the actual cast node is proven to never throw any exceptions.
-                    return gtWrapWithSideEffects(objArg, call, GTF_ALL_EFFECT, true);
+                    return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
                 }
             }
-            break;
-
-            default:
-                break;
         }
+        break;
+
+        default:
+            break;
     }
 
     return nullptr;
 }
 
 //------------------------------------------------------------------------------
-// optVNConstantPropOnTree: Substitutes tree with an evaluated constant while
+// optVNBasedFoldExpr: Folds given tree using VN to a constant or a simpler tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The tree to fold.
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
+{
+    // First, attempt to fold it to a constant if possible.
+    GenTree* foldedToCns = optVNBasedFoldConstExpr(block, parent, tree);
+    if (foldedToCns != nullptr)
+    {
+        return foldedToCns;
+    }
+
+    switch (tree->OperGet())
+    {
+        case GT_CALL:
+            return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
+
+        // We can add more VN-based foldings here.
+
+        default:
+            break;
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldConstExpr: Substitutes tree with an evaluated constant while
 //                          managing side-effects.
 //
 // Arguments:
@@ -2744,7 +2779,7 @@ GenTree* Compiler::optVNStrengthReductionOnTree(BasicBlock* block, GenTree* pare
 //    the relop will evaluate to "true" or "false" statically, then the side-effects
 //    will be put into new statements, presuming the JTrue will be folded away.
 //
-GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
+GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
     if (tree->OperGet() == GT_JTRUE)
     {
@@ -6343,7 +6378,7 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 }
 
 //------------------------------------------------------------------------------
-// optVNStrengthReductionCurStmt: Performs strength reduction (including constant propagation)
+// optVNBasedFoldCurStmt: Performs VN-based folding
 //    on the current statement's tree nodes using VN.
 //
 // Assumption:
@@ -6358,10 +6393,10 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 // Return Value:
 //    Returns the standard visitor walk result.
 //
-Compiler::fgWalkResult Compiler::optVNStrengthReductionCurStmt(BasicBlock* block,
-                                                               Statement*  stmt,
-                                                               GenTree*    parent,
-                                                               GenTree*    tree)
+Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
+                                                       Statement*  stmt,
+                                                       GenTree*    parent,
+                                                       GenTree*    tree)
 {
     // Don't perform strength reduction on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
@@ -6451,19 +6486,13 @@ Compiler::fgWalkResult Compiler::optVNStrengthReductionCurStmt(BasicBlock* block
             return WALK_CONTINUE;
     }
 
-    // Perform the constant propagation first
-    GenTree* newTree = optVNConstantPropOnTree(block, parent, tree);
+    // Perform the VN-based folding:
+    GenTree* newTree = optVNBasedFoldExpr(block, parent, tree);
 
     if (newTree == nullptr)
     {
-        // If it wasn't a constant, let's see if we can reduce the strength
-        // of the tree using VN.
-        newTree = optVNStrengthReductionOnTree(block, parent, tree);
-        if (newTree == nullptr)
-        {
-            // Not propagated, keep going.
-            return WALK_CONTINUE;
-        }
+        // Not propagated, keep going.
+        return WALK_CONTINUE;
     }
 
     // TODO https://github.com/dotnet/runtime/issues/10450:
@@ -6471,7 +6500,7 @@ Compiler::fgWalkResult Compiler::optVNStrengthReductionCurStmt(BasicBlock* block
 
     optAssertionProp_Update(newTree, tree, stmt);
 
-    JITDUMP("After constant propagation on [%06u]:\n", tree->gtTreeID);
+    JITDUMP("After VN-based fold of [%06u]:\n", tree->gtTreeID);
     DBEXEC(VERBOSE, gtDispStmt(stmt));
 
     return WALK_CONTINUE;
@@ -6539,7 +6568,7 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNStrengthReductionCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
+    return pThis->optVNBasedFoldCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
 }
 
 /*****************************************************************************
