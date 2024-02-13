@@ -14,9 +14,9 @@ namespace Mono.Linker
 
 		public MethodDefinition Override { get; }
 
-		public InterfaceImplementor? InterfaceImplementor { get; }
+		internal InterfaceImplementor? InterfaceImplementor { get; }
 
-		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
+		internal OverrideInformation (MethodDefinition @base, MethodDefinition @override, InterfaceImplementor? interfaceImplementor = null)
 		{
 			Base = @base;
 			Override = @override;
