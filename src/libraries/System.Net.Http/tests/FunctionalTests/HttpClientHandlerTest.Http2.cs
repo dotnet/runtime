@@ -2832,6 +2832,7 @@ namespace System.Net.Http.Functional.Tests
                     // This allows the request processing to complete.
                     duplexContent.Fail(e);
 
+                    connection.IgnoreWindowUpdates(); // The RTT algorithm may send a WINDOW_UPDATE before RST_STREAM.
                     // Client should set RST_STREAM.
                     await connection.ReadRstStreamAsync(streamId);
                 }
@@ -2860,7 +2861,6 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
                     connection = await server.EstablishConnectionAsync();
-                    connection.IgnoreWindowUpdates();
 
                     // Client should have sent the request headers, and the request stream should now be available
                     Stream requestStream = await duplexContent.WaitForStreamAsync();
@@ -2906,6 +2906,7 @@ namespace System.Net.Http.Functional.Tests
                     // This allows the request processing to complete.
                     duplexContent.Fail(e);
 
+                    connection.IgnoreWindowUpdates(); // The RTT algorithm may send a WINDOW_UPDATE before RST_STREAM.
                     // Client should set RST_STREAM.
                     await connection.ReadRstStreamAsync(streamId);
                 }
