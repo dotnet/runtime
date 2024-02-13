@@ -8356,7 +8356,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     // this field type has GC pointers in it, which need to be pointer-size aligned
                     // so do this if it has not been done already
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)TARGET_POINTER_SIZE);
                     containsGCPointers = true;
                 }
                 else
@@ -8385,7 +8385,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 // non-value-type fields always require pointer alignment
                 // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
                 // but that is explicitly handled when we calculate the final alignment for the type.
-                largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)TARGET_POINTER_SIZE);
 
                 if (!pFieldDescList[i].IsObjRef())
                 {
@@ -8427,7 +8427,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     minAlign *= 2;
             }
 
-            if (minAlign != min(dwNumInstanceFieldBytes, TARGET_POINTER_SIZE))
+            if (minAlign != min(dwNumInstanceFieldBytes, (unsigned int)TARGET_POINTER_SIZE))
             {
                 EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
                 GetHalfBakedClass()->GetOptionalFields()->m_requiredFieldAlignment = (BYTE)minAlign;

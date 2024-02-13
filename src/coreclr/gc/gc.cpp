@@ -51,9 +51,7 @@ public:
 
 uint64_t gc_rand::x = 0;
 
-// NativeAOT defines max/min as macros.
-// CoreCLR does not.
-// Define them if they aren't already available.
+// Define min/max as macros
 #ifndef min
 #define min(_a, _b) ((_a) < (_b) ? (_a) : (_b))
 #endif
