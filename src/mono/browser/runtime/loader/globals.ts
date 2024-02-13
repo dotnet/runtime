@@ -74,10 +74,9 @@ export function setLoaderGlobals(
     });
     const rh: Partial<RuntimeHelpers> = {
         mono_wasm_bindings_is_ready: false,
-        javaScriptExports: {} as any,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        nativeAbort: (reason: any) => { throw reason; },
+        nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
         nativeExit: (code: number) => { throw new Error("exit:" + code); }
     };
     const lh: Partial<LoaderHelpers> = {
