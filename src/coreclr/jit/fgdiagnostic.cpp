@@ -1951,7 +1951,7 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
         else
         {
             _snprintf_s(buffer, ArrLen(buffer), ArrLen(buffer), FMT_BB, b->bbNum);
-            printedBlockWidth += 2 /* BB */ + max(CountDigits(b->bbNum), 2);
+            printedBlockWidth += 2 /* BB */ + max(CountDigits(b->bbNum), 2u);
         }
 
         return buffer;

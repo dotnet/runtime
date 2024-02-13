@@ -5508,7 +5508,7 @@ void Compiler::SplitTreesRandomly()
     rng.Init(info.compMethodHash() ^ 0x077cc4d4);
 
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
 
     for (BasicBlock* block : Blocks())
     {
@@ -5570,7 +5570,7 @@ void Compiler::SplitTreesRandomly()
 void Compiler::SplitTreesRemoveCommas()
 {
     // Splitting creates a lot of new locals. Set a limit on how many we end up creating here.
-    unsigned maxLvaCount = max(lvaCount * 2, 50000);
+    unsigned maxLvaCount = max(lvaCount * 2, 50000u);
 
     for (BasicBlock* block : Blocks())
     {
@@ -7366,7 +7366,7 @@ void Compiler::compInitVarScopeMap()
     compVarScopeMap = new (getAllocator()) VarNumToScopeDscMap(getAllocator());
 
     // 599 prime to limit huge allocations; for ex: duplicated scopes on single var.
-    compVarScopeMap->Reallocate(min(info.compVarScopesCount, 599));
+    compVarScopeMap->Reallocate(min(info.compVarScopesCount, 599u));
 
     for (unsigned i = 0; i < info.compVarScopesCount; ++i)
     {

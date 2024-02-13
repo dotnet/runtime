@@ -824,7 +824,7 @@ void hashBv::setAll(indexType numToSet)
     for (unsigned int i = 0; i < numToSet; i += BITS_PER_NODE)
     {
         hashBvNode* node        = getOrAddNodeForIndex(i);
-        indexType   bits_to_set = min(BITS_PER_NODE, numToSet - i);
+        indexType   bits_to_set = min((unsigned int)BITS_PER_NODE, numToSet - i);
         node->setLowest(bits_to_set);
     }
 }

@@ -352,7 +352,7 @@ inline void DbgStateLockData::LockTaken(DbgStateLockType dbgStateLockType,
 
     // Remember as many of these new entrances in m_rgTakenLockInfos as we can
     for (UINT i = cCombinedLocks;
-         i < min (ARRAY_SIZE(m_rgTakenLockInfos), cCombinedLocks + cTakes);
+         i < min (ARRAY_SIZE(m_rgTakenLockInfos), (size_t)(cCombinedLocks + cTakes));
          i++)
     {
         m_rgTakenLockInfos[i].m_pvLock = pvLock;
@@ -377,7 +377,7 @@ inline void DbgStateLockData::LockReleased(DbgStateLockType dbgStateLockType, UI
     // If lock count is within range of our m_rgTakenLockInfos buffer size, then
     // make sure we're releasing locks in reverse order of how we took them
     for (UINT i = cCombinedLocks - cReleases;
-         i < min (ARRAY_SIZE(m_rgTakenLockInfos), cCombinedLocks);
+         i < min (ARRAY_SIZE(m_rgTakenLockInfos), (size_t)cCombinedLocks);
          i++)
     {
         if (m_rgTakenLockInfos[i].m_pvLock != pvLock)
@@ -443,7 +443,7 @@ inline BOOL DbgStateLockState::IsLockRetaken(void * pvLock)
     // m_cLocksEnteringCannotRetakeLock records the number of locks that were taken
     // when CANNOT_RETAKE_LOCK contract was constructed.
     for (UINT i = 0;
-        i < min(ARRAY_SIZE(m_pLockData->m_rgTakenLockInfos), m_cLocksEnteringCannotRetakeLock);
+        i < min(ARRAY_SIZE(m_pLockData->m_rgTakenLockInfos), (size_t)m_cLocksEnteringCannotRetakeLock);
         ++i)
     {
         if (m_pLockData->m_rgTakenLockInfos[i].m_pvLock == pvLock)
