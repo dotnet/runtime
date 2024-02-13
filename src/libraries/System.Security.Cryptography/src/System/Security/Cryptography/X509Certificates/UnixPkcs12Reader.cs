@@ -42,22 +42,17 @@ namespace System.Security.Cryptography.X509Certificates
 
                 unsafe
                 {
-                    IntPtr tmpPtr = IntPtr.Zero;
+                    void* tmpPtr = NativeMemory.Alloc((uint)encodedData.Length);
 
                     try
                     {
-                        tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
                         Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
                         encodedData.CopyTo(tmpSpan);
-                        _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
+                        _tmpManager = new PointerMemoryManager<byte>(tmpPtr, encodedData.Length);
                     }
                     catch
                     {
-                        if (tmpPtr != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(tmpPtr);
-                        }
-
+                        NativeMemory.Free(tmpPtr);
                         throw;
                     }
                 }
@@ -139,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     fixed (byte* ptr = tmp)
                     {
-                        Marshal.FreeHGlobal((IntPtr)ptr);
+                        NativeMemory.Free(ptr);
                     }
                 }
 
