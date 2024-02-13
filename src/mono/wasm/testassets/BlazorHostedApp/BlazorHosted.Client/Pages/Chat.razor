@@ -1,0 +1,111 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.SignalR
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Http.Connections;
+@using System.Collections.Specialized;
+@using System.Web;
+@inject NavigationManager NavigationManager
+
+<h1>Chat Room</h1>
+<div>
+    @foreach (var chatMessage in chatMessages)
+    {
+        <p>@chatMessage</p>
+    }
+</div>
+
+@code {
+    private string _hubUrl = string.Empty;
+    private HubConnection? _hubConnection;
+    private string message = string.Empty;
+    private string transport = string.Empty;
+    private List<string> chatMessages = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetQueryParameters();
+        HttpTransportType httpTransportType;
+        switch (transport.ToLower())
+        {
+            case "longpolling":
+                httpTransportType = HttpTransportType.LongPolling;
+                break;
+            case "websockets":
+                httpTransportType = HttpTransportType.WebSockets;
+                break;
+            default:
+                throw new Exception($"{transport} is invalid transport type");
+        }
+        await Connect(httpTransportType);
+        if (_hubConnection == null)
+        {
+            throw new Exception($"Hub connection is not initialized for transport={transport} and message={message}");
+        }
+        // wait one second before sending
+        await Task.Delay(1000);
+        await _hubConnection.SendAsync("SendMessage", transport, message);
+    }
+
+    private void GetQueryParameters()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        if (string.IsNullOrEmpty(uri.Query))
+        {
+            throw new Exception("Query string with parameters 'message' and 'transport' is required");
+        }
+        var parameters = HttpUtility.ParseQueryString(uri.Query);
+        if (parameters == null)
+        {
+            throw new Exception("Query string with parameters 'message' and 'transport' is required");
+        }
+        message = GetValue(parameters, "message");
+        transport = GetValue(parameters, "transport");
+    }
+
+    private string GetValue(NameValueCollection parameters, string key)
+    {
+        var values = parameters.GetValues(key);
+        if (values == null || values.Length == 0)
+        {
+            throw new Exception($"Parameter '{key}' is required in the query string");
+        }
+        if (values.Length > 1)
+        {
+            throw new Exception($"Parameter '{key}' should be unique in the query string");
+        }
+        return values[0]; 
+    }
+
+    protected async Task Connect(HttpTransportType httpTransportType)
+    {
+        _hubUrl = NavigationManager.BaseUri + "chathub";
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(_hubUrl, options =>
+                {
+                    options.Transports = httpTransportType;
+                })
+            .Build();
+
+        _hubConnection.On<string, string>("ReceiveMessage", async (transport, message) =>
+        {
+            chatMessages.Add(message);
+            string changedMessage = $"Client confirms receiving message={message}";
+            TestOutputWriteLine($"[{transport}] {changedMessage}");
+            // on this message server calls "Environment.Exit(0)"
+            await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExit", transport, changedMessage);
+            Console.WriteLine("WASM EXIT 0");
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    public ValueTask? DisposeAsync()
+    {
+        return _hubConnection?.DisposeAsync();
+    }
+
+    public void TestOutputWriteLine(string message)
+    {
+        Console.WriteLine("TestOutput -> " + message);
+    }
+}
