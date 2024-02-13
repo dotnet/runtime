@@ -614,7 +614,7 @@ void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 void Compiler::optAssertionInit(bool isLocalProp)
 {
     assert(NO_ASSERTION_INDEX == 0);
-    const unsigned maxTrackedLocals = (unsigned)JitConfig.JitMaxLocalsToTrack();
+    const unsigned maxTrackedLocals = 0x800;
 
     // We initialize differently for local prop / global prop
     //

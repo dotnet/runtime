@@ -2057,7 +2057,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 inline bool Compiler::lvaHaveManyLocals(float percent) const
 {
     assert((percent >= 0.0) && (percent <= 1.0));
-    return (lvaCount >= (unsigned)JitConfig.JitMaxLocalsToTrack() * percent);
+    return (lvaCount >= 0x800 * percent);
 }
 
 /*****************************************************************************

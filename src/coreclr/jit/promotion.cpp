@@ -1085,7 +1085,7 @@ public:
         // to the next struct, but PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT
         // puts a limit on the number of promotions in each struct so this is
         // fine to avoid the pathological cases.
-        const int maxTotalNumPromotions = JitConfig.JitMaxLocalsToTrack();
+        const int maxTotalNumPromotions = 0x800;
 
         for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
         {

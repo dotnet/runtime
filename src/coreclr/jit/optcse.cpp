@@ -4124,7 +4124,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             }
 
             // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
-            if (m_pCompiler->lvaTrackedCount == (unsigned)JitConfig.JitMaxLocalsToTrack())
+            if (m_pCompiler->lvaTrackedCount == 0x800)
             {
                 cse_def_cost += 1;
                 cse_use_cost += 1;

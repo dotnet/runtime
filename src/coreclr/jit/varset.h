@@ -142,7 +142,7 @@ typedef BitSetOps</*BitSetType*/ BitSetShortLongRep,
 typedef BitSetShortLongRep ALLVARSET_TP;
 
 // default value for JitConfig.JitMaxLocalsToTrack()
-const unsigned lclMAX_ALLSET_TRACKED = 0x400;
+const unsigned lclMAX_ALLSET_TRACKED = 0x800;
 
 #define ALLVARSET_REP_IS_CLASS 0
 

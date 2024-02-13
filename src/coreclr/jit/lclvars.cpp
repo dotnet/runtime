@@ -3675,7 +3675,7 @@ void Compiler::lvaSortByRefCount()
         }
     }
 
-    lvaTrackedCount = min(trackedCandidateCount, (unsigned)JitConfig.JitMaxLocalsToTrack());
+    lvaTrackedCount = min(trackedCandidateCount, 0x800);
 
     // Sort the candidates. In the late liveness passes we want lower tracked
     // indices to be more important variables, so we always do this. In early

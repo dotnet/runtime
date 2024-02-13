@@ -1783,7 +1783,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
     if (m_RootCompiler->lvaTableCnt > 64)
     {
         // E.g. MaxLocalsToTrack = 1024 and lvaTableCnt = 512 -> multiplier *= 0.5;
-        const double lclFullness = min(1.0, (double)m_RootCompiler->lvaTableCnt / JitConfig.JitMaxLocalsToTrack());
+        const double lclFullness = min(1.0, (double)m_RootCompiler->lvaTableCnt / 0x800);
         multiplier *= (1.0 - lclFullness);
         JITDUMP("\nCaller has %d locals.  Multiplier decreased to %g.", m_RootCompiler->lvaTableCnt, multiplier);
     }
