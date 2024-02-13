@@ -533,12 +533,12 @@ ftype BankersRound(ftype value)
             return integerPart;
 
         // Else return the nearest even integer
-        return (ftype)_copysign(ceil(fabs(value+0.5)),
+        return (ftype)copysign(ceil(fabs(value+0.5)),
                          value);
     }
 
     // Otherwise round to closest
-    return (ftype)_copysign(floor(fabs(value)+0.5),
+    return (ftype)copysign(floor(fabs(value)+0.5),
                      value);
 }
 
@@ -674,6 +674,32 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 }
 HCIMPLEND
 
+#ifndef TARGET_WINDOWS
+namespace
+{
+    bool isnan(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
+    }
+    bool isnan(double val)
+    {
+        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
+    }
+    bool isfinite(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (~bits & 0x7F800000U) != 0;
+    }
+    bool isfinite(double val)
+    {
+        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+        return (~bits & 0x7FF0000000000000ULL) != 0;
+    }
+}
+#endif
+
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;
@@ -689,12 +715,12 @@ HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
     // ***"negated for -infinity" has been removed from the spec
     //
 
-    if (divisor==0 || !_finite(dividend))
+    if (divisor==0 || !isfinite(dividend))
     {
         UINT32 NaN = CLR_NAN_32;
         return *(float *)(&NaN);
     }
-    else if (!_finite(divisor) && !_isnan(divisor))
+    else if (!isfinite(divisor) && !isnan(divisor))
     {
         return dividend;
     }
@@ -722,12 +748,12 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
     //
     // ***"negated for -infinity" has been removed from the spec
     //
-    if (divisor==0 || !_finite(dividend))
+    if (divisor==0 || !isfinite(dividend))
     {
         UINT64 NaN = CLR_NAN_64;
         return *(double *)(&NaN);
     }
-    else if (!_finite(divisor) && !_isnan(divisor))
+    else if (!isfinite(divisor) && !isnan(divisor))
     {
         return dividend;
     }
@@ -2445,7 +2471,6 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -2472,7 +2497,6 @@ HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 
     _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable* pMT = typeHnd.AsMethodTable();
-    _ASSERTE(pMT->IsRestored());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -3126,48 +3150,32 @@ HCIMPLEND
 
 struct JitGenericHandleCacheKey
 {
-    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, void *signature)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)classHnd;
         m_Data2 = (size_t)methodHnd;
         m_Data3 = (size_t)signature;
-        m_pDomainAndType = 0 | (size_t)pDomain;
+        m_type = 0;
     }
 
-    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, BaseDomain* pDomain=NULL)
+    JitGenericHandleCacheKey(MethodTable* pMT, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd)
     {
         LIMITED_METHOD_CONTRACT;
         m_Data1 = (size_t)pMT;
         m_Data2 = (size_t)classHnd;
         m_Data3 = (size_t)methodHnd;
-        m_pDomainAndType = 1 | (size_t)pDomain;
-    }
-
-    size_t GetType() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pDomainAndType & 1);
-    }
-
-    BaseDomain* GetDomain() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (BaseDomain*)(m_pDomainAndType & ~1);
+        m_type = 1;
     }
 
     size_t  m_Data1;
     size_t  m_Data2;
     size_t  m_Data3;
 
-    size_t  m_pDomainAndType; // Which domain the entry belongs to. Not actually part of the key.
-                        // Used only so we can scrape the table on AppDomain termination.
-                        // NULL appdomain means that the entry should be scratched
-                        // on any appdomain unload.
-                        //
-                        // The lowest bit is used to indicate the type of the entry:
-                        //  0 - JIT_GenericHandle entry
-                        //  1 - JIT_VirtualFunctionPointer entry
+    // The type of the entry:
+    //  0 - JIT_GenericHandle entry
+    //  1 - JIT_VirtualFunctionPointer entry
+    unsigned char m_type;
 };
 
 class JitGenericHandleCacheTraits
@@ -3194,9 +3202,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         const JitGenericHandleCacheKey *e1 = (const JitGenericHandleCacheKey*)&pEntry->Key;
         return (e1->m_Data1 == e2->m_Data1) && (e1->m_Data2 == e2->m_Data2) && (e1->m_Data3 == e2->m_Data3) &&
-            (e1->GetType() == e2->GetType()) &&
-            // Any domain will work if the lookup key does not specify it
-            ((e2->GetDomain() == NULL) || (e1->GetDomain() == e2->GetDomain()));
+            (e1->m_type == e2->m_type);
     }
 
     static DWORD Hash(const JitGenericHandleCacheKey *k)
@@ -3244,7 +3250,7 @@ void AddToGenericHandleCache(JitGenericHandleCacheKey* pKey, HashDatum datum)
 }
 
 /* static */
-void ClearJitGenericHandleCache(AppDomain *pDomain)
+void ClearJitGenericHandleCache()
 {
     CONTRACTL {
         NOTHROW;
@@ -3252,8 +3258,8 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     } CONTRACTL_END;
 
 
-    // We call this on every AppDomain unload, because entries in the cache might include
-    // pointers into the AppDomain being unloaded.  We would prefer to
+    // We call this on every ALC unload, because entries in the cache might include
+    // pointers into the ALC being unloaded.  We would prefer to
     // only flush entries that have that are no longer valid, but the entries don't yet contain
     // enough information to do that.  However everything in the cache can be found again by calling
     // loader functions, and the total number of entries in the cache is typically very small (indeed
@@ -3270,17 +3276,9 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         while(keepGoing)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
-            BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL)
-            {
-                // Advance the iterator before we delete!!  See notes in EEHash.h
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-                g_pJitGenericHandleCache->DeleteValue(key);
-            }
-            else
-            {
-                keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
-            }
+            // Advance the iterator before we delete!!  See notes in EEHash.h
+            keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
+            g_pJitGenericHandleCache->DeleteValue(key);
         }
     }
 }
@@ -3356,20 +3354,9 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
     if (pSlot == NULL)
     {
         // If we've overflowed the dictionary write the result to the cache.
-        BaseDomain *pDictDomain = NULL;
-
-        if (pMT != NULL)
-        {
-            pDictDomain = pDeclaringMT->GetDomain();
-        }
-        else
-        {
-            pDictDomain = pMD->GetDomain();
-        }
-
         // Add the normalized key (pDeclaringMT) here so that future lookups of any
         // inherited types are faster next time rather than just just for this specific pMT.
-        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature, pDictDomain);
+        JitGenericHandleCacheKey key((CORINFO_CLASS_HANDLE)pDeclaringMT, (CORINFO_METHOD_HANDLE)pMD, signature);
         AddToGenericHandleCache(&key, (HashDatum)result);
     }
 
@@ -3494,7 +3481,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClass, CORINFO_CLASS_HANDLE cla
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3514,7 +3500,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassWithSlotAndModule, CORINFO
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3536,7 +3521,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(classHnd));
-        PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 

@@ -39,7 +39,7 @@ namespace ILCompiler.IBC
                 return reader.ReadUInt32();
             }
 
-            uint current = reader.Read7BitEncodedUInt();
+            uint current = (uint)reader.Read7BitEncodedInt();
             byte highByte = (byte)(current >> 24);
             uint result;
 
@@ -116,7 +116,7 @@ namespace ILCompiler.IBC
 
         private uint ReadSmallUInt()
         {
-            return minified ? reader.Read7BitEncodedUInt() : reader.ReadUInt32();
+            return minified ? (uint)reader.Read7BitEncodedInt() : reader.ReadUInt32();
         }
         #endregion
 
@@ -327,7 +327,7 @@ namespace ILCompiler.IBC
 
             if (minified)
             {
-                uint firstBlockHitCount = reader.Read7BitEncodedUInt();
+                uint firstBlockHitCount = (uint)reader.Read7BitEncodedInt();
                 result.BasicBlocks.Add(new IBC.BasicBlockData { ILOffset = 0, ExecutionCount = firstBlockHitCount });
             }
 

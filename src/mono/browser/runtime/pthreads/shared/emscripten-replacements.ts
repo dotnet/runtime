@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import MonoWasmThreads from "consts:monoWasmThreads";
+import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
+import { dumpThreads, onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
 import { mono_wasm_pthread_on_pthread_created } from "../worker";
-import { PThreadLibrary, PThreadWorker, getModulePThread, getRunningWorkers, getUnusedWorkerPool } from "./emscripten-internals";
+import { PThreadLibrary, PThreadWorker, getModulePThread, getUnusedWorkerPool } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
+import { PThreadPtrNull } from "./types";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with
@@ -16,7 +17,7 @@ import { mono_log_warn } from "../../logging";
  */
 
 export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): void {
-    if (!MonoWasmThreads) return;
+    if (!WasmEnableThreads) return;
 
     const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
     const originalThreadInitTLS = modulePThread.threadInitTLS;
@@ -28,6 +29,11 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
             availableThreadCount++;
         });
         onWorkerLoadInitiated(worker, afterLoaded);
+        if (loaderHelpers.config.exitOnUnhandledError) {
+            worker.onerror = (e) => {
+                loaderHelpers.mono_exit(1, e);
+            };
+        }
         return afterLoaded;
     };
     modulePThread.threadInitTLS = (): void => {
@@ -41,7 +47,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
         // we can't reuse the worker, because user code could leave the worker JS globals in a dirty state
         worker.info.isRunning = false;
         resolveThreadPromises(worker.pthread_ptr, undefined);
-        worker.info.pthreadId = 0;
+        worker.info.pthreadId = PThreadPtrNull;
         if (worker.thread?.port) {
             worker.thread.port.close();
         }
@@ -71,7 +77,7 @@ export function is_thread_available() {
 }
 
 function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
-    if (!MonoWasmThreads) return null as any;
+    if (!WasmEnableThreads) return null as any;
 
     if (modulePThread.unusedWorkers.length == 0) {
         mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolSize. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
@@ -102,7 +108,7 @@ function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
 
 /// We replace Module["PThreads"].allocateUnusedWorker with this version that knows about assets
 function allocateUnusedWorker(): PThreadWorker {
-    if (!MonoWasmThreads) return null as any;
+    if (!WasmEnableThreads) return null as any;
 
     const asset = loaderHelpers.resolve_single_asset_path("js-module-threads");
     const uri = asset.resolvedUrl;
@@ -111,29 +117,13 @@ function allocateUnusedWorker(): PThreadWorker {
     getUnusedWorkerPool().push(worker);
     worker.loaded = false;
     worker.info = {
-        pthreadId: 0,
+        pthreadId: PThreadPtrNull,
         reuseCount: 0,
         updateCount: 0,
-        threadName: "",
+        threadPrefix: "          -    ",
+        threadName: "emscripten-pool",
     };
     return worker;
 }
 
 
-export function dumpThreads(): void {
-    if (!MonoWasmThreads) return;
-    // eslint-disable-next-line no-console
-    console.log("Running workers:");
-    getRunningWorkers().forEach((worker) => {
-        // eslint-disable-next-line no-console
-        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
-    });
-
-    // eslint-disable-next-line no-console
-    console.log("Unused workers:");
-    getUnusedWorkerPool().forEach((worker) => {
-        // eslint-disable-next-line no-console
-        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
-    });
-
-}

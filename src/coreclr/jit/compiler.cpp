@@ -2312,6 +2312,7 @@ void Compiler::compSetProcessor()
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+            codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
         }
         if (canUseEvexEncoding())
         {
@@ -4503,7 +4504,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
@@ -4605,6 +4605,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Add any internal blocks/trees we may need
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // Remove empty try regions
     //
@@ -10022,11 +10027,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->IsGuarded())
                     {
                         chars += printf("[CALL_GUARDED]");
-                    }
-
-                    if (call->IsExpRuntimeLookup())
-                    {
-                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
 
                     if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)

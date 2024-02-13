@@ -51,6 +51,7 @@
   <PropertyGroup>
     <ApiCompatContractItemName>ResolvedMatchingContract</ApiCompatContractItemName>
     <ApiCompatStrictMode Condition="'$(ApiCompatStrictMode)' == ''">true</ApiCompatStrictMode>
+    <ApiCompatUseRoslynToolsetPackagePath Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ApiCompatUseRoslynToolsetPackagePath>
 
     <!-- Optional rules -->
     <ApiCompatEnableRuleAttributesMustMatch>true</ApiCompatEnableRuleAttributesMustMatch>
@@ -113,6 +114,12 @@
                         '$(ApiCompatValidateAssemblies)' == 'true'">
     <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
+
+  <!-- ##### GenFacades settings ##### -->
+  <PropertyGroup>
+    <!-- Let GenFacades use roslyn from the toolset package as it loads sources which might require newer language features. -->
+    <GenFacadesUseRoslynToolsetPackagePath>true</GenFacadesUseRoslynToolsetPackagePath>
+  </PropertyGroup>
 
   <!-- ##### GenAPI settings ##### -->
 
