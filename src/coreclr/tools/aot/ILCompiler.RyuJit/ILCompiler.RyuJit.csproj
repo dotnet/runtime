@@ -97,7 +97,6 @@
 
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\IBCDataModel.cs" Link="Pgo\IBCDataModel.cs" />
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="Pgo\IBCProfileData.cs" />
-    <Compile Include="..\ILCompiler.ReadyToRun\IBC\ReaderExtensions.cs" Link="Pgo\ReaderExtensions.cs" />
     <Compile Include="..\ILCompiler.ReadyToRun\IBC\MIbcProfileParser.cs" Link="Pgo\MIbcProfileParser.cs" />
 
     <Compile Include="..\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="Pgo\ProfileData.cs" />

@@ -253,7 +253,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
             // so it could take some time, while target is CPU busy, but not forever
             // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.NativeTID, functionHandle, args);
+            Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.JSNativeTID, functionHandle, args);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
             if (exceptionArg.slot.Type != MarshalerType.None)
@@ -360,7 +360,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
             // so it could take some time, while target is CPU busy, but not forever
             // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Interop.Runtime.InvokeJSImportSyncSend(targetContext.NativeTID, args, sig);
+            Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, args, sig);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
             if (exceptionArg.slot.Type != MarshalerType.None)
@@ -384,7 +384,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we already know that we are not on the right thread
             // this will return quickly after sending the message
             // async
-            Interop.Runtime.InvokeJSImportAsyncPost(targetContext.NativeTID, (nint)cpy, sig);
+            Interop.Runtime.InvokeJSImportAsyncPost(targetContext.JSNativeTID, (nint)cpy, sig);
 
         }
 
@@ -455,7 +455,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Unsafe.CopyBlock(cpy, src, (uint)bytes);
 
                 // async
-                Interop.Runtime.ResolveOrRejectPromisePost(targetContext.NativeTID, (nint)cpy);
+                Interop.Runtime.ResolveOrRejectPromisePost(targetContext.JSNativeTID, (nint)cpy);
 
                 // this never throws directly
             }

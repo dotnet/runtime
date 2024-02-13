@@ -46,10 +46,11 @@ namespace System.Security.Cryptography.X509Certificates
             if (contentType == X509ContentType.Pkcs12)
             {
                 X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
-                ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
+                ApplePkcs12Reader reader = new ApplePkcs12Reader();
 
                 try
                 {
+                    reader.ParsePkcs12(rawData);
                     reader.Decrypt(password, ephemeralSpecified);
                     return new ApplePkcs12CertLoader(reader, password);
                 }
