@@ -11587,9 +11587,8 @@ namespace System.Reflection
         ReferenceTypeConstraint = 4,
         NotNullableValueTypeConstraint = 8,
         DefaultConstructorConstraint = 16,
-        [Obsolete("No longer represents all special constraints")]
         SpecialConstraintMask = 28,
-        AcceptByRefLike = 32,
+        AllowByRefLike = 32,
     }
     public partial interface ICustomAttributeProvider
     {
@@ -13104,6 +13103,7 @@ namespace System.Runtime.CompilerServices
     public static partial class RuntimeFeature
     {
         public const string ByRefFields = "ByRefFields";
+        public const string ByRefLikeGenerics = "ByRefLikeGenerics";
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
         public const string NumericIntPtr = "NumericIntPtr";

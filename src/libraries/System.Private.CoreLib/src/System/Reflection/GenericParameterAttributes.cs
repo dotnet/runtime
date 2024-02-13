@@ -10,11 +10,10 @@ namespace System.Reflection
         VarianceMask = 0x0003,
         Covariant = 0x0001,
         Contravariant = 0x0002,
-        [Obsolete("No longer represents all special constraints")]
         SpecialConstraintMask = 0x001C,
         ReferenceTypeConstraint = 0x0004,
         NotNullableValueTypeConstraint = 0x0008,
         DefaultConstructorConstraint = 0x0010,
-        AcceptByRefLike = 0x0020,
+        AllowByRefLike = 0x0020,
     }
 }

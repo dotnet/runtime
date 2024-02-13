@@ -42,7 +42,7 @@ namespace Internal.Reflection.Execution
                     return false;
             }
 
-            if (typeArg.IsByRefLike && (specialConstraints & (GenericParameterAttributes)0x20 /* GenericParameterAttributes.AcceptByRefLike */) == 0)
+            if (typeArg.IsByRefLike && (specialConstraints & (GenericParameterAttributes)0x20 /* GenericParameterAttributes.AllowByRefLike */) == 0)
                 return false;
 
             // Now check general subtype constraints

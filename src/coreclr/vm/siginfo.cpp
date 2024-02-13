@@ -4815,9 +4815,9 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
         }
 
         // Constraints that 'allow' must check the overridden first
-        if ((specialConstraints2 & gpAcceptByRefLike) != 0)
+        if ((specialConstraints2 & gpAllowByRefLike) != 0)
         {
-            if ((specialConstraints1 & gpAcceptByRefLike) == 0)
+            if ((specialConstraints1 & gpAllowByRefLike) == 0)
                 return FALSE;
         }
     }

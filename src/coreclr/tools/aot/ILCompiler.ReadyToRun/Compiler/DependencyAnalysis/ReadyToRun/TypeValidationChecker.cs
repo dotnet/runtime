@@ -489,8 +489,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return false;
 
                 // Constraints that 'allow' must check the impl first
-                if (parameterOfImpl.HasAcceptByRefLikeConstraint)
-                    if (!parameterOfDecl.HasAcceptByRefLikeConstraint)
+                if (parameterOfImpl.HasAllowByRefLikeConstraint)
+                    if (!parameterOfDecl.HasAllowByRefLikeConstraint)
                         return false;
 
                 HashSet<TypeDesc> constraintsOnDecl = new HashSet<TypeDesc>();
