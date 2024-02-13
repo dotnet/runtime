@@ -196,7 +196,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // Is this a back edge?
         if (predBlock->bbNum >= begBlk->bbNum)
         {
-            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, backedgeList);
+            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, begBlk, backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;

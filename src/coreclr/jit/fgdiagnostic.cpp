@@ -2683,6 +2683,10 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         }
 
         assert(CheckJump(blockPred, block));
+
+        // Make sure the pred edge's destination block is correct
+        //
+        assert(pred->getDestinationBlock() == block);
     }
 
     // Make sure preds are in increasing BBnum order
