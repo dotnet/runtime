@@ -5151,22 +5151,23 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            GenTree* objArg = call->gtArgs.GetArgByIndex(1)->GetNode();
-            GenTree* clsArg = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* arg1 = call->gtArgs.GetArgByIndex(1)->GetNode();
 
-            if (objArg->gtOper != GT_LCL_VAR)
+            if (arg1->gtOper != GT_LCL_VAR)
             {
                 return nullptr;
             }
 
-            unsigned index = optAssertionIsSubtype(objArg, clsArg, assertions);
+            GenTree* arg2 = call->gtArgs.GetArgByIndex(0)->GetNode();
+
+            unsigned index = optAssertionIsSubtype(arg1, arg2, assertions);
             if (index != NO_ASSERTION_INDEX)
             {
                 JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
                 DISPTREE(call);
 
-                objArg = gtWrapWithSideEffects(objArg, call, GTF_SIDE_EFFECT, true);
-                return optAssertionProp_Update(objArg, call, stmt);
+                arg1 = gtWrapWithSideEffects(arg1, call, GTF_SIDE_EFFECT, true);
+                return optAssertionProp_Update(arg1, call, stmt);
             }
 
             // Leave a hint for fgLateCastExpansion that obj is never null.
@@ -5174,7 +5175,7 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             INDEBUG(bool vnBased = false);
             // GTF_CALL_M_CAST_CAN_BE_EXPANDED check is to improve TP
             if (((call->gtCallMoreFlags & GTF_CALL_M_CAST_CAN_BE_EXPANDED) != 0) &&
-                optAssertionIsNonNull(objArg, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
+                optAssertionIsNonNull(arg1, assertions DEBUGARG(&vnBased) DEBUGARG(&nonNullIdx)))
             {
                 call->gtCallMoreFlags |= GTF_CALL_M_CAST_OBJ_NONNULL;
                 return optAssertionProp_Update(call, call, stmt);
