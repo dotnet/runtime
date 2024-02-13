@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Moq;
 using Xunit;
 
@@ -1289,6 +1290,62 @@ namespace System.ComponentModel.Tests
             }
         }
 
+        [SkipOnPlatform(TestPlatforms.Browser, "Thread.Start is not supported on browsers.")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ConcurrentAddProviderAndGetProvider()
+        {
+            // Use a timeout value lower than RemoteExecutor in order to get a nice Fail message.
+            const int Timeout = 50000;
+
+            RemoteInvokeOptions options = new()
+            {
+                TimeOut = 60000
+            };
+
+            RemoteExecutor.Invoke(() =>
+            {
+                using var finished = new CountdownEvent(2);
+
+                Thread t1 = new Thread(() =>
+                {
+                    ConcurrentAddProvider();
+                    finished.Signal();
+                });
+
+                Thread t2 = new Thread(() =>
+                {
+                    ConcurrentGetProvider();
+                    finished.Signal();
+                });
+
+                t1.Start();
+                t2.Start();
+                finished.Wait(Timeout);
+
+                if (finished.CurrentCount != 0)
+                {
+                    Assert.Fail("Timeout. Possible deadlock.");
+                }
+            }, options).Dispose();
+
+            static void ConcurrentAddProvider()
+            {
+                var provider = new EmptyPropertiesTypeProvider();
+                TypeDescriptor.AddProvider(provider, typeof(MyClass));
+
+                // This test primarily verifies no deadlock, but verify the values anyway.
+                Assert.True(TypeDescriptor.GetProvider(typeof(MyClass)).IsSupportedType(typeof(MyClass)));
+            }
+
+            static void ConcurrentGetProvider()
+            {
+                TypeDescriptionProvider provider = TypeDescriptor.GetProvider(typeof(TypeWithProperty));
+
+                // This test primarily verifies no deadlock, but verify the values anyway.
+                Assert.True(provider.IsSupportedType(typeof(TypeWithProperty)));
+            }
+        }
+
         public sealed class EmptyPropertiesTypeProvider : TypeDescriptionProvider
         {
             private sealed class EmptyPropertyListDescriptor : ICustomTypeDescriptor
@@ -1343,6 +1400,7 @@ namespace System.ComponentModel.Tests
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 100).Select(_ =>
                     Task.Run(() => TypeDescriptor.GetConverter(typeForGetConverter))));
+
             Assert.All(actualConverters,
                 currentConverter => Assert.IsType(expectedConverterType, currentConverter));
         }

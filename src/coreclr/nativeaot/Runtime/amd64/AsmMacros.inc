@@ -214,24 +214,6 @@ Name label proc
 PUBLIC Name
         endm
 
-EXPORT_POINTER_TO_ADDRESS macro Name
-
-        local   AddressToExport
-
-AddressToExport  label   proc
-
-        .const
-
-        align   8
-
-Name    dq      offset AddressToExport
-
-        public  Name
-
-        .code
-
-        endm
-
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;

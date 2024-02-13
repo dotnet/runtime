@@ -484,8 +484,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentException_DestinationTooShort();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
         /// <summary>Creates a new <see cref="Vector512{T}" /> instance with all elements initialized to the specified value.</summary>
@@ -616,8 +615,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector512<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref values[0]));
         }
 
         /// <summary>Creates a new <see cref="Vector512{T}" /> from a given array.</summary>
@@ -637,8 +635,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(values));
-            return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.Add(ref address, index));
+            return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref values[index]));
         }
 
         /// <summary>Creates a new <see cref="Vector512{T}" /> from a given readonly span.</summary>
@@ -655,8 +652,7 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.values);
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-            return Unsafe.ReadUnaligned<Vector512<T>>(ref address);
+            return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 
         /// <summary>Creates a new <see cref="Vector512{Byte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1369,6 +1365,15 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<ulong> CreateScalarUnsafe(ulong value) => CreateScalarUnsafe<ulong>(value);
 
+        /// <summary>Creates a new <see cref="Vector512{T}" /> instance where the elements begin at a specified value and which are spaced apart according to another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
+        /// <returns>A new <see cref="Vector512{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<T> CreateSequence<T>(T start, T step) => (Vector512<T>.Indices * step) + Create(start);
+
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>
@@ -1451,6 +1456,40 @@ namespace System.Runtime.Intrinsics
         {
             return Vector256.EqualsAny(left._lower, right._lower)
                 || Vector256.EqualsAny(left._upper, right._upper);
+        }
+
+        /// <inheritdoc cref="Vector256.Exp(Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<double> Exp(Vector512<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpDouble<Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Exp(vector._lower),
+                    Vector256.Exp(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector256.Exp(Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector512<float> Exp(Vector512<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.ExpSingle<Vector512<float>, Vector512<uint>, Vector512<double>, Vector512<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.Exp(vector._lower),
+                    Vector256.Exp(vector._upper)
+                );
+            }
         }
 
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
@@ -1807,6 +1846,7 @@ namespace System.Runtime.Intrinsics
             LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
 
         /// <inheritdoc cref="Vector256.Log(Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> Log(Vector512<double> vector)
         {
             if (IsHardwareAccelerated)
@@ -1823,6 +1863,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <inheritdoc cref="Vector256.Log(Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> Log(Vector512<float> vector)
         {
             if (IsHardwareAccelerated)
@@ -1839,6 +1880,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <inheritdoc cref="Vector256.Log2(Vector256{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> Log2(Vector512<double> vector)
         {
             if (IsHardwareAccelerated)
@@ -1855,6 +1897,7 @@ namespace System.Runtime.Intrinsics
         }
 
         /// <inheritdoc cref="Vector256.Log2(Vector256{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> Log2(Vector512<float> vector)
         {
             if (IsHardwareAccelerated)
@@ -2679,8 +2722,7 @@ namespace System.Runtime.Intrinsics
                 return false;
             }
 
-            ref byte address = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination));
-            Unsafe.WriteUnaligned(ref address, vector);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
             return true;
         }
 

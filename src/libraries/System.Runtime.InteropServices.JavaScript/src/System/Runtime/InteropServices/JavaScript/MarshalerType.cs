@@ -4,7 +4,7 @@
 namespace System.Runtime.InteropServices.JavaScript
 {
     // maps to names of System.Runtime.InteropServices.JavaScript.JSMarshalerType
-    // please sync with src\mono\wasm\runtime\marshal.ts
+    // please sync with src\mono\browser\runtime\marshal.ts
     internal enum MarshalerType : byte
     {
         None = 0,

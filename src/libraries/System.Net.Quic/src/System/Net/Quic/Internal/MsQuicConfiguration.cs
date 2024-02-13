@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -30,7 +31,13 @@ internal static class MsQuicConfiguration
 
         // Find the first certificate with private key, either from selection callback or from a provided collection.
         X509Certificate? certificate = null;
-        if (authenticationOptions.LocalCertificateSelectionCallback != null)
+        ReadOnlyCollection<X509Certificate2>? intermediates = null;
+        if (authenticationOptions.ClientCertificateContext is not null)
+        {
+            certificate = authenticationOptions.ClientCertificateContext.TargetCertificate;
+            intermediates = authenticationOptions.ClientCertificateContext.IntermediateCertificates;
+        }
+        else if (authenticationOptions.LocalCertificateSelectionCallback != null)
         {
             X509Certificate selectedCertificate = authenticationOptions.LocalCertificateSelectionCallback(
                 options,
@@ -69,7 +76,7 @@ internal static class MsQuicConfiguration
             }
         }
 
-        return Create(options, flags, certificate, null, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
+        return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
     public static MsQuicSafeHandle Create(QuicServerConnectionOptions options, string? targetHost)
@@ -86,13 +93,22 @@ internal static class MsQuicConfiguration
 
         X509Certificate? certificate = null;
         ReadOnlyCollection<X509Certificate2>? intermediates = default;
-        if (authenticationOptions.ServerCertificateContext is not null)
+
+        // the order of checking here matches the order of checking in SslStream
+        if (authenticationOptions.ServerCertificateSelectionCallback is not null)
+        {
+            certificate = authenticationOptions.ServerCertificateSelectionCallback.Invoke(authenticationOptions, targetHost);
+        }
+        else if (authenticationOptions.ServerCertificateContext is not null)
         {
             certificate = authenticationOptions.ServerCertificateContext.TargetCertificate;
             intermediates = authenticationOptions.ServerCertificateContext.IntermediateCertificates;
         }
+        else if (authenticationOptions.ServerCertificate is not null)
+        {
+            certificate = authenticationOptions.ServerCertificate;
+        }
 
-        certificate ??= authenticationOptions.ServerCertificate ?? authenticationOptions.ServerCertificateSelectionCallback?.Invoke(authenticationOptions, targetHost);
         if (certificate is null)
         {
             throw new ArgumentException(SR.Format(SR.net_quic_not_null_ceritifcate, nameof(SslServerAuthenticationOptions.ServerCertificate), nameof(SslServerAuthenticationOptions.ServerCertificateContext), nameof(SslServerAuthenticationOptions.ServerCertificateSelectionCallback)), nameof(options));
@@ -237,6 +253,15 @@ internal static class MsQuicConfiguration
                ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0 ? MsQuicApi.Tls13ServerMayBeDisabled : MsQuicApi.Tls13ClientMayBeDisabled))
             {
                 ThrowHelper.ThrowIfMsQuicError(status, SR.net_quic_tls_version_notsupported);
+            }
+
+            if (status == MsQuic.QUIC_STATUS_CERT_NO_CERT && certificate != null && certificate.HasPrivateKey())
+            {
+                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
+                if (safeCertContextHandle.HasEphemeralPrivateKey)
+                {
+                    throw new AuthenticationException(SR.net_auth_ephemeral);
+                }
             }
 #endif
 

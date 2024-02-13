@@ -1567,7 +1567,7 @@ DWORD Module::AllocateDynamicEntry(MethodTable *pMT)
         if (m_pDynamicStaticsInfo)
             memcpy(pNewDynamicStaticsInfo, m_pDynamicStaticsInfo, sizeof(DynamicStaticsInfo) * m_maxDynamicEntries);
 
-        m_pDynamicStaticsInfo = pNewDynamicStaticsInfo;
+        VolatileStore(&m_pDynamicStaticsInfo, pNewDynamicStaticsInfo);
         m_maxDynamicEntries = maxDynamicEntries;
     }
 
@@ -1641,7 +1641,7 @@ void Module::FreeModuleIndex(ModuleIndex index)
 }
 
 
-void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
+void Module::AllocateRegularStaticHandles()
 {
     CONTRACTL
     {
@@ -1659,7 +1659,7 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointerAddress() != NULL);
     if (this->m_dwMaxGCRegularStaticHandles > 0)
     {
-        pDomain->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
+        AppDomain::GetCurrentDomain()->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
                                                pModuleData->GetPrecomputedGCStaticsBasePointerAddress());
 
         // We should throw if we fail to allocate and never hit this assert
@@ -1722,7 +1722,7 @@ void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
         }
         else
         {
-            pLoaderAllocator = pDomainAssembly->GetAppDomain()->GetLoaderAllocator();
+            pLoaderAllocator = AppDomain::GetCurrentDomain()->GetLoaderAllocator();
         }
 
         SIZE_T size = GetDomainLocalModuleSize();
@@ -1770,7 +1770,7 @@ void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
     // as it is currently initialized through the DomainLocalModule::PopulateClass in MethodTable::CheckRunClassInitThrowing
     // (If we don't do this, it would allocate here unused regular static handles that will be overridden later)
     if (g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] != NULL && !GetAssembly()->IsCollectible())
-        AllocateRegularStaticHandles(pDomainAssembly->GetAppDomain());
+        AllocateRegularStaticHandles();
 }
 
 OBJECTREF Module::GetExposedObject()
@@ -1939,8 +1939,7 @@ void Module::FreeClassTables()
     while (typeDefIter.Next())
     {
         MethodTable * pMT = typeDefIter.GetElement();
-
-        if (pMT != NULL && pMT->IsRestored())
+        if (pMT != NULL)
         {
             pMT->GetClass()->Destruct(pMT);
         }
@@ -1957,9 +1956,6 @@ void Module::FreeClassTables()
             while (m_pAvailableParamTypes->FindNext(&it, &pEntry))
             {
                 TypeHandle th = pEntry->GetTypeHandle();
-
-                if (!th.IsRestored())
-                    continue;
 
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
                 // There is nothing interesting to destruct on array EEClass
@@ -1982,14 +1978,6 @@ ClassLoader *Module::GetClassLoader()
     SUPPORTS_DAC;
     _ASSERTE(m_pAssembly != NULL);
     return m_pAssembly->GetLoader();
-}
-
-PTR_BaseDomain Module::GetDomain()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    _ASSERTE(m_pAssembly != NULL);
-    return m_pAssembly->GetDomain();
 }
 
 #ifndef DACCESS_COMPILE
@@ -2420,8 +2408,7 @@ void Module::SetSymbolBytes(LPCBYTE pbSyms, DWORD cbSyms)
     if (CORDebuggerAttached())
     {
         AppDomain *pDomain = AppDomain::GetCurrentDomain();
-        if (pDomain->IsDebuggerAttached() && (GetDomain() == SystemDomain::System() ||
-                                                pDomain->ContainsAssembly(m_pAssembly)))
+        if (pDomain->IsDebuggerAttached() && pDomain->ContainsAssembly(m_pAssembly))
         {
             g_pDebugInterface->SendUpdateModuleSymsEventAndBlock(this, pDomain);
         }
@@ -2467,7 +2454,6 @@ ILStubCache* Module::GetILStubCache()
     CONTRACTL_END;
 
     // Use per-LoaderAllocator cache for modules
-    BaseDomain *pDomain = GetDomain();
     if (!IsSystem())
         return GetLoaderAllocator()->GetILStubCache();
 
@@ -3573,8 +3559,7 @@ BOOL Module::NotifyDebuggerLoad(AppDomain *pDomain, DomainAssembly * pDomainAsse
         while (typeDefIter.Next())
         {
             MethodTable * pMT = typeDefIter.GetElement();
-
-            if (pMT != NULL && pMT->IsRestored())
+            if (pMT != NULL)
             {
                 result = TypeHandle(pMT).NotifyDebuggerLoad(pDomain, attaching) || result;
             }
@@ -3599,8 +3584,7 @@ void Module::NotifyDebuggerUnload(AppDomain *pDomain)
     while (typeDefIter.Next())
     {
         MethodTable * pMT = typeDefIter.GetElement();
-
-        if (pMT != NULL && pMT->IsRestored())
+        if (pMT != NULL)
         {
             TypeHandle(pMT).NotifyDebuggerUnload(pDomain);
         }

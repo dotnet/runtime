@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal sealed class JSProxyContext : IDisposable
     {
-        private bool _isDisposed;
+        internal bool _isDisposed;
 
         // we use this to maintain identity of JSHandle for a JSObject proxy
         private readonly Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects = new();
@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         private JSProxyContext()
         {
         }
@@ -62,7 +62,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         #region Current operation context
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         public static readonly JSProxyContext MainThreadContext = new();
         public static JSProxyContext CurrentThreadContext => MainThreadContext;
         public static JSProxyContext CurrentOperationContext => MainThreadContext;
@@ -229,7 +229,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static JSProxyContext AssertIsInteropThread()
         {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             var ctx = CurrentThreadContext;
             if (ctx == null)
             {
@@ -429,36 +429,49 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static void ReleaseCSOwnedObject(JSObject proxy, bool skipJS)
+        public static void ReleaseCSOwnedObject(JSObject jso, bool skipJS)
         {
-            if (proxy.IsDisposed)
+            if (jso.IsDisposed)
             {
                 return;
             }
-            var ctx = proxy.ProxyContext;
-#if FEATURE_WASM_THREADS
-            if (!ctx.IsCurrentThread())
-            {
-                throw new InvalidOperationException($"ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy. ManagedThreadId: {Environment.CurrentManagedThreadId} JSHandle: {proxy.JSHandle}");
-            }
-#endif
+            var ctx = jso.ProxyContext;
+
             lock (ctx)
             {
-                if (proxy.IsDisposed)
+                if (jso.IsDisposed || ctx._isDisposed)
                 {
                     return;
                 }
-                var jsHandle = proxy.JSHandle;
-                proxy._isDisposed = true;
-                proxy.JSHandle = IntPtr.Zero;
-                GC.SuppressFinalize(proxy);
+                var jsHandle = jso.JSHandle;
+                jso._isDisposed = true;
+                jso.JSHandle = IntPtr.Zero;
+                GC.SuppressFinalize(jso);
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 };
                 if (!skipJS)
                 {
+#if FEATURE_WASM_MANAGED_THREADS
+                    if (ctx.IsCurrentThread())
+                    {
+                        Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+                    }
+                    else
+                    {
+                        if (IsJSVHandle(jsHandle))
+                        {
+                            Environment.FailFast("TODO implement blocking ReleaseCSOwnedObjectSend to make sure the order of FreeJSVHandle is correct.");
+                        }
+
+                        // this is async message, we need to call this as the last thing
+                        // the same jsHandle would not be re-used until JS side considers it free
+                        Interop.Runtime.ReleaseCSOwnedObjectPost(ctx.NativeTID, jsHandle);
+                    }
+#else
                     Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+#endif
                 }
                 if (IsJSVHandle(jsHandle))
                 {
@@ -467,70 +480,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        #endregion
-
-        #region Legacy
-
-        // legacy
-        public void RegisterCSOwnedObject(JSObject proxy)
-        {
-            lock (this)
-            {
-                ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
-            }
-        }
-
-        // legacy
-        public JSObject? GetCSOwnedObjectByJSHandle(nint jsHandle, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                if (ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference))
-                {
-                    reference.TryGetTarget(out JSObject? jsObject);
-                    if (shouldAddInflight != 0)
-                    {
-                        jsObject?.AddInFlight();
-                    }
-                    return jsObject;
-                }
-            }
-            return null;
-        }
-
-        // legacy
-        public JSObject CreateCSOwnedProxy(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight)
-        {
-            lock (this)
-            {
-                JSObject? res = null;
-                if (!ThreadCsOwnedObjects.TryGetValue(jsHandle, out WeakReference<JSObject>? reference) ||
-                !reference.TryGetTarget(out res) ||
-                res.IsDisposed)
-                {
-#pragma warning disable CS0612 // Type or member is obsolete
-                    res = mappedType switch
-                    {
-                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle, JSProxyContext.MainThreadContext),
-                        LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
-                        LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
-                        LegacyHostImplementation.MappedType.Function => new Function(jsHandle),
-                        LegacyHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
-                        _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
-                    };
-#pragma warning restore CS0612 // Type or member is obsolete
-                    ThreadCsOwnedObjects[jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
-                if (shouldAddInflight != 0)
-                {
-                    res.AddInFlight();
-                }
-                return res;
-            }
-        }
-
-        #endregion
+#endregion
 
         #region Dispose
 
@@ -540,7 +490,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!_isDisposed)
                 {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                     if (!IsCurrentThread())
                     {
                         Environment.FailFast($"JSProxyContext must be disposed on the thread which owns it, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
@@ -557,7 +507,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         }
                     }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                     Interop.Runtime.UninstallWebWorkerInterop();
 #endif
 
@@ -581,7 +531,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                     if (disposing)
                     {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                         SynchronizationContext.Dispose();
 #endif
                     }

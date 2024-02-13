@@ -24,6 +24,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 #include "jitstd/algorithm.h"
 
+#include <dn-u16.h> // for u16_strtod
+
 /*****************************************************************************/
 
 #define DECLARE_DATA
@@ -277,21 +279,32 @@ const char* getRegNameFloat(regNumber reg, var_types type)
 
 /*****************************************************************************
  *
- *  Displays a register set.
- *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
+ *  Displays a range of registers
+ *   -- This is a helper used by dspRegMask
  */
-
-void dspRegMask(regMaskTP regMask, size_t minSiz)
+const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
-    const char* sep = "";
+#ifdef TARGET_XARCH
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+           ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
+           ((regFirst == REG_MASK_FIRST) && (regLast == REG_MASK_LAST)));
+#else
+    assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
+           ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)));
+#endif
 
-    printf("[");
+    if (strlen(sep) > 0)
+    {
+        // We've already printed something.
+        sep = " ";
+    }
 
     bool      inRegRange = false;
     regNumber regPrev    = REG_NA;
     regNumber regHead    = REG_NA; // When we start a range, remember the first register of the range, so we don't use
                                    // range notation if the range contains just a single register.
-    for (regNumber regNum = REG_INT_FIRST; regNum <= REG_INT_LAST; regNum = REG_NEXT(regNum))
+
+    for (regNumber regNum = regFirst; regNum <= regLast; regNum = REG_NEXT(regNum))
     {
         regMaskTP regBit = genRegMask(regNum);
 
@@ -300,7 +313,7 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
             // We have a register to display. It gets displayed now if:
             // 1. This is the first register to display of a new range of registers (possibly because
             //    no register has ever been displayed).
-            // 2. This is the last register of an acceptable range (either the last integer register,
+            // 2. This is the last register of an acceptable range (either the last register of a type,
             //    or the last of a range that is displayed with range notation).
             if (!inRegRange)
             {
@@ -309,140 +322,101 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                 printf("%s%s", sep, nam);
                 minSiz -= strlen(sep) + strlen(nam);
 
-                // By default, we're not starting a potential register range.
-                sep = " ";
-
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_AMD64)
-                // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
-                if (regNum >= REG_R8)
+                if (genIsValidIntReg(regNum))
                 {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
-#elif defined(TARGET_ARM64)
-                // R17 and R28 can't be the start of a range, since the range would include TEB or FP
-                if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
-#elif defined(TARGET_ARM)
-                if (regNum < REG_R12)
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
-#elif defined(TARGET_X86)
-// No register ranges
+                    // By default, we're not starting a potential register range.
+                    sep = " ";
 
+#if defined(TARGET_AMD64)
+                    // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
+                    if (regNum >= REG_R8)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
+#elif defined(TARGET_ARM64)
+                    // R17 and R28 can't be the start of a range, since the range would include TEB or FP
+                    if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
+#elif defined(TARGET_ARM)
+                    if (regNum < REG_R12)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
+#elif defined(TARGET_X86)
+                    // No register ranges
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 #elif defined(TARGET_LOONGARCH64)
-                if (REG_A0 <= regNum && regNum <= REG_T8)
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    if (REG_A0 <= regNum && regNum <= REG_T8)
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #elif defined(TARGET_RISCV64)
-                if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
-                    (REG_T2 <= regNum && REG_T6 >= regNum))
-                {
-                    regHead    = regNum;
-                    inRegRange = true;
-                    sep        = "-";
-                }
+                    if ((REG_A0 <= regNum && REG_A7 >= regNum) || REG_T0 == regNum || REG_T1 == regNum ||
+                        (REG_T2 <= regNum && REG_T6 >= regNum))
+                    {
+                        regHead    = regNum;
+                        inRegRange = true;
+                        sep        = "-";
+                    }
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
+                }
+                else
+                {
+                    regHead    = regNum;
+                    inRegRange = true;
+                    sep        = "-";
+                }
             }
-
 #if defined(TARGET_ARM64)
-            // We've already printed a register. Is this the end of a range?
-            else if ((regNum == REG_INT_LAST) || (regNum == REG_R17) // last register before TEB
-                     || (regNum == REG_R28))                         // last register before FP
+            else if ((regNum == regLast) || (regNum == REG_R17) // last register before TEB
+                     || (regNum == REG_R28))                    // last register before FP
 #elif defined(TARGET_LOONGARCH64)
-            else if ((regNum == REG_INT_LAST) || (regNum == REG_A7) || (regNum == REG_T8))
-#else  // TARGET_LOONGARCH64
-            // We've already printed a register. Is this the end of a range?
-            else if (regNum == REG_INT_LAST)
-#endif // TARGET_LOONGARCH64
+            else if ((regNum == regLast) || (regNum == REG_A7) || (regNum == REG_T8))
+#else
+            else if (regNum == regLast)
+#endif
             {
+                // We've already printed a register and hit the end of a range
+
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);
                 minSiz -= strlen(sep) + strlen(nam);
+
+                regHead    = REG_NA;
                 inRegRange = false; // No longer in the middle of a register range
-                regHead    = REG_NA;
                 sep        = " ";
             }
         }
-        else // ((regMask & regBit) == 0)
+        else if (inRegRange)
         {
-            if (inRegRange)
+            assert(regHead != REG_NA);
+
+            if (regPrev != regHead)
             {
-                assert(regHead != REG_NA);
-                if (regPrev != regHead)
-                {
-                    // Close out the previous range, if it included more than one register.
-                    const char* nam = getRegName(regPrev);
-                    printf("%s%s", sep, nam);
-                    minSiz -= strlen(sep) + strlen(nam);
-                }
-                sep        = " ";
-                inRegRange = false;
-                regHead    = REG_NA;
-            }
-        }
-
-        if (regBit > regMask)
-        {
-            break;
-        }
-
-        regPrev = regNum;
-    }
-
-    if (strlen(sep) > 0)
-    {
-        // We've already printed something.
-        sep = " ";
-    }
-    inRegRange = false;
-    regPrev    = REG_NA;
-    regHead    = REG_NA;
-    for (regNumber regNum = REG_FP_FIRST; regNum <= REG_FP_LAST; regNum = REG_NEXT(regNum))
-    {
-        regMaskTP regBit = genRegMask(regNum);
-
-        if (regMask & regBit)
-        {
-            if (!inRegRange || (regNum == REG_FP_LAST))
-            {
-                const char* nam = getRegName(regNum);
+                // Close out the previous range, if it included more than one register.
+                const char* nam = getRegName(regPrev);
                 printf("%s%s", sep, nam);
-                minSiz -= strlen(sep) + strlen(nam);
-                sep     = "-";
-                regHead = regNum;
+                minSiz -= (strlen(sep) + strlen(nam));
             }
-            inRegRange = true;
-        }
-        else
-        {
-            if (inRegRange)
-            {
-                if (regPrev != regHead)
-                {
-                    const char* nam = getRegName(regPrev);
-                    printf("%s%s", sep, nam);
-                    minSiz -= (strlen(sep) + strlen(nam));
-                }
-                sep = " ";
-            }
+
+            regHead    = REG_NA;
             inRegRange = false;
+            sep        = " ";
         }
 
         if (regBit > regMask)
@@ -452,6 +426,27 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
 
         regPrev = regNum;
     }
+
+    return sep;
+}
+
+/*****************************************************************************
+ *
+ *  Displays a register set.
+ *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
+ */
+void dspRegMask(regMaskTP regMask, size_t minSiz)
+{
+    const char* sep = "";
+
+    printf("[");
+
+    sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
+    sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
+
+#ifdef TARGET_XARCH
+    sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
+#endif // TARGET_XARCH
 
     printf("]");
 
@@ -921,6 +916,181 @@ void ConfigMethodRange::Dump()
         {
             printf("%i [0x%08x-0x%08x]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
         }
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigIntArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are separated decimal with no whitespace.
+//    Separators are any digit not '-' or '0-9'
+//
+void ConfigIntArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                p++;
+            }
+
+            numValues++;
+        }
+        else
+        {
+            p++;
+        }
+    }
+
+    m_length = numValues;
+    m_values = (int*)g_jitHost->allocateMemory(numValues * sizeof(int));
+
+    numValues         = 0;
+    p                 = str;
+    int  currentValue = 0;
+    bool isNegative   = false;
+    while (*p != 0)
+    {
+        if ((*p == L'-') || ((L'0' <= *p) && (*p <= L'9')))
+        {
+            if (*p == L'-')
+            {
+                isNegative = true;
+                p++;
+            }
+
+            while ((L'0' <= *p) && (*p <= L'9'))
+            {
+                currentValue = currentValue * 10 + (*p++) - L'0';
+            }
+
+            if (isNegative)
+            {
+                currentValue = -currentValue;
+            }
+
+            m_values[numValues++] = currentValue;
+            currentValue          = 0;
+        }
+        else
+        {
+            p++;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigIntArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config int array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config int array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%i", i == 0 ? "" : ", ", m_values[i]);
+    }
+}
+
+//------------------------------------------------------------------------
+// Init: parse a string to set up a ConfigDoubleArray
+//
+// Arguments:
+//    str -- string to parse (may be nullptr)
+//
+// Notes:
+//    Values are comma, tab or space separated.
+//    Consecutive separators are ignored
+//
+void ConfigDoubleArray::Init(const WCHAR* str)
+{
+    // Count the number of values
+    //
+    const WCHAR* p         = str;
+    unsigned     numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+        WCHAR* pNext = nullptr;
+        u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            numValues++;
+        }
+        p = pNext;
+    }
+
+    m_length  = numValues;
+    m_values  = (double*)g_jitHost->allocateMemory(numValues * sizeof(double));
+    p         = str;
+    numValues = 0;
+    while (*p != 0)
+    {
+        if (*p == L',')
+        {
+            p++;
+            continue;
+        }
+
+        WCHAR* pNext = nullptr;
+        double val   = u16_strtod(p, &pNext);
+        if (errno == 0)
+        {
+            m_values[numValues++] = val;
+        }
+        p = pNext;
+    }
+}
+
+//------------------------------------------------------------------------
+// Dump: dump config array to stdout
+//
+void ConfigDoubleArray::Dump()
+{
+    if (m_values == nullptr)
+    {
+        printf("<uninitialized config double array>\n");
+        return;
+    }
+
+    if (m_length == 0)
+    {
+        printf("<empty config double array>\n");
+        return;
+    }
+
+    for (unsigned i = 0; i < m_length; i++)
+    {
+        printf("%s%f ", i == 0 ? "" : ",", m_values[i]);
     }
 }
 
@@ -2203,78 +2373,35 @@ double FloatingPointUtils::round(double x)
     //            MathF.Round(float), and FloatingPointUtils::round(float)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This represents the boundary at which point we can only represent whole integers
+    const double IntegerBoundary = 4503599627370496.0; // 2^52
 
-    uint64_t bits     = *reinterpret_cast<uint64_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 52) & 0x07FF;
-
-    if (exponent <= 0x03FE)
+    if (fabs(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        double result = ((exponent == 0x03FE) && ((bits & UI64(0x000FFFFFFFFFFFFF)) != 0)) ? 1.0 : 0.0;
-        return _copysign(result, x);
-    }
-
-    if (exponent >= 0x0433)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x03FF <= exponent) && (exponent <= 0x0432));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint64_t lastBitMask   = UI64(1) << (0x0433 - exponent);
-    uint64_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<double*>(&bits);
+    double temp = copysign(IntegerBoundary, x);
+    return copysign((x + temp) - temp, x);
 }
-
-// Windows x86 and Windows ARM/ARM64 may not define _copysignf() but they do define _copysign().
-// We will redirect the macro to this other functions if the macro is not defined for the platform.
-// This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
-// downcasting for the _copysign() call.
-#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
-
-#if !defined(_copysignf)
-#define _copysignf (float)_copysign
-#endif
-
-#endif
 
 // Rounds a single-precision floating-point value to the nearest integer,
 // and rounds midpoint values to the nearest even number.
@@ -2285,65 +2412,40 @@ float FloatingPointUtils::round(float x)
     //            Math.Round(double), and FloatingPointUtils::round(double)
     // ************************************************************************************
 
-    // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+    // This code is based on `nearbyint` from amd/aocl-libm-ose
+    // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+    //
+    // Licensed under the BSD 3-Clause "New" or "Revised" License
+    // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-    uint32_t bits     = *reinterpret_cast<uint32_t*>(&x);
-    int32_t  exponent = (int32_t)(bits >> 23) & 0xFF;
+    // This represents the boundary at which point we can only represent whole integers
+    const float IntegerBoundary = 8388608.0f; // 2^23
 
-    if (exponent <= 0x7E)
+    if (fabsf(x) >= IntegerBoundary)
     {
-        if ((bits << 1) == 0)
-        {
-            // Exactly +/- zero should return the original value
-            return x;
-        }
-
-        // Any value less than or equal to 0.5 will always round to exactly zero
-        // and any value greater than 0.5 will always round to exactly one. However,
-        // we need to preserve the original sign for IEEE compliance.
-
-        float result = ((exponent == 0x7E) && ((bits & 0x007FFFFF) != 0)) ? 1.0f : 0.0f;
-        return _copysignf(result, x);
-    }
-
-    if (exponent >= 0x96)
-    {
-        // Any value greater than or equal to 2^52 cannot have a fractional part,
-        // So it will always round to exactly itself.
-
+        // Values above this boundary don't have a fractional
+        // portion and so we can simply return them as-is.
         return x;
     }
 
-    // The absolute value should be greater than or equal to 1.0 and less than 2^52
-    assert((0x7F <= exponent) && (exponent <= 0x95));
+    // Otherwise, since floating-point takes the inputs, performs
+    // the computation as if to infinite precision and unbounded
+    // range, and then rounds to the nearest representable result
+    // using the current rounding mode, we can rely on this to
+    // cheaply round.
+    //
+    // In particular, .NET doesn't support changing the rounding
+    // mode and defaults to "round to nearest, ties to even", thus
+    // by adding the original value to the IntegerBoundary we get
+    // an exactly represented whole integer that is precisely the
+    // IntegerBoundary greater in magnitude than the answer we want.
+    //
+    // We can then simply remove that offset to get the correct answer,
+    // noting that we also need to copy back the original sign to
+    // correctly handle -0.0
 
-    // Determine the last bit that represents the integral portion of the value
-    // and the bits representing the fractional portion
-
-    uint32_t lastBitMask   = 1U << (0x96 - exponent);
-    uint32_t roundBitsMask = lastBitMask - 1;
-
-    // Increment the first fractional bit, which represents the midpoint between
-    // two integral values in the current window.
-
-    bits += lastBitMask >> 1;
-
-    if ((bits & roundBitsMask) == 0)
-    {
-        // If that overflowed and the rest of the fractional bits are zero
-        // then we were exactly x.5 and we want to round to the even result
-
-        bits &= ~lastBitMask;
-    }
-    else
-    {
-        // Otherwise, we just want to strip the fractional bits off, truncating
-        // to the current integer value.
-
-        bits &= ~roundBitsMask;
-    }
-
-    return *reinterpret_cast<float*>(&bits);
+    float temp = copysignf(IntegerBoundary, x);
+    return copysignf((x + temp) - temp, x);
 }
 
 bool FloatingPointUtils::isNormal(double x)
@@ -2468,6 +2570,38 @@ bool FloatingPointUtils::isAllBitsSet(double val)
 {
     UINT64 bits = *reinterpret_cast<UINT64*>(&val);
     return bits == 0xFFFFFFFFFFFFFFFFULL;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(float val)
+{
+    UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+    return (~bits & 0x7F800000U) != 0;
+}
+
+//------------------------------------------------------------------------
+// isFinite: Determines whether the specified value is finite
+//
+// Arguments:
+//    val - value to check is not NaN or infinity
+//
+// Return Value:
+//    True if val is finite
+//
+
+bool FloatingPointUtils::isFinite(double val)
+{
+    UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+    return (~bits & 0x7FF0000000000000ULL) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -3086,6 +3220,32 @@ double FloatingPointUtils::normalize(double value)
 #else
     return value;
 #endif
+}
+
+int FloatingPointUtils::ilogb(double value)
+{
+    if (value == 0.0)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogb(value);
+}
+
+int FloatingPointUtils::ilogb(float value)
+{
+    if (value == 0.0f)
+    {
+        return -2147483648;
+    }
+    else if (isNaN(value))
+    {
+        return 2147483647;
+    }
+    return ilogbf(value);
 }
 
 //------------------------------------------------------------------------

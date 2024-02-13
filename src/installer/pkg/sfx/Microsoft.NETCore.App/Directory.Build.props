@@ -107,6 +107,9 @@
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="clrgcexp.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgcexp.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libclrgcexp.dylib" IsNative="true" />    
     <PlatformManifestFileEntry Include="clretwrc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="clrjit.dll" IsNative="true" />
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="pgort140.dll" IsNative="true" />
@@ -231,7 +234,6 @@
     <PlatformManifestFileEntry Include="dotnet.native.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet-legacy.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.wasm" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />

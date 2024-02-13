@@ -68,7 +68,6 @@
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
-      - $(WasmEnableLegacyJsInterop)        - Include support for legacy JS interop. Defaults to true.
       - $(WasmEnableExceptionHandling)      - Enable support for the WASM post MVP Exception Handling runtime extension.
       - $(WasmEnableSIMD)                   - Enable support for the WASM post MVP SIMD runtime extension.
       - $(WasmEnableWebcil)                 - Enable conversion of assembly .dlls to Webcil wrapped in .wasm (default: true)
@@ -172,9 +171,6 @@
       /workspaces/runtime/.dotnet/sdk/7.0.100-rc.1.22431.12/Sdks/Microsoft.NET.Sdk/targets/Microsoft.NET.Sdk.FrameworkReferenceResolution.targets(135,5): error NETSDK1084: There is no application host available for the specified RuntimeIdentifier 'wasi-wasm'.
     -->
     <UseAppHost>false</UseAppHost>
-
-    <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
-    <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
 
     <!-- Post Wasm MVP features -->
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>

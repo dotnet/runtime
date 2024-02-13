@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using Xunit;
@@ -40,7 +41,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             } };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(ComInterfaceGeneratorSnippetsToCompile))]
         public async Task ValidateComInterfaceGeneratorSnippets(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
@@ -334,7 +335,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), customStructMarshallingCodeSnippets.Stateful.ByValueOutParameter };
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(InvalidUnmanagedToManagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         public async Task ValidateInvalidUnmanagedToManagedCodeSnippets(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
@@ -348,7 +349,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             await test.RunAsync();
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(InvalidManagedToUnmanagedCodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         public async Task ValidateInvalidManagedToUnmanagedCodeSnippets(string id, string source)
         {
@@ -360,7 +361,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(StringMarshallingCodeSnippets), GeneratorKind.ComInterfaceGenerator)]
         public async Task ValidateStringMarshallingDiagnostics(string id, string source, DiagnosticResult[] expectedDiagnostics)
         {
@@ -511,7 +512,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(StringMarshallingCustomTypeVisibilities))]
         public async Task VerifyStringMarshallingCustomTypeWithLessVisibilityThanInterfaceWarns(string id, string source, DiagnosticResult[] diagnostics)
         {
@@ -519,7 +520,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(InterfaceVisibilities))]
         public async Task VerifyInterfaceWithLessVisibilityThanInterfaceWarns(string id, string source, DiagnosticResult[] diagnostics)
         {
@@ -771,7 +772,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(CountParameterIsOutSnippets))]
         public async Task ValidateSizeParameterRefKindDiagnostics(string ID, string source, params DiagnosticResult[] diagnostics)
         {
@@ -888,7 +889,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
-        [Theory]
+        [ParallelTheory]
         [MemberData(nameof(IntAndEnumReturnTypeSnippets))]
         public async Task ValidateReturnTypeInfoDiagnostics(string id, string source, DiagnosticResult[] diagnostics)
         {

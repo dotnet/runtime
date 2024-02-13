@@ -164,20 +164,19 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhUnboxAny")]
-        public static unsafe void RhUnboxAny(object? o, ref byte data, EETypePtr pUnboxToEEType)
+        public static unsafe void RhUnboxAny(object? o, ref byte data, MethodTable* pUnboxToEEType)
         {
-            MethodTable* ptrUnboxToEEType = (MethodTable*)pUnboxToEEType.ToPointer();
-            if (ptrUnboxToEEType->IsValueType)
+            if (pUnboxToEEType->IsValueType)
             {
                 bool isValid = false;
 
-                if (ptrUnboxToEEType->IsNullable)
+                if (pUnboxToEEType->IsNullable)
                 {
-                    isValid = (o == null) || o.GetMethodTable() == ptrUnboxToEEType->NullableType;
+                    isValid = (o == null) || o.GetMethodTable() == pUnboxToEEType->NullableType;
                 }
                 else
                 {
-                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), ptrUnboxToEEType);
+                    isValid = (o != null) && UnboxAnyTypeCompare(o.GetMethodTable(), pUnboxToEEType);
                 }
 
                 if (!isValid)
@@ -187,16 +186,16 @@ namespace System.Runtime
 
                     ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
 
-                    throw ptrUnboxToEEType->GetClasslibException(exID);
+                    throw pUnboxToEEType->GetClasslibException(exID);
                 }
 
-                RhUnbox(o, ref data, ptrUnboxToEEType);
+                RhUnbox(o, ref data, pUnboxToEEType);
             }
             else
             {
-                if (o != null && (TypeCast.IsInstanceOfAny(ptrUnboxToEEType, o) == null))
+                if (o != null && (TypeCast.IsInstanceOfAny(pUnboxToEEType, o) == null))
                 {
-                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+                    throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }
 
                 Unsafe.As<byte, object?>(ref data) = o;

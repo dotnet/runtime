@@ -774,8 +774,6 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 				return FALSE;
 		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
 			return FALSE;
-		} else if (size == 8 && t->type != MONO_TYPE_R8) {
-			return FALSE;
 		} else {
 			if (etype)
 				*etype = t;

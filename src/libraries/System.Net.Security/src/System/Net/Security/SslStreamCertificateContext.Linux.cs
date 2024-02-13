@@ -17,6 +17,10 @@ namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
+        internal static TimeSpan DefaultOcspRefreshInterval => TimeSpan.FromHours(24);
+        internal static TimeSpan MinRefreshBeforeExpirationInterval => TimeSpan.FromMinutes(5);
+        internal static TimeSpan RefreshAfterFailureBackOffInterval => TimeSpan.FromSeconds(5);
+
         private const bool TrimRootCertificate = true;
         internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
         internal readonly SafeX509Handle CertificateHandle;
@@ -150,6 +154,17 @@ namespace System.Net.Security
             return ValueTask.FromResult(_ocspResponse);
         }
 
+        internal ValueTask<byte[]?> WaitForPendingOcspFetchAsync()
+        {
+            Task<byte[]?>? pending = _pendingDownload;
+            if (pending is not null && !pending.IsFaulted)
+            {
+                return new ValueTask<byte[]?>(pending);
+            }
+
+            return ValueTask.FromResult(DateTimeOffset.UtcNow <= _ocspExpiration ? _ocspResponse : null);
+        }
+
         private ValueTask<byte[]?> DownloadOcspAsync()
         {
             Task<byte[]?>? pending = _pendingDownload;
@@ -260,8 +275,8 @@ namespace System.Net.Security
                             _ocspUrls[i] = tmp;
                         }
 
-                        DateTimeOffset nextCheckA = DateTimeOffset.UtcNow.AddDays(1);
-                        DateTimeOffset nextCheckB = expiration.AddMinutes(-5);
+                        DateTimeOffset nextCheckA = DateTimeOffset.UtcNow.Add(DefaultOcspRefreshInterval);
+                        DateTimeOffset nextCheckB = expiration.Subtract(MinRefreshBeforeExpirationInterval);
 
                         _ocspResponse = ret;
                         _ocspExpiration = expiration;
@@ -285,7 +300,7 @@ namespace System.Net.Security
                     // All download attempts failed, don't try again for 5 seconds.
                     // This backoff will be applied only if the OCSP staple is not expired.
                     // If it is expired, we will force-refresh it during next GetOcspResponseAsync call.
-                    _nextDownload = DateTimeOffset.UtcNow.AddSeconds(5);
+                    _nextDownload = DateTimeOffset.UtcNow.Add(RefreshAfterFailureBackOffInterval);
                 }
                 return ret;
             }

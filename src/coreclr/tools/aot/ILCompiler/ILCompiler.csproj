@@ -13,13 +13,13 @@
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
     <NativeAotSupported Condition="$(OutputRID.StartsWith('tizen')) == 'true'">false</NativeAotSupported>
+    <NativeAotSupported Condition="$(OutputRID.EndsWith('-arm')) == 'true'">false</NativeAotSupported>
     <!-- Disable native AOT on FreeBSD when cross building from Linux. -->
     <NativeAotSupported Condition="'$(TargetOS)' == 'freebsd' and '$(CrossBuild)' == 'true'">false</NativeAotSupported>
     <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
     <SysRoot Condition="'$(NativeAotSupported)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
     <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
-    <PublishReadyToRun Condition="'$(DotNetBuildVertical)' == 'true' AND '$(CrossBuild)' == 'true'">false</PublishReadyToRun>
     <PublishTrimmed Condition="'$(NativeAotSupported)' != 'true'">true</PublishTrimmed>
     <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
     <!-- Compute host package name (taken from Microsoft.DotNet.ILCompiler.SingleEntry.targets) -->

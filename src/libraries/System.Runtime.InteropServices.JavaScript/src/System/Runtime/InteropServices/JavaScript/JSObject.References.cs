@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             get
             {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
                 return ProxyContext.SynchronizationContext;
 #else
                 throw new PlatformNotSupportedException();
@@ -25,10 +25,6 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-#if !DISABLE_LEGACY_JS_INTEROP
-        internal GCHandle? InFlight;
-        internal int InFlightCounter;
-#endif
         internal bool _isDisposed;
 
         internal JSObject(IntPtr jsHandle, JSProxyContext ctx)
@@ -36,41 +32,6 @@ namespace System.Runtime.InteropServices.JavaScript
             ProxyContext = ctx;
             JSHandle = jsHandle;
         }
-
-#if !DISABLE_LEGACY_JS_INTEROP
-        internal void AddInFlight()
-        {
-            AssertNotDisposed();
-            lock (ProxyContext)
-            {
-                InFlightCounter++;
-                if (InFlightCounter == 1)
-                {
-                    Debug.Assert(InFlight == null, "InFlight == null");
-                    InFlight = GCHandle.Alloc(this, GCHandleType.Normal);
-                }
-            }
-        }
-
-        // Note that we could not use SafeHandle.DangerousAddRef() and DangerousRelease()
-        // because we could get to zero InFlightCounter multiple times across lifetime of the JSObject
-        // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
-        internal void ReleaseInFlight()
-        {
-            lock (ProxyContext)
-            {
-                Debug.Assert(InFlightCounter != 0, "InFlightCounter != 0");
-
-                InFlightCounter--;
-                if (InFlightCounter == 0)
-                {
-                    Debug.Assert(InFlight.HasValue, "InFlight.HasValue");
-                    InFlight.Value.Free();
-                    InFlight = null;
-                }
-            }
-        }
-#endif
 
         /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is JSObject other && JSHandle == other.JSHandle;
@@ -94,27 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (!_isDisposed)
             {
-#if FEATURE_WASM_THREADS
-                if (ProxyContext.SynchronizationContext._isDisposed)
-                {
-                    return;
-                }
-
-                if (ProxyContext.IsCurrentThread())
-                {
-                    JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
-                    return;
-                }
-
-                // async
-                ProxyContext.SynchronizationContext.Post(static (object? s) =>
-                {
-                    var x = ((JSObject self, bool skipJS))s!;
-                    JSProxyContext.ReleaseCSOwnedObject(x.self, x.skipJS);
-                }, (this, skipJsCleanup));
-#else
                 JSProxyContext.ReleaseCSOwnedObject(this, skipJsCleanup);
-#endif
             }
         }
 

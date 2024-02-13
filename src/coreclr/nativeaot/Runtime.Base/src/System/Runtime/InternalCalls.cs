@@ -21,10 +21,10 @@ namespace System.Runtime
         VTableOffset = 0x2,
     }
 
-    internal struct DispatchCellInfo
+    internal unsafe struct DispatchCellInfo
     {
         public DispatchCellType CellType;
-        public EETypePtr InterfaceType;
+        public MethodTable* InterfaceType;
         public ushort InterfaceSlot;
         public byte HasCache;
         public uint MetadataToken;

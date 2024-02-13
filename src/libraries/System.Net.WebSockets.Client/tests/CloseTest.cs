@@ -266,7 +266,6 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_ServerInitiated_CanReceive(Uri server)
         {
-            string message = "Hello WebSockets!";
             var expectedCloseStatus = WebSocketCloseStatus.NormalClosure;
             var expectedCloseDescription = ".shutdownafter";
 
@@ -302,9 +301,6 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(expectedCloseDescription, cws.CloseStatusDescription);
 
                 Assert.Equal(WebSocketState.CloseReceived, cws.State);
-
-                // Should be able to send.
-                await cws.SendAsync(WebSocketData.GetBufferFromText(message), WebSocketMessageType.Text, true, cts.Token);
 
                 // Cannot change the close status/description with the final close.
                 var closeStatus = PlatformDetection.IsNotBrowser ? WebSocketCloseStatus.InvalidPayloadData : (WebSocketCloseStatus)3210;

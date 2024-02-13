@@ -69,11 +69,7 @@ nativeStringResourceTable_mscorrc
 #PAL__pread
 #PAL__close
 
-#minipal_get_length_utf16_to_utf8
-#minipal_convert_utf16_to_utf8
-
 #_wcsicmp
-#_stricmp
 #sprintf_s
 #vsprintf_s
 #_snprintf_s

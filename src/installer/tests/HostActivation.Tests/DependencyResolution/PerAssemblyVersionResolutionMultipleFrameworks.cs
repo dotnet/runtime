@@ -8,7 +8,6 @@ using Xunit;
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 {
     public abstract class PerAssemblyVersionResolutionMultipleFrameworksBase :
-        ComponentDependencyResolutionBase,
         IClassFixture<PerAssemblyVersionResolutionBase.SharedTestState>
     {
         protected readonly SharedTestState SharedState;
@@ -33,16 +32,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         private const string TestAssemblyWithBothVersions = "Test.Assembly.BothVersions";
 
         [Theory]
-        [InlineData(TestAssemblyWithBothVersions, null, null, MicrosoftNETCoreApp)] // NetCoreApp has higher version than HighWare
-        [InlineData(TestAssemblyWithBothVersions, "1.0.0.0", "1.0.0.0", MicrosoftNETCoreApp)]
+        [InlineData(TestAssemblyWithBothVersions, null, null, Constants.MicrosoftNETCoreApp)] // NetCoreApp has higher version than HighWare
+        [InlineData(TestAssemblyWithBothVersions, "1.0.0.0", "1.0.0.0", Constants.MicrosoftNETCoreApp)]
         [InlineData(TestAssemblyWithBothVersions, "3.0.0.0", "4.0.0.0", null)]  // App has higher version than any framework
         [InlineData(TestAssemblyWithBothVersions, "2.1.1.1", "3.3.0.0", null)]  // App has higher file version
-        [InlineData(TestAssemblyWithBothVersions, "2.1.1.1", "3.2.2.2", MicrosoftNETCoreApp)]  // Lower level framework always wins on equality (this is intentional)
-        [InlineData(TestAssemblyWithBothVersions, null, "4.0.0.0", MicrosoftNETCoreApp)] // The one with version wins
-        [InlineData(TestAssemblyWithBothVersions, null, "2.0.0.0", MicrosoftNETCoreApp)] // The one with version wins
+        [InlineData(TestAssemblyWithBothVersions, "2.1.1.1", "3.2.2.2", Constants.MicrosoftNETCoreApp)]  // Lower level framework always wins on equality (this is intentional)
+        [InlineData(TestAssemblyWithBothVersions, null, "4.0.0.0", Constants.MicrosoftNETCoreApp)] // The one with version wins
+        [InlineData(TestAssemblyWithBothVersions, null, "2.0.0.0", Constants.MicrosoftNETCoreApp)] // The one with version wins
         [InlineData(TestAssemblyWithBothVersions, "3.0.0.0", null, null)]
-        [InlineData(TestAssemblyWithBothVersions, "2.1.1.1", null, MicrosoftNETCoreApp)]
-        [InlineData(TestAssemblyWithNoVersions, null, null, MicrosoftNETCoreApp)] // No versions are treated as equal (so lower one wins)
+        [InlineData(TestAssemblyWithBothVersions, "2.1.1.1", null, Constants.MicrosoftNETCoreApp)]
+        [InlineData(TestAssemblyWithNoVersions, null, null, Constants.MicrosoftNETCoreApp)] // No versions are treated as equal (so lower one wins)
         [InlineData(TestAssemblyWithNoVersions, "1.0.0.0", null, null)] // The one with version wins
         [InlineData(TestAssemblyWithNoVersions, "1.0.0.0", "1.0.0.0", null)] // The one with version wins
         [InlineData(TestAssemblyWithNoVersions, null, "1.0.0.0", null)] // The one with version wins
@@ -52,11 +51,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData(TestAssemblyWithAssemblyVersion, "3.0.0.0", "1.0.0.0", null)] // App has higher version than any framework
         [InlineData(TestAssemblyWithAssemblyVersion, "2.1.1.2", null, HighWare)] // Both are exactly the same, so lower level wins
         [InlineData(TestAssemblyWithAssemblyVersion, "2.1.1.2", "1.0.0.0", null)]
-        [InlineData(TestAssemblyWithFileVersion, null, null, MicrosoftNETCoreApp)] // Frameworks both have the same version - lower one wins
+        [InlineData(TestAssemblyWithFileVersion, null, null, Constants.MicrosoftNETCoreApp)] // Frameworks both have the same version - lower one wins
         [InlineData(TestAssemblyWithFileVersion, "1.0.0.0", null, null)] // App has assembly version, no framework has it - so app wins
-        [InlineData(TestAssemblyWithFileVersion, null, "1.0.0.0", MicrosoftNETCoreApp)]
+        [InlineData(TestAssemblyWithFileVersion, null, "1.0.0.0", Constants.MicrosoftNETCoreApp)]
         [InlineData(TestAssemblyWithFileVersion, null, "4.0.0.0", null)] // App has higher version than either framework
-        [InlineData(TestAssemblyWithFileVersion, null, "3.2.2.2", MicrosoftNETCoreApp)] // Exactly equal - lower one wins
+        [InlineData(TestAssemblyWithFileVersion, null, "3.2.2.2", Constants.MicrosoftNETCoreApp)] // Exactly equal - lower one wins
         public void AppWithSameAssemblyAsFramework(string testAssemblyName, string appAsmVersion, string appFileVersion, string frameWorkWins)
         {
             RunTest(null, testAssemblyName, appAsmVersion, appFileVersion, frameWorkWins);
@@ -73,7 +72,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 runtimeConfig => runtimeConfig
                     .WithFramework(HighWare, frameworkReferenceVersion)
                     .WithRollForward(Constants.RollForwardSetting.Major),
-                TestAssemblyWithBothVersions, "2.1.1.1", "3.2.2.2", MicrosoftNETCoreApp);
+                TestAssemblyWithBothVersions, "2.1.1.1", "3.2.2.2", Constants.MicrosoftNETCoreApp);
         }
 
         protected abstract void RunTest(Action<RuntimeConfig> runtimeConfigCustomizer, string testAssemblyName, string appAsmVersion, string appFileVersion, string frameWorkWins);
@@ -104,7 +103,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 builder.AddFramework(
                     HighWare,
                     "1.1.1",
-                    runtimeConfig => runtimeConfig.WithFramework(MicrosoftNETCoreApp, "4.0.0"),
+                    runtimeConfig => runtimeConfig.WithFramework(Constants.MicrosoftNETCoreApp, "4.0.0"),
                     path => NetCoreAppBuilder.ForNETCoreApp(HighWare, TestContext.TargetRID)
                         .WithProject(HighWare, "1.1.1", p => p
                             .WithAssemblyGroup(null, g => g
@@ -152,7 +151,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             string expectedBaseLocation = frameworkWins switch
             {
-                MicrosoftNETCoreApp => SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath,
+                Constants.MicrosoftNETCoreApp => SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath,
                 HighWare => SharedState.HighWarePath,
                 _ => app.Location,
             };

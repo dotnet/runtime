@@ -281,10 +281,4 @@
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <Reference Include="System.Runtime.InteropServices.JavaScript" />
-  </ItemGroup>
-
 </Project>

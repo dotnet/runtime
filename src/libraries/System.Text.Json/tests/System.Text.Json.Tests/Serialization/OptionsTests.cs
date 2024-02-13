@@ -73,6 +73,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
+            Assert.Throws<InvalidOperationException>(() => options.AllowOutOfOrderMetadataProperties = options.AllowOutOfOrderMetadataProperties);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
             Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
             Assert.Throws<InvalidOperationException>(() => options.Encoder = JavaScriptEncoder.Default);
