@@ -389,11 +389,11 @@ namespace System.Net.Quic.Tests
             await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
 
             // Make sure the listener is still usable and there is no lingering bad connection
-            // validationResult = true;
-            // (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
-            // await PingPong(clientConnection, serverConnection);
-            // await clientConnection.DisposeAsync();
-            // await serverConnection.DisposeAsync();
+            validationResult = true;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
+            await PingPong(clientConnection, serverConnection);
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
         }
 
         [Fact]
