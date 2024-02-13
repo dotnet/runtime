@@ -5514,7 +5514,15 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
     }
 
-    const bool expandInline = canExpandInline && shouldExpandInline;
+    bool expandInline = canExpandInline && shouldExpandInline;
+
+    if (op2->IsIconHandle(GTF_ICON_CLASS_HDL) && (helper != CORINFO_HELP_ISINSTANCEOFCLASS || !isClassExact))
+    {
+        // TODO-InlineCast: move these to the late cast expansion phase as well:
+        // 1) isinst <exact class>
+        // 2) op2 being GT_RUNTIMELOOKUP
+        expandInline = false;
+    }
 
     if (!expandInline)
     {
@@ -5529,7 +5537,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
 
         // Instrument this castclass/isinst
-        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
+        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
+            !compCurBB->isRunRarely())
         {
             // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
             if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
@@ -12280,7 +12289,7 @@ void Compiler::impFixPredLists()
 
                         BasicBlock* const continuation = predBlock->Next();
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
-                        newEdge->setLikelihood(1.0);
+                        newEdge->setLikelihood(1.0 / predCount);
 
                         jumpEhf->bbeSuccs[predNum] = continuation;
                         ++predNum;

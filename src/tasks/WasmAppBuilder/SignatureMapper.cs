@@ -7,51 +7,74 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using WasmAppBuilder;
 
 internal static class SignatureMapper
 {
-    private static char? TypeToChar(Type t)
+    private static char? TypeToChar(Type t, LogAdapter log)
     {
-        char? c = t.Name switch
-        {
-            nameof(String) => 'I',
-            nameof(Boolean) => 'I',
-            nameof(Char) => 'I',
-            nameof(Byte) => 'I',
-            nameof(Int16) => 'I',
-            nameof(UInt16) => 'I',
-            nameof(Int32) => 'I',
-            nameof(UInt32) => 'I',
-            nameof(IntPtr) => 'I',
-            nameof(UIntPtr) => 'I',
-            nameof(Int64) => 'L',
-            nameof(UInt64) => 'L',
-            nameof(Single) => 'F',
-            nameof(Double) => 'D',
-            "Void" => 'V',
-            _ => null
-        };
+        char? c = null;
+        if (t.Namespace == "System") {
+            c = t.Name switch
+            {
+                nameof(String) => 'I',
+                nameof(Boolean) => 'I',
+                nameof(Char) => 'I',
+                nameof(Byte) => 'I',
+                nameof(Int16) => 'I',
+                nameof(UInt16) => 'I',
+                nameof(Int32) => 'I',
+                nameof(UInt32) => 'I',
+                nameof(Int64) => 'L',
+                nameof(UInt64) => 'L',
+                nameof(Single) => 'F',
+                nameof(Double) => 'D',
+                // FIXME: These will need to be L for wasm64
+                nameof(IntPtr) => 'I',
+                nameof(UIntPtr) => 'I',
+                "Void" => 'V',
+                _ => null
+            };
+        }
 
         if (c == null)
         {
+            // FIXME: Most of these need to be L for wasm64
             if (t.IsArray)
+                c = 'I';
+            else if (t.IsByRef)
+                c = 'I';
+            else if (typeof(Delegate).IsAssignableFrom(t))
+                // FIXME: Should we narrow this to only certain types of delegates?
                 c = 'I';
             else if (t.IsClass)
                 c = 'I';
             else if (t.IsInterface)
                 c = 'I';
             else if (t.IsEnum)
-                c = TypeToChar(t.GetEnumUnderlyingType());
-            else if (t.IsValueType)
+                c = TypeToChar(t.GetEnumUnderlyingType(), log);
+            else if (t.IsPointer)
                 c = 'I';
+            else if (PInvokeTableGenerator.IsFunctionPointer(t))
+                c = 'I';
+            else if (t.IsValueType)
+            {
+                var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (fields.Length == 1)
+                    return TypeToChar(fields[0].FieldType, log);
+                else if (PInvokeTableGenerator.IsBlittable(t, log))
+                    c = 'I';
+            }
+            else
+                log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
         }
 
         return c;
     }
 
-    public static string? MethodToSignature(MethodInfo method)
+    public static string? MethodToSignature(MethodInfo method, LogAdapter log)
     {
-        string? result = TypeToChar(method.ReturnType)?.ToString();
+        string? result = TypeToChar(method.ReturnType, log)?.ToString();
         if (result == null)
         {
             return null;
@@ -59,7 +82,7 @@ internal static class SignatureMapper
 
         foreach (var parameter in method.GetParameters())
         {
-            char? parameterChar = TypeToChar(parameter.ParameterType);
+            char? parameterChar = TypeToChar(parameter.ParameterType, log);
             if (parameterChar == null)
             {
                 return null;

@@ -2059,6 +2059,9 @@ private:
     // The source of the control flow
     BasicBlock* m_sourceBlock;
 
+    // The destination of the control flow
+    BasicBlock* m_destBlock;
+
     // Edge weights
     weight_t m_edgeWeightMin;
     weight_t m_edgeWeightMax;
@@ -2074,9 +2077,10 @@ private:
     bool m_likelihoodSet;
 
 public:
-    FlowEdge(BasicBlock* block, FlowEdge* rest)
+    FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
         : m_nextPredEdge(rest)
-        , m_sourceBlock(block)
+        , m_sourceBlock(sourceBlock)
+        , m_destBlock(destBlock)
         , m_edgeWeightMin(0)
         , m_edgeWeightMax(0)
         , m_likelihood(0)
@@ -2102,12 +2106,26 @@ public:
 
     BasicBlock* getSourceBlock() const
     {
+        assert(m_sourceBlock != nullptr);
         return m_sourceBlock;
     }
 
     void setSourceBlock(BasicBlock* newBlock)
     {
+        assert(newBlock != nullptr);
         m_sourceBlock = newBlock;
+    }
+
+    BasicBlock* getDestinationBlock() const
+    {
+        assert(m_destBlock != nullptr);
+        return m_destBlock;
+    }
+
+    void setDestinationBlock(BasicBlock* newBlock)
+    {
+        assert(newBlock != nullptr);
+        m_destBlock = newBlock;
     }
 
     weight_t edgeWeightMin() const
