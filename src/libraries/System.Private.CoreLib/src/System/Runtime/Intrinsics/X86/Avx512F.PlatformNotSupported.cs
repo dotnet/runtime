@@ -3445,7 +3445,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSCALEFSD xmm1 {k1}{z}, xmm2, xmm3/m64{er}
         /// </summary>
         public static Vector128<double> ScaleScalar(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
-
+        /// <summary>
+        /// __m128 _mm_scalef_round_ss (__m128 a, __m128 b)
+        ///   VSCALEFSS xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<float> ScaleScalar(Vector128<float> left, Vector128<float> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128d _mm_scalef_round_sd (__m128d a, __m128d b)
+        ///   VSCALEFSD xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<double> ScaleScalar(Vector128<double> left, Vector128<double> right, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m512i _mm512_sll_epi32 (__m512i a, __m128i count)
         ///   VPSLLD zmm1 {k1}{z}, zmm2, xmm3/m128
