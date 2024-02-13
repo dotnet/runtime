@@ -42,7 +42,7 @@
            This allows to build the repository using './build.sh <args> /p:DotNetBuildFromSource=true'.
            Properties that control flags from source-build, and the expected output for source-build should be added to this file. -->
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(TargetArch)' != '$(_hostArch)' and '$(ShortStack)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)allconfigurations</InnerBuildArgs>
