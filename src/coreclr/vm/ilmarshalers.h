@@ -1839,7 +1839,7 @@ protected:
         return native;
     }
 
-    virtual void EmitReInitNative(ILCodeStream* pslILEmit)
+    virtual void EmitReInitNative(ILCodeStream* pslILEmit) override
     {
         STANDARD_VM_CONTRACT;
 
