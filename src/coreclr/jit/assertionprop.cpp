@@ -5152,7 +5152,6 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
             GenTree* arg1 = call->gtArgs.GetArgByIndex(1)->GetNode();
-
             if (arg1->gtOper != GT_LCL_VAR)
             {
                 return nullptr;
