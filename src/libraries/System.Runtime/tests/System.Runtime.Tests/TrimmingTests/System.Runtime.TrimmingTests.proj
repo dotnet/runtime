@@ -1,5 +1,8 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
+  </ItemGroup>
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
