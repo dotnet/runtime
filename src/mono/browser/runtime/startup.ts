@@ -486,25 +486,25 @@ async function ensureUsedWasmFeatures() {
 
 export function start_runtime() {
     try {
-    const mark = startMeasure();
+        const mark = startMeasure();
         mono_log_debug("Initializing mono runtime");
-    for (const k in runtimeHelpers.config.environmentVariables) {
-        const v = runtimeHelpers.config.environmentVariables![k];
-        if (typeof (v) === "string")
-            mono_wasm_setenv(k, v);
-        else
-            throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
-    }
-    if (runtimeHelpers.config.runtimeOptions)
-        mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
+        for (const k in runtimeHelpers.config.environmentVariables) {
+            const v = runtimeHelpers.config.environmentVariables![k];
+            if (typeof (v) === "string")
+                mono_wasm_setenv(k, v);
+            else
+                throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
+        }
+        if (runtimeHelpers.config.runtimeOptions)
+            mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
 
-    if (runtimeHelpers.config.aotProfilerOptions)
-        mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions);
+        if (runtimeHelpers.config.aotProfilerOptions)
+            mono_wasm_init_aot_profiler(runtimeHelpers.config.aotProfilerOptions);
 
-    if (runtimeHelpers.config.browserProfilerOptions)
-        mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
+        if (runtimeHelpers.config.browserProfilerOptions)
+            mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
 
-    mono_wasm_load_runtime();
+        mono_wasm_load_runtime();
 
         jiterpreter_allocate_tables();
 
@@ -522,7 +522,7 @@ export function start_runtime() {
         // get GCHandle of the ctx
         runtimeHelpers.afterMonoStarted.promise_control.resolve(runtimeHelpers.proxyGCHandle);
 
-    endMeasure(mark, MeasuredBlock.startRuntime);
+        endMeasure(mark, MeasuredBlock.startRuntime);
     } catch (err) {
         mono_log_error("start_runtime() failed", err);
         loaderHelpers.mono_exit(1, err);

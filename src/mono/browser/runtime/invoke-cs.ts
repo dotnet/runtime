@@ -353,7 +353,7 @@ export function invoke_sync_method(method: MonoMethod, args: JSMarshalerArgument
     const fail_root = mono_wasm_new_root<MonoString>();
     try {
         set_args_context(args);
-        const fail = cwraps.mono_wasm_invoke_method(method, args as any, fail_root.address);
+        const fail = cwraps.mono_wasm_invoke_method(method, args, fail_root.address);
         if (fail) runtimeHelpers.nativeAbort("ERR24: Unexpected error: " + monoStringToString(fail_root));
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);

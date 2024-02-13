@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import type {
     MonoAssembly, MonoClass,
     MonoMethod, MonoObject,
-    MonoType, MonoObjectRef, MonoStringRef
+    MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
 } from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
@@ -181,7 +181,7 @@ export interface t_Cwraps {
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
-    mono_wasm_invoke_method(method: MonoMethod, args: VoidPtr, fail: MonoStringRef): number;
+    mono_wasm_invoke_method(method: MonoMethod, args: JSMarshalerArguments, fail: MonoStringRef): number;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
     mono_wasm_i52_to_f64(source: VoidPtr, error: Int32Ptr): number;
