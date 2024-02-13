@@ -294,6 +294,19 @@ public:
     virtual void dump(FILE* output) = 0;
 };
 
+// Helper class record and display a simple single value.
+class Counter : public Dumpable
+{
+public:
+    int64_t Value;
+
+    Counter(int64_t initialValue = 0) : Value(initialValue)
+    {
+    }
+
+    void dump(FILE* output);
+};
+
 // Helper class to record and display a histogram of different values.
 // Usage like:
 // static unsigned s_buckets[] = { 1, 2, 5, 10, 0 }; // Must have terminating 0
