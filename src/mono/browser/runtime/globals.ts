@@ -68,7 +68,7 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
         afterOnRuntimeInitialized: createPromiseController<void>(),
         afterPostRun: createPromiseController<void>(),
         nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
-        nativeExit: (code: number) => { throw new Error("exit:" + code); }
+        nativeExit: (code: number) => { throw new Error("exit:" + code); },
     };
     Object.assign(runtimeHelpers, rh);
 

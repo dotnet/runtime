@@ -6,14 +6,14 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { GCHandle, GCHandleNull, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
-import { alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_intptr, set_arg_type, set_gc_handle } from "./marshal";
+import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_intptr, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_sync_method } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
 import { assert_c_interop } from "./invoke-js";
-import { getI32 } from "./memory";
 import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
+import { _zero_region } from "./memory";
 
 const managedExports: ManagedExports = {} as any;
 
@@ -213,18 +213,19 @@ export function install_main_synchronization_context(): GCHandle {
     const sp = Module.stackSave();
     try {
         // tid in, gc_handle out
-        const args = alloc_stack_frame(4);
+        const bytes = JavaScriptMarshalerArgSize * 4;
+        const args = Module.stackAlloc(bytes) as any;
+        _zero_region(args, bytes);
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
         set_arg_intptr(arg1, mono_wasm_main_thread_ptr() as any);
         const fail = cwraps.mono_wasm_invoke_method(managedExports.InstallMainSynchronizationContext!, args, 0 as any);
         if (fail) runtimeHelpers.nativeAbort("ERR24: Unexpected error");
-        get_arg_gc_handle(arg2);
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
         }
-        return getI32(args) as any;
+        return get_arg_gc_handle(arg2) as any;
     } finally {
         Module.stackRestore(sp);
     }
