@@ -17778,6 +17778,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
             assert((regpos == 1) || (regpos == 2));
             return ((regpos == 2) ? PREDICATE_ZERO : PREDICATE_SIZED);
 
+        case IF_SVE_DV_4A:
+            assert((regpos >= 1) && (regpos <= 3));
+            return ((regpos == 3) ? PREDICATE_SIZED : PREDICATE_NONE);
+
         case IF_SVE_ID_2A:
         case IF_SVE_JG_2A:
             return PREDICATE_NONE;
@@ -25396,9 +25400,9 @@ void emitter::emitDispInsHelp(
 
         // <Pd>, <Pn>, <Pm>.<T>[<Wv>, <imm>]
         case IF_SVE_DV_4A: // ........ix.xxxvv ..NNNN.MMMM.DDDD -- SVE broadcast predicate element
-            emitDispPredicateReg(id->idReg1(), PREDICATE_NONE, id->idInsOpt(), true);   // DDDD
-            emitDispPredicateReg(id->idReg2(), PREDICATE_NONE, id->idInsOpt(), true);   // NNNN
-            emitDispPredicateReg(id->idReg3(), PREDICATE_SIZED, id->idInsOpt(), false); // MMMM
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt, 1), id->idInsOpt(), true);  // DDDD
+            emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt, 2), id->idInsOpt(), true);  // NNNN
+            emitDispPredicateReg(id->idReg3(), insGetPredicateType(fmt, 3), id->idInsOpt(), false); // MMMM
             printf("[");
             emitDispReg(id->idReg4(), EA_4BYTE, true); // vv
             emitDispImm(emitGetInsSC(id), false);      // ix xx
