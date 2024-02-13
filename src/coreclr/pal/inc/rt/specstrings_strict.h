@@ -656,7 +656,6 @@
 /***************************************************************************
 * Expert Macros
 ***************************************************************************/
-#define __null                  __allowed(on_typedecl)
 #define __notnull               __allowed(on_typedecl)
 #define __maybenull             __allowed(on_typedecl)
 #define __exceptthat            __allowed(on_typedecl)

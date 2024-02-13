@@ -568,10 +568,8 @@
 // Keep in sync with the definitions in dbgutil.cpp and createdump.h
 #define DACCESS_TABLE_SYMBOL "g_dacTable"
 
-#ifdef PAL_STDCPP_COMPAT
 #include <type_traits>
-#else
-#include "clr_std/type_traits"
+#ifndef PAL_STDCPP_COMPAT
 #include "crosscomp.h"
 #endif
 

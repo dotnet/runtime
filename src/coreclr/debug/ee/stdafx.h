@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <wchar.h>
 #include <stdio.h>
+#include <algorithm>
 
 #include <windows.h>
 

@@ -24,22 +24,15 @@ Abstract:
 #include "pal/misc.h"
 
 #include <errno.h>
-/* <stdarg.h> needs to be included after "palinternal.h" to avoid name
-   collision for va_start and va_end */
 #include <stdarg.h>
 #include <time.h>
 #include <limits.h>
 
-#if defined(HOST_AMD64) || defined(_x86_)
-#include <xmmintrin.h>
-#endif // defined(HOST_AMD64) || defined(_x86_)
 #if defined(_DEBUG)
 #include <assert.h>
 #endif //defined(_DEBUG)
 
 SET_DEFAULT_DEBUG_CHANNEL(CRT);
-
-using namespace CorUnix;
 
 /*++
 Function:
@@ -107,28 +100,4 @@ __iscsym( int c )
     LOGEXIT( "__iscsym returning 0\n" );
     PERF_EXIT(__iscsym);
     return 0;
-}
-/*++
-
-PAL forwarders for standard macro headers.
-
---*/
-PALIMPORT DLLEXPORT int * __cdecl PAL_errno()
-{
-    return &errno;
-}
-
-extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdout()
-{
-    return stdout;
-}
-
-extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stdin()
-{
-    return stdin;
-}
-
-extern "C" PALIMPORT DLLEXPORT FILE* __cdecl PAL_stderr()
-{
-    return stderr;
 }

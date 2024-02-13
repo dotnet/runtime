@@ -84,7 +84,7 @@ SpinConstants g_SpinConstants = {
 
 inline void InitializeSpinConstants_NoHost()
 {
-    g_SpinConstants.dwMaximumDuration = max(2, g_SystemInfo.dwNumberOfProcessors) * 20000;
+    g_SpinConstants.dwMaximumDuration = max(2u, g_SystemInfo.dwNumberOfProcessors) * 20000;
 }
 
 #else //!SELF_NO_HOST

@@ -31,11 +31,7 @@
 
 #include "static_assert.h"
 
-#ifdef PAL_STDCPP_COMPAT
 #include <type_traits>
-#else
-#include "clr_std/type_traits"
-#endif
 
 //==================================================================
 // Semantics: if val can be represented as the exact same value

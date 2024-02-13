@@ -8329,7 +8329,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         // Place by value class fields last
         // Update the number of GC pointer series
         // Calculate largest alignment requirement
-        int largestAlignmentRequirement = 1;
+        unsigned int largestAlignmentRequirement = 1;
         for (i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
         {
             if (pFieldDescList[i].IsByValue())
@@ -8362,7 +8362,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 else
                 {
                     int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)fieldAlignmentRequirement);
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
                 }
 

@@ -101,7 +101,9 @@ extern "C" {
 #else
 
 #define PALIMPORT
+#ifndef DLLEXPORT
 #define DLLEXPORT __attribute__((visibility("default")))
+#endif
 #define PAL_NORETURN    __attribute__((noreturn))
 
 #endif
@@ -207,20 +209,6 @@ extern "C" {
 #endif // _MSC_VER
 
 #ifndef PAL_STDCPP_COMPAT
-// Defined in gnu's types.h. For non PAL_IMPLEMENTATION system
-// includes are not included, so we need to define them.
-#ifndef PAL_IMPLEMENTATION
-
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
-typedef __int32 int32_t;
-typedef unsigned __int32 uint32_t;
-typedef __int16 int16_t;
-typedef unsigned __int16 uint16_t;
-typedef __int8 int8_t;
-typedef unsigned __int8 uint8_t;
-
-#endif // PAL_IMPLEMENTATION
 
 #ifndef _MSC_VER
 

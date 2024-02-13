@@ -1938,7 +1938,7 @@ CInMemoryStream::CopyTo(
 
     _ASSERTE(cb.QuadPart <= UINT32_MAX);
     ULONG       cbTotal = min(static_cast<ULONG>(cb.QuadPart), m_cbSize - m_cbCurrent);
-    ULONG       cbRead=min(1024, cbTotal);
+    ULONG       cbRead=min(1024u, cbTotal);
     CQuickBytes rBuf;
     void        *pBuf = rBuf.AllocNoThrow(cbRead);
     if (pBuf == 0)
@@ -2061,7 +2061,7 @@ CGrowableStream::CGrowableStream(float multiplicativeGrowthRate, DWORD additiveG
     m_multiplicativeGrowthRate = min(max(1.0F, multiplicativeGrowthRate), 2.0F);
 
     _ASSERTE(additiveGrowthRate >= 1);
-    m_additiveGrowthRate = max(1, additiveGrowthRate);
+    m_additiveGrowthRate = max(1u, additiveGrowthRate);
 } // CGrowableStream::CGrowableStream
 
 #ifndef DACCESS_COMPILE

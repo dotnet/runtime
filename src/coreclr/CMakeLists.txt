@@ -202,12 +202,6 @@ if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(debug/createdump)
   endif(CLR_CMAKE_HOST_OSX OR (CLR_CMAKE_HOST_LINUX AND NOT CLR_CMAKE_HOST_UNIX_X86 AND NOT CLR_CMAKE_HOST_ANDROID))
 
-  # Include the dummy c++ include files
-  include_directories("pal/inc/rt/cpp")
-
-  # This prevents inclusion of standard C compiler headers
-  add_compile_options(-nostdinc)
-
   set (NATIVE_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nativeresources)
   include_directories(${NATIVE_RESOURCE_DIR})
   set (PROCESS_RC_SCRIPT ${NATIVE_RESOURCE_DIR}/processrc.sh)

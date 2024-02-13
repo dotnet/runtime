@@ -49,7 +49,7 @@
 #endif
   #define USER_ARGS_COME_LAST      0
   #define EMIT_TRACK_STACK_DEPTH   1
-  #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this
+  #define TARGET_POINTER_SIZE      4u       // equal to sizeof(void*) and the managed pointer size in bytes for this
                                            // target
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
                                            // filter-handler, fault) and directly execute 'finally' clauses.

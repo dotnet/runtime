@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _UTILS_H_
 
 #include "safemath.h"
-#include "clr_std/type_traits"
+#include <type_traits>
 #include "iallocator.h"
 #include "hostallocator.h"
 #include "cycletimer.h"
@@ -158,6 +158,18 @@ int signum(T val)
     {
         return 0;
     }
+}
+
+template<typename T, typename U>
+constexpr auto max(T&& t, U&& u) -> decltype(t > u ? t : u)
+{
+    return t > u ? t : u;
+}
+
+template<typename T, typename U>
+constexpr auto min(T&& t, U&& u) -> decltype(t < u ? t : u)
+{
+    return t < u ? t : u;
 }
 
 #if defined(DEBUG)

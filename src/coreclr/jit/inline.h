@@ -1048,7 +1048,7 @@ public:
     enum
     {
         ALWAYS_INLINE_SIZE              = 16,
-        IMPLEMENTATION_MAX_INLINE_SIZE  = _UI16_MAX,
+        IMPLEMENTATION_MAX_INLINE_SIZE  = UINT16_MAX,
         IMPLEMENTATION_MAX_INLINE_DEPTH = 1000
     };
 

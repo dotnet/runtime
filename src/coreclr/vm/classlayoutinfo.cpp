@@ -136,7 +136,7 @@ namespace
     )
     {
         UINT32 cbCurOffset = parentSize;
-        BYTE LargestAlignmentRequirement = max(1, min(packingSize, parentAlignmentRequirement));
+        BYTE LargestAlignmentRequirement = max<BYTE>(1, min(packingSize, parentAlignmentRequirement));
 
         // Start with the size inherited from the parent (if any).
         uint32_t calcTotalSize = parentSize;

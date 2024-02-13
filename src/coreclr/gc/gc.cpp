@@ -51,6 +51,16 @@ public:
 
 uint64_t gc_rand::x = 0;
 
+// NativeAOT defines max/min as macros.
+// CoreCLR does not.
+// Define them if they aren't already available.
+#ifndef min
+#define min(_a, _b) ((_a) < (_b) ? (_a) : (_b))
+#endif
+#ifndef max
+#define max(_a, _b) ((_a) < (_b) ? (_b) : (_a))
+#endif
+
 #if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
 BOOL bgc_heap_walk_for_etw_p = FALSE;
 #endif //BACKGROUND_GC && FEATURE_EVENT_TRACE

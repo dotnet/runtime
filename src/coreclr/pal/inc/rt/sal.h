@@ -2399,16 +2399,13 @@ extern "C" {
     #define _SA_SPECSTRIZE( x ) #x
 
     /*
-     __null p
      __notnull p
      __maybenull p
 
-     Annotates a pointer p. States that pointer p is null. Commonly used
-     in the negated form __notnull or the possibly null form __maybenull.
+     Annotates a pointer p. States that pointer p is never null or maybe null.
     */
 
 #ifndef PAL_STDCPP_COMPAT
-    #define __null                  _Null_impl_
     #define __notnull               _Notnull_impl_
     #define __maybenull             _Maybenull_impl_
 #endif // !PAL_STDCPP_COMPAT
@@ -2599,7 +2596,6 @@ extern "C" {
 
 #else // ][
 #ifndef PAL_STDCPP_COMPAT
-    #define __null
     #define __notnull
     #define __deref
 #endif // !PAL_STDCPP_COMPAT

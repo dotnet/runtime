@@ -24,6 +24,7 @@
 #include <limits.h>
 
 #include <new>
+#include <type_traits>
 
 #ifdef TARGET_UNIX
 #include <pthread.h>

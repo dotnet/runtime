@@ -608,7 +608,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #if defined(TARGET_AMD64)
 
 #ifndef TARGET_POINTER_SIZE
-#define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#define TARGET_POINTER_SIZE 8u    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
@@ -664,7 +664,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #elif defined(TARGET_ARM)
 
 #ifndef TARGET_POINTER_SIZE
-#define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#define TARGET_POINTER_SIZE 4u   // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
@@ -722,7 +722,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #elif defined(TARGET_ARM64)
 
 #ifndef TARGET_POINTER_SIZE
-#define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#define TARGET_POINTER_SIZE 8u    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
@@ -777,7 +777,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 
 #elif defined(TARGET_LOONGARCH64)
 #ifndef TARGET_POINTER_SIZE
-#define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#define TARGET_POINTER_SIZE 8u    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
@@ -832,7 +832,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 
 #elif defined(TARGET_RISCV64)
 #ifndef TARGET_POINTER_SIZE
-#define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#define TARGET_POINTER_SIZE 8u    // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
@@ -896,7 +896,7 @@ PORTABILITY_WARNING("Please specialize these definitions for your platform!")
 #endif
 
 #ifndef TARGET_POINTER_SIZE
-#define TARGET_POINTER_SIZE 4   // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#define TARGET_POINTER_SIZE 4u   // equal to sizeof(void*) and the managed pointer size in bytes for this target
 #endif
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
 #define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)

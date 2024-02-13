@@ -11,6 +11,7 @@
 #define __CrtWrap_h__
 
 #include <stdint.h>
+#include <stddef.h>
 #include <windows.h>
 #include <objbase.h>
 #include "debugmacros.h"

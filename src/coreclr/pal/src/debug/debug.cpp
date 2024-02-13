@@ -40,6 +40,7 @@ SET_DEFAULT_DEBUG_CHANNEL(DEBUG); // some headers have code with asserts, so do 
 
 #include <signal.h>
 #include <unistd.h>
+#include <fcntl.h>
 #if HAVE_PROCFS_CTL
 #include <unistd.h>
 #elif defined(HAVE_TTRACE) // HAVE_PROCFS_CTL

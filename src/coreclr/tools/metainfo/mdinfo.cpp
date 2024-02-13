@@ -6,6 +6,7 @@
 #include <objbase.h>
 #include <crtdbg.h>
 #include <assert.h>
+#include <algorithm>
 
 #include <corpriv.h>
 #include <cor.h>
@@ -3772,7 +3773,7 @@ int MDInfo::DumpHex(
         ++nLines;
 
         // Calculate spacing.
-        nPrint = min(cbData, nLine);
+        nPrint = std::min(cbData, nLine);
         nSpace = nLine - nPrint;
 
             // dump in hex.

@@ -22,15 +22,10 @@ nativeStringResourceTable_mscorrc
 ; All the # exports are prefixed with DAC_
 #PAL_CatchHardwareExceptionHolderEnter
 #PAL_CatchHardwareExceptionHolderExit
-#PAL_bsearch
 #PAL_CopyModuleData
-#PAL_errno
-#PAL_free
 #PAL_GetLogicalCpuCountFromOS
 #PAL_GetTotalCpuCount
 #PAL_GetUnwindInfoSize
-#PAL_stdout
-#PAL_stderr
 #PAL_GetApplicationGroupId
 #PAL_GetTransportName
 #PAL_GetCurrentThread
@@ -47,7 +42,6 @@ nativeStringResourceTable_mscorrc
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
-#PAL_qsort
 #PAL__wcstoui64
 #PAL_wcstoul
 #PAL_wcstod

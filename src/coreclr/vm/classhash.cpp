@@ -452,7 +452,7 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
 
     // Allocate the table and verify that we actually got one.
     EEClassHashTable * pCaseInsTable = EEClassHashTable::Create(pModule,
-                                                                max(BaseGetElementCount() / 2, 11),
+                                                                max(BaseGetElementCount() / 2, 11u),
                                                                 this,
                                                                 pamTracker);
 

@@ -1949,7 +1949,7 @@ void DbgTransportSession::TransportWorker()
                     DWORD   cbBytesToRead = sReceiveHeader.TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer;
                     while (cbBytesToRead)
                     {
-                        DWORD cbTransfer = min(cbBytesToRead, sizeof(rgDummy));
+                        DWORD cbTransfer = min(cbBytesToRead, (DWORD)sizeof(rgDummy));
                         if (!ReceiveBlock(rgDummy, cbTransfer))
                             HANDLE_TRANSIENT_ERROR();
                         cbBytesToRead -= cbTransfer;

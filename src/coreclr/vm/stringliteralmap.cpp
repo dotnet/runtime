@@ -442,7 +442,7 @@ static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringDat
     STATIC_CONTRACT_FORBID_FAULT;
 
     ULONG length = pStringData->GetCharCount();
-    length = min(length, 128);
+    length = min(length, 128u);
     WCHAR *szString = (WCHAR *)_alloca((length + 1) * sizeof(WCHAR));
     memcpyNoGCRefs((void*)szString, (void*)pStringData->GetStringBuffer(), length * sizeof(WCHAR));
     szString[length] = '\0';
