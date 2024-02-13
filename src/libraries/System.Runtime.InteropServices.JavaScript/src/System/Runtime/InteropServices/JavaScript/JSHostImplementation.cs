@@ -211,12 +211,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             Assembly mainAssembly = Assembly.LoadFrom(mainAssemblyName);
 
-            // this would not work for generic types. But Main() could not be generic, so we are fine.
-            // If the entry point looks like a compiler generated wrapper around
-            // an async method in the form "<Name>" then try to look up the async methods
-            // "<Name>$" and "Name" it could be wrapping.  We do this because the generated
-            // sync wrapper will call task.GetAwaiter().GetResult() when we actually want
-            // to yield to the host runtime.
             MethodInfo? method = mainAssembly.EntryPoint;
             if (method == null)
             {
@@ -225,6 +219,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (method.IsSpecialName)
             {
                 // we are looking for the original async method, rather than for the compiler generated wrapper like <Main>
+                // because we need to yield to browser event loop
                 var type = method.DeclaringType!;
                 var name = method.Name;
                 var asyncName = name + "$";
@@ -234,12 +229,11 @@ namespace System.Runtime.InteropServices.JavaScript
                     asyncName = name.Substring(1, name.Length - 2);
                     method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public);
                 }
+                if (method == null)
+                {
+                    throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
+                }
             }
-            if (method == null)
-            {
-                throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
-            }
-
 
             if (waitForDebugger)
             {
