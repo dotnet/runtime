@@ -403,6 +403,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void EmptyPkcs7ThrowsException()
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.EmptyPkcs7));
+        }
+
+        [Fact]
         public static void ExportPublicKeyAsPkcs12()
         {
             using (X509Certificate2 publicOnly = new X509Certificate2(TestData.MsCertificate))
