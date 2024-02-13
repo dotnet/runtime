@@ -64,6 +64,7 @@ RegisterType regType(T type)
     }
 }
 
+// TODO: If there are lot of callers of RegisterType, simplify it.
 template <class T>
 unsigned regTypeIndex(T type)
 {
@@ -1252,15 +1253,15 @@ private:
     regMaskFloat filterConsecutiveCandidatesForSpill(regMaskFloat consecutiveCandidates, unsigned int registersNeeded);
 #endif // TARGET_ARM64
 
-    regMaskOnlyOne getFreeCandidates(regMaskOnlyOne candidates ARM_ARG(var_types regType))
+    regMaskOnlyOne getFreeCandidates(regMaskOnlyOne candidates, var_types regType)
     {
-        regMaskOnlyOne result = candidates & m_AvailableRegs;
+        regMaskOnlyOne result = candidates & m_AvailableRegs[regTypeIndex(regType)];
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
         // also available.
         if (regType == TYP_DOUBLE)
         {
-            result &= (m_AvailableRegs >> 1);
+            result &= (m_AvailableRegs[1] >> 1);
         }
 #endif // TARGET_ARM
         return result;
@@ -1751,7 +1752,16 @@ private:
     // Register status
     //-----------------------------------------------------------------------
 
-    regMaskMixed m_AvailableRegs; // TODO: Should be separate for gpr, vector, predicate
+    //TODO: One option is to also just have another current_AvailableREgs that
+    // gets reset for every refposition we are processing depending on the
+    // register type. That wawy we do not have to query and fetch the appropriate
+    // entry again and agin.
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    regMaskOnlyOne m_AvailableRegs[3];
+#else
+    regMaskOnlyOne m_AvailableRegs[2];
+#endif
+
     regNumber getRegForType(regNumber reg, var_types regType)
     {
 #ifdef TARGET_ARM
@@ -1779,7 +1789,11 @@ private:
 
     void resetAvailableRegs()
     {
-        m_AvailableRegs          = allAvailableRegs;
+        m_AvailableRegs[0] = availableIntRegs;
+        m_AvailableRegs[1] = availableFloatRegs;
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        m_AvailableRegs[2] = availableMaskRegs;
+#endif
         m_RegistersWithConstants[0] = RBM_NONE;
         m_RegistersWithConstants[1] = RBM_NONE;
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
@@ -1788,28 +1802,42 @@ private:
 
     }
 
-    bool isRegAvailable(regNumber reg, var_types regType)
+    bool isRegAvailable(regNumber reg, var_types regType) // only used in asserts
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        return (m_AvailableRegs & regMask) == regMask;
+        return (m_AvailableRegs[regTypeIndex(regType)] & regMask) == regMask;
     }
     void setRegsInUse(regMaskMixed regMask)
     {
-        m_AvailableRegs &= ~regMask;
+        //TODO: Fix this later.
+        m_AvailableRegs[0] &= ~(regMask & ~RBM_ALLFLOAT);
+        m_AvailableRegs[1] &= ~(regMask & RBM_ALLFLOAT);
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        m_AvailableRegs[2] &= ~(regMask & RBM_ALLMASK);
+#endif
     }
     void setRegInUse(regNumber reg, var_types regType)
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        setRegsInUse(regMask);
+        m_AvailableRegs[regTypeIndex(regType)] &= ~regMask;
     }
     void makeRegsAvailable(regMaskMixed regMask)
     {
-        m_AvailableRegs |= regMask;
+        // TODO: This will be just `regMask`
+        makeRegAvailable(regMask & ~RBM_ALLFLOAT, IntRegisterType);
+        makeRegAvailable(regMask & RBM_ALLFLOAT, FloatRegisterType);
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        makeRegAvailable(regMask & RBM_ALLMASK, MaskRegisterType);
+#endif
     }
     void makeRegAvailable(regNumber reg, var_types regType)
     {
         regMaskOnlyOne regMask = getRegMask(reg, regType);
-        makeRegsAvailable(regMask);
+        makeRegAvailable(regMask, regType);
+    }
+    void makeRegAvailable(regMaskOnlyOne regMask, var_types regType)
+    {
+        m_AvailableRegs[regTypeIndex(regType)] |= regMask;
     }
 
     void clearAllNextIntervalRef();
@@ -1834,6 +1862,10 @@ private:
 
     void clearConstantReg(regNumber reg, var_types regType)
     {
+        //TODO: If we decide to have curr_RegistersWithConstants, then here we will
+        // just operate on curr_RegistersWithConstants and assert
+        // assert(m_RegistersWithConstants[regTypeIndex(regType)] == curr_RegistersWithConstants);
+        // but we will have to make sure that we save it back too??
         m_RegistersWithConstants[regTypeIndex(regType)] &= ~getRegMask(reg, regType);
     }
     void setConstantReg(regNumber reg, var_types regType)

@@ -364,7 +364,7 @@ regMaskFloat LinearScan::filterConsecutiveCandidatesForSpill(regMaskFloat consec
         }
 
         maskForCurRange |= (registersNeededMask << regAvailableStartIndex);
-        maskForCurRange &= m_AvailableRegs;
+        maskForCurRange &= m_AvailableRegs[1];
 
         if (maskForCurRange != RBM_NONE)
         {
@@ -420,7 +420,7 @@ regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat  allCandidates,
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
-    regMaskFloat freeCandidates = allCandidates & m_AvailableRegs;
+    regMaskFloat freeCandidates = allCandidates & m_AvailableRegs[1];
 
 #ifdef DEBUG
     if (getStressLimitRegs() != LSRA_LIMIT_NONE)
@@ -536,7 +536,7 @@ regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat  allCandidates,
     *busyCandidates = consecutiveResultForBusy;
 
     // Check if we can further check better registers amoung consecutiveResultForBusy.
-    if ((m_AvailableRegs & overallResultForBusy) != RBM_NONE)
+    if ((m_AvailableRegs[1] & overallResultForBusy) != RBM_NONE)
     {
         // `overallResultForBusy` contains the mask of entire series that can be the consecutive candidates.
         // If there is an overlap of that with free registers, then try to find a series that will need least
@@ -549,13 +549,13 @@ regMaskFloat LinearScan::getConsecutiveCandidates(regMaskFloat  allCandidates,
         {
             *busyCandidates = optimalConsecutiveResultForBusy;
         }
-        else if ((m_AvailableRegs & consecutiveResultForBusy) != RBM_NONE)
+        else if ((m_AvailableRegs[1] & consecutiveResultForBusy) != RBM_NONE)
         {
             // We did not find free consecutive candidates, however we found some registers among the
             // `allCandidates` that are mix of free and busy. Since `busyCandidates` just has bit set for first
             // register of such series, return the mask that starts with free register, if possible. The busy
             // registers will be spilled during assignment of subsequent RefPosition.
-            *busyCandidates = (m_AvailableRegs & consecutiveResultForBusy);
+            *busyCandidates = (m_AvailableRegs[1] & consecutiveResultForBusy);
         }
     }
 
