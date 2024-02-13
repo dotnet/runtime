@@ -13,13 +13,15 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using Xunit;
 
 [assembly: TestAssembly]
 [module: TestModule]
 
-internal static class ReflectionTest
+public static class ReflectionTest
 {
-    private static int Main()
+    [Fact]
+    private static int TestEntryPoint()
     {
         // Things I would like to test, but we don't fully support yet:
         // * Interface method is reflectable if we statically called it through a constrained call

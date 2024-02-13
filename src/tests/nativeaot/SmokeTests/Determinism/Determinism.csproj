@@ -1,18 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- test tries to read files from disk, bundling them into the app isn't easily possible right now -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="Determinism.cs" />
     <Compile Include="../UnitTests/Delegates.cs" />
     <Compile Include="../UnitTests/Devirtualization.cs" />
     <Compile Include="../UnitTests/Generics.cs" />
     <Compile Include="../UnitTests/Interfaces.cs" />
-
   </ItemGroup>
 
   <Target Name="IlcCompileSingleThreaded"

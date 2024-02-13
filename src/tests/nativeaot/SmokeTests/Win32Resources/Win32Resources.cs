@@ -4,19 +4,23 @@
 using System;
 using System.Runtime.InteropServices;
 
-unsafe
+public unsafe class Program
 {
-    nint lib = 0;
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        nint lib = 0;
 
-    if (GetIntValueFromResource(lib, (ushort*)(nuint)(ushort)10, 0x041B) != 3)
-        throw new Exception();
-
-    ReadOnlySpan<char> resName = "funny";
-    fixed (char* pResName = resName)
-        if (GetIntValueFromResource(lib, (ushort*)pResName, 0x041B) != 1)
+        if (GetIntValueFromResource(lib, (ushort*)(nuint)(ushort)10, 0x041B) != 3)
             throw new Exception();
 
-    return 100;
+        ReadOnlySpan<char> resName = "funny";
+        fixed (char* pResName = resName)
+            if (GetIntValueFromResource(lib, (ushort*)pResName, 0x041B) != 1)
+                throw new Exception();
+
+        return 100;
+    }
 
     static int GetIntValueFromResource(nint hModule, ushort* lpName, ushort wLanguage)
     {

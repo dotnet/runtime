@@ -3,11 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int Main()
+    [Fact]
+    static int TestEntryPoint()
     {
         string stackTrace = Environment.StackTrace;
 
