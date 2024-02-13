@@ -638,7 +638,6 @@ namespace System
                 vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToUnescape));
             }
 
-            // We may throw for very large inputs (when growing the ValueStringBuilder).
             UriHelper.UnescapeString(
                 charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
                 c_DummyChar, c_DummyChar, c_DummyChar,

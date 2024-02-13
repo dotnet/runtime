@@ -42,7 +42,8 @@ namespace System.Net.Http
                 Encode(ref builder, pair.Value);
             }
 
-            // We know the encoded length because the input is all ASCII.
+            // EscapeDataString will always return an ASCII string and DefaultHttpEncoding is Latin1,
+            // so we know the output byte size will be the same as the builder length.
             byte[] bytes = new byte[builder.Length];
             HttpRuleParser.DefaultHttpEncoding.GetBytes(builder.AsSpan(), bytes);
             builder.Dispose();
