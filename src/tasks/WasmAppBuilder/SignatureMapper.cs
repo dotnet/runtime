@@ -11,9 +11,14 @@ using WasmAppBuilder;
 
 internal static class SignatureMapper
 {
-    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct)
+    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, int depth = 0)
     {
         isByRefStruct = false;
+
+        if (depth > 5) {
+            log.Warning("WASM0064", $"Unbounded recursion detected through parameter type '{t.Name}'");
+            return null;
+        }
 
         char? c = null;
         if (t.Namespace == "System") {
@@ -53,17 +58,30 @@ internal static class SignatureMapper
                 c = 'I';
             else if (t.IsInterface)
                 c = 'I';
-            else if (t.IsEnum)
-                c = TypeToChar(t.GetEnumUnderlyingType(), log, out _);
-            else if (t.IsPointer)
+            else if (t.IsEnum) {
+                Type underlyingType = t.GetEnumUnderlyingType();
+                if (underlyingType != t)
+                    c = TypeToChar(underlyingType, log, out _, ++depth);
+                else {
+                    log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
+                    return null;
+                }
+            } else if (t.IsPointer)
                 c = 'I';
             else if (PInvokeTableGenerator.IsFunctionPointer(t))
                 c = 'I';
             else if (t.IsValueType)
             {
                 var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (fields.Length == 1)
-                    return TypeToChar(fields[0].FieldType, log, out isByRefStruct);
+                if (fields.Length == 1) {
+                    Type fieldType = fields[0].FieldType;
+                    if (fieldType != t)
+                        return TypeToChar(fieldType, log, out isByRefStruct, ++depth);
+                    else {
+                        log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
+                        return null;
+                    }
+                }
                 else if (PInvokeTableGenerator.IsBlittable(t, log))
                     c = 'I';
 
