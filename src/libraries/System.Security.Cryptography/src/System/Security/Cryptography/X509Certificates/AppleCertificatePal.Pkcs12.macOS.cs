@@ -15,8 +15,9 @@ namespace System.Security.Cryptography.X509Certificates
             bool exportable,
             SafeKeychainHandle keychain)
         {
-            using (ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData))
+            using (ApplePkcs12Reader reader = new ApplePkcs12Reader())
             {
+                reader.ParsePkcs12(rawData);
                 reader.Decrypt(password, ephemeralSpecified: false);
 
                 UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
