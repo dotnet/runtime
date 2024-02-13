@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -601,6 +600,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
             }
         }
 
+        //
+        // the certificate validation is an expensive operation and we don't want to delay MsQuic
+        // worker thread. So we offload the validation to the .NET threadpool. Incidentally, this
+        // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
+        // worker threads.
+        //
+
         _ = Task.Run(() =>
         {
             int result;
@@ -615,10 +621,13 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 result = QUIC_STATUS_HANDSHAKE_FAILURE;
             }
 
-            bool success = result == QUIC_STATUS_SUCCESS;
+            int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
+                _handle,
+                MsQuic.StatusSucceeded(result),
+                MsQuic.StatusSucceeded(result) ? QUIC_TLS_ALERT_CODES.SUCCESS : QUIC_TLS_ALERT_CODES.USER_CANCELED);
 
-            // return result;
-            MsQuicApi.Api.ConnectionCertificateValidationComplete(_handle, success, success ? QUIC_TLS_ALERT_CODES.SUCCESS : QUIC_TLS_ALERT_CODES.BAD_CERTIFICATE);
+            _tlsSecret?.WriteSecret();
+            Debug.Assert(MsQuic.StatusSucceeded(status), $"ConnectionCertificateValidationComplete failed with 0x{status:X}");
         });
 
         return QUIC_STATUS_PENDING;
@@ -638,8 +647,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
             _ => QUIC_STATUS_SUCCESS,
         };
 
-    private static readonly Meter s_meter = new Meter("System.Net.Quic.QuicConnection.Events");
-    private static readonly Histogram<double> s_eventProcessing = s_meter.CreateHistogram<double>("eventloop.process", "ms", "");
 
 #pragma warning disable CS3016
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
@@ -658,7 +665,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return QUIC_STATUS_INVALID_STATE;
         }
 
-        long timestamp = Stopwatch.GetTimestamp();
         try
         {
             // Process the event.
@@ -675,13 +681,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
                 NetEventSource.Error(instance, $"{instance} Exception while processing event {connectionEvent->Type}: {ex}");
             }
             return QUIC_STATUS_INTERNAL_ERROR;
-        }
-        finally
-        {
-            var elapsed = Stopwatch.GetElapsedTime(timestamp);
-            TagList tags = default;
-            tags.Add("Type", connectionEvent->Type.ToString());
-            s_eventProcessing.Record(elapsed.TotalMilliseconds, tags);
         }
     }
 
