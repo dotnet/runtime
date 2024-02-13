@@ -1896,6 +1896,11 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, uint value) => ConvertScalarToVector128Single(upper, value);
         /// <summary>
         /// __m128 _mm_cvt_roundi32_ss (__m128 a, int b, int rounding)
+        /// VCVTUSI2SS xmm1, xmm2, r32 {er}
+        /// </summary>
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, uint value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Single(upper, value, mode);
+        /// <summary>
+        /// __m128 _mm_cvt_roundi32_ss (__m128 a, int b, int rounding)
         /// VCVTSI2SS xmm1, xmm2, r32 {er}
         /// </summary>
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, int value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertScalarToVector128Single(upper, value, mode);
@@ -2247,6 +2252,11 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> ConvertToVector512Single(Vector512<uint> value) => ConvertToVector512Single(value);
         /// <summary>
+        /// __m512 _mm512_cvt_roundepi32_ps (__m512i a, int rounding)
+        ///   VCVTUDQ2PS zmm1, zmm2 {er}
+        /// </summary>
+        public static Vector512<float> ConvertToVector512Single(Vector512<uint> value, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => ConvertToVector512Single(value, mode);
+        /// <summary>
         /// __m512i _mm512_cvtepi8_epi32 (__m128i a)
         ///   VPMOVSXBD zmm1 {k1}{z}, xmm2/m128
         /// </summary>
@@ -2488,10 +2498,30 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> FusedMultiplyAdd(Vector512<float> a, Vector512<float> b, Vector512<float> c) => FusedMultiplyAdd(a, b, c);
         /// <summary>
+        /// __m512 _mm512_fmadd_round_ps (__m512 a, __m512 b, __m512 c, int r)
+        ///   VFMADDPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<float> FusedMultiplyAdd(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAdd(a, b, c, mode);
+        /// <summary>
         /// __m512d _mm512_fmadd_pd (__m512d a, __m512d b, __m512d c)
         ///   VFMADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplyAdd(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplyAdd(a, b, c);
+        /// <summary>
+        /// __m512d _mm512_fmadd_round_pd (__m512d a, __m512d b, __m512d c, int r)
+        ///   VFMADDPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<double> FusedMultiplyAdd(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAdd(a, b, c, mode);
+        /// <summary>
+        /// __m128 _mm_fmadd_round_ss (__m128 a, __m128 b, __m128 c, int r)
+        ///   VFMADDSS xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<float> FusedMultiplyAddScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddScalar(a, b, c, mode);
+        /// <summary>
+        /// __m128d _mm_fmadd_round_sd (__m128d a, __m128d b, __m128d c, int r)
+        ///   VFMADDSD xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<double> FusedMultiplyAddScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddScalar(a, b, c, mode);
 
         /// <summary>
         /// __m512 _mm512_fmaddsub_ps (__m512 a, __m512 b, __m512 c)
@@ -2499,10 +2529,20 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> FusedMultiplyAddSubtract(Vector512<float> a, Vector512<float> b, Vector512<float> c) => FusedMultiplyAddSubtract(a, b, c);
         /// <summary>
+        /// __m512 _mm512_fmaddsub_ps (__m512 a, __m512 b, __m512 c, int c)
+        ///   VFMADDSUBPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<float> FusedMultiplyAddSubtract(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddSubtract(a, b, c, mode);
+        /// <summary>
         /// __m512d _mm512_fmaddsub_pd (__m512d a, __m512d b, __m512d c)
         ///   VFMADDSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m32bcst
         /// </summary>
         public static Vector512<double> FusedMultiplyAddSubtract(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplyAddSubtract(a, b, c);
+        /// <summary>
+        /// __m512d _mm512_fmaddsub_pd (__m512d a, __m512d b, __m512d c, int c)
+        ///   VFMADDSUBPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<double> FusedMultiplyAddSubtract(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddSubtract(a, b, c, mode);
 
         /// <summary>
         /// __m512 _mm512_fmsub_ps (__m512 a, __m512 b, __m512 c)
@@ -2510,10 +2550,30 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> FusedMultiplySubtract(Vector512<float> a, Vector512<float> b, Vector512<float> c) => FusedMultiplySubtract(a, b, c);
         /// <summary>
+        /// __m512 _mm512_fmsub_round_ps (__m512 a, __m512 b, __m512 c, int r)
+        ///   VFMSUBPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<float> FusedMultiplySubtract(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtract(a, b, c, mode);
+        /// <summary>
         /// __m512d _mm512_fmsub_pd (__m512d a, __m512d b, __m512d c)
         ///   VFMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplySubtract(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplySubtract(a, b, c);
+        /// <summary>
+        /// __m512d _mm512_fmsub_round_pd (__m512d a, __m512d b, __m512d c, int r)
+        ///   VFMSUBPD zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<double> FusedMultiplySubtract(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtract(a, b, c, mode);
+        /// <summary>
+        /// __m128 _mm_fmsub_round_ss (__m128 a, __m128 b, __m128 c, int r)
+        ///   VFMSUBSS xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<float> FusedMultiplySubtractScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractScalar(a, b, c, mode);
+        /// <summary>
+        /// __m128d _mm_fmsub_round_sd (__m128d a, __m128d b, __m128d c, int r)
+        ///   VFMSUBSS xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<double> FusedMultiplySubtractScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractScalar(a, b, c, mode);
 
         /// <summary>
         /// __m512 _mm512_fmsubadd_ps (__m512 a, __m512 b, __m512 c)
@@ -2521,10 +2581,20 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> FusedMultiplySubtractAdd(Vector512<float> a, Vector512<float> b, Vector512<float> c) => FusedMultiplySubtractAdd(a, b, c);
         /// <summary>
+        /// __m512 _mm512_fmsubadd_round_ps (__m512 a, __m512 b, __m512 c)
+        ///   VFMSUBADDPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<float> FusedMultiplySubtractAdd(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractAdd(a, b, c, mode);
+        /// <summary>
         /// __m512d _mm512_fmsubadd_pd (__m512d a, __m512d b, __m512d c)
         ///   VFMSUBADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplySubtractAdd(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplySubtractAdd(a, b, c);
+        /// <summary>
+        /// __m512d _mm512_fmsubadd_round_ps (__m512d a, __m512d b, __m512d c)
+        ///   VFMSUBADDPD zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<double> FusedMultiplySubtractAdd(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractAdd(a, b, c, mode);
 
         /// <summary>
         /// __m512 _mm512_fnmadd_ps (__m512 a, __m512 b, __m512 c)
@@ -2532,10 +2602,30 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> FusedMultiplyAddNegated(Vector512<float> a, Vector512<float> b, Vector512<float> c) => FusedMultiplyAddNegated(a, b, c);
         /// <summary>
+        /// __m512 _mm512_fnmadd_round_ps (__m512 a, __m512 b, __m512 c, int r)
+        ///   VFNMADDPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<float> FusedMultiplyAddNegated(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddNegated(a, b, c, mode);
+        /// <summary>
         /// __m512d _mm512_fnmadd_pd (__m512d a, __m512d b, __m512d c)
         ///   VFNMADDPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplyAddNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplyAddNegated(a, b, c);
+        /// <summary>
+        /// __m512d _mm512_fnmadd_round_pdd (__m512d a, __m512d b, __m512d c, int r)
+        ///   VFNMADDPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<double> FusedMultiplyAddNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddNegated(a, b, c, mode);
+        /// <summary>
+        /// __m128 _mm_fnmadd_round_ss (__m128 a, __m128 b, __m128 c, int r)
+        ///   VFNMADDSS xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<float> FusedMultiplyAddNegatedScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddNegatedScalar(a, b, c, mode);
+        /// <summary>
+        /// __m128d _mm_fnmadd_round_sd (__m128d a, __m128d b, __m128d c, int r)
+        ///   VFNMADDSD xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<double> FusedMultiplyAddNegatedScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplyAddNegatedScalar(a, b, c, mode);
 
         /// <summary>
         /// __m512 _mm512_fnmsub_ps (__m512 a, __m512 b, __m512 c)
@@ -2543,10 +2633,30 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector512<float> FusedMultiplySubtractNegated(Vector512<float> a, Vector512<float> b, Vector512<float> c) => FusedMultiplySubtractNegated(a, b, c);
         /// <summary>
+        /// __m512 _mm512_fnmsub_round_ps (__m512 a, __m512 b, __m512 c, int r)
+        ///   VFNMSUBPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<float> FusedMultiplySubtractNegated(Vector512<float> a, Vector512<float> b, Vector512<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractNegated(a, b, c, mode);
+        /// <summary>
         /// __m512d _mm512_fnmsub_pd (__m512d a, __m512d b, __m512d c)
         ///   VFNMSUBPD zmm1 {k1}{z}, zmm2, zmm3/m512/m64bcst
         /// </summary>
         public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c) => FusedMultiplySubtractNegated(a, b, c);
+        /// <summary>
+        /// __m512d _mm512_fnmsub_round_pd (__m512d a, __m512d b, __m512d c, int r)
+        ///   VFNMSUBPS zmm1, zmm2, zmm3 {er}
+        /// </summary>
+        public static Vector512<double> FusedMultiplySubtractNegated(Vector512<double> a, Vector512<double> b, Vector512<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractNegated(a, b, c, mode);
+        /// <summary>
+        /// __m128 _mm_fnmsub_round_ss (__m128 a, __m128 b, __m128 c, int r)
+        ///   VFNMSUBSS xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<float> FusedMultiplySubtractNegatedScalar(Vector128<float> a, Vector128<float> b, Vector128<float> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractNegatedScalar(a, b, c, mode);
+        /// <summary>
+        /// __m128d _mm_fnmsub_round_sd (__m128d a, __m128d b, __m128d c, int r)
+        ///   VFNMSUBSS xmm1, xmm2, xmm3 {er}
+        /// </summary>
+        public static Vector128<double> FusedMultiplySubtractNegatedScalar(Vector128<double> a, Vector128<double> b, Vector128<double> c, [ConstantExpected(Max = FloatRoundingMode.ToZero)] FloatRoundingMode mode) => FusedMultiplySubtractNegatedScalar(a, b, c, mode);
 
         /// <summary>
         /// __m512 _mm512_getexp_ps (__m512 a)

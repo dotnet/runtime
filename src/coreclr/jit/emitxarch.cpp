@@ -8552,20 +8552,27 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
 //    op1Reg    -- The register of the first operand
 //    op2Reg    -- The register of the second operand
 //    op3Reg    -- The register of the second operand
+//    instOptions - The options that modify how the instruction is generated
 //
 void emitter::emitIns_SIMD_R_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, insOpts instOptions)
 {
     if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins))
     {
         assert(UseSimdEncoding());
+
+        if(instOptions != INS_OPTS_NONE)
+        {
+            // insOpts is currently available only in EVEX encoding.
+            assert(UseEvexEncoding());
+        }
 
         // Ensure we aren't overwriting op2 or op3
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
         assert((op3Reg != targetReg) || (op1Reg == targetReg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-        emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg);
+        emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg, instOptions);
     }
     else if (UseSimdEncoding())
     {

@@ -2401,13 +2401,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_FMA_MultiplySubtractNegatedScalar:
             case NI_FMA_MultiplySubtractScalar:
             case NI_AVX512F_FusedMultiplyAdd:
+            case NI_AVX512F_FusedMultiplyAddScalar:
             case NI_AVX512F_FusedMultiplyAddNegated:
+            case NI_AVX512F_FusedMultiplyAddNegatedScalar:
             case NI_AVX512F_FusedMultiplyAddSubtract:
             case NI_AVX512F_FusedMultiplySubtract:
+            case NI_AVX512F_FusedMultiplySubtractScalar:
             case NI_AVX512F_FusedMultiplySubtractAdd:
             case NI_AVX512F_FusedMultiplySubtractNegated:
+            case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
             {
-                assert(numArgs == 3);
+                assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
                 assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
 
@@ -2504,6 +2508,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 srcCount += 1;
                 srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
                 srcCount += emitOp3->isContained() ? BuildOperandUses(emitOp3) : BuildDelayFreeUses(emitOp3, emitOp1);
+
+                if(intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
+                {
+                    srcCount += BuildDelayFreeUses(intrinsicTree->Op(4), emitOp1);
+                }
 
                 buildUses = false;
                 break;

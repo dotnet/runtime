@@ -976,15 +976,13 @@ protected:
 #ifdef FEATURE_HW_INTRINSICS
     void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
-    void genHWIntrinsic_R_RM(
-        GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp, insOpts instOptions);
-    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp);
+    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp, insOpts instOptions = INS_OPTS_NONE);
     void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, insOpts instOptions);
     void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_R_RM(
-        instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
+        instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3, insOpts instOptions = INS_OPTS_NONE);
     void genHWIntrinsic_R_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
 
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
@@ -996,7 +994,7 @@ protected:
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genFMAIntrinsic(GenTreeHWIntrinsic* node);
+    void genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node);
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);

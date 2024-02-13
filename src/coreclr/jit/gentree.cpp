@@ -26478,6 +26478,20 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
             return true;
         }
 
+        case NI_AVX512F_FusedMultiplyAdd:
+        case NI_AVX512F_FusedMultiplyAddScalar:
+        case NI_AVX512F_FusedMultiplyAddNegated:
+        case NI_AVX512F_FusedMultiplyAddNegatedScalar:
+        case NI_AVX512F_FusedMultiplyAddSubtract:
+        case NI_AVX512F_FusedMultiplySubtract:
+        case NI_AVX512F_FusedMultiplySubtractAdd:
+        case NI_AVX512F_FusedMultiplySubtractNegated:
+        case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
+        case NI_AVX512F_FusedMultiplySubtractScalar:
+        {
+            return numArgs == 4;
+        }
+
         case NI_AVX512F_Add:
         case NI_AVX512F_Divide:
         case NI_AVX512F_Multiply:
@@ -26485,7 +26499,6 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
 
         case NI_AVX512F_Scale:
 
-        case NI_AVX512F_ConvertScalarToVector128Double:
         case NI_AVX512F_ConvertScalarToVector128Single:
 #if defined(TARGET_AMD64)
         case NI_AVX512F_X64_ConvertScalarToVector128Double:
