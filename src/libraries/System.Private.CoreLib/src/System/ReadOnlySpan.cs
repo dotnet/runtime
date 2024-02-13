@@ -217,6 +217,11 @@ namespace System
         /// </summary>
         public static ReadOnlySpan<T> Empty => default;
 
+        public static ReadOnlySpan<T> CastUp<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : class, T
+        {
+            return new ReadOnlySpan<T>(ref Unsafe.As<TDerived, T>(ref items._reference), items.Length);
+        }
+
         /// <summary>Gets an enumerator for this span.</summary>
         public Enumerator GetEnumerator() => new Enumerator(this);
 
