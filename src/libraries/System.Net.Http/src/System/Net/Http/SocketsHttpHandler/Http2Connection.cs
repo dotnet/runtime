@@ -775,7 +775,7 @@ namespace System.Net.Http
             if (frameData.Length > 0)
             {
                 bool windowUpdateSent = ExtendWindow(frameData.Length);
-                if (!endStream)
+                if (http2Stream is not null && !endStream)
                 {
                     _rttEstimator.OnDataOrHeadersReceived(this, sendWindowUpdateBeforePing: !windowUpdateSent);
                 }
