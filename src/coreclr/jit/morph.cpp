@@ -9654,7 +9654,7 @@ DONE_MORPHING_CHILDREN:
                 else
                 {
                     JITDUMP("false\n");
-                    tree = gtWrapWithSideEffects(gtNewIconNode(0), op1);
+                    tree = gtWrapWithSideEffects(gtNewIconNode(0), op1, GTF_ALL_EFFECT);
                 }
                 INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return tree;

@@ -2664,7 +2664,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
-// optVNStrengthReductionOnTree:
+// optVNStrengthReductionOnTree: Substitutes tree with a less expensive tree using VN
 //
 // Arguments:
 //    block  -  The block containing the tree.
@@ -2702,8 +2702,7 @@ GenTree* Compiler::optVNStrengthReductionOnTree(BasicBlock* block, GenTree* pare
                     (funcApp.m_args[0] == clsArgVN))
                 {
                     // The outer cast is redundant, remove it and preserve its side effects
-                    // We do ignoreRoot here because the actual cast node is proven to never any exceptions
-                    // (namely, InvalidCastException).
+                    // We do ignoreRoot here because the actual cast node is proven to never throw any exceptions.
                     return gtWrapWithSideEffects(objArg, call, GTF_ALL_EFFECT, true);
                 }
             }

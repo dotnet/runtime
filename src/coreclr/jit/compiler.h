@@ -3516,9 +3516,9 @@ public:
                               bool         ignoreRoot   = false);
 
     GenTree* gtWrapWithSideEffects(GenTree*     tree,
-                              GenTree*    sideEffectsSource,
-                              GenTreeFlags sideEffectsFlags = GTF_ALL_EFFECT,
-                              bool         ignoreRoot   = false);
+                                   GenTree*     sideEffectsSource,
+                                   GenTreeFlags sideEffectsFlags = GTF_SIDE_EFFECT,
+                                   bool         ignoreRoot       = false);
 
     bool gtSplitTree(
         BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
