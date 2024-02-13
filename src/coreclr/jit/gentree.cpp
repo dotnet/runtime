@@ -17155,8 +17155,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                         colon->gtOp2  = (elseSideEffects != nullptr) ? elseSideEffects : m_compiler->gtNewNothingNode();
                         qmark->gtType = TYP_VOID;
                         colon->gtType = TYP_VOID;
-
-                        qmark->gtFlags &= ~GTF_QMARK_CAST_INSTOF;
                         Append(qmark);
                     }
 

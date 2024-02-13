@@ -9867,14 +9867,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_QMARK:
-
-                if (tree->gtFlags & GTF_QMARK_CAST_INSTOF)
-                {
-                    chars += printf("[QMARK_CAST_INSTOF]");
-                }
-                break;
-
             case GT_BOX:
 
                 if (tree->gtFlags & GTF_BOX_VALUE)

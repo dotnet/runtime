@@ -5667,7 +5667,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
     temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
     qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
-    qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
 
     // Make QMark node a top level node by spilling it.
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
