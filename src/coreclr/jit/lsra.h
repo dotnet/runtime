@@ -66,7 +66,7 @@ RegisterType regType(T type)
 
 // TODO: If there are lot of callers of RegisterType, simplify it.
 template <class T>
-unsigned regTypeIndex(T type)
+FORCEINLINE unsigned regTypeIndex(T type)
 {
     if (varTypeUsesIntReg(type))
     {
@@ -1757,7 +1757,7 @@ private:
     // register type. That wawy we do not have to query and fetch the appropriate
     // entry again and agin.
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-    regMaskOnlyOne m_AvailableRegs[3];
+    regMaskOnlyOne m_AvailableRegs[3]; // TODO: Change this to m_AvailableGprRegs, m_AvailableFloatRegs, etc.
 #else
     regMaskOnlyOne m_AvailableRegs[2];
 #endif
@@ -1855,7 +1855,7 @@ private:
                                                  DEBUG_ARG(regNumber assignedReg));
 
 #if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-    regMaskOnlyOne m_RegistersWithConstants[3];
+    regMaskOnlyOne m_RegistersWithConstants[3]; // TODO: Change this to m_GprRegistersWithConstant, m_FloatRegistersWithConstant, etc.
 #else
     regMaskOnlyOne m_RegistersWithConstants[2];
 #endif
