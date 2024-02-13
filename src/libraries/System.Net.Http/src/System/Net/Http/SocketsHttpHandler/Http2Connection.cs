@@ -1777,7 +1777,7 @@ namespace System.Net.Http
             if (_pendingWindowUpdate < ConnectionWindowThreshold)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)} {_pendingWindowUpdate} < {ConnectionWindowThreshold}.");
-                    return false;
+                return false;
             }
 
             int windowUpdateSize = _pendingWindowUpdate;
