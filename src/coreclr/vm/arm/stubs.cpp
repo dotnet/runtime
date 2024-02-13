@@ -643,7 +643,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD, m_MachState._sp);
+        UpdateFloatingPointRegisters(pRD);
         _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
@@ -1513,7 +1513,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD, GetSP());
+        UpdateFloatingPointRegisters(pRD);
         _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
@@ -1600,7 +1600,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD, *(DWORD *)&m_pCallSiteSP);
+        UpdateFloatingPointRegisters(pRD);
     }
 #endif // DACCESS_COMPILE
 

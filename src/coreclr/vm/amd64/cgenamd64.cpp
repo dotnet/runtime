@@ -65,7 +65,7 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD, GetSP());
+        UpdateFloatingPointRegisters(pRD);
         _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
@@ -108,7 +108,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD, *(DWORD64 *)&m_pCallSiteSP);
+        UpdateFloatingPointRegisters(pRD);
     }
 #endif // DACCESS_COMPILE
 
@@ -147,7 +147,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD,  m_MachState.m_Rsp);
+        UpdateFloatingPointRegisters(pRD);
         _ASSERTE(pRD->pCurrentContext->Rip == m_MachState.m_Rip);
     }
 #endif // DACCESS_COMPILE
