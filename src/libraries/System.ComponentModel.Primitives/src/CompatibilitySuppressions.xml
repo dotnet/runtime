@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.ComponentModel.EditorAttribute.#ctor(System.String,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.ComponentModel.EditorAttribute.#ctor(System.String,System.String)$1:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.ComponentModel.EditorAttribute.#ctor(System.String,System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.ComponentModel.EditorAttribute.#ctor(System.String,System.Type)$1:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.ComponentModel.EditorAttribute.#ctor(System.Type,System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.ComponentModel.EditorAttribute.#ctor(System.Type,System.Type)$1:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>P:System.ComponentModel.EditorAttribute.EditorBaseTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>P:System.ComponentModel.EditorAttribute.EditorTypeName:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>ref/net9.0/System.ComponentModel.Primitives.dll</Left>
+    <Right>lib/net9.0/System.ComponentModel.Primitives.dll</Right>
+  </Suppression>
+</Suppressions>

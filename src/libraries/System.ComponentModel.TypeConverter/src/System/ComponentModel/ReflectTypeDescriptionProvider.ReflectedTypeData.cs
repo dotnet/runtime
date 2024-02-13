@@ -391,6 +391,7 @@ namespace System.ComponentModel
             /// <summary>
             /// Helper method to return an editor attribute of the correct base type.
             /// </summary>
+            [RequiresUnreferencedCode("The type referenced by the Editor attribute may be trimmed away.")]
             private static EditorAttribute? GetEditorAttribute(AttributeCollection attributes, Type editorBaseType)
             {
                 foreach (Attribute attr in attributes)
