@@ -4812,6 +4812,7 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
             pCookie->signature = vaSignature;
             pCookie->classInstCount = classInstCount;
             pCookie->methodInstCount = methodInstCount;
+            pCookie->pLoaderModule = pLoaderModule;
 
             AllocMemTracker amt;
             

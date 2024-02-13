@@ -338,6 +338,7 @@ struct VASigCookie
     unsigned        sizeOfArgs;             // size of argument list
     Volatile<PCODE> pNDirectILStub;         // will be use if target is NDirect (tag == 0)
     PTR_Module      pModule;
+    PTR_Module      pLoaderModule;
     Signature       signature;
     DWORD           classInstCount;
     TypeHandle*     classInst;

@@ -6026,7 +6026,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
             }
         }
 
-        LoaderHeap *pHeap = pVASigCookie->pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
+        LoaderHeap *pHeap = pVASigCookie->pLoaderModule->GetLoaderAllocator()->GetHighFrequencyHeap();
         PCOR_SIGNATURE new_sig = (PCOR_SIGNATURE)(void *)pHeap->AllocMem(S_SIZE_T(signature.GetRawSigLen()));
         CopyMemory(new_sig, signature.GetRawSig(), signature.GetRawSigLen());
 
