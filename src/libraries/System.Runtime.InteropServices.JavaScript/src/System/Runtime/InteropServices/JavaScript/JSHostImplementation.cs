@@ -380,18 +380,8 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             var assembly = fqn.Substring(fqn.IndexOf('[') + 1, fqn.IndexOf(']') - 1).Trim();
             fqn = fqn.Substring(fqn.IndexOf(']') + 1).Trim();
-
             var methodName = fqn.Substring(fqn.IndexOf(':') + 1);
-            fqn = fqn.Substring(0, fqn.IndexOf(':')).Trim();
-
-            var className = fqn;
-            /*var nameSpace = "";
-            if (fqn.Contains('.'))
-            {
-                var idx = fqn.LastIndexOf(".");
-                nameSpace = fqn.Substring(0, idx);
-                className = fqn.Substring(idx + 1).Trim();
-            }*/
+            var className = fqn.Substring(0, fqn.IndexOf(':')).Trim();;
 
             if (string.IsNullOrEmpty(assembly))
                 throw new InvalidOperationException("No assembly name specified " + fqn);
