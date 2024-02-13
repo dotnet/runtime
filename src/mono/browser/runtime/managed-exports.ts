@@ -3,15 +3,14 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { GCHandle, GCHandleNull, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
+import { GCHandle, GCHandleNull, JSMarshalerArguments, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_intptr, set_arg_type, set_gc_handle } from "./marshal";
-import { invoke_sync_method } from "./invoke-cs";
-import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
+import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, marshal_exception_to_cs, marshal_string_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
-import { assert_c_interop } from "./invoke-js";
+import { assert_c_interop, assert_js_interop } from "./invoke-js";
 import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
 import { _zero_region } from "./memory";
 
@@ -19,18 +18,21 @@ const managedExports: ManagedExports = {} as any;
 
 export function init_managed_exports(): void {
     const exports_fqn_asm = "System.Runtime.InteropServices.JavaScript";
+    // TODO https://github.com/dotnet/runtime/issues/98366
     runtimeHelpers.runtime_interop_module = cwraps.mono_wasm_assembly_load(exports_fqn_asm);
     if (!runtimeHelpers.runtime_interop_module)
         throw "Can't find bindings module assembly: " + exports_fqn_asm;
 
-    runtimeHelpers.runtime_interop_namespace = "System.Runtime.InteropServices.JavaScript";
+    runtimeHelpers.runtime_interop_namespace = exports_fqn_asm;
     runtimeHelpers.runtime_interop_exports_classname = "JavaScriptExports";
+    // TODO https://github.com/dotnet/runtime/issues/98366
     runtimeHelpers.runtime_interop_exports_class = cwraps.mono_wasm_assembly_find_class(runtimeHelpers.runtime_interop_module, runtimeHelpers.runtime_interop_namespace, runtimeHelpers.runtime_interop_exports_classname);
     if (!runtimeHelpers.runtime_interop_exports_class)
         throw "Can't find " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + " class";
 
     managedExports.InstallMainSynchronizationContext = WasmEnableThreads ? get_method("InstallMainSynchronizationContext") : undefined;
     managedExports.CallEntrypoint = get_method("CallEntrypoint");
+    managedExports.BindAssemblyExports = get_method("BindAssemblyExports");
     managedExports.ReleaseJSOwnedObjectByGCHandle = get_method("ReleaseJSOwnedObjectByGCHandle");
     managedExports.CompleteTask = get_method("CompleteTask");
     managedExports.CallDelegate = get_method("CallDelegate");
@@ -39,26 +41,27 @@ export function init_managed_exports(): void {
     managedExports.LoadLazyAssembly = get_method("LoadLazyAssembly");
 }
 
-// the marshaled signature is: Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
-export async function call_entry_point(entry_point: MonoMethod, program_args?: string[]): Promise<number> {
+// the marshaled signature is: Task<int>? CallEntrypoint(string mainAssemblyName, string[] args)
+export function call_entry_point(main_assembly_name: string, program_args: string[] | undefined, waitForDebugger: boolean): Promise<number> {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
         Module.runtimeKeepalivePush();
-        const args = alloc_stack_frame(4);
+        const args = alloc_stack_frame(5);
         const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
-        marshal_intptr_to_cs(arg1, entry_point);
+        const arg3 = get_arg(args, 4);
+        marshal_string_to_cs(arg1, main_assembly_name);
         if (program_args && program_args.length == 0) {
             program_args = undefined;
         }
         marshal_array_to_cs_impl(arg2, program_args, MarshalerType.String);
+        marshal_bool_to_cs(arg3, waitForDebugger);
 
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
-        // NOTE: at the moment this is synchronous call on the same thread and therefore we could marshal (null) result synchronously
         invoke_sync_method(managedExports.CallEntrypoint, args);
 
         // in case the C# side returned synchronously
@@ -68,7 +71,7 @@ export async function call_entry_point(entry_point: MonoMethod, program_args?: s
             promise = Promise.resolve(0);
         }
         (promise as any)[do_not_force_dispose] = true; // prevent disposing the task in forceDisposeProxies()
-        return await promise;
+        return promise;
     } finally {
         Module.runtimeKeepalivePop();// after await promise !
         Module.stackRestore(sp);
@@ -219,8 +222,7 @@ export function install_main_synchronization_context(): GCHandle {
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
         set_arg_intptr(arg1, mono_wasm_main_thread_ptr() as any);
-        const fail = cwraps.mono_wasm_invoke_method(managedExports.InstallMainSynchronizationContext!, args, 0 as any);
-        if (fail) runtimeHelpers.nativeAbort("ERR24: Unexpected error");
+        cwraps.mono_wasm_invoke_method(managedExports.InstallMainSynchronizationContext!, args);
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
@@ -231,7 +233,45 @@ export function install_main_synchronization_context(): GCHandle {
     }
 }
 
+export function invoke_sync_method(method: MonoMethod, args: JSMarshalerArguments): void {
+    assert_js_interop();
+    cwraps.mono_wasm_invoke_method(method, args as any);
+    if (is_args_exception(args)) {
+        const exc = get_arg(args, 0);
+        throw marshal_exception_to_js(exc);
+    }
+}
+
+// the marshaled signature is: Task BindAssemblyExports(string assemblyName)
+export function bind_assembly_exports(assemblyName: string): Promise<void> {
+    loaderHelpers.assert_runtime_running();
+    const sp = Module.stackSave();
+    try {
+        const args = alloc_stack_frame(3);
+        const res = get_arg(args, 1);
+        const arg1 = get_arg(args, 2);
+        marshal_string_to_cs(arg1, assemblyName);
+
+        // because this is async, we could pre-allocate the promise
+        let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated);
+
+        invoke_sync_method(managedExports.BindAssemblyExports, args);
+
+        // in case the C# side returned synchronously
+        promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
+
+        if (promise === null || promise === undefined) {
+            promise = Promise.resolve();
+        }
+        return promise;
+    } finally {
+        Module.stackRestore(sp);
+    }
+}
+
+
 function get_method(method_name: string): MonoMethod {
+    // TODO https://github.com/dotnet/runtime/issues/98366
     const res = cwraps.mono_wasm_assembly_find_method(runtimeHelpers.runtime_interop_exports_class, method_name, -1);
     if (!res)
         throw "Can't find method " + runtimeHelpers.runtime_interop_namespace + "." + runtimeHelpers.runtime_interop_exports_classname + "." + method_name;
@@ -242,6 +282,7 @@ type ManagedExports = {
     InstallMainSynchronizationContext: MonoMethod | undefined,
     entry_point: MonoMethod,
     CallEntrypoint: MonoMethod,
+    BindAssemblyExports: MonoMethod,
     ReleaseJSOwnedObjectByGCHandle: MonoMethod,
     CompleteTask: MonoMethod,
     CallDelegate: MonoMethod,

@@ -194,7 +194,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_MANAGED_THREADS
             JSProxyContext.AssertIsInteropThread();
 #endif
-            return BindManagedFunctionImpl(fullyQualifiedName, signatureHash, signatures);
+            return JSHostImplementation.BindManagedFunctionImpl(fullyQualifiedName, signatureHash, signatures);
         }
 
 #if !DEBUG
@@ -403,21 +403,6 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
 #endif
-
-            return signature;
-        }
-
-        internal static unsafe JSFunctionBinding BindManagedFunctionImpl(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
-        {
-            var signature = JSHostImplementation.GetMethodSignature(signatures, null, null);
-
-            Interop.Runtime.BindCSFunction(fullyQualifiedName, signatureHash, signature.Header, out int isException, out object exceptionMessage);
-            if (isException != 0)
-            {
-                throw new JSException((string)exceptionMessage);
-            }
-
-            JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
             return signature;
         }

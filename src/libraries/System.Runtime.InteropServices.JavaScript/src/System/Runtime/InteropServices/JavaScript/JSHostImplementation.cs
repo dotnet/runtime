@@ -33,14 +33,6 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
-        {
-            var temp = new IntPtrAndHandle { ptr = ptr };
-            return temp.methodHandle;
-        }
-
         /// <summary>
         /// Gets the MethodInfo for the Task{T}.Result property getter.
         /// </summary>
@@ -208,6 +200,164 @@ namespace System.Runtime.InteropServices.JavaScript
             AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamic access from JavaScript")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Dynamic access from JavaScript")]
+        public static Task<int>? CallEntrypoint(string? mainAssemblyName, string?[]? args, bool waitForDebugger)
+        {
+            if (string.IsNullOrEmpty(mainAssemblyName))
+            {
+                throw new MissingMethodException(SR.MissingManagedEntrypointHandle);
+            }
+
+            Assembly mainAssembly = Assembly.LoadFrom(mainAssemblyName);
+
+            // this would not work for generic types. But Main() could not be generic, so we are fine.
+            // If the entry point looks like a compiler generated wrapper around
+            // an async method in the form "<Name>" then try to look up the async methods
+            // "<Name>$" and "Name" it could be wrapping.  We do this because the generated
+            // sync wrapper will call task.GetAwaiter().GetResult() when we actually want
+            // to yield to the host runtime.
+            MethodInfo? method = mainAssembly.EntryPoint;
+            if (method == null)
+            {
+                throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
+            }
+            if (method.IsSpecialName)
+            {
+                // we are looking for the original async method, rather than for the compiler generated wrapper like <Main>
+                var type = method.DeclaringType!;
+                var name = method.Name;
+                var asyncName = name + "$";
+                method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public);
+                if (method == null)
+                {
+                    asyncName = name.Substring(1, name.Length - 2);
+                    method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public);
+                }
+            }
+            if (method == null)
+            {
+                throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
+            }
+
+
+            if (waitForDebugger)
+            {
+                Interop.Runtime.SetEntryPointBreakpoint(method.MetadataToken);
+            }
+
+            object[] argsToPass = System.Array.Empty<object>();
+            Task<int>? result = null;
+            var parameterInfos = method.GetParameters();
+            if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(string[]))
+            {
+                argsToPass = new object[] { args ?? System.Array.Empty<string>() };
+            }
+            if (method.ReturnType == typeof(void))
+            {
+                method.Invoke(null, argsToPass);
+            }
+            else if (method.ReturnType == typeof(int))
+            {
+                int intResult = (int)method.Invoke(null, argsToPass)!;
+                result = Task.FromResult(intResult);
+            }
+            else if (method.ReturnType == typeof(Task))
+            {
+                Task methodResult = (Task)method.Invoke(null, argsToPass)!;
+                TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+                result = tcs.Task;
+                methodResult.ContinueWith((t) =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        tcs.SetException(t.Exception!);
+                    }
+                    else
+                    {
+                        tcs.SetResult(0);
+                    }
+                }, TaskScheduler.Default);
+            }
+            else if (method.ReturnType == typeof(Task<int>))
+            {
+                result = (Task<int>)method.Invoke(null, argsToPass)!;
+            }
+            else
+            {
+                throw new InvalidOperationException(SR.Format(SR.ReturnTypeNotSupportedForMain, method.ReturnType.FullName));
+            }
+            return result;
+        }
+
+        private static string GeneratedInitializerClassName = "System.Runtime.InteropServices.JavaScript.__GeneratedInitializer";
+        private static string GeneratedInitializerMethodName = "__Register_";
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamic access from JavaScript")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Dynamic access from JavaScript")]
+        public static Task BindAssemblyExports(string? assemblyName)
+        {
+            if (string.IsNullOrEmpty(assemblyName))
+            {
+                throw new MissingMethodException("Missing assembly name");
+            }
+
+            Assembly assembly = Assembly.LoadFrom(assemblyName);
+            Type? type = assembly.GetType(GeneratedInitializerClassName);
+            if (type == null)
+            {
+#if FEATURE_WASM_MANAGED_THREADS
+                throw new InvalidOperationException($"JSExport with multi-threading enabled is not supported with assembly {assemblyName} as it was generated with the .NET 7 SDK");
+#endif
+                // TODO call mono_wasm_runtime_run_module_cctor
+            }
+            else
+            {
+                MethodInfo? methodInfo = type.GetMethod(GeneratedInitializerMethodName, BindingFlags.NonPublic | BindingFlags.Static);
+                if (methodInfo == null)
+                {
+                    throw new InvalidOperationException(GeneratedInitializerMethodName + " not found in " + type.FullName);
+                }
+                methodInfo?.Invoke(null, []);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TODO https://github.com/dotnet/runtime/issues/98366")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "TODO https://github.com/dotnet/runtime/issues/98366")]
+        public static unsafe JSFunctionBinding BindManagedFunctionImpl(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
+        {
+            if (string.IsNullOrEmpty(fullyQualifiedName))
+            {
+                throw new ArgumentNullException(nameof(fullyQualifiedName));
+            }
+
+            var signature = GetMethodSignature(signatures, null, null);
+            var (assemblyName, className, methodName) = ParseFQN(fullyQualifiedName);
+
+            Assembly assembly = Assembly.LoadFrom(assemblyName + ".dll");
+            Type? type = assembly.GetType(className);
+            if (type == null)
+            {
+                throw new InvalidOperationException("Class not found " + className);
+            }
+            var wrapper_name = $"__Wrapper_{methodName}_{signatureHash}";
+            var methodInfo = type.GetMethod(wrapper_name, BindingFlags.NonPublic | BindingFlags.Static);
+            if (methodInfo == null)
+            {
+                throw new InvalidOperationException("Method not found " + wrapper_name);
+            }
+
+            var monoMethod = GetIntPtrFromMethodHandle(methodInfo.MethodHandle);
+
+            JavaScriptImports.BindCSFunction(monoMethod, fullyQualifiedName, signatureHash, (IntPtr)signature.Header);
+
+            FreeMethodSignatureBuffer(signature);
+
+            return signature;
+        }
+
 #if FEATURE_WASM_MANAGED_THREADS
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
         private static extern ref bool GetThreadExternalEventloop(Thread @this);
@@ -218,5 +368,38 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntPtr GetIntPtrFromMethodHandle(RuntimeMethodHandle methodHandle)
+        {
+            var temp = new IntPtrAndHandle { methodHandle = methodHandle };
+            return temp.ptr;
+        }
+
+
+        public static (string assemblyName, string className, string methodName) ParseFQN(string fqn)
+        {
+            var assembly = fqn.Substring(fqn.IndexOf('[') + 1, fqn.IndexOf(']') - 1).Trim();
+            fqn = fqn.Substring(fqn.IndexOf(']') + 1).Trim();
+
+            var methodName = fqn.Substring(fqn.IndexOf(':') + 1);
+            fqn = fqn.Substring(0, fqn.IndexOf(':')).Trim();
+
+            var className = fqn;
+            /*var nameSpace = "";
+            if (fqn.Contains('.'))
+            {
+                var idx = fqn.LastIndexOf(".");
+                nameSpace = fqn.Substring(0, idx);
+                className = fqn.Substring(idx + 1).Trim();
+            }*/
+
+            if (string.IsNullOrEmpty(assembly))
+                throw new InvalidOperationException("No assembly name specified " + fqn);
+            if (string.IsNullOrEmpty(className))
+                throw new InvalidOperationException("No class name specified " + fqn);
+            if (string.IsNullOrEmpty(methodName))
+                throw new InvalidOperationException("No method name specified " + fqn);
+            return (assembly, className, methodName);
+        }
     }
 }

@@ -20,6 +20,7 @@ import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { MonoObject, MonoObjectNull } from "./types/internal";
 import { monoStringToStringUnsafe } from "./strings";
 import { thread_available } from "./pthreads/browser";
+import { mono_wasm_bind_cs_function } from "./invoke-cs";
 
 export function export_internal(): any {
     return {
@@ -57,6 +58,7 @@ export function export_internal(): any {
         get_dotnet_instance: () => exportedRuntimeAPI,
         dynamic_import,
         thread_available,
+        mono_wasm_bind_cs_function,
 
         // BrowserWebSocket
         ws_wasm_create,

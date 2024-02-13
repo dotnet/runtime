@@ -33,7 +33,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.Array, marshal_array_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Span, _marshal_span_to_cs);
         js_to_cs_marshalers.set(MarshalerType.ArraySegment, _marshal_array_segment_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.Boolean, _marshal_bool_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.Boolean, marshal_bool_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Byte, _marshal_byte_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Char, _marshal_char_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Int16, _marshal_int16_to_cs);
@@ -45,7 +45,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.IntPtr, marshal_intptr_to_cs);
         js_to_cs_marshalers.set(MarshalerType.DateTime, _marshal_date_time_to_cs);
         js_to_cs_marshalers.set(MarshalerType.DateTimeOffset, _marshal_date_time_offset_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.String, _marshal_string_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.String, marshal_string_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Exception, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSException, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSObject, marshal_js_object_to_cs);
@@ -97,7 +97,7 @@ export function get_marshaler_to_cs_by_type(marshaler_type: MarshalerType): Mars
     return converter;
 }
 
-function _marshal_bool_to_cs(arg: JSMarshalerArgument, value: any): void {
+export function marshal_bool_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -219,7 +219,7 @@ function _marshal_date_time_offset_to_cs(arg: JSMarshalerArgument, value: Date):
     }
 }
 
-function _marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
+export function marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -560,7 +560,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);
-                _marshal_string_to_cs(element_arg, value[index]);
+                marshal_string_to_cs(element_arg, value[index]);
             }
         }
         else if (element_type == MarshalerType.Object) {

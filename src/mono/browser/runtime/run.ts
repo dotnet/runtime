@@ -8,8 +8,6 @@ import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
 import { mono_log_info } from "./logging";
-import { assert_js_interop } from "./invoke-js";
-import { assembly_load } from "./invoke-cs";
 import { cancelThreads } from "./pthreads/browser";
 import { call_entry_point } from "./managed-exports";
 
@@ -58,13 +56,14 @@ export async function mono_run_main(main_assembly_name?: string, args?: string[]
     }
 
     mono_wasm_set_main_args(main_assembly_name, args);
+    loaderHelpers.config.mainAssemblyName = main_assembly_name;
+
     if (runtimeHelpers.waitForDebugger == -1) {
         mono_log_info("waiting for debugger...");
         await mono_wasm_wait_for_debugger();
     }
-    const method = find_entry_point(main_assembly_name);
 
-    const res = await call_entry_point(method, args);
+    const res = await call_entry_point(main_assembly_name, args, runtimeHelpers.waitForDebugger == 1);
 
     // one more timer loop before we return, so that any remaining queued calls could run
     await new Promise(resolve => globalThis.setTimeout(resolve, 0));
@@ -72,22 +71,7 @@ export async function mono_run_main(main_assembly_name?: string, args?: string[]
     return res;
 }
 
-export function find_entry_point(assembly: string) {
-    loaderHelpers.assert_runtime_running();
-    assert_js_interop();
-    const asm = assembly_load(assembly);
-    if (!asm)
-        throw new Error("Could not find assembly: " + assembly);
 
-    let auto_set_breakpoint = 0;
-    if (runtimeHelpers.waitForDebugger == 1)
-        auto_set_breakpoint = 1;
-
-    const method = cwraps.mono_wasm_assembly_get_entry_point(asm, auto_set_breakpoint);
-    if (!method)
-        throw new Error("Could not find entry point for assembly: " + assembly);
-    return method;
-}
 
 export function nativeExit(code: number) {
     if (WasmEnableThreads) {

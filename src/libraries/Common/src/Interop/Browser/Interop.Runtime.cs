@@ -26,8 +26,6 @@ internal static partial class Interop
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
-        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ResolveOrRejectPromise(nint data);
 #if FEATURE_WASM_MANAGED_THREADS
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -65,6 +63,8 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void CancelPromise(nint gcHandle);
 #endif
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void SetEntryPointBreakpoint(int entryPointMetadataToken);
 
 
     }
