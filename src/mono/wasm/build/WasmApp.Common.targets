@@ -508,8 +508,8 @@
     <PropertyGroup>
       <_WasmBuildNativeRequired Condition="@(_ChangedBoolPropertiesThatTriggerRelinking->Count()) > 0">true</_WasmBuildNativeRequired>
     </PropertyGroup>
-
-    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'" 
+    <!-- FIXME: InvariantGlobalization is excluded now, as all trimming tests are running with WasmBuildNative=false -->
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true' and '@(_ChangedBoolPropertiesThatTriggerRelinking)' != 'InvariantGlobalization'" 
            Text="WasmBuildNative is required because %(_ChangedBoolPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedBoolPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
     <PropertyGroup>

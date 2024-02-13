@@ -43,10 +43,6 @@
       </TestConsoleApps>
       <TestConsoleApps AdditionalProperties="MSBuildEnableWorkloadResolver=$(MSBuildEnableWorkloadResolver)" Condition="'$(MSBuildEnableWorkloadResolver)' != ''" />
     </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-      <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
-    </ItemGroup>
   </Target>
 
   <Target Name="GenerateProjects"
