@@ -1159,9 +1159,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #ifdef TARGET_AMD64
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        op1     = impSIMDPopStack();
-                        CorInfoType fieldType = (simdBaseType == TYP_DOUBLE) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
-
                         var_types simdType = getSIMDTypeForSize(simdSize);
                         // Generate the control table for VFIXUPIMMSD
                         // The behavior we want is to saturate negative values to 0.
@@ -1191,15 +1188,15 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                         
                         //run vfixupimmsd base on table and no flags reporting
                         GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
-                                                                    NI_AVX512F_Fixup, fieldType, simdSize);
+                                                                    NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                        GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT64_MAX)), fieldType, simdSize);
+                        GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeD(static_cast<double>(INT64_MAX)), simdBaseJitType, simdSize);
                         GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT64_MAX, TYP_LONG), CORINFO_TYPE_LONG, simdSize);
                         //we will be using the input value twice
                         GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);
 
                         //usage 1 --> compare with max value of integer
-                        saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, fieldType, simdSize);
+                        saturate_val = gtNewSimdCmpOpNode(GT_GE, simdType, saturate_val, max_val, simdBaseJitType, simdSize);
                         //cast it
 
                         NamedIntrinsic intrinsic =    (simdSize == 16) ? NI_AVX512DQ_VL_ConvertToVector128Int64WithTruncation
@@ -1222,8 +1219,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #ifdef TARGET_AMD64
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        op1     = impSIMDPopStack();
-
                         var_types simdType = getSIMDTypeForSize(simdSize);
                         // Generate the control table for VFIXUPIMMSD
                         // The behavior we want is to saturate negative values to 0.
@@ -1270,8 +1265,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #ifdef TARGET_AMD64
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        op1     = impSIMDPopStack();
-
                         var_types simdType = getSIMDTypeForSize(simdSize);
                         // Generate the control table for VFIXUPIMMSD
                         // The behavior we want is to saturate negative values to 0.
@@ -1316,8 +1309,6 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 #ifdef TARGET_AMD64
                     if (IsBaselineVector512IsaSupportedOpportunistically())
                     {
-                        op1     = impSIMDPopStack();
-
                         var_types simdType = getSIMDTypeForSize(simdSize);
                         // Generate the control table for VFIXUPIMMSD
                         // The behavior we want is to saturate negative values to 0.

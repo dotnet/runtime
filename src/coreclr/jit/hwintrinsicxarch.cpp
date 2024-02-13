@@ -1482,7 +1482,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 GenTree* saturate_val = gtNewSimdHWIntrinsicNode(simdType, op1, op2Clone, tbl, gtNewIconNode(0),
                                                             NI_AVX512F_Fixup, simdBaseJitType, simdSize);
 
-                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeF(static_cast<float>(INT64_MAX)), simdBaseJitType, simdSize);
+                GenTree* max_val = gtNewSimdCreateBroadcastNode(simdType, gtNewDconNodeD(static_cast<double>(INT64_MAX)), simdBaseJitType, simdSize);
                 GenTree* max_valDup = gtNewSimdCreateBroadcastNode(simdType, gtNewIconNode(INT64_MAX, TYP_LONG), CORINFO_TYPE_LONG, simdSize);
                 //we will be using the input value twice
                 GenTree* saturate_valDup = fgMakeMultiUse(&saturate_val);

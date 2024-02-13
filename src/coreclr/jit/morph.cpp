@@ -339,6 +339,10 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             {
                 if (varTypeIsUnsigned(dstType))
                 {
+                    if ((dstType != TYP_UINT) && (dstType != TYP_ULONG))
+                    {
+                        break;
+                    }
                     // Generate the control table for VFIXUPIMMSD
                     // The behavior we want is to saturate negative values to 0.
                     GenTreeVecCon* tbl = gtNewVconNode(TYP_SIMD16);
@@ -377,15 +381,11 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                     {
                         break;
                     }
-                    CorInfoType destFieldType = (dstType == TYP_INT)   ? CORINFO_TYPE_INT 
-                                              : (dstType == TYP_LONG)  ? CORINFO_TYPE_LONG
-                                              : (dstType == TYP_SHORT) ? CORINFO_TYPE_INT
-                                              :                          CORINFO_TYPE_INT;
+                    CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT 
+                                              :                        CORINFO_TYPE_LONG;
                     
-                    ssize_t actualMaxVal = (dstType == TYP_INT)   ? INT32_MAX 
-                                         : (dstType == TYP_LONG)  ? INT64_MAX
-                                         : (dstType == TYP_SHORT) ? INT16_MAX
-                                         :                          INT8_MAX;
+                    ssize_t actualMaxVal = (dstType == TYP_INT) ? INT32_MAX 
+                                         :                        INT64_MAX;
 
                     // CorInfoType destFieldType = (dstType == TYP_INT) ? CORINFO_TYPE_INT : CORINFO_TYPE_LONG;
                     // Generate the control table for VFIXUPIMMSD
@@ -467,7 +467,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 #elif defined(TARGET_AMD64)
             // Amd64: src = float, dst = uint64 or overflow conversion.
             // This goes through helper and hence src needs to be converted to double.
-            && (tree->gtOverflow() || dstType == TYP_LONG || ((dstType == TYP_INT || dstType == TYP_ULONG) && !compOpportunisticallyDependsOn(InstructionSet_AVX512F)))
+            && (tree->gtOverflow() || ((dstType == TYP_INT || dstType == TYP_ULONG || dstType == TYP_LONG) && !compOpportunisticallyDependsOn(InstructionSet_AVX512F)))
 #elif defined(TARGET_ARM)
             // Arm: src = float, dst = int64/uint64 or overflow conversion.
             && (tree->gtOverflow() || varTypeIsLong(dstType))

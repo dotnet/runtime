@@ -1522,7 +1522,8 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
         switch (ins)
         {
             case INS_cvtss2si:
-            case INS_cvttss2si:
+            case INS_cvttss2si32:
+            case INS_cvttss2si64:
             case INS_cvtsd2si:
             case INS_cvttsd2si32:
             case INS_cvttsd2si64:
@@ -2725,7 +2726,8 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_bzhi:
         case INS_cvttsd2si32:
         case INS_cvttsd2si64:
-        case INS_cvttss2si:
+        case INS_cvttss2si32:
+        case INS_cvttss2si64:
         case INS_cvtsd2si:
         case INS_cvtss2si:
         case INS_extractps:
@@ -11611,7 +11613,8 @@ void emitter::emitDispIns(
                 case INS_cvttsd2si64:
                 case INS_cvtss2si:
                 case INS_cvtsd2si:
-                case INS_cvttss2si:
+                case INS_cvttss2si32:
+                case INS_cvttss2si64:
                 case INS_vcvtsd2usi:
                 case INS_vcvtss2usi:
                 case INS_vcvttsd2usi32:
@@ -19072,7 +19075,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency += PERFSCORE_LATENCY_5C;
             break;
 
-        case INS_cvttss2si:
+        case INS_cvttss2si32:
+        case INS_cvttss2si64:
         case INS_cvtss2si:
         case INS_vcvtss2usi:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;

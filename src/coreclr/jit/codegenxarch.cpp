@@ -7002,7 +7002,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // The type cannot be larger than the machine word size
     assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
-    assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
+    assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type) || compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
 
     var_types targetType = tree->TypeGet();
 
