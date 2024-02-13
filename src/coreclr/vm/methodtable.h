@@ -302,7 +302,7 @@ struct MethodTableWriteableData
         enum_flag_IsNotFullyLoaded          = 0x00000040,
         enum_flag_DependenciesLoaded        = 0x00000080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
-        // enum_unused                      = 0x00000100,
+        enum_flag_MayHaveOpenInterfaceInInterfaceMap = 0x00000100,
 
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x00000200,     // Is any field type or sub field type overrode Equals or GetHashCode
         enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000400,  // Whether we have checked the overridden Equals or GetHashCode
@@ -392,6 +392,17 @@ public:
         // Array's parent is always precise
         m_dwFlags &= ~(MethodTableWriteableData::enum_flag_HasApproxParent);
 
+    }
+
+    inline void SetMayHaveOpenInterfacesInInterfaceMap()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr((LONG*)&m_dwFlags, MethodTableWriteableData::enum_flag_MayHaveOpenInterfaceInInterfaceMap);
+    }
+
+    inline bool MayHaveOpenInterfacesInInterfaceMap() const
+    {
+        return !!(m_dwFlags & MethodTableWriteableData::enum_flag_MayHaveOpenInterfaceInInterfaceMap);
     }
 };  // struct MethodTableWriteableData
 
@@ -1970,7 +1981,7 @@ public:
                 if (pCurrentMethodTable->HasSameTypeDefAs(pMT) &&
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
-                    !pMTOwner->ContainsGenericVariables() &&
+                    !pMTOwner->GetWriteableData()->MayHaveOpenInterfacesInInterfaceMap() &&
                     pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
                 {
                     exactMatch = true;

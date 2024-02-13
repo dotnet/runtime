@@ -457,6 +457,14 @@ void local_RSA_get0_crt_params(const RSA* rsa, const BIGNUM** dmp1, const BIGNUM
     }
 }
 
+int local_RSA_get_multi_prime_extra_count(const RSA* rsa)
+{
+    (void)rsa;
+    // OpenSSL before 1.1 does not support multi-prime RSA, so it implicitly
+    // has zero extra primes.
+    return 0;
+}
+
 int32_t local_RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d)
 {
     if (rsa == NULL)
@@ -922,6 +930,21 @@ int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm)
 int local_BN_is_zero(const BIGNUM* a)
 {
     return a->top == 0;
+}
+
+int local_BN_is_one(const BIGNUM* a)
+{
+    return BN_abs_is_word(a, 1) && !a->neg;
+}
+
+int local_BN_abs_is_word(const BIGNUM *a, const BN_ULONG w)
+{
+    return ((a->top == 1) && (a->d[0] == w)) || ((w == 0) && (a->top == 0));
+}
+
+int local_BN_is_odd(const BIGNUM* a)
+{
+    return (a->top > 0) && (a->d[0] & 1);
 }
 
 #endif
