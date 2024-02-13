@@ -314,6 +314,11 @@ void Compiler::impEndTreeList(BasicBlock* block)
         impLastILoffsStmt = nullptr;
     }
 #endif
+    if (impLclValues != nullptr)
+    {
+        assert(impLclMapSize > 0);
+        memset(impLclValues, 0, impLclMapSize * sizeof(GenTree*));
+    }
     impStmtList = impLastStmt = nullptr;
 }
 
@@ -1061,6 +1066,83 @@ GenTree* Compiler::impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned
     store               = impStoreStruct(store, curLevel);
 
     return store;
+}
+
+//------------------------------------------------------------------------
+// impGetLclVal: Get the value of a LCL_VAR
+//
+// Arguments:
+//    val         - Tree to extract the value from
+//
+// Return Value:
+//    Extracted value if the tree is a LclVar with a known value in the
+//    current Basic Block, nullptr otherwise.
+//
+// Notes:
+//    Returned value must be cloned before importing it again.
+//
+GenTree* Compiler::impGetLclVal(GenTree* val)
+{
+    assert(val != nullptr);
+    if (!val->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
+    }
+
+    while (true)
+    {
+        unsigned lclNum = val->AsLclVar()->GetLclNum();
+        if (lclNum >= impLclMapSize || !lvaGetDesc(lclNum)->lvSingleDef)
+        {
+            return nullptr;
+        }
+
+        assert(impLclValues != nullptr);
+        GenTree* lclValue = impLclValues[lclNum];
+        if (lclValue != nullptr)
+        {
+            if (lclValue->OperIs(GT_LCL_VAR))
+            {
+                unsigned newLcl = lclValue->AsLclVar()->GetLclNum();
+                if (lclNum == newLcl)
+                {
+                    JITDUMP("\nLCL_VAR V%02u is only assigned to itself, aborting substitution\n", lclNum);
+                    return nullptr;
+                }
+                val = lclValue;
+                JITDUMP("\nChecking LCL_VAR V%02u for substitution of V%02u\n", newLcl, lclNum);
+                continue;
+            }
+            JITDUMP("\nSubstituting value of LCL_VAR V%02u with node [%06u]\n", lclNum, dspTreeID(lclValue));
+        }
+
+        return lclValue;
+    }
+}
+
+//------------------------------------------------------------------------
+// impSetLclVal: Sets the value of a LclVar for substitution
+//
+// Arguments:
+//    lclNum      - Local number
+//    val         - Current value of the local
+//
+void Compiler::impSetLclVal(unsigned lclNum, GenTree* val)
+{
+    if (lclNum >= impLclMapSize)
+    {
+        if (impLclValues != nullptr)
+        {
+            JITDUMP("impLclValues is too small to hold local V%02u\n", lclNum);
+            return;
+        }
+        // reserve more space for locals created later
+        impLclMapSize = max(lvaCount * 2, 32);
+        impLclValues  = new (getAllocator(CMK_ImpLclMap)) GenTree*[impLclMapSize];
+        memset(impLclValues, 0, impLclMapSize * sizeof(GenTree*));
+    }
+    assert(impLclValues != nullptr);
+    impLclValues[lclNum] = val;
 }
 
 //------------------------------------------------------------------------

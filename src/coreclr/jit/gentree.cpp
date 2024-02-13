@@ -8227,6 +8227,8 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* data)
 
     gtInitializeStoreNode(store, data);
 
+    impSetLclVal(lclNum, data);
+
     return store;
 }
 
@@ -18961,6 +18963,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 //
 bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 {
+    GenTree* typeValue = impGetLclVal(tree);
+    if (typeValue != nullptr)
+    {
+        tree = typeValue;
+    }
+
     if (tree->IsCall())
     {
         GenTreeCall* call = tree->AsCall();

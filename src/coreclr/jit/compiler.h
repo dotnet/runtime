@@ -4543,6 +4543,8 @@ protected:
 
     Statement* impStmtList; // Statements for the BB being imported.
     Statement* impLastStmt; // The last statement for the current BB.
+    GenTree** impLclValues; // Current values stored in locals.
+    unsigned impLclMapSize; // Current local map size.
 
 public:
     static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
@@ -4574,6 +4576,9 @@ public:
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
     GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel);
+
+    GenTree* impGetLclVal(GenTree* val);
+    void impSetLclVal(unsigned lclNum, GenTree* val);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
 
