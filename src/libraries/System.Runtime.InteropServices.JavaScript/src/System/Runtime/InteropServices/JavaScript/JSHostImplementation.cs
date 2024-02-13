@@ -308,10 +308,6 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 MethodInfo? methodInfo = type.GetMethod(GeneratedInitializerMethodName, BindingFlags.NonPublic | BindingFlags.Static);
-                if (methodInfo == null)
-                {
-                    throw new InvalidOperationException(GeneratedInitializerMethodName + " not found in " + type.FullName);
-                }
                 methodInfo?.Invoke(null, []);
             }
 
