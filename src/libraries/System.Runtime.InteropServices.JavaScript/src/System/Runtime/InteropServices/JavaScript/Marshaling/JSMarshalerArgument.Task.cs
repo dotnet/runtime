@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (!isCurrentThread)
                 {
-                    Environment.FailFast("NULL not supported in MT");
+                    Environment.FailFast("Marshalling null task to JS is not supported in MT");
                 }
                 slot.Type = MarshalerType.None;
                 return;
