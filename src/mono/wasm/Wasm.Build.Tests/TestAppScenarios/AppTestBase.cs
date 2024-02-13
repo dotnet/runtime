@@ -45,15 +45,18 @@ public abstract class AppTestBase : BlazorWasmTestBase
     }
 
     protected void BuildProject(
-        string configuration, params string[] extraArgs,
+        string configuration,
         string? binFrameworkDir = null,
-        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        bool assertAppBundle = true,
+        params string[] extraArgs)
     {
         (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
             Id: Id,
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
-            RuntimeType: runtimeType), extraArgs); 
+            RuntimeType: runtimeType,
+            AssertAppBundle: assertAppBundle), extraArgs); 
         result.EnsureSuccessful();
     }
 
