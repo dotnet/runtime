@@ -231,6 +231,6 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         }
     }
 
-    public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
-        => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework);
+    public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor, string? projectDir = null)
+        => _provider.FindBinFrameworkDir(config: config, forPublish: forPublish, framework: framework, projectDir: projectDir);
 }

@@ -31,14 +31,29 @@ public abstract class AppTestBase : BlazorWasmTestBase
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
 
-        // WasmBasicTestApp consists of App + Library projects
-        if (assetName == "WasmBasicTestApp")
-            _projectDir = Path.Combine(_projectDir!, "App");
+        switch(assetName)
+        {
+            case "WasmBasicTestApp":
+                // WasmBasicTestApp consists of App + Library projects
+                _projectDir = Path.Combine(_projectDir!, "App");
+                break;
+            case "BlazorHostedApp":
+                // BlazorHostedApp consists of BlazorHosted.Client and BlazorHosted.Server projects
+                _projectDir = Path.Combine(_projectDir!, "BlazorHosted.Server");
+                break;
+        }
     }
 
-    protected void BuildProject(string configuration)
+    protected void BuildProject(
+        string configuration,
+        string? binFrameworkDir = null,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
-        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(Id, configuration));
+        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(
+            Id: Id,
+            Config: configuration,
+            BinFrameworkDir: binFrameworkDir,
+            RuntimeType: runtimeType)); 
         result.EnsureSuccessful();
     }
 
@@ -67,7 +82,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 CheckCounter: false,
                 Config: options.Configuration,
                 OnConsoleMessage: OnConsoleMessage,
-                QueryString: queryString);
+                QueryString: queryString,
+                ExtraArgs: options.ExtraArgs);
 
         await BlazorRunForBuildWithDotnetRun(blazorRunOptions);
 
@@ -107,7 +123,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string TestScenario,
         Dictionary<string, string> BrowserQueryString = null,
         Action<IConsoleMessage> OnConsoleMessage = null,
-        int? ExpectedExitCode = 0
+        int? ExpectedExitCode = 0,
+        string? ExtraArgs = null
     );
 
     protected record RunResult(
