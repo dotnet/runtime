@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Test.Cryptography;
 using Xunit;
 
@@ -148,6 +149,52 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             Assert.Equal(skid, Convert.ToHexString(ext.SubjectKeyIdentifierBytes.Span));
         }
 
+        [Theory]
+        [MemberData(nameof(Rfc7093Examples))]
+        public static void EncodeDecode_Rfc7093Examples(
+            byte[] subjectPublicKeyInfo,
+            X509SubjectKeyIdentifierHashAlgorithm algorithm,
+            byte[] expectedDer,
+            string expectedIdentifier)
+        {
+            EncodeDecodeSubjectPublicKeyInfo(subjectPublicKeyInfo, algorithm, false, expectedDer, expectedIdentifier);
+        }
+
+        public static IEnumerable<object[]> Rfc7093Examples()
+        {
+            byte[] example =
+            [
+                0x30, 0x59,
+                    0x30, 0x13,
+                        0x06, 0x07, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01,
+                        0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07,
+                    0x03, 0x42, 0x00,
+                        0x04,
+                        0x7F, 0x7F, 0x35, 0xA7, 0x97, 0x94, 0xC9, 0x50, 0x06, 0x0B, 0x80, 0x29, 0xFC, 0x8F, 0x36, 0x3A,
+                        0x28, 0xF1, 0x11, 0x59, 0x69, 0x2D, 0x9D, 0x34, 0xE6, 0xAC, 0x94, 0x81, 0x90, 0x43, 0x47, 0x35,
+                        0xF8, 0x33, 0xB1, 0xA6, 0x66, 0x52, 0xDC, 0x51, 0x43, 0x37, 0xAF, 0xF7, 0xF5, 0xC9, 0xC7, 0x5D,
+                        0x67, 0x0C, 0x01, 0x9D, 0x95, 0xA5, 0xD6, 0x39, 0xB7, 0x27, 0x44, 0xC6, 0x4A, 0x91, 0x28, 0xBB,
+            ];
+
+            // Method 1 example from RFC 7093
+            yield return new object[]
+            {
+                example,
+                X509SubjectKeyIdentifierHashAlgorithm.ShortSha256,
+                Convert.FromHexString("0414BF37B3E5808FD46D54B28E846311BCCE1CAD2E1A"),
+                "BF37B3E5808FD46D54B28E846311BCCE1CAD2E1A",
+            };
+
+            // Method 4 example from RFC 7093
+            yield return new object[]
+            {
+                example,
+                X509SubjectKeyIdentifierHashAlgorithm.Sha256,
+                Convert.FromHexString("04206D20896AB8BD833B6B66554BD59B20225D8A75A296088148399D7BF763D57405"),
+                "6D20896AB8BD833B6B66554BD59B20225D8A75A296088148399D7BF763D57405",
+            };
+        }
+
         private static void EncodeDecode(
             byte[] certBytes,
             X509SubjectKeyIdentifierHashAlgorithm algorithm,
@@ -155,15 +202,32 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             byte[] expectedDer,
             string expectedIdentifier)
         {
-            PublicKey pk;
-
             using (var cert = new X509Certificate2(certBytes))
             {
-                pk = cert.PublicKey;
+                EncodeDecodePublicKey(cert.PublicKey, algorithm, critical, expectedDer, expectedIdentifier);
             }
+        }
 
-            X509SubjectKeyIdentifierExtension ext =
-                new X509SubjectKeyIdentifierExtension(pk, algorithm, critical);
+        private static void EncodeDecodeSubjectPublicKeyInfo(
+            byte[] spkiBytes,
+            X509SubjectKeyIdentifierHashAlgorithm algorithm,
+            bool critical,
+            byte[] expectedDer,
+            string expectedIdentifier)
+        {
+            PublicKey publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(spkiBytes, out _);
+            EncodeDecodePublicKey(publicKey, algorithm, critical, expectedDer, expectedIdentifier);
+        }
+
+
+        private static void EncodeDecodePublicKey(
+            PublicKey publicKey,
+            X509SubjectKeyIdentifierHashAlgorithm algorithm,
+            bool critical,
+            byte[] expectedDer,
+            string expectedIdentifier)
+        {
+            X509SubjectKeyIdentifierExtension ext = new X509SubjectKeyIdentifierExtension(publicKey, algorithm, critical);
 
             byte[] rawData = ext.RawData;
             Assert.Equal(expectedDer, rawData);
