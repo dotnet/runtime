@@ -45,7 +45,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
     }
 
     protected void BuildProject(
-        string configuration,
+        string configuration, params string[] extraArgs,
         string? binFrameworkDir = null,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
@@ -53,13 +53,13 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Id: Id,
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
-            RuntimeType: runtimeType)); 
+            RuntimeType: runtimeType), extraArgs); 
         result.EnsureSuccessful();
     }
 
-    protected void PublishProject(string configuration)
+    protected void PublishProject(string configuration, params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration));
+        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration), extraArgs);
         result.EnsureSuccessful();
     }
 
@@ -67,7 +67,13 @@ public abstract class AppTestBase : BlazorWasmTestBase
         .WithWorkingDirectory(_projectDir!)
         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
 
-    protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
+    protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
+        => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);
+    
+    protected Task<RunResult> RunSdkStyleAppForPublish(RunOptions options)
+        => RunSdkStyleApp(options, BlazorRunHost.WebServer);
+
+    private async Task<RunResult> RunSdkStyleApp(RunOptions options, BlazorRunHost host = BlazorRunHost.DotnetRun)
     {
         string queryString = "?test=" + options.TestScenario;
         if (options.BrowserQueryString != null)
@@ -83,9 +89,10 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 Config: options.Configuration,
                 OnConsoleMessage: OnConsoleMessage,
                 QueryString: queryString,
-                ExtraArgs: options.ExtraArgs);
+                ExtraArgs: options.ExtraArgs,
+                Host: host);
 
-        await BlazorRunForBuildWithDotnetRun(blazorRunOptions);
+        await BlazorRunTest(blazorRunOptions);
 
         void OnConsoleMessage(IConsoleMessage msg)
         {

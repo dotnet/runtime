@@ -45,3 +45,4 @@ Wasm.Build.Tests.WasmSIMDTests
 Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.WorkloadTests
 Wasm.Build.Tests.MT.Blazor.SimpleMultiThreadedTests
+Wasm.Build.Tests.TestAppScenarios.DebugLevelTests

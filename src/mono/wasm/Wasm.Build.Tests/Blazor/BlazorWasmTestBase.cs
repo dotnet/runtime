@@ -63,7 +63,9 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
+        {
             AssertBundle(res.Output, options with { IsPublish = false });
+        }
 
         return (res, logPath);
     }
@@ -77,6 +79,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
+            // Because we do relink in Release publish by default
+            if (options.Config == "Release")
+                options = options with { ExpectedFileType = NativeFilesType.Relinked };
+
             AssertBundle(res.Output, options with { IsPublish = true });
         }
 
