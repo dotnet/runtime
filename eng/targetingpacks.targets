@@ -36,6 +36,11 @@
     <UseLocalCrossgen2Pack Condition="'$(UseLocalCrossgen2Pack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalCrossgen2Pack>
   </PropertyGroup>
 
+  <!-- Add the Mono AOT cross compiler to the project. -->  
+  <ItemGroup>
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())" />
+  </ItemGroup>
+
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
   <ItemGroup>
     <KnownFrameworkReference Include="$(LocalFrameworkOverrideName)"
