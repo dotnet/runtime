@@ -1977,9 +1977,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/zeroinit/tail_zeroinit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/37955</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
