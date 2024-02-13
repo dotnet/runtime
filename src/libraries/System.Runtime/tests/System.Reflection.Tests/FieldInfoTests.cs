@@ -819,8 +819,8 @@ namespace System.Reflection.Tests
             static MyTypeThatThrowsInClassInitializer()
             {
                 FieldInfo fi = typeof(MyTypeThatThrowsInClassInitializer).GetField(nameof(s_field));
-                //for (int i = 0; i < 3; i++)
-                    //fi.GetValue(null);
+                for (int i = 0; i < 3; i++)
+                    fi.GetValue(null);
 
                 if (SettingsForMyTypeThatThrowsInClassInitializer.s_shouldThrow)
                 {
