@@ -124,12 +124,15 @@ namespace System.Security.Cryptography.X509Certificates
             // Generally, having a MemoryManager cleaned up in a Dispose is a bad practice.
             // In this case, the UnixPkcs12Reader is only ever created in a using statement,
             // never accessed by a second thread, and there isn't a manual call to Dispose
-            // mixed in anywhere.
-            if (_tmpManager != null)
+            // mixed in anywhere outside of an aborted allocation path.
+
+            PointerMemoryManager<byte>? manager = Interlocked.Exchange(ref _tmpManager, null);
+
+            if (manager != null)
             {
                 unsafe
                 {
-                    Span<byte> tmp = _tmpManager.GetSpan();
+                    Span<byte> tmp = manager.GetSpan();
                     CryptographicOperations.ZeroMemory(tmp);
 
                     fixed (byte* ptr = tmp)
@@ -138,8 +141,7 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
 
-                ((IDisposable)_tmpManager).Dispose();
-                _tmpManager = null;
+                ((IDisposable)manager).Dispose();
             }
 
             ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
