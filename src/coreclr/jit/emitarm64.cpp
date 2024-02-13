@@ -11025,9 +11025,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
             fmt = IF_SVE_HP_3A;
             break;
 
-        case INS_sve_prfb:
-            break;
-
         default:
             unreached();
             break;
