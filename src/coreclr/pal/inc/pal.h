@@ -3882,21 +3882,13 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 /* For backwards compatibility */
 #define _WConst_return _CONST_RETURN
 
-/* Locale categories */
-#define LC_ALL          0
-#define LC_COLLATE      1
-#define LC_CTYPE        2
-#define LC_MONETARY     3
-#define LC_NUMERIC      4
-#define LC_TIME         5
-
 /* _TRUNCATE */
 #if !defined(_TRUNCATE)
 #define _TRUNCATE ((size_t)-1)
 #endif
 
 // errno_t is only defined when the Secure CRT Extensions library is available (which no standard library that we build with implements anyway)
-typedef error_t errno_t;
+typedef int errno_t;
 
 PALIMPORT DLLEXPORT errno_t __cdecl memcpy_s(void *, size_t, const void *, size_t) THROW_DECL;
 PALIMPORT errno_t __cdecl memmove_s(void *, size_t, const void *, size_t);

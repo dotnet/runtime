@@ -202,7 +202,7 @@ namespace
                 SString nameToConvert(name);
 
 #ifdef HOST_WINDOWS
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, &getenv);
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix);
 #else
                 CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameToConvert.GetUTF8(), noPrefix, &PAL_getenv);
 #endif
