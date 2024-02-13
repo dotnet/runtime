@@ -28,7 +28,7 @@ public class DownloadResourceProgressTests : AppTestBase
         CopyTestAsset("WasmBasicTestApp", $"DownloadResourceProgressTests_{failAssemblyDownload}");
         PublishProject("Debug");
 
-        var result = await RunSdkStyleApp(new(
+        var result = await RunSdkStyleAppForPublish(new(
             Configuration: "Debug",
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new Dictionary<string, string> { ["failAssemblyDownload"] = failAssemblyDownload.ToString().ToLowerInvariant() }

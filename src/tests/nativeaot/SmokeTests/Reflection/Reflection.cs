@@ -70,6 +70,7 @@ internal static class ReflectionTest
         TestGenericLdtoken.Run();
         TestAbstractGenericLdtoken.Run();
         TestTypeHandlesVisibleFromIDynamicInterfaceCastable.Run();
+        TestCompilerGeneratedCode.Run();
 
         //
         // Mostly functionality tests
@@ -2539,6 +2540,62 @@ internal static class ReflectionTest
             Console.WriteLine(nameof(TestEntryPoint));
             if (Assembly.GetEntryAssembly().EntryPoint == null)
                 throw new Exception();
+        }
+    }
+
+    class TestCompilerGeneratedCode
+    {
+        class Canary1 { }
+        class Canary2 { }
+        class Canary3 { }
+        class Canary4 { }
+
+        private static void ReflectionInLambda()
+        {
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary1));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        private static void ReflectionInLocalFunction()
+        {
+            func();
+
+            void func()
+            {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary2));
+                Assert.NotNull(helpersType);
+            };
+        }
+
+        private static async void ReflectionInAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+            Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary3));
+            Assert.NotNull(helpersType);
+        }
+
+        private static async void ReflectionInLambdaAsync()
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+
+            var func = () => {
+                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary4));
+                Assert.NotNull(helpersType);
+            };
+
+            func();
+        }
+
+        public static void Run()
+        {
+            ReflectionInLambda();
+            ReflectionInLocalFunction();
+            ReflectionInAsync();
+            ReflectionInLambdaAsync();
         }
     }
 

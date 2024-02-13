@@ -28,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 result = GetTypeNameDebug(typeDefinition) + "<";
                 for (int i = 0; i < type.Instantiation.Length; i++)
-                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(type.Instantiation[0]);
+                    result += (i == 0 ? "" : ",") + GetTypeNameDebug(type.Instantiation[i]);
                 return result + ">";
             }
             else if (type.IsDefType)

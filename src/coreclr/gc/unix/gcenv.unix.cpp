@@ -220,6 +220,13 @@ AffinitySet g_processAffinitySet;
 extern "C" int g_highestNumaNode;
 extern "C" bool g_numaAvailable;
 
+static int64_t g_totalPhysicalMemSize = 0;
+
+#ifdef TARGET_APPLE
+static int *g_kern_memorystatus_level_mib = NULL;
+static size_t g_kern_memorystatus_level_mib_length = 0;
+#endif
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
@@ -316,6 +323,55 @@ bool GCToOSInterface::Initialize()
 #endif // HAVE_SCHED_GETAFFINITY
 
     NUMASupportInitialize();
+
+#ifdef TARGET_APPLE
+    const char* mem_free_name = "kern.memorystatus_level";
+    int rc = sysctlnametomib(mem_free_name, NULL, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        return false;
+    }
+
+    g_kern_memorystatus_level_mib = (int*)malloc(g_kern_memorystatus_level_mib_length * sizeof(int));
+    if (g_kern_memorystatus_level_mib == NULL)
+    {
+        return false;
+    }
+
+    rc = sysctlnametomib(mem_free_name, g_kern_memorystatus_level_mib, &g_kern_memorystatus_level_mib_length);
+    if (rc != 0)
+    {
+        free(g_kern_memorystatus_level_mib);
+        g_kern_memorystatus_level_mib = NULL;
+        g_kern_memorystatus_level_mib_length = 0;
+        return false;
+    }
+#endif
+
+    // Get the physical memory size
+#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
+    long pages = sysconf(_SC_PHYS_PAGES);
+    if (pages == -1)
+    {
+        return false;
+    }
+
+    g_totalPhysicalMemSize = (uint64_t)pages * (uint64_t)g_pageSizeUnixInl;
+#elif HAVE_SYSCTL
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    size_t length = sizeof(INT64);
+    int rc = sysctl(mib, 2, &g_totalPhysicalMemSize, &length, NULL, 0);
+    if (rc == 0)
+    {
+        return false;
+    }
+#else // HAVE_SYSCTL
+#error "Don't know how to get total physical memory on this platform"
+#endif // HAVE_SYSCTL
+
+    assert(g_totalPhysicalMemSize != 0);
 
     return true;
 }
@@ -515,12 +571,13 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 
 // Reserve virtual memory range.
 // Parameters:
-//  size      - size of the virtual memory range
-//  alignment - requested memory alignment, 0 means no specific alignment requested
-//  flags     - flags to control special settings like write watching
+//  size       - size of the virtual memory range
+//  alignment  - requested memory alignment, 0 means no specific alignment requested
+//  flags      - flags to control special settings like write watching
+//  committing - memory will be comitted
 // Return:
 //  Starting virtual address of the reserved range
-static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
+static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag, bool committing)
 {
     assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
     if (alignment < OS_PAGE_SIZE)
@@ -550,8 +607,11 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 
         pRetVal = pAlignedRetVal;
 #ifdef MADV_DONTDUMP
-        // Do not include reserved memory in coredump.
-        madvise(pRetVal, size, MADV_DONTDUMP);
+        // Do not include reserved uncommitted memory in coredump.
+        if (!committing)
+        {
+            madvise(pRetVal, size, MADV_DONTDUMP);
+        }
 #endif
         return pRetVal;
     }
@@ -569,7 +629,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 //  Starting virtual address of the reserved range
 void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
-    return VirtualReserveInner(size, alignment, flags);
+    return VirtualReserveInner(size, alignment, flags, 0, /* committing */ false);
 }
 
 // Release virtual memory range previously reserved using VirtualReserve
@@ -585,44 +645,21 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
     return (ret == 0);
 }
 
-// Commit virtual memory range.
-// Parameters:
-//  size      - size of the virtual memory range
-// Return:
-//  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
-{
-#if HAVE_MAP_HUGETLB
-    uint32_t largePagesFlag = MAP_HUGETLB;
-#elif HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
-    uint32_t largePagesFlag = VM_FLAGS_SUPERPAGE_SIZE_ANY;
-#else
-    uint32_t largePagesFlag = 0;
-#endif
-
-    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, node))
-    {
-        return pRetVal;
-    }
-
-    return nullptr;
-}
-
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
 // Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
+//  address   - starting virtual address
+//  size      - size of the virtual memory range
+//  newMemory - memory has been newly allocated
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
+static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 
 #ifdef MADV_DODUMP
-    if (success)
+    if (success && !newMemory)
     {
-        // Include committed memory in coredump.
+        // Include committed memory in coredump. New memory is included by default.
         madvise(address, size, MADV_DODUMP);
     }
 #endif
@@ -648,6 +685,41 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 #endif // TARGET_LINUX
 
     return success;
+}
+
+// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
+// Parameters:
+//  address - starting virtual address
+//  size    - size of the virtual memory range
+// Return:
+//  true if it has succeeded, false if it has failed
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
+{
+    return VirtualCommitInner(address, size, node, /* newMemory */ false);
+}
+
+// Commit virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+// Return:
+//  Starting virtual address of the committed range
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
+{
+#if HAVE_MAP_HUGETLB
+    uint32_t largePagesFlag = MAP_HUGETLB;
+#elif HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
+    uint32_t largePagesFlag = VM_FLAGS_SUPERPAGE_SIZE_ANY;
+#else
+    uint32_t largePagesFlag = 0;
+#endif
+
+    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag, true);
+    if (VirtualCommitInner(pRetVal, size, node, /* newMemory */ true))
+    {
+        return pRetVal;
+    }
+
+    return nullptr;
 }
 
 // Decomit virtual memory range.
@@ -686,31 +758,33 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-    int st;
-#if HAVE_MADV_FREE
-    // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
-    // need the pages in the range. Freeing the pages can be delayed until a memory pressure
-    // occurs.
-    st = madvise(address, size, MADV_FREE);
-    if (st != 0)
-#endif
-    {
-#if HAVE_POSIX_MADVISE
-        // In case the MADV_FREE is not supported, use MADV_DONTNEED
-        st = posix_madvise(address, size, MADV_DONTNEED);
-#else
-        // If we don't have posix_madvise, report failure
-        st = EINVAL;
-#endif
-    }
+    int st = EINVAL;
+
+#if defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+
+    int madviseFlags = 0;
 
 #ifdef MADV_DONTDUMP
-    if (st == 0)
-    {
-        // Do not include reset memory in coredump.
-        madvise(address, size, MADV_DONTDUMP);
-    }
+    // Do not include reset memory in coredump.
+    madviseFlags |= MADV_DONTDUMP;
 #endif
+
+#ifdef HAVE_MADV_FREE
+    // Tell the kernel that the application doesn't need the pages in the range.
+    // Freeing the pages can be delayed until a memory pressure occurs.
+    madviseFlags |= MADV_FREE;
+#endif
+
+    st = madvise(address, size, madviseFlags);
+
+#endif //defined(MADV_DONTDUMP) || defined(HAVE_MADV_FREE)
+
+#if defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
+    // DONTNEED is the nearest posix equivalent of FREE.
+    // Prefer FREE as, since glibc2.6 DONTNEED is a nop.
+    st = posix_madvise(address, size, POSIX_MADV_DONTNEED);
+
+#endif //defined(HAVE_POSIX_MADVISE) && !defined(MADV_DONTDUMP)
 
     return (st == 0);
 }
@@ -1193,34 +1267,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return restricted_limit;
     }
 
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    long pages = sysconf(_SC_PHYS_PAGES);
-    if (pages == -1)
-    {
-        return 0;
-    }
-
-    long pageSize = sysconf(_SC_PAGE_SIZE);
-    if (pageSize == -1)
-    {
-        return 0;
-    }
-
-    return (uint64_t)pages * (uint64_t)pageSize;
-#elif HAVE_SYSCTL
-    int mib[3];
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    int64_t physical_memory = 0;
-    size_t length = sizeof(INT64);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    assert(rc == 0);
-
-    return physical_memory;
-#else // HAVE_SYSCTL
-#error "Don't know how to get total physical memory on this platform"
-#endif // HAVE_SYSCTL
+    return g_totalPhysicalMemSize;
 }
 
 // Get amount of physical memory available for use in the system
@@ -1230,20 +1277,15 @@ uint64_t GetAvailablePhysicalMemory()
 
     // Get the physical memory available.
 #if defined(__APPLE__)
-    vm_size_t page_size;
-    mach_port_t mach_port;
-    mach_msg_type_number_t count;
-    vm_statistics_data_t vm_stats;
-    mach_port = mach_host_self();
-    count = sizeof(vm_stats) / sizeof(natural_t);
-    if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
+    uint32_t mem_free = 0;
+    size_t mem_free_length = sizeof(uint32_t);
+    assert(g_kern_memorystatus_level_mib != NULL);
+    int rc = sysctl(g_kern_memorystatus_level_mib, g_kern_memorystatus_level_mib_length, &mem_free, &mem_free_length, NULL, 0);
+    assert(rc == 0);
+    if (rc == 0)
     {
-        if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-        {
-            available = (int64_t)vm_stats.free_count * (int64_t)page_size;
-        }
+        available = (int64_t)mem_free * g_totalPhysicalMemSize / 100;
     }
-    mach_port_deallocate(mach_task_self(), mach_port);
 #elif defined(__FreeBSD__)
     size_t inactive_count = 0, laundry_count = 0, free_count = 0;
     size_t sz = sizeof(inactive_count);
@@ -1261,7 +1303,7 @@ uint64_t GetAvailablePhysicalMemory()
 
     if (tryReadMemInfo)
     {
-        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
+        // Ensure that we don't try to read the /proc/meminfo in successive calls to the GetAvailablePhysicalMemory
         // if we have failed to access the file or the file didn't contain the MemAvailable value.
         tryReadMemInfo = ReadMemAvailable(&available);
     }

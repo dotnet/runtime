@@ -491,6 +491,11 @@ public:
         m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
     }
 
+    bool EmbeddedHandleMapLookup(ssize_t embeddedHandle, ssize_t* compileTimeHandle)
+    {
+        return m_embeddedToCompileTimeHandleMap.TryGetValue(embeddedHandle, compileTimeHandle);
+    }
+
     void AddToFieldAddressToFieldSeqMap(ValueNum fldAddr, FieldSeq* fldSeq)
     {
         m_fieldAddressToFieldSeqMap.AddOrUpdate(fldAddr, fldSeq);
@@ -1020,8 +1025,14 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a specific handle constant.
+    bool IsVNHandle(ValueNum vn, GenTreeFlags flag);
+
     // Returns true iff the VN represents an object handle constant.
     bool IsVNObjHandle(ValueNum vn);
+
+    // Returns true iff the VN represents a Type handle constant.
+    bool IsVNTypeHandle(ValueNum vn);
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
@@ -1052,6 +1063,9 @@ public:
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
     static bool VNFuncIsComparison(VNFunc vnf);
 
+    // Returns "true" iff "vnf" is a signed comparison (and thus binary) operator.
+    static bool VNFuncIsSignedComparison(VNFunc vnf);
+
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
     // Lang is the language (C++) type for the corresponding vartype_t.
@@ -1081,14 +1095,15 @@ private:
         switch (c->m_typ)
         {
             case TYP_REF:
-                assert(0 <= offset && offset <= 1); // Null or exception.
+                assert((offset <= 1) || IsVNObjHandle(vn)); // Null, exception or nongc obj handle
                 FALLTHROUGH;
 
             case TYP_BYREF:
 
 #ifdef _MSC_VER
 
-                assert(&typeid(T) == &typeid(size_t)); // We represent ref/byref constants as size_t's.
+                assert((&typeid(T) == &typeid(size_t)) ||
+                       (&typeid(T) == &typeid(ssize_t))); // We represent ref/byref constants as size_t/ssize_t
 
 #endif // _MSC_VER
 
@@ -2099,6 +2114,15 @@ inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
     }
     genTreeOps gtOp = genTreeOps(vnf);
     return GenTree::OperIsCompare(gtOp) != 0;
+}
+
+inline bool ValueNumStore::VNFuncIsSignedComparison(VNFunc vnf)
+{
+    if (vnf >= VNF_Boundary)
+    {
+        return false;
+    }
+    return GenTree::OperIsCompare(genTreeOps(vnf)) != 0;
 }
 
 template <>

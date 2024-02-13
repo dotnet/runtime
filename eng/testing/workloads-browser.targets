@@ -1,0 +1,92 @@
+<Project>
+  <Import Project="workloads-wasm.targets" />
+
+  <PropertyGroup>
+    <GetWorkloadInputsDependsOn>_GetWorkloadsToInstall;$(GetWorkloadInputsDependsOn)</GetWorkloadInputsDependsOn>
+    <GetNuGetsToBuildForWorkloadTestingDependsOn>_GetRuntimePackNuGetsToBuild;_GetNugetsForAOT;$(GetNuGetsToBuildForWorkloadTestingDependsOn)</GetNuGetsToBuildForWorkloadTestingDependsOn>
+  </PropertyGroup>
+
+  <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
+    <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
+    <ItemGroup>
+      <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
+                            Variant="latest"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+
+      <WorkloadIdForTesting Include="wasm-tools-net8;wasm-experimental-net8"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net8"
+                            Variant="net8"
+                            Version="$(PackageVersionForWorkloadManifests)" />
+
+      <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
+                            Variant="net7"
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+
+      <WorkloadIdForTesting Include="wasm-tools-net6"
+                            ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
+                            Variant="net6"
+                            Version="$(PackageVersionForWorkloadManifests)"
+                            IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
+                            Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+
+      <WorkloadCombinationsToInstall Include="latest"        Variants="latest;net8" />
+      <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+      <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+      <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
+      <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
+      <!--<WorkloadCombinationsToInstall Include="none" />-->
+    </ItemGroup>
+  </Target>
+
+  <!-- For local builds, only one of the 2 required runtime packs might be available. In that case,
+       build the other nugets with the *same runtime* but different names.
+  -->
+  <Target Name="_GetRuntimePackNuGetsToBuild" Condition="'$(WasmSkipMissingRuntimePackBuild)' != 'true'" Returns="@(NuGetsToBuildForWorkloadTesting)">
+    <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
+    <PropertyGroup>
+      <_IsMTNugetMissing Condition="'$(WasmEnableThreads)' != 'true'">true</_IsMTNugetMissing>
+      <_BuildVariant Condition="'$(_IsMTNugetMissing)' == 'true'">multithread</_BuildVariant>
+      <_Descriptor Condition="'$(_IsMTNugetMissing)' == 'true'">runtime pack for $(_BuildVariant)</_Descriptor>
+      <_Descriptor Condition="'$(_IsMTNugetMissing)' != 'true'">single threaded runtime pack</_Descriptor>
+      <_DefaultRuntimePackNuGetPath>$([System.String]::Join('.',
+        $(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono,
+        $(_BuildVariant),
+        $(RIDForWorkload).$(PackageVersionForWorkloadManifests).nupkg))
+      </_DefaultRuntimePackNuGetPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(RIDForWorkload).*$(PackageVersionForWorkloadManifests).nupkg" />
+      <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.*.$(RIDForWorkload).*$(PackageVersionForWorkloadManifests).nupkg" />
+      <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
+    </ItemGroup>
+
+    <Error Condition="@(_RuntimePackNugetAvailable -> Count()) != 2 and @(_RuntimePackNugetAvailable -> Count()) != 1"
+           Text="Expected to find either one or two in $(LibrariesShippingPackagesDir): @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)')" />
+
+    <ItemGroup>
+      <!-- We need nugets for all wasm runtime flavors. The one corresponding the current
+      property values is already built, the others need to be added to NuGetsToBuildForWorkloadTesting -->
+      <NuGetsToBuildForWorkloadTesting Include="$(_DefaultRuntimePackNuGetPath)"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+                      Dependencies="$(_DefaultRuntimePackNuGetPath)"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(_IsMTNugetMissing)"
+                      Descriptor="$(_Descriptor)"/>
+    </ItemGroup>
+
+    <Message
+        Condition="@(_RuntimePackNugetAvailable -> Count()) == 1"
+        Importance="High"
+        Text="
+      ********************
+
+      Note: Could not find the expected two runtime packs in $(LibrariesShippingPackagesDir). Found @(_RuntimePackNugetAvailable->'%(FileName)%(Extension)', ', ') .
+            To support local builds, the same runtime pack will be built with the other variant names.
+            To disable this behavior, pass `-p:WasmSkipMissingRuntimePackBuild=true` .
+
+      *******************" />
+  </Target>
+</Project>

@@ -3,7 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 #if BUILDING_SOURCE_GENERATOR_TESTS
 using Microsoft.Extensions.Configuration;
 #endif
@@ -286,7 +288,7 @@ namespace Microsoft.Extensions
             var config = configurationBuilder.Build();
 
             var options = new Dictionary<T, string>();
-#pragma warning disable SYSLIB1104 
+#pragma warning disable SYSLIB1104
             config.GetSection("IntegerKeyDictionary").Bind(options);
 #pragma warning restore SYSLIB1104
 
@@ -721,6 +723,40 @@ namespace Microsoft.Extensions
             Assert.Equal(1, options.ObjectDictionary["abc"].Integer);
             Assert.Equal(2, options.ObjectDictionary["def"].Integer);
             Assert.Equal(3, options.ObjectDictionary["ghi"].Integer);
+        }
+
+        [Fact]
+        public void ObjectDictionaryWithHardcodedElements()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"ObjectDictionary:abc:Integer", "1"},
+                {"ObjectDictionary:def", null },
+                {"ObjectDictionary:ghi", null }
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithDictionary();
+            options.ObjectDictionary = new()
+            {
+                {"abc", new(){ Integer = 42}},
+                {"def", new(){ Integer = 42}},
+            };
+
+            Assert.Equal(2, options.ObjectDictionary.Count);
+            Assert.Equal(42, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+
+            config.Bind(options);
+
+            Assert.Equal(3, options.ObjectDictionary.Count);
+
+            Assert.Equal(1, options.ObjectDictionary["abc"].Integer);
+            Assert.Equal(42, options.ObjectDictionary["def"].Integer);
+            Assert.Equal(0, options.ObjectDictionary["ghi"].Integer);
         }
 
         [Fact]
@@ -2296,6 +2332,40 @@ namespace Microsoft.Extensions
             Assert.Equal(2, dict["Key"].Length);
             Assert.Equal("InitialValue", dict["Key"][0]);
             Assert.Equal("NewValue", dict["Key"][1]);
+        }
+
+        [Fact]
+        public void TestCollectionWithNullOrEmptyItems()
+        {
+            string json = @"
+                {
+                    ""CollectionContainer"": [
+                    {
+                        ""Elements"":
+                        {
+                            ""Typdde"": ""UserCredentials"",
+                            ""foo"": ""00"",
+                            ""111"": """",
+                            ""BaseUrl"": ""cccccc"",
+                            ""Valid"": {
+                                ""Type"": ""System.Boolean""
+                            },
+                        }
+                    }
+                    ]
+                }
+            ";
+
+            var builder = new ConfigurationBuilder();
+            Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            builder.AddJsonStream(stream);
+            IConfigurationRoot config = builder.Build();
+
+            List<CollectionContainer> result = config.GetSection("CollectionContainer").Get<List<CollectionContainer>>();
+            Assert.Equal(1, result.Count);
+            Assert.Equal(2, result[0].Elements.Count);
+            Assert.Null(result[0].Elements[0].Type);
+            Assert.Equal("System.Boolean", result[0].Elements[1].Type);
         }
 
         // Test behavior for root level arrays.

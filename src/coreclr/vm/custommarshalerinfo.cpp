@@ -646,5 +646,13 @@ CustomMarshalerInfo *SharedCustomMarshalerHelper::GetCustomMarshalerInfo()
     return pMarshalingData->GetCustomMarshalerInfo(this);
 }
 
+extern "C" void QCALLTYPE CustomMarshaler_GetMarshalerObject(CustomMarshalerHelper* pCMHelper, QCall::ObjectHandleOnStack retObject)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    GCX_COOP();
 
+    retObject.Set(pCMHelper->GetCustomMarshalerInfo()->GetCustomMarshaler());
 
+    END_QCALL;
+}

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -23,14 +24,21 @@ namespace System.Reflection.Emit
         private GenericTypeParameterBuilderImpl[]? _typeParameters;
         private ILGeneratorImpl? _ilGenerator;
         private bool _initLocals;
+        internal Type[]? _returnTypeRequiredModifiers;
+        internal Type[]? _returnTypeOptionalCustomModifiers;
+        internal Type[][]? _parameterTypeRequiredCustomModifiers;
+        internal Type[][]? _parameterTypeOptionalCustomModifiers;
 
+        internal bool _canBeRuntimeImpl;
         internal DllImportData? _dllImportData;
         internal List<CustomAttributeWrapper>? _customAttributes;
         internal ParameterBuilderImpl[]? _parameterBuilders;
         internal MethodDefinitionHandle _handle;
 
-        internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
-            Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
+        internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions,
+            Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
+            Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
+            ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             _module = module;
             _returnType = returnType ?? _module.GetTypeFromCoreAssembly(CoreTypeId.Void);
@@ -49,9 +57,13 @@ namespace System.Reflection.Emit
 
             _callingConventions = callingConventions;
             _declaringType = declaringType;
+            _returnTypeRequiredModifiers = returnTypeRequiredCustomModifiers;
+            _returnTypeOptionalCustomModifiers = returnTypeOptionalCustomModifiers;
 
             if (parameterTypes != null)
             {
+                _parameterTypeRequiredCustomModifiers = parameterTypeRequiredCustomModifiers;
+                _parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
                 _parameterTypes = new Type[parameterTypes.Length];
                 _parameterBuilders = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
                 for (int i = 0; i < parameterTypes.Length; i++)
@@ -64,41 +76,33 @@ namespace System.Reflection.Emit
             _initLocals = true;
         }
 
+        internal void CreateDllImportData(string dllName, string entryName, CallingConvention nativeCallConv, CharSet nativeCharSet)
+        {
+            _dllImportData = DllImportData.Create(dllName, entryName, nativeCallConv, nativeCharSet);
+        }
+
         internal int ParameterCount => _parameterTypes == null ? 0 : _parameterTypes.Length;
 
         internal Type[]? ParameterTypes => _parameterTypes;
 
         internal ILGeneratorImpl? ILGeneratorImpl => _ilGenerator;
 
-        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_module,
-            _parameterTypes, ReturnType, GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic);
-
-        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
+        public new bool IsConstructor
         {
-            // TODO: find out and handle other SignatureCallingConvention scenarios
-            SignatureCallingConvention convention = SignatureCallingConvention.Default;
-            if ((callingConventions & CallingConventions.HasThis) != 0 ||
-                (callingConventions & CallingConventions.ExplicitThis) != 0)
+            get
             {
-                convention |= SignatureCallingConvention.ThisCall;
-            }
+                if ((_attributes & (MethodAttributes.RTSpecialName | MethodAttributes.SpecialName)) != (MethodAttributes.RTSpecialName | MethodAttributes.SpecialName))
+                {
+                    return false;
+                }
 
-            if ((callingConventions & CallingConventions.VarArgs) != 0)
-            {
-                convention |= SignatureCallingConvention.VarArgs;
+                return _name.Equals(ConstructorInfo.ConstructorName) || _name.Equals(ConstructorInfo.TypeConstructorName);
             }
-
-            return convention;
         }
 
-        internal BindingFlags GetBindingFlags()
-        {
-            BindingFlags bindingFlags = (_attributes & MethodAttributes.MemberAccessMask) == MethodAttributes.Public ?
-                BindingFlags.Public : BindingFlags.NonPublic;
-            bindingFlags |= (_attributes & MethodAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
-
-            return bindingFlags;
-        }
+        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.GetMethodSignature(_module, _parameterTypes,
+            _returnType, ModuleBuilderImpl.GetSignatureConvention(_callingConventions), GetGenericArguments().Length, !IsStatic, optionalParameterTypes: null,
+            _returnTypeRequiredModifiers, _returnTypeOptionalCustomModifiers, _parameterTypeRequiredCustomModifiers, _parameterTypeOptionalCustomModifiers);
 
         protected override bool InitLocalsCore
         {
@@ -118,7 +122,7 @@ namespace System.Reflection.Emit
             {
                 string name = names[i];
                 ArgumentNullException.ThrowIfNull(names, nameof(names));
-                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _declaringType);
             }
 
             return _typeParameters = typeParameters;
@@ -174,11 +178,13 @@ namespace System.Reflection.Emit
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
                     int implValue = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                     _methodImplFlags |= (MethodImplAttributes)implValue;
+                    _canBeRuntimeImpl = true;
                     return;
                 case "System.Runtime.InteropServices.DllImportAttribute":
                     {
-                        _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
+                        _dllImportData = DllImportData.Create(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
                         _attributes |= MethodAttributes.PinvokeImpl;
+                        _canBeRuntimeImpl = true;
                         if (preserveSig)
                         {
                             _methodImplFlags |= MethodImplAttributes.PreserveSig;
@@ -203,6 +209,8 @@ namespace System.Reflection.Emit
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             _declaringType.ThrowIfCreated();
+
+            _canBeRuntimeImpl = true;
             _methodImplFlags = attributes;
         }
 
@@ -212,6 +220,8 @@ namespace System.Reflection.Emit
             if (returnType != null)
             {
                 _returnType = returnType;
+                _returnTypeOptionalCustomModifiers = returnTypeOptionalCustomModifiers;
+                _returnTypeRequiredModifiers = returnTypeRequiredCustomModifiers;
             }
 
             if (parameterTypes != null)
@@ -222,16 +232,18 @@ namespace System.Reflection.Emit
                 {
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
                 }
+
+                _parameterTypeOptionalCustomModifiers = parameterTypeOptionalCustomModifiers;
+                _parameterTypeRequiredCustomModifiers = parameterTypeRequiredCustomModifiers;
             }
-            // TODO: Add support for other parameters: returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypeRequiredCustomModifiers and parameterTypeOptionalCustomModifiers
         }
 
         public override string Name => _name;
         public override MethodAttributes Attributes => _attributes;
         public override CallingConventions CallingConvention => _callingConventions;
-        public override TypeBuilder DeclaringType => _declaringType;
+        public override Type? DeclaringType => _declaringType._isHiddenGlobalType ? null : _declaringType;
         public override Module Module => _module;
-        public override bool ContainsGenericParameters => throw new NotSupportedException();
+        public override bool ContainsGenericParameters => _typeParameters != null;
         public override bool IsGenericMethod => _typeParameters != null;
         public override bool IsGenericMethodDefinition => _typeParameters != null;
         public override bool IsSecurityCritical => true;
@@ -239,7 +251,7 @@ namespace System.Reflection.Emit
         public override bool IsSecurityTransparent => false;
         public override int MetadataToken => _handle == default ? 0 : MetadataTokens.GetToken(_handle);
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
-        public override Type? ReflectedType => _declaringType;
+        public override Type? ReflectedType => DeclaringType;
         public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
         public override Type ReturnType => _returnType;
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get => throw new NotImplementedException(); }

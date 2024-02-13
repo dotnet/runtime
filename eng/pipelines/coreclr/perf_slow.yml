@@ -148,43 +148,41 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
 
-      # run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
-        # disabled because of: https://github.com/dotnet/performance/issues/3565
-        # - template: /eng/pipelines/common/platform-matrix.yml
-        #   parameters:
-        #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-        #     buildConfig: release
-        #     runtimeFlavor: coreclr
-        #     platforms:
-        #     - linux_arm64
-        #     jobParameters:
-        #       testGroup: perf
-        #       liveLibrariesBuildConfig: Release
-        #       projectFile: microbenchmarks.proj
-        #       runKind: micro
-        #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        #       logicalmachine: 'perfampere'
-        #       timeoutInMinutes: 780
-        #       pgoRunType: --nodynamicpgo
+      #run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 780
+              pgoRunType: --nodynamicpgo
 
-      # run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
-        # disabled because of: https://github.com/dotnet/performance/issues/3565
-        # - template: /eng/pipelines/common/platform-matrix.yml
-        #   parameters:
-        #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-        #     buildConfig: release
-        #     runtimeFlavor: coreclr
-        #     platforms:
-        #     - linux_arm64
-        #     jobParameters:
-        #       testGroup: perf
-        #       liveLibrariesBuildConfig: Release
-        #       projectFile: microbenchmarks.proj
-        #       runKind: micro
-        #       runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        #       logicalmachine: 'perfampere'
-        #       timeoutInMinutes: 780
-        #       r2rRunType: --nor2r
+      #run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 780
+              r2rRunType: --nor2r
 
       # run coreclr Windows arm64 microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml

@@ -28,9 +28,12 @@ namespace System.Linq
 
             if (source is TSource[] array)
             {
-                return array.Length == 0 ?
-                    Empty<TSource>() :
-                    new WhereArrayIterator<TSource>(array, predicate);
+                if (array.Length == 0)
+                {
+                    return [];
+                }
+
+                return new WhereArrayIterator<TSource>(array, predicate);
             }
 
             if (source is List<TSource> list)
@@ -51,6 +54,11 @@ namespace System.Linq
             if (predicate == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return WhereIterator(source, predicate);
@@ -163,7 +171,7 @@ namespace System.Linq
                 int index = _state - 1;
                 TSource[] source = _source;
 
-                while (unchecked((uint)index < (uint)source.Length))
+                while ((uint)index < (uint)source.Length)
                 {
                     TSource item = source[index];
                     index = _state++;
@@ -268,7 +276,7 @@ namespace System.Linq
                 int index = _state - 1;
                 TSource[] source = _source;
 
-                while (unchecked((uint)index < (uint)source.Length))
+                while ((uint)index < (uint)source.Length)
                 {
                     TSource item = source[index];
                     index = _state++;

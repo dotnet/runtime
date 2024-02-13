@@ -121,6 +121,11 @@ namespace ILCompiler
             /// </summary>
             private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64 = 8;
 
+            /// <summary>
+            /// CoreCLR DomainLocalModule::NormalDynamicEntry::OffsetOfDataBlob for RISCV64
+            /// </summary>
+            private const int DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobRISCV64 = 8;
+
             protected override bool CompareKeyToValue(EcmaModule key, ModuleFieldLayout value)
             {
                 return key == value.Module;
@@ -421,6 +426,10 @@ namespace ILCompiler
 
                         case TargetArchitecture.LoongArch64:
                             nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobLoongArch64;
+                            break;
+
+                        case TargetArchitecture.RiscV64:
+                            nonGcOffset = DomainLocalModuleNormalDynamicEntryOffsetOfDataBlobRISCV64;
                             break;
 
                         default:

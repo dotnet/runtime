@@ -62,7 +62,6 @@ namespace Microsoft.Interop
         public string InstanceIdentifier { get; init; } = string.Empty;
 
         public RefKind RefKind { get; init; } = RefKind.None;
-        public SyntaxKind RefKindSyntax { get; init; } = SyntaxKind.None;
 
         public bool IsByRef => RefKind != RefKind.None;
 
@@ -87,7 +86,6 @@ namespace Microsoft.Interop
             {
                 InstanceIdentifier = ParseToken(paramSymbol.Name).IsReservedKeyword() ? $"@{paramSymbol.Name}" : paramSymbol.Name,
                 RefKind = paramSymbol.RefKind,
-                RefKindSyntax = RefKindToSyntax(paramSymbol.RefKind),
                 ByValueContentsMarshalKind = byValueContentsMarshalKind,
                 ByValueMarshalAttributeLocations = (inLocation, outLocation),
                 ScopedKind = paramSymbol.ScopedKind
@@ -131,18 +129,6 @@ namespace Microsoft.Interop
             }
 
             return (marshalKind, inAttributeLocation, outAttributeLocation);
-        }
-
-        private static SyntaxKind RefKindToSyntax(RefKind refKind)
-        {
-            return refKind switch
-            {
-                RefKind.In => SyntaxKind.InKeyword,
-                RefKind.Ref => SyntaxKind.RefKeyword,
-                RefKind.Out => SyntaxKind.OutKeyword,
-                RefKind.None => SyntaxKind.None,
-                _ => throw new NotImplementedException("Support for some RefKind"),
-            };
         }
     }
 }

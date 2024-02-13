@@ -44,10 +44,6 @@ namespace System
 
         private const double SCALEB_C3 = 9007199254740992; // 0x1p53
 
-        private const int ILogB_NaN = 0x7FFFFFFF;
-
-        private const int ILogB_Zero = (-1 - 0x7FFFFFFF);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -241,17 +237,17 @@ namespace System
 
         public static double BitDecrement(double x)
         {
-            long bits = BitConverter.DoubleToInt64Bits(x);
+            ulong bits = BitConverter.DoubleToUInt64Bits(x);
 
-            if (((bits >> 32) & 0x7FF00000) >= 0x7FF00000)
+            if (!double.IsFinite(x))
             {
                 // NaN returns NaN
                 // -Infinity returns -Infinity
-                // +Infinity returns double.MaxValue
-                return (bits == 0x7FF00000_00000000) ? double.MaxValue : x;
+                // +Infinity returns MaxValue
+                return (bits == double.PositiveInfinityBits) ? double.MaxValue : x;
             }
 
-            if (bits == 0x00000000_00000000)
+            if (bits == double.PositiveZeroBits)
             {
                 // +0.0 returns -double.Epsilon
                 return -double.Epsilon;
@@ -260,41 +256,55 @@ namespace System
             // Negative values need to be incremented
             // Positive values need to be decremented
 
-            bits += ((bits < 0) ? +1 : -1);
-            return BitConverter.Int64BitsToDouble(bits);
+            if (double.IsNegative(x))
+            {
+                bits += 1;
+            }
+            else
+            {
+                bits -= 1;
+            }
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         public static double BitIncrement(double x)
         {
-            long bits = BitConverter.DoubleToInt64Bits(x);
+            ulong bits = BitConverter.DoubleToUInt64Bits(x);
 
-            if (((bits >> 32) & 0x7FF00000) >= 0x7FF00000)
+            if (!double.IsFinite(x))
             {
                 // NaN returns NaN
-                // -Infinity returns double.MinValue
+                // -Infinity returns MinValue
                 // +Infinity returns +Infinity
-                return (bits == unchecked((long)(0xFFF00000_00000000))) ? double.MinValue : x;
+                return (bits == double.NegativeInfinityBits) ? double.MinValue : x;
             }
 
-            if (bits == unchecked((long)(0x80000000_00000000)))
+            if (bits == double.NegativeZeroBits)
             {
-                // -0.0 returns double.Epsilon
+                // -0.0 returns Epsilon
                 return double.Epsilon;
             }
 
             // Negative values need to be decremented
             // Positive values need to be incremented
 
-            bits += ((bits < 0) ? -1 : +1);
-            return BitConverter.Int64BitsToDouble(bits);
+            if (double.IsNegative(x))
+            {
+                bits -= 1;
+            }
+            else
+            {
+                bits += 1;
+            }
+            return BitConverter.UInt64BitsToDouble(bits);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double CopySign(double x, double y)
         {
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            if (Vector128.IsHardwareAccelerated)
             {
-                return VectorMath.ConditionalSelectBitwise(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
+                return Vector128.ConditionalSelect(Vector128.CreateScalarUnsafe(-0.0), Vector128.CreateScalarUnsafe(y), Vector128.CreateScalarUnsafe(x)).ToScalar();
             }
             else
             {
@@ -303,19 +313,14 @@ namespace System
 
             static double SoftwareFallback(double x, double y)
             {
-                const long signMask = 1L << 63;
-
                 // This method is required to work for all inputs,
                 // including NaN, so we operate on the raw bits.
-                long xbits = BitConverter.DoubleToInt64Bits(x);
-                long ybits = BitConverter.DoubleToInt64Bits(y);
+                ulong xbits = BitConverter.DoubleToUInt64Bits(x);
+                ulong ybits = BitConverter.DoubleToUInt64Bits(y);
 
                 // Remove the sign from x, and remove everything but the sign from y
-                xbits &= ~signMask;
-                ybits &= signMask;
-
-                // Simply OR them to get the correct sign
-                return BitConverter.Int64BitsToDouble(xbits | ybits);
+                // Then, simply OR them to get the correct sign
+                return BitConverter.UInt64BitsToDouble((xbits & ~double.SignMask) | (ybits & double.SignMask));
             }
         }
 
@@ -822,34 +827,29 @@ namespace System
 
         public static int ILogB(double x)
         {
-            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogb.c
+            // This code is based on `ilogb` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            if (double.IsNaN(x))
+            if (!double.IsNormal(x)) // x is zero, subnormal, infinity, or NaN
             {
-                return ILogB_NaN;
-            }
-
-            ulong i = BitConverter.DoubleToUInt64Bits(x);
-            int e = (int)((i >> 52) & 0x7FF);
-
-            if (e == 0)
-            {
-                i <<= 12;
-                if (i == 0)
+                if (double.IsZero(x))
                 {
-                    return ILogB_Zero;
+                    return int.MinValue;
                 }
 
-                for (e = -0x3FF; (i >> 63) == 0; e--, i <<= 1) ;
-                return e;
+                if (!double.IsFinite(x)) // infinity or NaN
+                {
+                    return int.MaxValue;
+                }
+
+                Debug.Assert(double.IsSubnormal(x));
+                return double.MinExponent - (BitOperations.TrailingZeroCount(x.TrailingSignificand) - double.BiasedExponentLength);
             }
 
-            if (e == 0x7FF)
-            {
-                return (i << 12) != 0 ? ILogB_Zero : int.MaxValue;
-            }
-
-            return e - 0x3FF;
+            return x.Exponent;
         }
 
         public static double Log(double a, double newBase)
@@ -1253,65 +1253,40 @@ namespace System
             //            FloatingPointUtils::round(double), and FloatingPointUtils::round(float)
             // ************************************************************************************
 
-            // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
+            // This code is based on `nearbyint` from amd/aocl-libm-ose
+            // Copyright (C) 2008-2022 Advanced Micro Devices, Inc. All rights reserved.
+            //
+            // Licensed under the BSD 3-Clause "New" or "Revised" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
 
-            ulong bits = BitConverter.DoubleToUInt64Bits(a);
-            ushort biasedExponent = double.ExtractBiasedExponentFromBits(bits);
+            // This represents the boundary at which point we can only represent whole integers
+            const double IntegerBoundary = 4503599627370496.0; // 2^52
 
-            if (biasedExponent <= 0x03FE)
+            if (Abs(a) >= IntegerBoundary)
             {
-                if ((bits << 1) == 0)
-                {
-                    // Exactly +/- zero should return the original value
-                    return a;
-                }
-
-                // Any value less than or equal to 0.5 will always round to exactly zero
-                // and any value greater than 0.5 will always round to exactly one. However,
-                // we need to preserve the original sign for IEEE compliance.
-
-                double result = ((biasedExponent == 0x03FE) && (double.ExtractTrailingSignificandFromBits(bits) != 0)) ? 1.0 : 0.0;
-                return CopySign(result, a);
-            }
-
-            if (biasedExponent >= 0x0433)
-            {
-                // Any value greater than or equal to 2^52 cannot have a fractional part,
-                // So it will always round to exactly itself.
-
+                // Values above this boundary don't have a fractional
+                // portion and so we can simply return them as-is.
                 return a;
             }
 
-            // The absolute value should be greater than or equal to 1.0 and less than 2^52
-            Debug.Assert((0x03FF <= biasedExponent) && (biasedExponent <= 0x0432));
+            // Otherwise, since floating-point takes the inputs, performs
+            // the computation as if to infinite precision and unbounded
+            // range, and then rounds to the nearest representable result
+            // using the current rounding mode, we can rely on this to
+            // cheaply round.
+            //
+            // In particular, .NET doesn't support changing the rounding
+            // mode and defaults to "round to nearest, ties to even", thus
+            // by adding the original value to the IntegerBoundary we get
+            // an exactly represented whole integer that is precisely the
+            // IntegerBoundary greater in magnitude than the answer we want.
+            //
+            // We can then simply remove that offset to get the correct answer,
+            // noting that we also need to copy back the original sign to
+            // correctly handle -0.0
 
-            // Determine the last bit that represents the integral portion of the value
-            // and the bits representing the fractional portion
-
-            ulong lastBitMask = 1UL << (0x0433 - biasedExponent);
-            ulong roundBitsMask = lastBitMask - 1;
-
-            // Increment the first fractional bit, which represents the midpoint between
-            // two integral values in the current window.
-
-            bits += lastBitMask >> 1;
-
-            if ((bits & roundBitsMask) == 0)
-            {
-                // If that overflowed and the rest of the fractional bits are zero
-                // then we were exactly x.5 and we want to round to the even result
-
-                bits &= ~lastBitMask;
-            }
-            else
-            {
-                // Otherwise, we just want to strip the fractional bits off, truncating
-                // to the current integer value.
-
-                bits &= ~roundBitsMask;
-            }
-
-            return BitConverter.UInt64BitsToDouble(bits);
+            double temp = CopySign(IntegerBoundary, a);
+            return CopySign((a + temp) - temp, a);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1323,86 +1298,50 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, MidpointRounding mode)
         {
-            // Inline single-instruction modes
-            if (RuntimeHelpers.IsKnownConstant((int)mode))
+            switch (mode)
             {
-                if (mode == MidpointRounding.ToEven)
-                    return Round(value);
-
-                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For other platforms we use a fast managed implementation
-                if (mode == MidpointRounding.AwayFromZero)
-                {
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
+                case MidpointRounding.AwayFromZero:
+                    // For ARM/ARM64 we can lower it down to a single instruction FRINTA
                     if (AdvSimd.IsSupported)
-                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(value)).ToScalar();
+                    // For other platforms we use a fast managed implementation
                     // manually fold BitDecrement(0.5)
                     return Truncate(value + CopySign(0.49999999999999994, value));
-                }
-            }
 
-            return Round(value, 0, mode);
+                // Rounds to the nearest value; if the number falls midway,
+                // it is rounded to the nearest value with an even least significant digit
+                case MidpointRounding.ToEven:
+                    return Round(value);
+                // Directed rounding: Round to the nearest value, toward to zero
+                case MidpointRounding.ToZero:
+                    return Truncate(value);
+                // Directed Rounding: Round down to the next value, toward negative infinity
+                case MidpointRounding.ToNegativeInfinity:
+                    return Floor(value);
+                // Directed rounding: Round up to the next value, toward positive infinity
+                case MidpointRounding.ToPositiveInfinity:
+                    return Ceiling(value);
+
+                default:
+                    ThrowHelper.ThrowArgumentException_InvalidEnumValue(mode);
+                    return default;
+            }
         }
 
-        public static unsafe double Round(double value, int digits, MidpointRounding mode)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Round(double value, int digits, MidpointRounding mode)
         {
-            if ((digits < 0) || (digits > maxRoundingDigits))
+            if ((uint)digits > maxRoundingDigits)
             {
-                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
-            }
-
-            if (mode < MidpointRounding.ToEven || mode > MidpointRounding.ToPositiveInfinity)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
+                ThrowHelper.ThrowArgumentOutOfRange_RoundingDigits(nameof(digits));
             }
 
             if (Abs(value) < doubleRoundLimit)
             {
                 double power10 = RoundPower10Double[digits];
-
-                value *= power10;
-
-                switch (mode)
-                {
-                    // Rounds to the nearest value; if the number falls midway,
-                    // it is rounded to the nearest value with an even least significant digit
-                    case MidpointRounding.ToEven:
-                    {
-                        value = Round(value);
-                        break;
-                    }
-                    // Rounds to the nearest value; if the number falls midway,
-                    // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
-                    case MidpointRounding.AwayFromZero:
-                    {
-                        // manually fold BitDecrement(0.5)
-                        value = Truncate(value + CopySign(0.49999999999999994, value));
-                        break;
-                    }
-                    // Directed rounding: Round to the nearest value, toward to zero
-                    case MidpointRounding.ToZero:
-                    {
-                        value = Truncate(value);
-                        break;
-                    }
-                    // Directed Rounding: Round down to the next value, toward negative infinity
-                    case MidpointRounding.ToNegativeInfinity:
-                    {
-                        value = Floor(value);
-                        break;
-                    }
-                    // Directed rounding: Round up to the next value, toward positive infinity
-                    case MidpointRounding.ToPositiveInfinity:
-                    {
-                        value = Ceiling(value);
-                        break;
-                    }
-                    default:
-                    {
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
-                    }
-                }
-
-                value /= power10;
+                value = Round(value * power10, mode) / power10;
             }
 
             return value;

@@ -13,8 +13,8 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
-#if FEATURE_WASM_THREADS
-#error when compiled with FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
+#error when compiled with FEATURE_WASM_MANAGED_THREADS
 #endif
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject

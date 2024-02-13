@@ -11,17 +11,17 @@ namespace System.Security.Cryptography.X509Certificates
 {
     internal sealed class AndroidPkcs12Reader : UnixPkcs12Reader
     {
-        internal AndroidPkcs12Reader(ReadOnlySpan<byte> data)
+        internal AndroidPkcs12Reader()
         {
-            ParsePkcs12(data);
         }
 
         public static bool IsPkcs12(ReadOnlySpan<byte> data)
         {
             try
             {
-                using (var reader = new AndroidPkcs12Reader(data))
+                using (var reader = new AndroidPkcs12Reader())
                 {
+                    reader.ParsePkcs12(data);
                     return true;
                 }
             }

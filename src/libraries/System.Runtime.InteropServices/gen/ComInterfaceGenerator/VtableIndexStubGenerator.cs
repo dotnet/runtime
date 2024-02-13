@@ -365,7 +365,7 @@ namespace Microsoft.Interop
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorFactory);
+            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
@@ -378,7 +378,7 @@ namespace Microsoft.Interop
         private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
-            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorFactory);
+            var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub, VtableIndexStubGeneratorHelpers.GetGeneratorResolver);
 
             return (
                 methodStub.ContainingSyntaxContext.AddContainingSyntax(
@@ -446,7 +446,7 @@ namespace Microsoft.Interop
                     .WithType(PointerType(PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))))));
 
             return containingSyntax.WrapMembersInContainingSyntaxWithUnsafeModifier(
-                populateVtableMethod.WithBody(VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(vtableMethods, vtableParameter, VtableIndexStubGeneratorHelpers.GetGeneratorFactory)));
+                populateVtableMethod.WithBody(VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(vtableMethods, vtableParameter, VtableIndexStubGeneratorHelpers.GetGeneratorResolver)));
         }
     }
 }

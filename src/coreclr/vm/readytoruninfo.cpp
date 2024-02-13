@@ -94,42 +94,21 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     LPCUTF8 pszName = NULL;
     LPCUTF8 pszNameSpace = NULL;
-    // Reserve stack space for parsing out the namespace in a name-based lookup
-    // at this scope so the stack space is in scope for all usages in this method.
-    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
     //
     int dwHashCode = 0;
 
+    _ASSERTE(pName->GetName() != NULL);
+    _ASSERTE(pName->GetNameSpace() != NULL);
+
     if (pName->GetTypeToken() == mdtBaseType || pName->GetTypeModule() == NULL)
     {
         // Name-based lookups (ex: Type.GetType()).
 
         pszName = pName->GetName();
-        pszNameSpace = "";
-        if (pName->GetNameSpace() != NULL)
-        {
-            pszNameSpace = pName->GetNameSpace();
-        }
-        else
-        {
-            LPCUTF8 p;
-
-            if ((p = ns::FindSep(pszName)) != NULL)
-            {
-                SIZE_T d = p - pszName;
-
-                FAULT_NOT_FATAL();
-                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
-
-                if (pszNameSpace == NULL)
-                    return FALSE;
-
-                pszName = (p + 1);
-            }
-        }
+        pszNameSpace = pName->GetNameSpace();
 
         _ASSERT(pszNameSpace != NULL);
         dwHashCode ^= ComputeNameHashCode(pszNameSpace, pszName);
@@ -1945,7 +1924,7 @@ bool ReadyToRun_TypeGenericInfoMap::HasVariance(mdTypeDef input, bool *foundResu
 bool ReadyToRun_TypeGenericInfoMap::HasConstraints(mdTypeDef input, bool *foundResult) const
 {
     ReadyToRunTypeGenericInfo typeGenericInfo = GetTypeGenericInfo(input, foundResult);
-    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasVariance);
+    return !!((uint8_t)typeGenericInfo & (uint8_t)ReadyToRunTypeGenericInfo::HasConstraints);
 }
 
 bool ReadyToRun_MethodIsGenericMap::IsGeneric(mdMethodDef input, bool *foundResult) const

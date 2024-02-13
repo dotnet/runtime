@@ -23,20 +23,20 @@ namespace System.Resources
         }
 
         public MissingSatelliteAssemblyException(string? message)
-            : base(message)
+            : base(message ?? SR.MissingSatelliteAssembly_Default)
         {
             HResult = HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
         public MissingSatelliteAssemblyException(string? message, string? cultureName)
-            : base(message)
+            : base(message ?? SR.MissingSatelliteAssembly_Default)
         {
             HResult = HResults.COR_E_MISSINGSATELLITEASSEMBLY;
             _cultureName = cultureName;
         }
 
         public MissingSatelliteAssemblyException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.MissingSatelliteAssembly_Default, inner)
         {
             HResult = HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }

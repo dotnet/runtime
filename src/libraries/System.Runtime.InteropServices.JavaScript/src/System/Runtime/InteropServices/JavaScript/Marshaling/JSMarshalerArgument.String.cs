@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
 #if !ENABLE_JS_INTEROP_BY_VALUE
-            Interop.Runtime.RegisterGCRoot((IntPtr)payload, bytes, IntPtr.Zero);
+            Interop.Runtime.RegisterGCRoot(payload, bytes, IntPtr.Zero);
 #endif
             for (int i = 0; i < slot.Length; i++)
             {

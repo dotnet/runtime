@@ -42,10 +42,9 @@ namespace System.Linq
                 ref int end = ref Unsafe.Add(ref pos, destination.Length);
 
                 if (Vector.IsHardwareAccelerated &&
-                    Vector<int>.Count <= 8 &&
                     destination.Length >= Vector<int>.Count)
                 {
-                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)[0, 1, 2, 3, 4, 5, 6, 7]);
+                    Vector<int> init = Vector<int>.Indices;
                     Vector<int> current = new Vector<int>(value) + init;
                     Vector<int> increment = new Vector<int>(Vector<int>.Count);
 
@@ -68,15 +67,15 @@ namespace System.Linq
                 }
             }
 
-            public int GetCount(bool onlyIfCheap) => unchecked(_end - _start);
+            public int GetCount(bool onlyIfCheap) => _end - _start;
 
             public int Count => _end - _start;
 
-            public IPartition<int> Skip(int count)
+            public IPartition<int>? Skip(int count)
             {
                 if (count >= _end - _start)
                 {
-                    return EmptyPartition<int>.Instance;
+                    return null;
                 }
 
                 return new RangeIterator(_start + count, _end - _start - count);
@@ -95,7 +94,7 @@ namespace System.Linq
 
             public int TryGetElementAt(int index, out bool found)
             {
-                if (unchecked((uint)index < (uint)(_end - _start)))
+                if ((uint)index < (uint)(_end - _start))
                 {
                     found = true;
                     return _start + index;

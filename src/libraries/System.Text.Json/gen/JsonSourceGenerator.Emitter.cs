@@ -796,7 +796,7 @@ namespace System.Text.Json.SourceGeneration
                     if (defaultCheckType != DefaultCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
-                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
                         writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
                         propValueExpr = localVariableName;
                     }
@@ -1105,6 +1105,9 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('{');
                 writer.Indentation++;
 
+                if (optionsSpec.AllowOutOfOrderMetadataProperties is bool allowOutOfOrderMetadataProperties)
+                    writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBool(allowOutOfOrderMetadataProperties)},");
+
                 if (optionsSpec.AllowTrailingCommas is bool allowTrailingCommas)
                     writer.WriteLine($"AllowTrailingCommas = {FormatBool(allowTrailingCommas)},");
 
@@ -1167,6 +1170,12 @@ namespace System.Text.Json.SourceGeneration
 
                 if (optionsSpec.WriteIndented is bool writeIndented)
                     writer.WriteLine($"WriteIndented = {FormatBool(writeIndented)},");
+
+                if (optionsSpec.IndentCharacter is char indentCharacter)
+                    writer.WriteLine($"IndentCharacter = {FormatIndentChar(indentCharacter)},");
+
+                if (optionsSpec.IndentSize is int indentSize)
+                    writer.WriteLine($"IndentSize = {indentSize},");
 
                 writer.Indentation--;
                 writer.WriteLine("};");
@@ -1344,6 +1353,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatBool(bool value) => value ? "true" : "false";
             private static string FormatStringLiteral(string? value) => value is null ? "null" : $"\"{value}\"";
+            private static string FormatIndentChar(char value) => value is '\t' ? "'\\t'" : $"'{value}'";
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance

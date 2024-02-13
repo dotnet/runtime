@@ -533,19 +533,57 @@ struct ThreadStubArguments
 {
     void (*m_pRealStartRoutine)(void*);
     void* m_pRealContext;
-    bool m_isSuspendable;
     CLREventStatic m_ThreadStartedEvent;
 };
+
+static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, const char* name)
+{
+    UNREFERENCED_PARAMETER(name);
+
+    ThreadStubArguments* threadStubArgs = new (nothrow) ThreadStubArguments();
+    if (!threadStubArgs)
+        return false;
+
+    threadStubArgs->m_pRealStartRoutine = threadStart;
+    threadStubArgs->m_pRealContext = arg;
+
+    // Helper used to wrap the start routine of GC threads so we can do things like initialize the
+    // thread state which requires running in the new thread's context.
+    auto threadStub = [](void* argument) -> DWORD
+        {
+            ThreadStore::RawGetCurrentThread()->SetGCSpecial();
+
+            ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
+            auto realStartRoutine = pStartContext->m_pRealStartRoutine;
+            void* realContext = pStartContext->m_pRealContext;
+            delete pStartContext;
+
+            STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
+
+            realStartRoutine(realContext);
+
+            return 0;
+        };
+
+    if (!PalStartBackgroundGCThread(threadStub, threadStubArgs))
+    {
+        delete threadStubArgs;
+        return false;
+    }
+
+    return true;
+}
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
     UNREFERENCED_PARAMETER(name);
 
-    ThreadStubArguments threadStubArgs;
+    if (!is_suspendable)
+        return CreateNonSuspendableThread(threadStart, arg, name);
 
+    ThreadStubArguments threadStubArgs;
     threadStubArgs.m_pRealStartRoutine = threadStart;
     threadStubArgs.m_pRealContext = arg;
-    threadStubArgs.m_isSuspendable = is_suspendable;
 
     if (!threadStubArgs.m_ThreadStartedEvent.CreateAutoEventNoThrow(false))
     {
@@ -553,34 +591,32 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     }
 
     // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
-    // Redhawk thread state which requires running in the new thread's context.
+    // thread state which requires running in the new thread's context.
     auto threadStub = [](void* argument) -> DWORD
-    {
-        ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
-
-        if (pStartContext->m_isSuspendable)
         {
+            ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
+
             // Initialize the Thread for this thread. The false being passed indicates that the thread store lock
             // should not be acquired as part of this operation. This is necessary because this thread is created in
             // the context of a garbage collection and the lock is already held by the GC.
+            // This also implies that creation and initialization must proceed sequentially, one thread after another.
+            // GCToEEInterface::CreateThread will not return until the thread is done attaching itself.
             ASSERT(GCHeapUtilities::IsGCInProgress());
-
             ThreadStore::AttachCurrentThread(false);
-        }
 
-        ThreadStore::RawGetCurrentThread()->SetGCSpecial();
+            ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
-        auto realStartRoutine = pStartContext->m_pRealStartRoutine;
-        void* realContext = pStartContext->m_pRealContext;
+            auto realStartRoutine = pStartContext->m_pRealStartRoutine;
+            void* realContext = pStartContext->m_pRealContext;
 
-        pStartContext->m_ThreadStartedEvent.Set();
+            pStartContext->m_ThreadStartedEvent.Set();
 
-        STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
+            STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
 
-        realStartRoutine(realContext);
+            realStartRoutine(realContext);
 
-        return 0;
-    };
+            return 0;
+        };
 
     if (!PalStartBackgroundGCThread(threadStub, &threadStubArgs))
     {

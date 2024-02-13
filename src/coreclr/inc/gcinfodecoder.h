@@ -265,6 +265,7 @@ public:
 
         m_pCurrent = m_pBuffer = dac_cast<PTR_size_t>((size_t)dac_cast<TADDR>(pBuffer) & ~((size_t)sizeof(size_t)-1));
         m_RelPos = m_InitialRelPos = (int)((size_t)dac_cast<TADDR>(pBuffer) % sizeof(size_t)) * 8/*BITS_PER_BYTE*/;
+        m_current = *m_pCurrent >> m_RelPos;
     }
 
     BitStreamReader(const BitStreamReader& other)
@@ -275,6 +276,7 @@ public:
         m_InitialRelPos = other.m_InitialRelPos;
         m_pCurrent = other.m_pCurrent;
         m_RelPos = other.m_RelPos;
+        m_current = other.m_current;
     }
 
     const BitStreamReader& operator=(const BitStreamReader& other)
@@ -285,6 +287,7 @@ public:
         m_InitialRelPos = other.m_InitialRelPos;
         m_pCurrent = other.m_pCurrent;
         m_RelPos = other.m_RelPos;
+        m_current = other.m_current;
         return *this;
     }
 
@@ -295,33 +298,35 @@ public:
 
         _ASSERTE(numBits > 0 && numBits <= BITS_PER_SIZE_T);
 
-        size_t result = (*m_pCurrent) >> m_RelPos;
+        size_t result = m_current;
+        m_current >>= numBits;
         int newRelPos = m_RelPos + numBits;
         if(newRelPos >= BITS_PER_SIZE_T)
         {
             m_pCurrent++;
+            m_current = *m_pCurrent;
             newRelPos -= BITS_PER_SIZE_T;
-            if(newRelPos > 0)
-            {
-                size_t extraBits = (*m_pCurrent) << (numBits - newRelPos);
-                result ^= extraBits;
-            }
+            size_t extraBits = m_current << (numBits - newRelPos);
+            result |= extraBits;
+            m_current >>= newRelPos;
         }
         m_RelPos = newRelPos;
-        result &= SAFE_SHIFT_LEFT(1, numBits) - 1;
+        result &= ((size_t)-1 >> (BITS_PER_SIZE_T - numBits));
         return result;
     }
 
-    // This version reads one bit, returning zero/non-zero (not 0/1)
+    // This version reads one bit
     // NOTE: This routine is perf-critical
     __forceinline size_t ReadOneFast()
     {
         SUPPORTS_DAC;
 
-        size_t result = (*m_pCurrent) & (((size_t)1) << m_RelPos);
+        size_t result = m_current & 1;
+        m_current >>= 1;
         if(++m_RelPos == BITS_PER_SIZE_T)
         {
             m_pCurrent++;
+            m_current = *m_pCurrent;
             m_RelPos = 0;
         }
         return result;
@@ -339,6 +344,7 @@ public:
         size_t adjPos = pos + m_InitialRelPos;
         m_pCurrent = m_pBuffer + adjPos / BITS_PER_SIZE_T;
         m_RelPos = (int)(adjPos % BITS_PER_SIZE_T);
+        m_current = *m_pCurrent >> m_RelPos;
         _ASSERTE(GetCurrentPos() == pos);
     }
 
@@ -347,19 +353,6 @@ public:
         SUPPORTS_DAC;
 
         SetCurrentPos(GetCurrentPos() + numBitsToSkip);
-    }
-
-    __forceinline void AlignUpToByte()
-    {
-        if(m_RelPos <= BITS_PER_SIZE_T - 8)
-        {
-            m_RelPos = (m_RelPos + 7) & ~7;
-        }
-        else
-        {
-            m_RelPos = 0;
-            m_pCurrent++;
-        }
     }
 
     __forceinline size_t ReadBitAtPos( size_t pos )
@@ -376,23 +369,36 @@ public:
     // See the corresponding methods on BitStreamWriter for more information on the format
     //--------------------------------------------------------------------------
 
-    inline size_t DecodeVarLengthUnsigned( int base )
+    size_t DecodeVarLengthUnsignedMore ( int base )
     {
         _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
         size_t numEncodings = size_t{ 1 } << base;
-        size_t result = 0;
-        for(int shift=0; ; shift+=base)
+        size_t result = numEncodings;
+        for(int shift=base; ; shift+=base)
         {
             _ASSERTE(shift+base <= (int)BITS_PER_SIZE_T);
 
             size_t currentChunk = Read(base+1);
-            result |= (currentChunk & (numEncodings-1)) << shift;
+            result ^= (currentChunk & (numEncodings-1)) << shift;
             if(!(currentChunk & numEncodings))
             {
                 // Extension bit is not set, we're done.
                 return result;
             }
         }
+    }
+
+    __forceinline size_t DecodeVarLengthUnsigned(int base)
+    {
+        _ASSERTE((base > 0) && (base < (int)BITS_PER_SIZE_T));
+
+        size_t result = Read(base + 1);
+        if (result & ((size_t)1 << base))
+        {
+            result ^= DecodeVarLengthUnsignedMore(base);
+        }
+
+        return result;
     }
 
     inline SSIZE_T DecodeVarLengthSigned( int base )
@@ -422,6 +428,7 @@ private:
     int m_InitialRelPos;
     PTR_size_t m_pCurrent;
     int m_RelPos;
+    size_t m_current;
 };
 
 struct GcSlotDesc
@@ -565,15 +572,8 @@ private:
     UINT32  m_InstructionOffset;
 
     // Pre-decoded information
+    GcInfoHeaderFlags m_headerFlags;
     bool    m_IsInterruptible;
-    bool    m_IsVarArg;
-    bool    m_GenericSecretParamIsMD;
-    bool    m_GenericSecretParamIsMT;
-#ifdef TARGET_AMD64
-    bool    m_WantsReportOnlyLeaf;
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    bool    m_HasTailCalls;
-#endif // TARGET_AMD64
     INT32   m_GSCookieStackSlot;
     INT32   m_ReversePInvokeFrameStackSlot;
     UINT32  m_ValidRangeStart;
@@ -590,7 +590,8 @@ private:
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
     UINT32  m_SafePointIndex;
-    UINT32 FindSafePoint(UINT32 codeOffset);
+    UINT32  NarrowSafePointSearch(size_t savedPos, UINT32 breakOffset, UINT32* searchEnd);
+    UINT32  FindSafePoint(UINT32 codeOffset);
 #endif
     UINT32  m_NumInterruptibleRanges;
 
@@ -603,6 +604,8 @@ private:
     PTR_CBYTE m_GcInfoAddress;
 #endif
     UINT32 m_Version;
+
+    bool PredecodeFatHeader(int remainingFlags);
 
     static bool SetIsInterruptibleCB (UINT32 startOffset, UINT32 stopOffset, void * hCallback);
 

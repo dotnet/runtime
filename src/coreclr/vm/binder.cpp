@@ -83,10 +83,13 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
         (void)ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle);
 
         // Now load the nested type.
-        nameHandle.SetName(NULL, nestedTypeMaybe + 1);
+        nameHandle.SetName("", nestedTypeMaybe + 1);
 
         // We don't support nested types in nested types.
         _ASSERTE(strchr(nameHandle.GetName(), '+') == NULL);
+
+        // We don't support nested types with explicit namespaces
+        _ASSERTE(strchr(nameHandle.GetName(), '.') == NULL);
         pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), &nameHandle).AsMethodTable();
     }
 
@@ -229,7 +232,7 @@ NOINLINE PTR_MethodTable CoreLibBinder::LookupClassIfExist(BinderClassID id)
     const CoreLibClassDescription *d = (&g_CoreLib)->m_classDescriptions + (int)id;
 
     PTR_MethodTable pMT = ClassLoader::LoadTypeByNameThrowing(GetModule()->GetAssembly(), d->nameSpace, d->name,
-        ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_UNRESTOREDTYPEKEY).AsMethodTable();
+        ClassLoader::ReturnNullIfNotFound, ClassLoader::DontLoadTypes, CLASS_LOAD_APPROXPARENTS).AsMethodTable();
 
     _ASSERTE((pMT == NULL) || (pMT->GetModule() == GetModule()));
 

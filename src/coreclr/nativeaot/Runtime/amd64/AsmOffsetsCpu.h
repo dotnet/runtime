@@ -8,7 +8,7 @@
 // NOTE: the offsets MUST be in hex notation WITHOUT the 0x prefix
 
 #ifndef UNIX_AMD64_ABI
-PLAT_ASM_SIZEOF(270, ExInfo)
+PLAT_ASM_SIZEOF(260, ExInfo)
 PLAT_ASM_OFFSET(0, ExInfo, m_pPrevExInfo)
 PLAT_ASM_OFFSET(8, ExInfo, m_pExContext)
 PLAT_ASM_OFFSET(10, ExInfo, m_exception)
@@ -16,7 +16,7 @@ PLAT_ASM_OFFSET(18, ExInfo, m_kind)
 PLAT_ASM_OFFSET(19, ExInfo, m_passNumber)
 PLAT_ASM_OFFSET(1c, ExInfo, m_idxCurClause)
 PLAT_ASM_OFFSET(20, ExInfo, m_frameIter)
-PLAT_ASM_OFFSET(260, ExInfo, m_notifyDebuggerSP)
+PLAT_ASM_OFFSET(250, ExInfo, m_notifyDebuggerSP)
 
 PLAT_ASM_OFFSET(0, PInvokeTransitionFrame, m_RIP)
 PLAT_ASM_OFFSET(8, PInvokeTransitionFrame, m_FramePointer)
@@ -24,12 +24,12 @@ PLAT_ASM_OFFSET(10, PInvokeTransitionFrame, m_pThread)
 PLAT_ASM_OFFSET(18, PInvokeTransitionFrame, m_Flags)
 PLAT_ASM_OFFSET(20, PInvokeTransitionFrame, m_PreservedRegs)
 
-PLAT_ASM_SIZEOF(240, StackFrameIterator)
+PLAT_ASM_SIZEOF(230, StackFrameIterator)
 PLAT_ASM_OFFSET(10, StackFrameIterator, m_FramePointer)
 PLAT_ASM_OFFSET(18, StackFrameIterator, m_ControlPC)
 PLAT_ASM_OFFSET(20, StackFrameIterator, m_RegDisplay)
-PLAT_ASM_OFFSET(228, StackFrameIterator, m_OriginalControlPC)
-PLAT_ASM_OFFSET(230, StackFrameIterator, m_pPreviousTransitionFrame)
+PLAT_ASM_OFFSET(220, StackFrameIterator, m_OriginalControlPC)
+PLAT_ASM_OFFSET(228, StackFrameIterator, m_pPreviousTransitionFrame)
 
 PLAT_ASM_SIZEOF(100, PAL_LIMITED_CONTEXT)
 PLAT_ASM_OFFSET(0, PAL_LIMITED_CONTEXT, IP)
@@ -71,7 +71,7 @@ PLAT_ASM_OFFSET(90, REGDISPLAY, Xmm)
 
 #else // !UNIX_AMD64_ABI
 
-PLAT_ASM_SIZEOF(1b0, ExInfo)
+PLAT_ASM_SIZEOF(1a0, ExInfo)
 PLAT_ASM_OFFSET(0, ExInfo, m_pPrevExInfo)
 PLAT_ASM_OFFSET(8, ExInfo, m_pExContext)
 PLAT_ASM_OFFSET(10, ExInfo, m_exception)
@@ -79,7 +79,7 @@ PLAT_ASM_OFFSET(18, ExInfo, m_kind)
 PLAT_ASM_OFFSET(19, ExInfo, m_passNumber)
 PLAT_ASM_OFFSET(1c, ExInfo, m_idxCurClause)
 PLAT_ASM_OFFSET(20, ExInfo, m_frameIter)
-PLAT_ASM_OFFSET(1a8, ExInfo, m_notifyDebuggerSP)
+PLAT_ASM_OFFSET(198, ExInfo, m_notifyDebuggerSP)
 
 PLAT_ASM_OFFSET(0, PInvokeTransitionFrame, m_RIP)
 PLAT_ASM_OFFSET(8, PInvokeTransitionFrame, m_FramePointer)
@@ -87,12 +87,12 @@ PLAT_ASM_OFFSET(10, PInvokeTransitionFrame, m_pThread)
 PLAT_ASM_OFFSET(18, PInvokeTransitionFrame, m_Flags)
 PLAT_ASM_OFFSET(20, PInvokeTransitionFrame, m_PreservedRegs)
 
-PLAT_ASM_SIZEOF(188, StackFrameIterator)
+PLAT_ASM_SIZEOF(178, StackFrameIterator)
 PLAT_ASM_OFFSET(10, StackFrameIterator, m_FramePointer)
 PLAT_ASM_OFFSET(18, StackFrameIterator, m_ControlPC)
 PLAT_ASM_OFFSET(20, StackFrameIterator, m_RegDisplay)
-PLAT_ASM_OFFSET(178, StackFrameIterator, m_OriginalControlPC)
-PLAT_ASM_OFFSET(180, StackFrameIterator, m_pPreviousTransitionFrame)
+PLAT_ASM_OFFSET(168, StackFrameIterator, m_OriginalControlPC)
+PLAT_ASM_OFFSET(170, StackFrameIterator, m_pPreviousTransitionFrame)
 
 PLAT_ASM_SIZEOF(50, PAL_LIMITED_CONTEXT)
 PLAT_ASM_OFFSET(0, PAL_LIMITED_CONTEXT, IP)
@@ -108,7 +108,7 @@ PLAT_ASM_OFFSET(38, PAL_LIMITED_CONTEXT, R13)
 PLAT_ASM_OFFSET(40, PAL_LIMITED_CONTEXT, R14)
 PLAT_ASM_OFFSET(48, PAL_LIMITED_CONTEXT, R15)
 
-PLAT_ASM_SIZEOF(90, REGDISPLAY)
+PLAT_ASM_SIZEOF(88, REGDISPLAY)
 PLAT_ASM_OFFSET(78, REGDISPLAY, SP)
 
 PLAT_ASM_OFFSET(18, REGDISPLAY, pRbx)

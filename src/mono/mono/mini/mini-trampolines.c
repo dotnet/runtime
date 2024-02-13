@@ -419,7 +419,7 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 	if (mono_llvm_only)
 		add_static_rgctx_tramp = FALSE;
 
-	if (add_static_rgctx_tramp)
+	if (add_static_rgctx_tramp && !(ji && ji->no_mrgctx))
 		addr = mono_create_static_rgctx_trampoline (m, addr);
 
 	return addr;
@@ -657,12 +657,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	if (!code) {
 		mini_patch_jump_sites (m, mono_get_addr_from_ftnptr (addr));
 
+		MonoJitMemoryManager *jit_mm;
+
 		/* Patch the got entries pointing to this method */
 		/*
 		 * We do this here instead of in mono_codegen () to cover the case when m
 		 * was loaded from an aot image.
 		 */
-		MonoJitMemoryManager *jit_mm;
 		GSList *list, *tmp;
 		MonoMethod *shared_method = mini_method_to_shared (m);
 		m = shared_method ? shared_method : m;
@@ -681,6 +682,18 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			}
 			jit_mm_unlock (jit_mm);
 		}
+
+		/* Patch the jump trampoline if possible */
+#ifdef MONO_ARCH_HAVE_PATCH_JUMP_TRAMPOLINE
+		if (!mono_aot_only) {
+			jit_mm_lock (jit_mm);
+			gpointer jump_tramp = g_hash_table_lookup (jit_mm->jump_trampoline_hash, m);
+			jit_mm_unlock (jit_mm);
+
+			if (jump_tramp)
+				mono_arch_patch_jump_trampoline ((guint8*)jump_tramp, (guint8*)addr);
+		}
+#endif
 
 		return addr;
 	}

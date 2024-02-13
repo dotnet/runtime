@@ -57,7 +57,6 @@ namespace System.Linq.Parallel.Tests
             Assert.IsNotType<ParallelQuery<int>>(seq.Cast<int>());
             Assert.True(seq.Cast<int>() is ParallelQuery<int>);
 
-            Assert.False(seq.Concat(Enumerable.Range(0, count)) is ParallelQuery<int>);
             Assert.False(seq.DefaultIfEmpty() is ParallelQuery<int>);
             Assert.False(seq.Distinct() is ParallelQuery<int>);
             Assert.False(seq.Except(Enumerable.Range(0, count)) is ParallelQuery<int>);

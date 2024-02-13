@@ -13,7 +13,7 @@ namespace System.Linq
             public TSource[] ToArray()
             {
                 TSource[] array = _source.ToArray();
-                return array.Length == 0 ? new[] { _default } : array;
+                return array.Length == 0 ? [_default] : array;
             }
 
             public List<TSource> ToList()

@@ -8,6 +8,7 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows' or $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ConnectionTests.cs" />
     <Compile Include="DependencyCheckTest.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IntegrationTestBase.cs" />

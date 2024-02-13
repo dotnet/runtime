@@ -178,15 +178,38 @@ namespace System.Security.Cryptography.Apple
 {
     internal sealed class SafeSecKeyRefHandle : SafeHandle
     {
+        private SafeHandle? _parentHandle;
+
         public SafeSecKeyRefHandle()
             : base(IntPtr.Zero, ownsHandle: true)
         {
+        }
+
+        internal void SetParentHandle(SafeHandle parentHandle)
+        {
+            Debug.Assert(_parentHandle is null);
+
+            bool added = false;
+            parentHandle.DangerousAddRef(ref added);
+            _parentHandle = parentHandle;
+
+            // If we became invalid while the parent handle was being incremented, release the parent handle since
+            // ReleaseHandle will not get called.
+            if (IsInvalid)
+            {
+                _parentHandle.DangerousRelease();
+                _parentHandle = null;
+            }
         }
 
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
             SetHandle(IntPtr.Zero);
+
+            _parentHandle?.DangerousRelease();
+            _parentHandle = null;
+
             return true;
         }
 

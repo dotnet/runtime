@@ -86,7 +86,7 @@ There is another random number generator in `upstream/emscripten/src/determinist
 which needs the same treatment.
 
 Running `make patch-deterministic` in `src/mono/wasm` will patch the
-emscripten installation in `src/mono/wasm/emsdk` with these changes.
+emscripten installation in `src/mono/browser/emsdk` with these changes.
 
 # Debugging signature mismatch errors
 

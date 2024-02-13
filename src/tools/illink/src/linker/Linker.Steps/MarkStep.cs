@@ -65,7 +65,6 @@ namespace Mono.Linker.Steps
 		readonly List<AttributeProviderPair> _ivt_attributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> _lateMarkedAttributes;
 		protected List<(TypeDefinition, MarkScopeStack.Scope)> _typesWithInterfaces;
-		protected HashSet<(OverrideInformation, MarkScopeStack.Scope)> _interfaceOverrides;
 		protected HashSet<AssemblyDefinition> _dynamicInterfaceCastableImplementationTypesDiscovered;
 		protected List<TypeDefinition> _dynamicInterfaceCastableImplementationTypes;
 		protected List<(MethodBody, MarkScopeStack.Scope)> _unreachableBodies;
@@ -153,6 +152,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.InterfaceImplementationInterfaceType,
 			DependencyKind.Ldtoken,
 			DependencyKind.ModifierType,
+			DependencyKind.NestedType,
 			DependencyKind.InstructionTypeRef,
 			DependencyKind.ParameterType,
 			DependencyKind.ReferencedBySpecialAttribute,
@@ -225,7 +225,6 @@ namespace Mono.Linker.Steps
 			_ivt_attributes = new List<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MarkScopeStack.Scope)> ();
 			_typesWithInterfaces = new List<(TypeDefinition, MarkScopeStack.Scope)> ();
-			_interfaceOverrides = new HashSet<(OverrideInformation, MarkScopeStack.Scope)> ();
 			_dynamicInterfaceCastableImplementationTypesDiscovered = new HashSet<AssemblyDefinition> ();
 			_dynamicInterfaceCastableImplementationTypes = new List<TypeDefinition> ();
 			_unreachableBodies = new List<(MethodBody, MarkScopeStack.Scope)> ();
@@ -373,7 +372,7 @@ namespace Mono.Linker.Steps
 					MarkEntireType (nested, new DependencyInfo (DependencyKind.NestedType, type));
 			}
 
-			Annotations.Mark (type, reason, ScopeStack.CurrentScope.Origin);
+			MarkTypeVisibleToReflection (type, type, reason, ScopeStack.CurrentScope.Origin);
 			MarkCustomAttributes (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 			MarkTypeSpecialCustomAttributes (type);
 
@@ -386,26 +385,27 @@ namespace Mono.Linker.Steps
 
 			if (type.HasFields) {
 				foreach (FieldDefinition field in type.Fields) {
-					MarkField (field, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					MarkFieldVisibleToReflection (field, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasMethods) {
 				foreach (MethodDefinition method in type.Methods) {
-					Annotations.SetAction (method, MethodAction.ForceParse);
-					MarkMethod (method, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
+					if (IsFullyPreservedAction (Annotations.GetAction (type.Module.Assembly)))
+						Annotations.SetAction (method, MethodAction.ForceParse);
+					MarkMethodVisibleToReflection (method, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasProperties) {
 				foreach (var property in type.Properties) {
-					MarkProperty (property, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkPropertyVisibleToReflection (property, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 
 			if (type.HasEvents) {
 				foreach (var ev in type.Events) {
-					MarkEvent (ev, new DependencyInfo (DependencyKind.MemberOfType, type));
+					MarkEventVisibleToReflection (ev, new DependencyInfo (DependencyKind.MemberOfType, type), ScopeStack.CurrentScope.Origin);
 				}
 			}
 		}
@@ -571,9 +571,10 @@ namespace Mono.Linker.Steps
 
 		void ProcessVirtualMethods ()
 		{
-			foreach ((MethodDefinition method, MarkScopeStack.Scope scope) in _virtual_methods) {
-				using (ScopeStack.PushScope (scope))
+			foreach ((var method, var scope) in _virtual_methods) {
+				using (ScopeStack.PushScope (scope)) {
 					ProcessVirtualMethod (method);
+				}
 			}
 		}
 
@@ -601,24 +602,17 @@ namespace Mono.Linker.Steps
 						!unusedInterfacesOptimizationEnabled) {
 						MarkInterfaceImplementations (type);
 					}
-					// OverrideInformation for interfaces in PreservedScope aren't added yet
+					// Interfaces in PreservedScope should have their methods added to _virtual_methods so that they are properly processed
 					foreach (var method in type.Methods) {
-						var baseOverrideInformations = Annotations.GetBaseMethods (method);
-						if (baseOverrideInformations is null)
+						var baseMethods = Annotations.GetBaseMethods (method);
+						if (baseMethods is null)
 							continue;
-						foreach (var ov in baseOverrideInformations) {
-							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope))
-								_interfaceOverrides.Add ((ov, ScopeStack.CurrentScope));
+						foreach (var ov in baseMethods) {
+							if (ov.Base.DeclaringType is not null && ov.Base.DeclaringType.IsInterface && IgnoreScope (ov.Base.DeclaringType.Scope)) {
+								_virtual_methods.Add ((ov.Base, ScopeStack.CurrentScope));
+							}
 						}
 					}
-				}
-			}
-
-			var interfaceOverrides = _interfaceOverrides.ToArray ();
-			foreach ((var overrideInformation, var scope) in interfaceOverrides) {
-				using (ScopeStack.PushScope (scope)) {
-					if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (overrideInformation))
-						MarkMethod (overrideInformation.Override, new DependencyInfo (DependencyKind.Override, overrideInformation.Base), scope.Origin);
 				}
 			}
 		}
@@ -703,10 +697,23 @@ namespace Mono.Linker.Steps
 		{
 			Annotations.EnqueueVirtualMethod (method);
 
-			var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
-			if (defaultImplementations != null) {
-				foreach (var defaultImplementationInfo in defaultImplementations) {
-					ProcessDefaultImplementation (defaultImplementationInfo.InstanceType, defaultImplementationInfo.ProvidingInterface);
+			if (method.DeclaringType.IsInterface) {
+				var defaultImplementations = Annotations.GetDefaultInterfaceImplementations (method);
+				if (defaultImplementations is not null) {
+					foreach (var dimInfo in defaultImplementations) {
+						ProcessDefaultImplementation (dimInfo.ImplementingType, dimInfo.InterfaceImpl, dimInfo.DefaultInterfaceMethod);
+
+						var ov = new OverrideInformation (method, dimInfo.DefaultInterfaceMethod, Context);
+						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, dimInfo.ImplementingType))
+							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
+					}
+				}
+				var overridingMethods = Annotations.GetOverrides (method);
+				if (overridingMethods is not null) {
+					foreach (var ov in overridingMethods) {
+						if (IsInterfaceImplementationMethodNeededByTypeDueToInterface (ov, ov.Override.DeclaringType))
+							MarkMethod (ov.Override, new DependencyInfo (DependencyKind.Override, ov.Base), ScopeStack.CurrentScope.Origin);
+					}
 				}
 			}
 		}
@@ -722,10 +729,8 @@ namespace Mono.Linker.Steps
 			Debug.Assert (Annotations.IsMarked (overrideInformation.Base) || IgnoreScope (overrideInformation.Base.DeclaringType.Scope));
 			if (!Annotations.IsMarked (overrideInformation.Override.DeclaringType))
 				return false;
-			if (overrideInformation.IsOverrideOfInterfaceMember) {
-				_interfaceOverrides.Add ((overrideInformation, ScopeStack.CurrentScope));
+			if (overrideInformation.IsOverrideOfInterfaceMember)
 				return false;
-			}
 
 			if (!Context.IsOptimizationEnabled (CodeOptimizations.OverrideRemoval, overrideInformation.Override))
 				return true;
@@ -814,9 +819,10 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		void ProcessDefaultImplementation (TypeDefinition typeWithDefaultImplementedInterfaceMethod, InterfaceImplementation implementation)
+		void ProcessDefaultImplementation (TypeDefinition typeWithDefaultImplementedInterfaceMethod, InterfaceImplementation implementation, MethodDefinition implementationMethod)
 		{
-			if (!Annotations.IsInstantiated (typeWithDefaultImplementedInterfaceMethod))
+			if ((!implementationMethod.IsStatic && !Annotations.IsInstantiated (typeWithDefaultImplementedInterfaceMethod))
+				|| implementationMethod.IsStatic && !Annotations.IsRelevantToVariantCasting (typeWithDefaultImplementedInterfaceMethod))
 				return;
 
 			MarkInterfaceImplementation (implementation);
@@ -1422,6 +1428,8 @@ namespace Mono.Linker.Steps
 					MarkEntireAssembly (assembly);
 				}
 				return;
+			} else if (Annotations.IsRootAssembly (assembly)) {
+				MarkEntireAssembly (assembly);
 			}
 
 			ProcessModuleType (assembly);
@@ -1805,7 +1813,7 @@ namespace Mono.Linker.Steps
 			}
 
 			var parent = field.DeclaringType;
-			if (!Annotations.HasPreservedStaticCtor (parent)) {
+			if (field.IsStatic && !Annotations.HasPreservedStaticCtor (parent)) {
 				var cctorReason = reason.Kind switch {
 					// Report an edge directly from the method accessing the field to the static ctor it triggers
 					DependencyKind.FieldAccess => new DependencyInfo (DependencyKind.TriggersCctorThroughFieldAccess, reason.Source),
@@ -2033,7 +2041,9 @@ namespace Mono.Linker.Steps
 				// will call MarkType on the attribute type itself).
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
 				// or because of a copy assembly with a reference and so on) then we should not spam the warnings due to the type itself.
-				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type))
+				// Also don't warn when the type is marked due to an assembly being rooted.
+				if (!(reason.Source is IMemberDefinition sourceMemberDefinition && sourceMemberDefinition.DeclaringType == type) &&
+					reason.Kind is not DependencyKind.TypeInAssembly)
 					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.AttributeIsReferencedButTrimmerRemoveAllInstances, type.GetDisplayName ());
 			}
 
@@ -2269,9 +2279,9 @@ namespace Mono.Linker.Steps
 				// Record a logical dependency on the attribute so that we can blame it for the kept members below.
 				Tracer.AddDirectDependency (attribute, new DependencyInfo (DependencyKind.CustomAttribute, type), marked: false);
 
-				MarkTypeWithDebuggerDisplayAttributeValue(type, attribute, (string) attribute.ConstructorArguments[0].Value);
+				MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) attribute.ConstructorArguments[0].Value);
 				if (attribute.HasProperties) {
-					foreach (var  property in attribute.Properties) {
+					foreach (var property in attribute.Properties) {
 						if (property.Name is "Name" or "Type") {
 							MarkTypeWithDebuggerDisplayAttributeValue (type, attribute, (string) property.Argument.Value);
 						}
@@ -2539,17 +2549,15 @@ namespace Mono.Linker.Steps
 		/// <summary>
 		/// Returns true if the override method is required due to the interface that the base method is declared on. See doc at <see href="docs/methods-kept-by-interface.md"/> for explanation of logic.
 		/// </summary>
-		bool IsInterfaceImplementationMethodNeededByTypeDueToInterface (OverrideInformation overrideInformation)
+		bool IsInterfaceImplementationMethodNeededByTypeDueToInterface (OverrideInformation overrideInformation, TypeDefinition typeThatImplsInterface)
 		{
 			var @base = overrideInformation.Base;
 			var method = overrideInformation.Override;
+			Debug.Assert (@base.DeclaringType.IsInterface);
 			if (@base is null || method is null || @base.DeclaringType is null)
 				return false;
 
 			if (Annotations.IsMarked (method))
-				return false;
-
-			if (!@base.DeclaringType.IsInterface)
 				return false;
 
 			// If the interface implementation is not marked, do not mark the implementation method
@@ -2572,12 +2580,12 @@ namespace Mono.Linker.Steps
 			// If the method is static and the implementing type is relevant to variant casting, mark the implementation method.
 			// A static method may only be called through a constrained call if the type is relevant to variant casting.
 			if (@base.IsStatic)
-				return Annotations.IsRelevantToVariantCasting (method.DeclaringType)
+				return Annotations.IsRelevantToVariantCasting (typeThatImplsInterface)
 					|| IgnoreScope (@base.DeclaringType.Scope);
 
 			// If the implementing type is marked as instantiated, mark the implementation method.
 			// If the type is not instantiated, do not mark the implementation method
-			return Annotations.IsInstantiated (method.DeclaringType);
+			return Annotations.IsInstantiated (typeThatImplsInterface);
 		}
 
 		static bool IsSpecialSerializationConstructor (MethodDefinition method)
@@ -3225,7 +3233,7 @@ namespace Mono.Linker.Steps
 			} else if (method.TryGetProperty (out PropertyDefinition? property))
 				MarkProperty (property, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.PropertyOfPropertyMethod), method));
 			else if (method.TryGetEvent (out EventDefinition? @event)) {
-				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventOfEventMethod), method));
+				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventOfEventMethod), method));
 			}
 
 			if (method.HasMetadataParameters ()) {
@@ -3309,7 +3317,7 @@ namespace Mono.Linker.Steps
 		{
 		}
 
-		static DependencyKind PropagateDependencyKindToAccessors(DependencyKind parentDependencyKind, DependencyKind kind)
+		static DependencyKind PropagateDependencyKindToAccessors (DependencyKind parentDependencyKind, DependencyKind kind)
 		{
 			switch (parentDependencyKind) {
 			// If the member is marked due to descriptor or similar, propagate the original reason to suppress some warnings correctly
@@ -3329,11 +3337,11 @@ namespace Mono.Linker.Steps
 				return;
 
 			// keep fields for types with explicit layout, for enums and for InlineArray types
-			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType(type))
+			if (!type.IsAutoLayout || type.IsEnum || TypeIsInlineArrayType (type))
 				MarkFields (type, includeStatic: type.IsEnum, reason: new DependencyInfo (DependencyKind.MemberOfType, type));
 		}
 
-		static bool TypeIsInlineArrayType(TypeDefinition type)
+		static bool TypeIsInlineArrayType (TypeDefinition type)
 		{
 			if (!type.IsValueType)
 				return false;
@@ -3578,7 +3586,7 @@ namespace Mono.Linker.Steps
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
 
-			DependencyKind dependencyKind = PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventMethod);
+			DependencyKind dependencyKind = PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.EventMethod);
 			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
 			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
 			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);

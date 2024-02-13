@@ -11,7 +11,7 @@
 #include <unicode/uversion.h>
 #include <unicode/localpointer.h>
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(APPLE_HYBRID_GLOBALIZATION)
 #include <unicode/utrace.h>
 #endif
 

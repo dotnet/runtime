@@ -1,5 +1,7 @@
+.\" *********************************** start of \input{common.tex}
+.\" *********************************** end of \input{common.tex}
 '\" t
-.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
+.\" Manual page created with latex2man on Tue Aug 29 11:41:44 2023
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +12,7 @@
 
 .fi
 ..
-.TH "UNW\\_INIT\\_LOCAL" "3" "29 August 2021" "Programming Library " "Programming Library "
+.TH "UNW\\_INIT\\_LOCAL" "3libunwind" "29 August 2023" "Programming Library " "Programming Library "
 .SH NAME
 unw_init_local
 \-\- initialize cursor for local unwinding 
@@ -38,18 +40,18 @@ flag);
 The unw_init_local()
 routine initializes the unwind cursor 
 pointed to by c
-with the machine\-state in the context structure 
+with the machine state in the context structure 
 pointed to by ctxt\&.
-As such, the machine\-state pointed to by 
+As such, the machine state pointed to by 
 ctxt
 identifies the initial stack frame at which unwinding 
-starts. The machine\-state is expected to be one provided by a call to 
+starts. The machine state is expected to be one provided by a call to 
 unw_getcontext();
 as such, the instruction pointer may point to 
 the instruction after the last instruction of a function, and 
 libunwind
 will back\-up the instruction pointer before beginning 
-a walk up the call stack. The machine\-state must remain valid for the 
+a walk up the call stack. The machine state must remain valid for the 
 duration for which the cursor c
 is in use. 
 .PP
@@ -81,14 +83,14 @@ flag.
 .PP
 On successful completion, unw_init_local()
 returns 0. 
-Otherwise the negative value of one of the error\-codes below is 
+Otherwise the negative value of one of the error codes below is 
 returned. 
 .PP
 .SH THREAD AND SIGNAL SAFETY
 
 .PP
 unw_init_local()
-is thread\-safe as well as safe to use from a 
+is thread safe as well as safe to use from a 
 signal handler. 
 .PP
 .SH ERRORS
@@ -114,8 +116,8 @@ wasn\&'t accessible.
 .SH SEE ALSO
 
 .PP
-libunwind(3),
-unw_init_remote(3)
+libunwind(3libunwind),
+unw_init_remote(3libunwind)
 .PP
 .SH AUTHOR
 

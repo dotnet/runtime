@@ -56,7 +56,7 @@ exitcode_list[133]="SIGTRAP Breakpoint hit. Core dumped."
 exitcode_list[134]="SIGABRT Abort. Managed or native assert, or runtime check such as heap corruption, caused call to abort(). Core dumped."
 exitcode_list[135]="IGBUS   Unaligned memory access. Core dumped."
 exitcode_list[136]="SIGFPE  Bad floating point arguments. Core dumped."
-exitcode_list[137]="SIGKILL Killed eg by kill"
+exitcode_list[137]="SIGKILL Killed either due to out of memory/resources (see /var/log/messages) or by explicit kill."
 exitcode_list[139]="SIGSEGV Illegal memory access. Deref invalid pointer, overrunning buffer, stack overflow etc. Core dumped."
 exitcode_list[143]="SIGTERM Terminated. Usually before SIGKILL."
 exitcode_list[159]="SIGSYS  Bad System Call."
@@ -233,7 +233,9 @@ if [ -n "$HELIX_WORKITEM_PAYLOAD" ]; then
 
 fi
 
-if [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
+if [[ -z "$HELIX_CORRELATION_PAYLOAD" ]]; then
+  : # Skip XUnitLogChecker execution
+elif [[ -z "$__IsXUnitLogCheckerSupported" ]]; then
   echo "The '__IsXUnitLogCheckerSupported' env var is not set."
 elif [[ "$__IsXUnitLogCheckerSupported" != "1" ]]; then
   echo "XUnitLogChecker not supported for this test case. Skipping."

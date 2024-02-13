@@ -1,18 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_NODE, loaderHelpers, runtimeHelpers } from "./globals";
+import WasmEnableThreads from "consts:wasmEnableThreads";
+
+import { ENVIRONMENT_IS_NODE, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
-import { assembly_load } from "./class-loader";
 import { mono_log_info } from "./logging";
-import { assert_bindings } from "./invoke-js";
+import { assert_js_interop } from "./invoke-js";
+import { assembly_load } from "./invoke-cs";
+import { cancelThreads } from "./pthreads/browser";
+import { call_entry_point } from "./managed-exports";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
-export async function mono_run_main_and_exit(main_assembly_name: string, args?: string[]): Promise<number> {
+export async function mono_run_main_and_exit(main_assembly_name?: string, args?: string[]): Promise<number> {
     try {
         const result = await mono_run_main(main_assembly_name, args);
         loaderHelpers.mono_exit(result);
@@ -34,7 +38,11 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args?: 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
  */
-export async function mono_run_main(main_assembly_name: string, args?: string[]): Promise<number> {
+export async function mono_run_main(main_assembly_name?: string, args?: string[]): Promise<number> {
+    if (main_assembly_name === undefined || main_assembly_name === null || main_assembly_name === "") {
+        main_assembly_name = loaderHelpers.config.mainAssemblyName;
+        mono_assert(main_assembly_name, "Null or empty config.mainAssemblyName");
+    }
     if (args === undefined || args === null) {
         args = runtimeHelpers.config.applicationArguments;
     }
@@ -56,7 +64,7 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
     }
     const method = find_entry_point(main_assembly_name);
 
-    const res = await runtimeHelpers.javaScriptExports.call_entry_point(method, args);
+    const res = await call_entry_point(method, args);
 
     // one more timer loop before we return, so that any remaining queued calls could run
     await new Promise(resolve => globalThis.setTimeout(resolve, 0));
@@ -66,7 +74,7 @@ export async function mono_run_main(main_assembly_name: string, args?: string[])
 
 export function find_entry_point(assembly: string) {
     loaderHelpers.assert_runtime_running();
-    assert_bindings();
+    assert_js_interop();
     const asm = assembly_load(assembly);
     if (!asm)
         throw new Error("Could not find assembly: " + assembly);
@@ -81,3 +89,17 @@ export function find_entry_point(assembly: string) {
     return method;
 }
 
+export function nativeExit(code: number) {
+    if (WasmEnableThreads) {
+        cancelThreads();
+    }
+    cwraps.mono_wasm_exit(code);
+}
+
+export function nativeAbort(reason: any) {
+    loaderHelpers.exitReason = reason;
+    if (!loaderHelpers.is_exited()) {
+        cwraps.mono_wasm_abort();
+    }
+    throw reason;
+}

@@ -309,8 +309,14 @@ extends:
           - iossimulator_x64
           - iossimulator_arm64
           - ios_arm64
-          - linux_bionic_arm64
+          - linux_x64
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm64
           - linux_bionic_x64
+          - linux_bionic_arm64
+          - windows_x64
+          - windows_arm64
           jobParameters:
             buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
             nameSuffix: NativeAOT
@@ -388,7 +394,7 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread

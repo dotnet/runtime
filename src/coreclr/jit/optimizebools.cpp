@@ -751,7 +751,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
     //
     BasicBlock* notInRangeBb = m_b1->GetTrueTarget();
     BasicBlock* inRangeBb;
-    if (notInRangeBb == m_b2->GetTrueTarget())
+    if (m_b2->TrueTargetIs(notInRangeBb))
     {
         // Shape 1: both conditions jump to NotInRange
         //
@@ -765,7 +765,7 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         // ...
         inRangeBb = m_b2->GetFalseTarget();
     }
-    else if (notInRangeBb == m_b2->GetFalseTarget())
+    else if (m_b2->FalseTargetIs(notInRangeBb))
     {
         // Shape 2: 2nd block jumps to InRange
         //
@@ -807,11 +807,16 @@ bool OptBoolsDsc::optOptimizeRangeTests()
         return false;
     }
 
+    // Re-direct firstBlock to jump to inRangeBb
     m_comp->fgAddRefPred(inRangeBb, m_b1);
     if (!cmp2IsReversed)
     {
-        // Re-direct firstBlock to jump to inRangeBb
         m_b1->SetTrueTarget(inRangeBb);
+        m_b1->SetFalseTarget(notInRangeBb);
+    }
+    else
+    {
+        m_b1->SetFalseTarget(inRangeBb);
     }
 
     // Remove the 2nd condition block as we no longer need it
@@ -1015,7 +1020,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    if (m_b1->NextIs(m_b2) && m_comp->fgCanCompactBlocks(m_b1, m_b2))
     {
         m_comp->fgCompactBlocks(m_b1, m_b2);
     }
@@ -1188,7 +1193,7 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 
 //-----------------------------------------------------------------------------
 // optOptimizeBoolsUpdateTrees: Fold the trees based on fold type and comparison type,
-//                              update the edges, unlink removed blocks and update loop table
+//                              update the edges, and unlink removed blocks
 //
 void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 {
@@ -1298,6 +1303,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
+        assert(m_b1->KindIs(BBJ_COND));
         assert(m_b2->KindIs(BBJ_RETURN));
         assert(m_b1->FalseTargetIs(m_b2));
         assert(m_b3 != nullptr);
@@ -1316,10 +1322,11 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update bbRefs and bbPreds
         //
-        // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
-        // Remove  pred 'm_b2' for 'm_b2->bbTarget'
+        // Replace pred 'm_b2' for 'm_b2->bbFalseTarget' with 'm_b1'
+        // Remove  pred 'm_b2' for 'm_b2->bbTrueTarget'
         m_comp->fgReplacePred(m_b2->GetFalseTarget(), m_b2, m_b1);
         m_comp->fgRemoveRefPred(m_b2->GetTrueTarget(), m_b2);
+        m_b1->SetFalseTarget(m_b2->GetFalseTarget());
     }
 
     // Get rid of the second block
@@ -1336,16 +1343,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         m_b3->SetFlags(BBF_REMOVED);
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);
-    }
-
-    // Update loop table
-    if (m_comp->optLoopTableValid)
-    {
-        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
-        if (optReturnBlock)
-        {
-            m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
-        }
     }
 
     // Update IL range of first block

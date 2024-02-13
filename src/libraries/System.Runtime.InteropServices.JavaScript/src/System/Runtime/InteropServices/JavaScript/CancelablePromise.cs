@@ -9,9 +9,6 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public static partial class CancelablePromise
     {
-        [JSImport("INTERNAL.mono_wasm_cancel_promise")]
-        private static partial void _CancelPromise(IntPtr gcHandle);
-
         public static void CancelPromise(Task promise)
         {
             // this check makes sure that promiseGCHandle is still valid handle
@@ -22,59 +19,35 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
             if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
             if (holder.IsDisposed)
             {
                 return;
             }
-            _CancelPromise(holder.GCHandle);
+            holder.IsCanceling = true;
+            Interop.Runtime.CancelPromise(holder.GCHandle);
 #else
-            holder.ProxyContext.SynchronizationContext.Post(static (object? h) =>
+
+            lock (holder.ProxyContext)
             {
-                var holder = (JSHostImplementation.PromiseHolder)h!;
-                lock (holder.ProxyContext)
+                if (promise.IsCompleted || holder.IsDisposed || holder.ProxyContext._isDisposed)
                 {
-                    if (holder.IsDisposed)
-                    {
-                        return;
-                    }
+                    return;
                 }
-                _CancelPromise(holder.GCHandle);
-            }, holder);
-#endif
-        }
+                holder.IsCanceling = true;
 
-        public static void CancelPromise<T>(Task promise, Action<T> callback, T state)
-        {
-            // this check makes sure that promiseGCHandle is still valid handle
-            if (promise.IsCompleted)
-            {
-                return;
-            }
-            JSHostImplementation.PromiseHolder? holder = promise.AsyncState as JSHostImplementation.PromiseHolder;
-            if (holder == null) throw new InvalidOperationException("Expected Task converted from JS Promise");
-
-#if !FEATURE_WASM_THREADS
-            if (holder.IsDisposed)
-            {
-                return;
-            }
-            _CancelPromise(holder.GCHandle);
-            callback.Invoke(state);
-#else
-            holder.ProxyContext.SynchronizationContext.Post(_ =>
-            {
-                lock (holder.ProxyContext)
+                if (holder.ProxyContext.IsCurrentThread())
                 {
-                    if (holder.IsDisposed)
-                    {
-                        return;
-                    }
+                    Interop.Runtime.CancelPromise(holder.GCHandle);
                 }
-
-                _CancelPromise(holder.GCHandle);
-                callback.Invoke(state);
-            }, null);
+                else
+                {
+                    // FIXME: race condition
+                    // we know that holder.GCHandle is still valid because we hold the ProxyContext lock
+                    // but the message may arrive to the target thread after it was resolved, making GCHandle invalid
+                    Interop.Runtime.CancelPromisePost(holder.ProxyContext.JSNativeTID, holder.GCHandle);
+                }
+            }
 #endif
         }
     }

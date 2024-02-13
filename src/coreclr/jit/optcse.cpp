@@ -337,6 +337,83 @@ bool Compiler::optCSEcostCmpSz::operator()(const CSEdsc* dsc1, const CSEdsc* dsc
     return dsc1->csdIndex < dsc2->csdIndex;
 }
 
+//---------------------------------------------------------------------------
+// ComputeNumLocals: examine CSE def tree to compute number of locals it
+//    uses
+//
+// Arguments:
+//    compiler - compiler instance
+//
+// Notes:
+//    Just looks at the first tree discovered.
+//
+void CSEdsc::ComputeNumLocals(Compiler* compiler)
+{
+    // Count the number of distinct locals and the total number of local var nodes in a tree.
+    //
+    class LocalCountingVisitor final : public GenTreeVisitor<LocalCountingVisitor>
+    {
+        struct LocalInfo
+        {
+            unsigned m_lclNum;
+            unsigned m_occurrences;
+        };
+        enum
+        {
+            MAX_LOCALS = 8
+        };
+        LocalInfo m_locals[MAX_LOCALS];
+
+    public:
+        unsigned short m_count;
+        unsigned short m_occurrences;
+
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        LocalCountingVisitor(Compiler* compiler)
+            : GenTreeVisitor<LocalCountingVisitor>(compiler), m_count(0), m_occurrences(0)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree   = *use;
+            unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
+
+            m_occurrences++;
+            for (unsigned i = 0; i < m_count; i++)
+            {
+                if (m_locals[i].m_lclNum == lclNum)
+                {
+                    m_locals[i].m_occurrences++;
+                    return Compiler::fgWalkResult::WALK_CONTINUE;
+                }
+            }
+
+            if (m_count >= MAX_LOCALS)
+            {
+                return Compiler::fgWalkResult::WALK_ABORT;
+            }
+
+            m_locals[m_count].m_lclNum      = lclNum;
+            m_locals[m_count].m_occurrences = 1;
+            m_count++;
+
+            return Compiler::fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
+    LocalCountingVisitor lcv(compiler);
+    lcv.WalkTree(&csdTree, nullptr);
+
+    numDistinctLocals   = lcv.m_count;
+    numLocalOccurrences = lcv.m_occurrences;
+}
+
 /*****************************************************************************
  *
  *  Initialize the Value Number CSE tracking logic.
@@ -482,7 +559,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // We don't share small offset constants when they require a reloc
         // Also, we don't share non-null const gc handles
         //
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && ((tree->IsIntegralConst(0)) || !varTypeIsGC(tree)))
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && (tree->IsIntegralConst(0) || !varTypeIsGC(tree)))
         {
             // Here we make constants that have the same upper bits use the same key
             //
@@ -681,6 +758,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         noway_assert(((unsigned)hashDsc->csdTreeList->tslTree->gtCSEnum) == CSEindex);
 
         tree->gtCSEnum = ((signed char)CSEindex);
+
+        // Compute local info
+        hashDsc->ComputeNumLocals(this);
 
 #ifdef DEBUG
         if (verbose)
@@ -1652,6 +1732,13 @@ CSE_HeuristicCommon::CSE_HeuristicCommon(Compiler* pCompiler) : m_pCompiler(pCom
     }
 #endif
 
+#ifdef DEBUG
+    // Track the order of CSEs done (candidate number)
+    //
+    CompAllocator allocator = m_pCompiler->getAllocator(CMK_CSE);
+    m_sequence              = new (allocator) jitstd::vector<unsigned>(allocator);
+#endif
+
     JITDUMP("CONST CSE is %s\n", enableConstCSE ? "enabled" : "disabled");
 }
 
@@ -1944,6 +2031,20 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
 }
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// DumpMetrics: dump post-CSE metrics
+//
+void CSE_HeuristicCommon::DumpMetrics()
+{
+    printf(" %s", Name());
+    printf(" seq ");
+    for (unsigned i = 0; i < m_sequence->size(); i++)
+    {
+        printf("%s%i", (i == 0) ? "" : ",", (*m_sequence)[i]);
+    }
+}
+
 //------------------------------------------------------------------------
 // CSE_HeuristicRandom: construct random CSE heuristic
 //
@@ -1956,21 +2057,16 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
 //
 CSE_HeuristicRandom::CSE_HeuristicRandom(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
 {
-    m_cseRNG.Init(m_pCompiler->info.compMethodHash());
+    m_cseRNG.Init(m_pCompiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
+    Announce();
+}
 
-    // We should either have a bias or stress should be enabled.
-    m_bias = ReinterpretHexAsDecimal(JitConfig.JitRandomCSE());
-
-    if (m_bias == 0)
-    {
-        // Note this bias will vary per method, depending on hash...
-        m_bias = m_cseRNG.Next(100);
-        JITDUMP("JitRandomCSE is OFF, but JitStress is ON: using random bias=%d.\n", m_bias);
-    }
-    else
-    {
-        JITDUMP("JitRandomCSE is ON; using random bias=%d.\n", m_bias);
-    }
+//------------------------------------------------------------------------
+// Announce: describe heuristic in jit dump
+//
+void CSE_HeuristicRandom::Announce()
+{
+    JITDUMP("JitRandomCSE is enabled with salt %d\n", JitConfig.JitRandomCSE());
 }
 
 //------------------------------------------------------------------------
@@ -1987,7 +2083,1405 @@ bool CSE_HeuristicRandom::ConsiderTree(GenTree* tree, bool isReturn)
 {
     return CanConsiderTree(tree, isReturn);
 }
+
+//------------------------------------------------------------------------
+// ConsiderCandidates: examine candidates and perform CSEs.
+//
+void CSE_HeuristicRandom::ConsiderCandidates()
+{
+    // Generate a random permutation of all candidates.
+    // We rely on the fact that SortCandidates set up
+    // sortTab to be a copy of m_pCompiler->optCSEtab.
+    //
+    const unsigned n = m_pCompiler->optCSECandidateCount;
+
+    if (n == 0)
+    {
+        // No candidates
+        return;
+    }
+
+    // Fill sortTab with random permutation of the optCSETab
+    // (via the "inside-out" Fisher-Yates shuffle)
+    //
+    sortTab = new (m_pCompiler, CMK_CSE) CSEdsc*[n];
+
+    for (unsigned i = 0; i < n; i++)
+    {
+        // Choose j in [0...i]
+        //
+        const unsigned j = m_cseRNG.Next(i + 1);
+        if (i != j)
+        {
+            sortTab[i] = sortTab[j];
+        }
+        sortTab[j] = m_pCompiler->optCSEtab[i];
+    }
+
+    // Randomly perform the first K of these CSEs
+    // where K is uniform within [1...n].
+    //
+    unsigned k = m_cseRNG.Next(n) + 1;
+
+    CSEdsc** ptr = sortTab;
+    for (; (k > 0); k--, ptr++)
+    {
+        const int     attempt = m_pCompiler->optCSEattempt++;
+        CSEdsc* const dsc     = *ptr;
+        CSE_Candidate candidate(this, dsc);
+
+        JITDUMP("\nRandomly attempting " FMT_CSE "\n", candidate.CseIndex());
+        JITDUMP("CSE Expression : \n");
+        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMP("\n");
+
+        if (dsc->defExcSetPromise == ValueNumStore::NoVN)
+        {
+            JITDUMP("Abandoned " FMT_CSE " because we had defs with different Exc sets\n", candidate.CseIndex());
+            continue;
+        }
+
+        candidate.InitializeCounts();
+
+        if (candidate.UseCount() == 0)
+        {
+            JITDUMP("Skipped " FMT_CSE " because use count is 0\n", candidate.CseIndex());
+            continue;
+        }
+
+        if ((dsc->csdDefCount <= 0) || (dsc->csdUseCount == 0))
+        {
+            // If we reach this point, then the CSE def was incorrectly marked or the
+            // block with this use is unreachable. So skip and go to the next CSE.
+            // Without the "continue", we'd generate bad code in retail.
+            // Commented out a noway_assert(false) here due to bug: 3290124.
+            // The problem is if there is sub-graph that is not reachable from the
+            // entry point, the CSE flags propagated, would be incorrect for it.
+            continue;
+        }
+
+        PerformCSE(&candidate);
+        madeChanges = true;
+    }
+}
+
+//------------------------------------------------------------------------
+// CSE_HeuristicReplay: construct replay CSE heuristic
+//
+// Arguments;
+//  pCompiler - compiler instance
+//
+// Notes:
+//  This creates the replay CSE heuristic. It does CSEs specifed by
+//  the ArrayConfig parsing of JitReplayCSE.
+//
+CSE_HeuristicReplay::CSE_HeuristicReplay(Compiler* pCompiler) : CSE_HeuristicCommon(pCompiler)
+{
+    Announce();
+}
+
+//------------------------------------------------------------------------
+// Announce: describe heuristic in jit dump
+//
+void CSE_HeuristicReplay::Announce()
+{
+    JITDUMP("JitReplayCSE is enabled with config %s\n", JitConfig.JitReplayCSE());
+}
+
+//------------------------------------------------------------------------
+// ConsiderTree: check if this tree can be a CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if tree is part of a return statement
+//
+// Returns:
+//    true if this tree can be a CSE candidate
+//
+bool CSE_HeuristicReplay::ConsiderTree(GenTree* tree, bool isReturn)
+{
+    return CanConsiderTree(tree, isReturn);
+}
+
+//------------------------------------------------------------------------
+// ConsiderCandidates: examine candidates and perform CSEs.
+//
+// Notes:
+//   Simply follows the script provided.
+//
+void CSE_HeuristicReplay::ConsiderCandidates()
+{
+    const unsigned n = m_pCompiler->optCSECandidateCount;
+
+    if (n == 0)
+    {
+        // No candidates
+        return;
+    }
+
+    static ConfigIntArray JitReplayCSEArray;
+    JitReplayCSEArray.EnsureInit(JitConfig.JitReplayCSE());
+
+    for (unsigned i = 0; i < JitReplayCSEArray.GetLength(); i++)
+    {
+        // optCSEtab is 0-based; candidate numbers are 1-based
+        //
+        const int index = JitReplayCSEArray.GetData()[i] - 1;
+
+        if ((index < 0) || (index >= (int)n))
+        {
+            JITDUMP("Invalid candidate number %d\n", index + 1);
+            continue;
+        }
+        const int     attempt = m_pCompiler->optCSEattempt++;
+        CSEdsc* const dsc     = m_pCompiler->optCSEtab[index];
+        CSE_Candidate candidate(this, dsc);
+
+        JITDUMP("\nReplay attempting " FMT_CSE "\n", candidate.CseIndex());
+        JITDUMP("CSE Expression : \n");
+        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMP("\n");
+
+        if (!dsc->IsViable())
+        {
+            JITDUMP("Abandoned " FMT_CSE " -- not viable\n", candidate.CseIndex());
+            continue;
+        }
+
+        PerformCSE(&candidate);
+        madeChanges = true;
+    }
+}
+
+//------------------------------------------------------------------------
+// CSE_HeuristicRL: construct RL CSE heuristic
+//
+// Arguments;
+//  pCompiler - compiler instance
+//
+// Notes:
+//  This creates the RL CSE heuristic. It does CSEs based on a stochastic
+//  softmax policy, governed by a parameter vector.
+//
+//  JitRLCSE specified the initial parameter values.
+//  JitRandomCSE can be used to supply salt for the RNG.
+//  JitReplayCSE can be used to supply a sequence to follow.
+//  JitReplayCSEReward can be used to supply the perf score for the sequence.
+//
+CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler), m_alpha(0.0), m_updateParameters(false), m_greedy(false), m_verbose(false)
+{
+    // Set up the random state
+    //
+    m_cseRNG.Init(m_pCompiler->info.compMethodHash() ^ JitConfig.JitRandomCSE());
+
+    // Parameters
+    //
+    static ConfigDoubleArray initialParameters;
+    initialParameters.EnsureInit(JitConfig.JitRLCSE());
+    const unsigned initialParamLength = initialParameters.GetLength();
+
+    for (unsigned i = 0; (i < initialParamLength) && (i < numParameters); i++)
+    {
+        m_parameters[i] = initialParameters.GetData()[i];
+    }
+
+    if (numParameters > initialParamLength)
+    {
+        JITDUMP("Too few parameters (expected %d), trailing will be zero\n", numParameters);
+        for (unsigned i = initialParamLength; i < numParameters; i++)
+        {
+            m_parameters[i] = 0;
+        }
+    }
+    else if (numParameters < initialParamLength)
+    {
+        JITDUMP("Too many parameters (expected %d), trailing will be ignored\n", numParameters);
+    }
+
+    // Policy sub-behavior: explore / update / greedy
+    //
+    // We may be given a prior sequence and perf score to use to
+    // update the parameters .... if so, we will replay same sequence of CSEs
+    // (like the replay policy) and update the parameters via the policy
+    // gradient algorithm.
+    //
+    // For updates:
+    //
+    // m_alpha controls the "step size" or learning rate; when we want to adjust
+    // the parameters we only partially move them towards the gradient indicated values.
+    //
+    // m_rewards describes the reward associated with each step.
+    //
+    // This "two-pass" technique (first run the current policy and, obtain the perf score
+    // and CSE sequence, then rerun with the same sequence and update the policy
+    // parameters) ensures all the policy model logic is within the
+    // JIT, so the preference computation and its gradient can be kept in sync.
+    //
+    if ((JitConfig.JitReplayCSE() != nullptr) && (JitConfig.JitReplayCSEReward() != nullptr))
+    {
+        m_updateParameters = true;
+
+        // Reward
+        //
+        static ConfigDoubleArray rewards;
+        rewards.EnsureInit(JitConfig.JitReplayCSEReward());
+        const unsigned rewardsLength = rewards.GetLength();
+
+        for (unsigned i = 0; (i < rewardsLength) && (i < maxSteps); i++)
+        {
+            m_rewards[i] = rewards.GetData()[i];
+        }
+
+        for (unsigned i = rewardsLength; i < maxSteps; i++)
+        {
+            m_rewards[i] = 0;
+        }
+
+        // Alpha
+        //
+        if (JitConfig.JitRLCSEAlpha() != nullptr)
+        {
+            static ConfigDoubleArray JitRLCSEAlphaArray;
+            JitRLCSEAlphaArray.EnsureInit(JitConfig.JitRLCSEAlpha());
+            m_alpha = JitRLCSEAlphaArray.GetData()[0];
+        }
+        else
+        {
+            m_alpha = 0.001;
+        }
+    }
+    else if (JitConfig.JitRLCSEGreedy() > 0)
+    {
+        m_greedy = true;
+    }
+
+    // Stopping "parameter"
+    //
+    m_registerPressure = CNT_CALLEE_TRASH + CNT_CALLEE_SAVED;
+
+    // Verbose
+    //
+    if (m_pCompiler->verbose || (JitConfig.JitRLCSEVerbose() > 0))
+    {
+        m_verbose = true;
+    }
+
+#ifdef DEBUG
+    CompAllocator allocator = m_pCompiler->getAllocator(CMK_CSE);
+    m_likelihoods           = new (allocator) jitstd::vector<double>(allocator);
+    m_baseLikelihoods       = new (allocator) jitstd::vector<double>(allocator);
+    m_features              = new (allocator) jitstd::vector<char*>(allocator);
 #endif
+    Announce();
+}
+
+//------------------------------------------------------------------------
+// Name: name this jit heuristic
+//
+// Returns:
+//   descriptive name string
+//
+const char* CSE_HeuristicRL::Name() const
+{
+    if (m_updateParameters)
+    {
+        return "RL Policy Gradient Update";
+    }
+    else if (m_greedy)
+    {
+        return "RL Policy Gradient Greedy";
+    }
+    else
+    {
+        return "RL Policy Gradient Stochastic";
+    }
+}
+
+//------------------------------------------------------------------------
+// Announce: describe heuristic in jit dump
+//
+void CSE_HeuristicRL::Announce()
+{
+    JITDUMP("%s salt %d parameters ", Name(), JitConfig.JitRandomCSE());
+    for (int i = 0; i < numParameters; i++)
+    {
+        JITDUMP("%s%f", (i == 0) ? "" : ",", m_parameters[i]);
+    }
+    JITDUMP("\n");
+
+    if (m_updateParameters)
+    {
+        JITDUMP("Operating in update mode with sequence %ls, rewards %ls, and alpha %f\n", JitConfig.JitReplayCSE(),
+                JitConfig.JitReplayCSEReward(), m_alpha);
+    }
+}
+
+//------------------------------------------------------------------------
+// DumpMetrics: dump post-CSE metrics
+//
+void CSE_HeuristicRL::DumpMetrics()
+{
+    CSE_HeuristicCommon::DumpMetrics();
+
+    if (m_updateParameters)
+    {
+        // For update, dump the new parameter values
+        //
+        printf(" updatedparams ");
+        for (int i = 0; i < numParameters; i++)
+        {
+            printf("%s%f", (i == 0) ? "" : ",", m_parameters[i]);
+        }
+
+        if (JitConfig.JitRLCSECandidateFeatures() > 0)
+        {
+            bool first = true;
+            printf(", features ");
+            for (char* f : *m_features)
+            {
+                printf("%s%s", first ? "" : ",", f);
+                first = false;
+            }
+        }
+    }
+    else if (m_greedy)
+    {
+        // Show the parameters used.
+        //
+        printf(" params ");
+        for (int i = 0; i < numParameters; i++)
+        {
+            printf("%s%f", (i == 0) ? "" : ",", m_parameters[i]);
+        }
+    }
+    else
+    {
+        // For evaluation, dump likelihood of the choices made
+        //
+        printf(" likelihoods ");
+        bool first = true;
+        for (double d : *m_likelihoods)
+        {
+            printf("%s%.3f", first ? "" : ",", d);
+            first = false;
+        }
+
+        // For evaluation, dump initial likelihood each choice
+        //
+        printf(" baseLikelihoods ");
+        first = true;
+        for (double d : *m_baseLikelihoods)
+        {
+            printf("%s%.3f", first ? "" : ",", d);
+            first = false;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// ConsiderTree: check if this tree can be a CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if tree is part of a return statement
+//
+// Returns:
+//    true if this tree can be a CSE candidate
+//
+bool CSE_HeuristicRL::ConsiderTree(GenTree* tree, bool isReturn)
+{
+    return CanConsiderTree(tree, isReturn);
+}
+
+//------------------------------------------------------------------------
+// CaptureLocalWeights: build a sorted vector of normalized enregisterable
+//   local weights (highest to lowest)
+//
+// Notes:
+//    Used to estimate where the temp introduced by a CSE would rank compared
+//    to other locals in the method, as they compete for registers.
+//
+void CSE_HeuristicRL::CaptureLocalWeights()
+{
+    JITDUMP("Local weight table...\n");
+    CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
+    m_localWeights          = new (allocator) jitstd::vector<double>(allocator);
+
+    for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
+    {
+        LclVarDsc* const varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
+
+        // Locals with no references aren't enregistered
+        //
+        if (varDsc->lvRefCnt() == 0)
+        {
+            continue;
+        }
+
+        // Some LclVars always have stack homes
+        //
+        if (varDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        // Only consider for integral types
+        //
+        if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsMask(varDsc->TypeGet()))
+        {
+            continue;
+        }
+
+        JITDUMP("V%02u," FMT_WT "\n", m_pCompiler->lvaGetLclNum(varDsc), varDsc->lvRefCntWtd());
+        m_localWeights->push_back(varDsc->lvRefCntWtd() / BB_UNITY_WEIGHT);
+    }
+}
+
+//------------------------------------------------------------------------
+// ConsiderCandidates: examine candidates and perform CSEs.
+//
+void CSE_HeuristicRL::ConsiderCandidates()
+{
+    const int numCandidates = m_pCompiler->optCSECandidateCount;
+    sortTab                 = new (m_pCompiler, CMK_CSE) CSEdsc*[numCandidates];
+    sortSiz                 = numCandidates * sizeof(*sortTab);
+    memcpy(sortTab, m_pCompiler->optCSEtab, sortSiz);
+
+    // Capture distribution of enregisterable local var weights.
+    //
+    CaptureLocalWeights();
+
+    if (m_updateParameters)
+    {
+        UpdateParameters();
+        return;
+    }
+
+    if (m_greedy)
+    {
+        GreedyPolicy();
+        return;
+    }
+
+    SoftmaxPolicy();
+}
+
+//------------------------------------------------------------------------
+// GreedyPolicy: use a greedy policy
+//
+// Notes:
+//   This always performs the most-preferred choice, using lower candidate number
+//   as a tie-breaker.
+//
+void CSE_HeuristicRL::GreedyPolicy()
+{
+    if (m_verbose)
+    {
+        printf("RL using greedy policy\n");
+    }
+
+    // Number of choices is num candidates + 1, since
+    // early stopping is also a choice.
+    //
+    const int          numCandidates = m_pCompiler->optCSECandidateCount;
+    ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE), numCandidates + 1);
+
+    while (true)
+    {
+        Choice&       choice = ChooseGreedy(choices);
+        CSEdsc* const dsc    = choice.m_dsc;
+
+        if (dsc == nullptr)
+        {
+            m_likelihoods->push_back(choice.m_softmax);
+            break;
+        }
+
+        // purge this CSE from sortTab so we won't choose it again
+        //
+        assert(sortTab[dsc->csdIndex - 1] == dsc);
+        sortTab[dsc->csdIndex - 1] = nullptr;
+
+        // ChooseCSE should only choose viable options
+        //
+        assert(dsc->IsViable());
+
+        CSE_Candidate candidate(this, dsc);
+
+        if (m_verbose)
+        {
+            printf("\nRL attempting " FMT_CSE "\n", candidate.CseIndex());
+        }
+
+        JITDUMP("CSE Expression : \n");
+        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMP("\n");
+
+        PerformCSE(&candidate);
+        madeChanges = true;
+        m_likelihoods->push_back(choice.m_softmax);
+    }
+
+    return;
+}
+
+//------------------------------------------------------------------------
+// SoftmaxPolicy: use a randomized softmax policy
+//
+// Notes:
+//   This converts preferences to likelihoods using softmax, and then
+//   randomly selects a candidate proportional to its likelihood.
+//
+void CSE_HeuristicRL::SoftmaxPolicy()
+{
+    if (m_verbose)
+    {
+        printf("RL using softmax policy\n");
+    }
+
+    // Number of choices is num candidates + 1, since
+    // early stopping is also a choice.
+    //
+    const int          numCandidates = m_pCompiler->optCSECandidateCount;
+    ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE), numCandidates + 1);
+    bool               first = true;
+
+    while (true)
+    {
+        Choice& choice = ChooseSoftmax(choices);
+
+        if (first)
+        {
+            for (int i = 0; i < choices.Height(); i++)
+            {
+                Choice& option = choices.TopRef(i);
+                if (option.m_dsc == nullptr)
+                {
+                    m_baseLikelihoods->push_back(0);
+                }
+                else
+                {
+                    m_baseLikelihoods->push_back(option.m_dsc->csdIndex);
+                }
+                m_baseLikelihoods->push_back(option.m_softmax);
+            }
+            first = false;
+        }
+
+        CSEdsc* const dsc = choice.m_dsc;
+
+        if (dsc == nullptr)
+        {
+            m_likelihoods->push_back(choice.m_softmax);
+            break;
+        }
+
+        // purge this CSE from sortTab so we won't choose it again
+        //
+        assert(sortTab[dsc->csdIndex - 1] == dsc);
+        sortTab[dsc->csdIndex - 1] = nullptr;
+
+        // ChooseCSE should only choose viable options
+        //
+        assert(dsc->IsViable());
+
+        CSE_Candidate candidate(this, dsc);
+
+        if (m_verbose)
+        {
+            printf("\nRL attempting " FMT_CSE "\n", candidate.CseIndex());
+        }
+
+        JITDUMP("CSE Expression : \n");
+        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMP("\n");
+
+        PerformCSE(&candidate);
+        madeChanges = true;
+        m_likelihoods->push_back(choice.m_softmax);
+    }
+
+    return;
+}
+
+//------------------------------------------------------------------------
+// GetFeatures: extract features for this CSE
+//
+// Arguments:
+//    cse - cse descriptor
+//    features - array to fill in with feature values
+//
+// Notes:
+//    Current set of features:
+//
+//    0. cse costEx
+//    1. cse use count weighted (log)
+//    2. cse def count weighted (log)
+//    3. cse costSz
+//    4. cse use count
+//    5. cse def count
+//    6. cse live across call (0/1)
+//    7. cse is int (0/1)
+//    8. cse is a constant, but not shared (0/1)
+//    9. cse is a shared const (0/1)
+//   10. cse cost is MIN_CSE_COST (0/1)
+//   11. cse is a constant and live across call (0/1)
+//   12. cse is a constant and min cost (0/1)
+//   13. cse cost is MIN_CSE_COST (0/1) and cse is live across call (0/1)
+//   14. cse is marked GTF_MAKE_CSE (0/1)
+//   15. cse num distinct locals
+//   16. cse num local occurrences
+//   17. cse has call (0/1)
+//   18. log (cse use count weighted * costEx)
+//   19. log (cse use count weighted * num local occurrences)
+//   20. cse "distance" (max postorder num - min postorder num) / num BBs
+//   21. cse is "containable" (0/1)
+//   22. cse is cheap & containable (0/1)
+//   23. is live across call in possible LSRA ordering (0/1)
+//
+//   -----
+//
+//   24. log (pressure estimate weight)
+//
+void CSE_HeuristicRL::GetFeatures(CSEdsc* cse, double* features)
+{
+    for (int i = 0; i < numParameters; i++)
+    {
+        features[i] = 0;
+    }
+
+    if (cse == nullptr)
+    {
+        GetStoppingFeatures(features);
+        return;
+    }
+
+    const unsigned char costEx       = cse->csdTree->GetCostEx();
+    const double        deMinimis    = 1e-3;
+    const double        deMinimusAdj = -log(deMinimis);
+
+    features[0] = costEx;
+    features[1] = deMinimusAdj + log(max(deMinimis, cse->csdUseWtCnt));
+    features[2] = deMinimusAdj + log(max(deMinimis, cse->csdDefWtCnt));
+    features[3] = cse->csdTree->GetCostSz();
+    features[4] = cse->csdUseCount;
+    features[5] = cse->csdDefCount;
+
+    // Boolean features get scaled up so their dynamic range
+    // is similar to the features above, roughly [0...5]
+    //
+    const bool isLiveAcrossCall = cse->csdLiveAcrossCall;
+
+    features[6] = booleanScale * isLiveAcrossCall;
+    features[7] = booleanScale * varTypeUsesIntReg(cse->csdTree->TypeGet());
+
+    const bool isConstant       = cse->csdTree->OperIsConst();
+    const bool isSharedConstant = cse->csdIsSharedConst;
+
+    features[8] = booleanScale * (isConstant & !isSharedConstant);
+    features[9] = booleanScale * isSharedConstant;
+
+    const bool isMinCost = (costEx == Compiler::MIN_CSE_COST);
+    const bool isLowCost = (costEx <= Compiler::MIN_CSE_COST + 1);
+
+    features[10] = booleanScale * isMinCost;
+
+    // Joint features: constant / low cost CSEs seem to require extra scrutiny
+    //
+    features[11] = booleanScale * (isConstant & isLiveAcrossCall);
+    features[12] = booleanScale * (isConstant & isMinCost);
+    features[13] = booleanScale * (isMinCost & isLiveAcrossCall);
+
+    // Is any CSE tree for this candidate marked GTF_MAKE_CSE (hoisting)
+    // Also gather data for "distance" metric.
+    //
+    const unsigned numBBs            = m_pCompiler->fgBBcount;
+    bool           isMakeCse         = false;
+    unsigned       minPostorderNum   = numBBs;
+    unsigned       maxPostorderNum   = 0;
+    BasicBlock*    minPostorderBlock = nullptr;
+    BasicBlock*    maxPostorderBlock = nullptr;
+    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr && !isMakeCse; treeList = treeList->tslNext)
+    {
+        BasicBlock* const treeBlock    = treeList->tslBlock;
+        unsigned          postorderNum = treeBlock->bbPostorderNum;
+        if (postorderNum < minPostorderNum)
+        {
+            minPostorderNum   = postorderNum;
+            minPostorderBlock = treeBlock;
+        }
+
+        if (postorderNum > maxPostorderNum)
+        {
+            maxPostorderNum   = postorderNum;
+            maxPostorderBlock = treeBlock;
+        }
+
+        isMakeCse |= ((treeList->tslTree->gtFlags & GTF_MAKE_CSE) != 0);
+    }
+    const unsigned blockSpread = maxPostorderNum - minPostorderNum;
+
+    features[14] = booleanScale * isMakeCse;
+
+    // Locals data
+    //
+    features[15] = cse->numDistinctLocals;
+    features[16] = cse->numLocalOccurrences;
+
+    // More
+    //
+    features[17] = booleanScale * ((cse->csdTree->gtFlags & GTF_CALL) != 0);
+    features[18] = deMinimusAdj + log(max(deMinimis, cse->csdUseCount * cse->csdUseWtCnt));
+    features[19] = deMinimusAdj + log(max(deMinimis, cse->numLocalOccurrences * cse->csdUseWtCnt));
+    features[20] = booleanScale * ((double)(blockSpread) / numBBs);
+
+    const bool isContainable = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
+    features[21]             = booleanScale * isContainable;
+    features[22]             = booleanScale * (isContainable && isLowCost);
+
+    // LSRA "is live across call"
+    //
+    bool isLiveAcrossCallLSRA = isLiveAcrossCall;
+
+    if (!isLiveAcrossCallLSRA)
+    {
+        unsigned count = 0;
+        for (BasicBlock *block                                                            = minPostorderBlock;
+             block != nullptr && block != maxPostorderBlock && count < blockSpread; block = block->Next(), count++)
+        {
+            if (block->HasFlag(BBF_HAS_CALL))
+            {
+                isLiveAcrossCallLSRA = true;
+                break;
+            }
+        }
+    }
+
+    features[23] = booleanScale * isLiveAcrossCallLSRA;
+}
+
+//------------------------------------------------------------------------
+// GetStoppingFeatures: extract features for stopping CSE
+//
+// Arguments:
+//    features - array to fill in with feature values
+//
+// Notes:
+//
+// Stopping features
+//
+//   24. int register pressure weight estimate (log)
+//
+// All boolean features are scaled up by booleanScale so their
+// numeric range is similar to the non-boolean features
+//
+void CSE_HeuristicRL::GetStoppingFeatures(double* features)
+{
+    // Estimate the (log) weight at which a new CSE would cause a spill
+    // if m_registerPressure registers were initially available.
+    //
+    // Todo (perhaps) also adjust weight distribution as we perform CSEs
+    //
+    //  "remove" weight per local use occurrences * weightUses
+    //  "add" weight of the CSE temp times * (weigh defs*2) + weightUses
+    //
+    const double deMinimis     = 1e-3;
+    double       spillAtWeight = deMinimis;
+    const double deMinimusAdj  = -log(deMinimis);
+
+    // Assume each already performed cse is occupying a registger
+    //
+    unsigned currentPressure = m_registerPressure;
+
+    if (currentPressure > m_addCSEcount)
+    {
+        currentPressure -= m_addCSEcount;
+    }
+    else
+    {
+        currentPressure = 0;
+    }
+
+    if (currentPressure < m_localWeights->size())
+    {
+        spillAtWeight = (*m_localWeights)[currentPressure];
+    }
+
+    JITDUMP("Pressure count %u, pressure weight " FMT_WT "\n", currentPressure, spillAtWeight);
+
+    // Large frame...?
+    //  todo: scan all vars, not just tracked?
+    //
+
+    features[24] = deMinimusAdj + log(max(deMinimis, spillAtWeight));
+}
+
+//------------------------------------------------------------------------
+// DumpFeatures: dump feature values for a CSE candidate
+//
+// Arguments:
+//    dsc - cse descriptor
+//    features - feature vector for that candidate
+//
+// Notes:
+//    Dumps a comma separated row of data, prefixed by method index.
+//
+void CSE_HeuristicRL::DumpFeatures(CSEdsc* dsc, double* features)
+{
+    printf("features,%d," FMT_CSE, m_pCompiler->info.compMethodSuperPMIIndex, dsc == nullptr ? 0 : dsc->csdIndex);
+    for (int i = 0; i < numParameters; i++)
+    {
+        printf(",%f", features[i]);
+    }
+    printf("\n");
+}
+
+//------------------------------------------------------------------------
+// Preference: determine a preference score for this CSE
+//
+// Arguments:
+//    cse - cse descriptor, or nullptr for the option to stop doing CSEs.
+//
+double CSE_HeuristicRL::Preference(CSEdsc* cse)
+{
+    double features[numParameters];
+    GetFeatures(cse, features);
+
+    if (JitConfig.JitRLCSECandidateFeatures() > 0)
+    {
+        DumpFeatures(cse, features);
+    }
+
+    double preference = 0;
+    for (int i = 0; i < numParameters; i++)
+    {
+        preference += features[i] * m_parameters[i];
+    }
+
+    return preference;
+}
+
+//------------------------------------------------------------------------
+// StoppingPreference: determine a preference score for this stopping CSE
+//
+// Arguments:
+//    regAvail - number of registers threshold
+//
+double CSE_HeuristicRL::StoppingPreference()
+{
+    double features[numParameters];
+    GetFeatures(nullptr, features);
+
+    if (JitConfig.JitRLCSECandidateFeatures() > 0)
+    {
+        DumpFeatures(nullptr, features);
+    }
+
+    double preference = 0;
+    for (int i = 0; i < numParameters; i++)
+    {
+        preference += features[i] * m_parameters[i];
+    }
+
+    return preference;
+}
+
+//------------------------------------------------------------------------
+// ChooseGreedy: examine candidates and choose the next CSE to perform
+//   via greedy policy
+//
+// Returns:
+//   Choice of CSE to perform
+//
+// Notes:
+//   Picks the most-preferred candidate.
+//   If there is a tie, picks stop, or the lowest cse index.
+//
+CSE_HeuristicRL::Choice& CSE_HeuristicRL::ChooseGreedy(ArrayStack<Choice>& choices)
+{
+    choices.Reset();
+    BuildChoices(choices);
+
+    // Find the maximally preferred case.
+    //
+    Choice& bestChoice = choices.TopRef(0);
+    int     choiceNum  = 0;
+
+    for (int i = 1; i < choices.Height(); i++)
+    {
+        Choice&      choice = choices.TopRef(i);
+        const double delta  = choice.m_preference - bestChoice.m_preference;
+
+        bool update = false;
+
+        if (delta > 0)
+        {
+            update = true;
+        }
+        else if (delta == 0)
+        {
+            if (choice.m_dsc == nullptr)
+            {
+                update = true;
+            }
+            else if ((bestChoice.m_dsc != nullptr) && (choice.m_dsc->csdIndex < bestChoice.m_dsc->csdIndex))
+            {
+                update = true;
+            }
+        }
+
+        if (update)
+        {
+            bestChoice = choice;
+            choiceNum  = i;
+        }
+    }
+
+    if (m_verbose)
+    {
+        printf("Greedy candidate evaluation\n");
+        DumpChoices(choices, choiceNum);
+    }
+
+    return bestChoice;
+}
+
+//------------------------------------------------------------------------
+// ChooseSoftmax: examine candidates and choose the next CSE to perform
+//   via softmax
+//
+// Returns:
+//   Choice of CSE to perform
+//
+// Notes:
+//   This is a softmax policy, meaning that there is some randomness
+//   associated with choices it makes.
+//
+//   Each candidate is given a preference score; these are converted into
+//   "spans" in the [0..1] range via softmax, and then a random value
+//   is generated in [0..1] and we choose the candidate whose range contains
+//   this value.
+//
+//   For example if there are 3 candidates with scores 1,0, 2.0, and 0.3,
+//   the softmax sum is e^1.0 + e^2.0 + e^0.3 = 2.78 + 7.39 + 1.35 = 11.52,
+//   and so the spans are 0.24, 0.64, 0.12 (note they sum to 1.0).
+//
+//   So if the random value is in [0.00, 0.24) we choose candidate 1;
+//      if the random value is in [0.24, 0.88) we choose candidate 2;
+//      else we choose candidate 3;
+//
+CSE_HeuristicRL::Choice& CSE_HeuristicRL::ChooseSoftmax(ArrayStack<Choice>& choices)
+{
+    choices.Reset();
+    BuildChoices(choices);
+
+    // Compute softmax likelihoods
+    //
+    Softmax(choices);
+
+    // Generate a random number and choose the CSE to perform.
+    //
+    double randomFactor = m_cseRNG.NextDouble();
+    double softmaxSum   = 0;
+    int    choiceNum    = 0;
+    for (int i = 0; i < choices.Height(); i++)
+    {
+        softmaxSum += choices.TopRef(i).m_softmax;
+
+        if (randomFactor < softmaxSum)
+        {
+            choiceNum = i;
+            break;
+        }
+    }
+
+    if (m_verbose)
+    {
+        printf("Current candidate evaluation, rng is %f\n", randomFactor);
+        DumpChoices(choices, choiceNum);
+    }
+
+    return choices.TopRef(choiceNum);
+}
+
+//------------------------------------------------------------------------
+// BuildChoices: fill in the choices currently available
+//
+//   choices - array of choices to be filled in
+//
+// Notes:
+//    Also computes the preference for each choice.
+//
+void CSE_HeuristicRL::BuildChoices(ArrayStack<Choice>& choices)
+{
+    for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
+    {
+        CSEdsc* const dsc = sortTab[i];
+        if ((dsc == nullptr) || !dsc->IsViable())
+        {
+            // already did this cse,
+            // or the cse is not viable
+            continue;
+        }
+
+        double preference = Preference(dsc);
+        choices.Emplace(dsc, preference);
+    }
+
+    // Doing nothing is also an option.
+    //
+    const double stoppingPreference = StoppingPreference();
+    choices.Emplace(nullptr, stoppingPreference);
+}
+
+//------------------------------------------------------------------------
+// Softmax: fill in likelihoods for each choice vis softmax
+//
+// Arguments:
+//   choices - array of choices
+//
+// Notes:
+//
+//   Each choice has already been given a preference score.
+//   These are converted into likelihoods in the [0..1] range via softmax,
+//   where the sum across all choices is 1.0.
+//
+//   For each choice i, softmax(i) = e^preference(i) / sum_k (e^preference(k))
+//
+//   For example if there are 3 choices with preferences 1,0, 2.0, and 0.3,
+//   the softmax sum is e^1.0 + e^2.0 + e^0.3 = 2.78 + 7.39 + 1.35 = 11.52,
+//   and so the likelihoods are 0.24, 0.64, 0.12 (note they sum to 1.0).
+//
+void CSE_HeuristicRL::Softmax(ArrayStack<Choice>& choices)
+{
+    // Determine likelihood via softmax.
+    //
+    double softmaxSum = 0;
+    for (int i = 0; i < choices.Height(); i++)
+    {
+        double softmax              = exp(choices.TopRef(i).m_preference);
+        choices.TopRef(i).m_softmax = softmax;
+        softmaxSum += softmax;
+    }
+
+    // Normalize each choice's softmax likelihood
+    //
+    for (int i = 0; i < choices.Height(); i++)
+    {
+        choices.TopRef(i).m_softmax /= softmaxSum;
+    }
+}
+
+//------------------------------------------------------------------------
+// DumpChoices: dump out information on current choices
+//
+// Arguments:
+//   choices - array of choices
+//   highlight - highlight this choice
+//
+void CSE_HeuristicRL::DumpChoices(ArrayStack<Choice>& choices, int highlight)
+{
+    for (int i = 0; i < choices.Height(); i++)
+    {
+        Choice&       choice = choices.TopRef(i);
+        CSEdsc* const cse    = choice.m_dsc;
+        const char*   msg    = i == highlight ? "=>" : "  ";
+        if (cse != nullptr)
+        {
+            printf("%s%2d: " FMT_CSE " preference %10.7f likelihood %10.7f\n", msg, i, cse->csdIndex,
+                   choice.m_preference, choice.m_softmax);
+        }
+        else
+        {
+            printf("%s%2d: QUIT    preference %10.7f likelihood %10.7f\n", msg, i, choice.m_preference,
+                   choice.m_softmax);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// DumpChoices: dump out information on current choices
+//
+// Arguments:
+//   choices - array of choices
+//   highlight - highlight this choice
+//
+void CSE_HeuristicRL::DumpChoices(ArrayStack<Choice>& choices, CSEdsc* highlight)
+{
+    for (int i = 0; i < choices.Height(); i++)
+    {
+        Choice&       choice = choices.TopRef(i);
+        CSEdsc* const cse    = choice.m_dsc;
+        const char*   msg    = cse == highlight ? "=>" : "  ";
+        if (cse != nullptr)
+        {
+            printf("%s%2d: " FMT_CSE " preference %10.7f likelihood %10.7f\n", msg, i, cse->csdIndex,
+                   choice.m_preference, choice.m_softmax);
+        }
+        else
+        {
+            printf("%s%2d: QUIT    preference %10.7f likelihood %10.7f\n", msg, i, choice.m_preference,
+                   choice.m_softmax);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// UpdateParameters: Replay an existing CSE sequence with known reward,
+//   and update the model parameters via the policy gradient.
+//
+void CSE_HeuristicRL::UpdateParameters()
+{
+    const unsigned n = m_pCompiler->optCSECandidateCount;
+
+    if (n == 0)
+    {
+        // No candidates, nothing to update.
+        return;
+    }
+
+    ArrayStack<Choice>    choices(m_pCompiler->getAllocator(CMK_CSE));
+    static ConfigIntArray JitReplayCSEArray;
+    JitReplayCSEArray.EnsureInit(JitConfig.JitReplayCSE());
+
+    // We have an undiscounted reward, so it applies equally
+    // to all steps in the computation.
+    //
+    if (m_verbose)
+    {
+        printf("Updating parameters with sequence ");
+        JitReplayCSEArray.Dump();
+        printf(" alpha " FMT_WT " and rewards ", m_alpha);
+        for (unsigned int i = 0; i < JitReplayCSEArray.GetLength(); i++)
+        {
+            printf("%s%7.4f", (i == 0 ? "" : ","), m_rewards[i]);
+        }
+        printf("\n");
+    }
+
+    // We need to evaluate likelihoods based on the current parameters
+    // so we save up the accumulated upates here.
+    double parameterDelta[numParameters];
+    for (int i = 0; i < numParameters; i++)
+    {
+        parameterDelta[i] = 0;
+    }
+
+    const unsigned nSteps = JitReplayCSEArray.GetLength();
+    unsigned       i      = 0;
+
+    for (; i < nSteps; i++)
+    {
+        const int candNumber = JitReplayCSEArray.GetData()[i];
+
+        // CSE "0" means stop.
+        //
+        if (candNumber == 0)
+        {
+            break;
+        }
+
+        // optCSEtab is 0-based; candidate numbers are 1-based
+        //
+        const int index = candNumber - 1;
+
+        if ((index < 0) || (index >= (int)n))
+        {
+            JITDUMP("Invalid candidate number %d\n", index + 1);
+            continue;
+        }
+
+        // Re-evaluate the available options.
+        //
+        choices.Reset();
+        BuildChoices(choices);
+        Softmax(choices);
+
+        const int     attempt = m_pCompiler->optCSEattempt++;
+        CSEdsc* const dsc     = sortTab[index];
+
+        // purge this CSE so we don't consider it again when
+        // building choices
+        //
+        assert(sortTab[dsc->csdIndex - 1] == dsc);
+        sortTab[dsc->csdIndex - 1] = nullptr;
+        if (!dsc->IsViable())
+        {
+            // If we are replaying an off-policy sequence
+            // it may contain non-viable candidates.
+            // Ignore them.
+            continue;
+        }
+
+        // We are actually going to do this CSE since
+        // we want the state to evolve as it did originally
+        //
+        CSE_Candidate candidate(this, dsc);
+
+        if (m_verbose)
+        {
+            printf("\nRL Update attempting " FMT_CSE "\n", candidate.CseIndex());
+        }
+
+        JITDUMP("CSE Expression : \n");
+        JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+        JITDUMP("\n");
+
+        // Compute the parameter update impact from this step
+        // and add it to the net delta.
+        //
+        UpdateParametersStep(dsc, choices, m_rewards[i], parameterDelta);
+
+        // Actually do the cse, since subsequent step updates
+        // possibly can observe changes to the method caused by this CSE.
+        //
+        PerformCSE(&candidate);
+        madeChanges = true;
+    }
+
+    // If we did not exhaust all choices (we stopped early) we need one
+    // last parameter update.
+    //
+    choices.Reset();
+    BuildChoices(choices);
+
+    // See if there are any non-
+    // then there is an option left besides stopping.
+    //
+    int undoneCSEs = choices.Height() - 1;
+    if (undoneCSEs > 0)
+    {
+        if (m_verbose)
+        {
+            printf("\nRL Update stopping early (%d CSEs done, %d CSEs left undone)\n", i, undoneCSEs);
+        }
+
+        Softmax(choices);
+        // nullptr here means "stopping"
+        UpdateParametersStep(nullptr, choices, m_rewards[i], parameterDelta);
+    }
+
+    // Update the parameters to include the computed delta
+    //
+    for (int i = 0; i < numParameters; i++)
+    {
+        m_parameters[i] += parameterDelta[i];
+    }
+}
+
+//------------------------------------------------------------------------
+// UpdateParametersStep: perform parameter update for this step in
+//   the CSE sequence
+//
+// Arguments;
+//   dsc -- cse to perform (nullptr if stopping)
+//   choices -- alternatives available, with preference and softmax computed
+//   reward -- reward for this step
+//   delta -- accumulated change to the parameters (in, out)
+//
+// Notes:
+//   modifies delta to include the adjustments due to this
+//   choice, with indicated reward (higher better).
+//
+//   Takes into account both the likelihood of the choice and the magnitude
+//   of reward, briefly:
+//   - likely   choices and good rewards are strongly encouraged
+//   - unlikely choices and good rewards are mildly   encouraged
+//   - unlikely choices and bad  rewards are mildly   discouraged
+//   - likely   choices and bad  rewards are strongly discouraged
+//
+void CSE_HeuristicRL::UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta)
+{
+    // Since this is an "on-policy" process, the dsc
+    // should be among the possible choices.
+    //
+    // Eventually (with a well-trained policy) the current choice will
+    // be (one of) the strongly preferred choice(s), if this is an optimal sequence.
+    //
+    Choice* const currentChoice = FindChoice(dsc, choices);
+    if (m_verbose)
+    {
+        DumpChoices(choices, dsc);
+        printf("Reward: %7.4f\n", reward);
+    }
+
+    // Compute the parameter update...
+    //
+    double currentFeatures[numParameters];
+    GetFeatures(dsc, currentFeatures);
+
+    double adjustment[numParameters];
+    for (int i = 0; i < numParameters; i++)
+    {
+        adjustment[i] = 0;
+    }
+
+    for (int c = 0; c < choices.Height(); c++)
+    {
+        double choiceFeatures[numParameters];
+        GetFeatures(choices.TopRef(c).m_dsc, choiceFeatures);
+        double softmax = choices.TopRef(c).m_softmax;
+
+        for (int i = 0; i < numParameters; i++)
+        {
+            adjustment[i] += softmax * choiceFeatures[i];
+        }
+    }
+
+    double gradient[numParameters];
+    for (int i = 0; i < numParameters; i++)
+    {
+        gradient[i] = currentFeatures[i] - adjustment[i];
+    }
+
+    double newDelta[numParameters];
+    for (int i = 0; i < numParameters; i++)
+    {
+        // Todo: discount?
+        newDelta[i] = m_alpha * reward * gradient[i];
+    }
+
+    if (m_verbose)
+    {
+        printf("Feat   OldDelta     Feature  Adjustment    Gradient   StepDelta   NewDelta\n");
+
+        for (int i = 0; i < numParameters; i++)
+        {
+            printf("%4d  %10.7f  %10.7f  %10.7f  %10.7f  %10.7f %10.7f\n", i, delta[i], currentFeatures[i],
+                   adjustment[i], gradient[i], newDelta[i], newDelta[i] + delta[i]);
+        }
+    }
+
+    for (int i = 0; i < numParameters; i++)
+    {
+        delta[i] += newDelta[i];
+    }
+}
+
+//------------------------------------------------------------------------
+// FindChoice: Find the choice info for a particular CSE.
+//
+// Arguments:
+//   dsc -- cse to search for
+//   choices -- choice array to search
+//
+// Returns:
+//   indicated choice, or nullptr
+//
+CSE_HeuristicRL::Choice* CSE_HeuristicRL::FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices)
+{
+    for (int i = 0; i < choices.Height(); i++)
+    {
+        if (choices.TopRef(i).m_dsc == dsc)
+        {
+            return &choices.TopRef(i);
+        }
+    }
+    return nullptr;
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // CSE_Heuristic: construct standard CSE heuristic
@@ -2343,48 +3837,6 @@ void CSE_Heuristic::SortCandidates()
     }
 #endif // DEBUG
 }
-
-#ifdef DEBUG
-//------------------------------------------------------------------------
-// PromotionCheck: decide whether to perform this CSE
-//
-// Arguments:
-//   candidate - cse candidate to consider
-//
-// Return Value:
-//   true if the CSE should be performed
-//
-bool CSE_HeuristicRandom::PromotionCheck(CSE_Candidate* candidate)
-{
-    // Generate a number between (0, 99) and if the generated
-    // number is smaller than bias, then perform CSE.
-    unsigned const gen   = m_cseRNG.Next(100);
-    bool const     doCSE = gen < m_bias;
-
-    JITDUMP("%s CSE; gen=%d; bias=%d\n", doCSE ? "Promoting" : "No", gen, m_bias);
-
-    if (doCSE)
-    {
-        candidate->SetStressCSE();
-    }
-
-    return doCSE;
-}
-
-//------------------------------------------------------------------------
-// SortCandidate: fill in the CSE sort tab
-//
-void CSE_HeuristicRandom::SortCandidates()
-{
-    // Just fill in the sort tab, but don't bother sorting as order
-    // should not matter for random CSEs
-    //
-    sortTab = new (m_pCompiler, CMK_CSE) CSEdsc*[m_pCompiler->optCSECandidateCount];
-    sortSiz = m_pCompiler->optCSECandidateCount * sizeof(*sortTab);
-    memcpy(sortTab, m_pCompiler->optCSEtab, sortSiz);
-}
-
-#endif
 
 //------------------------------------------------------------------------
 // PromotionCheck: decide whether to perform this CSE
@@ -2860,6 +4312,10 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     {
         grabTempMessage = "CSE - stress mode";
     }
+    else if (successfulCandidate->IsRandom())
+    {
+        grabTempMessage = "CSE - random";
+    }
 #endif // DEBUG
 
     /* Introduce a new temp for the CSE */
@@ -2887,6 +4343,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     //  Later we will unmark any nested CSE's for the CSE uses.
     //
     CSEdsc* dsc = successfulCandidate->CseDsc();
+    INDEBUG(m_sequence->push_back(dsc->csdIndex));
 
     // If there's just a single def for the CSE, we'll put this
     // CSE into SSA form on the fly. We won't need any PHIs.
@@ -3379,8 +4836,12 @@ void CSE_Heuristic::AdjustHeuristic(CSE_Candidate* successfulCandidate)
     }
 }
 
-// Consider each of the CSE candidates and if the CSE passes
-// the PromotionCheck then transform the CSE by calling PerformCSE
+//------------------------------------------------------------------------
+// ConsiderCandidates: examine candidates and perform CSEs.
+//
+// Notes:
+//   Consider each of the CSE candidates and if the CSE passes
+//   the PromotionCheck then transform the CSE by calling PerformCSE
 //
 void CSE_HeuristicCommon::ConsiderCandidates()
 {
@@ -3389,22 +4850,16 @@ void CSE_HeuristicCommon::ConsiderCandidates()
     CSEdsc** ptr = sortTab;
     for (; (cnt > 0); cnt--, ptr++)
     {
-        CSEdsc*       dsc = *ptr;
+        const int     attempt = m_pCompiler->optCSEattempt++;
+        CSEdsc* const dsc     = *ptr;
         CSE_Candidate candidate(this, dsc);
 
-        if (dsc->defExcSetPromise == ValueNumStore::NoVN)
+        if (!dsc->IsViable())
         {
-            JITDUMP("Abandoned " FMT_CSE " because we had defs with different Exc sets\n", candidate.CseIndex());
             continue;
         }
 
         candidate.InitializeCounts();
-
-        if (candidate.UseCount() == 0)
-        {
-            JITDUMP("Skipped " FMT_CSE " because use count is 0\n", candidate.CseIndex());
-            continue;
-        }
 
 #ifdef DEBUG
         if (m_pCompiler->verbose)
@@ -3428,41 +4883,27 @@ void CSE_HeuristicCommon::ConsiderCandidates()
         }
 #endif // DEBUG
 
-        if ((dsc->csdDefCount <= 0) || (dsc->csdUseCount == 0))
-        {
-            // If we reach this point, then the CSE def was incorrectly marked or the
-            // block with this use is unreachable. So skip and go to the next CSE.
-            // Without the "continue", we'd generate bad code in retail.
-            // Commented out a noway_assert(false) here due to bug: 3290124.
-            // The problem is if there is sub-graph that is not reachable from the
-            // entry point, the CSE flags propagated, would be incorrect for it.
-            continue;
-        }
-
         bool doCSE = PromotionCheck(&candidate);
 
 #ifdef DEBUG
 
-        if (doCSE)
-        {
-            const int attempt = m_pCompiler->optCSEattempt++;
+        const int hash = JitConfig.JitCSEHash();
 
-            if (m_pCompiler->info.compMethodHash() == (unsigned)JitConfig.JitCSEHash())
+        if ((hash == 0) || (m_pCompiler->info.compMethodHash() == (unsigned)hash))
+        {
+            // We can only mask the first 32 CSE attempts, so suppress anything beyond that.
+            // Note methods with >= 32 CSEs are currently quite rare.
+            //
+            if (attempt >= 32)
             {
-                // We can only mask the first 32 CSE attempts, so suppress anything beyond that.
-                // Note methods with >= 32 CSEs are currently quite rare.
-                //
-                if (attempt >= 32)
-                {
-                    doCSE = false;
-                    JITDUMP(FMT_CSE " attempt %u disabled, out of mask range\n", candidate.CseIndex(), attempt);
-                }
-                else
-                {
-                    doCSE = ((1 << attempt) & ((unsigned)JitConfig.JitCSEMask())) != 0;
-                    JITDUMP(FMT_CSE " attempt %u mask 0x%08x: %s\n", candidate.CseIndex(), attempt,
-                            JitConfig.JitCSEMask(), doCSE ? "allowed" : "disabled");
-                }
+                doCSE = false;
+                JITDUMP(FMT_CSE " attempt %u disabled, out of mask range\n", candidate.CseIndex(), attempt);
+            }
+            else
+            {
+                doCSE = ((1 << attempt) & ((unsigned)JitConfig.JitCSEMask())) != 0;
+                JITDUMP(FMT_CSE " attempt %u mask 0x%08x: %s\n", candidate.CseIndex(), attempt, JitConfig.JitCSEMask(),
+                        doCSE ? "allowed" : "disabled");
             }
         }
 
@@ -3503,6 +4944,8 @@ void Compiler::optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic)
         fgDumpTrees(fgFirstBB, nullptr);
         printf("\n");
     }
+
+    heuristic->Announce();
 #endif // DEBUG
 
     heuristic->Initialize();
@@ -3525,23 +4968,56 @@ CSE_HeuristicCommon* Compiler::optGetCSEheuristic()
     }
 
 #ifdef DEBUG
-    bool useRandomHeuristic = false;
 
-    if (JitConfig.JitRandomCSE() > 0)
+    // Enable optional policies
+    //
+    // RL takes precedence
+    //
+    if (optCSEheuristic == nullptr)
     {
-        JITDUMP("Using Random CSE heuristic (JitRandomCSE)\n");
-        useRandomHeuristic = true;
-    }
-    else if (compStressCompile(Compiler::STRESS_MAKE_CSE, MAX_STRESS_WEIGHT))
-    {
-        JITDUMP("Using Random CSE heuristic (stress)\n");
-        useRandomHeuristic = true;
+        bool useRLHeuristic = (JitConfig.JitRLCSE() != nullptr);
+
+        if (useRLHeuristic)
+        {
+            optCSEheuristic = new (this, CMK_CSE) CSE_HeuristicRL(this);
+        }
     }
 
-    if (useRandomHeuristic)
+    // then Random
+    //
+    if (optCSEheuristic == nullptr)
     {
-        optCSEheuristic = new (this, CMK_CSE) CSE_HeuristicRandom(this);
+        bool useRandomHeuristic = false;
+
+        if (JitConfig.JitRandomCSE() > 0)
+        {
+            JITDUMP("Using Random CSE heuristic (JitRandomCSE)\n");
+            useRandomHeuristic = true;
+        }
+        else if (compStressCompile(Compiler::STRESS_MAKE_CSE, MAX_STRESS_WEIGHT))
+        {
+            JITDUMP("Using Random CSE heuristic (stress)\n");
+            useRandomHeuristic = true;
+        }
+
+        if (useRandomHeuristic)
+        {
+            optCSEheuristic = new (this, CMK_CSE) CSE_HeuristicRandom(this);
+        }
     }
+
+    // then Replay
+    //
+    if (optCSEheuristic == nullptr)
+    {
+        bool useReplayHeuristic = (JitConfig.JitReplayCSE() != nullptr);
+
+        if (useReplayHeuristic)
+        {
+            optCSEheuristic = new (this, CMK_CSE) CSE_HeuristicReplay(this);
+        }
+    }
+
 #endif
 
     if (optCSEheuristic == nullptr)

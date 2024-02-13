@@ -16,6 +16,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonSerializerDefaults? Defaults { get; init; }
 
+        public required bool? AllowOutOfOrderMetadataProperties { get; init; }
+
         public required bool? AllowTrailingCommas { get; init; }
 
         public required ImmutableEquatableArray<TypeRef>? Converters { get; init; }
@@ -51,6 +53,10 @@ namespace System.Text.Json.SourceGeneration
         public required bool? UseStringEnumConverter { get; init; }
 
         public required bool? WriteIndented { get; init; }
+
+        public required char? IndentCharacter { get; init; }
+
+        public required int? IndentSize { get; init; }
 
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
             => PropertyNamingPolicy ?? (Defaults is JsonSerializerDefaults.Web ? JsonKnownNamingPolicy.CamelCase : null);

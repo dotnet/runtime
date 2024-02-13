@@ -11,7 +11,6 @@ using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
@@ -89,6 +88,10 @@ namespace System.Text.RegularExpressions.Tests
             {
                 // Zero-width negative lookahead assertion
                 yield return (@"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty);
+                yield return (@"(?!(b)b)\1", "ba", RegexOptions.None, 0, 2, false, string.Empty);  // negative assertion should not capture
+                yield return (@"(?:(?!(b)b)\1a)+", "babababa", RegexOptions.None, 0, 8, false, string.Empty);
+                yield return (@"(?:(?!(b)b)\1a)*", "babababa", RegexOptions.None, 0, 8, true, string.Empty);
+                yield return (@"(.*?)a(?!(a+)b\2c)\2(.*)", "baaabaac", RegexOptions.None, 0, 8, false, string.Empty);
 
                 // Zero-width positive lookbehind assertion
                 yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
@@ -115,12 +118,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<=\d?)a{4}", "123aaaaaaaaa", RegexOptions.None, 0, 12, true, "aaaa");
                 yield return (@"(?<=a{3,5}[ab]*)1234", "aaaaaaa1234", RegexOptions.None, 0, 11, true, "1234");
                 yield return (@"(\w)*?3(?<=33)$", "1233", RegexOptions.None, 0, 4, true, "1233");
+                yield return (@"(?=(\d))4\1", "44", RegexOptions.None, 0, 2, true, "44");
+                yield return (@"(?=(\d))4\1", "43", RegexOptions.None, 0, 2, false, "");
 
                 // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
                 yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");
                 yield return (@"123(?<!$) abcdef", "123 abcdef", RegexOptions.None, 0, 10, true, "123 abcdef");
                 yield return (@"(abc)\w(?<!(?(1)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
                 yield return (@"(abc)\w(?<!(?(cd)e|d))", "abcdabc", RegexOptions.None, 0, 7, true, "abcd");
+                yield return (@"(?<!(b)a)\1", "bb", RegexOptions.None, 0, 2, false, string.Empty); // negative assertion should not capture
 
                 // Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
                 // The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched
@@ -1516,12 +1522,12 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         new CaptureData("209.25.0.111", 0, 12),
                         new CaptureData("209.25.0.111", 0, 12),
-                        new CaptureData(".111", 8, 4, new CaptureData[]
-                        {
+                        new CaptureData(".111", 8, 4,
+                        [
                             new CaptureData(".25", 3, 3),
                             new CaptureData(".0", 6, 2),
                             new CaptureData(".111", 8, 4),
-                        }),
+                        ]),
                     }
                 };
 
@@ -1658,12 +1664,12 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData[]
                         {
                             new CaptureData("aaaa", 0, 4),
-                            new CaptureData("a", 2, 1, new CaptureData[]
-                            {
+                            new CaptureData("a", 2, 1,
+                            [
                                 new CaptureData("a", 0, 1),
                                 new CaptureData("a", 1, 1),
                                 new CaptureData("a", 2, 1),
-                            }),
+                            ]),
                             new CaptureData("a", 3, 1)
                         }
                     };
@@ -2115,7 +2121,7 @@ namespace System.Text.RegularExpressions.Tests
         public async Task Match_Count(RegexEngine engine, string pattern, string input, int expectedCount)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
-            Assert.Equal(expectedCount,r.Matches(input).Count);
+            Assert.Equal(expectedCount, r.Matches(input).Count);
         }
 
         public static IEnumerable<object[]> StressTestDeepNestingOfConcat_TestData()
@@ -2374,6 +2380,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, "^(?:aaa|aa){1,5}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
                 yield return new object[] { engine, "^(?:aaa|aa){4}$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
                 yield return new object[] { engine, "^(?:aaa|aa){4}?$", RegexOptions.None, "aaaaaaaa", new (int, int, string)[] { (0, 8, "aaaaaaaa") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x*)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(xx?,xx?)|xx?,xx?>xx?,xx?)-?(x+)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^((?:(x(x?),x(x?))|xx?,(x(x?)>x(x?)),(x((x))?))-?(x+?)??){1,2}$", RegexOptions.None, "xx,xx>xx,xx", new (int, int, string)[] { (0, 11, "xx,xx>xx,xx") } };
+                yield return new object[] { engine, "^(?:x|(x)??){2}$", RegexOptions.None, "x>", null };
 
                 // Mostly empty matches using unusual regexes consisting mostly of anchors only
                 yield return new object[] { engine, "^", RegexOptions.None, "", new (int, int, string)[] { (0, 0, "") } };
@@ -2394,11 +2405,11 @@ namespace System.Text.RegularExpressions.Tests
 
                 //this will need a total of 2x70 + 2 parts in the partition of NonBacktracking
                 string pattern_orig = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>:;&@%!";
-                string pattern_WL = new String(Array.ConvertAll(pattern_orig.ToCharArray(), c => (char)((int)c + 0xFF00 - 32)));
+                string pattern_WL = new String(Array.ConvertAll(pattern_orig.ToCharArray(), c => (char)(c + 0xFF00 - 32)));
                 string pattern = "(" + pattern_orig + "===" + pattern_WL + ")+";
                 string input = "=====" + pattern_orig + "===" + pattern_WL + pattern_orig + "===" + pattern_WL + "===" + pattern_orig + "===" + pattern_orig;
                 int length = 2 * (pattern_orig.Length + 3 + pattern_WL.Length);
-                yield return new object[] { engine, pattern, RegexOptions.None, input, new (int, int, string)[]{(5, length, input.Substring(5, length)) } };
+                yield return new object[] { engine, pattern, RegexOptions.None, input, new (int, int, string)[] { (5, length, input.Substring(5, length)) } };
             }
         }
 
@@ -2542,7 +2553,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [MemberData(nameof(MatchAmbiguousRegexes_TestData))]
-        public async Task MatchAmbiguousRegexes(RegexEngine engine, string pattern, string input, (int,int) expected_match)
+        public async Task MatchAmbiguousRegexes(RegexEngine engine, string pattern, string input, (int, int) expected_match)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
             var match = r.Match(input);
