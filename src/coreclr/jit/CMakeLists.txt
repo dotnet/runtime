@@ -403,6 +403,7 @@ set( JIT_ARM64_HEADERS
     emitfmtsarm64.h
     emitfmtsarm64sve.h
     hwintrinsiclistarm64.h
+    hwintrinsiclistarm64sve.h
     instrsarm64.h
     instrsarm64sve.h
     registerarm64.h

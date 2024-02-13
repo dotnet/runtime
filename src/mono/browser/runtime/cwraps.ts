@@ -9,7 +9,7 @@ import type {
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
 } from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
-import { linkerEnableAotProfiler, linkerEnableBrowserProfiler, Module } from "./globals";
+import { Module, runtimeHelpers } from "./globals";
 import { mono_log_error } from "./logging";
 import { mono_assert } from "./globals";
 
@@ -60,8 +60,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_getenv", "number", ["string"]],
     [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
     // These two need to be lazy because they may be missing
-    [() => !linkerEnableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [() => !linkerEnableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
+    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
     [false, "mono_wasm_invoke_method_bound", "number", ["number", "number", "number"]],
@@ -166,7 +166,7 @@ export interface t_Cwraps {
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
-    mono_wasm_load_runtime(unused: string, debugLevel: number): void;
+    mono_wasm_load_runtime(debugLevel: number): void;
     mono_wasm_change_debugger_log_level(value: number): void;
 
     mono_wasm_assembly_load(name: string): MonoAssembly;

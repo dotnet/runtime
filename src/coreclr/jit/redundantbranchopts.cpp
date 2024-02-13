@@ -1257,10 +1257,10 @@ bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBl
             continue;
         }
 
-        const bool isTruePred = ((predBlock == domBlock) && (domTrueSuccessor == block)) ||
-                                optReachable(domTrueSuccessor, predBlock, domBlock);
-        const bool isFalsePred = ((predBlock == domBlock) && (domFalseSuccessor == block)) ||
-                                 optReachable(domFalseSuccessor, predBlock, domBlock);
+        const bool isTruePred =
+            (predBlock == domBlock) ? (domTrueSuccessor == block) : optReachable(domTrueSuccessor, predBlock, domBlock);
+        const bool isFalsePred = (predBlock == domBlock) ? (domFalseSuccessor == block)
+                                                         : optReachable(domFalseSuccessor, predBlock, domBlock);
 
         if (isTruePred == isFalsePred)
         {

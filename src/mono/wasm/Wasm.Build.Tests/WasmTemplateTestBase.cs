@@ -22,7 +22,7 @@ public abstract class WasmTemplateTestBase : BuildTestBase
         _provider.BundleDirName = "AppBundle";
     }
 
-    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false)
+    public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "", bool runAnalyzers = true, bool addFrameworkArg = false, string? extraProperties = null)
     {
         InitPaths(id);
         InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
@@ -49,7 +49,10 @@ public abstract class WasmTemplateTestBase : BuildTestBase
                 .EnsureSuccessful();
 
         string projectfile = Path.Combine(_projectDir!, $"{id}.csproj");
-        string extraProperties = string.Empty;
+
+        if (extraProperties == null)
+            extraProperties = string.Empty;
+
         extraProperties += "<TreatWarningsAsErrors>true</TreatWarningsAsErrors>";
         if (runAnalyzers)
             extraProperties += "<RunAnalyzers>true</RunAnalyzers>";

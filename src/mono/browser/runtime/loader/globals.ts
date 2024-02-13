@@ -13,9 +13,9 @@ import type { MonoConfig, RuntimeAPI } from "../types";
 import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
-import { mono_log_error, mono_set_thread_name, setup_proxy_console } from "./logging";
+import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-import { deep_merge_config, hasDebuggingEnabled } from "./config";
+import { deep_merge_config, isDebuggingSupported } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 // if we are the first script loaded in the web worker, we are expected to become the sidecar
@@ -102,7 +102,6 @@ export function setLoaderGlobals(
         allDownloadsQueued: createPromiseController<void>(),
         wasmCompilePromise: createPromiseController<WebAssembly.Module>(),
         runtimeModuleLoaded: createPromiseController<void>(),
-        memorySnapshotSkippedOrDone: createPromiseController<void>(),
 
         is_exited,
         is_runtime_running,
@@ -114,14 +113,14 @@ export function setLoaderGlobals(
         mono_download_assets,
         resolve_single_asset_path,
         setup_proxy_console,
-        mono_set_thread_name,
+        set_thread_prefix,
         logDownloadStatsToConsole,
         purgeUnusedCacheEntriesAsync,
         installUnhandledErrorHandler,
 
-        hasDebuggingEnabled,
         retrieve_asset_download,
         invokeLibraryInitializers,
+        isDebuggingSupported,
 
         // from wasm-feature-detect npm package
         exceptions,

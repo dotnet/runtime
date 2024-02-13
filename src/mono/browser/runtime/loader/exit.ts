@@ -108,6 +108,9 @@ export function mono_exit(exit_code: number, reason?: any): void {
                 if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
                     runtimeHelpers.forceDisposeProxies(true, true);
                 }
+                if (WasmEnableThreads && exit_code !== 0 && loaderHelpers.config?.dumpThreadsOnNonZeroExit) {
+                    runtimeHelpers.dumpThreads();
+                }
             }
         }
         catch (err) {
@@ -211,7 +214,6 @@ function abort_promises(reason: any) {
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);
-    loaderHelpers.memorySnapshotSkippedOrDone.promise_control.reject(reason);
     if (runtimeHelpers.dotnetReady) {
         runtimeHelpers.dotnetReady.promise_control.reject(reason);
         runtimeHelpers.afterInstantiateWasm.promise_control.reject(reason);
