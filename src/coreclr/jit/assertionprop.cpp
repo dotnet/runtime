@@ -6343,8 +6343,8 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 }
 
 //------------------------------------------------------------------------------
-// optVNConstantPropCurStmt
-//    Performs constant prop on the current statement's tree nodes.
+// optVNStrengthReductionCurStmt: Performs strength reduction (including constant propagation)
+//    on the current statement's tree nodes using VN.
 //
 // Assumption:
 //    This function is called as part of a post-order tree walk.
@@ -6358,17 +6358,12 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 // Return Value:
 //    Returns the standard visitor walk result.
 //
-// Description:
-//    Checks if a node is an R-value and evaluates to a constant. If the node
-//    evaluates to constant, then the tree is replaced by its side effects and
-//    the constant node.
-//
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
-                                                          Statement*  stmt,
-                                                          GenTree*    parent,
-                                                          GenTree*    tree)
+Compiler::fgWalkResult Compiler::optVNStrengthReductionCurStmt(BasicBlock* block,
+                                                               Statement*  stmt,
+                                                               GenTree*    parent,
+                                                               GenTree*    tree)
 {
-    // Don't perform const prop on expressions marked with GTF_DONT_CSE
+    // Don't perform strength reduction on expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
     if (!tree->CanCSE())
     {
@@ -6456,7 +6451,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
             return WALK_CONTINUE;
     }
 
-    // Perform the constant propagation
+    // Perform the constant propagation first
     GenTree* newTree = optVNConstantPropOnTree(block, parent, tree);
 
     if (newTree == nullptr)
@@ -6544,7 +6539,7 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
+    return pThis->optVNStrengthReductionCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
 }
 
 /*****************************************************************************

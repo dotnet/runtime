@@ -7715,7 +7715,7 @@ protected:
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
-    fgWalkResult optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
+    fgWalkResult optVNStrengthReductionCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree* optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree* optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree);
     GenTree* optVNStrengthReductionOnTree(BasicBlock* block, GenTree* parent, GenTree* tree);
