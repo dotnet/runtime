@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { MonoWorkerToMainMessage, PThreadInfo, pthreadPtr } from "../shared/types";
+import { MonoWorkerToMainMessage, PThreadInfo, PThreadPtr, PThreadPtrNull } from "../shared/types";
 import { MonoThreadMessage, mono_wasm_pthread_ptr, update_thread_info } from "../shared";
 import { PThreadWorker, allocateUnusedWorker, getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "../shared/emscripten-internals";
 import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
@@ -12,23 +12,23 @@ import { mono_log_info } from "../../logging";
 import { monoThreadInfo } from "../worker";
 import { mono_wasm_init_diagnostics } from "../../diagnostics";
 
-const threadPromises: Map<pthreadPtr, PromiseController<Thread>[]> = new Map();
+const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
 
 export interface Thread {
-    readonly pthreadPtr: pthreadPtr;
+    readonly pthreadPtr: PThreadPtr;
     readonly port: MessagePort;
     postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
 }
 
 class ThreadImpl implements Thread {
-    constructor(readonly pthreadPtr: pthreadPtr, readonly worker: Worker, readonly port: MessagePort) { }
+    constructor(readonly pthreadPtr: PThreadPtr, readonly worker: Worker, readonly port: MessagePort) { }
     postMessageToWorker<T extends MonoThreadMessage>(message: T): void {
         this.port.postMessage(message);
     }
 }
 
 /// wait until the thread with the given id has set up a message port to the runtime
-export function waitForThread(pthreadPtr: pthreadPtr): Promise<Thread> {
+export function waitForThread(pthreadPtr: PThreadPtr): Promise<Thread> {
     if (!WasmEnableThreads) return null as any;
     const worker = getWorker(pthreadPtr);
     if (worker?.thread) {
@@ -44,7 +44,7 @@ export function waitForThread(pthreadPtr: pthreadPtr): Promise<Thread> {
     return promiseAndController.promise;
 }
 
-export function resolveThreadPromises(pthreadPtr: pthreadPtr, thread?: Thread): void {
+export function resolveThreadPromises(pthreadPtr: PThreadPtr, thread?: Thread): void {
     if (!WasmEnableThreads) return;
     const arr = threadPromises.get(pthreadPtr);
     if (arr !== undefined) {
@@ -62,13 +62,13 @@ export function resolveThreadPromises(pthreadPtr: pthreadPtr, thread?: Thread): 
 // handler that runs in the main thread when a message is received from a pthread worker
 function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>): void {
     if (!WasmEnableThreads) return;
-    let pthreadId: pthreadPtr;
+    let pthreadId: PThreadPtr;
     // this is emscripten message
     if (ev.data.cmd === "killThread") {
         pthreadId = ev.data["thread"];
         mono_assert(pthreadId == worker.info.pthreadId, "expected pthreadId to match");
         worker.info.isRunning = false;
-        worker.info.pthreadId = 0;
+        worker.info.pthreadId = PThreadPtrNull;
         return;
     }
 

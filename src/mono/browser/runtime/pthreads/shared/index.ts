@@ -9,7 +9,7 @@ import { mono_log_debug, set_thread_prefix } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
 import { GCHandle, GCHandleNull, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
-import { MonoWorkerToMainMessage } from "./types";
+import { MonoWorkerToMainMessage, PThreadPtr, PThreadPtrNull } from "./types";
 import { monoThreadInfo } from "../worker";
 
 /// Messages sent on the dedicated mono channel between a pthread and the browser thread
@@ -73,7 +73,9 @@ export function update_thread_info(): void {
                                 : monoThreadInfo.isExternalEventLoop ? "jsww"
                                     : monoThreadInfo.isBackground ? "back"
                                         : "norm";
-    monoThreadInfo.threadPrefix = `${monoThreadInfo.isRegistered ? "0x" : "--"}${monoThreadInfo.pthreadId.toString(16).padStart(8, "0")}-${threadType}`;
+    const hexPtr = (monoThreadInfo.pthreadId as any).toString(16).padStart(8, "0");
+    const hexPrefix = monoThreadInfo.isRegistered ? "0x" : "--";
+    monoThreadInfo.threadPrefix = `${hexPrefix}${hexPtr}-${threadType}`;
 
     loaderHelpers.set_thread_prefix(monoThreadInfo.threadPrefix!);
     if (!loaderHelpers.config.forwardConsoleLogsToWS) {
@@ -92,13 +94,13 @@ export function update_thread_info(): void {
     }
 }
 
-export function mono_wasm_pthread_ptr(): number {
-    if (!WasmEnableThreads) return 0;
+export function mono_wasm_pthread_ptr(): PThreadPtr {
+    if (!WasmEnableThreads) return PThreadPtrNull;
     return (<any>Module)["_pthread_self"]();
 }
 
-export function mono_wasm_main_thread_ptr(): number {
-    if (!WasmEnableThreads) return 0;
+export function mono_wasm_main_thread_ptr(): PThreadPtr {
+    if (!WasmEnableThreads) return PThreadPtrNull;
     return (<any>Module)["_emscripten_main_runtime_thread_id"]();
 }
 

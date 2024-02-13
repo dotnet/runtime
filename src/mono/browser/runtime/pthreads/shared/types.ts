@@ -4,10 +4,13 @@
 import type { WorkerToMainMessageType } from "../../types/internal";
 
 /// pthread_t in C
-export type pthreadPtr = number;
+export type PThreadPtr = {
+    __brand: "PThreadPtr"
+}
+export const PThreadPtrNull: PThreadPtr = <PThreadPtr><any>0;
 
 export interface PThreadInfo {
-    pthreadId: pthreadPtr;
+    pthreadId: PThreadPtr;
 
     reuseCount: number,
     updateCount: number,

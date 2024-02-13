@@ -25,7 +25,7 @@ import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 // threads
 import { preAllocatePThreadWorkerPool, mono_wasm_init_threads } from "./pthreads/browser";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads/worker";
-import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads/shared";
+import { update_thread_info } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
@@ -348,8 +348,7 @@ export function postRunWorker() {
     const mark = startMeasure();
     try {
         if (runtimeHelpers.proxyGCHandle) {
-            const pthread_ptr = mono_wasm_pthread_ptr();
-            mono_log_warn(`JSSynchronizationContext is still installed on worker 0x${pthread_ptr.toString(16)}.`);
+            mono_log_warn("JSSynchronizationContext is still installed on worker.");
         } else {
             assertNoProxies();
         }
