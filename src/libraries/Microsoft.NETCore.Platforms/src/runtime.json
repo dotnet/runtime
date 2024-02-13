@@ -1498,6 +1498,23 @@
         "fedora-x64"
       ]
     },
+    "fedora.40": {
+      "#import": [
+        "fedora"
+      ]
+    },
+    "fedora.40-arm64": {
+      "#import": [
+        "fedora.40",
+        "fedora-arm64"
+      ]
+    },
+    "fedora.40-x64": {
+      "#import": [
+        "fedora.40",
+        "fedora-x64"
+      ]
+    },
     "freebsd": {
       "#import": [
         "unix"
@@ -3918,6 +3935,35 @@
     "ubuntu.23.10-x86": {
       "#import": [
         "ubuntu.23.10",
+        "ubuntu-x86"
+      ]
+    },
+    "ubuntu.24.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.24.04-arm": {
+      "#import": [
+        "ubuntu.24.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.24.04-arm64": {
+      "#import": [
+        "ubuntu.24.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.24.04-x64": {
+      "#import": [
+        "ubuntu.24.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.24.04-x86": {
+      "#import": [
+        "ubuntu.24.04",
         "ubuntu-x86"
       ]
     },
