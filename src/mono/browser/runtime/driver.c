@@ -181,7 +181,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_load_runtime (const char *unused, int debug_level)
+mono_wasm_load_runtime (int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -189,19 +189,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_link_icu_shim ();
 #endif
 
-#ifndef DISABLE_THREADS
-	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
-#endif
-
-	// monoeg_g_setenv ("DOTNET_DebugWriteToStdErr", "1", 0);
-
-#ifdef DEBUG
-	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
-    // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
-    // output will be sent to the console.  Right now this is the only way to emit debug logging from
-    // corlib assemblies.
-#endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in BrowserWasmApp.targets file
 	const char *appctx_keys[2];
@@ -241,7 +228,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArguments*/, MonoString **out_exc)
+mono_wasm_invoke_method (MonoMethod *method, void* args, MonoString **out_exc)
 {
 	PVOLATILE(MonoObject) temp_exc = NULL;
 
@@ -249,31 +236,10 @@ mono_wasm_invoke_method_bound (MonoMethod *method, void* args /*JSMarshalerArgum
 	int is_err = 0;
 
 	MONO_ENTER_GC_UNSAFE;
-	mono_runtime_invoke (method, NULL, invoke_args, (MonoObject **)&temp_exc);
+	mono_runtime_invoke (method, NULL, args ? invoke_args : NULL, (MonoObject **)&temp_exc);
 
 	// this failure is unlikely because it would be runtime error, not application exception.
 	// the application exception is passed inside JSMarshalerArguments `args`
-	if (temp_exc && out_exc) {
-		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile((MonoObject**)out_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
-		if (exc2)
-			store_volatile((MonoObject**)out_exc, (MonoObject*)mono_string_new (root_domain, "Exception Double Fault"));
-		is_err = 1;
-	}
-	MONO_EXIT_GC_UNSAFE;
-	return is_err;
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_invoke_method_raw (MonoMethod *method, MonoString **out_exc)
-{
-	PVOLATILE(MonoObject) temp_exc = NULL;
-
-	int is_err = 0;
-
-	MONO_ENTER_GC_UNSAFE;
-	mono_runtime_invoke (method, NULL, NULL, (MonoObject **)&temp_exc);
-
 	if (temp_exc && out_exc) {
 		PVOLATILE(MonoObject) exc2 = NULL;
 		store_volatile((MonoObject**)out_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
@@ -372,7 +338,10 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
-	mono_jit_cleanup (root_domain);
+	if (exit_code == 0)
+	{
+		mono_jit_cleanup (root_domain);
+	}
 	fflush (stdout);
 	fflush (stderr);
 	emscripten_force_exit (exit_code);

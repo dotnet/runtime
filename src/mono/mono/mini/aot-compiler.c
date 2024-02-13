@@ -3751,7 +3751,7 @@ static void
 encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
-	guint8 flags = 0;
+	guint32 flags = 0;
 	int i;
 
 	/* Similar to the metadata encoding */
@@ -3759,14 +3759,18 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 		flags |= 0x10;
 	if (sig->hasthis)
 		flags |= 0x20;
-	if (sig->explicit_this)
-		flags |= 0x40;
 	if (sig->pinvoke)
+		flags |= 0x40;
+	if (sig->explicit_this)
 		flags |= 0x80;
+	if (sig->ext_callconv)
+		flags |= 0x100;
 	flags |= (sig->call_convention & 0x0F);
 
-	*p = flags;
-	++p;
+	encode_value (flags, p, &p);
+	if (sig->ext_callconv)
+		encode_value (sig->ext_callconv, p, &p);
+
 	if (sig->generic_param_count)
 		encode_value (sig->generic_param_count, p, &p);
 	encode_value (sig->param_count, p, &p);
@@ -4208,22 +4212,23 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			res->debug_sym = get_plt_entry_debug_sym (acfg, res->ji, acfg->plt_entry_debug_sym_cache);
 		if (synchronized) {
 			/* Avoid duplicate symbols because we don't cache */
+			char *tmp_symbol = res->symbol;
 			res->symbol = g_strdup_printf ("%s_%d", res->symbol, synchronized_symbol_idx);
-			if (res->debug_sym)
+			g_free (tmp_symbol);
+			if (res->debug_sym) {
+				char *tmp_debug_sym = res->debug_sym;
 				res->debug_sym = g_strdup_printf ("%s_%d", res->debug_sym, synchronized_symbol_idx);
+				g_free (tmp_debug_sym);
+			}
 			synchronized_symbol_idx ++;
 		}
 
 		if (res->debug_sym)
-			res->llvm_symbol = g_strdup_printf ("%s_%s_llvm", res->symbol, res->debug_sym);
+			res->llvm_symbol = mono_mempool_strdup_printf (acfg->mempool, "%s_%s_llvm", res->symbol, res->debug_sym);
 		else
-			res->llvm_symbol = g_strdup_printf ("%s_llvm", res->symbol);
-		if (strstr (res->llvm_symbol, acfg->temp_prefix) == res->llvm_symbol) {
-			/* The llvm symbol shouldn't be temporary, since the llvm generated object file references it */
-			char *tmp = res->llvm_symbol;
-			res->llvm_symbol = g_strdup (res->llvm_symbol + strlen (acfg->temp_prefix));
-			g_free (tmp);
-		}
+			res->llvm_symbol = mono_mempool_strdup_printf (acfg->mempool, "%s_llvm", res->symbol);
+		if (strstr (res->llvm_symbol, acfg->temp_prefix) == res->llvm_symbol)
+			res->llvm_symbol = res->llvm_symbol + strlen (acfg->temp_prefix);
 
 		g_hash_table_insert (acfg->patch_to_plt_entry [new_ji->type], new_ji, res);
 
@@ -6999,7 +7004,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 /*
  * sanitize_symbol:
  *
- *   Return a modified version of S which only includes characters permissible in symbols.
+ *   Returns either S or a malloc-ed modified version of S which only includes characters permissible in symbols.
  */
 static char*
 sanitize_symbol (MonoAotCompile *acfg, char *s)
@@ -7041,7 +7046,7 @@ sanitize_symbol (MonoAotCompile *acfg, char *s)
 		}
 	}
 
-	res = mono_mempool_strdup (acfg->mempool, gs->str);
+	res = g_strdup (gs->str);
 	g_string_free (gs, TRUE);
 	return res;
 }
@@ -8035,7 +8040,12 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 
 	g_free (prefix);
 
-	return sanitize_symbol (acfg, debug_sym);
+	char *tmp_debug_sym = debug_sym;
+	debug_sym = sanitize_symbol (acfg, debug_sym);
+	if (tmp_debug_sym != debug_sym)
+		g_free (tmp_debug_sym);
+
+	return debug_sym;
 }
 
 /*
@@ -9422,9 +9432,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		// FIXME: The wrapper should be generic too, but it is not
 		return;
 
-	if (method->wrapper_type == MONO_WRAPPER_COMINTEROP)
-		return;
-
 	if (acfg->aot_opts.profile_only && !g_hash_table_lookup (acfg->profile_methods, method)) {
 		if (acfg->aot_opts.llvm_only) {
 			gboolean keep = FALSE;
@@ -9859,11 +9866,15 @@ mono_aot_get_method_name (MonoCompile *cfg)
 		}
 	}
 
-	if (llvm_acfg->aot_opts.static_link)
+	if (llvm_acfg->aot_opts.static_link) {
 		/* Include the assembly name too to avoid duplicate symbol errors */
-		return g_strdup_printf ("%s_%s", llvm_acfg->assembly_name_sym, get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash));
-	else
+		char *tmp_debug_sym = get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
+		char *debug_sym = g_strdup_printf ("%s_%s", llvm_acfg->assembly_name_sym, tmp_debug_sym);
+		g_free (tmp_debug_sym);
+		return debug_sym;
+	} else {
 		return get_debug_sym (cfg->orig_method, "", llvm_acfg->method_label_hash);
+	}
 }
 
 static gboolean
@@ -12780,7 +12791,7 @@ emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info)
 
 	while (current_unwind_node < last_unwind_node) {
 		guint8 node_count = 0;
-		switch (current_unwind_node->UnwindOp) {
+		switch (current_unwind_node->UnwindCode.UnwindOp) {
 		case UWOP_PUSH_NONVOL:
 		case UWOP_ALLOC_SMALL:
 		case UWOP_SET_FPREG:
@@ -12796,7 +12807,7 @@ emit_unwind_info_data_win32 (MonoAotCompile *acfg, PUNWIND_INFO unwind_info)
 			node_count = 3;
 			break;
 		case UWOP_ALLOC_LARGE:
-			if (current_unwind_node->OpInfo == 0)
+			if (current_unwind_node->UnwindCode.OpInfo == 0)
 				node_count = 2;
 			else
 				node_count = 3;
@@ -14218,7 +14229,7 @@ static void
 acfg_free (MonoAotCompile *acfg)
 {
 #ifdef ENABLE_LLVM
-	if (acfg->aot_opts.llvm)
+	if (mono_use_llvm || acfg->aot_opts.llvm)
 		mono_llvm_free_aot_module ();
 #endif
 
@@ -15368,7 +15379,7 @@ emit_aot_image (MonoAotCompile *acfg)
 			} else {
 				cfg->asm_symbol = g_strdup_printf ("%s%sm_%x", acfg->temp_prefix, acfg->llvm_label_prefix, method_index);
 			}
-			cfg->asm_debug_symbol = cfg->asm_symbol;
+			cfg->asm_debug_symbol = g_strdup (cfg->asm_symbol);
 		}
 	}
 

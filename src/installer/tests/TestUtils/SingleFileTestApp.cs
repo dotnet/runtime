@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public string Bundle(BundleOptions options, out Manifest manifest, Version? bundleVersion = null)
         {
-            string bundleDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "bundle"));
+            string bundleDirectory = GetUniqueSubdirectory("bundle");
             var bundler = new Bundler(
                 Binaries.GetExeFileNameForCurrentPlatform(AppName),
                 bundleDirectory,
@@ -124,7 +124,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public string GetNewExtractionRootPath()
         {
-            return SharedFramework.CalculateUniqueTestDirectory(Path.Combine(Location, "extract"));
+            return GetUniqueSubdirectory("extract");
         }
 
         public DirectoryInfo GetExtractionDir(string root, Manifest manifest)

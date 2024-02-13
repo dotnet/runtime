@@ -2124,8 +2124,12 @@ regMaskTP GenTreeCall::GetOtherRegMask() const
 //
 bool GenTreeCall::IsPure(Compiler* compiler) const
 {
-    return (gtCallType == CT_HELPER) &&
-           compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
+    if (IsHelperCall())
+    {
+        return compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
+    }
+    // If needed, we can annotate other special intrinsic methods as pure as well.
+    return IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle);
 }
 
 //------------------------------------------------------------------------------
@@ -2308,6 +2312,12 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     // calls that can prove them side-effect-free.
     if (gtCallType != CT_HELPER)
     {
+        // If needed, we can annotate other special intrinsic methods as side effect free as well.
+        if (IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -2483,6 +2493,34 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 }
 
 //-------------------------------------------------------------------------
+// IsRuntimeLookupHelperCall: Determine if this GT_CALL node represents a runtime lookup helper call.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeGetHelperNum
+//
+// Return Value:
+//     Returns true if this GT_CALL node represents a runtime lookup helper call.
+//
+bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
+{
+    if (!IsHelperCall())
+    {
+        return false;
+    }
+
+    switch (compiler->eeGetHelperNum(gtCallMethHnd))
+    {
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//-------------------------------------------------------------------------
 // IsSpecialIntrinsic: Determine if this GT_CALL node is a specific intrinsic.
 //
 // Arguments:
@@ -2536,6 +2574,12 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     if (c1->gtCallType != CT_INDIRECT)
     {
         if (c1->gtCallMethHnd != c2->gtCallMethHnd)
+        {
+            return false;
+        }
+
+        if (c1->IsHelperCall() && ((c1->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) !=
+                                   (c2->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL)))
         {
             return false;
         }
@@ -2696,6 +2740,14 @@ AGAIN:
     if ((op1->gtFlags & (GTF_UNSIGNED)) != (op2->gtFlags & (GTF_UNSIGNED)))
     {
         return false;
+    }
+    if (op1->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV))
+    {
+        if ((op1->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) !=
+            (op2->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)))
+        {
+            return false;
+        }
     }
 
     /* Figure out what kind of nodes we're comparing */
@@ -7702,8 +7754,11 @@ GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags i
     {
         iconNode->gtTargetHandle = (size_t)compileTimeHandle;
     }
+    if (iconFlags == GTF_ICON_OBJ_HDL)
+    {
+        iconNode->gtTargetHandle = (size_t)value;
+    }
 #endif
-
     return handleNode;
 }
 
@@ -7716,8 +7771,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     {
         case IAT_VALUE:
             setMethodHasFrozenObjects();
-            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            tree->gtType = TYP_REF;
+            tree = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
@@ -8074,8 +8128,6 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
                 // setMethodHasFrozenObjects here to make caller's life easier.
                 setMethodHasFrozenObjects();
                 GenTree* tree = gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                tree->gtType  = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = val);
                 return tree;
             }
         }
@@ -11979,12 +12031,12 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else
             {
-                ssize_t dspIconVal =
-                    tree->IsIconHandle() ? dspPtr(tree->AsIntCon()->gtIconVal) : tree->AsIntCon()->gtIconVal;
+                ssize_t iconVal    = tree->AsIntCon()->gtIconVal;
+                ssize_t dspIconVal = tree->IsIconHandle() ? dspPtr(iconVal) : iconVal;
 
                 if (tree->TypeGet() == TYP_REF)
                 {
-                    if (tree->AsIntCon()->gtIconVal == 0)
+                    if (iconVal == 0)
                     {
                         printf(" null");
                     }
@@ -11994,12 +12046,12 @@ void Compiler::gtDispConst(GenTree* tree)
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
-                else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
+                else if ((iconVal > -1000) && (iconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
                 }
 #ifdef TARGET_64BIT
-                else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
+                else if ((iconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
                     if (dspIconVal >= 0)
                     {
@@ -12031,13 +12083,13 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" scope");
                             break;
                         case GTF_ICON_CLASS_HDL:
-                            printf(" class");
+                            printf(" class %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                             break;
                         case GTF_ICON_METHOD_HDL:
-                            printf(" method");
+                            printf(" method %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
                             break;
                         case GTF_ICON_FIELD_HDL:
-                            printf(" field");
+                            printf(" field %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
                             break;
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
@@ -16039,7 +16091,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // For unordered operations (i.e. the GTF_RELOP_NAN_UN flag is set)
             // the result is always true - return 1.
 
-            if (_isnan(d1) || _isnan(d2))
+            if (FloatingPointUtils::isNaN(d1) || FloatingPointUtils::isNaN(d2))
             {
                 JITDUMP("Double operator(s) is NaN\n");
 

@@ -85,18 +85,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 capturedSynchronizationContext = SynchronizationContext.Current;
                 jswReady.SetResult();
 
-                var threadFlag = Monitor.ThrowOnBlockingWaitOnJSInteropThread;
-                try
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = false;
-                    
-                    // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
-                    blocker.Wait();
-                }
-                finally
-                {
-                    Monitor.ThrowOnBlockingWaitOnJSInteropThread = threadFlag;
-                }
+                // blocking the worker, so that JSSynchronizationContext could enqueue next tasks
+                Thread.ForceBlockingWait(static (b) => ((ManualResetEventSlim)b).Wait(), blocker);
 
                 return never.Task;
             }, cts.Token);
@@ -449,13 +439,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
         public async Task WaitAssertsOnJSInteropThreads(Executor executor, NamedCall method)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(Task () =>
             {
                 Exception? exception = null;
-                try {
+                try
+                {
                     method.Call(cts.Token);
-                } catch (Exception ex) {
+                }
+                catch (Exception ex)
+                {
                     exception = ex;
                 }
 

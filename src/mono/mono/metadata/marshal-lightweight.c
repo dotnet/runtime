@@ -34,7 +34,6 @@
 #include "mono/metadata/threads-types.h"
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
-#include "mono/metadata/cominterop.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/custom-attrs-internals.h"
@@ -88,23 +87,6 @@ mono_mb_strdup (MonoMethodBuilder *mb, const char *s)
 		res = g_strdup (s);
 	return res;
 }
-
-#ifndef DISABLE_COM
-
-// FIXME There are multiple caches of "Clear".
-G_GNUC_UNUSED
-static MonoMethod*
-mono_get_Variant_Clear (void)
-{
-	MONO_STATIC_POINTER_INIT (MonoMethod, variant_clear)
-		variant_clear = mono_marshal_shared_get_method_nofail (mono_class_get_variant_class (), "Clear", 0, 0);
-	MONO_STATIC_POINTER_INIT_END (MonoMethod, variant_clear)
-
-	g_assert (variant_clear);
-	return variant_clear;
-}
-
-#endif
 
 // FIXME There are multiple caches of "GetObjectForNativeVariant".
 G_GNUC_UNUSED
@@ -602,9 +584,6 @@ typedef struct EmitGCSafeTransitionBuilder {
 	MonoMethodBuilder *mb;
 	gboolean func_param;
 	int coop_gc_var;
-#ifndef DISABLE_COM
-	int coop_cominterop_fnptr;
-#endif
 } GCSafeTransitionBuilder;
 
 static gboolean
@@ -613,9 +592,6 @@ gc_safe_transition_builder_init (GCSafeTransitionBuilder *builder, MonoMethodBui
 	builder->mb = mb;
 	builder->func_param = func_param;
 	builder->coop_gc_var = -1;
-#ifndef DISABLE_COM
-	builder->coop_cominterop_fnptr = -1;
-#endif
 #if defined (TARGET_WASM)
 	#ifndef DISABLE_THREADS
 		return TRUE;
@@ -637,11 +613,6 @@ gc_safe_transition_builder_add_locals (GCSafeTransitionBuilder *builder)
 	MonoType *int_type = mono_get_int_type();
 	/* local 4, the local to be used when calling the suspend funcs */
 	builder->coop_gc_var = mono_mb_add_local (builder->mb, int_type);
-#ifndef DISABLE_COM
-	if (!builder->func_param && MONO_CLASS_IS_IMPORT (builder->mb->method->klass)) {
-		builder->coop_cominterop_fnptr = mono_mb_add_local (builder->mb, int_type);
-	}
-#endif
 }
 
 /**
@@ -652,21 +623,13 @@ gc_safe_transition_builder_add_locals (GCSafeTransitionBuilder *builder)
 static void
 gc_safe_transition_builder_emit_enter (GCSafeTransitionBuilder *builder, MonoMethod *method, gboolean aot)
 {
-
 	// Perform an extra, early lookup of the function address, so any exceptions
 	// potentially resulting from the lookup occur before entering blocking mode.
-	if (!builder->func_param && !MONO_CLASS_IS_IMPORT (builder->mb->method->klass) && aot) {
+	if (!builder->func_param && aot) {
 		mono_mb_emit_byte (builder->mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_op (builder->mb, CEE_MONO_ICALL_ADDR, method);
 		mono_mb_emit_byte (builder->mb, CEE_POP); // Result not needed yet
 	}
-
-#ifndef DISABLE_COM
-	if (!builder->func_param && MONO_CLASS_IS_IMPORT (builder->mb->method->klass)) {
-		mono_mb_emit_cominterop_get_function_pointer (builder->mb, method);
-		mono_mb_emit_stloc (builder->mb, builder->coop_cominterop_fnptr);
-	}
-#endif
 
 	mono_mb_emit_byte (builder->mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (builder->mb, CEE_MONO_GET_SP);
@@ -693,9 +656,6 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
 {
 	builder->mb = NULL;
 	builder->coop_gc_var = -1;
-#ifndef DISABLE_COM
-	builder->coop_cominterop_fnptr = -1;
-#endif
 }
 
 typedef struct EmitGCUnsafeTransitionBuilder {
@@ -837,6 +797,7 @@ emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignatu
 static void
 emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags)
 {
+	g_assert (!MONO_CLASS_IS_IMPORT (mb->method->klass));
 	gboolean aot = (flags & EMIT_NATIVE_WRAPPER_AOT) != 0;
 	gboolean check_exceptions = (flags & EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS) != 0;
 	gboolean func_param = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM) != 0;
@@ -902,7 +863,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	if (need_gc_safe)
 		gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 
-	if (!func && !aot && !func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass)) {
+	if (!func && !aot && !func_param) {
 		/*
 		 * On netcore, its possible to register pinvoke resolvers at runtime, so
 		 * a pinvoke lookup can fail, and then succeed later. So if the
@@ -997,17 +958,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
 		}
 		mono_mb_emit_calli (mb, csig);
-	} else if (MONO_CLASS_IS_IMPORT (mb->method->klass)) {
-#ifndef DISABLE_COM
-		mono_mb_emit_ldloc (mb, gc_safe_transition_builder.coop_cominterop_fnptr);
-		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
-		}
-		mono_mb_emit_cominterop_call_function_pointer (mb, csig);
-#else
-		g_assert_not_reached ();
-#endif
 	} else {
 		if (func_addr_local != -1) {
 			mono_mb_emit_ldloc (mb, func_addr_local);

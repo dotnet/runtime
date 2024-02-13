@@ -519,15 +519,22 @@ namespace System.Reflection.Emit
                 method: methodHandle,
                 instantiation: _metadataBuilder.GetOrAddBlob(MetadataSignatureHelper.GetMethodSpecificationSignature(genericArgs, this)));
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:RequiresDynamicCode", Justification = "Test")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050:RequiresUnreferencedCode", Justification = "Test")]
         private EntityHandle GetMemberReferenceHandle(MemberInfo memberInfo)
         {
             if (!_memberReferences.TryGetValue(memberInfo, out var memberHandle))
             {
-                MemberInfo member = GetOriginalMemberIfConstructedType(memberInfo);
-                switch (member)
+                switch (memberInfo)
                 {
                     case FieldInfo field:
-                        memberHandle = AddMemberReference(field.Name, GetTypeHandle(memberInfo.DeclaringType!),
+                        Type declaringType = field.DeclaringType!;
+                        if (field.DeclaringType!.IsGenericTypeDefinition)
+                        {
+                            //The type of the field has to be fully instantiated type.
+                            declaringType = declaringType.MakeGenericType(declaringType.GetGenericArguments());
+                        }
+                        memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
                             MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
                         break;
                     case ConstructorInfo ctor:
@@ -538,8 +545,13 @@ namespace System.Reflection.Emit
                         {
                             memberHandle = AddMethodSpecification(GetMemberHandle(method.GetGenericMethodDefinition()), method.GetGenericArguments());
                         }
+                        else if (method is ArrayMethod sm)
+                        {
+                            memberHandle = AddMemberReference(sm.Name, GetTypeHandle(sm.DeclaringType!), GetMethodArrayMethodSignature(sm));
+                        }
                         else
                         {
+                            method = (MethodInfo)GetOriginalMemberIfConstructedType(method);
                             memberHandle = AddMemberReference(method.Name, GetTypeHandle(memberInfo.DeclaringType!), GetMethodSignature(method, null));
                         }
                         break;
@@ -573,6 +585,12 @@ namespace System.Reflection.Emit
             MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
 
+        private BlobBuilder GetMethodArrayMethodSignature(ArrayMethod method) => MetadataSignatureHelper.GetMethodSignature(
+            this, method.ParameterTypes, method.ReturnType, GetSignatureConvention(method.CallingConvention), isInstance: IsInstance(method.CallingConvention));
+
+        private static bool IsInstance(CallingConventions callingConvention) =>
+            callingConvention.HasFlag(CallingConventions.HasThis) || callingConvention.HasFlag(CallingConventions.ExplicitThis) ? true : false;
+
         internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention)
         {
             SignatureCallingConvention convention = SignatureCallingConvention.Default;
@@ -585,15 +603,16 @@ namespace System.Reflection.Emit
             return convention;
         }
 
-        private static MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
+        private static MemberInfo GetOriginalMemberIfConstructedType(MethodBase methodBase)
         {
-            Type declaringType = memberInfo.DeclaringType!;
-            if (declaringType.IsConstructedGenericType && declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
+            Type declaringType = methodBase.DeclaringType!;
+            if (declaringType.IsConstructedGenericType && !methodBase.ContainsGenericParameters &&
+                declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
             {
-                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
+                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
             }
 
-            return memberInfo;
+            return methodBase;
         }
 
         private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
@@ -652,8 +671,20 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void AddDefaultValue(EntityHandle parentHandle, object? defaultValue) =>
+        private void AddDefaultValue(EntityHandle parentHandle, object? defaultValue)
+        {
+            if (defaultValue != null)
+            {
+                Type type = defaultValue.GetType();
+                if (type.IsEnum)
+                {
+                    // ECMA spec II.22.9: in case of enum the constant type shall match the underlying type of that enum.
+                    defaultValue = Convert.ChangeType(defaultValue, type.GetEnumUnderlyingType());
+                }
+            }
+
             _metadataBuilder.AddConstant(parent: parentHandle, value: defaultValue);
+        }
 
         private void AddMethodSemantics(EntityHandle parentHandle, MethodSemanticsAttributes attribute, MethodDefinitionHandle methodHandle) =>
             _metadataBuilder.AddMethodSemantics(
@@ -756,11 +787,15 @@ namespace System.Reflection.Emit
         {
             if (type is TypeBuilderImpl tb && Equals(tb.Module))
             {
+                Debug.Assert(tb.IsCreated());
+
                 return tb._handle;
             }
 
             if (type is EnumBuilderImpl eb && Equals(eb.Module))
             {
+                Debug.Assert(eb._typeBuilder.IsCreated());
+
                 return eb._typeBuilder._handle;
             }
 
@@ -772,6 +807,11 @@ namespace System.Reflection.Emit
             if (member is TypeBuilderImpl tb && Equals(tb.Module))
             {
                 return tb._handle;
+            }
+
+            if (member is EnumBuilderImpl en && Equals(en.Module))
+            {
+                return en._typeBuilder._handle;
             }
 
             if (member is Type type)
@@ -789,7 +829,7 @@ namespace System.Reflection.Emit
                 return ctor._methodBuilder._handle;
             }
 
-            if (member is FieldBuilderImpl fb && Equals(fb.Module))
+            if (member is FieldBuilderImpl fb && Equals(fb.Module) && !fb.DeclaringType!.IsGenericTypeDefinition)
             {
                 return fb._handle;
             }
@@ -797,11 +837,6 @@ namespace System.Reflection.Emit
             if (member is PropertyBuilderImpl prop && Equals(prop.Module))
             {
                 return prop._handle;
-            }
-
-            if (member is EnumBuilderImpl en && Equals(en.Module))
-            {
-                return en._typeBuilder._handle;
             }
 
             return GetMemberReferenceHandle(member);
@@ -822,9 +857,9 @@ namespace System.Reflection.Emit
         public override Guid ModuleVersionId => _moduleVersionId;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
 
-        public override int GetFieldMetadataToken(FieldInfo field) => GetTokenForHandle(GetFieldHandle(field));
+        public override int GetFieldMetadataToken(FieldInfo field) => GetTokenForHandle(TryGetFieldHandle(field));
 
-        internal EntityHandle GetFieldHandle(FieldInfo field)
+        internal EntityHandle TryGetFieldHandle(FieldInfo field)
         {
             if (field is FieldBuilderImpl fb)
             {
@@ -855,11 +890,50 @@ namespace System.Reflection.Emit
         }
 
         private static bool IsConstructedFromNotBakedTypeBuilder(Type type) => type.IsConstructedGenericType &&
-            type.GetGenericTypeDefinition() is TypeBuilderImpl tb && tb._handle == default;
+            (type.GetGenericTypeDefinition() is TypeBuilderImpl tb && tb._handle == default ||
+             ContainsNotBakedTypeBuilder(type.GetGenericArguments()));
 
-        public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(GetConstructorHandle(constructor));
+        private static bool ContainsNotBakedTypeBuilder(Type[] genericArguments)
+        {
+            foreach (Type type in genericArguments)
+            {
+                if (type is TypeBuilderImpl tb && tb._handle == default)
+                {
+                    return true;
+                }
 
-        internal EntityHandle GetConstructorHandle(ConstructorInfo constructor)
+                if (IsConstructedFromNotBakedTypeBuilder(type))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal EntityHandle TryGetTypeHandle(Type type)
+        {
+            if (type is TypeBuilderImpl tb && Equals(tb.Module))
+            {
+                return tb._handle;
+            }
+
+            if (type is EnumBuilderImpl eb && Equals(eb.Module))
+            {
+                return eb._typeBuilder._handle;
+            }
+
+            if (IsConstructedFromNotBakedTypeBuilder(type))
+            {
+                return default;
+            }
+
+            return GetTypeReferenceOrSpecificationHandle(type);
+        }
+
+        public override int GetMethodMetadataToken(ConstructorInfo constructor) => GetTokenForHandle(TryGetConstructorHandle(constructor));
+
+        internal EntityHandle TryGetConstructorHandle(ConstructorInfo constructor)
         {
             if (constructor is ConstructorBuilderImpl cb)
             {
@@ -869,22 +943,31 @@ namespace System.Reflection.Emit
             return GetHandleForMember(constructor);
         }
 
-        public override int GetMethodMetadataToken(MethodInfo method) => GetTokenForHandle(GetMethodHandle(method));
+        public override int GetMethodMetadataToken(MethodInfo method) => GetTokenForHandle(TryGetMethodHandle(method));
 
-        internal EntityHandle GetMethodHandle(MethodInfo method)
+        internal EntityHandle TryGetMethodHandle(MethodInfo method)
         {
             if (method is MethodBuilderImpl mb)
             {
                 return mb._handle;
             }
 
+            if (IsConstructedMethodFromNotBakedMethodBuilder(method) ||
+                IsArrayMethodFromNotBakedTypeBuilder(method))
+            {
+                return default;
+            }
+
             return GetHandleForMember(method);
         }
 
-        private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) =>
-            method.IsConstructedGenericMethod && method.GetGenericMethodDefinition() is MethodBuilderImpl mb2 && mb2._handle == default;
+        private static bool IsArrayMethodFromNotBakedTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
+            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl tb && tb._handle == default;
 
-        internal EntityHandle GetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
+        private static bool IsConstructedMethodFromNotBakedMethodBuilder(MethodInfo method) =>
+            method.IsConstructedGenericMethod && method.GetGenericMethodDefinition() is MethodBuilderImpl mb && mb._handle == default;
+
+        internal EntityHandle TryGetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
             if ((method.CallingConvention & CallingConventions.VarArgs) == 0)
             {
@@ -922,7 +1005,7 @@ namespace System.Reflection.Emit
 
         public override int GetStringMetadataToken(string stringConstant) => MetadataTokens.GetToken(_metadataBuilder.GetOrAddUserString(stringConstant));
 
-        public override int GetTypeMetadataToken(Type type) => GetTokenForHandle(GetTypeHandle(type));
+        public override int GetTypeMetadataToken(Type type) => GetTokenForHandle(TryGetTypeHandle(type));
 
         protected override void CreateGlobalFunctionsCore()
         {
@@ -1011,7 +1094,22 @@ namespace System.Reflection.Emit
             return field;
         }
 
-        protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
+        protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName,
+            CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes)
+        {
+            if (!arrayClass.IsArray)
+            {
+                throw new ArgumentException(SR.Argument_HasToBeArrayClass);
+            }
+
+            // GetArrayMethod is useful when you have an array of a type whose definition has not been completed and
+            // you want to access methods defined on Array. For example, you might define a type and want to define a
+            // method that takes an array of the type as a parameter. In order to access the elements of the array,
+            // you will need to call methods of the Array class.
+
+            return new ArrayMethod(this, arrayClass, methodName, callingConvention, returnType, parameterTypes);
+        }
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             _customAttributes ??= new List<CustomAttributeWrapper>();
