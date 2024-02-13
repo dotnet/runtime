@@ -798,7 +798,7 @@ static void HoldContextAndInvokeActivationHandler(CONTEXT* pWinContext)
     CONTEXT* winContext = pWinContext;
     g_inject_activation_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
     int savedErrNo = errno; // Make sure that errno is not modified
-    InvokeActivationHandler(&winContext);
+    InvokeActivationHandler(winContext);
     errno = savedErrNo;
 }
 
