@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -12,17 +11,14 @@ namespace System.Reflection
     internal sealed class FieldAccessor
     {
         private readonly RtFieldInfo _fieldInfo;
-        private readonly IntPtr _addressOrOffset;
-        private readonly unsafe MethodTable* _methodTable;
+        private IntPtr _addressOrOffset;
+        private unsafe MethodTable* _methodTable;
         private FieldAccessorType _fieldAccessType;
 
         internal FieldAccessor(FieldInfo fieldInfo)
         {
             _fieldInfo = (RtFieldInfo)fieldInfo;
 
-            InitializeClass();
-
-            Debug.Assert(_fieldInfo.m_declaringType != null);
             if (_fieldInfo.m_declaringType.ContainsGenericParameters ||
                 _fieldInfo.m_declaringType.IsNullableOfT)
             {
@@ -31,35 +27,31 @@ namespace System.Reflection
             else
             {
                 _fieldAccessType = FieldAccessorType.SlowPathUntilClassInitialized;
-
-                if (RuntimeFieldHandle.IsFastPathSupported(_fieldInfo))
-                {
-                    // Initialize the readonly fields.
-                    _addressOrOffset = _fieldInfo.IsStatic ?
-                        RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo) :
-                        RuntimeFieldHandle.GetInstanceFieldOffset(_fieldInfo);
-
-                    unsafe
-                    {
-                        _methodTable = _fieldInfo.FieldType.IsFunctionPointer ?
-                            (MethodTable*) typeof(IntPtr).TypeHandle.Value :
-                            (MethodTable*) _fieldInfo.FieldType.TypeHandle.Value;
-                    }
-                }
             }
         }
 
         private void Initialize()
         {
-            RuntimeType fieldType = (RuntimeType)_fieldInfo.FieldType;
+            Debug.Assert(_fieldInfo.m_declaringType != null);
 
             if (!RuntimeFieldHandle.IsFastPathSupported(_fieldInfo))
             {
                 // Currently this is true for [ThreadStatic] cases, for fields added from EnC, and for fields on unloadable types.
                 _fieldAccessType = FieldAccessorType.SlowPath;
+                return;
             }
-            else if (_fieldInfo.IsStatic)
+
+            unsafe
             {
+                _methodTable = (MethodTable*)_fieldInfo.FieldType.TypeHandle.Value;
+            }
+
+            RuntimeType fieldType = (RuntimeType)_fieldInfo.FieldType;
+
+            if (_fieldInfo.IsStatic)
+            {
+                _addressOrOffset = RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo);
+
                 if (fieldType.IsValueType)
                 {
                     if (fieldType.IsEnum)
@@ -83,6 +75,11 @@ namespace System.Reflection
                 else if (fieldType.IsFunctionPointer)
                 {
                     _fieldAccessType = GetIntPtrAccessorTypeForStatic();
+
+                    unsafe
+                    {
+                        _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
+                    }
                 }
                 else
                 {
@@ -91,6 +88,8 @@ namespace System.Reflection
             }
             else
             {
+                _addressOrOffset = RuntimeFieldHandle.GetInstanceFieldOffset(_fieldInfo);
+
                 if (fieldType.IsEnum)
                 {
                     _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType());
@@ -106,6 +105,11 @@ namespace System.Reflection
                 else if (fieldType.IsFunctionPointer)
                 {
                     _fieldAccessType = GetIntPtrAccessorTypeForInstance();
+
+                    unsafe
+                    {
+                        _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
+                    }
                 }
                 else
                 {
@@ -285,25 +289,23 @@ namespace System.Reflection
                         return;
 
                     case FieldAccessorType.SlowPathUntilClassInitialized:
+                        if (IsStatic())
                         {
-                            if (IsStatic())
-                            {
-                                VerifyStaticField(ref value, invokeAttr, binder, culture);
-                            }
-                            else
-                            {
-                                VerifyInstanceField(obj, ref value, invokeAttr, binder, culture);
-                            }
-
-                            isClassInitialized = false;
-                            RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
-                            if (isClassInitialized)
-                            {
-                                Initialize();
-                            }
-
-                            return;
+                            VerifyStaticField(ref value, invokeAttr, binder, culture);
                         }
+                        else
+                        {
+                            VerifyInstanceField(obj, ref value, invokeAttr, binder, culture);
+                        }
+
+                        isClassInitialized = false;
+                        RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
+                        if (isClassInitialized)
+                        {
+                            Initialize();
+                        }
+
+                        return;
 
                     case FieldAccessorType.NoInvoke:
                         if (_fieldInfo.DeclaringType is not null && _fieldInfo.DeclaringType.ContainsGenericParameters)
@@ -313,7 +315,7 @@ namespace System.Reflection
                 }
             }
 
-            // Slow path
+            // All other cases use the slow path.
             if (IsStatic())
             {
                 VerifyStaticField(ref value, invokeAttr, binder, culture);
@@ -325,30 +327,6 @@ namespace System.Reflection
 
             isClassInitialized = true;
             RuntimeFieldHandle.SetValue(_fieldInfo, obj, value, (RuntimeType)_fieldInfo.FieldType, _fieldInfo.m_declaringType, ref isClassInitialized);
-        }
-
-        private void InitializeClass()
-        {
-            if (_fieldInfo.DeclaringType is null)
-            {
-                RunModuleConstructor(_fieldInfo.Module);
-            }
-            else
-            {
-                RunClassConstructor(_fieldInfo);
-            }
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",
-                Justification = "This represents the static constructor, so if this object was created, the static constructor exists.")]
-            static void RunClassConstructor(FieldInfo fieldInfo)
-            {
-                RuntimeHelpers.RunClassConstructor(fieldInfo.DeclaringType!.TypeHandle);
-            }
-
-            static void RunModuleConstructor(Module module)
-            {
-                RuntimeHelpers.RunModuleConstructor(module.ModuleHandle);
-            }
         }
 
         private bool IsStatic() => (_fieldInfo.Attributes & FieldAttributes.Static) == FieldAttributes.Static;
@@ -526,9 +504,9 @@ namespace System.Reflection
             StaticValueTypeSize8,
             StaticValueTypeBoxed,
             StaticPointerType,
-            NoInvoke,
             SlowPathUntilClassInitialized,
             SlowPath,
+            NoInvoke,
         }
     }
 }

@@ -4488,7 +4488,7 @@ Exit:
 
 //==========================================================================================
 // Returns true if the class is initialized.
-BOOL MethodTable::CheckRunClassInitThrowing()
+void MethodTable::CheckRunClassInitThrowing()
 {
     CONTRACTL
     {
@@ -4507,11 +4507,11 @@ BOOL MethodTable::CheckRunClassInitThrowing()
     TRIGGERSGC();
 
     if (IsClassPreInited())
-        return TRUE;
+        return;
 
     // Don't initialize shared generic instantiations (e.g. MyClass<__Canon>)
     if (IsSharedByGenericInstantiations())
-        return TRUE;
+        return;
 
     DomainLocalModule *pLocalModule = GetDomainLocalModule();
     _ASSERTE(pLocalModule);
@@ -4522,11 +4522,8 @@ BOOL MethodTable::CheckRunClassInitThrowing()
     if (!pLocalModule->IsClassAllocated(this, iClassIndex))
         pLocalModule->PopulateClass(this);
 
-    if (pLocalModule->IsClassInitialized(this, iClassIndex))
-        return TRUE;
-
-    DoRunClassInitThrowing();
-    return pLocalModule->IsClassInitialized(this, iClassIndex);       
+    if (!pLocalModule->IsClassInitialized(this, iClassIndex))
+        DoRunClassInitThrowing();
 }
 
 //==========================================================================================

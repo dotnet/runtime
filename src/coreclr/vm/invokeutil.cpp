@@ -791,7 +791,8 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
-            *pIsClassInitialized = pDeclMT->CheckRunClassInitThrowing();
+            pDeclMT->CheckRunClassInitThrowing();
+            *pIsClassInitialized = pDeclMT->IsClassInited();            
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
@@ -1014,7 +1015,8 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
-            *pIsClassInitialized = pDeclMT->CheckRunClassInitThrowing();
+            pDeclMT->CheckRunClassInitThrowing();
+            *pIsClassInitialized = pDeclMT->IsClassInited();
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
