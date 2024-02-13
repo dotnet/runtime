@@ -1690,7 +1690,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
     snprintf(statFileName, sizeof(statFileName), "/proc/%d/stat", processId);
     _ASSERTE(chars > 0 && chars <= (int)sizeof(statFileName));
 
-    FILE *statFile = fopen(statFileName, "rb");
+    FILE *statFile = fopen(statFileName, "r");
     if (statFile == nullptr)
     {
         TRACE("GetProcessIdDisambiguationKey: fopen() FAILED");
