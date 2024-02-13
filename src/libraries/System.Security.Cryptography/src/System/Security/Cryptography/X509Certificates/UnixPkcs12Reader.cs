@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs12;
@@ -126,7 +127,8 @@ namespace System.Security.Cryptography.X509Certificates
             // never accessed by a second thread, and there isn't a manual call to Dispose
             // mixed in anywhere outside of an aborted allocation path.
 
-            PointerMemoryManager<byte>? manager = Interlocked.Exchange(ref _tmpManager, null);
+            PointerMemoryManager<byte>? manager = _tmpManager;
+            _tmpManager = null;
 
             if (manager != null)
             {
@@ -134,18 +136,16 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     Span<byte> tmp = manager.GetSpan();
                     CryptographicOperations.ZeroMemory(tmp);
-
-                    fixed (byte* ptr = tmp)
-                    {
-                        NativeMemory.Free(ptr);
-                    }
+                    NativeMemory.Free(Unsafe.AsPointer(ref MemoryMarshal.GetReference(tmp)));
                 }
 
                 ((IDisposable)manager).Dispose();
             }
 
-            ContentInfoAsn[]? rentedContents = Interlocked.Exchange(ref _safeContentsValues, null);
-            CertAndKey[]? rentedCerts = Interlocked.Exchange(ref _certs, null);
+            ContentInfoAsn[]? rentedContents = _safeContentsValues;
+            CertAndKey[]? rentedCerts = _certs;
+            _safeContentsValues = null;
+            _certs = null;
 
             if (rentedContents != null)
             {
