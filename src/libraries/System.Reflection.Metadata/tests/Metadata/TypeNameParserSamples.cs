@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -12,65 +13,12 @@ namespace System.Reflection.Metadata.Tests
 {
     public class TypeNameParserSamples
     {
-        [Fact]
-        public void CanImplementSerializationBinder()
-        {
-            SerializableClass parent = new()
-            {
-                Integer = 1,
-                Text = "parent",
-                Dates = new List<DateTime>()
-                {
-                    DateTime.Parse("02/06/2024")
-                }
-            };
-            SerializableClass child = new()
-            {
-                Integer = 2,
-                Text = "child"
-            };
-            parent.Array = new SerializableClass[] { child };
-
-            SampleSerializationBinder binder = new(
-                allowedCustomElementalTypes: new HashSet<Type>(new Type[]
-                {
-                    typeof(SerializableClass),
-                }));
-
-            BinaryFormatter bf = new()
-            {
-                Binder = binder
-            };
-            using MemoryStream bfStream = new();
-            bf.Serialize(bfStream, parent);
-            bfStream.Position = 0;
-
-            SerializableClass deserialized = (SerializableClass)bf.Deserialize(bfStream);
-
-            Assert.Equal(parent.Integer, deserialized.Integer);
-            Assert.Equal(parent.Text, deserialized.Text);
-            Assert.Equal(parent.Dates.Count, deserialized.Dates.Count);
-            for (int i = 0; i < deserialized.Dates.Count; i++)
-            {
-                Assert.Equal(parent.Dates[i], deserialized.Dates[i]);
-            }
-            Assert.Equal(parent.Array.Length, deserialized.Array.Length);
-            for (int i = 0; i < deserialized.Array.Length; i++)
-            {
-                Assert.Equal(parent.Array[i].Integer, deserialized.Array[i].Integer);
-                Assert.Equal(parent.Array[i].Text, deserialized.Array[i].Text);
-            }
-        }
-
         internal sealed class SampleSerializationBinder : SerializationBinder
         {
-            private static readonly TypeNameParserOptions _options = new()
-            {
-                AllowFullyQualifiedName = false // we parse only type names
-            };
+            private static TypeNameParserOptions _options;
 
-            // we could use Frozen collections here!
-            private readonly static Dictionary<string, Type> _alwaysAllowedElementalTypes = new()
+            // we could use Frozen collections here ;)
+            private readonly static Dictionary<string, Type> _alwaysAllowed = new()
             {
                 { typeof(string).FullName, typeof(string) },
                 { typeof(int).FullName, typeof(int) },
@@ -90,53 +38,37 @@ namespace System.Reflection.Metadata.Tests
                 { typeof(Uri).FullName, typeof(Uri) },
                 { typeof(DateTimeOffset).FullName, typeof(DateTimeOffset) },
                 { typeof(Version).FullName, typeof(Version) },
+                { typeof(Nullable).FullName, typeof(Nullable) }, // Nullable is generic!
             };
 
-            private static readonly Dictionary<string, Type> _alwaysAllowedOpenGenericTypes = new()
-            {
-                { typeof(Nullable).FullName, typeof(Nullable) },
-                { typeof(List<>).FullName, typeof(List<>) },
-            };
+            private readonly Dictionary<string, Type>? _userDefined;
 
-            private readonly Dictionary<string, Type>? _allowedCustomElementalTypes, _allowedCustomOpenGenericTypes;
-
-            public SampleSerializationBinder(
-                HashSet<Type>? allowedCustomElementalTypes,
-                HashSet<Type>? allowedCustomOpenGenericTypes = null)
-            {
-                if (allowedCustomElementalTypes is not null)
-                {
-                    foreach (var type in allowedCustomElementalTypes)
-                    {
-                        if (type.IsGenericType || type.IsByRef || type.IsPointer || type.IsArray)
-                        {
-                            throw new ArgumentException($"{type.FullName} is not an elemental type");
-                        }
-                    }
-                }
-
-                if (allowedCustomOpenGenericTypes is not null)
-                {
-                    foreach (var type in allowedCustomOpenGenericTypes)
-                    {
-                        if (!type.IsGenericTypeDefinition || type.IsByRef || type.IsPointer || type.IsArray)
-                        {
-                            throw new ArgumentException($"{type.FullName} is not an open generic type");
-                        }
-                    }
-                }
-
-                _allowedCustomElementalTypes = allowedCustomElementalTypes?.ToDictionary(type => type.FullName);
-                _allowedCustomOpenGenericTypes = allowedCustomOpenGenericTypes?.ToDictionary(type => type.FullName);
-            }
+            public SampleSerializationBinder(Type[]? allowedTypes = null)
+                => _userDefined = allowedTypes?.ToDictionary(type => type.FullName);
 
             public override Type? BindToType(string assemblyName, string typeName)
             {
-                // fast path for common primitive types like int, bool and string
-                if (_alwaysAllowedElementalTypes.TryGetValue(typeName, out Type type))
+                // Fast path for common primitive type names and user-defined type names
+                // that use the same syntax and casing as System.Type.FullName API.
+                if (TryGetTypeFromFullName(typeName, out Type type))
                 {
                     return type;
                 }
+
+                _options ??= new() // there is no need for lazy initialization, I just wanted to have everything important in one method
+                {
+                    // We parse only type names, because the attackers may create such a payload,
+                    // where "typeName" passed to BindToType contains the assembly name
+                    // and "assemblyName" passed to this method contains something else
+                    // (some garbage or a different assembly name). Example:
+                    // typeName: System.Int32, MyHackyDll.dll
+                    // assemblyName: mscorlib.dll
+                    AllowFullyQualifiedName = false,
+                    // To prevent from unbounded recursion, we set the max depth for parser options.
+                    // By ensuring that the max depth limit is enforced, we can safely use recursion in
+                    // GetTypeFromParsedTypeName to get arrays of arrays and generics of generics.
+                    MaxRecursiveDepth = 10
+                };
 
                 if (!TypeName.TryParse(typeName.AsSpan(), out TypeName parsed, _options))
                 {
@@ -144,73 +76,175 @@ namespace System.Reflection.Metadata.Tests
                     throw new InvalidOperationException($"Invalid type name: '{typeName}'");
                 }
 
-                if (parsed.IsElementalType) // not a pointer, generic, array or managed reference
-                {
-                    if (TryGetElementalTypeFromFullName(parsed.FullName, out type))
-                    {
-                        return type;
-                    }
+                return GetTypeFromParsedTypeName(parsed);
+            }
 
-                    throw new ArgumentException($"{parsed.FullName} is not on the allow list.");
+            private Type? GetTypeFromParsedTypeName(TypeName parsed)
+            {
+                if (TryGetTypeFromFullName(parsed.FullName, out Type type))
+                {
+                    return type;
                 }
                 else if (parsed.IsArray)
                 {
-                    TypeName arrayElementType = parsed.UnderlyingType;
-                    if (TryGetElementalTypeFromFullName(arrayElementType.FullName, out type))
-                    {
-                        return arrayElementType.IsSzArrayType
-                            ? type.MakeArrayType()
-                            : type.MakeArrayType(parsed.GetArrayRank());
-                    }
+                    TypeName arrayElementTypeName = parsed.UnderlyingType; // equivalent of type.GetElementType()
+                    Type arrayElementType = GetTypeFromParsedTypeName(arrayElementTypeName); // recursive call allows for creating arrays of arrays etc
 
-                    throw new ArgumentException($"{parsed.FullName} (array) is not on the allow list.");
+                    return parsed.IsSzArrayType
+                            ? arrayElementType.MakeArrayType()
+                            : arrayElementType.MakeArrayType(parsed.GetArrayRank());
                 }
                 else if (parsed.IsConstructedGenericType)
                 {
-                    TypeName genericTypeDefinition = parsed.UnderlyingType;
-                    if (TryGetOpenGenericTypeFromFullName(genericTypeDefinition.FullName, out type))
+                    TypeName genericTypeDefinitionName = parsed.UnderlyingType; // equivalent of type.GetGenericTypeDefinition()
+                    Type genericTypeDefinition = GetTypeFromParsedTypeName(genericTypeDefinitionName);
+                    Debug.Assert(genericTypeDefinition.IsGenericTypeDefinition);
+
+                    TypeName[] genericArgs = parsed.GetGenericArguments();
+                    Type[] typeArguments = new Type[genericArgs.Length];
+                    for (int i = 0; i < genericArgs.Length; i++)
                     {
-                        TypeName[] genericArguments = parsed.GetGenericArguments();
-                        Type[] types = new Type[genericArguments.Length];
-                        for (int i = 0; i < genericArguments.Length; i++ )
-                        {
-                            if (!TryGetElementalTypeFromFullName(genericArguments[i].FullName, out types[i]))
-                            {
-                                throw new ArgumentException($"{genericArguments[i].FullName} (generic argument) is not on the allow list.");
-                            }
-                        }
-                        return type.MakeGenericType(types);
+                        typeArguments[i] = GetTypeFromParsedTypeName(genericArgs[i]); // recursive call allows for generics of generics like "List<int?>"
                     }
-                    throw new ArgumentException($"{parsed.FullName} (generic) is not on the allow list.");
+                    return genericTypeDefinition.MakeGenericType(typeArguments);
                 }
 
                 throw new ArgumentException($"{parsed.FullName} is not on the allow list.");
             }
 
-            private bool TryGetElementalTypeFromFullName(string fullName, out Type? type)
-            {
-                type = null;
-
-                return (_alwaysAllowedElementalTypes is not null && _alwaysAllowedElementalTypes.TryGetValue(fullName, out type))
-                    || (_allowedCustomElementalTypes is not null && _allowedCustomElementalTypes.TryGetValue(fullName, out type));
-            }
-
-            private bool TryGetOpenGenericTypeFromFullName(string fullName, out Type? type)
-            {
-                type = null;
-
-                return (_alwaysAllowedOpenGenericTypes is not null && _alwaysAllowedOpenGenericTypes.TryGetValue(fullName, out type))
-                    || (_allowedCustomOpenGenericTypes is not null && _allowedCustomOpenGenericTypes.TryGetValue(fullName, out type));
-            }
+            private bool TryGetTypeFromFullName(string fullName, out Type? type)
+                => _alwaysAllowed.TryGetValue(fullName, out type)
+                || (_userDefined is not null && _userDefined.TryGetValue(fullName, out type));
         }
 
         [Serializable]
-        public class SerializableClass
+        public class CustomUserDefinedType
         {
             public int Integer { get; set; }
             public string Text { get; set; }
-            public List<DateTime> Dates { get; set; }
-            public SerializableClass[] Array { get; set; }
+            public List<DateTime> ListOfDates { get; set; }
+            public CustomUserDefinedType[] ArrayOfCustomUserDefinedTypes { get; set; }
+        }
+
+        [Fact]
+        public void CanDeserializeCustomUserDefinedType()
+        {
+            CustomUserDefinedType parent = new()
+            {
+                Integer = 1,
+                Text = "parent",
+                ListOfDates = new List<DateTime>()
+                {
+                    DateTime.Parse("02/06/2024")
+                },
+                ArrayOfCustomUserDefinedTypes = new []
+                {
+                    new CustomUserDefinedType()
+                    {
+                        Integer = 2,
+                        Text = "child"
+                    }
+                }
+            };
+            SampleSerializationBinder binder = new(
+                allowedTypes:
+                [
+                    typeof(CustomUserDefinedType),
+                    typeof(List<>) // TODO adsitnik: make it work for List<DateTime> too (currently does not work due to type forwarding)
+                ]);
+
+            CustomUserDefinedType deserialized = SerializeDeserialize(parent, binder);
+
+            Assert.Equal(parent.Integer, deserialized.Integer);
+            Assert.Equal(parent.Text, deserialized.Text);
+            Assert.Equal(parent.ListOfDates.Count, deserialized.ListOfDates.Count);
+            for (int i = 0; i < deserialized.ListOfDates.Count; i++)
+            {
+                Assert.Equal(parent.ListOfDates[i], deserialized.ListOfDates[i]);
+            }
+            Assert.Equal(parent.ArrayOfCustomUserDefinedTypes.Length, deserialized.ArrayOfCustomUserDefinedTypes.Length);
+            for (int i = 0; i < deserialized.ArrayOfCustomUserDefinedTypes.Length; i++)
+            {
+                Assert.Equal(parent.ArrayOfCustomUserDefinedTypes[i].Integer, deserialized.ArrayOfCustomUserDefinedTypes[i].Integer);
+                Assert.Equal(parent.ArrayOfCustomUserDefinedTypes[i].Text, deserialized.ArrayOfCustomUserDefinedTypes[i].Text);
+            }
+        }
+
+        [Fact]
+        public void CanDeserializeDictionaryUsingNonPublicComparerType()
+        {
+            Dictionary<string, int> dictionary = new(StringComparer.CurrentCulture)
+            {
+                { "test", 1 }
+            };
+            SampleSerializationBinder binder = new(
+                allowedTypes:
+                [
+                    typeof(Dictionary<,>), // this could be Dictionary<string, int> to be more strict
+                    StringComparer.CurrentCulture.GetType(), // this type is not public, this is all this test is about
+                    typeof(Globalization.CompareOptions),
+                    typeof(Globalization.CompareInfo),
+                    typeof(KeyValuePair<,>), // this could be KeyValuePair<string, int> to be more strict
+                ]);
+
+            Dictionary<string, int> deserialized = SerializeDeserialize(dictionary, binder);
+
+            Assert.Equal(dictionary, deserialized);
+        }
+
+        [Fact]
+        public void CanDeserializeArraysOfArrays()
+        {
+            int[][] arrayOfArrays = new int[10][];
+            for (int i = 0; i < arrayOfArrays.Length; i++)
+            {
+                arrayOfArrays[i] = Enumerable.Repeat(i, 10).ToArray();
+            }
+
+            SampleSerializationBinder binder = new();
+            int[][] deserialized = SerializeDeserialize(arrayOfArrays, binder);
+
+            Assert.Equal(arrayOfArrays.Length, deserialized.Length);
+            for (int i = 0; i < arrayOfArrays.Length; i++)
+            {
+                Assert.Equal(arrayOfArrays[i], deserialized[i]);
+            }
+        }
+
+        [Fact]
+        public void CanDeserializeListOfListOfInt()
+        {
+            List<List<int>> listOfListOfInts = new(10);
+            for (int i = 0; i < listOfListOfInts.Count; i++)
+            {
+                listOfListOfInts[i] = Enumerable.Repeat(i, 10).ToList();
+            }
+
+            SampleSerializationBinder binder = new(allowedTypes:
+                [
+                    typeof(List<>)
+                ]);
+            List<List<int>> deserialized = SerializeDeserialize(listOfListOfInts, binder);
+
+            Assert.Equal(listOfListOfInts.Count, deserialized.Count);
+            for (int i = 0; i < listOfListOfInts.Count; i++)
+            {
+                Assert.Equal(listOfListOfInts[i], deserialized[i]);
+            }
+        }
+
+        static T SerializeDeserialize<T>(T instance, SerializationBinder binder)
+        {
+            using MemoryStream bfStream = new();
+            BinaryFormatter bf = new()
+            {
+                Binder = binder
+            };
+
+            bf.Serialize(bfStream, instance);
+            bfStream.Position = 0;
+
+            return (T)bf.Deserialize(bfStream);
         }
     }
 }
