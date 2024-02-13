@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
         protected abstract ICertificatePalCore ReadX509Der(ReadOnlyMemory<byte> data);
         protected abstract AsymmetricAlgorithm LoadKey(ReadOnlyMemory<byte> safeBagBagValue);
 
-        protected void ParsePkcs12(ReadOnlySpan<byte> data)
+        internal void ParsePkcs12(ReadOnlySpan<byte> data)
         {
             try
             {
@@ -42,10 +42,24 @@ namespace System.Security.Cryptography.X509Certificates
 
                 unsafe
                 {
-                    IntPtr tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
-                    Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
-                    encodedData.CopyTo(tmpSpan);
-                    _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
+                    IntPtr tmpPtr = IntPtr.Zero;
+
+                    try
+                    {
+                        tmpPtr = Marshal.AllocHGlobal(encodedData.Length);
+                        Span<byte> tmpSpan = new Span<byte>((byte*)tmpPtr, encodedData.Length);
+                        encodedData.CopyTo(tmpSpan);
+                        _tmpManager = new PointerMemoryManager<byte>((void*)tmpPtr, encodedData.Length);
+                    }
+                    catch
+                    {
+                        if (tmpPtr != IntPtr.Zero)
+                        {
+                            Marshal.FreeHGlobal(tmpPtr);
+                        }
+
+                        throw;
+                    }
                 }
 
                 ReadOnlyMemory<byte> tmpMemory = _tmpManager.Memory;
