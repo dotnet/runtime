@@ -12,6 +12,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/reflection.h>
 #include <mono/jit/jit.h>
 
 #include "wasm-config.h"
@@ -26,7 +27,7 @@ extern void mono_wasm_set_entrypoint_breakpoint (int entry_point_metadata_token)
 
 typedef void (*background_job_cb)(void);
 
-void mono_wasm_set_entry_assembly (MonoAssembly *assembly, int entry_point_metadata_token);
+void mono_wasm_set_entry_assembly (MonoReflectionAssembly* ref_assembly, int entry_point_metadata_token);
 
 #ifndef DISABLE_THREADS
 void mono_wasm_release_cs_owned_object_post (pthread_t target_tid, int js_handle);
@@ -107,8 +108,9 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("System.ConsolePal::Clear", mono_wasm_console_clear);
 }
 
-void mono_wasm_set_entry_assembly (MonoAssembly *assembly, int entry_point_metadata_token)
+void mono_wasm_set_entry_assembly (MonoReflectionAssembly* ref_assembly, int entry_point_metadata_token)
 {
+	MonoAssembly *assembly = mono_reflection_assembly_get_assembly (ref_assembly);
 	mono_domain_ensure_entry_assembly (mono_get_root_domain (), assembly);
 	if (entry_point_metadata_token != 0)
 	{
