@@ -65,6 +65,7 @@ public class WasmTestRunner : WasmApplicationEntryPoint
                 case "-threads":
                     runner.IsThreadless = false;
                     runner.RunInParallel = true;
+                    Console.WriteLine($"Running in parallel with {runner.MaxParallelThreads} threads.");
                     break;
                 case "-verbosity":
                     runner.MinimumLogLevel = Enum.Parse<MinimumLogLevel>(args[i + 1]);
