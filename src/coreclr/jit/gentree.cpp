@@ -17090,7 +17090,8 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
     {
         // TODO: assert if tree is a subnode of sideEffectsSource and the tree has its own side effects
         // otherwise the resulting COMMA might have some side effects to be duplicated
-        // For now, caller is responsible for ensuring that will not happen.
+        // It should be possible to be smarter here and allow such cases by extracting the side effects
+        // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
         if (fgNodeThreading == NodeThreading::AllTrees)
