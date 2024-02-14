@@ -1007,6 +1007,16 @@ protected:
                 regNumber      _idReg4 : REGNUM_BITS;
             };
 
+            struct
+            {
+                // This 32-bit structure can pack with these unsigned bit fields
+                emitLclVarAddr __dummy_iiaLclVar;
+                unsigned       __dummy__idRegBit : 1; // Reg3 is scaled by idOpSize bits
+                GCtype         __dummy__idGCref2 : 2;
+                regNumber      __dummy__idReg3 : REGNUM_BITS;
+                insSvePrfop    _idSvePrfop : REGNUM_BITS;
+            };
+
             insSvePattern _idSvePattern;
 
 #elif defined(TARGET_XARCH)
@@ -1477,6 +1487,16 @@ protected:
         {
             assert(!idIsSmallDsc());
             idAddr()->_idSvePattern = idSvePattern;
+        }
+        insSvePrfop idSvePrfop() const
+        {
+            assert(!idIsSmallDsc());
+            return (idAddr()->_idSvePrfop);
+        }
+        void idSvePrfop(insSvePrfop idSvePrfop)
+        {
+            assert(!idIsSmallDsc());
+            idAddr()->_idSvePrfop = idSvePrfop;
         }
 #endif // TARGET_ARM64
 

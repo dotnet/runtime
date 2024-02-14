@@ -74,6 +74,7 @@ void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
 void emitDispSvePattern(insSvePattern pattern, bool addComma);
+void emitDispSvePrfop(insSvePrfop prfop, bool addComma);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -1413,6 +1414,18 @@ void emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern = SVE_PATTERN_ALL);
 
 void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm);
+
+void emitIns_PRFOP_R_R_R(instruction     ins,
+                         emitAttr        attr,
+                         insSvePrfop     prfop,
+                         regNumber       reg1,
+                         regNumber       reg2,
+                         regNumber       reg3,
+                         insOpts         opt,
+                         insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitIns_PRFOP_R_R_I(
+    instruction ins, emitAttr attr, insSvePrfop prfop, regNumber reg1, regNumber reg2, int imm, insOpts opt);
 
 void emitIns_BARR(instruction ins, insBarrier barrier);
 
