@@ -3146,8 +3146,10 @@ bool Compiler::optCanonicalizeExits(FlowGraphNaturalLoop* loop)
         // Find all blocks outside the loop from this exiting block. Those
         // blocks are exits. Note that we may see preheaders created by
         // previous canonicalization here, which are not part of the DFS tree
-        // or properly maintained in a parent loop. The canonicalization here
-        // works despite this.
+        // or properly maintained in a parent loop. This also means the
+        // destination block of the exit edge may no longer be right, so we
+        // cannot use VisitRegularExitBlocks. The canonicalization here works
+        // despite this.
         edge->getSourceBlock()->VisitRegularSuccs(this, [=, &changed](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ))
             {
