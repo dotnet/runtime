@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Test.Common;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -31,6 +33,7 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(UseSsl_MemberData))]
         public async Task Connect_ReadWriteResponseStream(bool useSsl)
         {
+            const int MessageCount = 3;
             byte[] clientMessage = new byte[] { 1, 2, 3 };
             byte[] serverMessage = new byte[] { 4, 5, 6, 7 };
 
@@ -43,19 +46,39 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestMessage request = CreateRequest(HttpMethod.Connect, uri, UseVersion, exactVersion: true);
                 request.Headers.Protocol = "foo";
 
+                bool readFromContentStream = false;
+
+                // We won't send the content bytes, but we will send content headers.
+                // Since we're dropping the content, we'll also drop the Content-Length header.
+                request.Content = new StreamContent(new DelegateStream(
+                    readAsyncFunc: (_, _, _, _) =>
+                    {
+                        readFromContentStream = true;
+                        throw new UnreachableException();
+                    }));
+
+                request.Headers.Add("User-Agent", "foo");
+                request.Content.Headers.Add("Content-Language", "bar");
+                request.Content.Headers.ContentLength = 42;
+
                 using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
                 using Stream responseStream = await response.Content.ReadAsStreamAsync();
 
-                await responseStream.WriteAsync(clientMessage);
-                await responseStream.FlushAsync();
+                for (int i = 0; i < MessageCount; i++)
+                {
+                    await responseStream.WriteAsync(clientMessage);
+                    await responseStream.FlushAsync();
 
-                byte[] readBuffer = new byte[serverMessage.Length];
-                await responseStream.ReadExactlyAsync(readBuffer);
-                Assert.Equal(serverMessage, readBuffer);
+                    byte[] readBuffer = new byte[serverMessage.Length];
+                    await responseStream.ReadExactlyAsync(readBuffer);
+                    Assert.Equal(serverMessage, readBuffer);
+                }
 
                 // Receive server's EOS
-                Assert.Equal(0, await responseStream.ReadAsync(readBuffer));
+                Assert.Equal(0, await responseStream.ReadAsync(new byte[1]));
+
+                Assert.False(readFromContentStream);
 
                 clientCompleted.SetResult();
             },
@@ -63,14 +86,21 @@ namespace System.Net.Http.Functional.Tests
             {
                 await using Http2LoopbackConnection connection = await ((Http2LoopbackServer)server).EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
 
-                (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+                (int streamId, HttpRequestData request) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+
+                Assert.Equal("foo", request.GetSingleHeaderValue("User-Agent"));
+                Assert.Equal("bar", request.GetSingleHeaderValue("Content-Language"));
+                Assert.Equal(0, request.GetHeaderValueCount("Content-Length"));
 
                 await connection.SendResponseHeadersAsync(streamId, endStream: false).ConfigureAwait(false);
 
-                DataFrame dataFrame = await connection.ReadDataFrameAsync();
-                Assert.Equal(clientMessage, dataFrame.Data.ToArray());
+                for (int i = 0; i < MessageCount; i++)
+                {
+                    DataFrame dataFrame = await connection.ReadDataFrameAsync();
+                    Assert.Equal(clientMessage, dataFrame.Data.ToArray());
 
-                await connection.SendResponseDataAsync(streamId, serverMessage, endStream: true);
+                    await connection.SendResponseDataAsync(streamId, serverMessage, endStream: i == MessageCount - 1);
+                }
 
                 await clientCompleted.Task.WaitAsync(TestHelper.PassingTestTimeout);
             }, options: new GenericLoopbackOptions { UseSsl = useSsl });
@@ -162,6 +192,113 @@ namespace System.Net.Http.Functional.Tests
             });
 
             await new[] { serverTask, clientTask }.WhenAllOrAnyFailed().WaitAsync(TestHelper.PassingTestTimeout);
+        }
+
+        [Theory]
+        [MemberData(nameof(UseSsl_MemberData))]
+        public async Task Connect_ServerSideEOS_ReceivedByClient(bool useSsl)
+        {
+            var timeoutTcs = new CancellationTokenSource(TestHelper.PassingTestTimeout);
+            var serverReceivedEOS = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await Http2LoopbackServerFactory.Singleton.CreateClientAndServerAsync(
+                clientFunc: async uri =>
+                {
+                    var client = CreateHttpClient();
+                    var request = CreateRequest(HttpMethod.Connect, uri, UseVersion, exactVersion: true);
+                    request.Headers.Protocol = "foo";
+
+                    var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutTcs.Token);
+                    var responseStream = await response.Content.ReadAsStreamAsync(timeoutTcs.Token);
+
+                    // receive server's EOS
+                    Assert.Equal(0, await responseStream.ReadAsync(new byte[1], timeoutTcs.Token));
+
+                    // send client's EOS
+                    responseStream.Dispose();
+
+                    // wait for "ack" from server
+                    await serverReceivedEOS.Task.WaitAsync(timeoutTcs.Token);
+
+                    // can dispose handler now
+                    client.Dispose();
+                },
+                serverFunc: async server =>
+                {
+                    await using var connection = await ((Http2LoopbackServer)server).EstablishConnectionAsync(
+                        new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
+
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false);
+
+                    // send server's EOS
+                    await connection.SendResponseDataAsync(streamId, Array.Empty<byte>(), endStream: true);
+
+                    // receive client's EOS "in response" to server's EOS
+                    var eosFrame = Assert.IsType<DataFrame>(await connection.ReadFrameAsync(timeoutTcs.Token));
+                    Assert.Equal(streamId, eosFrame.StreamId);
+                    Assert.Equal(0, eosFrame.Data.Length);
+                    Assert.True(eosFrame.EndStreamFlag);
+
+                    serverReceivedEOS.SetResult();
+
+                    // on handler dispose, client should shutdown the connection without sending additional frames
+                    await connection.WaitForClientDisconnectAsync().WaitAsync(timeoutTcs.Token);
+                },
+                options: new GenericLoopbackOptions { UseSsl = useSsl });
+        }
+
+        [Theory]
+        [MemberData(nameof(UseSsl_MemberData))]
+        public async Task Connect_ClientSideEOS_ReceivedByServer(bool useSsl)
+        {
+            var timeoutTcs = new CancellationTokenSource(TestHelper.PassingTestTimeout);
+            var serverReceivedRst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await Http2LoopbackServerFactory.Singleton.CreateClientAndServerAsync(
+                clientFunc: async uri =>
+                {
+                    var client = CreateHttpClient();
+                    var request = CreateRequest(HttpMethod.Connect, uri, UseVersion, exactVersion: true);
+                    request.Headers.Protocol = "foo";
+
+                    var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutTcs.Token);
+                    var responseStream = await response.Content.ReadAsStreamAsync(timeoutTcs.Token);
+
+                    // send client's EOS
+                    // this will also send RST_STREAM as we didn't receive server's EOS before
+                    responseStream.Dispose();
+
+                    // wait for "ack" from server
+                    await serverReceivedRst.Task.WaitAsync(timeoutTcs.Token);
+
+                    // can dispose handler now
+                    client.Dispose();
+                },
+                serverFunc: async server =>
+                {
+                    await using var connection = await ((Http2LoopbackServer)server).EstablishConnectionAsync(
+                        new SettingsEntry { SettingId = SettingId.EnableConnect, Value = 1 });
+
+                    (int streamId, _) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false);
+
+                    // receive client's EOS
+                    var eosFrame = Assert.IsType<DataFrame>(await connection.ReadFrameAsync(timeoutTcs.Token));
+                    Assert.Equal(streamId, eosFrame.StreamId);
+                    Assert.Equal(0, eosFrame.Data.Length);
+                    Assert.True(eosFrame.EndStreamFlag);
+
+                    // receive client's RST_STREAM as we didn't send server's EOS before
+                    var rstFrame = Assert.IsType<RstStreamFrame>(await connection.ReadFrameAsync(timeoutTcs.Token));
+                    Assert.Equal(streamId, rstFrame.StreamId);
+
+                    serverReceivedRst.SetResult();
+
+                    // on handler dispose, client should shutdown the connection without sending additional frames
+                    await connection.WaitForClientDisconnectAsync().WaitAsync(timeoutTcs.Token);
+                },
+                options: new GenericLoopbackOptions { UseSsl = useSsl });
         }
     }
 }

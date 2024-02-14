@@ -1446,6 +1446,14 @@ namespace System.Net.Http
                             continue;
                         }
 
+                        // Extended connect requests will use the response content stream for bidirectional communication.
+                        // We will ignore any content set for such requests in Http2Stream.SendRequestBodyAsync, as it has no defined semantics.
+                        // Drop the Content-Length header as well in the unlikely case it was set.
+                        if (knownHeader == KnownHeaders.ContentLength && request.IsExtendedConnectRequest)
+                        {
+                            continue;
+                        }
+
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         WriteBytes(knownHeader.Http2EncodedName, ref headerBuffer);
                         string? separator = null;
