@@ -4714,9 +4714,11 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
 
     pCookie = NULL;
 
+    Module * pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
+
     // First, see if we already enregistered this sig.
     // Note that we're outside the lock here, so be a bit careful with our logic
-    for (pBlock = m_pVASigCookieBlock; pBlock != NULL; pBlock = pBlock->m_Next)
+    for (pBlock = pLoaderModule->m_pVASigCookieBlock; pBlock != NULL; pBlock = pBlock->m_Next)
     {
         for (UINT i = 0; i < pBlock->m_numcookies; i++)
         {
@@ -4770,7 +4772,6 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
         DWORD sizeOfArgs = argit.SizeOfArgStack();
 
         // Prepare instantiation
-        Module * pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
         LoaderAllocator * pAllocator = pLoaderModule->GetLoaderAllocator();
 
         DWORD classInstCount = typeContext->m_classInst.GetNumArgs();
@@ -4788,20 +4789,20 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
             // occasional duplicate cookie instead.
 
             // Is the first block in the list full?
-            if (m_pVASigCookieBlock && m_pVASigCookieBlock->m_numcookies
+            if (pLoaderModule->m_pVASigCookieBlock && pLoaderModule->m_pVASigCookieBlock->m_numcookies
                 < VASigCookieBlock::kVASigCookieBlockSize)
             {
                 // Nope, reserve a new slot in the existing block.
-                pCookie = &(m_pVASigCookieBlock->m_cookies[m_pVASigCookieBlock->m_numcookies]);
+                pCookie = &(pLoaderModule->m_pVASigCookieBlock->m_cookies[pLoaderModule->m_pVASigCookieBlock->m_numcookies]);
             }
             else
             {
                 // Yes, create a new block.
                 VASigCookieBlock *pNewBlock = new VASigCookieBlock();
 
-                pNewBlock->m_Next = m_pVASigCookieBlock;
+                pNewBlock->m_Next = pLoaderModule->m_pVASigCookieBlock;
                 pNewBlock->m_numcookies = 0;
-                m_pVASigCookieBlock = pNewBlock;
+                pLoaderModule->m_pVASigCookieBlock = pNewBlock;
                 pCookie = &(pNewBlock->m_cookies[0]);
             }
 
@@ -4838,7 +4839,7 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
 
             // Finally, now that it's safe for asynchronous readers to see it,
             // update the count.
-            m_pVASigCookieBlock->m_numcookies++;
+            pLoaderModule->m_pVASigCookieBlock->m_numcookies++;
         }
     }
 
