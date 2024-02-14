@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 internal static partial class Interop
@@ -64,8 +65,6 @@ internal static partial class Interop
         public static extern void CancelPromise(nint gcHandle);
 #endif
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetEntryPointBreakpoint(int entryPointMetadataToken);
-
-
+        internal static extern void SetEntryAssembly(Assembly assembly, int entryPointMetadataToken);
     }
 }

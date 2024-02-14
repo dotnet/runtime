@@ -191,10 +191,11 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
                 throw new PlatformNotSupportedException();
-#if FEATURE_WASM_MANAGED_THREADS
-            JSProxyContext.AssertIsInteropThread();
-#endif
-            return JSHostImplementation.BindManagedFunctionImpl(fullyQualifiedName, signatureHash, signatures);
+
+            // this could be called by assembly module initializer from Net7 code-gen
+            // on wrong thread, in which case we will bind it to UI thread
+
+            return JSHostImplementation.BindManagedFunction(fullyQualifiedName, signatureHash, signatures);
         }
 
 #if !DEBUG

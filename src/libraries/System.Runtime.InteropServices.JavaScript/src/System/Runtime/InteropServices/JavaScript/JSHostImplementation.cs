@@ -235,10 +235,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 }
             }
 
-            if (waitForDebugger)
-            {
-                Interop.Runtime.SetEntryPointBreakpoint(method.MetadataToken);
-            }
+            Interop.Runtime.SetEntryAssembly(mainAssembly, waitForDebugger ? method.MetadataToken : 0);
 
             object[] argsToPass = System.Array.Empty<object>();
             Task<int>? result = null;
@@ -316,7 +313,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TODO https://github.com/dotnet/runtime/issues/98366")]
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "TODO https://github.com/dotnet/runtime/issues/98366")]
-        public static unsafe JSFunctionBinding BindManagedFunctionImpl(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
+        public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (string.IsNullOrEmpty(fullyQualifiedName))
             {
@@ -324,7 +321,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
             var signature = GetMethodSignature(signatures, null, null);
-            var (assemblyName, className, methodName) = ParseFQN(fullyQualifiedName);
+            var (assemblyName, className, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
 
             Assembly assembly = Assembly.LoadFrom(assemblyName + ".dll");
             Type? type = assembly.GetType(className);
@@ -341,7 +338,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var monoMethod = GetIntPtrFromMethodHandle(methodInfo.MethodHandle);
 
-            JavaScriptImports.BindCSFunction(monoMethod, fullyQualifiedName, signatureHash, (IntPtr)signature.Header);
+            JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
 
             FreeMethodSignatureBuffer(signature);
 
@@ -366,12 +363,21 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 
-        public static (string assemblyName, string className, string methodName) ParseFQN(string fqn)
+        public static (string assemblyName, string className, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
         {
             var assembly = fqn.Substring(fqn.IndexOf('[') + 1, fqn.IndexOf(']') - 1).Trim();
             fqn = fqn.Substring(fqn.IndexOf(']') + 1).Trim();
             var methodName = fqn.Substring(fqn.IndexOf(':') + 1);
             var className = fqn.Substring(0, fqn.IndexOf(':')).Trim();;
+
+            var nameSpace = "";
+            var shortClassName = className;
+            var idx = fqn.LastIndexOf(".");
+            if (idx != -1)
+            {
+                nameSpace = fqn.Substring(0, idx);
+                shortClassName = className.Substring(idx + 1);
+            }
 
             if (string.IsNullOrEmpty(assembly))
                 throw new InvalidOperationException("No assembly name specified " + fqn);
@@ -379,7 +385,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new InvalidOperationException("No class name specified " + fqn);
             if (string.IsNullOrEmpty(methodName))
                 throw new InvalidOperationException("No method name specified " + fqn);
-            return (assembly, className, methodName);
+            return (assembly, className, nameSpace, shortClassName, methodName);
         }
     }
 }

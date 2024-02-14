@@ -19,14 +19,12 @@ import { bind_assembly_exports, invoke_sync_method } from "./managed-exports";
 
 const _assembly_cache_by_name = new Map<string, MonoAssembly>();
 
-export function mono_wasm_bind_cs_function(method: MonoMethod, fullyQualifiedName: string, signatureHash: number, signature: JSFunctionSignature): void {
-    mono_assert(fullyQualifiedName, "fully_qualified_name must be string");
+export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
+    const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
     const mark = startMeasure();
-
     const version = get_signature_version(signature);
     mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
 
-    const { assembly, namespace, classname, methodname } = parseFQN(fullyQualifiedName);
 
     const args_count = get_signature_argument_count(signature);
 
@@ -49,7 +47,7 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, fullyQualifiedNam
 
     const closure: BindingClosure = {
         method,
-        fqn: fullyQualifiedName,
+        fullyQualifiedName,
         args_count,
         arg_marshalers,
         res_converter,
@@ -85,7 +83,7 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, fullyQualifiedNam
     // in Release configuration, it would be a trimmed by rollup
     if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         try {
-            bound_fn = new Function("fn", "return (function JSExport_" + methodname + "(){ return fn.apply(this, arguments)});")(bound_fn);
+            bound_fn = new Function("fn", "return (function JSExport_" + methodName + "(){ return fn.apply(this, arguments)});")(bound_fn);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;
@@ -94,13 +92,13 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, fullyQualifiedNam
 
     (<any>bound_fn)[bound_cs_function_symbol] = closure;
 
-    _walk_exports_to_set_function(assembly, namespace, classname, methodname, signatureHash, bound_fn);
+    _walk_exports_to_set_function(assemblyName, namespaceName, shortClassName, methodName, signatureHash, bound_fn);
     endMeasure(mark, MeasuredBlock.bindCsFunction, fullyQualifiedName);
 }
 
 function bind_fn_0V(closure: BindingClosure) {
     const method = closure.method;
-    const fqn = closure.fqn;
+    const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_0V() {
         const mark = startMeasure();
@@ -121,7 +119,7 @@ function bind_fn_0V(closure: BindingClosure) {
 function bind_fn_1V(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
-    const fqn = closure.fqn;
+    const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1V(arg1: any) {
         const mark = startMeasure();
@@ -145,7 +143,7 @@ function bind_fn_1R(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
-    const fqn = closure.fqn;
+    const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
         const mark = startMeasure();
@@ -172,7 +170,7 @@ function bind_fn_1RA(closure: BindingClosure) {
     const method = closure.method;
     const marshaler1 = closure.arg_marshalers[0]!;
     const res_converter = closure.res_converter!;
-    const fqn = closure.fqn;
+    const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
         const mark = startMeasure();
@@ -205,7 +203,7 @@ function bind_fn_2R(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
-    const fqn = closure.fqn;
+    const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
@@ -234,7 +232,7 @@ function bind_fn_2RA(closure: BindingClosure) {
     const marshaler1 = closure.arg_marshalers[0]!;
     const marshaler2 = closure.arg_marshalers[1]!;
     const res_converter = closure.res_converter!;
-    const fqn = closure.fqn;
+    const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
@@ -268,7 +266,7 @@ function bind_fn(closure: BindingClosure) {
     const arg_marshalers = closure.arg_marshalers;
     const res_converter = closure.res_converter;
     const method = closure.method;
-    const fqn = closure.fqn;
+    const fqn = closure.fullyQualifiedName;
     const is_async = closure.is_async;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
@@ -309,7 +307,7 @@ function bind_fn(closure: BindingClosure) {
 }
 
 type BindingClosure = {
-    fqn: string,
+    fullyQualifiedName: string,
     args_count: number,
     method: MonoMethod,
     arg_marshalers: (BoundMarshalerToCs)[],
@@ -356,31 +354,6 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
     }
 
     return exportsByAssembly.get(assembly) || {};
-}
-
-export function parseFQN(fqn: string)
-    : { assembly: string, namespace: string, classname: string, methodname: string } {
-    const assembly = fqn.substring(fqn.indexOf("[") + 1, fqn.indexOf("]")).trim();
-    fqn = fqn.substring(fqn.indexOf("]") + 1).trim();
-
-    const methodname = fqn.substring(fqn.indexOf(":") + 1);
-    fqn = fqn.substring(0, fqn.indexOf(":")).trim();
-
-    let namespace = "";
-    let classname = fqn;
-    if (fqn.indexOf(".") != -1) {
-        const idx = fqn.lastIndexOf(".");
-        namespace = fqn.substring(0, idx);
-        classname = fqn.substring(idx + 1);
-    }
-
-    if (!assembly.trim())
-        throw new Error("No assembly name specified " + fqn);
-    if (!classname.trim())
-        throw new Error("No class name specified " + fqn);
-    if (!methodname.trim())
-        throw new Error("No method name specified " + fqn);
-    return { assembly, namespace, classname, methodname };
 }
 
 export function assembly_load(name: string): MonoAssembly {
