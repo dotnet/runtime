@@ -112,7 +112,7 @@ int32_t local_X509_get_version(const X509* x509)
 
 X509_PUBKEY* local_X509_get_X509_PUBKEY(const X509* x509)
 {
-    if (x509)
+    if (x509 && x509->cert_info)
     {
         return x509->cert_info->key;
     }
@@ -123,13 +123,28 @@ X509_PUBKEY* local_X509_get_X509_PUBKEY(const X509* x509)
 int32_t local_X509_PUBKEY_get0_param(
     ASN1_OBJECT** palgOid, const uint8_t** pkeyBytes, int* pkeyBytesLen, X509_ALGOR** palg, X509_PUBKEY* pubkey)
 {
+    if (!pubkey)
+    {
+        return 0;
+    }
+
     if (palgOid)
     {
+        if (!pubkey->algor)
+        {
+            return 0;
+        }
+
         *palgOid = pubkey->algor->algorithm;
     }
 
     if (pkeyBytes)
     {
+        if (!pubkey->public_key)
+        {
+            return 0;
+        }
+
         *pkeyBytes = pubkey->public_key->data;
         *pkeyBytesLen = pubkey->public_key->length;
     }
