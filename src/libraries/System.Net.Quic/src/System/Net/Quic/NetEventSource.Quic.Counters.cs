@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Diagnostics.Metrics;
 using System.Net.Quic;
 
 using Microsoft.Quic;
@@ -11,53 +13,24 @@ namespace System.Net
 {
     internal sealed partial class NetEventSource
     {
+        private static Meter s_meter = new Meter("Private.InternalDiagnostics.System.Net.Quic");
         private static readonly long[] s_counters = new long[(int)QUIC_PERFORMANCE_COUNTERS.MAX];
 
-        private IncrementingPollingCounter? _connCreated;
-        private IncrementingPollingCounter? _connHandshakeFail;
-        private IncrementingPollingCounter? _connAppReject;
-        private IncrementingPollingCounter? _connLoadReject;
+        public static readonly ObservableGauge<long> MsQuicCountersGauge = s_meter.CreateObservableGauge<long>(
+            name: "MsQuic",
+            observeValues: GetGauges,
+            unit: null,
+            description: "MsQuic performance counters");
 
-        protected override void OnEventCommand(EventCommandEventArgs command)
-        {
-            if (command.Command == EventCommand.Enable && MsQuicApi.IsQuicSupported)
-            {
-                _connCreated ??= new IncrementingPollingCounter("CONN_CREATED", this, () => GetCounter(QUIC_PERFORMANCE_COUNTERS.CONN_CREATED))
-                {
-                    DisplayName = "Connections Created",
-                    DisplayRateTimeScale = TimeSpan.FromSeconds(1)
-                };
-
-                _connHandshakeFail ??= new IncrementingPollingCounter("CONN_HANDSHAKE_FAIL", this, () => GetCounter(QUIC_PERFORMANCE_COUNTERS.CONN_HANDSHAKE_FAIL))
-                {
-                    DisplayName = "Connection Handshake Failures",
-                    DisplayRateTimeScale = TimeSpan.FromSeconds(1)
-                };
-
-                _connAppReject ??= new IncrementingPollingCounter("CONN_APP_REJECT", this, () => GetCounter(QUIC_PERFORMANCE_COUNTERS.CONN_APP_REJECT))
-                {
-                    DisplayName = "Connections Rejected on Application Layer",
-                    DisplayRateTimeScale = TimeSpan.FromSeconds(1)
-                };
-
-                _connLoadReject ??= new IncrementingPollingCounter("CONN_LOAD_REJECT", this, () => GetCounter(QUIC_PERFORMANCE_COUNTERS.CONN_LOAD_REJECT))
-                {
-                    DisplayName = "Connections Rejected due to worker load",
-                    DisplayRateTimeScale = TimeSpan.FromSeconds(1)
-                };
-            }
-        }
+        public static readonly ObservableCounter<long> MsQuicCountersCounter = s_meter.CreateObservableCounter<long>(
+            name: "MsQuic",
+            observeValues: GetCounters,
+            unit: null,
+            description: "MsQuic performance counters");
 
         [NonEvent]
-        private void UpdateCounters()
+        private static void UpdateCounters()
         {
-            // if (!MsQuicApi.IsQuicSupported)
-            // {
-            //     // MsQuicApi static ctor also uses this event source for logging, so if this event source is enabled, logging can
-            //     // actually transitively call this method. Since IsQuicSupported is set at the very end of that method, we just
-            //     return;
-            // }
-
             unsafe
             {
                 fixed (long* pCounters = s_counters)
@@ -68,10 +41,80 @@ namespace System.Net
         }
 
         [NonEvent]
-        private long GetCounter(QUIC_PERFORMANCE_COUNTERS counter)
+        private static IEnumerable<Measurement<long>> GetGauges()
         {
+            if (!MsQuicApi.IsQuicSupported)
+            {
+                // Avoid calling into MsQuic if not supported (or not initialized yet)
+                return Array.Empty<Measurement<long>>();
+            }
+
             UpdateCounters();
-            return s_counters[(int)counter];
+
+            var measurements = new List<Measurement<long>>();
+
+            static void AddMeasurement(List<Measurement<long>> measurements, QUIC_PERFORMANCE_COUNTERS counter)
+            {
+                measurements.Add(new Measurement<long>(s_counters[(int)counter], new KeyValuePair<string, object?>("Name", counter)));
+            }
+
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_ACTIVE);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_CONNECTED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.STRM_ACTIVE);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_QUEUE_DEPTH);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_OPER_QUEUE_DEPTH);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.WORK_OPER_QUEUE_DEPTH);
+
+            return measurements;
+        }
+
+
+        [NonEvent]
+        private static IEnumerable<Measurement<long>> GetCounters()
+        {
+            if (!MsQuicApi.IsQuicSupported)
+            {
+                // Avoid calling into MsQuic if not supported (or not initialized yet)
+                return Array.Empty<Measurement<long>>();
+            }
+
+            UpdateCounters();
+
+            var measurements = new List<Measurement<long>>();
+
+            static void AddMeasurement(List<Measurement<long>> measurements, QUIC_PERFORMANCE_COUNTERS counter)
+            {
+                measurements.Add(new Measurement<long>(s_counters[(int)counter], new KeyValuePair<string, object?>("Name", counter)));
+            }
+
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_CREATED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_HANDSHAKE_FAIL);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_APP_REJECT);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_RESUMED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_PROTOCOL_ERRORS);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_NO_ALPN);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.PKTS_SUSPECTED_LOST);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.PKTS_DROPPED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.PKTS_DECRYPTION_FAIL);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.UDP_RECV);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.UDP_SEND);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.UDP_RECV_BYTES);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.UDP_SEND_BYTES);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.UDP_RECV_EVENTS);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.UDP_SEND_CALLS);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.APP_SEND_BYTES);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.APP_RECV_BYTES);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_OPER_QUEUED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_OPER_COMPLETED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.WORK_OPER_QUEUED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.WORK_OPER_COMPLETED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.PATH_VALIDATED);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.PATH_FAILURE);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.SEND_STATELESS_RESET);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.SEND_STATELESS_RETRY);
+            AddMeasurement(measurements, QUIC_PERFORMANCE_COUNTERS.CONN_LOAD_REJECT);
+
+            return measurements;
         }
     }
 }
