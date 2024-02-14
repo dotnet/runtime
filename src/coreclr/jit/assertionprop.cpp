@@ -2679,7 +2679,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     switch (call->GetHelperNum())
     {
         //
-        // Fold "CAST(CAST(obj, cls), cls)" to "CAST(obj, cls)"
+        // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
         // where CAST is either ISINST or CASTCLASS.
         //
         case CORINFO_HELP_CHKCASTARRAY:
@@ -2705,15 +2705,16 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             }
 
             VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(castObjArgVN, &funcApp) &&
-                ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf)))
+            if (vnStore->GetVNFunc(castObjArgVN, &funcApp) && (funcApp.m_func == VNF_IsInstanceOf))
             {
                 ValueNum innerCastClsVN = funcApp.m_args[0];
                 if (innerCastClsVN == castClsArgVN)
                 {
                     // The outer cast is redundant, remove it and preserve its side effects
-                    // We do ignoreRoot here because the actual cast node is proven to never throw any exceptions.
-                    return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    // We do ignoreRoot here because the actual cast node never throws any exceptions.
+                    GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    fgSetTreeSeq(result);
+                    return result;
                 }
             }
         }

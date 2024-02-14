@@ -17094,10 +17094,6 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
         // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
         tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
-        if (fgNodeThreading == NodeThreading::AllTrees)
-        {
-            fgSetTreeSeq(tree);
-        }
     }
     return tree;
 }
