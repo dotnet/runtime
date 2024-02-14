@@ -316,7 +316,15 @@ export type SingleAssetBehaviors =
     /**
      * Typically blazor.boot.json
      */
-    | "manifest";
+    | "manifest"
+    /**
+     * The debugging symbols
+     */
+    | "symbols"
+    /**
+     * Load segmentation rules file for Hybrid Globalization.
+     */
+    | "segmentation-rules";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
@@ -347,14 +355,6 @@ export type AssetBehaviors = SingleAssetBehaviors |
      * The javascript module that came from nuget package .
      */
     | "js-module-library-initializer"
-    /**
-     * The javascript module for threads.
-     */
-    | "symbols"
-    /**
-     * Load segmentation rules file for Hybrid Globalization.
-     */
-    | "segmentation-rules"
 
 export const enum GlobalizationMode {
     /**

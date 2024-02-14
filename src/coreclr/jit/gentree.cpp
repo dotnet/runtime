@@ -2076,6 +2076,75 @@ void CallArgs::Remove(CallArg* arg)
     assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
+#ifdef TARGET_XARCH
+//---------------------------------------------------------------
+// NeedsVzeroupper: Determines if the call needs a vzeroupper emitted before it is invoked
+//
+// Parameters:
+//   comp - the compiler
+//
+// Returns:
+//   true if a vzeroupper needs to be emitted; otherwise, false
+//
+bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
+{
+    bool needsVzeroupper = false;
+
+    if (IsPInvoke() && comp->canUseVexEncoding())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        switch (gtCallType)
+        {
+            case CT_USER_FUNC:
+            case CT_INDIRECT:
+            {
+                // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
+                // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
+
+                needsVzeroupper = true;
+                break;
+            }
+
+            case CT_HELPER:
+            {
+                // Most helpers are well known to not use any floating-point or SIMD logic internally, but
+                // a few do exist so we need to ensure they are handled. They are identified by taking or
+                // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
+
+                if (varTypeUsesFloatReg(this))
+                {
+                    needsVzeroupper = true;
+                }
+                else
+                {
+                    for (CallArg& arg : gtArgs.Args())
+                    {
+                        if (varTypeUsesFloatReg(arg.GetSignatureType()))
+                        {
+                            needsVzeroupper = true;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    return needsVzeroupper;
+}
+#endif // TARGET_XARCH
+
 //---------------------------------------------------------------
 // GetOtherRegMask: Get the reg mask of gtOtherRegs of call node
 //

@@ -74,7 +74,11 @@ export function mono_exit(exit_code: number, reason?: any): void {
 
     // unify shape of the reason object
     const is_object = reason && typeof reason === "object";
-    exit_code = (is_object && typeof reason.status === "number") ? reason.status : exit_code;
+    exit_code = (is_object && typeof reason.status === "number")
+        ? reason.status
+        : exit_code === undefined
+            ? -1
+            : exit_code;
     const message = (is_object && typeof reason.message === "string")
         ? reason.message
         : "" + reason;
@@ -227,12 +231,12 @@ function abort_promises(reason: any) {
 }
 
 function appendElementOnExit(exit_code: number) {
-    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
+    if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && loaderHelpers.config && loaderHelpers.config.appendElementOnExit && document) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
         const tests_done_elem = document.createElement("label");
         tests_done_elem.id = "tests_done";
-        if (exit_code) tests_done_elem.style.background = "red";
-        tests_done_elem.innerHTML = exit_code.toString();
+        if (exit_code !== 0) tests_done_elem.style.background = "red";
+        tests_done_elem.innerHTML = "" + exit_code;
         document.body.appendChild(tests_done_elem);
     }
 }

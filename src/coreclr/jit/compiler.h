@@ -9402,6 +9402,7 @@ private:
     }
 
 #ifdef TARGET_XARCH
+public:
     bool canUseVexEncoding() const
     {
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
@@ -9418,6 +9419,7 @@ private:
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
     }
 
+private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
     //

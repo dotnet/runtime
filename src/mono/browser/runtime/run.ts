@@ -11,6 +11,7 @@ import { mono_log_info } from "./logging";
 import { assert_js_interop } from "./invoke-js";
 import { assembly_load } from "./invoke-cs";
 import { cancelThreads } from "./pthreads/browser";
+import { call_entry_point } from "./managed-exports";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -63,7 +64,7 @@ export async function mono_run_main(main_assembly_name?: string, args?: string[]
     }
     const method = find_entry_point(main_assembly_name);
 
-    const res = await runtimeHelpers.javaScriptExports.call_entry_point(method, args);
+    const res = await call_entry_point(method, args);
 
     // one more timer loop before we return, so that any remaining queued calls could run
     await new Promise(resolve => globalThis.setTimeout(resolve, 0));

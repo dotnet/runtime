@@ -2312,6 +2312,7 @@ void Compiler::compSetProcessor()
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+            codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
         }
         if (canUseEvexEncoding())
         {
