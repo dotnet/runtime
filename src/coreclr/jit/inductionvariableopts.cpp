@@ -1298,7 +1298,7 @@ PhaseStatus Compiler::optInductionVariables()
             }
 
             changed            = true;
-            unsigned newLclNum = lvaGrabTemp(false DEBUGARG("Widened primary induction variable"));
+            unsigned newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
             JITDUMP("  Replacing V%02u with a widened version V%02u\n", lcl->GetLclNum(), newLclNum);
 
             GenTree* initVal;
