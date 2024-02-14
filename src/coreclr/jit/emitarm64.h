@@ -51,7 +51,7 @@ void emitDispBarrier(insBarrier barrier);
 void emitDispShiftOpts(insOpts opt);
 void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
-void emitDispSveExtendOptsModN(insOpts opt, int n);
+void emitDispSveExtendOptsModN(insOpts opt, ssize_t imm);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
 void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);

@@ -24718,18 +24718,18 @@ void emitter::emitDispSveExtendOpts(insOpts opt)
  *  Prints the encoding for the Extend Type encoding along with the N value
  */
 
-void emitter::emitDispSveExtendOptsModN(insOpts opt, int n)
+void emitter::emitDispSveExtendOptsModN(insOpts opt, ssize_t imm)
 {
-    assert(n >= 0 && n <= 3);
+    assert(imm >= 0 && imm <= 3);
 
-    if (n == 0 && opt != INS_OPTS_LSL)
+    if (imm == 0 && opt != INS_OPTS_LSL)
     {
         emitDispSveExtendOpts(opt);
     }
-    else if (n > 0)
+    else if (imm > 0)
     {
         emitDispSveExtendOpts(opt);
-        printf(" #%d", n);
+        printf(" #%d", (int)imm);
     }
 }
 
