@@ -1368,7 +1368,7 @@ public:
     // Enregisters a VASig.
     VASigCookie *GetVASigCookie(Signature vaSignature, const SigTypeContext* typeContext);
 private:
-    static VASigCookie *MakeVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
+    static VASigCookie *GetVASigCookieWorker(Module* pDefiningModule, Module* pLoaderModule, Signature vaSignature, const SigTypeContext* typeContext);
 
 public:
 #ifndef DACCESS_COMPILE
