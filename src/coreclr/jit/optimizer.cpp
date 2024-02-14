@@ -3226,7 +3226,7 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
     // weights from the previous edge).
     block->inheritWeight(block->GetTarget());
 
-    weight_t exitWeight = BB_ZERO_WEIGHT;
+    weight_t newWeight = BB_ZERO_WEIGHT;
     for (FlowEdge* edge : block->PredEdges())
     {
         BasicBlock* predBlock = edge->getSourceBlock();
@@ -3239,7 +3239,7 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
         JITDUMP("  Estimated likelihood " FMT_BB " -> " FMT_BB " to be " FMT_WT " (contribution: " FMT_WT ")\n",
                 predBlock->bbNum, block->bbNum, likelihood, contribution);
 
-        exitWeight += contribution;
+        newWeight += contribution;
 
         // Normalize exiting -> new exit weight
         edge->setEdgeWeights(contribution, contribution, block);
@@ -3247,13 +3247,13 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
 
     block->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
 
-    block->bbWeight = exitWeight;
+    block->bbWeight = newWeight;
     if (hasProfWeight)
     {
         block->SetFlags(BBF_PROF_WEIGHT);
     }
 
-    if (exitWeight == BB_ZERO_WEIGHT)
+    if (newWeight == BB_ZERO_WEIGHT)
     {
         block->SetFlags(BBF_RUN_RARELY);
         return;
