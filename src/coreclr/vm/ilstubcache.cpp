@@ -500,6 +500,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     ILStubHashBlob* pHashBlob,
     DWORD dwStubFlags,
     Module* pSigModule,
+    Module* pSigLoaderModule,
     SigTypeContext* pTypeContext,
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
@@ -538,12 +539,17 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         //
         // Couldn't find it, let's make a new one.
         //
-
+        
         Module *pContainingModule = pSigModule;
         if (pTargetMD != NULL)
         {
             // loader module may be different from signature module for generic targets
             pContainingModule = pTargetMD->GetLoaderModule();
+        }
+        else if (pTypeContext != NULL)
+        {
+            // for generic calli targets loader module is given directly
+            pContainingModule = pSigLoaderModule;
         }
 
         MethodTable *pStubMT = GetOrCreateStubMethodTable(pContainingModule);
@@ -555,6 +561,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         }
         else if (pTypeContext != NULL)
         {
+            // for generic calli targets typeContext is given directly
             typeContext = *pTypeContext;
         }
 

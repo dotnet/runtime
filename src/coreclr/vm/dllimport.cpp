@@ -113,7 +113,7 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
     INDEBUG(InitDebugNames());
 }
 
-StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
+StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule, Module* pLoaderModule)
 {
     CONTRACTL
     {
@@ -135,13 +135,13 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
         m_pMetadataModule = pMD->GetModule();
-        m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
+        m_pLoaderModule = pLoaderModule == NULL ? pMD->GetLoaderModule() : pLoaderModule;   // Used for ILStubCache selection and MethodTable creation.
     }
     else
     {
         m_tkMethodDef = mdMethodDefNil;
         m_pMetadataModule = m_pModule;
-        m_pLoaderModule = m_pModule;
+        m_pLoaderModule = pLoaderModule == NULL ? m_pModule : pLoaderModule;
     }
 
     INDEBUG(InitDebugNames());
@@ -4185,6 +4185,7 @@ namespace
                                         pHashParams,
                                         pParams->m_dwStubFlags,
                                         pParams->m_pModule,
+                                        pParams->m_pLoaderModule,
                                         pParams->m_pTypeContext,
                                         pParams->m_sig.GetRawSig(),
                                         pParams->m_sig.GetRawSigLen(),
@@ -5035,7 +5036,8 @@ namespace
                                 else
                                 {
                                     // For generic calli, we only support blittable types
-                                    if (!pSigDesc->m_typeContext.IsEmpty() && SF_IsCALLIStub(dwStubFlags) && NDirect::MarshalingRequired(pStubMD))
+                                    if (!pSigDesc->m_typeContext.IsEmpty() && SF_IsCALLIStub(dwStubFlags)
+                                        && NDirect::MarshalingRequired(NULL, pStubMD->GetSig(), pSigDesc->m_pModule, &pSigDesc->m_typeContext))
                                     {
                                         COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
                                     }
@@ -6064,7 +6066,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         nlType  = nltAnsi;
     }
 
-    StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule);
+    StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule, pVASigCookie->pLoaderModule);
     sigDesc.InitTypeContext(pVASigCookie->classInst, pVASigCookie->classInstCount, pVASigCookie->methodInst, pVASigCookie->methodInstCount);
 
     MethodDesc* pStubMD = NDirect::CreateCLRToNativeILStub(&sigDesc,
