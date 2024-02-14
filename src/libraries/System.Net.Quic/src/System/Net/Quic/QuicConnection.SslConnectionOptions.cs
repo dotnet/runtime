@@ -63,38 +63,45 @@ public partial class QuicConnection
             _certificateChainPolicy = certificateChainPolicy;
         }
 
-        public unsafe int ValidateCertificate(X509Certificate2? certificate, X509Chain? chain)
+        public unsafe int ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             bool wrapException = false;
 
+            X509Chain? chain = null;
             try
             {
-                chain ??= new X509Chain();
-
-                if (_certificateChainPolicy != null)
-                {
-                    chain.ChainPolicy = _certificateChainPolicy;
-                }
-                else
-                {
-                    chain.ChainPolicy.RevocationMode = _revocationMode;
-                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
-
-                    // TODO: configure chain.ChainPolicy.CustomTrustStore to mirror behavior of SslStream.VerifyRemoteCertificate (https://github.com/dotnet/runtime/issues/73053)
-                }
-
-                // set ApplicationPolicy unless already provided.
-                if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
-                {
-                    // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
-                    chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_serverAuthOid : s_clientAuthOid);
-                }
-
                 if (certificate is not null)
                 {
+                    chain = new X509Chain();
+                    if (_certificateChainPolicy != null)
+                    {
+                        chain.ChainPolicy = _certificateChainPolicy;
+                    }
+                    else
+                    {
+                        chain.ChainPolicy.RevocationMode = _revocationMode;
+                        chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+
+                        // TODO: configure chain.ChainPolicy.CustomTrustStore to mirror behavior of SslStream.VerifyRemoteCertificate (https://github.com/dotnet/runtime/issues/73053)
+                    }
+
+                    // set ApplicationPolicy unless already provided.
+                    if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
+                    {
+                        // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
+                        chain.ChainPolicy.ApplicationPolicy.Add(_isClient ? s_serverAuthOid : s_clientAuthOid);
+                    }
+
+                    if (chainData.Length > 0)
+                    {
+                        X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
+                        additionalCertificates.Import(chainData);
+                        chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
+                    }
+
                     bool checkCertName = !chain!.ChainPolicy!.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName);
-                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, certificate, checkCertName, !_isClient, TargetHostNameHelper.NormalizeHostName(_targetHost), IntPtr.Zero, 0);
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, certificate, checkCertName, !_isClient, TargetHostNameHelper.NormalizeHostName(_targetHost), certData);
                 }
                 else if (_certificateRequired)
                 {
@@ -130,7 +137,6 @@ public partial class QuicConnection
             }
             catch (Exception ex)
             {
-                certificate?.Dispose();
                 if (wrapException)
                 {
                     throw new QuicException(QuicError.CallbackError, null, SR.net_quic_callback_error, ex);

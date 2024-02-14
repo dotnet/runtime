@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -571,54 +572,84 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
-        X509Certificate2? certificate = null;
-        X509Chain? chain = null;
-
-        QUIC_BUFFER* certificatePtr = (QUIC_BUFFER*)data.Certificate;
-        QUIC_BUFFER* chainPtr = (QUIC_BUFFER*)data.Chain;
-
-        if (certificatePtr is not null)
-        {
-            chain = new X509Chain();
-            if (MsQuicApi.UsesSChannelBackend)
-            {
-                certificate = new X509Certificate2((IntPtr)certificatePtr);
-            }
-            else
-            {
-                if (certificatePtr->Length > 0)
-                {
-                    certificate = new X509Certificate2(certificatePtr->Span);
-                }
-
-                if (chainPtr->Length > 0)
-                {
-                    X509Certificate2Collection additionalCertificates = new X509Certificate2Collection();
-                    additionalCertificates.Import(chainPtr->Span);
-                    chain.ChainPolicy.ExtraStore.AddRange(additionalCertificates);
-                }
-            }
-        }
-
         //
         // the certificate validation is an expensive operation and we don't want to delay MsQuic
         // worker thread. So we offload the validation to the .NET threadpool. Incidentally, this
         // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
         // worker threads.
         //
+        // the provided data pointers are valid only while still inside the callback so they need to be
+        // copied before handing them to threadpool.
+        //
+
+        X509Certificate2? certificate = null;
+
+        byte[]? certDataRented = null;
+        Memory<byte> certData = default;
+        byte[]? chainDataRented = null;
+        Memory<byte> chainData = default;
+
+        if (data.Certificate != null)
+        {
+            if (MsQuicApi.UsesSChannelBackend)
+            {
+                certificate = new X509Certificate2((IntPtr)data.Certificate);
+                // TODO: what about chainPtr?
+            }
+            else
+            {
+                // on non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the content is buffers
+                // with DER encoded cert and chain
+                QUIC_BUFFER* certificatePtr = (QUIC_BUFFER*)data.Certificate;
+                QUIC_BUFFER* chainPtr = (QUIC_BUFFER*)data.Chain;
+
+                if (certificatePtr->Length > 0)
+                {
+                    certDataRented = ArrayPool<byte>.Shared.Rent((int)certificatePtr->Length);
+                    certData = certDataRented.AsMemory(0, (int)certificatePtr->Length);
+                    certificatePtr->Span.CopyTo(certData.Span);
+                }
+
+                if (chainPtr->Length > 0)
+                {
+                    chainDataRented = ArrayPool<byte>.Shared.Rent((int)chainPtr->Length);
+                    chainData = chainDataRented.AsMemory(0, (int)chainPtr->Length);
+                    chainPtr->Span.CopyTo(chainData.Span);
+                }
+            }
+        }
 
         _ = Task.Run(() =>
         {
             int result;
             try
             {
-                result = _sslConnectionOptions.ValidateCertificate(certificate, chain);
+                if (certData.Length > 0)
+                {
+                    Debug.Assert(certificate == null);
+                    certificate = new X509Certificate2(certData.Span);
+                }
+
+                result = _sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
                 _remoteCertificate = certificate;
             }
             catch (Exception ex)
             {
+                certificate?.Dispose();
                 _connectedTcs.TrySetException(ex);
                 result = QUIC_STATUS_HANDSHAKE_FAILURE;
+            }
+            finally
+            {
+                if (certDataRented != null)
+                {
+                    ArrayPool<byte>.Shared.Return(certDataRented);
+                }
+
+                if (chainDataRented != null)
+                {
+                    ArrayPool<byte>.Shared.Return(chainDataRented);
+                }
             }
 
             int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
