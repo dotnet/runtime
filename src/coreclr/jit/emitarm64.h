@@ -584,8 +584,9 @@ template <const size_t hi, const size_t lo>
 static code_t insEncodeUimm(size_t imm)
 {
     static_assert(hi >= lo && hi < sizeof(code_t) * 8);
-    size_t imm_bits = hi - lo + 1;
-    assert(imm < (1 << imm_bits));
+    const size_t imm_bits = hi - lo + 1;
+    const size_t imm_max  = 1 << imm_bits;
+    assert(imm < imm_max);
     return static_cast<code_t>(imm << lo);
 }
 
@@ -598,12 +599,15 @@ static code_t insEncodeSplitUimm(size_t imm)
     static_assert(hi1 >= lo1 && lo1 > hi2 && hi2 >= lo2);
     static_assert(hi1 < sizeof(code_t) * 8);
 
-    size_t hi_part_bits = hi1 - lo1 + 1;
-    size_t lo_part_bits = hi2 - lo2 + 1;
-    assert(imm < (1 << (hi_part_bits + lo_part_bits)));
+    const size_t hi_bits = hi1 - lo1 + 1;
+    const size_t lo_bits = hi2 - lo2 + 1;
+    const size_t imm_max = 1 << (hi_bits + lo_bits);
+    assert(imm < imm_max);
 
-    size_t immhi = (imm >> lo_part_bits) & ((1 << hi_part_bits) - 1);
-    size_t immlo = imm & ((1 << lo_part_bits) - 1);
+    const size_t hi_max = 1 << hi_bits;
+    const size_t lo_max = 1 << lo_bits;
+    size_t       immhi  = (imm >> lo_bits) & (hi_max - 1);
+    size_t       immlo  = imm & (lo_max - 1);
 
     return insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
 }
