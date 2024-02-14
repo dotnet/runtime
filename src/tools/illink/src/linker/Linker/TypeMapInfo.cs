@@ -295,7 +295,15 @@ namespace Mono.Linker
 					continue;
 
 				// If the interface doesn't implement the interface with the method we're looking for, exit early
-				if (!potentialImplInterface.Interfaces.Any(i => context.TryResolve(i.InterfaceType) == interfaceMethod.DeclaringType))
+				bool potentialImplInterfaceImplementsInterface = false;
+				foreach (var iface in potentialImplInterface.Interfaces) {
+					if (context.TryResolve (iface.InterfaceType) == interfaceMethod.DeclaringType)
+					{
+						potentialImplInterfaceImplementsInterface = true;
+						break;
+					}
+				}
+				if (!potentialImplInterfaceImplementsInterface)
 					continue;
 
 				bool foundImpl = false;
