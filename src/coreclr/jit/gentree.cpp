@@ -17064,13 +17064,13 @@ bool Compiler::gtSplitTree(
 }
 
 //------------------------------------------------------------------------
-// gWrapWithSicdeEffects: Extracts side effects from sideEffectSource (if any)
+// gtWrapWithSideEffects: Extracts side effects from sideEffectSource (if any)
 //    and wraps the input tree with a COMMA node with them.
 //
 // Arguments:
 //    tree              - the expression tree to wrap with side effects (if any)
 //    sideEffectsSource - the expression tree to extract side effects from
-//    flags             - side effect flags to be considered
+//    sideEffectsFlags  - side effect flags to be considered
 //    ignoreRoot        - ignore side effects on the expression root node
 //
 // Return Value:
