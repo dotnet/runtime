@@ -1169,7 +1169,9 @@ namespace System.Threading.ThreadPools.Tests
             private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
 
             public volatile int TPIOEnqueue = 0;
+            public volatile int TPIODequeue = 0;
             public ManualResetEvent TPWaitIOEnqueueEvent = new ManualResetEvent(false);
+            public ManualResetEvent TPWaitIODequeueEvent = new ManualResetEvent(false);
 
             protected override void OnEventSourceCreated(EventSource eventSource)
             {
@@ -1188,10 +1190,15 @@ namespace System.Threading.ThreadPools.Tests
                     Interlocked.Increment(ref TPIOEnqueue);
                     TPWaitIOEnqueueEvent.Set();
                 }
+                else if (eventData.EventName.Equals("ThreadPoolIODequeue"))
+                {
+                    Interlocked.Increment(ref TPIODequeue);
+                    TPWaitIODequeueEvent.Set();
+                }
             }
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UseWindowsThreadPool))]
         public void ReadWriteAsyncTest()
         {
             RemoteExecutor.Invoke(async () =>
@@ -1230,7 +1237,8 @@ namespace System.Threading.ThreadPools.Tests
                     Task listenerTask = StartListenerAsync();
                     Task clientTask = StartClientAsync();
                     await Task.WhenAll(listenerTask, clientTask);
-                    eventListener.TPWaitIOEnqueueEvent.WaitOne(TimeSpan.FromSeconds(15));
+                    ManualResetEvent[] waitEvents = [eventListener.TPWaitIOEnqueueEvent, eventListener.TPWaitIODequeueEvent];
+                    WaitHandle.WaitAll(waitEvents, TimeSpan.FromSeconds(15));
                     Assert.True(eventListener.TPIOEnqueue > 0);
                 }
             }).Dispose();
@@ -1245,6 +1253,7 @@ namespace System.Threading.ThreadPools.Tests
             return useWindowsThreadPool;
         }
 
-        private static bool UsePortableThreadPool { get; } = !GetUseWindowsThreadPool();
+        private static bool UseWindowsThreadPool { get; } = GetUseWindowsThreadPool();
+        private static bool UsePortableThreadPool { get; } = !UseWindowsThreadPool;
     }
 }
