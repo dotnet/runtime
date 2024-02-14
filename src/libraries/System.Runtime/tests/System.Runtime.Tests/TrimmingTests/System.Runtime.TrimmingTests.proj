@@ -1,16 +1,5 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
-  <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults" Condition="'$(TargetsBrowser)' == 'true'">
-    <ItemGroup>
-      <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
-    </ItemGroup>
-  </Target>
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <PrepareInputsForWasmBuildDependsOn>
-      $(PrepareInputsForWasmBuildDependsOn);
-      RemoveInvariantGlobalization;
-    </PrepareInputsForWasmBuildDependsOn>
-  </PropertyGroup>
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
@@ -35,6 +24,17 @@
       <DisabledProperties>InvariantGlobalization</DisabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults" Condition="'$(TargetsBrowser)' == 'true'">
+        <ItemGroup>
+          <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
+        </ItemGroup>
+      </Target>
+      <PropertyGroup Condition="'$(TargetsBrowser)' == 'true'">
+        <PrepareInputsForWasmBuildDependsOn>
+          $(PrepareInputsForWasmBuildDependsOn);
+          RemoveInvariantGlobalization;
+        </PrepareInputsForWasmBuildDependsOn>
+      </PropertyGroup>
       <DisabledProperties>HybridGlobalization</DisabledProperties>
       <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
     </TestConsoleAppSourceFiles>
