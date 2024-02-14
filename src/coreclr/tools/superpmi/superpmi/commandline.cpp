@@ -110,6 +110,11 @@ void CommandLine::DumpHelp(const char* program)
     printf("     If 'workerCount' is not specified, the number of workers used is\n");
     printf("     the number of processors on the machine.\n");
     printf("\n");
+    printf(" -streaming filename\n");
+    printf("     Streaming mode. Read and execute work requests from indicated file (can be 'stdin').\n");
+    printf("     Each line is a method context number and additional force jit options for that method.\n");
+    printf("     Blank line or EOF terminates\n");
+    printf("\n");
     printf(" -failureLimit <limit>\n");
     printf("     For a positive 'limit' number, replay and asm diffs will exit if it sees more than 'limit' failures.\n");
     printf("     Otherwise, all methods will be compiled.\n");
@@ -467,6 +472,17 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
                 o->hash = argv[i];
+            }
+            else if ((_strnicmp(&argv[i][1], "streaming", argLen) == 0))
+            {
+                if (++i >= argc)
+                {
+                    LogError("'-streaming' must be followed by a file name or stdin.");
+                    // DumpHelp(argv[0]);
+                    return false;
+                }
+
+                o->streamFile = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "parallel", argLen) == 0))
             {

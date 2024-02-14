@@ -619,3 +619,10 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
     }
     return false;
 }
+
+void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
+{
+    Indexes = newIndexes;
+    IndexCount = newIndexCount;
+    curIndexPos = 0;
+}

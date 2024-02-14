@@ -2219,7 +2219,7 @@ void CSE_HeuristicReplay::ConsiderCandidates()
         return;
     }
 
-    static ConfigIntArray JitReplayCSEArray;
+    ConfigIntArray JitReplayCSEArray;
     JitReplayCSEArray.EnsureInit(JitConfig.JitReplayCSE());
 
     for (unsigned i = 0; i < JitReplayCSEArray.GetLength(); i++)
@@ -2277,7 +2277,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
 
     // Parameters
     //
-    static ConfigDoubleArray initialParameters;
+    ConfigDoubleArray initialParameters;
     initialParameters.EnsureInit(JitConfig.JitRLCSE());
     const unsigned initialParamLength = initialParameters.GetLength();
 
@@ -2324,7 +2324,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
 
         // Reward
         //
-        static ConfigDoubleArray rewards;
+        ConfigDoubleArray rewards;
         rewards.EnsureInit(JitConfig.JitReplayCSEReward());
         const unsigned rewardsLength = rewards.GetLength();
 
@@ -2342,7 +2342,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
         //
         if (JitConfig.JitRLCSEAlpha() != nullptr)
         {
-            static ConfigDoubleArray JitRLCSEAlphaArray;
+            ConfigDoubleArray JitRLCSEAlphaArray;
             JitRLCSEAlphaArray.EnsureInit(JitConfig.JitRLCSEAlpha());
             m_alpha = JitRLCSEAlphaArray.GetData()[0];
         }
@@ -3241,8 +3241,8 @@ void CSE_HeuristicRL::UpdateParameters()
         return;
     }
 
-    ArrayStack<Choice>    choices(m_pCompiler->getAllocator(CMK_CSE));
-    static ConfigIntArray JitReplayCSEArray;
+    ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE));
+    ConfigIntArray     JitReplayCSEArray;
     JitReplayCSEArray.EnsureInit(JitConfig.JitReplayCSE());
 
     // We have an undiscounted reward, so it applies equally
