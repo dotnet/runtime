@@ -621,7 +621,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _ = Task.Run(() =>
         {
-            int result;
+            QUIC_TLS_ALERT_CODES result;
             try
             {
                 if (certData.Length > 0)
@@ -637,7 +637,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
             {
                 certificate?.Dispose();
                 _connectedTcs.TrySetException(ex);
-                result = QUIC_STATUS_HANDSHAKE_FAILURE;
+                result = QUIC_TLS_ALERT_CODES.USER_CANCELED;
             }
             finally
             {
@@ -654,8 +654,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
                 _handle,
-                MsQuic.StatusSucceeded(result),
-                MsQuic.StatusSucceeded(result) ? QUIC_TLS_ALERT_CODES.SUCCESS : QUIC_TLS_ALERT_CODES.USER_CANCELED);
+                result == QUIC_TLS_ALERT_CODES.SUCCESS,
+                result);
 
             Debug.Assert(MsQuic.StatusSucceeded(status), $"ConnectionCertificateValidationComplete failed with 0x{status:X}");
         });

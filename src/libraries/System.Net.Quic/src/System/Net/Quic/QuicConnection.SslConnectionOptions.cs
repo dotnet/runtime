@@ -63,7 +63,7 @@ public partial class QuicConnection
             _certificateChainPolicy = certificateChainPolicy;
         }
 
-        public unsafe int ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
+        public unsafe QUIC_TLS_ALERT_CODES ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             bool wrapException = false;
@@ -108,7 +108,7 @@ public partial class QuicConnection
                     sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNotAvailable;
                 }
 
-                int status = QUIC_STATUS_SUCCESS;
+                QUIC_TLS_ALERT_CODES result = QUIC_TLS_ALERT_CODES.SUCCESS;
                 if (_validationCallback is not null)
                 {
                     wrapException = true;
@@ -120,7 +120,7 @@ public partial class QuicConnection
                             throw new AuthenticationException(SR.net_quic_cert_custom_validation);
                         }
 
-                        status = QUIC_STATUS_USER_CANCELED;
+                        result = QUIC_TLS_ALERT_CODES.BAD_CERTIFICATE;
                     }
                 }
                 else if (sslPolicyErrors != SslPolicyErrors.None)
@@ -130,10 +130,10 @@ public partial class QuicConnection
                         throw new AuthenticationException(SR.Format(SR.net_quic_cert_chain_validation, sslPolicyErrors));
                     }
 
-                    status = QUIC_STATUS_HANDSHAKE_FAILURE;
+                    result = QUIC_TLS_ALERT_CODES.BAD_CERTIFICATE;
                 }
 
-                return status;
+                return result;
             }
             catch (Exception ex)
             {
