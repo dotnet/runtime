@@ -2511,7 +2511,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 if (intrinsicTree->OperIsEmbRoundingEnabled() && !intrinsicTree->Op(4)->IsCnsIntOrI())
                 {
-                    srcCount += BuildDelayFreeUses(intrinsicTree->Op(4), emitOp1);
+                    srcCount += BuildOperandUses(intrinsicTree->Op(4));
                 }
 
                 buildUses = false;
