@@ -18,6 +18,7 @@ namespace System.Reflection
         internal FieldAccessor(FieldInfo fieldInfo)
         {
             _fieldInfo = (RtFieldInfo)fieldInfo;
+            Debug.Assert(_fieldInfo.m_declaringType != null);
 
             if (_fieldInfo.m_declaringType.ContainsGenericParameters ||
                 _fieldInfo.m_declaringType.IsNullableOfT)
@@ -32,8 +33,6 @@ namespace System.Reflection
 
         private void Initialize()
         {
-            Debug.Assert(_fieldInfo.m_declaringType != null);
-
             if (!RuntimeFieldHandle.IsFastPathSupported(_fieldInfo))
             {
                 // Currently this is true for [ThreadStatic] cases, for fields added from EnC, and for fields on unloadable types.
@@ -41,79 +40,74 @@ namespace System.Reflection
                 return;
             }
 
-            unsafe
-            {
-                _methodTable = (MethodTable*)_fieldInfo.FieldType.TypeHandle.Value;
-            }
-
             RuntimeType fieldType = (RuntimeType)_fieldInfo.FieldType;
 
-            if (_fieldInfo.IsStatic)
+            unsafe
             {
-                _addressOrOffset = RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo);
-
-                if (fieldType.IsValueType)
+                if (_fieldInfo.IsStatic)
                 {
-                    if (fieldType.IsEnum)
+                    _addressOrOffset = RuntimeFieldHandle.GetStaticFieldAddress(_fieldInfo);
+
+                    if (fieldType.IsValueType)
                     {
-                        _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType.GetEnumUnderlyingType());
+                        if (fieldType.IsEnum)
+                        {
+                            _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType.GetEnumUnderlyingType());
+                            _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                        }
+                        else if (RuntimeTypeHandle.GetCorElementType(fieldType) == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                        {
+                            // The runtime stores non-primitive value types as a boxed value.
+                            _fieldAccessType = FieldAccessorType.StaticValueTypeBoxed;
+                            _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                        }
+                        else
+                        {
+                            _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType);
+                            _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                        }
                     }
-                    else if (RuntimeTypeHandle.GetCorElementType(fieldType) == CorElementType.ELEMENT_TYPE_VALUETYPE)
+                    else if (fieldType.IsPointer)
                     {
-                        // The runtime stores non-primitive value types as a boxed value.
-                        _fieldAccessType = FieldAccessorType.StaticValueTypeBoxed;
+                        _fieldAccessType = FieldAccessorType.StaticPointerType;
+                    }
+                    else if (fieldType.IsFunctionPointer)
+                    {
+                        _fieldAccessType = GetIntPtrAccessorTypeForStatic();
+                        _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
                     }
                     else
                     {
-                        _fieldAccessType = GetPrimitiveAccessorTypeForStatic(fieldType);
-                    }
-                }
-                else if (fieldType.IsPointer)
-                {
-                    _fieldAccessType = FieldAccessorType.StaticPointerType;
-                }
-                else if (fieldType.IsFunctionPointer)
-                {
-                    _fieldAccessType = GetIntPtrAccessorTypeForStatic();
-
-                    unsafe
-                    {
-                        _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
+                        _fieldAccessType = FieldAccessorType.StaticReferenceType;
                     }
                 }
                 else
                 {
-                    _fieldAccessType = FieldAccessorType.StaticReferenceType;
-                }
-            }
-            else
-            {
-                _addressOrOffset = RuntimeFieldHandle.GetInstanceFieldOffset(_fieldInfo);
+                    _addressOrOffset = RuntimeFieldHandle.GetInstanceFieldOffset(_fieldInfo);
 
-                if (fieldType.IsEnum)
-                {
-                    _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType());
-                }
-                else if (fieldType.IsValueType)
-                {
-                    _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType);
-                }
-                else if (fieldType.IsPointer)
-                {
-                    _fieldAccessType = FieldAccessorType.InstancePointerType;
-                }
-                else if (fieldType.IsFunctionPointer)
-                {
-                    _fieldAccessType = GetIntPtrAccessorTypeForInstance();
-
-                    unsafe
+                    if (fieldType.IsEnum)
                     {
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType.GetEnumUnderlyingType());
+                        _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                    }
+                    else if (fieldType.IsValueType)
+                    {
+                        _fieldAccessType = GetPrimitiveAccessorTypeForInstance(fieldType);
+                        _methodTable = (MethodTable*)fieldType.TypeHandle.Value;
+                    }
+                    else if (fieldType.IsPointer)
+                    {
+                        _fieldAccessType = FieldAccessorType.InstancePointerType;
+                    }
+                    else if (fieldType.IsFunctionPointer)
+                    {
+                        _fieldAccessType = GetIntPtrAccessorTypeForInstance();
                         _methodTable = (MethodTable*)typeof(IntPtr).TypeHandle.Value;
                     }
-                }
-                else
-                {
-                    _fieldAccessType = FieldAccessorType.InstanceReferenceType;
+                    else
+                    {
+                        _fieldAccessType = FieldAccessorType.InstanceReferenceType;
+                    }
                 }
             }
         }
@@ -220,7 +214,9 @@ namespace System.Reflection
                     case FieldAccessorType.InstanceReferenceType:
                         VerifyInstanceField(obj, ref value, invokeAttr, binder, culture);
                         Debug.Assert(obj != null);
-                        Volatile.Write(ref Unsafe.As<byte, object?>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)), value);
+                        Volatile.Write(
+                            ref Unsafe.As<byte, object?>(ref Unsafe.AddByteOffset(ref obj.GetRawData(), _addressOrOffset)),
+                            value);
                         return;
 
                     case FieldAccessorType.InstanceValueTypeSize1:
