@@ -26529,7 +26529,7 @@ bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
         {
             return numArgs == 2;
         }
-        
+
         default:
             unreached();
     }

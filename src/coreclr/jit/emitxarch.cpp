@@ -8554,14 +8554,19 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
 //    op3Reg    -- The register of the second operand
 //    instOptions - The options that modify how the instruction is generated
 //
-void emitter::emitIns_SIMD_R_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, insOpts instOptions)
+void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
+                                   emitAttr    attr,
+                                   regNumber   targetReg,
+                                   regNumber   op1Reg,
+                                   regNumber   op2Reg,
+                                   regNumber   op3Reg,
+                                   insOpts     instOptions)
 {
     if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins))
     {
         assert(UseSimdEncoding());
 
-        if(instOptions != INS_OPTS_NONE)
+        if (instOptions != INS_OPTS_NONE)
         {
             // insOpts is currently available only in EVEX encoding.
             assert(UseEvexEncoding());

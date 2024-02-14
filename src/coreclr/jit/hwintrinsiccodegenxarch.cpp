@@ -1123,8 +1123,13 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
 //    op3       - The third operand
 //    instOptions - The options that modify how the instruction is generated
 //
-void CodeGen::genHWIntrinsic_R_R_R_RM(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3, insOpts instOptions)
+void CodeGen::genHWIntrinsic_R_R_R_RM(instruction ins,
+                                      emitAttr    attr,
+                                      regNumber   targetReg,
+                                      regNumber   op1Reg,
+                                      regNumber   op2Reg,
+                                      GenTree*    op3,
+                                      insOpts     instOptions)
 {
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
@@ -1133,7 +1138,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
     emitter*    emit    = GetEmitter();
     OperandDesc op3Desc = genOperandDesc(op3);
 
-    if(((instOptions & INS_OPTS_EVEX_b_MASK) != 0 ) && (op3Desc.GetKind() == OperandKind::Reg))
+    if (((instOptions & INS_OPTS_EVEX_b_MASK) != 0) && (op3Desc.GetKind() == OperandKind::Reg))
     {
         // As embedded rounding only appies in R_R case, we can skip other checks for different paths.
         regNumber op3Reg = op3->GetRegNum();
@@ -1404,7 +1409,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             genHWIntrinsicJumpTableFallback(intrinsicId, lastOp->GetRegNum(), baseReg, offsReg, emitSwCase);
             break;
         }
-        
+
         case NI_AVX512F_FusedMultiplyAdd:
         case NI_AVX512F_FusedMultiplyAddScalar:
         case NI_AVX512F_FusedMultiplyAddNegated:
@@ -1416,12 +1421,13 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512F_FusedMultiplySubtractScalar:
         {
-            // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
+            // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding
+            // is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
             assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinsicId));
 
-            GenTree*    op1      = node->Op(1);
-            GenTree*    op2      = node->Op(2);
-            GenTree*    op3      = node->Op(3);
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
 
             regNumber op1Reg = op1->GetRegNum();
             regNumber op2Reg = op2->GetRegNum();

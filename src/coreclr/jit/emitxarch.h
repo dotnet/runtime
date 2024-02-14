@@ -839,8 +839,13 @@ void emitIns_SIMD_R_R_R_C(instruction          ins,
                           regNumber            op2Reg,
                           CORINFO_FIELD_HANDLE fldHnd,
                           int                  offs);
-void emitIns_SIMD_R_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, insOpts instOptions = INS_OPTS_NONE);
+void emitIns_SIMD_R_R_R_R(instruction ins,
+                          emitAttr    attr,
+                          regNumber   targetReg,
+                          regNumber   op1Reg,
+                          regNumber   op2Reg,
+                          regNumber   op3Reg,
+                          insOpts     instOptions = INS_OPTS_NONE);
 void emitIns_SIMD_R_R_R_S(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, int varx, int offs);
 
