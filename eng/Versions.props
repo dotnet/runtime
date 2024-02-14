@@ -243,9 +243,9 @@
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport
     -->
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.0-preview.2.24111.1</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>9.0.0-preview.2.24113.2</MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest90100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
-    <MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>9.0.0-preview.2.24111.1</MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>
+    <MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>9.0.0-preview.2.24113.2</MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
