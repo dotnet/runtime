@@ -2696,6 +2696,14 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
             ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
 
+            if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
+            {
+                // It won't be trivial to properly extract side-effects from the call node.
+                // Ideally, we only need side effects from the castClsArg argument as the call itself
+                // won't throw any exceptions. But we should not forget about the EarlyNode (setup args)
+                return nullptr;
+            }
+
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(castObjArgVN, &funcApp) &&
                 ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf)))

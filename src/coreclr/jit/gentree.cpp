@@ -17069,6 +17069,8 @@ bool Compiler::gtSplitTree(
 //
 // Arguments:
 //    tree              - the expression tree to wrap with side effects (if any)
+//                        it has to be either a side effect free node of sideEffectsSource
+//                        or any tree outside sideEffectsSource's hierarchy
 //    sideEffectsSource - the expression tree to extract side effects from
 //    sideEffectsFlags  - side effect flags to be considered
 //    ignoreRoot        - ignore side effects on the expression root node
