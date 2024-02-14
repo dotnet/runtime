@@ -122,7 +122,8 @@ class ScalarEvolutionContext
     FlowGraphNaturalLoop* m_loop = nullptr;
     ScalarEvolutionMap    m_cache;
 
-    Scev* AnalyzeNew(BasicBlock* block, GenTree* tree);
+    Scev* Analyze(BasicBlock* block, GenTree* tree, int depth);
+    Scev* AnalyzeNew(BasicBlock* block, GenTree* tree, int depth);
     Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
                              Scev*                start,
                              BasicBlock*          stepDefBlock,
@@ -375,7 +376,7 @@ Scev* ScalarEvolutionContext::CreateScevForConstant(GenTreeIntConCommon* tree)
 //   SCEV node if the tree was analyzable; otherwise nullptr if the value is
 //   cannot be described.
 //
-Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
+Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int depth)
 {
     switch (tree->OperGet())
     {
@@ -402,9 +403,8 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
                 GenTreeLclVarCommon* def = ssaDsc->GetDefNode();
                 if ((def != nullptr) && def->Data()->OperIs(GT_CNS_INT, GT_CNS_LNG))
                 {
-                    // For constant definitions from outside the loop we prefer to inline the constant.
-                    // TODO: Maybe we shouldn't but should just do it when we dump the scev?
-
+                    // For constant definitions from outside the loop we prefer
+                    // to inline the constant.
                     return CreateScevForConstant(def->Data()->AsIntConCommon());
                 }
 
@@ -424,7 +424,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
                 return nullptr;
             }
 
-            return Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode());
+            return Analyze(ssaDsc->GetBlock(), ssaDsc->GetDefNode(), depth + 1);
         }
         case GT_STORE_LCL_VAR:
         {
@@ -432,7 +432,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
             GenTree*             data  = store->Data();
             if (!data->OperIs(GT_PHI))
             {
-                return Analyze(block, data);
+                return Analyze(block, data, depth + 1);
             }
 
             if (block != m_loop->GetHeader())
@@ -526,7 +526,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
                 return nullptr;
             }
 
-            Scev* op = Analyze(block, cast->CastOp());
+            Scev* op = Analyze(block, cast->CastOp(), depth + 1);
             if (op == nullptr)
             {
                 return nullptr;
@@ -538,11 +538,11 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
         case GT_MUL:
         case GT_LSH:
         {
-            Scev* op1 = Analyze(block, tree->gtGetOp1());
+            Scev* op1 = Analyze(block, tree->gtGetOp1(), depth + 1);
             if (op1 == nullptr)
                 return nullptr;
 
-            Scev* op2 = Analyze(block, tree->gtGetOp2());
+            Scev* op2 = Analyze(block, tree->gtGetOp2(), depth + 1);
             if (op2 == nullptr)
                 return nullptr;
 
@@ -566,11 +566,11 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree)
         }
         case GT_COMMA:
         {
-            return Analyze(block, tree->gtGetOp2());
+            return Analyze(block, tree->gtGetOp2(), depth + 1);
         }
         case GT_ARR_ADDR:
         {
-            return Analyze(block, tree->AsArrAddr()->Addr());
+            return Analyze(block, tree->AsArrAddr()->Addr(), depth + 1);
         }
         default:
             return nullptr;
@@ -641,10 +641,47 @@ Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStor
 //
 Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
 {
+    return Analyze(block, tree, 0);
+}
+
+// Since the analysis follows SSA defs we have no upper bound on the potential
+// depth of the analysis performed. We put an artificial limit on this for two
+// reasons:
+// 1. The analysis is recursive, and we should not stack overflow regardless of
+// the input program.
+// 2. If we produced arbitrarily deep SCEV trees then all algorithms over their
+// structure would similarly be at risk of stack overflows if they were
+// recursive. However, these algorithms are generally much more elegant when
+// they make use of recursion.
+const int SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH = 64;
+
+static Counter s_numDepthHit;
+DumpOnShutdown ds("ScalarEvolutionContext::Analyze depth hit", &s_numDepthHit);
+
+//------------------------------------------------------------------------
+// Analyze: Analyze the specified tree in the specified block.
+//
+// Parameters:
+//   block - Block containing the tree
+//   tree  - Tree node
+//   depth - Current analysis depth.
+//
+// Returns:
+//   SCEV node if the tree was analyzable; otherwise nullptr if the value is
+//   cannot be described.
+//
+Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree, int depth)
+{
     Scev* result;
     if (!m_cache.Lookup(tree, &result))
     {
-        result = AnalyzeNew(block, tree);
+        if (depth >= SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH)
+        {
+            s_numDepthHit.Value++;
+            return nullptr;
+        }
+
+        result = AnalyzeNew(block, tree, depth);
         m_cache.Set(tree, result);
     }
 
@@ -1189,9 +1226,9 @@ PhaseStatus Compiler::optInductionVariables()
 
     bool changed = false;
 
-    // Currently we only do IV widening which is only profitable for x64
-    // because arm64 addressing modes can include the zero/sign-extension of
-    // the index for free.
+    // Currently we only do IV widening which generally is only profitable for
+    // x64 because arm64 addressing modes can include the zero/sign-extension
+    // of the index for free.
     CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
     m_dfsTree = fgComputeDfs();
@@ -1224,6 +1261,9 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
+            // If the IV is not enregisterable then uses/defs are going to go
+            // to stack regardless. This check also filters out IVs that may be
+            // live into exceptional exits since those are always marked DNER.
             if (lclDsc->lvDoNotEnregister)
             {
                 JITDUMP("  V%02u is marked DNER\n", lcl->GetLclNum());
