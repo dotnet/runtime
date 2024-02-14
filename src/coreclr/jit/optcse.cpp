@@ -618,10 +618,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 // already prove that the first one is _not_ going to be a
                 // valid def for the second one, due to the second one having
                 // more exceptions. This happens for example in code like
-                // CASTCLASS(x, y) where x was already proven to be of type y.
-                // In those cases it is always better to let the second value
-                // be the def.
-                // This is essentially a less special-casey version of the
+                // CASTCLASS(x, y) where the "CASTCLASS" just adds exceptions
+                // on top of "x". In those cases it is always better to let the
+                // second value be the def.
+                // It also happens for GT_COMMA, but that one is special cased
+                // above; this handling is a less special-casey version of the
                 // GT_COMMA handling above. However, it is quite limited since
                 // it only handles the def/use being in the same block.
                 if (compCurBB == hashDsc->csdBlock)
