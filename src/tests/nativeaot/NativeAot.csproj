@@ -6,6 +6,7 @@
 
     <MergedWrapperProjectReference Remove="SmokeTests/ControlFlowGuard/ControlFlowGuard.csproj" />
     <MergedWrapperProjectReference Remove="SmokeTests/DynamicGenerics/DynamicGenerics.csproj" />
+    <MergedWrapperProjectReference Remove="SmokeTests/MultiModule/*.*" />
   </ItemGroup>
 
   <PropertyGroup>
