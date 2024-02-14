@@ -23756,6 +23756,10 @@ void emitter::emitDispSvePrfop(insSvePrfop prfop, bool addComma)
             printf("#7");
             break;
 
+        case SVE_PRFOP_CONST14:
+            printf("#0xE");
+            break;
+
         case SVE_PRFOP_CONST15:
             printf("#0xF");
             break;

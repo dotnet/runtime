@@ -7550,6 +7550,8 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                                     INS_OPTS_SCALABLE_S_SXTW); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
     theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_CONST7, REG_P1, REG_R2, REG_V3,
                                     INS_OPTS_SCALABLE_S_SXTW); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_CONST14, REG_P1, REG_R2, REG_V3,
+                                    INS_OPTS_SCALABLE_S_UXTW); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
     theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_CONST15, REG_P1, REG_R2, REG_V3,
                                     INS_OPTS_SCALABLE_S_UXTW); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
 

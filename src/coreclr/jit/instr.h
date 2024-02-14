@@ -422,6 +422,7 @@ enum insSvePrfop : unsigned
 
     SVE_PRFOP_CONST6    = 0b0110,
     SVE_PRFOP_CONST7    = 0b0111,
+    SVE_PRFOP_CONST14   = 0b1110,
     SVE_PRFOP_CONST15   = 0b1111
 
 };
