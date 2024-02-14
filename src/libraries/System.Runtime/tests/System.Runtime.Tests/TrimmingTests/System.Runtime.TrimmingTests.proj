@@ -23,10 +23,6 @@
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
       <DisabledProperties>InvariantGlobalization</DisabledProperties>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <DisabledProperties>HybridGlobalization</DisabledProperties>
-      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
-    </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
       causing the framework to not be able to get source line info any longer. This
@@ -61,6 +57,18 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
       <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <DisabledProperties>HybridGlobalization</DisabledProperties>
+      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly;WasmBuildNative</EnabledProperties>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <DisabledProperties>HybridGlobalization</DisabledProperties>
+      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 
