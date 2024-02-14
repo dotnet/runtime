@@ -6,7 +6,10 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tests;
 using Microsoft.DotNet.RemoteExecutor;
@@ -1069,6 +1072,22 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+        private sealed class RuntimeEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == ClrProviderName)
+                {
+                    EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+        }
+
         private class ClrMinMaxThreadsEventListener : EventListener
         {
             private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
@@ -1157,6 +1176,49 @@ namespace System.Threading.ThreadPools.Tests
                 Assert.Equal(newMinIOCompletionThreads, (ushort)el.Payloads[2][2]);
                 Assert.Equal(newMaxWorkerThreads, (ushort)el.Payloads[2][1]);
                 Assert.Equal(newMaxIOCompletionThreads, (ushort)el.Payloads[2][3]);
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void ReadAsyncTest()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                using (RuntimeEventListener eventListener = new RuntimeEventListener())
+                {
+                    TaskCompletionSource<int> portTcs = new TaskCompletionSource<int>();
+                    async Task StartListenerAsync()
+                    {
+                        TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+                        listener.Start();
+                        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+                        portTcs.SetResult(port);
+                        TcpClient client = await listener.AcceptTcpClientAsync();
+                        using (NetworkStream stream = client.GetStream())
+                        {
+                            byte[] buffer = new byte[1024];
+                            int bytesRead;
+                            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0);
+                        }
+                        listener.Stop();
+                    }
+                    async Task StartClientAsync()
+                    {
+                        int port = await portTcs.Task;
+                        using (TcpClient client = new TcpClient(new IPEndPoint(IPAddress.Loopback, 0)))
+                        {
+                            await client.ConnectAsync(IPAddress.Loopback, port);
+                            using (NetworkStream stream = client.GetStream())
+                            {
+                                byte[] data = Encoding.UTF8.GetBytes(new string('*', 1 << 26));
+                                await stream.WriteAsync(data, 0, data.Length);
+                            }
+                        }
+                    }
+                    Task listenerTask = StartListenerAsync();
+                    Task clientTask = StartClientAsync();
+                    await Task.WhenAll(listenerTask, clientTask);
+                }
             }).Dispose();
         }
 
