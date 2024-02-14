@@ -38,7 +38,7 @@ using Mono.Cecil;
 namespace Mono.Linker
 {
 
-	internal class TypeMapInfo
+	public class TypeMapInfo
 	{
 		readonly HashSet<AssemblyDefinition> assemblies = new HashSet<AssemblyDefinition> ();
 		readonly LinkContext context;

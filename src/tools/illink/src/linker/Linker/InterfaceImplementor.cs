@@ -6,7 +6,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	internal class InterfaceImplementor
+	public class InterfaceImplementor
 	{
 		public TypeDefinition Implementor { get; }
 		public InterfaceImplementation InterfaceImplementation { get; }
