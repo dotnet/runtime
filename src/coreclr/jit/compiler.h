@@ -2185,9 +2185,6 @@ public:
     BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
 
     template<typename TFunc>
-    BasicBlockVisit VisitAllExitBlocks(TFunc func);
-
-    template<typename TFunc>
     BasicBlockVisit VisitRegularExitBlocks(TFunc func);
 
     BasicBlock* GetLexicallyTopMostBlock();

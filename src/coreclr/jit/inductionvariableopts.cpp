@@ -822,8 +822,10 @@ Scev* ScalarEvolutionContext::Simplify(Scev* scev)
 //
 //   We are able to sink when none of the exits are critical blocks, in the
 //   sense that all their predecessors must come from inside the loop. Loop
-//   exit canonicalization guarantees this for regular exit blocks, but
-//   exceptional exits may still have non-loop predecessors.
+//   exit canonicalization guarantees this for regular exit blocks. It is not
+//   guaranteed for exceptional exits, but we do not expect to widen IVs that
+//   are live into exceptional exits since those are marked DNER which makes it
+//   unprofitable anyway.
 //
 //   Note that there may be natural loops that have not had their regular exits
 //   canonicalized at the time when IV opts run, in particular if RBO/assertion
@@ -834,29 +836,51 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 {
     LclVarDsc* dsc = lvaGetDesc(lclNum);
 
-    BasicBlockVisit result = loop->VisitAllExitBlocks([=](BasicBlock* exit) {
+    BasicBlockVisit result = loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
+
         if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
             JITDUMP("  Exit " FMT_BB " does not need a sink; V%02u is not live-in\n", exit->bbNum, lclNum);
             return BasicBlockVisit::Continue;
         }
 
-        for (FlowEdge* predEdge = BlockPredsWithEH(exit); predEdge != nullptr; predEdge = predEdge->getNextPredEdge())
+        for (BasicBlock* pred : exit->PredBlocks())
         {
-            if (!loop->ContainsBlock(predEdge->getSourceBlock()))
+            if (!loop->ContainsBlock(pred))
             {
                 JITDUMP("  Cannot safely sink widened version of V%02u into exit " FMT_BB " of " FMT_LP
                         "; it has a non-loop pred " FMT_BB "\n",
-                        lclNum, exit->bbNum, loop->GetIndex(), predEdge->getSourceBlock()->bbNum);
+                        lclNum, exit->bbNum, loop->GetIndex(), pred->bbNum);
                 return BasicBlockVisit::Abort;
             }
         }
 
-        JITDUMP("  V%02u is live into exit " FMT_BB "; will sink the widened value\n", lclNum, exit->bbNum);
         return BasicBlockVisit::Continue;
     });
 
-    return result == BasicBlockVisit::Continue;
+#ifdef DEBUG
+    // We currently do not expect to ever widen IVs that are live into
+    // exceptional exits. Such IVs are expected to have been marked DNER
+    // previously (EH write-thru is only for single def locals) which makes it
+    // unprofitable. If this ever changes we need some more expansive handling
+    // here.
+    loop->VisitLoopBlocks([=](BasicBlock* block) {
+
+        block->VisitAllSuccs(this, [=](BasicBlock* succ) {
+            if (!loop->ContainsBlock(succ) && bbIsHandlerBeg(succ))
+            {
+                assert(!VarSetOps::IsMember(this, succ->bbLiveIn, dsc->lvVarIndex) &&
+                       "Candidate IV for widening is live into exceptional exit");
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        return BasicBlockVisit::Continue;
+    });
+#endif
+
+    return result != BasicBlockVisit::Abort;
 }
 
 //------------------------------------------------------------------------
@@ -971,7 +995,7 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
 
     // Now account for the cost of sinks.
     LclVarDsc* dsc = lvaGetDesc(lclNum);
-    loop->VisitAllExitBlocks([&](BasicBlock* exit) {
+    loop->VisitRegularExitBlocks([&](BasicBlock* exit) {
         if (VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
             savedSize -= ExtensionSize;
@@ -1021,7 +1045,7 @@ bool Compiler::optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNa
 {
     bool       anySunk = false;
     LclVarDsc* dsc     = lvaGetDesc(lclNum);
-    loop->VisitAllExitBlocks([=, &anySunk](BasicBlock* exit) {
+    loop->VisitRegularExitBlocks([=, &anySunk](BasicBlock* exit) {
         if (!VarSetOps::IsMember(this, exit->bbLiveIn, dsc->lvVarIndex))
         {
             return BasicBlockVisit::Continue;

@@ -4971,45 +4971,6 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
 }
 
 //------------------------------------------------------------------------------
-// FlowGraphNaturalLoop::VisitAllExitBlocks: Visit all blocks that are outside
-// the loop but that may have predecessors inside the loop. This includes
-// handler blocks.
-//
-// Type parameters:
-//   TFunc - Callback functor type
-//
-// Arguments:
-//   func - Callback functor that takes a BasicBlock* and returns a
-//   BasicBlockVisit.
-//
-// Returns:
-//    BasicBlockVisit that indicated whether the visit was aborted by the
-//    callback or whether all blocks were visited.
-//
-template <typename TFunc>
-BasicBlockVisit FlowGraphNaturalLoop::VisitAllExitBlocks(TFunc func)
-{
-    Compiler* comp = m_dfsTree->GetCompiler();
-
-    BitVecTraits traits = m_dfsTree->PostOrderTraits();
-    BitVec       visited(BitVecOps::MakeEmpty(&traits));
-
-    BasicBlockVisit result = VisitLoopBlocksReversePostOrder([&, comp](BasicBlock* block) {
-        return block->VisitAllSuccs(comp, [&](BasicBlock* succ) {
-            if (!ContainsBlock(succ) && BitVecOps::TryAddElemD(&traits, visited, succ->bbPostorderNum) &&
-                (func(succ) == BasicBlockVisit::Abort))
-            {
-                return BasicBlockVisit::Abort;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-    });
-
-    return result;
-}
-
-//------------------------------------------------------------------------------
 // FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit non-handler blocks that
 // are outside the loop but that may have regular predecessors inside the loop.
 //
@@ -5042,19 +5003,10 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
 
     for (FlowEdge* edge : ExitEdges())
     {
-        BasicBlockVisit result = edge->getSourceBlock()->VisitRegularSuccs(comp, [&](BasicBlock* succ) {
-            assert(m_dfsTree->Contains(succ));
-            if (!comp->bbIsHandlerBeg(succ) && !ContainsBlock(succ) &&
-                BitVecOps::TryAddElemD(&traits, visited, succ->bbPostorderNum) &&
-                (func(succ) == BasicBlockVisit::Abort))
-            {
-                return BasicBlockVisit::Abort;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-
-        if (result == BasicBlockVisit::Abort)
+        BasicBlock* exit = edge->getDestinationBlock();
+        assert(m_dfsTree->Contains(exit) && !ContainsBlock(exit));
+        if (!comp->bbIsHandlerBeg(exit) && BitVecOps::TryAddElemD(&traits, visited, exit->bbPostorderNum) &&
+            (func(exit) == BasicBlockVisit::Abort))
         {
             return BasicBlockVisit::Abort;
         }
