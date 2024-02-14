@@ -1157,6 +1157,7 @@ namespace
             case ELEMENT_TYPE_PTR:
             {
                 BYTE ptrByte;
+                sig.SkipCustomModifiers();
                 sig.GetByte(&ptrByte);
                 _ASSERTE(ptrByte == ELEMENT_TYPE_PTR);
                 TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
@@ -1709,6 +1710,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
             SigPointer sigtmp = sig;
             BYTE ptrByte;
+            sigtmp.SkipCustomModifiers();
             sigtmp.GetByte(&ptrByte);
             _ASSERTE(ptrByte == ELEMENT_TYPE_PTR);
             TypeHandle sigTH = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
