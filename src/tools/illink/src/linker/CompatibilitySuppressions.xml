@@ -255,6 +255,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Mono.Linker.InterfaceImplementor</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Mono.Linker.InternalErrorException</Target>
   </Suppression>
   <Suppression>
