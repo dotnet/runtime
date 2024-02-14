@@ -1072,22 +1072,6 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        private sealed class RuntimeEventListener : EventListener
-        {
-            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
-            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
-
-            protected override void OnEventSourceCreated(EventSource eventSource)
-            {
-                if (eventSource.Name == ClrProviderName)
-                {
-                    EnableEvents(eventSource, EventLevel.Informational, ThreadingKeyword);
-                }
-
-                base.OnEventSourceCreated(eventSource);
-            }
-        }
-
         private class ClrMinMaxThreadsEventListener : EventListener
         {
             private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
@@ -1179,6 +1163,32 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
+        private sealed class RuntimeEventListener : EventListener
+        {
+            private const string ClrProviderName = "Microsoft-Windows-DotNETRuntime";
+            private const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
+
+            public volatile int TPIOEnqueue = 0;
+            public ManualResetEvent TPWaitIOEnqueueEvent = new ManualResetEvent(false);
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name.Equals(ClrProviderName))
+                {
+                    EnableEvents(eventSource, EventLevel.Verbose, ThreadingKeyword);
+                }
+
+                base.OnEventSourceCreated(eventSource);
+            }
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
+                {
+                    Interlocked.Increment(ref TPIOEnqueue);
+                    TPWaitIOEnqueueEvent.Set();
+                }
+            }
+        }
+
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public void ReadWriteAsyncTest()
         {
@@ -1218,6 +1228,8 @@ namespace System.Threading.ThreadPools.Tests
                     Task listenerTask = StartListenerAsync();
                     Task clientTask = StartClientAsync();
                     await Task.WhenAll(listenerTask, clientTask);
+                    eventListener.TPWaitIOEnqueueEvent.WaitOne(TimeSpan.FromSeconds(15));
+                    Assert.True(eventListener.TPIOEnqueue > 0);
                 }
             }).Dispose();
         }
