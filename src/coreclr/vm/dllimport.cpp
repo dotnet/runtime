@@ -5035,12 +5035,19 @@ namespace
                                 }
                                 else
                                 {
-                                    // For generic calli/varargs, we only support blittable types
-                                    if (!pSigDesc->m_typeContext.IsEmpty()
-                                        && (SF_IsCALLIStub(dwStubFlags) || SF_IsVarArgStub(dwStubFlags))
-                                        && NDirect::MarshalingRequired(NULL, pStubMD->GetSig(), pSigDesc->m_pModule, &pSigDesc->m_typeContext))
+                                    if (!pSigDesc->m_typeContext.IsEmpty())
                                     {
-                                        COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
+                                        // For generic calli, we only support blittable types
+                                        if (SF_IsCALLIStub(dwStubFlags)
+                                            && NDirect::MarshalingRequired(NULL, pStubMD->GetSig(), pSigDesc->m_pModule, &pSigDesc->m_typeContext))
+                                        {
+                                            COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_GENERICS_RESTRICTION);
+                                        }
+                                        // We don't want to support generic varargs, so block it
+                                        else if (SF_IsVarArgStub(dwStubFlags))
+                                        {
+                                            COMPlusThrow(kNotSupportedException, BFA_GENCODE_NOT_BE_VARARG);
+                                        }
                                     }
 
                                     CreateNDirectStubWorker(pss,
