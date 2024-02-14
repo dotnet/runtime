@@ -9988,6 +9988,8 @@ public:
 
     const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
+    const char* printfAlloc(const char* format, ...);
+
 #endif // DEBUG
 
 // clang-format off
