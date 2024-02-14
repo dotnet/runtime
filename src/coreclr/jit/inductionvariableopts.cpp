@@ -655,9 +655,6 @@ Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree)
 // they make use of recursion.
 const int SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH = 64;
 
-static Counter s_numDepthHit;
-DumpOnShutdown ds("ScalarEvolutionContext::Analyze depth hit", &s_numDepthHit);
-
 //------------------------------------------------------------------------
 // Analyze: Analyze the specified tree in the specified block.
 //
@@ -677,7 +674,6 @@ Scev* ScalarEvolutionContext::Analyze(BasicBlock* block, GenTree* tree, int dept
     {
         if (depth >= SCALAR_EVOLUTION_ANALYSIS_MAX_DEPTH)
         {
-            s_numDepthHit.Value++;
             return nullptr;
         }
 
