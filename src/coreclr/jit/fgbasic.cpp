@@ -449,18 +449,17 @@ void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
     assert(oldBlock->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    for (BasicBlock* const succ : oldBlock->EHFinallyRetSuccs())
+    BBehfDesc* ehfDesc = oldBlock->GetEhfTargets();
+
+    for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
     {
-        assert(succ != nullptr);
+        FlowEdge* succEdge = ehfDesc->bbeSuccs[i];
+        assert(succEdge != nullptr);
 
-        // Remove the old edge [oldBlock => succ]
+        // Redirect edge's source block from oldBlock to newBlock
         //
-        assert(succ->countOfInEdges() > 0);
-        fgRemoveRefPred(succ, oldBlock);
-
-        // Create the new edge [newBlock => succ]
-        //
-        fgAddRefPred(succ, newBlock);
+        assert(succEdge->getSourceBlock() == oldBlock);
+        succEdge->setSourceBlock(newBlock);
     }
 }
 
@@ -486,19 +485,19 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
 
     BBehfDesc* const   ehfDesc   = block->GetEhfTargets();
     const unsigned     succCount = ehfDesc->bbeCount;
-    BasicBlock** const succTab   = ehfDesc->bbeSuccs;
+    FlowEdge** const   succTab   = ehfDesc->bbeSuccs;
 
     // Walk the successor table looking for the old successor, which we expect to find.
     unsigned oldSuccNum = UINT_MAX;
     unsigned newSuccNum = UINT_MAX;
     for (unsigned i = 0; i < succCount; i++)
     {
-        if (succTab[i] == newSucc)
+        if (succTab[i]->getDestinationBlock() == newSucc)
         {
             newSuccNum = i;
         }
 
-        if (succTab[i] == oldSucc)
+        if (succTab[i]->getSourceBlock() == oldSucc)
         {
             oldSuccNum = i;
         }
@@ -517,17 +516,17 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     }
     else
     {
-        // Replace the old one with the new one.
-
-        succTab[oldSuccNum] = newSucc;
-
         // Remove the old edge [block => oldSucc]
         //
         fgRemoveAllRefPreds(oldSucc, block);
 
         // Create the new edge [block => newSucc]
         //
-        fgAddRefPred(newSucc, block);
+        FlowEdge* const newEdge = fgAddRefPred(newSucc, block);
+
+        // Replace the old one with the new one.
+        //
+        succTab[oldSuccNum] = newEdge;
 
         JITDUMP("Replace BBJ_EHFINALLYRET " FMT_BB " successor " FMT_BB " with " FMT_BB "\n", block->bbNum,
                 oldSucc->bbNum, newSucc->bbNum);
@@ -556,19 +555,19 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
 
     BBehfDesc* const ehfDesc   = block->GetEhfTargets();
     unsigned         succCount = ehfDesc->bbeCount;
-    BasicBlock**     succTab   = ehfDesc->bbeSuccs;
+    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
     bool             found     = false;
 
     // Walk the successor table looking for the specified successor block.
     for (unsigned i = 0; i < succCount; i++)
     {
-        if (succTab[i] == succ)
+        if (succTab[i]->getDestinationBlock() == succ)
         {
             // If it's not the last one, move everything after in the table down one slot.
             if (i + 1 < succCount)
             {
-                memmove_s(&succTab[i], (succCount - i) * sizeof(BasicBlock*), &succTab[i + 1],
-                          (succCount - i - 1) * sizeof(BasicBlock*));
+                memmove_s(&succTab[i], (succCount - i) * sizeof(FlowEdge*), &succTab[i + 1],
+                          (succCount - i - 1) * sizeof(FlowEdge*));
             }
 
             --succCount;
@@ -579,7 +578,7 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
             // We only expect to see a successor once in the table.
             for (; i < succCount; i++)
             {
-                assert(succTab[i] != succ);
+                assert(succTab[i]->getDestinationBlock() != succ);
             }
 #endif // DEBUG
 
