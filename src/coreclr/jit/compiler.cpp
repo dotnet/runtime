@@ -5036,7 +5036,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    optLoopsRequirePreHeaders = false;
+    optLoopsCanonical = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);

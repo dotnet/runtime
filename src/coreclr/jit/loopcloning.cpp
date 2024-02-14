@@ -2969,11 +2969,18 @@ PhaseStatus Compiler::optCloneLoops()
 
     if (optLoopsCloned > 0)
     {
-        fgRenumberBlocks();
-
         fgInvalidateDfsTree();
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        if (optCanonicalizeLoops())
+        {
+            fgInvalidateDfsTree();
+            m_dfsTree = fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
+
+        fgRenumberBlocks();
     }
 
 #ifdef DEBUG

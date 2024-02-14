@@ -2184,6 +2184,9 @@ public:
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
 
+    template<typename TFunc>
+    BasicBlockVisit VisitRegularExitBlocks(TFunc func);
+
     BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
@@ -4976,7 +4979,11 @@ public:
     FlowGraphDominatorTree* m_domTree;
     BlockReachabilitySets* m_reachabilitySets;
 
-    bool optLoopsRequirePreHeaders; // Do we require that all loops (in m_loops) have pre-headers?
+    // Do we require loops to be in canonical form? The canonical form ensures that:
+    // 1. All loops have preheaders (single entry blocks that always enter the loop)
+    // 2. All loop exits where bbIsHandlerBeg(exit) is false have only loop predecessors.
+    //
+    bool optLoopsCanonical;
     unsigned optNumNaturalLoopsFound; // Number of natural loops found in the loop finding phase
 
     bool fgBBVarSetsInited;
@@ -5914,7 +5921,7 @@ public:
 
     PhaseStatus fgCanonicalizeFirstBB();
 
-    void fgSetEHRegionForNewPreheader(BasicBlock* preheader);
+    void fgSetEHRegionForNewPreheaderOrExit(BasicBlock* preheader);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -6793,12 +6800,18 @@ public:
 
     void optFindLoops();
     bool optCanonicalizeLoops();
+
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
     BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
     BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
     void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
+
+    bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
+    bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
+    weight_t optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile);
+    void optSetExitWeight(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
