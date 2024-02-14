@@ -111,6 +111,13 @@
   <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
   <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
+  <ItemGroup>
+      <_BoolPropertiesThatTriggerRelinking Include="InvariantTimezone" DefaultValueInRuntimePack="false" />
+      <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
+      <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
+      <_BoolPropertiesThatTriggerRelinking Include="WasmSingleFileBundle" DefaultValueInRuntimePack="false" />
+  </ItemGroup>
+
   <PropertyGroup>
     <PrepareInputsForWasmBuildDependsOn>
       $(PrepareInputsForWasmBuildDependsOn);
@@ -497,10 +504,6 @@
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
 
     <ItemGroup>
-      <_BoolPropertiesThatTriggerRelinking Include="InvariantTimezone" DefaultValueInRuntimePack="false" />
-      <_BoolPropertiesThatTriggerRelinking Include="InvariantGlobalization" DefaultValueInRuntimePack="false" />
-      <_BoolPropertiesThatTriggerRelinking Include="WasmNativeStrip" DefaultValueInRuntimePack="true" />
-      <_BoolPropertiesThatTriggerRelinking Include="WasmSingleFileBundle" DefaultValueInRuntimePack="false" />
       <_ChangedBoolPropertiesThatTriggerRelinking Include="%(_BoolPropertiesThatTriggerRelinking.Identity)" Condition="'$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '' and 
                                                                                                             '$(%(_BoolPropertiesThatTriggerRelinking.Identity))' != '%(_BoolPropertiesThatTriggerRelinking.DefaultValueInRuntimePack)'" />
     </ItemGroup>

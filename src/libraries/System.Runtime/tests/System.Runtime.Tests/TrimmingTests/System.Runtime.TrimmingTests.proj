@@ -1,5 +1,8 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
+  </ItemGroup>
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="AppDomainGetThreadGenericPrincipalTest.cs" />
@@ -22,6 +25,10 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="InvariantGlobalizationFalse.cs">
       <DisabledProperties>InvariantGlobalization</DisabledProperties>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
+      <DisabledProperties>HybridGlobalization</DisabledProperties>
+      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="StackFrameHelperTest.cs">
       <!-- There is a bug with the linker where it is corrupting the pdbs while trimming
@@ -57,18 +64,6 @@
     </TestConsoleAppSourceFiles>
     <TestConsoleAppSourceFiles Include="UseWindowsThreadPoolTrue.cs">
       <EnabledFeatureSwitches>System.Threading.ThreadPool.UseWindowsThreadPool</EnabledFeatureSwitches>
-    </TestConsoleAppSourceFiles>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <DisabledProperties>HybridGlobalization</DisabledProperties>
-      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly;WasmBuildNative</EnabledProperties>
-    </TestConsoleAppSourceFiles>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
-    <TestConsoleAppSourceFiles Include="InvariantGlobalizationTrue.cs">
-      <DisabledProperties>HybridGlobalization</DisabledProperties>
-      <EnabledProperties>InvariantGlobalization;PredefinedCulturesOnly</EnabledProperties>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 
