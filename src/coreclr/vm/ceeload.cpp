@@ -4779,6 +4779,8 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
     
     if (!pCookie)
     {
+        // If not, time to make a new one.
+
         // Compute the size of args first, outside of the lock.
 
         MetaSig metasig(vaSignature, pDefiningModule, typeContext);
