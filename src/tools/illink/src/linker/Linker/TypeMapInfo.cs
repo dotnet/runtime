@@ -32,6 +32,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -291,6 +292,10 @@ namespace Mono.Linker
 			foreach (var interfaceImpl in type.Interfaces) {
 				var potentialImplInterface = context.TryResolve (interfaceImpl.InterfaceType);
 				if (potentialImplInterface == null)
+					continue;
+
+				// If the interface doesn't implement the interface with the method we're looking for, exit early
+				if (!potentialImplInterface.Interfaces.Any(i => context.TryResolve(i.InterfaceType) == interfaceMethod.DeclaringType))
 					continue;
 
 				bool foundImpl = false;
