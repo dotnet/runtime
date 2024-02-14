@@ -300,10 +300,10 @@ namespace System.Runtime.InteropServices.JavaScript
             Type? type = assembly.GetType(GeneratedInitializerClassName);
             if (type == null)
             {
-#if FEATURE_WASM_MANAGED_THREADS
-                throw new InvalidOperationException($"JSExport with multi-threading enabled is not supported with assembly {assemblyName} as it was generated with the .NET 7 SDK");
-#endif
-                // TODO call mono_wasm_runtime_run_module_cctor
+                foreach (var module in assembly.Modules)
+                {
+                    RuntimeHelpers.RunModuleConstructor(module.ModuleHandle);
+                }
             }
             else
             {
