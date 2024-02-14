@@ -43,10 +43,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                if (ex is TargetInvocationException refEx && refEx.InnerException != null)
-                    ex = refEx.InnerException;
-
-                arg_exc.ToJS(ex);
+                Environment.FailFast("CallEntrypoint: Unexpected synchronous failure. " + ex);
             }
         }
 
@@ -111,7 +108,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                arg_exc.ToJS(ex);
+                Environment.FailFast("ReleaseJSOwnedObjectByGCHandle: Unexpected synchronous failure. " + ex);
             }
         }
 
@@ -208,7 +205,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                arg_exc.ToJS(ex);
+                Environment.FailFast("CompleteTask: Unexpected synchronous failure. " + ex);
             }
         }
 
@@ -286,7 +283,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                arg_exc.ToJS(ex);
+                Environment.FailFast("BindAssemblyExports: Unexpected synchronous failure. " + ex);
             }
         }
 
