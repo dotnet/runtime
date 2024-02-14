@@ -3241,7 +3241,7 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
 
         newWeight += contribution;
 
-        // Normalize exiting -> new exit weight
+        // Normalize pred -> new block weight
         edge->setEdgeWeights(contribution, contribution, block);
     }
 
