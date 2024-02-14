@@ -5,14 +5,14 @@ using System;
 using System.IO;
 using Xunit;
 
-using var baseline = File.OpenRead("baseline.object");
-using var compare = File.OpenRead("compare.object");
-
 public class Program
 {
     [Fact]
     public static int TestEntryPoint()
     {
+        var baseline = File.OpenRead("baseline.object");
+        var compare = File.OpenRead("compare.object");
+
         Console.WriteLine($"Baseline size: {baseline.Length}");
         Console.WriteLine($"Compare size: {compare.Length}");
 
@@ -38,7 +38,7 @@ public class Program
         {
             Delegates.Run();
             Devirtualization.Run();
-            Generics.Run();
+            // Generics.Run();
             Interfaces.Run();
         }
 

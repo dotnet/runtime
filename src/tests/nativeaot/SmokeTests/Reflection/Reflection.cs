@@ -21,7 +21,7 @@ using Xunit;
 public static class ReflectionTest
 {
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         // Things I would like to test, but we don't fully support yet:
         // * Interface method is reflectable if we statically called it through a constrained call
@@ -90,7 +90,7 @@ public static class ReflectionTest
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
         TestBaseOnlyUsedFromCode.Run();
-        TestEntryPoint.Run();
+        TestStartPoint.Run();
 
         return 100;
     }
@@ -2535,11 +2535,11 @@ public static class ReflectionTest
         }
     }
 
-    class TestEntryPoint
+    class TestStartPoint
     {
         public static void Run()
         {
-            Console.WriteLine(nameof(TestEntryPoint));
+            Console.WriteLine(nameof(TestStartPoint));
             if (Assembly.GetEntryAssembly().EntryPoint == null)
                 throw new Exception();
         }

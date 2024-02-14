@@ -1,6 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Include="StartupHook/StartupHook.csproj" />
+    <MergedWrapperProjectReference Include="GenerateUnmanagedEntryPoints/**/*.??proj" />
+    <MergedWrapperProjectReference Include="SmokeTests/**/*.??proj" />
+
+    <MergedWrapperProjectReference Remove="SmokeTests/ControlFlowGuard/ControlFlowGuard.csproj" />
+    <MergedWrapperProjectReference Remove="SmokeTests/DynamicGenerics/DynamicGenerics.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

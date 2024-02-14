@@ -14,7 +14,7 @@ using BindingFlags = System.Reflection.BindingFlags;
 public class Program
 {
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
 #if !MULTIMODULE_BUILD
         TestHardwareIntrinsics.Run();
