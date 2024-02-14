@@ -1246,7 +1246,7 @@ static bool IsFastPathSupportedHelper(FieldDesc* pFieldDesc)
 
     return !pFieldDesc->IsThreadStatic() &&
         !pFieldDesc->IsEnCNew() &&
-        !pFieldDesc->IsCollectible();
+        !(pFieldDesc->IsCollectible() && pFieldDesc->IsStatic());
 }
 
 FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::IsFastPathSupported, ReflectFieldObject *pFieldUNSAFE)

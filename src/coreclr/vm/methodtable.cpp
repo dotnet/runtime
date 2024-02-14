@@ -4487,7 +4487,6 @@ Exit:
 }
 
 //==========================================================================================
-// Returns true if the class is initialized.
 void MethodTable::CheckRunClassInitThrowing()
 {
     CONTRACTL
