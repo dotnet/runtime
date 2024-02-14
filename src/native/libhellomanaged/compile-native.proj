@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+    <PropertyGroup>
+        <!-- We always want to use release for publishing using NativeAOT -->
+        <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
+        <!-- TODO: default to shared on windows? -->
+        <NativeLib Condition="'$(NativeLib)' == ''">static</NativeLib>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)src/libhellomanaged.csproj" />
+    </ItemGroup>
+
+    <!-- FIXME: incremental build -->
+    <Target Name="BuildNativeLibs" AfterTargets="Build">
+        <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
+        <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
+        <MSBuild Projects="@(NativeLibsProjectsToBuild)"
+                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(TargetOS)-$(TargetArchitecture);NativeLib=$(NativeLib)"
+                 Targets="Restore;Build;Publish" />
+    </Target>
+</Project>
