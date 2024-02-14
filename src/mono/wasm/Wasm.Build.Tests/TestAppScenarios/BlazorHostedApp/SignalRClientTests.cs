@@ -23,18 +23,18 @@ public class SignalRClientTests : AppTestBase
     {
     }
 
-    // ToDo: run only on MT
-    [Fact]
-    public async Task SignalRClientWorksWithLongPolling()
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
+    [InlineData("Debug", "LongPolling")]
+    [InlineData("Release", "LongPolling")]
+    [InlineData("Debug", "WebSockets")]
+    [InlineData("Release", "WebSockets")]
+    public async Task SignalRPassMessages(string config, string transport)
     {
         CopyTestAsset("BlazorHostedApp", "SignalRClientTests");
-
-        string config = "Debug";
         RunOptions options = new(
             Configuration: config,
-            // for now, TestScenario is ignored - there's only one scenario
-            TestScenario: "SignalRClientTests",
-            BrowserQueryString: new Dictionary<string, string> { ["message"] = "test",  ["transport"] = "LongPolling" },
+            TestScenario: "SignalRPassMessages",
+            BrowserQueryString: new Dictionary<string, string> { ["message"] = "test",  ["transport"] = transport },
             ExtraArgs: $"--logRootPath {s_buildEnv.LogRootPath}"
         );
 
@@ -42,28 +42,16 @@ public class SignalRClientTests : AppTestBase
         string clientProjectDir = Path.Combine(rootProjectPath, "BlazorHosted.Client");
         string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: false, projectDir: clientProjectDir);
         BuildProject(
-            configuration: "Debug",
+            configuration: config,
             binFrameworkDir: frameworkDir,
-            runtimeType: RuntimeVariant.MultiThreaded, 
-            assertAppBundle: false); // Temporary fix to avoid: found dotnet.native.9.0.0-dev.u27nwa5zma.js instead of dotnet.native.9.0.0.js
+            runtimeType: RuntimeVariant.MultiThreaded);
 
         var result = await RunSdkStyleAppForBuild(options);
-        foreach (var a in result.TestOutput)
-        {
-            Console.WriteLine($"TestOutput = {a}");
-        }
-        // foreach (var a in result.ConsoleOutput)
-        // {
-        //     Console.WriteLine($"{a}");
-        // }
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("[LongPolling] Client confirms receiving message=test from server", m)
-        );
 
-        // ToDo:
-        // 1) fix error: SharedArrayBuffer is not enabled on this page
-        // 2) can we reproduce the failures?
-        // 3) add remaining tests from https://github.com/dotnet/aspnetcore/blob/main/src/Components/test/E2ETest/Tests/SignalRClientTest.cs
+        // make sure we're not in the main thread (id != 1)
+        var confirmation = result.TestOutput.FirstOrDefault(m => m.Contains($"[{transport}] Client confirms receiving message=test CurrentManagedThreadId="));
+        Assert.NotNull(confirmation);
+        string currentManagedThreadId = confirmation.Split("CurrentManagedThreadId=")[1];
+        Assert.NotEqual("1", currentManagedThreadId);
     }
 }

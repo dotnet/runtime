@@ -16,13 +16,18 @@ public class ChatHub : Hub
     public async Task SendMessage(string transport, string message)
     {
         _logger.LogInformation($"[{transport}] Server receives message={message}");
-        string changedMessage = $"{message} from server";
-        await Clients.All.SendAsync("ReceiveMessage", transport, changedMessage).ConfigureAwait(false);
+        await Clients.All.SendAsync("ReceiveMessage", transport, message).ConfigureAwait(false);
     }
 
     public void ConfirmClientReceivedMessageAndExit(string transport, string message)
     {
         _logger.LogInformation($"[{transport}] {message}");
-        Environment.Exit(0);
+        Exit(0);
+    }
+
+    public void Exit(int code)
+    {
+        _logger.LogInformation($"Received exit code {code} from client. Exiting.");
+        Environment.Exit(code);
     }
 }

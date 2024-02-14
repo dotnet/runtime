@@ -2,7 +2,6 @@
 @using Microsoft.AspNetCore.SignalR
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.AspNetCore.Http.Connections;
-@using System.Collections.Specialized;
 @using System.Web;
 @inject NavigationManager NavigationManager
 
@@ -19,71 +18,60 @@
     private HubConnection? _hubConnection;
     private string message = string.Empty;
     private string transport = string.Empty;
+    private string scenario = string.Empty;
     private List<string> chatMessages = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
-        GetQueryParameters();
-        HttpTransportType httpTransportType;
-        switch (transport.ToLower())
-        {
-            case "longpolling":
-                httpTransportType = HttpTransportType.LongPolling;
-                break;
-            case "websockets":
-                httpTransportType = HttpTransportType.WebSockets;
-                break;
-            default:
-                throw new Exception($"{transport} is invalid transport type");
-        }
-        await Connect(httpTransportType);
+        GetQueryParameters();        
+        await Connect();
         if (_hubConnection == null)
         {
-            throw new Exception($"Hub connection is not initialized for transport={transport} and message={message}");
+            throw new Exception($"Hub connection is not initialized for transport={transport}");
         }
-        // wait one second before sending
+
+        // wait one second before activating the test scenario
         await Task.Delay(1000);
+        switch (scenario.ToLower())
+        {
+            case "signalrpassmessages":
+                await SignalRPassMessages();
+                break;
+            default:
+                await FailAndExit($"{scenario} is invalid test scenario name");
+                break;
+        }
+    }
+
+    private async Task SignalRPassMessages() => 
         await Task.Run(async () =>
             await _hubConnection.SendAsync(
                 "SendMessage",
                 transport,
-                $"{Environment.CurrentManagedThreadId} {message} from {transport}")
+                $"{message} CurrentManagedThreadId={Environment.CurrentManagedThreadId}")
             );
-    }
 
     private void GetQueryParameters()
     {
         var uri = new Uri(NavigationManager.Uri);
         if (string.IsNullOrEmpty(uri.Query))
         {
-            throw new Exception("Query string with parameters 'message' and 'transport' is required");
+            throw new Exception("Query string with parameters 'test', 'message' and 'transport' are required");
         }
         var parameters = HttpUtility.ParseQueryString(uri.Query);
         if (parameters == null)
         {
-            throw new Exception("Query string with parameters 'message' and 'transport' is required");
+            throw new Exception("Query string with parameters  'test', 'message' and 'transport' are required");
         }
-        message = GetValue(parameters, "message");
-        transport = GetValue(parameters, "transport");
+        scenario = Helper.GetValue(parameters, "test");
+        message = Helper.GetValue(parameters, "message");
+        transport = Helper.GetValue(parameters, "transport");
     }
 
-    private string GetValue(NameValueCollection parameters, string key)
-    {
-        var values = parameters.GetValues(key);
-        if (values == null || values.Length == 0)
-        {
-            throw new Exception($"Parameter '{key}' is required in the query string");
-        }
-        if (values.Length > 1)
-        {
-            throw new Exception($"Parameter '{key}' should be unique in the query string");
-        }
-        return values[0]; 
-    }
-
-    protected async Task Connect(HttpTransportType httpTransportType)
+    private async Task Connect()
     {
         _hubUrl = NavigationManager.BaseUri + "chathub";
+        HttpTransportType httpTransportType = Helper.StringToTransportType(transport);
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(_hubUrl, options =>
                 {
@@ -95,13 +83,21 @@
         {
             chatMessages.Add(message);
             string changedMessage = $"Client confirms receiving message={message}";
-            Console.WriteLine($"[{transport}] {changedMessage}");
+            Helper.TestOutputWriteLine($"[{transport}] {changedMessage}");
             // on this message server calls "Environment.Exit(0)"
             await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExit", transport, changedMessage);
             Console.WriteLine("WASM EXIT 0");
         });
 
         await _hubConnection.StartAsync();
+    }
+
+    private async Task FailAndExit(string message)
+    {
+        int code = 1;
+        await _hubConnection.SendAsync("Exit", code);
+        Console.WriteLine($"WASM EXIT {code}");
+        throw new Exception(message);
     }
 
     public ValueTask? DisposeAsync()

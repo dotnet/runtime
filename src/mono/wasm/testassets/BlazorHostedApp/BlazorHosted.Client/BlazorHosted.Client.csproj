@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <WasmEnableThreads>true</WasmEnableThreads>
+    <!-- nullablility warnings -->
+    <NoWarn>CS8604</NoWarn>
   </PropertyGroup>
 
   <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
