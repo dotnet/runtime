@@ -549,7 +549,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
         if (pTypeContext != NULL)
         {
-            // for generic calli targets loader module is given directly
+            // for generic calli/varargs targets loader module is given directly
             pContainingModule = pSigLoaderModule;
         }
 
@@ -563,7 +563,7 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
 
         if (pTypeContext != NULL)
         {
-            // for generic calli targets typeContext is given directly
+            // for generic calli/varargs targets typeContext is given directly
             typeContext = *pTypeContext;
         }
 
