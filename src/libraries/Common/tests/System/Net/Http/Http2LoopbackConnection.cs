@@ -402,7 +402,7 @@ namespace System.Net.Test.Common
             return (HeadersFrame)frame;
         }
 
-        public async Task<Frame> ReadDataFrameAsync()
+        public async Task<DataFrame> ReadDataFrameAsync()
         {
             // Receive DATA frame for request.
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
@@ -412,7 +412,7 @@ namespace System.Net.Test.Common
             }
 
             Assert.Equal(FrameType.Data, frame.Type);
-            return frame;
+            return (DataFrame)frame;
         }
 
         private static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)
