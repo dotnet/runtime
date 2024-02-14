@@ -213,7 +213,7 @@ inline TADDR FuncEvalFrame::GetReturnAddressPtr()
 //
 // This updates the register display for a FuncEvalFrame.
 //
-inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats)
 {
     SUPPORTS_DAC;
     DebuggerEval * pDE = GetDebuggerEval();
