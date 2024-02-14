@@ -6398,7 +6398,7 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
                                                        GenTree*    parent,
                                                        GenTree*    tree)
 {
-    // Don't perform strength reduction on expressions marked with GTF_DONT_CSE
+    // Don't try and fold expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
     if (!tree->CanCSE())
     {

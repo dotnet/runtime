@@ -17064,7 +17064,7 @@ bool Compiler::gtSplitTree(
 }
 
 //------------------------------------------------------------------------
-// gtExtractSideEffList: Extracts side effects from sideEffectSource (if any)
+// gWrapWithSicdeEffects: Extracts side effects from sideEffectSource (if any)
 //    and wraps the input tree with a COMMA node with them.
 //
 // Arguments:
