@@ -7844,7 +7844,7 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     }
 }
 
-struct StoreCoalescingData
+struct LoadStoreCoalescingData
 {
     var_types targetType;
     GenTree*  baseAddr;
@@ -7852,31 +7852,37 @@ struct StoreCoalescingData
     GenTree*  value;
     uint32_t  scale;
     int       offset;
+    bool      allowsNonAtomic;
 };
 
 //------------------------------------------------------------------------
-// GetStoreCoalescingData: given a STOREIND node, get the data needed to perform
+// GetLoadStoreCoalescingData: given a IND/STOREIND node, get the data needed to perform
 //    store coalescing including pointer to the previous node.
 //
 // Arguments:
 //    comp     - the compiler instance
-//    ind      - the STOREIND node
+//    ind      - the IND/STOREIND node
 //    data     - [OUT] the data needed for store coalescing
 //
 // Return Value:
 //    true if the data was successfully retrieved, false otherwise.
 //    Basically, false means that we definitely can't do store coalescing.
 //
-static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCoalescingData* data)
+static bool GetLoadStoreCoalescingData(Compiler* comp, GenTreeIndir* ind, LoadStoreCoalescingData* data)
 {
-    // Don't merge volatile stores.
+    assert(ind->OperIs(GT_IND, GT_STOREIND));
+
+    // Don't merge volatile stores/loads.
     if (ind->IsVolatile())
     {
         return false;
     }
 
-    // Data has to be INT_CNS, can be also VEC_CNS in future.
-    if (!ind->Data()->IsCnsIntOrI() && !ind->Data()->IsVectorConst())
+    const bool isStore = ind->OperIs(GT_STOREIND);
+
+    // Data is either a constant or GT_IND
+    // TODO-CoalescingStores: allow locals (to then broadcast them)
+    if (isStore && !ind->Data()->IsCnsIntOrI() && !ind->Data()->IsVectorConst() && !ind->Data()->OperIs(GT_IND))
     {
         return false;
     }
@@ -7890,8 +7896,9 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
         return node->OperIs(GT_LCL_VAR) && !comp->lvaVarAddrExposed(node->AsLclVar()->GetLclNum());
     };
 
-    data->targetType = ind->TypeGet();
-    data->value      = ind->Data();
+    data->allowsNonAtomic = (ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0;
+    data->targetType      = ind->TypeGet();
+    data->value           = isStore ? ind->Data() : nullptr;
     if (ind->Addr()->OperIs(GT_LEA))
     {
         GenTree* base  = ind->Addr()->AsAddrMode()->Base();
@@ -7931,6 +7938,98 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
 }
 
 //------------------------------------------------------------------------
+// GetLoadStoreCoalescingData: perform legality check for load/store coalescing.
+//
+// Arguments:
+//    data1 - the data needed for store coalescing for the first load/store
+//    data2 - the data needed for store coalescing for the second load/store
+//
+// Return Value:
+//    true if two stores or two loads can be coalesced, false otherwise.
+//
+static bool CanBeCoalesced(const LoadStoreCoalescingData& data1, const LoadStoreCoalescingData& data2)
+{
+    // BaseAddr, Index, Scale and Type all have to match.
+    if ((data1.scale != data2.scale) || (data1.targetType != data2.targetType) ||
+        !GenTree::Compare(data1.baseAddr, data2.baseAddr) || !GenTree::Compare(data1.index, data2.index))
+    {
+        return false;
+    }
+
+    // Make sure both are either loads or stores and not a mix.
+    if ((data1.value == nullptr) != (data2.value == nullptr))
+    {
+        return false;
+    }
+
+    // Value should be either a constant or an IND in both cases.
+    if ((data1.value != nullptr) && !data1.value->OperIs(data2.value->OperGet()))
+    {
+        return false;
+    }
+
+    // Offset is the same - we can just remove the previous store.
+    // Alignment doesn't matter here.
+    if (data1.offset == data2.offset)
+    {
+        return true;
+    }
+
+    // Otherwise, the difference between two offsets has to match the size of the type or be zero
+    if (abs(data1.offset - data2.offset) != (int)genTypeSize(data1.targetType))
+    {
+        return false;
+    }
+
+    // Now the hardest part: decide whether it's safe to use an unaligned write.
+    //
+    // IND<byte> is always fine (and all IND<X> created here from such)
+    // IND<simd> is not required to be atomic per our Memory Model
+    const bool allowsNonAtomic = data1.allowsNonAtomic && data2.allowsNonAtomic;
+
+    if (!allowsNonAtomic && (genTypeSize(data1.targetType) > 1) && !varTypeIsSIMD(data1.targetType))
+    {
+        // TODO-CoalescingStores: if we see that the target is a local memory (non address exposed)
+        // we can use any type (including SIMD) for a new load.
+
+        // Ignore indices for now, they can invalidate our alignment assumptions.
+        // Although, we can take scale into account.
+        if (data1.index != nullptr)
+        {
+            return false;
+        }
+
+        // Base address being TYP_REF gives us a hint that data is pointer-aligned.
+        if (!data1.baseAddr->TypeIs(TYP_REF))
+        {
+            return false;
+        }
+
+        // Check whether the combined indir is still aligned.
+        bool isCombinedIndirAtomic = (genTypeSize(data1.targetType) < TARGET_POINTER_SIZE) &&
+                                     (min(data1.offset, data2.offset) % (genTypeSize(data1.targetType) * 2)) == 0;
+
+        if (genTypeSize(data1.targetType) == TARGET_POINTER_SIZE)
+        {
+#ifdef TARGET_ARM64
+            // Per Arm Architecture Reference Manual for A-profile architecture:
+            //
+            // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
+            //   are treated as a pair of single - copy atomic 64 - bit writes.
+            //
+            // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
+            //
+            // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
+            // we're already doing a load that has no atomicity guarantees.
+            isCombinedIndirAtomic = true;
+#endif
+        }
+        return isCombinedIndirAtomic;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerStoreIndirCoalescing: If the given STOREIND node is followed by a similar
 //    STOREIND node, try to merge them into a single store of a twice wider type. Example:
 //
@@ -7950,16 +8049,41 @@ static bool GetStoreCoalescingData(Compiler* comp, GenTreeStoreInd* ind, StoreCo
 //    |  \--*  LCL_VAR   byref  V00
 //    \--*  CNS_INT   long  0x200000001
 //
+//    Another example is when we have a "memory move" pattern:
+//
+//    *  STOREIND  int
+//    +--*  LEA(b+8)  byref
+//    |  \--*  LCL_VAR   ref
+//    \--*  IND       int
+//    \--*  LEA(b+8)  byref
+//        \--*  LCL_VAR   ref
+//
+//    *  STOREIND  int
+//    +--*  LEA(b+12) byref
+//    |  \--*  LCL_VAR   ref
+//    \--*  IND       int
+//    \--*  LEA(b+12) byref
+//        \--*  LCL_VAR   ref
+//
+//    is transformed into:
+//
+//    *  STOREIND  long
+//    +--*  LEA(b+8)  byref
+//    |  \--*  LCL_VAR   ref
+//    \--*  IND       long
+//    \--*  LEA(b+8)  byref
+//        \--*  LCL_VAR   ref
+//
 //   NOTE: Our memory model allows us to do this optimization, see Memory-model.md:
-//     * Adjacent non-volatile writes to the same location can be coalesced. (see Memory-model.md)
+//     * Adjacent non-volatile reads from the same location can be coalesced.
+//     * Adjacent non-volatile writes to the same location can be coalesced.
 //
 // Arguments:
 //    ind - the current STOREIND node
 //
 void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 {
-// LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
-// unaligned accesses making this optimization questionable.
+// TODO-CoalescingStores: Enable for RISC-V, LA64 and ARM32 if it's beneficial.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!comp->opts.OptimizationEnabled())
     {
@@ -7989,11 +8113,16 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
     // to get a single store of 8 bytes.
     do
     {
-        StoreCoalescingData currData;
-        StoreCoalescingData prevData;
+        LoadStoreCoalescingData currData;
+        LoadStoreCoalescingData prevData;
+
+        // Coalescing data for "loads" if Data() is GT_IND
+        // Since it's optional, we zero-initialize it.
+        LoadStoreCoalescingData currValueData = {};
+        LoadStoreCoalescingData prevValueData = {};
 
         // Get coalescing data for the current STOREIND
-        if (!GetStoreCoalescingData(comp, ind, &currData))
+        if (!GetLoadStoreCoalescingData(comp, ind, &currData))
         {
             return;
         }
@@ -8022,7 +8151,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
 
         // Get coalescing data for the previous STOREIND
         GenTreeStoreInd* prevInd = prevTree->AsStoreInd();
-        if (!GetStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData))
+        if (!GetLoadStoreCoalescingData(comp, prevInd->AsStoreInd(), &prevData) || !CanBeCoalesced(prevData, currData))
         {
             return;
         }
@@ -8038,12 +8167,48 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         LIR::Use use;
         assert(!BlockRange().TryGetUse(prevInd, &use) && !BlockRange().TryGetUse(ind, &use));
 
-        // BaseAddr, Index, Scale and Type all have to match.
-        if ((prevData.scale != currData.scale) || (prevData.targetType != currData.targetType) ||
-            !GenTree::Compare(prevData.baseAddr, currData.baseAddr) ||
-            !GenTree::Compare(prevData.index, currData.index))
+        if (currData.value->OperIs(GT_IND))
         {
-            return;
+            // if value is IND then we have something like this:
+            //
+            //  *  STOREIND  int
+            //  +--*  LEA(b+12) byref
+            //  |  \--*  LCL_VAR   ref    V00
+            //  \--*  IND       int
+            //     \--*  LEA(b+12) byref
+            //        \--*  LCL_VAR   ref    V01
+            //
+            // So make sure the same rules are applied to the value INDir as well.
+
+            GenTreeIndir* currDstInd = currData.value->AsIndir();
+            GenTreeIndir* prevDstInd = prevData.value->AsIndir();
+
+            if (!GetLoadStoreCoalescingData(comp, currDstInd, &currValueData) ||
+                !GetLoadStoreCoalescingData(comp, prevDstInd, &prevValueData) ||
+                !CanBeCoalesced(prevValueData, currValueData))
+            {
+                // Data() indirs can't be coalesced
+                return;
+            }
+
+            // Make sure target types are the same in stores and loads
+            if (currData.targetType != currValueData.targetType)
+            {
+                return;
+            }
+
+            // TODO-CoalescingStores: Get rid of this limitation
+            // We require LEA so we can easily change the offset
+            if (!currDstInd->Addr()->OperIs(GT_LEA))
+            {
+                return;
+            }
+
+            // Make sure the difference between offsets is the same (and direction)
+            if ((prevData.offset - currData.offset) != (prevValueData.offset - currValueData.offset))
+            {
+                return;
+            }
         }
 
         // At this point we know that we have two consecutive STOREINDs with the same base address,
@@ -8057,69 +8222,11 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
             continue;
         }
 
-        // Otherwise, the difference between two offsets has to match the size of the type.
-        // We don't support overlapping stores.
-        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
-        {
-            return;
-        }
-
-        // For now, we require the current STOREIND to have LEA (previous store may not have it)
-        // So we can easily adjust the offset, consider making it more flexible in future.
+        // TODO-CoalescingStores: Get rid of this limitation
+        // We require LEA so we can easily change the offset
         if (!ind->Addr()->OperIs(GT_LEA))
         {
             return;
-        }
-
-        // Now the hardest part: decide whether it's safe to use an unaligned write.
-        //
-        // IND<byte> is always fine (and all IND<X> created here from such)
-        // IND<simd> is not required to be atomic per our Memory Model
-        const bool allowsNonAtomic =
-            ((ind->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0) && ((prevInd->gtFlags & GTF_IND_ALLOW_NON_ATOMIC) != 0);
-
-        if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
-        {
-            // TODO-CQ: if we see that the target is a local memory (non address exposed)
-            // we can use any type (including SIMD) for a new load.
-
-            // Ignore indices for now, they can invalidate our alignment assumptions.
-            // Although, we can take scale into account.
-            if (currData.index != nullptr)
-            {
-                return;
-            }
-
-            // Base address being TYP_REF gives us a hint that data is pointer-aligned.
-            if (!currData.baseAddr->TypeIs(TYP_REF))
-            {
-                return;
-            }
-
-            // Check whether the combined indir is still aligned.
-            bool isCombinedIndirAtomic = (genTypeSize(ind) < TARGET_POINTER_SIZE) &&
-                                         (min(prevData.offset, currData.offset) % (genTypeSize(ind) * 2)) == 0;
-
-            if (genTypeSize(ind) == TARGET_POINTER_SIZE)
-            {
-#ifdef TARGET_ARM64
-                // Per Arm Architecture Reference Manual for A-profile architecture:
-                //
-                // * Writes from SIMD and floating-point registers of a 128-bit value that is 64-bit aligned in memory
-                //   are treated as a pair of single - copy atomic 64 - bit writes.
-                //
-                // Thus, we can allow 2xLONG -> SIMD, same for TYP_REF (for value being null)
-                //
-                // And we assume on ARM64 TYP_LONG/TYP_REF are always 64-bit aligned, otherwise
-                // we're already doing a load that has no atomicity guarantees.
-                isCombinedIndirAtomic = true;
-#endif
-            }
-
-            if (!isCombinedIndirAtomic)
-            {
-                return;
-            }
         }
 
         // Since we're merging two stores of the same type, the new type is twice wider.
@@ -8198,6 +8305,49 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
                 return;
         }
 
+        // For the memory move case we need to make sure pointers don't alias, e.g.:
+        //
+        //   *(a + 0) = *(b + 0);
+        //   *(a + 4) = *(b + 4);
+        //
+        // We can't merge this to
+        //
+        //   *(long*)(a + 0) = *(long*)(b + 0);
+        //
+        // if we don't know that a and b don't alias.
+        //
+        if (ind->Data()->OperIs(GT_IND))
+        {
+            if (!currData.baseAddr->TypeIs(TYP_REF) || !currValueData.baseAddr->TypeIs(TYP_REF))
+            {
+                // Non-TYP_REF pointers can alias,
+                // and we unlikely have enough information to prove otherwise.
+                return;
+            }
+
+            if (currData.index != nullptr || currValueData.index != nullptr)
+            {
+                // We only support base + constant offset, unknown index may lead to aliasing.
+                return;
+            }
+
+            // NOTE: for baseAddr and index we only checked curr* because prev* are guaranteed to be the same.
+
+            // Assume the worst case - currData.baseAddr and currValueData.baseAddr are the same GC object:
+            // Let's see if we can prove that they don't alias by checking the offsets.
+            const int storeStart = min(currData.offset, prevData.offset);
+            const int loadStart  = min(currValueData.offset, prevValueData.offset);
+
+            const int smallerOffset = min(storeStart, loadStart);
+            const int largerOffset  = max(storeStart, loadStart);
+
+            if ((smallerOffset != largerOffset) && ((smallerOffset + (int)genTypeSize(newType)) > largerOffset))
+            {
+                // May alias
+                return;
+            }
+        }
+
         // We should not be here for stores requiring write barriers.
         assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind));
         assert(!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(prevInd));
@@ -8217,6 +8367,22 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeStoreInd* ind)
         // Update type for both STOREIND and val
         ind->gtType         = newType;
         ind->Data()->gtType = newType;
+
+        if (ind->Data()->OperIs(GT_IND))
+        {
+            GenTreeIndir* destInd = ind->Data()->AsIndir();
+
+            // Update offset to be the minimum of the two
+            assert((prevData.offset > currData.offset) == (prevValueData.offset > currValueData.offset));
+            destInd->Addr()->AsAddrMode()->SetOffset(min(prevValueData.offset, currValueData.offset));
+
+            if (genTypeSize(oldType) == 1)
+            {
+                // A mark for future foldings that this IND doesn't need to be atomic.
+                destInd->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
+            }
+            continue;
+        }
 
 #if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
         // Upgrading two SIMD stores to a wider SIMD store.
