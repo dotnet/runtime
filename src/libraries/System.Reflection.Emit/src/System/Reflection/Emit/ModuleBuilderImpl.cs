@@ -607,8 +607,9 @@ namespace System.Reflection.Emit
         private static MemberInfo GetOriginalMemberIfConstructedType(MethodBase methodBase)
         {
             Type declaringType = methodBase.DeclaringType!;
-            if (declaringType.IsConstructedGenericType && !methodBase.ContainsGenericParameters &&
-                declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl)
+            if (declaringType.IsConstructedGenericType &&
+                declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl &&
+                !ContainsNotBakedTypeBuilder(declaringType.GetGenericArguments()))
             {
                 return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
             }
@@ -891,14 +892,14 @@ namespace System.Reflection.Emit
         }
 
         private static bool IsConstructedFromNotBakedTypeBuilder(Type type) => type.IsConstructedGenericType &&
-            (type.GetGenericTypeDefinition() is TypeBuilderImpl tb && tb._handle == default ||
+            (type.GetGenericTypeDefinition() is TypeBuilderImpl ||
              ContainsNotBakedTypeBuilder(type.GetGenericArguments()));
 
         private static bool ContainsNotBakedTypeBuilder(Type[] genericArguments)
         {
             foreach (Type type in genericArguments)
             {
-                if (type is TypeBuilderImpl tb && tb._handle == default)
+                if (type is TypeBuilderImpl || type is GenericTypeParameterBuilderImpl)
                 {
                     return true;
                 }
