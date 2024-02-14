@@ -240,9 +240,19 @@
     </ItemGroup>
   </Target>
 
+  <!-- XUnitLogChecker required configuration -->
   <ItemGroup Condition="Exists('$(XUnitLogCheckerLibrariesOutDir)')">
     <HelixCorrelationPayload Include="$(XUnitLogCheckerLibrariesOutDir)" />
-  </ItemGroup>  
+    <HelixCorrelationPayload Condition="'$(WindowsShell)' == 'true'" Include="dotnet-sos">
+      <Destination>sos</Destination>
+      <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
+    </HelixCorrelationPayload>
+    <HelixPreCommands Condition="'$(TargetOS)' == 'windows'">
+      $(HelixPreCommands);
+      set _NT_SYMBOL_PATH=%25HELIX_CORRELATION_PAYLOAD%25;
+      dotnet %25HELIX_CORRELATION_PAYLOAD%25\sos\tools\net$(DotnetSosTargetFrameworkVersion)\any\dotnet-sos.dll install --architecture $(TargetArchitecture)
+    </HelixPreCommands>
+  </ItemGroup>
 
   <!--
     Create all the Helix data to start a set of jobs. Create a set of work items, one for each libraries
