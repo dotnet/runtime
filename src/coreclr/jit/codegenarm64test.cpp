@@ -7566,45 +7566,61 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                                     INS_OPTS_SCALABLE_D_UXTW,
                                     INS_SCALABLE_OPTS_MOD_N); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #2]
 
-    //// IF_SVE_HY_3B
-    //theEmitter->emitIns_R_R_R(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #3]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #1]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #2]
+    // IF_SVE_HY_3B
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P0, REG_R1, REG_V2,
+                                    INS_OPTS_SCALABLE_D); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D]
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfd, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P7, REG_R4, REG_V3,
+                                    INS_OPTS_SCALABLE_D,
+                                    INS_SCALABLE_OPTS_LSL_N); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #3]
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfh, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P6, REG_R5, REG_V4,
+                                    INS_OPTS_SCALABLE_D,
+                                    INS_SCALABLE_OPTS_LSL_N); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #1]
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfw, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P3, REG_R2, REG_V1,
+                                    INS_OPTS_SCALABLE_D,
+                                    INS_SCALABLE_OPTS_LSL_N); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #2]
 
-    //// IF_SVE_HZ_2A_B
-    //theEmitter->emitIns_R_R_I(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
+    // IF_SVE_HZ_2A_B
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P1, REG_V2, 0,
+                                    INS_OPTS_SCALABLE_S); // PRFB    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfd, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P4, REG_V3, 248,
+                                    INS_OPTS_SCALABLE_S); // PRFD    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfh, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P0, REG_V4, 62,
+                                    INS_OPTS_SCALABLE_S); // PRFH    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfw, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P7, REG_V5, 124,
+                                    INS_OPTS_SCALABLE_S); // PRFW    <prfop>, <Pg>, [<Zn>.S{, #<imm>}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P1, REG_V2, 31,
+                                    INS_OPTS_SCALABLE_D); // PRFB    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfd, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P4, REG_V3, 248,
+                                    INS_OPTS_SCALABLE_D); // PRFD    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfh, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P0, REG_V4, 62,
+                                    INS_OPTS_SCALABLE_D); // PRFH    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfw, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P7, REG_V5, 124,
+                                    INS_OPTS_SCALABLE_D); // PRFW    <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
 
-    //// IF_SVE_IA_2A
-    //theEmitter->emitIns_R_R_I(INS_sve_prfb, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfd, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfh, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
-    //theEmitter->emitIns_R_R_I(INS_sve_prfw, EA_SCALABLE, REG_P0, REG_R0, 5,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    // IF_SVE_IA_2A
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P2, REG_R3,
+                                    -32); // PRFB    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfd, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P7, REG_R4,
+                                    31); // PRFD    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfh, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P1, REG_R2,
+                                    0); // PRFH    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfw, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P0, REG_R5,
+                                    -32); // PRFW    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+    theEmitter->emitIns_PRFOP_R_R_I(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P2, REG_R3,
+                                    17); // PRFB    <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
 
-    //// IF_SVE_IB_3A
-    //theEmitter->emitIns_R_R_R(INS_sve_prfb, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Xm>]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfd, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfh, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
-    //theEmitter->emitIns_R_R_R(INS_sve_prfw, EA_SCALABLE, REG_V0, REG_P0, REG_R0,
-    //                          INS_OPTS_SCALABLE_B); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+    // IF_SVE_IB_3A
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P0, REG_R1,
+                                    REG_R2); // PRFB    <prfop>, <Pg>, [<Xn|SP>, <Xm>]
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfd, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P5, REG_R4, REG_R3,
+                                    INS_OPTS_NONE,
+                                    INS_SCALABLE_OPTS_LSL_N); // PRFD    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfh, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P6, REG_R7, REG_R8,
+                                    INS_OPTS_NONE,
+                                    INS_SCALABLE_OPTS_LSL_N); // PRFH    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+    theEmitter->emitIns_PRFOP_R_R_R(INS_sve_prfw, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P7, REG_R1, REG_R9,
+                                    INS_OPTS_NONE,
+                                    INS_SCALABLE_OPTS_LSL_N); // PRFW    <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
 }
 
 #endif // defined(TARGET_ARM64) && defined(DEBUG)
