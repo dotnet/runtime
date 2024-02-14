@@ -1170,6 +1170,7 @@ namespace System.Threading.ThreadPools.Tests
 
             public volatile int TPIOEnqueue = 0;
             public ManualResetEvent TPWaitIOEnqueueEvent = new ManualResetEvent(false);
+
             protected override void OnEventSourceCreated(EventSource eventSource)
             {
                 if (eventSource.Name.Equals(ClrProviderName))
@@ -1179,6 +1180,7 @@ namespace System.Threading.ThreadPools.Tests
 
                 base.OnEventSourceCreated(eventSource);
             }
+
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
                 if (eventData.EventName.Equals("ThreadPoolIOEnqueue"))
