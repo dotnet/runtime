@@ -41,7 +41,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Workloads" Version="$(MicrosoftDotNetBuildTasksWorkloadsPackageVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Signed.WiX" Version="$(MicrosoftSignedWixVersion)" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.Signed.WiX" Version="$(WixPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="MicroBuild.Plugins.SwixBuild.Dotnet" Version="$(SwixPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" GeneratePathProperty="True" />
   </ItemGroup>
