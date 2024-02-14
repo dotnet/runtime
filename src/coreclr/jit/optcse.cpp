@@ -552,7 +552,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         //
         assert(vnLibNorm == vnStore->VNNormalValue(vnOp2Lib));
     }
-    else if (enableSharedConstCSE && tree->IsIntegralConst())
+    if (enableSharedConstCSE && tree->IsIntegralConst())
     {
         assert(vnStore->IsVNConstant(vnLibNorm));
 
@@ -609,50 +609,41 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             treeStmtLst* newElem;
 
-            BasicBlock* prevBlock = nullptr;
-            Statement** prevStmtPtr = nullptr;
-            GenTree** prevTreePtr = nullptr;
-
-            if (hashDsc->csdTreeList == nullptr)
-            {
-                prevBlock = hashDsc->csdBlock;
-                prevStmtPtr = &hashDsc->csdStmt;
-                prevTreePtr = &hashDsc->csdTree;
-            }
-            else
-            {
-                prevBlock = hashDsc->csdTreeLast->tslBlock;
-                prevStmtPtr = &hashDsc->csdTreeLast->tslStmt;
-                prevTreePtr = &hashDsc->csdTreeLast->tslTree;
-            }
-
-            if (compCurBB == prevBlock)
-            {
-                GenTree* prevTree = *prevTreePtr;
-                ValueNum prevVnLib = (*prevTreePtr)->GetVN(VNK_Liberal);
-                assert(vnStore->VNNormalValue(prevVnLib) == vnLibNorm);
-                if (prevVnLib != vnLib)
-                {
-                    // Different exceptions. If this one has strictly more
-                    // exceptions then we know that considering the previous
-                    // one as a def is not going to be useful.
-                    ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
-                    ValueNum curExceptionSet = vnStore->VNExceptionSet(vnLib);
-                    if (vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
-                    {
-                        prevTree->gtCSEnum = 0;
-                        *prevStmtPtr = stmt;
-                        *prevTreePtr = tree;
-                        tree->gtCSEnum = (signed char)hashDsc->csdIndex;
-                        return hashDsc->csdIndex;
-                    }
-                }
-            }
-
             // Have we started the list of matching nodes?
 
             if (hashDsc->csdTreeList == nullptr)
             {
+                // This is the second time we see this value. Handle cases
+                // where the first value dominates the second one and we can
+                // already prove that the first one is _not_ going to be a
+                // valid def for the second one, due to the second one having
+                // more exceptions. This happens for example in code like
+                // CASTCLASS(x, y) where x was already proven to be of type y.
+                // In those cases it is always better to let the second value
+                // be the def.
+                // This is essentially a less special-casey version of the
+                // GT_COMMA handling above. However, it is quite limited since
+                // it only handles the def/use being in the same block.
+                if (compCurBB == hashDsc->csdBlock)
+                {
+                    GenTree* prevTree  = hashDsc->csdTree;
+                    ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
+                    assert(vnStore->VNNormalValue(prevVnLib) == vnLibNorm);
+                    if (prevVnLib != vnLib)
+                    {
+                        ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
+                        ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
+                        if (vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
+                        {
+                            prevTree->gtCSEnum = 0;
+                            hashDsc->csdStmt   = stmt;
+                            hashDsc->csdTree   = tree;
+                            tree->gtCSEnum     = (signed char)hashDsc->csdIndex;
+                            return hashDsc->csdIndex;
+                        }
+                    }
+                }
+
                 // Create the new element based upon the matching hashDsc element.
 
                 newElem = new (this, CMK_TreeStatementList) treeStmtLst;
