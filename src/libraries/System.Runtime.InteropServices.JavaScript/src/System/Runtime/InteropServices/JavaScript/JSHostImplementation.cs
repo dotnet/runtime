@@ -214,7 +214,7 @@ namespace System.Runtime.InteropServices.JavaScript
             MethodInfo? method = mainAssembly.EntryPoint;
             if (method == null)
             {
-                throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
+                throw new InvalidOperationException(string.Format(SR.CannotResolveManagedEntrypoint, "Main", mainAssemblyName));
             }
             if (method.IsSpecialName)
             {
@@ -223,15 +223,15 @@ namespace System.Runtime.InteropServices.JavaScript
                 var type = method.DeclaringType!;
                 var name = method.Name;
                 var asyncName = name + "$";
-                method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public);
+                method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                 if (method == null)
                 {
                     asyncName = name.Substring(1, name.Length - 2);
-                    method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public);
+                    method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                 }
                 if (method == null)
                 {
-                    throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
+                    throw new InvalidOperationException(string.Format(SR.CannotResolveManagedEntrypoint, asyncName, mainAssemblyName));
                 }
             }
 
