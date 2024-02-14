@@ -9,7 +9,7 @@ using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 
 public class WasmTestRunner : WasmApplicationEntryPoint
 {
-    protected override int? MaxParallelThreads => RunInParallel ? 2 : base.MaxParallelThreads;
+    protected override int? MaxParallelThreads => RunInParallel ? 8 : base.MaxParallelThreads;
 
     public static async Task<int> Main(string[] args)
     {
