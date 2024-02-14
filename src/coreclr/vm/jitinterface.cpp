@@ -8258,6 +8258,8 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                     shouldCallReJIT = TRUE;
                     modId = reinterpret_cast<ModuleID>(pCaller->GetModule());
                     methodDef = pCaller->GetMemberDef();
+                    // Do Not call RequestReJIT inside this scope, calling RequestReJIT while holding the CodeVersionManager lock
+                    // will cause deadlocks with other threads calling RequestReJIT since it tries to obtain the CodeVersionManager lock
                 }
             }
 
