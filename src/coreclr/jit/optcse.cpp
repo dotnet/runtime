@@ -609,7 +609,47 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             treeStmtLst* newElem;
 
-            /* Have we started the list of matching nodes? */
+            BasicBlock* prevBlock = nullptr;
+            Statement** prevStmtPtr = nullptr;
+            GenTree** prevTreePtr = nullptr;
+
+            if (hashDsc->csdTreeList == nullptr)
+            {
+                prevBlock = hashDsc->csdBlock;
+                prevStmtPtr = &hashDsc->csdStmt;
+                prevTreePtr = &hashDsc->csdTree;
+            }
+            else
+            {
+                prevBlock = hashDsc->csdTreeLast->tslBlock;
+                prevStmtPtr = &hashDsc->csdTreeLast->tslStmt;
+                prevTreePtr = &hashDsc->csdTreeLast->tslTree;
+            }
+
+            if (compCurBB == prevBlock)
+            {
+                GenTree* prevTree = *prevTreePtr;
+                ValueNum prevVnLib = (*prevTreePtr)->GetVN(VNK_Liberal);
+                assert(vnStore->VNNormalValue(prevVnLib) == vnLibNorm);
+                if (prevVnLib != vnLib)
+                {
+                    // Different exceptions. If this one has strictly more
+                    // exceptions then we know that considering the previous
+                    // one as a def is not going to be useful.
+                    ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
+                    ValueNum curExceptionSet = vnStore->VNExceptionSet(vnLib);
+                    if (vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
+                    {
+                        prevTree->gtCSEnum = 0;
+                        *prevStmtPtr = stmt;
+                        *prevTreePtr = tree;
+                        tree->gtCSEnum = (signed char)hashDsc->csdIndex;
+                        return hashDsc->csdIndex;
+                    }
+                }
+            }
+
+            // Have we started the list of matching nodes?
 
             if (hashDsc->csdTreeList == nullptr)
             {
