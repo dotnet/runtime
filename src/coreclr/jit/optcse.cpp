@@ -628,12 +628,12 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 {
                     GenTree* prevTree  = hashDsc->csdTree;
                     ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
-                    assert(vnStore->VNNormalValue(prevVnLib) == vnLibNorm);
                     if (prevVnLib != vnLib)
                     {
                         ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
                         ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
-                        if (vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
+                        if ((prevExceptionSet != curExceptionSet) &&
+                            vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
                         {
                             prevTree->gtCSEnum = 0;
                             hashDsc->csdStmt   = stmt;
