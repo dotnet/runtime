@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_NODE, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";
@@ -63,12 +63,16 @@ export async function mono_run_main(main_assembly_name?: string, args?: string[]
         await mono_wasm_wait_for_debugger();
     }
 
-    const res = await call_entry_point(main_assembly_name, args, runtimeHelpers.waitForDebugger == 1);
+    try {
+        Module.runtimeKeepalivePush();
 
-    // one more timer loop before we return, so that any remaining queued calls could run
-    await new Promise(resolve => globalThis.setTimeout(resolve, 0));
+        // one more timer loop before we return, so that any remaining queued calls could run
+        await new Promise(resolve => globalThis.setTimeout(resolve, 0));
 
-    return res;
+        return await call_entry_point(main_assembly_name, args, runtimeHelpers.waitForDebugger == 1);
+    } finally {
+        Module.runtimeKeepalivePop();// after await promise !
+    }
 }
 
 

@@ -42,40 +42,35 @@ export function init_managed_exports(): void {
 }
 
 // the marshaled signature is: Task<int>? CallEntrypoint(string mainAssemblyName, string[] args)
-export async function call_entry_point(main_assembly_name: string, program_args: string[] | undefined, waitForDebugger: boolean): Promise<number> {
+export function call_entry_point(main_assembly_name: string, program_args: string[] | undefined, waitForDebugger: boolean): Promise<number> {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
     try {
-        let promise: Promise<number> | null;
-        try {
-            Module.runtimeKeepalivePush();
-            const args = alloc_stack_frame(5);
-            const res = get_arg(args, 1);
-            const arg1 = get_arg(args, 2);
-            const arg2 = get_arg(args, 3);
-            const arg3 = get_arg(args, 4);
-            marshal_string_to_cs(arg1, main_assembly_name);
-            marshal_array_to_cs_impl(arg2, program_args && !program_args.length ? undefined : program_args, MarshalerType.String);
-            marshal_bool_to_cs(arg3, waitForDebugger);
+        const args = alloc_stack_frame(5);
+        const res = get_arg(args, 1);
+        const arg1 = get_arg(args, 2);
+        const arg2 = get_arg(args, 3);
+        const arg3 = get_arg(args, 4);
+        marshal_string_to_cs(arg1, main_assembly_name);
+        marshal_array_to_cs_impl(arg2, program_args && !program_args.length ? undefined : program_args, MarshalerType.String);
+        marshal_bool_to_cs(arg3, waitForDebugger);
 
-            // because this is async, we could pre-allocate the promise
-            promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
+        // because this is async, we could pre-allocate the promise
+        let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
-            invoke_sync_method(managedExports.CallEntrypoint, args);
+        invoke_sync_method(managedExports.CallEntrypoint, args);
 
-            // in case the C# side returned synchronously
-            promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
+        // in case the C# side returned synchronously
+        promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
 
-            if (promise === null || promise === undefined) {
-                promise = Promise.resolve(0);
-            }
-            (promise as any)[do_not_force_dispose] = true; // prevent disposing the task in forceDisposeProxies()
-        } finally {
-            Module.stackRestore(sp);
+        if (promise === null || promise === undefined) {
+            promise = Promise.resolve(0);
         }
-        return await promise;
+        (promise as any)[do_not_force_dispose] = true; // prevent disposing the task in forceDisposeProxies()
+
+        return promise;
     } finally {
-        Module.runtimeKeepalivePop();// after await promise !
+        Module.stackRestore(sp); // synchronously
     }
 }
 
@@ -266,7 +261,7 @@ export function bind_assembly_exports(assemblyName: string): Promise<void> {
         }
         return promise;
     } finally {
-        Module.stackRestore(sp);
+        Module.stackRestore(sp); // synchronously
     }
 }
 
