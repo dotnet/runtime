@@ -1180,7 +1180,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
-        public void ReadAsyncTest()
+        public void ReadWriteAsyncTest()
         {
             RemoteExecutor.Invoke(async () =>
             {
