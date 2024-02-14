@@ -154,7 +154,7 @@ namespace System.Numerics
 
         /// <summary>Computes the sign of a value.</summary>
         /// <param name="value">The value whose sign is to be computed.</param>
-        /// <returns>A positive value if <paramref name="value" /> is positive, 0 if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
+        /// <returns>A positive value if <paramref name="value" /> is positive, <c>0</c> if <paramref name="value" /> is zero, and a negative value if <paramref name="value" /> is negative.</returns>
         /// <remarks>It is recommended that a function return <c>1</c>, <c>0</c>, and <c>-1</c>, respectively.</remarks>
         static virtual int Sign(TSelf value)
         {
