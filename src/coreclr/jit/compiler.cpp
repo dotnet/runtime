@@ -10631,7 +10631,7 @@ const char* Compiler::printfAlloc(const char* format, ...)
     char    str[512];
     va_list args;
     va_start(args, format);
-    int result = vsprintf_s(str, format, args);
+    int result = vsprintf_s(str, ArrLen(str), format, args);
     va_end(args);
     assert((result >= 0) && ((unsigned)result < ArrLen(str)));
 
