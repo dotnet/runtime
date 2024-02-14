@@ -29,6 +29,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
     public string? WasmIcuDataFileName { get; set; }
     public string? RuntimeAssetsLocation { get; set; }
     public bool CacheBootResources { get; set; }
+    public int DebugLevel { get; set; }
 
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
     {

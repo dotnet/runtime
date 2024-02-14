@@ -58,14 +58,12 @@ namespace AppHost.Bundle.Tests
         {
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle(BundleOptions.None);
 
-            string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "guiErrors"));
-            using (new TestArtifact(dotnetWithMockHostFxr))
+            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrFrameworkMissingFailure"))
             {
-                Directory.CreateDirectory(dotnetWithMockHostFxr);
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrFrameworkMissingFailure")
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
                     .RemoveHostFxr()
-                    .AddMockHostFxr(new Version(2, 2, 0));
-                var dotnet = dotnetBuilder.Build();
+                    .AddMockHostFxr(new Version(2, 2, 0))
+                    .Build();
 
                 // Run the bundled app (extract files)
                 RunTheApp(singleFile, dotnet.BinPath)
@@ -86,16 +84,15 @@ namespace AppHost.Bundle.Tests
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options);
             PEUtils.SetWindowsGraphicalUserInterfaceBit(singleFile);
 
-            string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "bundleErrors"));
-            using (new TestArtifact(dotnetWithMockHostFxr))
+            // The mockhostfxrBundleVersionFailure folder name is used by mock hostfxr to return the appropriate error code
+            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrBundleVersionFailure"))
             {
-                Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, TestContext.BuiltDotNet.BinPath, "mockhostfxrBundleVersionFailure")
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
                     .RemoveHostFxr()
-                    .AddMockHostFxr(new Version(5, 0, 0));
-                var dotnet = dotnetBuilder.Build();
+                    .AddMockHostFxr(new Version(5, 0, 0))
+                    .Build();
 
                 Command command = Command.Create(singleFile)
                     .EnableTracingAndCaptureOutputs()

@@ -600,6 +600,9 @@ static code_t insEncodeSimm4_MultipleOf32_19_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
+// Returns the encoding for the unsigned immediate value as 5-bits at bit locations '20-16'.
+static code_t insEncodeUimm5_20_to_16(ssize_t imm);
+
 // Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
 static code_t insEncodeUimm2_9_to_8(ssize_t imm);
 
@@ -608,6 +611,9 @@ static code_t insEncodeUimm2_11_to_10(ssize_t imm);
 
 // Returns the encoding for the immediate value as 2-bits at bit locations '20-19'.
 static code_t insEncodeUimm2_20_to_19(ssize_t imm);
+
+// Returns the encoding for the immediate value as 1 bit at bit location '10'.
+static code_t insEncodeImm1_10(ssize_t imm);
 
 // Returns the encoding for the immediate value as 1 bit at bit location '11'.
 static code_t insEncodeImm1_11(ssize_t imm);
@@ -635,6 +641,9 @@ static code_t insEncodeSveShift_23_to_22_9_to_0(emitAttr size, bool isRightShift
 // for an Arm64 Sve instruction.
 static code_t insEncodeSveElemsize_R_22(emitAttr size);
 
+// Returns the immediate value for instructions that encode it as a difference from tszh:tszl:imm3.
+static ssize_t insGetImmDiff(const ssize_t imm, const insOpts opt);
+
 // Returns the encoding to select an insSvePattern
 static code_t insEncodeSvePattern(insSvePattern pattern);
 
@@ -659,7 +668,7 @@ static bool isValidSimm4(ssize_t value)
 // Returns true if 'value' is a legal signed immediate 9 bit encoding (such as for LDR).
 static bool isValidSimm9(ssize_t value)
 {
-    return (-256 <= value) && (value <= 255);
+    return (-0x100 <= value) && (value <= 0xFF);
 };
 
 // Returns true if 'value' is a legal signed multiple of 2 immediate 4 bit encoding (such as for LD2Q).
@@ -710,22 +719,34 @@ static bool isValidUimm3(ssize_t value)
     return (0 <= value) && (value <= 7);
 };
 
+// Returns true if 'value' is a legal unsigned immediate 3 bit encoding, starting from 1 (such as for SHRNB).
+static bool isValidUimm3From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 8);
+};
+
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding.
 static bool isValidUimm4(ssize_t value)
 {
-    return (0 <= value) && (value <= 15);
+    return (0 <= value) && (value <= 0xF);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 4 bit encoding, starting from 1 (such as for CNTB).
 static bool isValidUimm4From1(ssize_t value)
 {
-    return (1 <= value) && (value <= 16);
+    return (1 <= value) && (value <= 0x10);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 5 bit encoding (such as for CCMP).
 static bool isValidUimm5(ssize_t value)
 {
     return (0 <= value) && (value <= 0x1FLL);
+};
+
+// Returns true if 'value' is a legal unsigned immediate 5 bit encoding, starting from 1 (such as for SHRNB).
+static bool isValidUimm5From1(ssize_t value)
+{
+    return (1 <= value) && (value <= 0x20);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 7 bit encoding (such as for CMPLT, CMPNE).
@@ -743,7 +764,7 @@ static bool isValidUimm8(ssize_t value)
 // Returns true if 'value' is a legal signed immediate 8 bit encoding (such as for SMAX, SMIN).
 static bool isValidSimm8(ssize_t value)
 {
-    return (-128 <= value) && (value <= 127);
+    return (-0x80 <= value) && (value <= 0x7F);
 };
 
 // Returns true if 'value' is a legal unsigned immediate 12 bit encoding (such as for CMP, CMN).
@@ -826,6 +847,10 @@ static insOpts optMakeArrangement(emitAttr datasize, emitAttr elemsize);
 
 //    For the given 'datasize' and 'opt' returns true if it specifies a valid vector register arrangement
 static bool isValidArrangement(emitAttr datasize, insOpts opt);
+
+// Expands an option that has different size operands (INS_OPTS_*_TO_*) into a pair of scalable options where
+// the first describes the size of the destination operand and the second describes the size of the source operand.
+static void optExpandConversionPair(insOpts opt, insOpts& dst, insOpts& src);
 
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
 static emitAttr optGetDatasize(insOpts arrangement);
@@ -1133,6 +1158,11 @@ inline static bool insOpts64BitExtend(insOpts opt)
 inline static bool insOptsAnyArrangement(insOpts opt)
 {
     return ((opt >= INS_OPTS_8B) && (opt <= INS_OPTS_2D));
+}
+
+inline static bool insOptsConvertFloatStepwise(insOpts opt)
+{
+    return (opt == INS_OPTS_H_TO_S || opt == INS_OPTS_S_TO_H || opt == INS_OPTS_D_TO_S || opt == INS_OPTS_S_TO_D);
 }
 
 inline static bool insOptsConvertFloatToFloat(insOpts opt)
