@@ -546,7 +546,8 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
             // loader module may be different from signature module for generic targets
             pContainingModule = pTargetMD->GetLoaderModule();
         }
-        else if (pTypeContext != NULL)
+
+        if (pTypeContext != NULL)
         {
             // for generic calli targets loader module is given directly
             pContainingModule = pSigLoaderModule;
@@ -559,7 +560,8 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         {
             SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
         }
-        else if (pTypeContext != NULL)
+
+        if (pTypeContext != NULL)
         {
             // for generic calli targets typeContext is given directly
             typeContext = *pTypeContext;
