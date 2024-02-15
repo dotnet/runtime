@@ -12,8 +12,71 @@ function(add_nativeAotFramework_targets_once)
   get_property(targets_added GLOBAL PROPERTY CLR_CMAKE_NATIVEAOTFRAMEWORK_TARGETS_ADDED)
   if (NOT "${targets_added}")
     add_library(nativeAotFramework INTERFACE)
-    # FIXME: finish this
 
+    # depends on NATIVEAOT_FRAMEWORK_PATH and NATIVEAOT_SDK_PATH to be set
+    # by the generated .cmake fragment during the managed build
+
+    if ("${CLR_CMAKE_HOST_WIN32}")
+      set(NAOT_SDK_BASE_BOOTSTRAP bootstrapperdll${CMAKE_C_OUTPUT_EXTENSION})
+    else()
+      set(NAOT_SDK_BASE_BOOTSTRAP libbootstrapperdll${CMAKE_C_OUTPUT_EXTENSION})
+    endif()
+
+    set(NAOT_SDK_BASE_LIBS
+      Runtime.WorkstationGC
+      eventpipe-disabled)
+
+    if(NOT "${CLR_CMAKE_HOST_WIN32}")
+      list(APPEND NAOT_SDK_BASE_LIBS stdc++compat)
+    else()
+      list(APPEND NAOT_SDK_BASE_LIBS
+        Runtime.VxsortEnabled
+        System.Globalization.Native.Aot
+        System.IO.Compression.Native.Aot
+      )
+    endif()
+
+    addprefix(NAOT_SDK_BOOTSTRAP "${NATIVEAOT_SDK_PATH}" "${NAOT_SDK_BASE_BOOTSTRAP}")
+    addprefix(NAOT_SDK_LIBS "${NATIVEAOT_SDK_PATH}" "${NAOT_SDK_BASE_LIBS}")
+
+    if("${CLR_CMAKE_HOST_WIN32}")
+      set(NAOT_FRAMEWORK_BASE_LIBS)
+    else()
+      set(NAOT_FRAMEWORK_BASE_LIBS
+        System.Native
+        System.Globalization.Native
+        System.IO.Compression.Native
+        System.Net.Security.Native
+        System.Security.Cryptography.Native.OpenSsl)
+    endif()
+
+    addprefix(NAOT_FRAMEWORK_LIBS "${NATIVEAOT_FRAMEWORK_PATH}" "${NAOT_FRAMEWORK_BASE_LIBS}")
+
+    if("${CLR_CMAKE_HOST_WIN32}")
+      list(TRANSFORM NAOT_FRAMEWORK_LIBS APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+      list(TRANSFORM NAOT_SDK_LIBS APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    endif()
+
+    if("${CLR_CMAKE_HOST_APPLE}")
+      list(TRANSFORM NAOT_SDK_BASE_LIBS PREPEND "-Wl,-hidden-l" OUTPUT_VARIABLE NAOT_SDK_HIDDEN_LIBS)
+      list(TRANSFORM NAOT_FRAMEWORK_BASE_LIBS PREPEND "-Wl,-hidden-l" OUTPUT_VARIABLE NAOT_FRAMEWORK_HIDDEN_LIBS)
+      target_link_directories(nativeAotFramework INTERFACE "${NATIVEAOT_FRAMEWORK_PATH}" "${NATIVEAOT_SDK_PATH}")
+      target_link_libraries(nativeAotFramework INTERFACE "${NAOT_SDK_BOOTSTRAP}" "${NAOT_SDK_HIDDEN_LIBS}" "${NAOT_FRAMEWORK_HIDDEN_LIBS}" -lm)
+    elseif("${CLR_CMAKE_HOST_UNIX}")
+      target_link_directories(nativeAotFramework INTERFACE "${NATIVEAOT_FRAMEWORK_PATH}" "${NATIVEAOT_SDK_PATH}")
+      list(TRANSFORM NAOT_SDK_BASE_LIBS PREPEND "lib" OUTPUT_VARIABLE NAOT_SDK_HIDDEN_LIBS)
+      list(TRANSFORM NAOT_FRAMEWORK_BASE_LIBS PREPEND "lib" OUTPUT_VARIABLE NAOT_FRAMEWORK_HIDDEN_LIBS)
+      string(REPLACE ";" ":" NAOT_SDK_EXCLUDE_ARG "${NAOT_SDK_HIDDEN_LIBS}")
+      string(REPLACE ";" ":" NAOT_FRAMEWORK_EXCLUDE_ARG "${NAOT_FRAMEWORK_HIDDEN_LIBS}")
+      target_link_libraries(nativeAotFramework INTERFACE "${NAOT_SDK_BOOTSTRAP}" "${NAOT_SDK_BASE_LIBS}" "${NAOT_FRAMEWORK_BASE_LIBS}" -lm)
+      target_link_options(nativeAotFramework INTERFACE "LINKER:--exclude-libs=${NAOT_SDK_EXCLUDE_ARG}:${NAOT_FRAMEWORK_EXCLUDE_ARG}")
+      target_link_options(nativeAotFramework INTERFACE "LINKER:--discard-all")
+      target_link_options(nativeAotFramework INTERFACE "LINKER:--gc-sections")
+    elseif("${CLR_CMAKE_HOST_WIN32}")
+      target_link_directories(nativeAotFramework INTERFACE "${NATIVEAOT_FRAMEWORK_PATH}" "${NATIVEAOT_SDK_PATH}")
+      target_link_libraries(nativeAotFramework INTERFACE "${NAOT_SDK_BOOTSTRAP}" "${NAOT_SDK_LIBS}" "${NAOT_FRAMEWORK_LIBS}" BCrypt)
+    endif()
+    
     set_property(GLOBAL PROPERTY CLR_CMAKE_NATIVEAOTFRAMEWORK_TARGETS_ADDED 1)
   endif()
 endfunction()
@@ -42,18 +105,18 @@ function(add_imported_nativeaot_library targetName symbolPrefix)
     # exported symbols list we could use an LD version script or the apple -exported_symbols_list
     # option.  But we dont' have that, so instead we use the GNU LD `--exclude-libs=libtargetName.a` option, or the  apple `-hidden-ltargetName` option
 
-    if(${CLR_CMAKE_HOST_APPLE})
+    if("${CLR_CMAKE_HOST_APPLE}")
       message(STATUS creeating ${targetName}-static for apple)
       # hack: -hidden-l wants the library name without a "lib" prefix
       STRING(REGEX REPLACE "^lib" "" libBaseName ${libName})
       add_library(${targetName}-static INTERFACE IMPORTED)
       target_link_directories(${targetName}-static INTERFACE "${libPath}")
       target_link_libraries(${targetName}-static INTERFACE "-Wl,-hidden-l${libBaseName}")
-    elseif(${CLR_CMAKE_HOST_UNIX})
+    elseif("${CLR_CMAKE_HOST_UNIX}")
       add_library(${targetName}-static STATIC IMPORTED)
       set_property(TARGET ${targetName}-static PROPERTY IMPORTED_LOCATION "${libPath}/${libFilename}")
       target_link_options(${targetName}-static INTERFACE "LINKER:--exclude-libs=${libFilename}")
-    elseif(${CLR_CMAKE_HOST_WIN32})
+    elseif("${CLR_CMAKE_HOST_WIN32}")
       add_library(${targetName}-static STATIC IMPORTED)
       set_property(TARGET ${targetName}-static PROPERTY IMPORTED_LOCATION "${libPath}\\${libFilename}")
     endif()
