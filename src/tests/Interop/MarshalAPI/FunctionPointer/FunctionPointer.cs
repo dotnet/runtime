@@ -189,69 +189,19 @@ public partial class FunctionPtr
         Console.WriteLine($"Running {nameof(RunInvalidGenericFunctionPointerTest)}...");
         unsafe
         {
-            nint lib = nint.Zero;
-            try
-            {
-                lib = NativeLibrary.Load(NativeLibraryToLoad.GetFullPath());
-                nint fnptr = NativeLibrary.GetExport(lib, "ReturnParameter");
-                Console.WriteLine("Testing GenericCalli with string as the parameter type");
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged<string, int>)fnptr, "test"));
-                Console.WriteLine("Testing GenericCalli with string as the return type");
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged<int, string>)fnptr, "test"));
-                Console.WriteLine("Testing GenericCalli with string as both the parameter and return type");
-                Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged<string, string>)fnptr, "test"));
-            }
-            finally
-            {
-                if (lib != nint.Zero)
-                {
-                    NativeLibrary.Free(lib);
-                }
-            }
+            nint fnptr = (nint)(delegate* unmanaged<nint*, nint*>)&ReturnParameter;
+            Console.WriteLine("Testing GenericCalli with string as the parameter type");
+            Assert.Throws<MarshalDirectiveException>(() => GenericCaller<int>.GenericCalli((delegate* unmanaged<string, int>)fnptr, "test"));
+            Console.WriteLine("Testing GenericCalli with string as the return type");
+            Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged<int, string>)fnptr, "test"));
+            Console.WriteLine("Testing GenericCalli with string as both the parameter and return type");
+            Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged<string, string>)fnptr, "test"));
         }
     }
 
-    class NativeLibraryToLoad
+    [UnmanagedCallersOnly]
+    static unsafe nint* ReturnParameter(nint* p)
     {
-        static string GetFileName()
-        {
-            return GetLibraryFileName(nameof(FunctionPointerNative));
-        }
-
-        static string GetLibraryFileName(string name)
-        {
-            if (OperatingSystem.IsWindows())
-                return $"{name}.dll";
-
-            if (OperatingSystem.IsLinux())
-                return $"lib{name}.so";
-
-            if (OperatingSystem.IsMacOS())
-                return $"lib{name}.dylib";
-
-            throw new PlatformNotSupportedException();
-        }
-
-        internal static string GetFullPath()
-        {
-            return Path.Combine(GetDirectory(), GetFileName());
-        }
-
-        static string GetDirectory()
-        {
-            string directory;
-            if (TestLibrary.Utilities.IsNativeAot)
-            {
-                // NativeAOT test is put in a native/ subdirectory, so we want the parent
-                // directory that contains the native library to load
-                directory = new DirectoryInfo(AppContext.BaseDirectory).Parent.FullName;
-            }
-            else
-            {
-                directory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            }
-
-            return directory;
-        }
+        return p;
     }
 }

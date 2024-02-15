@@ -4186,9 +4186,9 @@ namespace
                                         pParams->m_dwStubFlags,
                                         pParams->m_pModule,
                                         pParams->m_pLoaderModule,
-                                        pParams->m_pTypeContext,
                                         pParams->m_sig.GetRawSig(),
                                         pParams->m_sig.GetRawSigLen(),
+                                        pParams->m_pTypeContext,
                                         pamTracker,
                                         bILStubCreator,
                                         pLastMD);
@@ -6075,7 +6075,7 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     }
 
     StubSigDesc sigDesc(pMD, signature, pVASigCookie->pModule, pVASigCookie->pLoaderModule);
-    sigDesc.InitTypeContext(pVASigCookie->classInst, pVASigCookie->classInstCount, pVASigCookie->methodInst, pVASigCookie->methodInstCount);
+    sigDesc.InitTypeContext(pVASigCookie->classInst, pVASigCookie->methodInst);
 
     MethodDesc* pStubMD = NDirect::CreateCLRToNativeILStub(&sigDesc,
                                     nlType,

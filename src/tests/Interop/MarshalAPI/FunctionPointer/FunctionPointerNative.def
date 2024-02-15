@@ -1,7 +1,0 @@
-LIBRARY
-    EXPORTS
-        GetVoidVoidFcnPtr
-        CheckFcnPtr
-        FillOutPtr
-        FillOutIntParameter
-        ReturnParameter

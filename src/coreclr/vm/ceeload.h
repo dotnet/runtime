@@ -340,10 +340,8 @@ struct VASigCookie
     PTR_Module      pModule;
     PTR_Module      pLoaderModule;
     Signature       signature;
-    DWORD           classInstCount;
-    TypeHandle*     classInst;
-    DWORD           methodInstCount;
-    TypeHandle*     methodInst;
+    Instantiation   classInst;
+    Instantiation   methodInst;
 };
 
 //

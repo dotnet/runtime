@@ -54,9 +54,9 @@ public:
         DWORD dwStubFlags,      // bitmask of NDirectStubFlags
         Module* pSigModule,
         Module* pSigLoaderModule,
-        SigTypeContext* pTypeContext,
         PCCOR_SIGNATURE pSig,
         DWORD cbSig,
+        SigTypeContext* pTypeContext,
         AllocMemTracker* pamTracker,
         bool& bILStubCreator,
         MethodDesc* pLastMD);

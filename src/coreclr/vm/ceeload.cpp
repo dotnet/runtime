@@ -4709,10 +4709,8 @@ VASigCookie *Module::GetVASigCookie(Signature vaSignature, const SigTypeContext*
     }
     CONTRACT_END;
 
-    VASigCookie *pCookie = GetVASigCookieWorker(this,
-        ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst),
-        vaSignature,
-        typeContext);
+    Module* pLoaderModule = ClassLoader::ComputeLoaderModuleWorker(this, mdTokenNil, typeContext->m_classInst, typeContext->m_methodInst);
+    VASigCookie *pCookie = GetVASigCookieWorker(this, pLoaderModule, vaSignature, typeContext);
 
     RETURN pCookie;
 }
@@ -4742,12 +4740,12 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
         {
             if (pBlock->m_cookies[i].signature.GetRawSig() == vaSignature.GetRawSig())
             {
-                _ASSERTE(pBlock->m_cookies[i].classInstCount == typeContext->m_classInst.GetNumArgs());
-                _ASSERTE(pBlock->m_cookies[i].methodInstCount == typeContext->m_methodInst.GetNumArgs());
+                _ASSERTE(pBlock->m_cookies[i].classInst.GetNumArgs() == typeContext->m_classInst.GetNumArgs());
+                _ASSERTE(pBlock->m_cookies[i].methodInst.GetNumArgs() == typeContext->m_methodInst.GetNumArgs());
 
                 bool instMatch = true;
 
-                for (DWORD j = 0; j < pBlock->m_cookies[i].classInstCount; j++)
+                for (DWORD j = 0; j < pBlock->m_cookies[i].classInst.GetNumArgs(); j++)
                 {
                     if (pBlock->m_cookies[i].classInst[j] != typeContext->m_classInst[j])
                     {
@@ -4758,7 +4756,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
                 if (instMatch)
                 {
-                    for (DWORD j = 0; j < pBlock->m_cookies[i].methodInstCount; j++)
+                    for (DWORD j = 0; j < pBlock->m_cookies[i].methodInst.GetNumArgs(); j++)
                     {
                         if (pBlock->m_cookies[i].methodInst[j] != typeContext->m_methodInst[j])
                         {
@@ -4829,28 +4827,28 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
             pCookie->pNDirectILStub = NULL;
             pCookie->sizeOfArgs = sizeOfArgs;
             pCookie->signature = vaSignature;
-            pCookie->classInstCount = classInstCount;
-            pCookie->methodInstCount = methodInstCount;
             pCookie->pLoaderModule = pLoaderModule;
 
             AllocMemTracker amt;
         
             if (classInstCount != 0)
             {
-                pCookie->classInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount * sizeof(TypeHandle))));
+                TypeHandle* pClassInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount * sizeof(TypeHandle))));
                 for (DWORD i = 0; i < classInstCount; i++)
                 {
-                    pCookie->classInst[i] = typeContext->m_classInst[i];
+                    pClassInst[i] = typeContext->m_classInst[i];
                 }
+                pCookie->classInst = Instantiation(pClassInst, classInstCount);
             }
 
             if (methodInstCount != 0)
             {
-                pCookie->methodInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount * sizeof(TypeHandle))));
+                TypeHandle* pMethodInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount * sizeof(TypeHandle))));
                 for (DWORD i = 0; i < methodInstCount; i++)
                 {
-                    pCookie->methodInst[i] = typeContext->m_methodInst[i];
+                    pMethodInst[i] = typeContext->m_methodInst[i];
                 }
+                pCookie->methodInst = Instantiation(pMethodInst, methodInstCount);
             }
         
             amt.SuppressRelease();

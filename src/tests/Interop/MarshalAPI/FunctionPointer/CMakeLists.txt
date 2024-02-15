@@ -1,6 +1,6 @@
 project (FunctionPointerNative)
 include ("${CLR_INTEROP_TEST_ROOT}/Interop.cmake")
-set(SOURCES FunctionPointerNative.cpp FunctionPointerNative.def)
+set(SOURCES FunctionPointerNative.cpp)
 
 # add the executable
 add_library (FunctionPointerNative SHARED ${SOURCES})

@@ -501,9 +501,9 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
     DWORD dwStubFlags,
     Module* pSigModule,
     Module* pSigLoaderModule,
-    SigTypeContext* pTypeContext,
     PCCOR_SIGNATURE pSig,
     DWORD cbSig,
+    SigTypeContext* pTypeContext,
     AllocMemTracker* pamTracker,
     bool& bILStubCreator,
     MethodDesc *pLastMD)
@@ -540,34 +540,23 @@ MethodDesc* ILStubCache::GetStubMethodDesc(
         // Couldn't find it, let's make a new one.
         //
 
-        Module *pContainingModule = pSigModule;
-        if (pTargetMD != NULL)
+        if (pSigLoaderModule == NULL)
         {
-            // loader module may be different from signature module for generic targets
-            pContainingModule = pTargetMD->GetLoaderModule();
+            pSigLoaderModule = (pTargetMD != NULL) ? pTargetMD->GetLoaderModule() : pSigModule;
         }
-
-        if (pTypeContext != NULL)
-        {
-            // for generic calli targets loader module is given directly
-            pContainingModule = pSigLoaderModule;
-        }
-
-        MethodTable *pStubMT = GetOrCreateStubMethodTable(pContainingModule);
 
         SigTypeContext typeContext;
-        if (pTargetMD != NULL)
+        if (pTypeContext == NULL)
         {
-            SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            if (pTargetMD != NULL)
+            {
+                SigTypeContext::InitTypeContext(pTargetMD, &typeContext);
+            }
+            pTypeContext = &typeContext;
         }
 
-        if (pTypeContext != NULL)
-        {
-            // for generic calli targets typeContext is given directly
-            typeContext = *pTypeContext;
-        }
-
-        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, &typeContext, pamTracker);
+        MethodTable *pStubMT = GetOrCreateStubMethodTable(pSigLoaderModule);
+        pMD = ILStubCache::CreateNewMethodDesc(m_pAllocator->GetHighFrequencyHeap(), pStubMT, dwStubFlags, pSigModule, pSig, cbSig, pTypeContext, pamTracker);
 
         if (SF_IsSharedStub(dwStubFlags))
         {
