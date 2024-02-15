@@ -193,6 +193,9 @@
   <data name="Cryptography_InvalidOID" xml:space="preserve">
     <value>Object identifier (OID) is unknown.</value>
   </data>
+  <data name="Cryptography_InvalidPadding" xml:space="preserve">
+    <value>Padding is invalid and cannot be removed.</value>
+  </data>
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
