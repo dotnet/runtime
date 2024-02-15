@@ -108,7 +108,7 @@
     <_XHarnessArgs Condition="'$(_UseWasmSymbolicator)' == 'true'" >$(_XHarnessArgs) --symbolicator WasmSymbolicator.dll,Microsoft.WebAssembly.Internal.SymbolicatorWrapperForXHarness</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(_WasmBrowserPathForTests)' != ''" >$(_XHarnessArgs) &quot;--browser-path=$(_WasmBrowserPathForTests)&quot;</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
-    <_XHarnessArgs Condition="'$(WasmXHarnessVerbosity)' != ''"    >$(_XHarnessArgs) --verbosity=$(WasmXHarnessVerbosity)</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessVerbosity)' != ''"    >$(_XHarnessArgs) --verbosity=$(WasmXHarnessVerbosity)</_XHarnessArgs><!-- Trace, Debug, Information (default), Warning, Error, Critical -->
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
     <_AppArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_AppArgs) -threads</_AppArgs>
