@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -578,88 +577,8 @@ public sealed partial class QuicConnection : IAsyncDisposable
         // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
         // worker threads.
         //
-        // the provided data pointers are valid only while still inside the callback so they need to be
-        // copied before handing them to threadpool.
-        //
 
-        X509Certificate2? certificate = null;
-
-        byte[]? certDataRented = null;
-        Memory<byte> certData = default;
-        byte[]? chainDataRented = null;
-        Memory<byte> chainData = default;
-
-        if (data.Certificate != null)
-        {
-            if (MsQuicApi.UsesSChannelBackend)
-            {
-                certificate = new X509Certificate2((IntPtr)data.Certificate);
-                // TODO: what about chainPtr?
-            }
-            else
-            {
-                // on non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the content is buffers
-                // with DER encoded cert and chain
-                QUIC_BUFFER* certificatePtr = (QUIC_BUFFER*)data.Certificate;
-                QUIC_BUFFER* chainPtr = (QUIC_BUFFER*)data.Chain;
-
-                if (certificatePtr->Length > 0)
-                {
-                    certDataRented = ArrayPool<byte>.Shared.Rent((int)certificatePtr->Length);
-                    certData = certDataRented.AsMemory(0, (int)certificatePtr->Length);
-                    certificatePtr->Span.CopyTo(certData.Span);
-                }
-
-                if (chainPtr->Length > 0)
-                {
-                    chainDataRented = ArrayPool<byte>.Shared.Rent((int)chainPtr->Length);
-                    chainData = chainDataRented.AsMemory(0, (int)chainPtr->Length);
-                    chainPtr->Span.CopyTo(chainData.Span);
-                }
-            }
-        }
-
-        _ = Task.Run(() =>
-        {
-            QUIC_TLS_ALERT_CODES result;
-            try
-            {
-                if (certData.Length > 0)
-                {
-                    Debug.Assert(certificate == null);
-                    certificate = new X509Certificate2(certData.Span);
-                }
-
-                result = _sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
-                _remoteCertificate = certificate;
-            }
-            catch (Exception ex)
-            {
-                certificate?.Dispose();
-                _connectedTcs.TrySetException(ex);
-                result = QUIC_TLS_ALERT_CODES.USER_CANCELED;
-            }
-            finally
-            {
-                if (certDataRented != null)
-                {
-                    ArrayPool<byte>.Shared.Return(certDataRented);
-                }
-
-                if (chainDataRented != null)
-                {
-                    ArrayPool<byte>.Shared.Return(chainDataRented);
-                }
-            }
-
-            int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
-                _handle,
-                result == QUIC_TLS_ALERT_CODES.SUCCESS,
-                result);
-
-            Debug.Assert(MsQuic.StatusSucceeded(status), $"ConnectionCertificateValidationComplete failed with 0x{status:X}");
-        });
-
+        _sslConnectionOptions.StartAsyncCertificateValidation(data.Certificate, data.Chain);
         return QUIC_STATUS_PENDING;
     }
 
@@ -676,7 +595,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
             QUIC_CONNECTION_EVENT_TYPE.PEER_CERTIFICATE_RECEIVED => HandleEventPeerCertificateReceived(ref connectionEvent.PEER_CERTIFICATE_RECEIVED),
             _ => QUIC_STATUS_SUCCESS,
         };
-
 
 #pragma warning disable CS3016
     [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]

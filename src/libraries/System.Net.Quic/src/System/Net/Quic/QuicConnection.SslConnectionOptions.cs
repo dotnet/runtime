@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
@@ -63,7 +66,102 @@ public partial class QuicConnection
             _certificateChainPolicy = certificateChainPolicy;
         }
 
-        public unsafe QUIC_TLS_ALERT_CODES ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
+        internal unsafe void StartAsyncCertificateValidation(void* certificatePtr, void* chainPtr)
+        {
+            //
+            // the provided data pointers are valid only while still inside this function, so they need to be
+            // copied to separate buffers which are then handed off to threadpool.
+            //
+
+            X509Certificate2? certificate = null;
+
+            byte[]? certDataRented = null;
+            Memory<byte> certData = default;
+            byte[]? chainDataRented = null;
+            Memory<byte> chainData = default;
+
+            if (certificatePtr != null)
+            {
+                if (MsQuicApi.UsesSChannelBackend)
+                {
+                    certificate = new X509Certificate2((IntPtr)certificatePtr);
+                    // TODO: what about chainPtr?
+                }
+                else
+                {
+                    // on non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the content is buffers
+                    // with DER encoded cert and chain
+                    QUIC_BUFFER* certificateBuffer = (QUIC_BUFFER*)certificatePtr;
+                    QUIC_BUFFER* chainBuffer = (QUIC_BUFFER*)chainPtr;
+
+                    if (certificateBuffer->Length > 0)
+                    {
+                        certDataRented = ArrayPool<byte>.Shared.Rent((int)certificateBuffer->Length);
+                        certData = certDataRented.AsMemory(0, (int)certificateBuffer->Length);
+                        certificateBuffer->Span.CopyTo(certData.Span);
+                    }
+
+                    if (chainBuffer->Length > 0)
+                    {
+                        chainDataRented = ArrayPool<byte>.Shared.Rent((int)chainBuffer->Length);
+                        chainData = chainDataRented.AsMemory(0, (int)chainBuffer->Length);
+                        chainBuffer->Span.CopyTo(chainData.Span);
+                    }
+                }
+            }
+
+            // hand-off rest of the work to the threadpool, certificatePtr and chainPtr are invalid inside the lambda
+            QuicConnection thisConnection = _connection; // cannot use "this" inside lambda since SslConnectionOptions is struct
+            _ = Task.Run(() =>
+            {
+
+                QUIC_TLS_ALERT_CODES result;
+                try
+                {
+                    if (certData.Length > 0)
+                    {
+                        Debug.Assert(certificate == null);
+                        certificate = new X509Certificate2(certData.Span);
+                    }
+
+                    result = thisConnection._sslConnectionOptions.ValidateCertificate(certificate, certData.Span, chainData.Span);
+                    thisConnection._remoteCertificate = certificate;
+                }
+                catch (Exception ex)
+                {
+                    certificate?.Dispose();
+                    thisConnection._connectedTcs.TrySetException(ex);
+                    result = QUIC_TLS_ALERT_CODES.USER_CANCELED;
+                }
+                finally
+                {
+                    if (certDataRented != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(certDataRented);
+                    }
+
+                    if (chainDataRented != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(chainDataRented);
+                    }
+                }
+
+                int status = MsQuicApi.Api.ConnectionCertificateValidationComplete(
+                    thisConnection._handle,
+                    result == QUIC_TLS_ALERT_CODES.SUCCESS ? (byte)1 : (byte)0,
+                    result);
+
+                if (MsQuic.StatusFailed(status))
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(thisConnection, $"{thisConnection} ConnectionCertificateValidationComplete failed with {ThrowHelper.GetErrorMessageForStatus(status)}");
+                    }
+                }
+            });
+        }
+
+        private QUIC_TLS_ALERT_CODES ValidateCertificate(X509Certificate2? certificate, Span<byte> certData, Span<byte> chainData)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             bool wrapException = false;
