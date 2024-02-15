@@ -2270,7 +2270,6 @@ interp_entry (InterpEntryData *data)
 	sp = (stackval*)context->stack_pointer;
 
 	method = rmethod->method;
-	g_printf ("interp entering %s::%s\n", method->klass->name, method->name);
 
 	if (rmethod->is_invoke) {
 		/*
@@ -2498,8 +2497,6 @@ jit_call_cb (gpointer arg)
 	int pindex = cb_data->pindex;
 	gpointer *args = cb_data->args;
 	gpointer ftndesc = cb_data->extra_arg;
-
-	g_printf ("jit_call_cb %x (%d args + ftndesc)\n", jit_wrapper, pindex);
 
 	switch (pindex) {
 	case 0: {
@@ -2845,7 +2842,6 @@ do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame
 
 	interp_push_lmf (&ext, frame);
 
-	g_printf ("do_jit_call entering %s::%s\n", rmethod->method->klass->name, rmethod->method->name);
 	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
 		/* Catch the exception thrown by the native code using a try-catch */
 		mono_llvm_catch_exception (jit_call_cb, &cb_data, &thrown);
