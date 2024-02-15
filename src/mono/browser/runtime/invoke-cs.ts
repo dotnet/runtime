@@ -16,12 +16,14 @@ import cwraps from "./cwraps";
 import { assert_js_interop } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { bind_assembly_exports, invoke_sync_method } from "./managed-exports";
+import { mono_log_debug } from "./logging";
 
 const _assembly_cache_by_name = new Map<string, MonoAssembly>();
 
 export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
     const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
     const mark = startMeasure();
+    mono_log_debug(`Binding [JSExport] ${assemblyName}.${shortClassName} from ${assemblyName} assembly`);
     const version = get_signature_version(signature);
     mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
 
