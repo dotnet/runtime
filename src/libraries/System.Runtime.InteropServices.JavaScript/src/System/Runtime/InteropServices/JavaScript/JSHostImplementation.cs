@@ -326,27 +326,34 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
         {
-            var assembly = fqn.Substring(fqn.IndexOf('[') + 1, fqn.IndexOf(']') - 1).Trim();
-            fqn = fqn.Substring(fqn.IndexOf(']') + 1).Trim();
-            var methodName = fqn.Substring(fqn.IndexOf(':') + 1);
-            var className = fqn.Substring(0, fqn.IndexOf(':')).Trim();
+            ReadOnlySpan<char> fqnSpan = fqn.AsSpan();
+            ReadOnlySpan assemblyStart = fqnSpan..Slice(fqnSpan.IndexOf('[') + 1);
+            int assemblyEnd = assemblyStart.IndexOf(']');
 
-            var nameSpace = "";
-            var shortClassName = className;
-            var idx = fqn.LastIndexOf('.');
-            if (idx != -1)
-            {
-                nameSpace = fqn.Substring(0, idx);
-                shortClassName = className.Substring(idx + 1);
-            }
+            if (assemblyEnd == -1 || assemblyStart.Length == fqnSpan.Length)
+                throw new InvalidOperationException($"No assembly name specified {fqn}");
 
-            if (string.IsNullOrEmpty(assembly))
-                throw new InvalidOperationException("No assembly name specified " + fqn);
-            if (string.IsNullOrEmpty(className))
-                throw new InvalidOperationException("No class name specified " + fqn);
+            string assemblySpan = assemblyStart.Slice(assemblyEnd).Trim().ToString();
+            ReadOnlySpan<char> classAndMethod = assemblyStart.Slice(assemblyEnd + 1).Trim();
+
+            int classNameEnd = classAndMethod.IndexOf(':');
+            if (classNameEnd == -1)
+                throw new InvalidOperationException($"No class name specified {fqn}");
+
+            ReadOnlySpan<char> classSpan = classAndMethod.Slice(0, classNameEnd - 1);
+            string methodName = classAndMethod.Slice(classNameEnd + 1).Trim().ToString();
+
             if (string.IsNullOrEmpty(methodName))
-                throw new InvalidOperationException("No method name specified " + fqn);
-            return (assembly, nameSpace, shortClassName, methodName);
+                throw new InvalidOperationException($"No method name specified {fqn}");
+
+            int namespaceEnd = classSpan.LastIndexOf('.');
+            string nameSpace = string.Empty;
+            if (namespaceEnd != -1)
+            {
+                nameSpace = classSpan.Slice(0, namespaceEnd - 1).ToString();
+                classSpan = classSpan.Slice(namespaceEnd + 1);
+            }
+            return (assembly, nameSpace, classSpan.ToString(), methodName);
         }
     }
 }
