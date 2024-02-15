@@ -17133,6 +17133,41 @@ bool Compiler::gtSplitTree(
 }
 
 //------------------------------------------------------------------------
+// gtWrapWithSideEffects: Extracts side effects from sideEffectSource (if any)
+//    and wraps the input tree with a COMMA node with them.
+//
+// Arguments:
+//    tree              - the expression tree to wrap with side effects (if any)
+//                        it has to be either a side effect free subnode of sideEffectsSource
+//                        or any tree outside sideEffectsSource's hierarchy
+//    sideEffectsSource - the expression tree to extract side effects from
+//    sideEffectsFlags  - side effect flags to be considered
+//    ignoreRoot        - ignore side effects on the expression root node
+//
+// Return Value:
+//    The original tree wrapped with a COMMA node that contains the side effects
+//    or just the tree itself if sideEffectSource has no side effects.
+//
+GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
+                                         GenTree*     sideEffectsSource,
+                                         GenTreeFlags sideEffectsFlags,
+                                         bool         ignoreRoot)
+{
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(sideEffectsSource, &sideEffects, sideEffectsFlags, ignoreRoot);
+    if (sideEffects != nullptr)
+    {
+        // TODO: assert if tree is a subnode of sideEffectsSource and the tree has its own side effects
+        // otherwise the resulting COMMA might have some side effects to be duplicated
+        // It should be possible to be smarter here and allow such cases by extracting the side effects
+        // properly for this particular case. For now, caller is responsible for avoiding such cases.
+
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+    }
+    return tree;
+}
+
+//------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:
