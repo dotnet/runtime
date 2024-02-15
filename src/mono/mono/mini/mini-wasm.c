@@ -79,11 +79,11 @@ get_storage (MonoType *type, MonoType **etype, gboolean is_return)
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
-		if (mini_wasm_is_scalar_vtype (type, etype))
-			return ArgVtypeAsScalar;
-
 		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
+
+		if (mini_wasm_is_scalar_vtype (type, etype))
+			return ArgVtypeAsScalar;
 
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
@@ -777,7 +777,7 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 		if (nfields > 1)
 			return FALSE;
 		MonoType *t = mini_get_underlying_type (field->type);
-		int field_size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
+		int align, field_size = mono_type_size (t, &align);
 		// inlinearray and fixed both work by having a single field that is bigger than its element type.
 		// we also don't want to scalarize a struct that has padding in its metadata, even if it would fit.
 		if (field_size != size) {
