@@ -392,18 +392,18 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>b5ac2d9031d4b2dc40683b31de86b05a20b670af</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.10.0-2.24114.1">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.10.0-2.24114.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>744a0ae8691c5c463f63e9936b7d56592c0ed57c</Sha>
+      <Sha>77372c66fd54927312b5b0a2e399e192f74445c9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.10.0-2.24114.1">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.10.0-2.24114.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>744a0ae8691c5c463f63e9936b7d56592c0ed57c</Sha>
+      <Sha>77372c66fd54927312b5b0a2e399e192f74445c9</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.10.0-2.24114.1">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.10.0-2.24114.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>744a0ae8691c5c463f63e9936b7d56592c0ed57c</Sha>
+      <Sha>77372c66fd54927312b5b0a2e399e192f74445c9</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24109.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
@@ -414,9 +414,9 @@
       <Sha>68c643b4667c6808bd21910ef32f7e2f7bd776c5</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.10.0-2.24114.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.10.0-2.24114.13">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>744a0ae8691c5c463f63e9936b7d56592c0ed57c</Sha>
+      <Sha>77372c66fd54927312b5b0a2e399e192f74445c9</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-preview.2.24112.1">
