@@ -684,8 +684,8 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // cannot cross on some systems.
     if ((void*)curPc == g_InvokeActivationHandlerReturnAddress)
     {
-        CONTEXT** activationContext = (CONTEXT**)(CONTEXTGetFP(context) + g_inject_activation_context_locvar_offset);
-        memcpy_s(context, sizeof(CONTEXT), *activationContext, sizeof(CONTEXT));
+        CONTEXT* activationContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_inject_activation_context_locvar_offset);
+        memcpy_s(context, sizeof(CONTEXT), activationContext, sizeof(CONTEXT));
 
         return TRUE;
     }
