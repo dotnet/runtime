@@ -10,6 +10,7 @@ import { withStackAlloc, getI32 } from "../../memory";
 import { Thread, waitForThread } from "../../pthreads/browser";
 import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
+import { PThreadPtr } from "../../pthreads/shared/types";
 
 /// An object that can be used to control the diagnostic server.
 export interface ServerController {
@@ -57,10 +58,10 @@ export async function startDiagnosticServer(websocket_url: string): Promise<Serv
     mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
     const sizeOfPthreadT = 4;
     mono_log_info(`starting the diagnostic server url: ${websocket_url}`);
-    const result: number | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {
+    const result: PThreadPtr | undefined = withStackAlloc(sizeOfPthreadT, (pthreadIdPtr) => {
         if (!cwraps.mono_wasm_diagnostic_server_create_thread(websocket_url, pthreadIdPtr))
             return undefined;
-        const pthreadId = getI32(pthreadIdPtr);
+        const pthreadId = getI32(pthreadIdPtr) as any as PThreadPtr;
         return pthreadId;
     });
     if (result === undefined) {

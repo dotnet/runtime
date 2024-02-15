@@ -462,7 +462,7 @@ export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmR
 export function assert_js_interop(): void {
     loaderHelpers.assert_runtime_running();
     if (WasmEnableThreads) {
-        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready && runtimeHelpers.proxy_context_gc_handle, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+        mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready && runtimeHelpers.proxyGCHandle, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
     }

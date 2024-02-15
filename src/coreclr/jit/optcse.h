@@ -162,7 +162,7 @@ private:
 
     enum
     {
-        numParameters = 19,
+        numParameters = 25,
         booleanScale  = 5,
         maxSteps      = 65, // MAX_CSE_CNT + 1 (for stopping)
     };

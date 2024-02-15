@@ -8,7 +8,7 @@ import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
@@ -24,6 +24,7 @@ import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerTo
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
 import { mono_log_debug } from "./logging";
+import { complete_task } from "./managed-exports";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -358,7 +359,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
             // so that managed user code running in the continuation could allocate the same GCHandle number and the local registry would be already ok with that
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, false, null, data, res_converter || _marshal_cs_object_to_cs);
+            complete_task(gc_handle, false, null, data, res_converter || _marshal_cs_object_to_cs);
         }
         catch (ex) {
             try {
@@ -385,7 +386,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, holder.isCanceled, reason, null, undefined);
+            complete_task(gc_handle, holder.isCanceled, reason, null, undefined);
         }
         catch (ex) {
             try {

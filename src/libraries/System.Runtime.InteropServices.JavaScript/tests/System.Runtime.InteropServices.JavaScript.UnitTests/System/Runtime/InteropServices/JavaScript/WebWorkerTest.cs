@@ -439,7 +439,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Theory, MemberData(nameof(GetTargetThreadsAndBlockingCalls))]
         public async Task WaitAssertsOnJSInteropThreads(Executor executor, NamedCall method)
         {
-            var cts = CreateTestCaseTimeoutSource();
+            using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(Task () =>
             {
                 Exception? exception = null;
