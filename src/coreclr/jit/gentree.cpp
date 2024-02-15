@@ -18807,10 +18807,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf) ||
                  (funcApp.m_func == VNF_JitNew)))
             {
+                ssize_t  clsHandle;
                 ValueNum clsVN = funcApp.m_args[0];
-                if (vnStore->IsVNTypeHandle(clsVN))
+                if (vnStore->IsVNTypeHandle(clsVN) &&
+                    vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle))
                 {
-                    objClass = (CORINFO_CLASS_HANDLE)vnStore->CoercedConstantValue<size_t>(clsVN);
+                    objClass = (CORINFO_CLASS_HANDLE)clsHandle;
                     // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
                     *pIsNonNull = funcApp.m_func == VNF_JitNew;
                     *pIsExact   = funcApp.m_func == VNF_JitNew;

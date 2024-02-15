@@ -2709,8 +2709,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 TypeCompareState     castResult = info.compCompHnd->compareTypesForCast(objCls, castToCls);
                 if (castResult == TypeCompareState::Must)
                 {
-                    // The outer cast is redundant, remove it and preserve its side effects
-                    // We do ignoreRoot here because the actual cast node never throws any exceptions.
                     GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
                     fgSetTreeSeq(result);
                     return result;

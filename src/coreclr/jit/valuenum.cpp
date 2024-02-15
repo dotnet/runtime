@@ -11306,7 +11306,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     //
                     bool                 isExact   = false;
                     bool                 isNonNull = false;
-                    CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(addr, &isExact, &isNonNull);
+                    CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(addr, &isExact, &isNonNull, true);
                     if (isExact && (handle != NO_CLASS_HANDLE))
                     {
                         JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
@@ -11848,7 +11848,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         // Try to fold obj.GetType() if we know the exact type of obj.
         bool                 isExact   = false;
         bool                 isNonNull = false;
-        CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull);
+        CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull, true);
         if ((cls != NO_CLASS_HANDLE) && isExact && isNonNull)
         {
             CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
