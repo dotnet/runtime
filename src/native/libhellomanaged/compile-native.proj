@@ -10,8 +10,12 @@
         <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)src/libhellomanaged.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="@(NativeLibsProjectsToBuild)" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
     <!-- FIXME: incremental build -->
-    <Target Name="BuildNativeLibs" AfterTargets="Build">
+    <Target Name="BuildNativeLibs" BeforeTargets="Build">
         <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
         <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
