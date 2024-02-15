@@ -13,49 +13,18 @@
 #include "methodcontextreader.h"
 #include "spmiutil.h"
 #include "fileio.h"
+#include "commandline.h"
 
 #if defined(_WIN32)
 #define strtok_r strtok_s
 #endif
-
-static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
-{
-    char tempKey[1024];
-
-    unsigned i;
-    for (i = 0; (optionString[i] != '=') && (optionString[i] != '#'); i++)
-    {
-        if ((i >= 1023) || (optionString[i] == '\0'))
-        {
-            return false;
-        }
-        tempKey[i] = optionString[i];
-    }
-    tempKey[i] = '\0';
-
-    const char* tempVal = &optionString[i + 1];
-
-    const unsigned keyLen = i;
-    WCHAR*       keyBuf = new WCHAR[keyLen + 1];
-    MultiByteToWideChar(CP_UTF8, 0, tempKey, keyLen + 1, keyBuf, keyLen + 1);
-
-    const unsigned valLen = (unsigned)strlen(tempVal);
-    WCHAR*       valBuf = new WCHAR[valLen + 1];
-    MultiByteToWideChar(CP_UTF8, 0, tempVal, valLen + 1, valBuf, valLen + 1);
-
-    LogDebug("[streaming] option '%S=%S'", keyBuf, valBuf);
-
-    *key   = keyBuf;
-    *value = valBuf;
-    return true;
-}
 
 static bool AddJitOption(LightWeightMap<DWORD,DWORD>* map, char* newOption)
 {
     WCHAR* key;
     WCHAR* value;
 
-    if (!ParseJitOption(newOption, &key, &value))
+    if (!CommandLine::ParseJitOption(newOption, &key, &value))
     {
         return false;
     }
@@ -231,7 +200,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
 
         // Protocol with clients is for them to read stdout. Let them know we're done.
         //
-        printf("[streaming] Done.\n");
+        printf("[streaming] Done. Status=%d\n", res.Result);
         fflush(stdout);
 
         if (res.Result == ReplayResult::Success)
@@ -246,11 +215,11 @@ int doStreamingSuperPMI(CommandLine::Options& o)
             LogError("Method %d of size %d failed to load and compile correctly%s (%s).",
                 reader->GetMethodContextIndex(), mc->methodSize,
                 (o.nameOfJit2 == nullptr) ? "" : " by JIT1", o.nameOfJit);
-            return (int)SpmiResult::Error;
         }
 
         delete forceJitOptions;
+        delete mc;
     }
 
-    return 0;
+    return (int)SpmiResult::Success;
 }

@@ -175,7 +175,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("     ; if there are any failures, record their MC numbers in the file fail.mcl\n");
 }
 
-static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
+bool CommandLine::ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
 {
     char tempKey[1024];
 
@@ -477,8 +477,8 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             {
                 if (++i >= argc)
                 {
-                    LogError("'-streaming' must be followed by a file name or stdin.");
-                    // DumpHelp(argv[0]);
+                    LogError("'-streaming' must be followed by a file name or 'stdin'.");
+                    DumpHelp(argv[0]);
                     return false;
                 }
 
@@ -689,6 +689,21 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         {
             LogError("Illegal target architecture specified with -target (use 'x64', 'x86', 'arm64', or 'arm').");
             DumpHelp(argv[0]);
+            return false;
+        }
+    }
+
+    if (o->streamFile != nullptr)
+    {
+        if (o->parallel)
+        {
+            LogError("streaming mode and parallel mode are incompatible.");
+            return false;
+        }
+
+        if (o->nameOfJit2 != nullptr)
+        {
+            LogError("streaming mode and diff mode are incompatible.");
             return false;
         }
     }

@@ -59,6 +59,8 @@ public:
                              LightWeightMap<DWORD, DWORD>** pJitOptions,
                              LightWeightMap<DWORD, DWORD>** pForceJitOptions);
 
+    static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value);
+
 private:
     static void DumpHelp(const char* program);
 };
