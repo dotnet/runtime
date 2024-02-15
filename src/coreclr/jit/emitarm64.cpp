@@ -11581,101 +11581,6 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             }
             break;
 
-        case INS_sve_cmpeq:
-        case INS_sve_cmpgt:
-        case INS_sve_cmpge:
-        case INS_sve_cmpne:
-        case INS_sve_cmple:
-        case INS_sve_cmplt:
-            assert(insOptsScalableStandard(opt));
-            assert(isPredicateRegister(reg1));    // DDDD
-            assert(isLowPredicateRegister(reg2)); // ggg
-            assert(isVectorRegister(reg3));       // nnnnn
-            assert(isValidSimm5(imm));            // iiiii
-            fmt = IF_SVE_CY_3A;
-            break;
-
-        case INS_sve_cmphi:
-        case INS_sve_cmphs:
-        case INS_sve_cmplo:
-        case INS_sve_cmpls:
-            assert(insOptsScalableStandard(opt));
-            assert(isPredicateRegister(reg1));    // DDDD
-            assert(isLowPredicateRegister(reg2)); // ggg
-            assert(isVectorRegister(reg3));       // nnnnn
-            assert(isValidUimm7(imm));            // iiiii
-            fmt = IF_SVE_CY_3B;
-            break;
-
-        case INS_sve_sdot:
-        case INS_sve_udot:
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-
-            if (opt == INS_OPTS_SCALABLE_B)
-            {
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
-                fmt = IF_SVE_EY_3A;
-            }
-            else if (opt == INS_OPTS_SCALABLE_H)
-            {
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                assert(isValidUimm2(imm));                    // ii
-                fmt = IF_SVE_EG_3A;
-            }
-            else
-            {
-                assert(insOptsNone(opt));
-                assert(isValidImm1(imm)); // i
-                opt = INS_OPTS_SCALABLE_H;
-                fmt = IF_SVE_EY_3B;
-            }
-            break;
-
-        case INS_sve_usdot:
-        case INS_sve_sudot:
-            assert(opt == INS_OPTS_SCALABLE_B);
-            assert(isVectorRegister(reg1)); // ddddd
-            assert(isVectorRegister(reg2)); // nnnnn
-            assert(isVectorRegister(reg3)); // mmm
-            assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-            assert(isValidUimm2(imm)); // ii
-            fmt = IF_SVE_EZ_3A;
-            break;
-
-        case INS_sve_mul:
-            assert(insOptsScalableAtLeastHalf(opt));
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-
-            switch (opt)
-            {
-                case INS_OPTS_SCALABLE_H:
-                    assert(isValidUimm3(imm));                    // iii
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                    fmt = IF_SVE_FD_3A;
-                    break;
-
-                case INS_OPTS_SCALABLE_S:
-                    assert(isValidUimm2(imm));                    // ii
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
-                    fmt = IF_SVE_FD_3B;
-                    break;
-
-                case INS_OPTS_SCALABLE_D:
-                    assert(isValidImm1(imm)); // i
-                    fmt = IF_SVE_FD_3C;
-                    break;
-
-                default:
-                    unreached();
-                    break;
-            }
-            break;
-
         case INS_fmul: // by element, imm[0..3] selects the element of reg3
         case INS_fmla:
         case INS_fmls:
@@ -11913,6 +11818,281 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_4S)));
             assert(isValidVectorIndex(EA_16BYTE, EA_4BYTE, imm));
             fmt = IF_DV_3AI;
+            break;
+
+        default:
+            // fallback to emit SVE instructions.
+            return emitInsSve_R_R_R_I(ins, attr, reg1, reg2, reg3, imm, opt, attrReg2);
+
+    } // end switch (ins)
+
+    if (isLdSt)
+    {
+        assert(!isAddSub);
+        assert(isGeneralRegisterOrSP(reg3));
+        assert(insOptsNone(opt) || insOptsIndexed(opt));
+
+        if (isSIMD)
+        {
+            assert(isValidVectorLSPDatasize(size));
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            assert((scale >= 2) && (scale <= 4));
+        }
+        else
+        {
+            assert(isValidGeneralDatasize(size));
+            assert(isGeneralRegisterOrZR(reg1));
+            assert(isGeneralRegisterOrZR(reg2));
+            assert((scale == 2) || (scale == 3));
+        }
+
+        // Load/Store Pair reserved encodings:
+        if (emitInsIsLoad(ins))
+        {
+            assert(reg1 != reg2);
+        }
+        if (insOptsIndexed(opt))
+        {
+            assert(reg1 != reg3);
+            assert(reg2 != reg3);
+        }
+
+        reg3 = encodingSPtoZR(reg3);
+
+        ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+        if (imm == 0)
+        {
+            assert(insOptsNone(opt)); // PRE/POST Index doesn't make sense with an immediate of zero
+
+            fmt = IF_LS_3B;
+        }
+        else
+        {
+            if ((imm & mask) == 0)
+            {
+                imm >>= scale; // The immediate is scaled by the size of the ld/st
+
+                if ((imm >= -64) && (imm <= 63))
+                {
+                    fmt = IF_LS_3C;
+                }
+            }
+#ifdef DEBUG
+            if (fmt != IF_LS_3C)
+            {
+                assert(!"Instruction cannot be encoded: IF_LS_3C");
+            }
+#endif
+        }
+    }
+    else if (isAddSub)
+    {
+        bool reg2IsSP = (reg2 == REG_SP);
+        assert(!isLdSt);
+        assert(isValidGeneralDatasize(size));
+        assert(isGeneralRegister(reg3));
+
+        if (setFlags || insOptsAluShift(opt)) // Can't encode SP in reg1 with setFlags or AluShift option
+        {
+            assert(isGeneralRegisterOrZR(reg1));
+        }
+        else
+        {
+            assert(isGeneralRegisterOrSP(reg1));
+            reg1 = encodingSPtoZR(reg1);
+        }
+
+        if (insOptsAluShift(opt)) // Can't encode SP in reg2 with AluShift option
+        {
+            assert(isGeneralRegister(reg2));
+        }
+        else
+        {
+            assert(isGeneralRegisterOrSP(reg2));
+            reg2 = encodingSPtoZR(reg2);
+        }
+
+        if (insOptsAnyExtend(opt))
+        {
+            assert((imm >= 0) && (imm <= 4));
+
+            fmt = IF_DR_3C;
+        }
+        else if (insOptsAluShift(opt))
+        {
+            // imm should be non-zero and in [1..63]
+            assert(isValidImmShift(imm, size) && (imm != 0));
+            fmt = IF_DR_3B;
+        }
+        else if (imm == 0)
+        {
+            assert(insOptsNone(opt));
+
+            if (reg2IsSP)
+            {
+                // To encode the SP register as reg2 we must use the IF_DR_3C encoding
+                // and also specify a LSL of zero (imm == 0)
+                opt = INS_OPTS_LSL;
+                fmt = IF_DR_3C;
+            }
+            else
+            {
+                fmt = IF_DR_3A;
+            }
+        }
+        else
+        {
+            assert(!"Instruction cannot be encoded: Add/Sub IF_DR_3A");
+        }
+    }
+
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(opt);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+
+    // Record the attribute for the second register in the pair
+    id->idGCrefReg2(GCT_NONE);
+    if (attrReg2 != EA_UNKNOWN)
+    {
+        // Record the attribute for the second register in the pair
+        assert((fmt == IF_LS_3B) || (fmt == IF_LS_3C));
+        if (EA_IS_GCREF(attrReg2))
+        {
+            id->idGCrefReg2(GCT_GCREF);
+        }
+        else if (EA_IS_BYREF(attrReg2))
+        {
+            id->idGCrefReg2(GCT_BYREF);
+        }
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add a SVE instruction referencing three registers and a constant.
+ */
+
+void emitter::emitInsSve_R_R_R_I(instruction ins,
+                                 emitAttr    attr,
+                                 regNumber   reg1,
+                                 regNumber   reg2,
+                                 regNumber   reg3,
+                                 ssize_t     imm,
+                                 insOpts     opt /* = INS_OPTS_NONE */,
+                                 emitAttr    attrReg2 /* = EA_UNKNOWN */)
+{
+    emitAttr  size     = EA_SIZE(attr);
+    emitAttr  elemsize = EA_UNKNOWN;
+    insFormat fmt      = IF_NONE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_sve_cmpeq:
+        case INS_sve_cmpgt:
+        case INS_sve_cmpge:
+        case INS_sve_cmpne:
+        case INS_sve_cmple:
+        case INS_sve_cmplt:
+            assert(insOptsScalableStandard(opt));
+            assert(isPredicateRegister(reg1));    // DDDD
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            assert(isValidSimm5(imm));            // iiiii
+            fmt = IF_SVE_CY_3A;
+            break;
+
+        case INS_sve_cmphi:
+        case INS_sve_cmphs:
+        case INS_sve_cmplo:
+        case INS_sve_cmpls:
+            assert(insOptsScalableStandard(opt));
+            assert(isPredicateRegister(reg1));    // DDDD
+            assert(isLowPredicateRegister(reg2)); // ggg
+            assert(isVectorRegister(reg3));       // nnnnn
+            assert(isValidUimm7(imm));            // iiiii
+            fmt = IF_SVE_CY_3B;
+            break;
+
+        case INS_sve_sdot:
+        case INS_sve_udot:
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isVectorRegister(reg2));    // nnnnn
+            assert(isLowVectorRegister(reg3)); // mmmm
+
+            if (opt == INS_OPTS_SCALABLE_B)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm2(imm));                    // ii
+                fmt = IF_SVE_EY_3A;
+            }
+            else if (opt == INS_OPTS_SCALABLE_H)
+            {
+                assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                assert(isValidUimm2(imm));                    // ii
+                fmt = IF_SVE_EG_3A;
+            }
+            else
+            {
+                assert(insOptsNone(opt));
+                assert(isValidImm1(imm)); // i
+                opt = INS_OPTS_SCALABLE_H;
+                fmt = IF_SVE_EY_3B;
+            }
+            break;
+
+        case INS_sve_usdot:
+        case INS_sve_sudot:
+            assert(opt == INS_OPTS_SCALABLE_B);
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmm
+            assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+            assert(isValidUimm2(imm)); // ii
+            fmt = IF_SVE_EZ_3A;
+            break;
+
+        case INS_sve_mul:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1));    // ddddd
+            assert(isVectorRegister(reg2));    // nnnnn
+            assert(isLowVectorRegister(reg3)); // mmmm
+
+            switch (opt)
+            {
+                case INS_OPTS_SCALABLE_H:
+                    assert(isValidUimm3(imm));                    // iii
+                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                    fmt = IF_SVE_FD_3A;
+                    break;
+
+                case INS_OPTS_SCALABLE_S:
+                    assert(isValidUimm2(imm));                    // ii
+                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7)); // mmm
+                    fmt = IF_SVE_FD_3B;
+                    break;
+
+                case INS_OPTS_SCALABLE_D:
+                    assert(isValidImm1(imm)); // i
+                    fmt = IF_SVE_FD_3C;
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
             break;
 
         case INS_sve_cdot:
@@ -12964,8 +13144,8 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             assert(isGeneralRegister(reg3));
             assert(isValidUimm6(imm));
             fmt = IF_SVE_IC_3A_C;
-            break
-            
+            break;
+
         case INS_sve_fmlalb:
         case INS_sve_fmlalt:
         case INS_sve_fmlslb:
@@ -12988,128 +13168,6 @@ void emitter::emitIns_R_R_R_I(instruction ins,
             break;
 
     } // end switch (ins)
-
-    if (isLdSt)
-    {
-        assert(!isAddSub);
-        assert(isGeneralRegisterOrSP(reg3));
-        assert(insOptsNone(opt) || insOptsIndexed(opt));
-
-        if (isSIMD)
-        {
-            assert(isValidVectorLSPDatasize(size));
-            assert(isVectorRegister(reg1));
-            assert(isVectorRegister(reg2));
-            assert((scale >= 2) && (scale <= 4));
-        }
-        else
-        {
-            assert(isValidGeneralDatasize(size));
-            assert(isGeneralRegisterOrZR(reg1));
-            assert(isGeneralRegisterOrZR(reg2));
-            assert((scale == 2) || (scale == 3));
-        }
-
-        // Load/Store Pair reserved encodings:
-        if (emitInsIsLoad(ins))
-        {
-            assert(reg1 != reg2);
-        }
-        if (insOptsIndexed(opt))
-        {
-            assert(reg1 != reg3);
-            assert(reg2 != reg3);
-        }
-
-        reg3 = encodingSPtoZR(reg3);
-
-        ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-        if (imm == 0)
-        {
-            assert(insOptsNone(opt)); // PRE/POST Index doesn't make sense with an immediate of zero
-
-            fmt = IF_LS_3B;
-        }
-        else
-        {
-            if ((imm & mask) == 0)
-            {
-                imm >>= scale; // The immediate is scaled by the size of the ld/st
-
-                if ((imm >= -64) && (imm <= 63))
-                {
-                    fmt = IF_LS_3C;
-                }
-            }
-#ifdef DEBUG
-            if (fmt != IF_LS_3C)
-            {
-                assert(!"Instruction cannot be encoded: IF_LS_3C");
-            }
-#endif
-        }
-    }
-    else if (isAddSub)
-    {
-        bool reg2IsSP = (reg2 == REG_SP);
-        assert(!isLdSt);
-        assert(isValidGeneralDatasize(size));
-        assert(isGeneralRegister(reg3));
-
-        if (setFlags || insOptsAluShift(opt)) // Can't encode SP in reg1 with setFlags or AluShift option
-        {
-            assert(isGeneralRegisterOrZR(reg1));
-        }
-        else
-        {
-            assert(isGeneralRegisterOrSP(reg1));
-            reg1 = encodingSPtoZR(reg1);
-        }
-
-        if (insOptsAluShift(opt)) // Can't encode SP in reg2 with AluShift option
-        {
-            assert(isGeneralRegister(reg2));
-        }
-        else
-        {
-            assert(isGeneralRegisterOrSP(reg2));
-            reg2 = encodingSPtoZR(reg2);
-        }
-
-        if (insOptsAnyExtend(opt))
-        {
-            assert((imm >= 0) && (imm <= 4));
-
-            fmt = IF_DR_3C;
-        }
-        else if (insOptsAluShift(opt))
-        {
-            // imm should be non-zero and in [1..63]
-            assert(isValidImmShift(imm, size) && (imm != 0));
-            fmt = IF_DR_3B;
-        }
-        else if (imm == 0)
-        {
-            assert(insOptsNone(opt));
-
-            if (reg2IsSP)
-            {
-                // To encode the SP register as reg2 we must use the IF_DR_3C encoding
-                // and also specify a LSL of zero (imm == 0)
-                opt = INS_OPTS_LSL;
-                fmt = IF_DR_3C;
-            }
-            else
-            {
-                fmt = IF_DR_3A;
-            }
-        }
-        else
-        {
-            assert(!"Instruction cannot be encoded: Add/Sub IF_DR_3A");
-        }
-    }
-
     assert(fmt != IF_NONE);
 
     instrDesc* id = emitNewInstrCns(attr, imm);
@@ -13121,22 +13179,6 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idReg3(reg3);
-
-    // Record the attribute for the second register in the pair
-    id->idGCrefReg2(GCT_NONE);
-    if (attrReg2 != EA_UNKNOWN)
-    {
-        // Record the attribute for the second register in the pair
-        assert((fmt == IF_LS_3B) || (fmt == IF_LS_3C));
-        if (EA_IS_GCREF(attrReg2))
-        {
-            id->idGCrefReg2(GCT_GCREF);
-        }
-        else if (EA_IS_BYREF(attrReg2))
-        {
-            id->idGCrefReg2(GCT_BYREF);
-        }
-    }
 
     dispIns(id);
     appendToCurIG(id);
@@ -19729,17 +19771,6 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         imm = (imm & 0x1F);
     }
-    return (code_t)imm << 16;
-}
-
-/*****************************************************************************
- *
- *  Returns the encoding for the unsigned immediate value as 5-bits at bit locations '20-16'.
- */
-
-/*static*/ emitter::code_t emitter::insEncodeUimm5_20_to_16(ssize_t imm)
-{
-    assert(isValidUimm5(imm));
     return (code_t)imm << 16;
 }
 

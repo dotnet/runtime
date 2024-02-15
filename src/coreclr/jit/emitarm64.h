@@ -630,9 +630,6 @@ static code_t insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm);
 // Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
 static code_t insEncodeSimm5_20_to_16(ssize_t imm);
 
-// Returns the encoding for the unsigned immediate value as 5-bits at bit locations '20-16'.
-static code_t insEncodeUimm5_20_to_16(ssize_t imm);
-
 // Returns the encoding for the immediate value as 2-bits at bit locations '9-8'.
 static code_t insEncodeUimm2_9_to_8(ssize_t imm);
 
@@ -1437,6 +1434,15 @@ void emitIns_R_R_R_I(instruction ins,
                      ssize_t     imm,
                      insOpts     opt      = INS_OPTS_NONE,
                      emitAttr    attrReg2 = EA_UNKNOWN);
+
+void emitInsSve_R_R_R_I(instruction ins,
+                        emitAttr    attr,
+                        regNumber   reg1,
+                        regNumber   reg2,
+                        regNumber   reg3,
+                        ssize_t     imm,
+                        insOpts     opt      = INS_OPTS_NONE,
+                        emitAttr    attrReg2 = EA_UNKNOWN);
 
 void emitIns_R_R_R_I_I(instruction ins,
                        emitAttr    attr,
