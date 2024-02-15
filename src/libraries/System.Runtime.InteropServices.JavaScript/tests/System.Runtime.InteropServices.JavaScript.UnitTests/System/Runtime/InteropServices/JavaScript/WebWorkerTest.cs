@@ -457,6 +457,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 return Task.CompletedTask;
             }, cts.Token);
+
+            cts?.Dispose();
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]
