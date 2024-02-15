@@ -75,17 +75,23 @@ get_storage (MonoType *type, MonoType **etype, gboolean is_return)
 	case MONO_TYPE_R8:
 		return ArgOnStack;
 
-	case MONO_TYPE_GENERICINST:
+	case MONO_TYPE_GENERICINST: {
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
+		if (mini_wasm_is_scalar_vtype (type, etype))
+			return ArgVtypeAsScalar;
+
 		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
-		/* fall through */
+
+		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
+	}
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
 		if (mini_wasm_is_scalar_vtype (type, etype))
 			return ArgVtypeAsScalar;
+
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
 	case MONO_TYPE_VAR:

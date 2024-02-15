@@ -52,7 +52,7 @@ handle_enum:
 		return 'L';
 	case MONO_TYPE_VOID:
 		return 'V';
-	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_VALUETYPE: {
 		if (m_class_is_enumtype (t->data.klass)) {
 			t = mono_class_enum_basetype_internal (t->data.klass);
 			goto handle_enum;
@@ -70,8 +70,13 @@ handle_enum:
 			*is_byref_return = 1;
 
 		return 'I';
-	case MONO_TYPE_GENERICINST:
+	}
+	case MONO_TYPE_GENERICINST: {
 		if (m_class_is_valuetype (t->data.klass)) {
+			MonoType *scalar_vtype;
+			if (mini_wasm_is_scalar_vtype (t, &scalar_vtype))
+				return type_to_c (scalar_vtype, NULL);
+
 			if (is_byref_return)
 				*is_byref_return = 1;
 
@@ -79,6 +84,7 @@ handle_enum:
 		}
 
 		return 'I';
+	}
 	default:
 		g_warning ("CANT TRANSLATE %s", mono_type_full_name (t));
 		return 'X';
