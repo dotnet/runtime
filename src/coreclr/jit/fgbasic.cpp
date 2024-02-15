@@ -483,9 +483,9 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     assert(block->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    BBehfDesc* const   ehfDesc   = block->GetEhfTargets();
-    const unsigned     succCount = ehfDesc->bbeCount;
-    FlowEdge** const   succTab   = ehfDesc->bbeSuccs;
+    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
+    const unsigned   succCount = ehfDesc->bbeCount;
+    FlowEdge** const succTab   = ehfDesc->bbeSuccs;
 
     // Walk the successor table looking for the old successor, which we expect to find.
     unsigned oldSuccNum = UINT_MAX;
