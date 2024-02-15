@@ -327,7 +327,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // This if check needs to be changed to make sure we only 
     // block casts which are already Fixed UP.
     do {
-        if ( varTypeIsFloating(srcType) &&  varTypeIsIntegral(dstType))
+        if (!tree->gtOverflow() && varTypeIsFloating(srcType) &&  varTypeIsIntegral(dstType))
         {
             if (tree->IsSaturatedConversion())
             {
