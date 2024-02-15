@@ -533,6 +533,9 @@ static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+// Returns the encoding for the field 'i1:tszh:tszl' at bit locations '23-22:20-18'.
+static code_t insEncodeSveElemsize_tszh_tszl_and_imm(const insOpts opt, const ssize_t imm);
+
 // Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit location '16'.
 static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
@@ -1472,6 +1475,11 @@ void emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, regNumber re
 void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int offs);
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
+
+void emitIns_Adrp_Ldr_Add(emitAttr  attr,
+                          regNumber reg1,
+                          regNumber reg2,
+                          ssize_t addr DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,
