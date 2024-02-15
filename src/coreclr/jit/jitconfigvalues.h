@@ -403,7 +403,7 @@ CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
 
 // Use new dominanced-based CSE candidate finder
-CONFIG_INTEGER(JitCSELocateNew, W("JitCSELocateNew"), 0)
+CONFIG_INTEGER(JitCSELocateNew, W("JitCSELocateNew"), 1)
 
 // When nonzero, choose CSE candidates randomly, with hash salt
 // specified by the (decimal) value of the config
