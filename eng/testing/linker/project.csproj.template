@@ -75,6 +75,18 @@
     {AdditionalProjectReferences}
   </ItemGroup>
 
+  <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults">
+    <ItemGroup>
+      <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
+    </ItemGroup>
+  </Target>
+  <PropertyGroup>
+    <PrepareInputsForWasmBuildDependsOn>
+      $(PrepareInputsForWasmBuildDependsOn);
+      RemoveInvariantGlobalization;
+    </PrepareInputsForWasmBuildDependsOn>
+ </PropertyGroup>
+
   <Target Name="LocateNativeCompiler"
           Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'"
           BeforeTargets="SetupOSSpecificProps">
