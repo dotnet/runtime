@@ -109,7 +109,7 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Range(0, 10).ToDictionary(x => x, x => x));
+                expected: Enumerable.Range(0, 10).Select(x => new KeyValuePair<int, int>(x, x)));
 
             yield return WrapArgs(
                 source: Enumerable.Range(5, 10),
@@ -117,7 +117,7 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Repeat(true, 1).ToDictionary(x => x, x => 95));
+                expected: Enumerable.Repeat(true, 1).Select(x => new KeyValuePair<bool, int>(x, 95)));
 
             yield return WrapArgs(
                 source: Enumerable.Range(0, 20),
@@ -125,7 +125,7 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Range(0, 5).ToDictionary(x => x, x => 30 + 4 * x));
+                expected: Enumerable.Range(0, 5).Select(x => new KeyValuePair<int, int>(x, 30 + 4 * x)));
 
             yield return WrapArgs(
                 source: Enumerable.Repeat(5, 20),
@@ -133,7 +133,7 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y,
                 comparer: null,
-                expected: Enumerable.Repeat(5, 1).ToDictionary(x => x, x => 100));
+                expected: Enumerable.Repeat(5, 1).Select(x => new KeyValuePair<int, int>(x, 100)));
 
             yield return WrapArgs(
                 source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
@@ -141,13 +141,13 @@ namespace System.Linq.Tests
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
                 null,
-                expected: new Dictionary<string, string>
-                {
-                    { "Bob", "BobBob" },
-                    { "bob", "bob" },
-                    { "tim", "tim" },
-                    { "Tim", "Tim" },
-                });
+                expected:
+                [
+                    new("Bob", "BobBob"),
+                    new("bob", "bob"),
+                    new("tim", "tim"),
+                    new("Tim", "Tim"),
+                ]);
 
             yield return WrapArgs(
                 source: new string[] { "Bob", "bob", "tim", "Bob", "Tim" },
@@ -155,11 +155,11 @@ namespace System.Linq.Tests
                 seedSelector: x => string.Empty,
                 func: (x, y) => x + y,
                 StringComparer.OrdinalIgnoreCase,
-                expected: new Dictionary<string, string>
-                {
-                    { "Bob", "BobbobBob" },
-                    { "tim", "timTim" }
-                });
+                expected:
+                [
+                    new("Bob", "BobbobBob"),
+                    new("tim", "timTim")
+                ]);
 
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 30), ("Harry", 40) },
@@ -167,12 +167,12 @@ namespace System.Linq.Tests
                 seedSelector: x => $"I am {x} and my name is ",
                 func: (x, y) => x + y.Name,
                 comparer: null,
-                expected: new Dictionary<int, string>
-                {
-                    { 20, "I am 20 and my name is Tom" },
-                    { 30, "I am 30 and my name is Dick" },
-                    { 40, "I am 40 and my name is Harry" }
-                });
+                expected:
+                [
+                    new(20, "I am 20 and my name is Tom"),
+                    new(30, "I am 30 and my name is Dick"),
+                    new(40, "I am 40 and my name is Harry")
+                ]);
 
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Tom", 20), ("Dick", 20), ("Harry", 40) },
@@ -180,11 +180,11 @@ namespace System.Linq.Tests
                 seedSelector: x => $"I am {x} and my name is",
                 func: (x, y) => $"{x} maybe {y.Name}",
                 comparer: null,
-                expected: new Dictionary<int, string>
-                {
-                    { 20, "I am 20 and my name is maybe Tom maybe Dick" },
-                    { 40, "I am 40 and my name is maybe Harry" }
-                });
+                expected:
+                [
+                    new(20, "I am 20 and my name is maybe Tom maybe Dick"),
+                    new(40, "I am 40 and my name is maybe Harry")
+                ]);
 
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Bob", 20), ("bob", 20), ("Harry", 20) },
@@ -192,7 +192,7 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y.Age,
                 comparer: null,
-                expected: new string[] { "Bob", "bob", "Harry" }.ToDictionary(x => x, x => 20));
+                expected: new string[] { "Bob", "bob", "Harry" }.Select(x => new KeyValuePair<string, int>(x, 20)));
 
             yield return WrapArgs(
                 source: new (string Name, int Age)[] { ("Bob", 20), ("bob", 30), ("Harry", 40) },
@@ -200,11 +200,11 @@ namespace System.Linq.Tests
                 seedSelector: x => 0,
                 func: (x, y) => x + y.Age,
                 comparer: StringComparer.OrdinalIgnoreCase,
-                expected: new Dictionary<string, int>
-                {
-                    { "Bob", 50 },
-                    { "Harry", 40 }
-                });
+                expected:
+                [
+                    new("Bob", 50),
+                    new("Harry", 40)
+                ]);
 
             object[] WrapArgs<TSource, TKey, TAccumulate>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TKey, TAccumulate> seedSelector, Func<TAccumulate, TSource, TAccumulate> func, IEqualityComparer<TKey>? comparer, IEnumerable<KeyValuePair<TKey, TAccumulate>> expected)
                 => new object[] { source, keySelector, seedSelector, func, comparer, expected };
@@ -286,11 +286,9 @@ namespace System.Linq.Tests
                 keySelector: entry => entry.id,
                 seed: 0,
                 (totalScore, curr) => totalScore + curr.score)
-                .ToDictionary();
+                .ToArray();
 
-            Assert.Equal(67, scores["0"]);
-            Assert.Equal(15, scores["1"]);
-            Assert.Equal( 4, scores["2"]);
+            Assert.Equal([new("0", 67), new("1", 15), new("2", 4)], scores);
         }
     }
 }

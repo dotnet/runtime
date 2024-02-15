@@ -1078,6 +1078,8 @@ namespace Internal.TypeSystem.Interop
 
                     if (sizeConst.HasValue)
                         codeStream.Emit(ILOpcode.add);
+
+                    codeStream.Emit(ILOpcode.conv_ovf_i4);
                 }
 
                 if (!sizeConst.HasValue && !sizeParamIndex.HasValue)

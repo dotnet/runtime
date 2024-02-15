@@ -203,9 +203,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
-      <_WasmDebugLevel>$(WasmDebugLevel)</_WasmDebugLevel>
-      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == ''">0</_WasmDebugLevel>
-      <_WasmDebugLevel Condition="'$(_WasmDebugLevel)' == '0' and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</_WasmDebugLevel>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
@@ -364,7 +361,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssemblyPath="@(IntermediateAssembly)"
       Resources="@(_WasmOutputWithHash)"
       DebugBuild="true"
-      DebugLevel="$(_WasmDebugLevel)"
+      DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="false"
       CacheBootResources="$(BlazorCacheBootResources)"
       OutputPath="$(_WasmBuildBootJsonPath)"
@@ -380,7 +377,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
-      ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)" />
+      ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
+      IsPublish="false" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -533,7 +531,6 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="GeneratePublishWasmBootJson" DependsOnTargets="$(GeneratePublishWasmBootJsonDependsOn)">
-
     <ItemGroup>
       <_WasmPublishAsset
         Include="@(StaticWebAsset)"
@@ -549,7 +546,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- We remove the extensions since they are added to the list of static web assets but we need to compute the target path for them -->
       <_WasmPublishAsset Remove="@(_BlazorExtensionsCandidatesForPublish)" />
-
     </ItemGroup>
 
     <ComputeStaticWebAssetsTargetPaths
@@ -568,7 +564,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssemblyPath="@(IntermediateAssembly)"
       Resources="@(_WasmPublishBootResourceWithHash)"
       DebugBuild="false"
-      DebugLevel="$(_WasmDebugLevel)"
+      DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="$(PublishTrimmed)"
       CacheBootResources="$(BlazorCacheBootResources)"
       OutputPath="$(IntermediateOutputPath)blazor.publish.boot.json"
@@ -584,7 +580,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
-      ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)" />
+      ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
+      IsPublish="true" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />

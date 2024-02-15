@@ -533,12 +533,12 @@ ftype BankersRound(ftype value)
             return integerPart;
 
         // Else return the nearest even integer
-        return (ftype)_copysign(ceil(fabs(value+0.5)),
+        return (ftype)copysign(ceil(fabs(value+0.5)),
                          value);
     }
 
     // Otherwise round to closest
-    return (ftype)_copysign(floor(fabs(value)+0.5),
+    return (ftype)copysign(floor(fabs(value)+0.5),
                      value);
 }
 
@@ -674,6 +674,32 @@ HCIMPL1_V(INT64, JIT_Dbl2LngOvf, double val)
 }
 HCIMPLEND
 
+#ifndef TARGET_WINDOWS
+namespace
+{
+    bool isnan(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (bits & 0x7FFFFFFFU) > 0x7F800000U;
+    }
+    bool isnan(double val)
+    {
+        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+        return (bits & 0x7FFFFFFFFFFFFFFFULL) > 0x7FF0000000000000ULL;
+    }
+    bool isfinite(float val)
+    {
+        UINT32 bits = *reinterpret_cast<UINT32*>(&val);
+        return (~bits & 0x7F800000U) != 0;
+    }
+    bool isfinite(double val)
+    {
+        UINT64 bits = *reinterpret_cast<UINT64*>(&val);
+        return (~bits & 0x7FF0000000000000ULL) != 0;
+    }
+}
+#endif
+
 HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
 {
     FCALL_CONTRACT;
@@ -689,12 +715,12 @@ HCIMPL2_VV(float, JIT_FltRem, float dividend, float divisor)
     // ***"negated for -infinity" has been removed from the spec
     //
 
-    if (divisor==0 || !_finite(dividend))
+    if (divisor==0 || !isfinite(dividend))
     {
         UINT32 NaN = CLR_NAN_32;
         return *(float *)(&NaN);
     }
-    else if (!_finite(divisor) && !_isnan(divisor))
+    else if (!isfinite(divisor) && !isnan(divisor))
     {
         return dividend;
     }
@@ -722,12 +748,12 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
     //
     // ***"negated for -infinity" has been removed from the spec
     //
-    if (divisor==0 || !_finite(dividend))
+    if (divisor==0 || !isfinite(dividend))
     {
         UINT64 NaN = CLR_NAN_64;
         return *(double *)(&NaN);
     }
-    else if (!_finite(divisor) && !_isnan(divisor))
+    else if (!isfinite(divisor) && !isnan(divisor))
     {
         return dividend;
     }
@@ -4263,7 +4289,10 @@ void RethrowNew()
 
     ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
-    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pActiveExInfo->m_ptrs.ContextRecord, ExKind::None);
+    CONTEXT exceptionContext;
+    RtlCaptureContext(&exceptionContext);
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, &exceptionContext, ExKind::None);
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
