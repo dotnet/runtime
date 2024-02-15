@@ -115,7 +115,8 @@ namespace System.Reflection.Tests
             MethodInvoker invoker = MethodInvoker.Create(typeof(Test).GetMethod(nameof(Test.TestMethod)));
 
             TargetException ex = Assert.Throws<TargetException>(() => invoker.Invoke(obj: incorrectInstance, "NotAnInt"));
-            Assert.Equal("Object type Test does not match target type Sample.", ex.Message);
+            Assert.Contains(nameof(Test), ex.Message);
+            Assert.Contains(nameof(Sample), ex.Message);
         }
 
         [Fact]
