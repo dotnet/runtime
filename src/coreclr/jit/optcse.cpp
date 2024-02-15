@@ -609,10 +609,45 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             treeStmtLst* newElem;
 
-            /* Have we started the list of matching nodes? */
+            // Have we started the list of matching nodes?
 
             if (hashDsc->csdTreeList == nullptr)
             {
+                // This is the second time we see this value. Handle cases
+                // where the first value dominates the second one and we can
+                // already prove that the first one is _not_ going to be a
+                // valid def for the second one, due to the second one having
+                // more exceptions. This happens for example in code like
+                // CASTCLASS(x, y) where the "CASTCLASS" just adds exceptions
+                // on top of "x". In those cases it is always better to let the
+                // second value be the def.
+                // It also happens for GT_COMMA, but that one is special cased
+                // above; this handling is a less special-casey version of the
+                // GT_COMMA handling above. However, it is quite limited since
+                // it only handles the def/use being in the same block.
+                if (compCurBB == hashDsc->csdBlock)
+                {
+                    GenTree* prevTree  = hashDsc->csdTree;
+                    ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
+                    if (prevVnLib != vnLib)
+                    {
+                        ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
+                        ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
+                        if ((prevExceptionSet != curExceptionSet) &&
+                            vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
+                        {
+                            JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
+                                    "more exceptions\n",
+                                    prevTree->gtTreeID, tree->gtTreeID);
+                            prevTree->gtCSEnum = 0;
+                            hashDsc->csdStmt   = stmt;
+                            hashDsc->csdTree   = tree;
+                            tree->gtCSEnum     = (signed char)hashDsc->csdIndex;
+                            return hashDsc->csdIndex;
+                        }
+                    }
+                }
+
                 // Create the new element based upon the matching hashDsc element.
 
                 newElem = new (this, CMK_TreeStatementList) treeStmtLst;
