@@ -14,6 +14,10 @@
 #include "spmiutil.h"
 #include "fileio.h"
 
+#if defined(_WIN32)
+#define strtok_r strtok_s
+#endif
+
 static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value)
 {
     char tempKey[1024];
@@ -119,7 +123,15 @@ int doStreamingSuperPMI(CommandLine::Options& o)
     //
     while (fgets(line, sizeof(line), streamFile) != nullptr)
     {
-        line[strcspn(line, "\r\n")] = 0;
+        for (int i = 0; i < sizeof(line); i++)
+        {
+            if (line[i] == '\n' || line[i] == '\r')
+            {
+                line[i]= 0;
+                break;
+            }
+        }
+
         size_t len = strlen(line);
 
         LogDebug("[streaming] Request: '%s'", line);
@@ -135,7 +147,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
             break;
         }
 
-        char* tok = strtok_s(line, seps, &next);
+        char* tok = strtok_r(line, seps, &next);
         const int index = atoi(tok);
 
         if (index == 0)
@@ -150,7 +162,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
         LightWeightMap<DWORD,DWORD>* forceJitOptions = nullptr;
         bool skip = false;
 
-        while (tok = strtok_s(nullptr, seps, &next))
+        while ((tok = strtok_r(nullptr, seps, &next)))
         {
             if (forceJitOptions == nullptr)
             {
