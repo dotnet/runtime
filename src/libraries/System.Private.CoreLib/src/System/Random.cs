@@ -294,7 +294,7 @@ namespace System
         public void Shuffle<T>(T[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
-            Shuffle(values.AsSpan());
+            Shuffle(ref MemoryMarshal.GetArrayDataReference(values), values.Length);
         }
 
         /// <summary>
@@ -308,17 +308,24 @@ namespace System
         /// </remarks>
         public void Shuffle<T>(Span<T> values)
         {
-            int n = values.Length;
+            Shuffle(ref MemoryMarshal.GetReference(values), values.Length);
+        }
 
+        private void Shuffle<T>(ref T values, int n)
+        {
             for (int i = 0; i < n - 1; i++)
             {
                 int j = Next(i, n);
+                Debug.Assert((uint)i < (uint)n, $"Shuffle first index {i} out of range (max {n - 1})!");
+                Debug.Assert((uint)j < (uint)n, $"Shuffle second index {j} out of range (max {n - 1})!");
 
                 if (j != i)
                 {
-                    T temp = values[i];
-                    values[i] = values[j];
-                    values[j] = temp;
+                    ref T first = Unsafe.Add(ref values, (uint)i);
+                    ref T second = Unsafe.Add(ref values, (uint)j);
+                    T temp = first;
+                    first = second;
+                    second = temp;
                 }
             }
         }
