@@ -1839,6 +1839,8 @@ struct BBswtDesc
     {
     }
 
+    BBswtDesc(const BBswtDesc* other);
+
     BBswtDesc(Compiler* comp, const BBswtDesc* other);
 
     void removeDefault()

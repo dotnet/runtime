@@ -1782,6 +1782,22 @@ bool BasicBlock::hasEHBoundaryOut() const
 }
 
 //------------------------------------------------------------------------
+// BBswtDesc copy ctor: copy a switch descriptor, but don't set up the jump table
+//
+// Arguments:
+//    other - existing switch descriptor to copy (except for its jump table)
+//
+BBswtDesc::BBswtDesc(const BBswtDesc* other)
+    : bbsDstTab(nullptr)
+    , bbsCount(other->bbsCount)
+    , bbsDominantCase(other->bbsDominantCase)
+    , bbsDominantFraction(other->bbsDominantFraction)
+    , bbsHasDefault(other->bbsHasDefault)
+    , bbsHasDominantCase(other->bbsHasDominantCase)
+{
+}
+
+//------------------------------------------------------------------------
 // BBswtDesc copy ctor: copy a switch descriptor
 //
 // Arguments:
