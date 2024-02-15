@@ -4,7 +4,7 @@
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
-import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
+import { getU16 } from "./memory";
 import { WasmValtype, WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -12,15 +12,15 @@ import {
     MintOpcodePtr, WasmBuilder, addWasmFunctionPointer,
     _now, isZeroPageReserved,
     getRawCwrap, importDef, JiterpreterOptions, getOptions, recordFailure,
-    getMemberOffset, getCounter, modifyCounter,
+    getCounter, modifyCounter,
     simdFallbackCounters, getWasmFunctionTable
 } from "./jiterpreter-support";
 import {
-    JiterpMember, BailoutReasonNames, BailoutReason,
+    BailoutReasonNames, BailoutReason,
     JiterpreterTable, JiterpCounter,
 } from "./jiterpreter-enums";
 import {
-    generateWasmBody
+    generateWasmBody, generateBackwardBranchTable
 } from "./jiterpreter-trace-generator";
 import { mono_jiterp_free_method_data_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_jiterp_free_method_data_jit_call } from "./jiterpreter-jit-call";
@@ -44,7 +44,7 @@ export const
     //  dump a list of the most common ones when dumping stats
     countCallTargets = false,
     // Trace when encountering branches
-    traceBranchDisplacements = false,
+    traceBranchDisplacements = true,
     // Trace when we reject something for being too small
     traceTooSmall = false,
     // For instrumented methods, trace their exact IP during execution
@@ -60,12 +60,7 @@ export const
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
-    traceBackBranches = 0,
-    // If we encounter an enter opcode that looks like a loop body and it was already
-    //  jitted, we should abort the current trace since it's not worth continuing
-    // Unproductive if we have backward branches enabled because it can stop us from jitting
-    //  nested loops
-    abortAtJittedLoopBodies = true,
+    traceBackBranches = 2,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode
@@ -78,7 +73,7 @@ export const
     // Generate compressed names for imports so that modules have more space for code
     compressImportNames = true,
     // Always grab method full names
-    useFullNames = false,
+    useFullNames = true,
     // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
     useDebugCount = false,
     // Web browsers limit synchronous module compiles to 4KB
@@ -99,6 +94,7 @@ export const disabledOpcodes: Array<MintOpcode> = [
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames: Array<string> = [
+    "SequenceEqualByte",
 ];
 
 export class InstrumentedTraceState {
@@ -1030,11 +1026,8 @@ export function mono_interp_tier_prepare_jiterpreter(
     const methodName = utf8ToString(cwraps.mono_wasm_method_get_name(method));
     info.name = methodFullName || methodName;
 
-    const imethod = getU32_unaligned(getMemberOffset(JiterpMember.Imethod) + <any>frame);
-    const backBranchCount = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsetsCount) + imethod);
-    const pBackBranches = getU32_unaligned(getMemberOffset(JiterpMember.BackwardBranchOffsets) + imethod);
-    let backwardBranchTable = backBranchCount
-        ? new Uint16Array(localHeapViewU8().buffer, pBackBranches, backBranchCount)
+    let backwardBranchTable = mostRecentOptions.noExitBackwardBranches
+        ? generateBackwardBranchTable(ip, startOfBody, sizeOfBody)
         : null;
 
     // If we're compiling a trace that doesn't start at the beginning of a method,

@@ -9,7 +9,7 @@ import {
 } from "./memory";
 import {
     WasmOpcode, WasmSimdOpcode, WasmValtype,
-    getOpcodeName,
+    getOpcodeName, MintOpArgType
 } from "./jiterpreter-opcodes";
 import {
     MintOpcode, SimdInfo,
@@ -126,6 +126,47 @@ function get_known_constant_value(builder: WasmBuilder, localOffset: number): Kn
         return undefined;
 
     return knownConstantValues.get(localOffset);
+}
+
+// Perform a quick scan through the opcodes potentially in this trace to build a table of
+//  backwards branch targets, compatible with the layout of the old one that was generated in C.
+// We do this here to match the exact way that the jiterp calculates branch targets, since
+//  there were previously corner cases where jiterp and interp disagreed.
+export function generateBackwardBranchTable(
+    ip: MintOpcodePtr, startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
+): Uint16Array | null {
+    const table : MintOpcodePtr[] = [];
+    while (ip < endOfBody) {
+        const rip = <any>ip - <any>startOfBody;
+        const opcode = <MintOpcode>getU16(ip);
+        // HACK
+        if (opcode === MintOpcode.MINT_SWITCH)
+            break;
+
+        const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+        const displacement = getBranchDisplacement(ip, opcode);
+        if (typeof (displacement) === "number") {
+            const rtarget = rip + (displacement * 2);
+            mono_assert(rtarget >= 0, () => `opcode @${ip} branch target before start of body: ${rtarget}`);
+        }
+
+        switch (opcode) {
+            // While this formally isn't a backward branch target, we want to record
+            //  the offset of its following instruction so that the jiterpreter knows
+            //  to generate the necessary dispatch code to enable branching back to it.
+            case MintOpcode.MINT_CALL_HANDLER:
+            case MintOpcode.MINT_CALL_HANDLER_S:
+                mono_log_info("not implemented: record call_handler rip as backbranch target");
+                break;
+        }
+
+        ip += <any>(opLengthU16 * 2);
+    }
+
+    if (table.length <= 0)
+        return null;
+    table.sort((a, b) => <any>a - <any>b);
+    return new Uint16Array(<any>table);
 }
 
 export function generateWasmBody(
@@ -2572,12 +2613,43 @@ function append_call_handler_store_ret_ip(
     builder.callHandlerReturnAddresses.push(retIp);
 }
 
+function getBranchDisplacement(
+    ip: MintOpcodePtr, opcode: MintOpcode
+) : number | undefined {
+    // opsymbol, opstring, oplength, num_dregs, num_sregs, optype
+    const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
+        payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
+        payloadAddress = <any>ip + 2 + (payloadOffset * 2);
+
+    let result : number;
+    switch (opArgType) {
+        case MintOpArgType.MintOpBranch:
+            result = getI32_unaligned(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortBranch:
+            result = getI16(payloadAddress);
+            break;
+        case MintOpArgType.MintOpShortAndShortBranch:
+            result = getI16(payloadAddress + 2);
+            break;
+        default:
+            return undefined;
+    }
+
+    if (traceBranchDisplacements)
+        mono_log_info(`${getOpcodeName(opcode)} @${ip} displacement=${result}`);
+
+    return result;
+}
+
 function emit_branch(
     builder: WasmBuilder, ip: MintOpcodePtr,
-    frame: NativePointer, opcode: MintOpcode, displacement?: number
+    frame: NativePointer, opcode: MintOpcode
 ): boolean {
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
         (opcode <= MintOpcode.MINT_BLT_UN_I8_IMM_SP);
+    const displacement = getBranchDisplacement(ip, opcode);
+    mono_assert (typeof (displacement) === "number", () => `${getOpcodeName(opcode)} @${ip} had no displacement`);
 
     // If the branch is taken we bail out to allow the interpreter to do it.
     // So for brtrue, we want to do 'cond == 0' to produce a bailout only
@@ -2592,15 +2664,7 @@ function emit_branch(
         case MintOpcode.MINT_BR_S: {
             const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER_S);
-            displacement = (
-                (opcode === MintOpcode.MINT_BR) ||
-                (opcode === MintOpcode.MINT_CALL_HANDLER)
-            )
-                ? getArgI32(ip, 1)
-                : getArgI16(ip, 1);
 
-            if (traceBranchDisplacements)
-                mono_log_info(`br.s @${ip} displacement=${displacement}`);
             const destination = <any>ip + (displacement * 2);
 
             if (displacement <= 0) {
@@ -2653,7 +2717,6 @@ function emit_branch(
 
             // Load the condition
 
-            displacement = getArgI16(ip, 2);
             append_ldloc(builder, getArgU16(ip, 1), is64 ? WasmOpcode.i64_load : WasmOpcode.i32_load);
             if (
                 (opcode === MintOpcode.MINT_BRFALSE_I4_S) ||
@@ -2683,11 +2746,6 @@ function emit_branch(
             break;
         }
     }
-
-    if (!displacement)
-        throw new Error("Branch had no displacement");
-    else if (traceBranchDisplacements)
-        mono_log_info(`${getOpcodeName(opcode)} @${ip} displacement=${displacement}`);
 
     const destination = <any>ip + (displacement * 2);
 
@@ -2741,10 +2799,6 @@ function emit_relop_branch(
     if (!relopInfo && !intrinsicFpBinop)
         return false;
 
-    const displacement = getArgI16(ip, 3);
-    if (traceBranchDisplacements)
-        mono_log_info(`relop @${ip} displacement=${displacement}`);
-
     const operandLoadOp = relopInfo
         ? relopInfo[1]
         : (
@@ -2779,7 +2833,7 @@ function emit_relop_branch(
         builder.callImport("relop_fp");
     }
 
-    return emit_branch(builder, ip, frame, opcode, displacement);
+    return emit_branch(builder, ip, frame, opcode);
 }
 
 function emit_math_intrinsic(builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode): boolean {
