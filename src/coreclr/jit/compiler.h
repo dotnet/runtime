@@ -7407,7 +7407,7 @@ public:
 
     PhaseStatus optInductionVariables();
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
-    bool optIsIVWideningProfitable(unsigned lclNum, struct ScevAddRec* addRec, FlowGraphNaturalLoop* loop);
+    bool optIsIVWideningProfitable(unsigned lclNum, bool needsInitialization, FlowGraphNaturalLoop* loop);
     void optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statement* stmt);
     bool optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 

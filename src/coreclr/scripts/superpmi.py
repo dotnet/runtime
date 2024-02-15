@@ -2671,6 +2671,7 @@ class SuperPMIReplayAsmDiffs:
         if self.coreclr_args.metrics is not None:
             contexts = diffs
             examples = []
+            contexts = [r for r in diffs if int(r["Diff size"]) > int(r["Base size"])]
         else:
             # In the default case we have size improvements/regressions
             # available without needing to disassemble all, so pick a subset of

@@ -58,6 +58,8 @@ struct Scev
     {
         return Type == type;
     }
+
+    bool GetConstantValue(Compiler* comp, int64_t* cns);
 };
 
 struct ScevConstant : Scev
@@ -78,6 +80,31 @@ struct ScevLocal : Scev
 
     const unsigned LclNum;
     const unsigned SsaNum;
+
+    //------------------------------------------------------------------------
+    // GetConstantValue: If this SSA use refers to a constant, then fetch that
+    // constant.
+    //
+    // Parameters:
+    //   comp - Compiler instance
+    //   cns  - [out] Constant value; only valid if this function returns true.
+    //
+    // Returns:
+    //   True if this SSA use refers to a constant; otherwise false,
+    //
+    bool GetConstantValue(Compiler* comp, int64_t* cns)
+    {
+        LclVarDsc*           dsc     = comp->lvaGetDesc(LclNum);
+        LclSsaVarDsc*        ssaDsc  = dsc->GetPerSsaData(SsaNum);
+        GenTreeLclVarCommon* defNode = ssaDsc->GetDefNode();
+        if ((defNode != nullptr) && defNode->Data()->OperIs(GT_CNS_INT, GT_CNS_LNG))
+        {
+            *cns = defNode->Data()->AsIntConCommon()->IntegralValue();
+            return true;
+        }
+
+        return false;
+    }
 };
 
 struct ScevUnop : Scev
@@ -111,6 +138,34 @@ struct ScevAddRec : Scev
     Scev* const Step;
 };
 
+//------------------------------------------------------------------------
+// Scev::GetConstantValue: If this SCEV is always a constant (i.e. either an
+// inline constant or an SSA use referring to a constant) then obtain that
+// constant.
+//
+// Parameters:
+//   comp - Compiler instance
+//   cns  - [out] Constant value; only valid if this function returns true.
+//
+// Returns:
+//   True if a constant could be extracted.
+//
+bool Scev::GetConstantValue(Compiler* comp, int64_t* cns)
+{
+    if (OperIs(ScevOper::Constant))
+    {
+        *cns = ((ScevConstant*)this)->Value;
+        return true;
+    }
+
+    if (OperIs(ScevOper::Local))
+    {
+        return ((ScevLocal*)this)->GetConstantValue(comp, cns);
+    }
+
+    return false;
+}
+
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Scev*> ScalarEvolutionMap;
 
 // Scalar evolution is analyzed in the context of a single loop, and are
@@ -125,7 +180,7 @@ class ScalarEvolutionContext
     Scev* Analyze(BasicBlock* block, GenTree* tree, int depth);
     Scev* AnalyzeNew(BasicBlock* block, GenTree* tree, int depth);
     Scev* CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
-                             Scev*                start,
+                             ScevLocal*           start,
                              BasicBlock*          stepDefBlock,
                              GenTree*             stepDefData);
     Scev* CreateSimpleInvariantScev(GenTree* tree);
@@ -259,6 +314,12 @@ void ScalarEvolutionContext::DumpScev(Scev* scev)
         {
             ScevLocal* invariantLocal = (ScevLocal*)scev;
             printf("V%02u.%u", invariantLocal->LclNum, invariantLocal->SsaNum);
+
+            int64_t cns;
+            if (invariantLocal->GetConstantValue(m_comp, &cns))
+            {
+                printf(" (%lld)", (long long)cns);
+            }
             break;
         }
         case ScevOper::ZeroExtend:
@@ -399,15 +460,6 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
 
             if ((ssaDsc->GetBlock() == nullptr) || !m_loop->ContainsBlock(ssaDsc->GetBlock()))
             {
-                // Invariant local
-                GenTreeLclVarCommon* def = ssaDsc->GetDefNode();
-                if ((def != nullptr) && def->Data()->OperIs(GT_CNS_INT, GT_CNS_LNG))
-                {
-                    // For constant definitions from outside the loop we prefer
-                    // to inline the constant.
-                    return CreateScevForConstant(def->Data()->AsIntConCommon());
-                }
-
                 return NewLocal(tree->AsLclVarCommon()->GetLclNum(), tree->AsLclVarCommon()->GetSsaNum());
             }
 
@@ -465,12 +517,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
                 return nullptr;
             }
 
-            Scev* enterScev = Analyze(block, enterSsa);
-
-            if (enterScev == nullptr)
-            {
-                return nullptr;
-            }
+            ScevLocal* enterScev = NewLocal(enterSsa->GetLclNum(), enterSsa->GetSsaNum());
 
             LclVarDsc*    dsc    = m_comp->lvaGetDesc(store);
             LclSsaVarDsc* ssaDsc = dsc->GetPerSsaData(backedgeSsa->GetSsaNum());
@@ -592,7 +639,7 @@ Scev* ScalarEvolutionContext::AnalyzeNew(BasicBlock* block, GenTree* tree, int d
 //   SCEV node if this is a simple addrec shape. Otherwise nullptr.
 //
 Scev* ScalarEvolutionContext::CreateSimpleAddRec(GenTreeLclVarCommon* headerStore,
-                                                 Scev*                enterScev,
+                                                 ScevLocal*           enterScev,
                                                  BasicBlock*          stepDefBlock,
                                                  GenTree*             stepDefData)
 {
@@ -920,9 +967,9 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 // optIsIVWideningProfitable: Check to see if IV widening is profitable.
 //
 // Parameters:
-//   lclNum - The primary induction variable
-//   addRec - Value of the induction variable
-//   loop   - The loop
+//   lclNum              - The primary induction variable
+//   needsInitialization - Whether or not the widened IV will need explicit initialization
+//   loop                - The loop
 //
 // Returns:
 //   True if IV widening is profitable.
@@ -937,7 +984,7 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //     2. We need to store the wide IV back into the narrow one in each of
 //     the exits where the narrow IV is live-in.
 //
-bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, FlowGraphNaturalLoop* loop)
+bool Compiler::optIsIVWideningProfitable(unsigned lclNum, bool needsInitialization, FlowGraphNaturalLoop* loop)
 {
     struct CountZeroExtensionsVisitor : GenTreeVisitor<CountZeroExtensionsVisitor>
     {
@@ -1014,9 +1061,9 @@ bool Compiler::optIsIVWideningProfitable(unsigned lclNum, ScevAddRec* addRec, Fl
         return BasicBlockVisit::Continue;
     });
 
-    if (!addRec->Start->OperIs(ScevOper::Constant))
+    if (needsInitialization)
     {
-        // Need to insert a move from the narrow local in the preheader.
+        // Need to insert a move from the narrow local.
         savedSize -= ExtensionSize;
         savedCost -= loop->EntryEdge(0)->getSourceBlock()->getBBWeight(this) * ExtensionCost;
     }
@@ -1231,6 +1278,19 @@ PhaseStatus Compiler::optInductionVariables()
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     ScalarEvolutionContext scevContext(this);
+    struct WidenedIV
+    {
+        unsigned LclNum;
+        unsigned InitSsaNum;
+        unsigned NewLclNum;
+
+        WidenedIV(unsigned lclNum, unsigned initSsaNum, unsigned newLclNum)
+            : LclNum(lclNum), InitSsaNum(initSsaNum), NewLclNum(newLclNum)
+        {
+        }
+    };
+    ArrayStack<WidenedIV> widenedIVs(getAllocator(CMK_LoopScalarEvolution));
+
     JITDUMP("Widening primary induction variables:\n");
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
@@ -1292,33 +1352,77 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
-            if (!optIsIVWideningProfitable(lcl->GetLclNum(), addRec, loop))
+            // Start value should always be an SSA use from outside the loop
+            // since we only widen primary IVs.
+            assert(addRec->Start->OperIs(ScevOper::Local));
+            ScevLocal* startLocal = (ScevLocal*)addRec->Start;
+            unsigned   newLclNum  = BAD_VAR_NUM;
+            for (int i = 0; i < widenedIVs.Height(); i++)
+            {
+                WidenedIV& wiv = widenedIVs.BottomRef(i);
+                if ((wiv.LclNum == startLocal->LclNum) && (wiv.InitSsaNum == startLocal->SsaNum))
+                {
+                    newLclNum = wiv.NewLclNum;
+                    break;
+                }
+            }
+
+            int64_t startConstant  = 0;
+            bool    initToConstant = startLocal->GetConstantValue(this, &startConstant);
+            // Even with constants we need explicit initialization, but we
+            // assume that the old local will be DCE'd in which case it
+            // balances out.
+            bool needsExplicitInitialization = (newLclNum == BAD_VAR_NUM) && !initToConstant;
+            if (!optIsIVWideningProfitable(lcl->GetLclNum(), needsExplicitInitialization, loop))
             {
                 continue;
             }
 
-            changed            = true;
-            unsigned newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
-            JITDUMP("  Replacing V%02u with a widened version V%02u\n", lcl->GetLclNum(), newLclNum);
+            changed = true;
 
-            GenTree* initVal;
-            if (addRec->Start->OperIs(ScevOper::Constant))
+            if (newLclNum == BAD_VAR_NUM)
             {
-                ScevConstant* cns = (ScevConstant*)addRec->Start;
-                initVal           = gtNewIconNode((int64_t)(uint32_t)cns->Value, TYP_LONG);
-            }
-            else
-            {
-                initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), TYP_INT), true, TYP_LONG);
+                newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
+                assert(startLocal->LclNum == lcl->GetLclNum());
+                lclDsc                    = lvaGetDesc(lcl);
+                LclSsaVarDsc* startSsaDsc = lclDsc->GetPerSsaData(startLocal->SsaNum);
+
+                BasicBlock* initBlock;
+                if (startSsaDsc->GetBlock() != nullptr)
+                {
+                    initBlock = startSsaDsc->GetBlock();
+                    JITDUMP(
+                        "Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
+                        "\n",
+                        initBlock->bbNum);
+
+                    // Any other use of this IV can reuse the same wide local/initialization.
+                    widenedIVs.Emplace(startLocal->LclNum, startLocal->SsaNum, newLclNum);
+                }
+                else
+                {
+                    initBlock = loop->EntryEdge(0)->getSourceBlock();
+                    JITDUMP("Adding initialization of new widened local to preheader " FMT_BB "\n", initBlock->bbNum);
+                }
+
+                GenTree* initVal;
+                if (initToConstant)
+                {
+                    initVal = gtNewIconNode((int64_t)(uint32_t)startConstant, TYP_LONG);
+                }
+                else
+                {
+                    initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), TYP_INT), true, TYP_LONG);
+                }
+
+                GenTree*   widenStore = gtNewTempStore(newLclNum, initVal);
+                Statement* initStmt   = fgNewStmtFromTree(widenStore);
+                fgInsertStmtNearEnd(initBlock, initStmt);
+                DISPSTMT(initStmt);
+                JITDUMP("\n");
             }
 
-            JITDUMP("Adding initialization of new widened local to preheader:\n");
-            GenTree*    widenStore = gtNewTempStore(newLclNum, initVal);
-            BasicBlock* preheader  = loop->EntryEdge(0)->getSourceBlock();
-            Statement*  initStmt   = fgNewStmtFromTree(widenStore);
-            fgInsertStmtAtEnd(preheader, initStmt);
-            DISPSTMT(initStmt);
-            JITDUMP("\n");
+            JITDUMP("  Replacing uses of V%02u with widened version V%02u\n", lcl->GetLclNum(), newLclNum);
 
             loop->VisitLoopBlocks([=](BasicBlock* block) {
 
