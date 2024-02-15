@@ -63,31 +63,31 @@ internal sealed unsafe partial class MsQuicApi
         bool success = false;
         try
         {
-            handle?.DangerousAddRef(ref success);
-            return ApiTable->SetParam(handle != null ? handle.QuicHandle : null, param, bufferLength, buffer);
+            handle.DangerousAddRef(ref success);
+            return ApiTable->SetParam(handle.QuicHandle, param, bufferLength, buffer);
         }
         finally
         {
             if (success)
             {
-                handle!.DangerousRelease();
+                handle.DangerousRelease();
             }
         }
     }
 
-    public int GetParam(MsQuicSafeHandle? handle, uint param, uint* bufferLength, void* buffer)
+    public int GetParam(MsQuicSafeHandle handle, uint param, uint* bufferLength, void* buffer)
     {
         bool success = false;
         try
         {
-            handle?.DangerousAddRef(ref success);
-            return ApiTable->GetParam(handle != null ? handle.QuicHandle : null, param, bufferLength, buffer);
+            handle.DangerousAddRef(ref success);
+            return ApiTable->GetParam(handle.QuicHandle, param, bufferLength, buffer);
         }
         finally
         {
             if (success)
             {
-                handle!.DangerousRelease();
+                handle.DangerousRelease();
             }
         }
     }

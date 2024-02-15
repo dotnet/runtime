@@ -35,7 +35,8 @@ namespace System.Net
             {
                 fixed (long* pCounters = s_counters)
                 {
-                    MsQuicHelpers.GetMsQuicParameter(null, QUIC_PARAM_GLOBAL_PERF_COUNTERS, (uint)s_counters.Length * sizeof(long), (byte*)pCounters);
+                    uint size = (uint)s_counters.Length * sizeof(long);
+                    MsQuicApi.Api.ApiTable->GetParam(null, QUIC_PARAM_GLOBAL_PERF_COUNTERS, &size, (byte*)pCounters);
                 }
             }
         }
