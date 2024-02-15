@@ -415,6 +415,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->ephemeral_high != nullptr);
         g_ephemeral_low = args->ephemeral_low;
         g_ephemeral_high = args->ephemeral_high;
+        g_region_to_generation_table = args->region_to_generation_table;
+        g_region_shr = args->region_shr;
+        g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
         return;
     case WriteBarrierOp::Initialize:
         // This operation should only be invoked once, upon initialization.
@@ -442,6 +445,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
+        g_region_to_generation_table = args->region_to_generation_table;
+        g_region_shr = args->region_shr;
+        g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
         g_ephemeral_low = args->ephemeral_low;
         g_ephemeral_high = args->ephemeral_high;
         return;

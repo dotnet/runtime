@@ -122,6 +122,55 @@ endif
     cmp     REFREG, [g_ephemeral_high]
     jae     &BASENAME&_NoBarrierRequired_&REFREG&
 
+    mov     r10, REFREG
+    mov     r11, rcx
+
+    mov     cl, [g_region_shr]
+    test    cl, cl
+    je      &BASENAME&_SkipCheck_&REFREG&
+
+    ; check if the source is in gen 2 - then it's not an ephemeral pointer
+    shr     r10, cl
+    add     r10, [g_region_to_generation_table]
+    cmp     byte ptr [r10], 82h
+    je      &BASENAME&_NoBarrierRequired_&REFREG&
+
+    ; check if the destination happens to be in gen 0
+    mov     r10, r11
+    shr     r10, cl
+    add     r10, [g_region_to_generation_table]
+    cmp     byte ptr [r10], 0    
+    je      &BASENAME&_NoBarrierRequired_&REFREG&
+&BASENAME&_SkipCheck_&REFREG&:
+
+    cmp     [g_region_use_bitwise_write_barrier], 0
+    mov     rcx, r11
+    je      &BASENAME&_CheckCardTableByte_&REFREG&
+
+    ; compute card table bit
+    mov     r10b, 1
+    shr     rcx, 8
+    and     cl, 7
+    shl     r10b, cl
+
+    ; Check if we need to update the card table
+    ; Calc pCardByte
+    mov     rcx, r11
+    shr     rcx, 0Bh
+    add     rcx, [g_card_table]
+
+    ; Check if this card table bit is already set
+    test    byte ptr [rcx], r10b
+    jne     &BASENAME&_NoBarrierRequired_&REFREG&
+
+    lock or byte ptr [rcx], r10b
+
+    mov     rcx, r11
+    shr     rcx, 15h
+    jmp     &BASENAME&_CheckCardBundle_&REFREG&
+
+&BASENAME&_CheckCardTableByte_&REFREG&:
+
     ;; We have a location on the GC heap being updated with a reference to an ephemeral object so we must
     ;; track this write. The location address is translated into an offset in the card table bitmap. We set
     ;; an entire byte in the card table since it's quicker than messing around with bitmasks and we only write
@@ -137,11 +186,14 @@ endif
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     ;; Shift rcx by 0Ah more to get the card bundle byte (we shifted by 0x0B already)
     shr     rcx, 0Ah
+&BASENAME&_CheckCardBundle_&REFREG&:
     add     rcx, [g_card_bundle_table]
     cmp     byte ptr [rcx], 0FFh
     je      &BASENAME&_NoBarrierRequired_&REFREG&
 
     mov     byte ptr [rcx], 0FFh
+else
+&BASENAME&_CheckCardBundle_&REFREG&:
 endif
 
 &BASENAME&_NoBarrierRequired_&REFREG&:
@@ -317,6 +369,54 @@ RhpByRefAssignRef_CheckCardTable:
     cmp     rcx, [g_ephemeral_high]
     jae     RhpByRefAssignRef_NoBarrierRequired
 
+    mov     r10, rcx
+
+    mov     cl, [g_region_shr]
+    test    cl, cl
+    je      RhpByRefAssignRef_SkipCheck
+
+    ; check if the source is in gen 2 - then it's not an ephemeral pointer
+    shr     r10, cl
+    add     r10, [g_region_to_generation_table]
+    cmp     byte ptr [r10], 82h
+    je      RhpByRefAssignRef_NoBarrierRequired
+
+    ; check if the destination happens to be in gen 0
+    mov     r10, rdi
+    shr     r10, cl
+    add     r10, [g_region_to_generation_table]
+    cmp     byte ptr [r10], 0    
+    je      RhpByRefAssignRef_NoBarrierRequired
+RhpByRefAssignRef_SkipCheck:
+
+    cmp     [g_region_use_bitwise_write_barrier], 0
+    je      RhpByRefAssignRef_CheckCardTableByte
+
+    ; compute card table bit
+    mov     rcx, rdi
+    mov     r10b, 1
+    shr     rcx, 8
+    and     cl, 7
+    shl     r10b, cl
+
+    ; Check if we need to update the card table
+    ; Calc pCardByte
+    mov     rcx, rdi
+    shr     rcx, 0Bh
+    add     rcx, [g_card_table]
+
+    ; Check if this card table bit is already set
+    test    byte ptr [rcx], r10b
+    jne     RhpByRefAssignRef_NoBarrierRequired
+
+    lock or byte ptr [rcx], r10b
+
+    mov     rcx, rdi
+    shr     rcx, 15h
+    jmp     RhpByRefAssignRef_CheckCardBundle
+
+RhpByRefAssignRef_CheckCardTableByte:
+
     ;; move current rdi value into rcx, we need to keep rdi and eventually increment by 8
     mov     rcx, rdi
 
@@ -335,11 +435,14 @@ RhpByRefAssignRef_CheckCardTable:
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     ;; Shift rcx by 0Ah more to get the card bundle byte (we shifted by 0Bh already)
     shr     rcx, 0Ah
+RhpByRefAssignRef_CheckCardBundle:
     add     rcx, [g_card_bundle_table]
     cmp     byte ptr [rcx], 0FFh
     je      RhpByRefAssignRef_NoBarrierRequired
 
     mov     byte ptr [rcx], 0FFh
+else
+RhpByRefAssignRef_CheckCardBundle:
 endif
 
 RhpByRefAssignRef_NoBarrierRequired:

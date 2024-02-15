@@ -400,6 +400,9 @@ EXTERN g_highest_address    : QWORD
 EXTERN g_ephemeral_low      : QWORD
 EXTERN g_ephemeral_high     : QWORD
 EXTERN g_card_table         : QWORD
+EXTERN g_region_shr         : BYTE
+EXTERN g_region_use_bitwise_write_barrier : BYTE
+EXTERN g_region_to_generation_table       : QWORD
 
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 EXTERN g_card_bundle_table  : QWORD

@@ -21,6 +21,9 @@ GPTR_IMPL_INIT(uint8_t,  g_highest_address, nullptr);
 GVAL_IMPL_INIT(GCHeapType, g_heap_type,     GC_HEAP_INVALID);
 uint8_t* g_ephemeral_low  = (uint8_t*)1;
 uint8_t* g_ephemeral_high = (uint8_t*)~0;
+uint8_t* g_region_to_generation_table = nullptr;
+uint8_t  g_region_shr = 0;
+bool g_region_use_bitwise_write_barrier = false;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 uint32_t* g_card_bundle_table = nullptr;
