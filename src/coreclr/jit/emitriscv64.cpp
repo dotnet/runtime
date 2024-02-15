@@ -3158,7 +3158,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t            sz = 0;
 
     assert(REG_NA == static_cast<int>(REG_NA));
-    assert(writeableOffset == 0);
 
     insOpts insOp = id->idInsOpt();
 
