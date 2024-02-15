@@ -388,8 +388,8 @@ namespace System.Numerics.Tests
             public static BinaryIntegerWrapper<T> operator >>(BinaryIntegerWrapper<T> value, int shiftAmount) => value.Value >> shiftAmount;
             public static bool operator ==(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value == right.Value;
             public static bool operator !=(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value != right.Value;
-            public static bool operator <(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value > right.Value;
-            public static bool operator >(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value < right.Value;
+            public static bool operator <(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value < right.Value;
+            public static bool operator >(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value > right.Value;
             public static bool operator <=(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value <= right.Value;
             public static bool operator >=(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value >= right.Value;
             public static BinaryIntegerWrapper<T> operator >>>(BinaryIntegerWrapper<T> value, int shiftAmount) => value.Value >>> shiftAmount;
