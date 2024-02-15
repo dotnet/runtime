@@ -1619,8 +1619,8 @@ namespace System.Net
                 if (parameters.ServicePoint is { } servicePoint)
                 {
                     handler.MaxConnectionsPerServer = servicePoint.ConnectionLimit;
-                    handler.PooledConnectionIdleTimeout = servicePoint.MaxIdleTime == -1 ? Threading.Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(servicePoint.MaxIdleTime);
-                    handler.PooledConnectionLifetime = servicePoint.ConnectionLeaseTimeout == -1 ? Threading.Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(servicePoint.ConnectionLeaseTimeout);
+                    handler.PooledConnectionIdleTimeout = TimeSpan.FromMilliseconds(servicePoint.MaxIdleTime);
+                    handler.PooledConnectionLifetime = TimeSpan.FromMilliseconds(servicePoint.ConnectionLeaseTimeout);
                 }
 
                 Debug.Assert(handler.UseProxy); // Default of handler.UseProxy is true.
