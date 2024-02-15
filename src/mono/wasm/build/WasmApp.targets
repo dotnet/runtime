@@ -142,9 +142,6 @@
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
 
-    <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
-    <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
-
     <!-- by default, package assemblies as webcil -->
     <WasmEnableWebcil Condition="'$(WasmEnableWebcil)' == ''">true</WasmEnableWebcil>
     <WasmAssemblyExtension Condition="'$(WasmEnableWebcil)' == 'true'">.wasm</WasmAssemblyExtension>

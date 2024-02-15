@@ -543,7 +543,7 @@ async function mono_wasm_before_memory_snapshot() {
     if (runtimeHelpers.config.browserProfilerOptions)
         mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
 
-    mono_wasm_load_runtime("unused", runtimeHelpers.config.debugLevel);
+    mono_wasm_load_runtime();
 
     // we didn't have snapshot yet and the feature is enabled. Take snapshot now.
     if (runtimeHelpers.config.startupMemoryCache) {
@@ -556,17 +556,21 @@ async function mono_wasm_before_memory_snapshot() {
     endMeasure(mark, MeasuredBlock.memorySnapshot);
 }
 
-export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
+export function mono_wasm_load_runtime(): void {
     mono_log_debug("mono_wasm_load_runtime");
     try {
         const mark = startMeasure();
+        let debugLevel = runtimeHelpers.config.debugLevel;
         if (debugLevel == undefined) {
             debugLevel = 0;
             if (runtimeHelpers.config.debugLevel) {
                 debugLevel = 0 + debugLevel;
             }
         }
-        cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
+        if (!loaderHelpers.isDebuggingSupported() || !runtimeHelpers.config.resources!.pdb) {
+            debugLevel = 0;
+        }
+        cwraps.mono_wasm_load_runtime("unused", debugLevel);
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
     } catch (err: any) {
