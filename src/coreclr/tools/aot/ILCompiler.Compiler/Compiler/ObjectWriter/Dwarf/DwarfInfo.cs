@@ -531,9 +531,9 @@ namespace ILCompiler.ObjectWriter
                     e.OpPiece();
                     break;
                 case VarLocType.VLT_STK_REG:
-                    e.OpBReg(loc.C, loc.D);
+                    e.OpBReg(loc.B, loc.C);
                     e.OpPiece();
-                    e.OpReg(loc.B);
+                    e.OpReg(loc.D);
                     e.OpPiece();
                     break;
                 default:
