@@ -18637,11 +18637,11 @@ namespace System.Numerics.Tensors
             // TODO https://github.com/dotnet/runtime/issues/96162: Use AVX512 popcount operations when available
 
             public static bool Vectorizable =>
-                // The fallback approach used for sizeof(T) <= 4 requires 64-bit shifts for
-                // sizeof(T) == 8, and such shifts aren't accelerated on today's hardware. Alternative
-                // approaches, such as doing two 32-bit operations and combining them were observed
-                // to not provide any meaningfuls speedup over scalar. So for now, we don't vectorize
-                // when sizeof(T) == 8.
+                // The implementation uses a vectorized version of the BitOperations.PopCount software fallback:
+                // https://github.com/dotnet/runtime/blob/aff061bab1b6d9ccd5731bd16fa8e89ad82ab75a/src/libraries/System.Private.CoreLib/src/System/Numerics/BitOperations.cs#L496-L508
+                // This relies on 64-bit shifts for sizeof(T) == 8, and such shifts aren't accelerated on today's hardware.
+                // Alternative approaches, such as doing two 32-bit operations and combining them were observed to not
+                // provide any meaningfuls speedup over scalar. So for now, we don't vectorize when sizeof(T) == 8.
                 sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4;
 
             public static T Invoke(T x) => T.PopCount(x);
