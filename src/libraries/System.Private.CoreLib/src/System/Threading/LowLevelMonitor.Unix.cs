@@ -31,6 +31,9 @@ namespace System.Threading
 
         private void AcquireCore()
         {
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
             Interop.Sys.LowLevelMonitor_Acquire(_nativeMonitor);
         }
 
@@ -41,6 +44,9 @@ namespace System.Threading
 
         private void WaitCore()
         {
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
             Interop.Sys.LowLevelMonitor_Wait(_nativeMonitor);
         }
 
@@ -53,6 +59,10 @@ namespace System.Threading
                 WaitCore();
                 return true;
             }
+
+#if FEATURE_WASM_MANAGED_THREADS
+            Thread.AssureBlockingPossible();
+#endif
 
             return Interop.Sys.LowLevelMonitor_TimedWait(_nativeMonitor, timeoutMilliseconds);
         }

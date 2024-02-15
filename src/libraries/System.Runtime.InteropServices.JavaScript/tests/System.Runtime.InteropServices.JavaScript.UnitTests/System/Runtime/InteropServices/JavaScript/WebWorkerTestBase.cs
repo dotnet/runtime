@@ -165,6 +165,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                         sem.Wait(cts.Token);
                     } catch (OperationCanceledException) { /* ignore */ }
                 }},
+                new NamedCall { Name = "CancellationTokenSource.ctor", Call = delegate (CancellationToken ct) {
+                    using var cts = new CancellationTokenSource(8);
+                }},
+                new NamedCall { Name = "Mutex.WaitOne", Call = delegate (CancellationToken ct) {
+                    using var mr = new ManualResetEventSlim(false);
+                    var mutex = new Mutex();
+                    var thread = new Thread(() => {
+                        mutex.WaitOne();
+                        mr.Set();
+                        Thread.Sleep(50);
+                        mutex.ReleaseMutex();
+                    });
+                    thread.Start();
+                    Thread.ForceBlockingWait((_) => mr.Wait(), null);
+                    mutex.WaitOne();
+                }},
         };
 
         public static IEnumerable<object[]> GetTargetThreadsAndBlockingCalls()
