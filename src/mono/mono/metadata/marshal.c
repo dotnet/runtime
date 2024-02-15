@@ -3713,7 +3713,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						swift_self_args++;
 					} else if (!m_class_is_blittable (param_klass) || m_class_is_simd_type (param_klass)) {
 						swift_error_args = swift_self_args = 0;
-						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-primitive value types to a P/Invoke with the Swift calling convention is unsupported.");
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-blittable types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
 					}
 				}
