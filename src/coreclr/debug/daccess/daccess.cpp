@@ -33,6 +33,8 @@ extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddre
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
+#include "libhellomanaged.h"
+
 // To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
@@ -62,6 +64,8 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
             return FALSE;
 #endif
         }
+
+	hellomanaged_Hello();
 
 #ifdef HOST_UNIX
         int err = PAL_InitializeDLL();
