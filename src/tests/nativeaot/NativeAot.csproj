@@ -5,12 +5,13 @@
     <MergedWrapperProjectReference Include="SmokeTests/**/*.??proj" />
 
     <MergedWrapperProjectReference Remove="SmokeTests/ControlFlowGuard/ControlFlowGuard.csproj" />
-    <MergedWrapperProjectReference Remove="SmokeTests/DynamicGenerics/DynamicGenerics.csproj" />
     <MergedWrapperProjectReference Remove="SmokeTests/MultiModule/*.*" />
   </ItemGroup>
 
   <PropertyGroup>
     <BuildAsStandalone>false</BuildAsStandalone>
+    <!-- There's just too many of these warnings -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

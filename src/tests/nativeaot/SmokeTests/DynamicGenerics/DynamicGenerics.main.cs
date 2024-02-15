@@ -165,6 +165,13 @@ public class EntryPointMain
             new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestCoAndContraVariantCalls", () => global::GenericVirtualMethods.TestCoAndContraVariantCalls(), null)
         };
 
+        // This is a placeholder for the RunTests() call below that expects an
+        // args array as a parameter. Tests using the Merged Wrapper system rely
+        // on the TestEntryPoint(), which receives no parameters, whereas the
+        // legacy system had a Main(string[] args) signature. However, in this
+        // specific test's case, the args array was always empty.
+        string[] args = new string[] { };
+
         bool passed = CoreFXTestLibrary.Internal.Runner.RunTests(tests, args);
         CoreFXTestLibrary.Logger.LogInformation("Passed: {0}, Failed: {1}, Number of Tests Run: {2}",
                                                 CoreFXTestLibrary.Internal.Runner.NumPassedTests,
