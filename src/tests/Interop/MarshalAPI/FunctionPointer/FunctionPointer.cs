@@ -151,7 +151,12 @@ public partial class FunctionPtr
     }
 
     [Theory]
-    [InlineData([-0f, 0f, 1f, -1f, 42f, 60f])]
+    [InlineData(-0f)]
+    [InlineData(0f)]
+    [InlineData(1f)]
+    [InlineData(-1f)]
+    [InlineData(42f)]
+    [InlineData(60f)]
     public static void RunGenericFunctionPointerTest(float inVal)
     {
         Console.WriteLine($"Running {nameof(RunGenericFunctionPointerTest)}...");
