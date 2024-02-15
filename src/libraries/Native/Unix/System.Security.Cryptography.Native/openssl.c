@@ -635,6 +635,11 @@ BIO* CryptoNative_GetX509NameInfo(X509* x509, int32_t nameType, int32_t forIssue
                                     0 == strncmp(localOid, szOidUpn, sizeof(szOidUpn)))
                                 {
                                     // OTHERNAME->ASN1_TYPE->union.field
+                                    if (!value->value)
+                                    {
+                                        return NULL;
+                                    }
+
                                     str = value->value->value.asn1_string;
                                 }
                             }
