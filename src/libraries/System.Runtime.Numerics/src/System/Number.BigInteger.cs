@@ -732,6 +732,10 @@ namespace System
                     ReadOnlySpan<uint> multiplier = powersOf1e9.GetSpan(log2);
                     Span<uint> bitsUpper = bits.Slice(0, upperBuffer.Length + multiplier.Length);
 
+                    int multiplierTrailingZeroCountUInt32 = (MaxPartialDigits * (1 << log2)) >> 5;
+                    multiplier = multiplier.Slice(multiplierTrailingZeroCountUInt32);
+                    bitsUpper = bitsUpper.Slice(multiplierTrailingZeroCountUInt32);
+
                     if (multiplier.Length < upperBuffer.Length)
                         BigIntegerCalculator.Multiply(upperBuffer, multiplier, bitsUpper);
                     else
@@ -962,7 +966,6 @@ namespace System
                 Debug.Assert(bits.Length > unchecked((int)(0.934292276687070661 / 9 * trailingZeroCount)) + 1);
                 Debug.Assert(trailingZeroCount >= 0);
 
-
                 int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
 
                 if (trailingPartialCount == 0)
@@ -987,7 +990,7 @@ namespace System
                 else
                     bits2 = default;
 
-                int curLength;
+                int curLength, curTrailingZeroCount;
                 scoped Span<uint> curBits, otherBits;
 
                 if ((popCount & 1) != 0)
@@ -1007,6 +1010,7 @@ namespace System
                     ReadOnlySpan<uint> first = GetSpan(fi);
                     first.CopyTo(curBits);
                     curLength = first.Length;
+                    curTrailingZeroCount = MaxPartialDigits * (1 << fi);
                     trailingPartialCount >>= fi;
                     trailingPartialCount >>= 1;
                 }
@@ -1018,10 +1022,23 @@ namespace System
                     if ((trailingPartialCount & 1) != 0)
                     {
                         ReadOnlySpan<uint> power = GetSpan(i);
-
                         Span<uint> src = curBits.Slice(0, curLength);
                         Span<uint> dst = otherBits.Slice(0, curLength += power.Length);
-                        BigIntegerCalculator.Multiply(power, src, dst);
+
+                        int powerTrailingZeroCount = MaxPartialDigits * (1 << i);
+                        int powerTrailingZeroCountUInt32 = powerTrailingZeroCount >> 5;
+                        int curTrailingZeroCountUInt32 = curTrailingZeroCount >> 5;
+
+                        Debug.Assert(powerTrailingZeroCountUInt32 < power.Length
+                            && power.Slice(0, powerTrailingZeroCountUInt32).Trim(0u).Length == 0
+                            && power[powerTrailingZeroCountUInt32] != 0);
+                        Debug.Assert(curTrailingZeroCountUInt32 < src.Length
+                            && src.Slice(0, curTrailingZeroCountUInt32).Trim(0u).Length == 0
+                            && src[curTrailingZeroCountUInt32] != 0);
+
+                        BigIntegerCalculator.Multiply(power.Slice(powerTrailingZeroCountUInt32), src.Slice(curTrailingZeroCountUInt32), dst.Slice(powerTrailingZeroCountUInt32 + curTrailingZeroCountUInt32));
+
+                        curTrailingZeroCount += powerTrailingZeroCount;
 
                         Span<uint> tmp = curBits;
                         curBits = otherBits;
@@ -1039,7 +1056,7 @@ namespace System
                 curBits = curBits.Slice(0, curLength);
                 uint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
                 uint carry = 0;
-                for (int i = 0; i < curBits.Length; i++)
+                for (int i = (curTrailingZeroCount >> 5); i < curBits.Length; i++)
                 {
                     ulong p = (ulong)multiplier * curBits[i] + carry;
                     curBits[i] = (uint)p;
