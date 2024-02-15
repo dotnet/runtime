@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <!-- TODO: remove -->
-  <ItemGroup>
+  <ItemGroup Condition="false">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" /> 
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
