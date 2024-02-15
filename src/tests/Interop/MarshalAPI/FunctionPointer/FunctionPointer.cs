@@ -150,17 +150,18 @@ public partial class FunctionPtr
         public int X;
     }
 
-    [Fact]
-    public static void RunGenericFunctionPointerTest()
+    [Theory]
+    [InlineData([-0f, 0f, 1f, -1f, 42f, 60f])]
+    public static void RunGenericFunctionPointerTest(float inVal)
     {
         Console.WriteLine($"Running {nameof(RunGenericFunctionPointerTest)}...");
         int outVar = 0;
-        int expectedValue = 42;
+        int expectedValue = Convert.ToInt32(inVal);
 
         Console.WriteLine("Testing GenericCalli with int as the return type");
         unsafe
         {
-            outVar = GenericCaller<int>.GenericCalli((delegate* unmanaged<float, int>)&UnmanagedExportedFunction, 42.0f);
+            outVar = GenericCaller<int>.GenericCalli((delegate* unmanaged<float, int>)&UnmanagedExportedFunction, inVal);
         }
         Assert.Equal(expectedValue, outVar);
         
@@ -168,7 +169,7 @@ public partial class FunctionPtr
         Console.WriteLine("Testing GenericCalli with BlittableGeneric<int> as the return type");
         unsafe
         {
-            outVar = GenericCaller<int>.WrappedGenericCalli((delegate* unmanaged<float, BlittableGeneric<int>>)&UnmanagedExportedFunctionBlittableGenericInt, 42.0f).X;
+            outVar = GenericCaller<int>.WrappedGenericCalli((delegate* unmanaged<float, BlittableGeneric<int>>)&UnmanagedExportedFunctionBlittableGenericInt, inVal).X;
         }
         Assert.Equal(expectedValue, outVar);
 
@@ -176,7 +177,7 @@ public partial class FunctionPtr
         Console.WriteLine("Testing GenericCalli with BlittableGeneric<string> as the return type");
         unsafe
         {
-            outVar = GenericCaller<string>.WrappedGenericCalli((delegate* unmanaged<float, BlittableGeneric<string>>)&UnmanagedExportedFunctionBlittableGenericString, 42.0f).X;
+            outVar = GenericCaller<string>.WrappedGenericCalli((delegate* unmanaged<float, BlittableGeneric<string>>)&UnmanagedExportedFunctionBlittableGenericString, inVal).X;
         }
         Assert.Equal(expectedValue, outVar);
     }
