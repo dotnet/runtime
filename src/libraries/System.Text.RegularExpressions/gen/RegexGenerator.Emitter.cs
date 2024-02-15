@@ -10,6 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -1416,6 +1417,15 @@ namespace System.Text.RegularExpressions.Generator
             HashSet<string> additionalDeclarations = new();
             Dictionary<string, string[]> additionalLocalFunctions = new();
 
+            // In debug builds, additional code is emitted to validate that the backtracking stack is being maintained appropriately.
+            // When state is pushed onto the backtracking stack, an additional known value is pushed, and when it's popped, it's
+            // the popped value is checked against that known value, throwing an exception if they don't match.
+#if DEBUG
+#pragma warning disable RS1035 // Random isn't always deterministic, but this is only for debug builds, and we've seeded the Random with a constant
+            Random stackCookieGenerator = new(12345); // seed for deterministic behavior
+#pragma warning restore RS1035
+#endif
+
             // Declare some locals.
             string sliceSpan = "slice";
             writer.WriteLine("int pos = base.runtextpos;");
@@ -1857,6 +1867,7 @@ namespace System.Text.RegularExpressions.Generator
                         additionalDeclarations.Add($"int {currentBranch} = 0;");
                     }
 
+                    int stackCookie = CreateStackCookie();
                     for (int i = 0; i < childCount; i++)
                     {
                         // If the alternation isn't atomic, backtracking may require our jump table jumping back
@@ -1896,7 +1907,7 @@ namespace System.Text.RegularExpressions.Generator
                                 // the relevant state is stored in our locals.
                                 if (currentBranch is null)
                                 {
-                                    EmitStackPush(startingCapturePos is not null ?
+                                    EmitStackPush(stackCookie + i, startingCapturePos is not null ?
                                         [i.ToString(), startingPos, startingCapturePos] :
                                         [i.ToString(), startingPos]);
                                 }
@@ -1967,10 +1978,10 @@ namespace System.Text.RegularExpressions.Generator
                         if (currentBranch is null)
                         {
                             // We're in a loop, so we use the backtracking stack to persist our state. Pop it off.
-                            EmitStackPop(startingCapturePos is not null ?
+                            EmitStackPop(0, startingCapturePos is not null ?
                                 [startingCapturePos, startingPos] :
                                 [startingPos]);
-                            switchClause = StackPop();
+                            switchClause = ValidateStackCookieWithAdditionAndReturnPoppedStack(stackCookie);
                         }
                         else
                         {
@@ -2070,6 +2081,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
+                int stackCookie = CreateStackCookie();
 
                 // Get the capture number to test.
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Tree.CaptureNumberSparseMapping);
@@ -2201,7 +2213,7 @@ namespace System.Text.RegularExpressions.Generator
                     // the local.
                     if (isInLoop)
                     {
-                        EmitStackPop(resumeAt);
+                        EmitStackPop(stackCookie, resumeAt);
                     }
                     using (EmitBlock(writer, $"switch ({resumeAt})"))
                     {
@@ -2230,7 +2242,7 @@ namespace System.Text.RegularExpressions.Generator
                     // so finish outputting our backtracking logic, which involves pushing onto the stack which
                     // branch to backtrack into.  If we're not in a loop, though, nothing else can overwrite this local
                     // in the interim, so we can avoid pushing it.
-                    EmitStackPush(resumeAt);
+                    EmitStackPush(stackCookie, resumeAt);
                 }
             }
 
@@ -2298,10 +2310,19 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
 
-                // Emit the child. The condition expression is a zero-width assertion, which is atomic,
+                // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
                 writer.WriteLine("// Condition:");
-                EmitNode(condition);
+                if (rm.Analysis.MayBacktrack(condition))
+                {
+                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                    // so we need to emit the node as atomic if it might backtrack.
+                    EmitAtomic(node, null);
+                }
+                else
+                {
+                    EmitNode(condition);
+                }
                 writer.WriteLine();
                 doneLabel = originalDoneLabel;
 
@@ -2380,11 +2401,13 @@ namespace System.Text.RegularExpressions.Generator
                     doneLabel = backtrack;
                     MarkLabel(backtrack, emitSemicolon: false);
 
+                    int stackCookie = CreateStackCookie();
+
                     if (isInLoop)
                     {
                         // If we're not in a loop, the local will maintain its value until backtracking occurs.
                         // If we are in a loop, multiple iterations need their own value, so we need to use the stack.
-                        EmitStackPop(resumeAt);
+                        EmitStackPop(stackCookie, resumeAt);
                     }
 
                     using (EmitBlock(writer, $"switch ({resumeAt})"))
@@ -2405,7 +2428,7 @@ namespace System.Text.RegularExpressions.Generator
                     MarkLabel(endConditional, emitSemicolon: !isInLoop);
                     if (isInLoop)
                     {
-                        EmitStackPush(resumeAt);
+                        EmitStackPush(stackCookie, resumeAt);
                     }
                 }
             }
@@ -2477,12 +2500,13 @@ namespace System.Text.RegularExpressions.Generator
                     // pushes/pops the starting position before falling through.
                     writer.WriteLine();
 
+                    int stackCookie = CreateStackCookie();
                     if (isInLoop)
                     {
                         // If we're in a loop, different iterations of the loop need their own
                         // starting position, so push it on to the stack.  If we're not in a loop,
                         // the local will maintain its value and will suffice.
-                        EmitStackPush(startingPos);
+                        EmitStackPush(stackCookie, startingPos);
                     }
 
                     // Skip past the backtracking section
@@ -2495,7 +2519,7 @@ namespace System.Text.RegularExpressions.Generator
                     MarkLabel(backtrack, emitSemicolon: false);
                     if (isInLoop)
                     {
-                        EmitStackPop(startingPos);
+                        EmitStackPop(stackCookie, startingPos);
                     }
                     Goto(doneLabel);
                     writer.WriteLine();
@@ -2589,6 +2613,7 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode child = node.Child(0);
 
                 // Ensure we're able to uncapture anything captured by the child.
+                int stackCookie = CreateStackCookie();
                 bool isInLoop = false;
                 string? capturePos = null;
                 bool hasCaptures = rm.Analysis.MayContainCapture(child);
@@ -2599,7 +2624,7 @@ namespace System.Text.RegularExpressions.Generator
                     isInLoop = rm.Analysis.IsInLoop(node);
                     if (isInLoop)
                     {
-                        EmitStackPush("base.Crawlpos()");
+                        EmitStackPush(stackCookie, "base.Crawlpos()");
                     }
                     else
                     {
@@ -2637,7 +2662,15 @@ namespace System.Text.RegularExpressions.Generator
                 // And uncapture anything if necessary. Negative lookaround captures don't persist beyond the lookaround.
                 if (hasCaptures)
                 {
-                    EmitUncaptureUntil(isInLoop ? StackPop() : capturePos!);
+                    if (isInLoop)
+                    {
+                        EmitUncaptureUntil(StackPop());
+                        EmitStackCookieValidate(stackCookie);
+                    }
+                    else
+                    {
+                        EmitUncaptureUntil(capturePos!);
+                    }
                 }
 
                 doneLabel = originalDoneLabel;
@@ -2817,8 +2850,8 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the node for an atomic.
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
-                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround, $"Unexpected type: {node.Kind}");
-                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
+                Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
+                Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional ? node.ChildCount() >= 1 : node.ChildCount() == 1, $"Unexpected number of children: {node.ChildCount()}");
                 Debug.Assert(rm.Analysis.MayBacktrack(node.Child(0)), "Expected child to potentially backtrack");
 
                 // Grab the current done label and the current backtracking position.  The purpose of the atomic node
@@ -3227,6 +3260,7 @@ namespace System.Text.RegularExpressions.Generator
                 // point we decrement the matched count as long as it's above the minimum
                 // required, and try again by flowing to everything that comes after this.
                 MarkLabel(backtrackingLabel, emitSemicolon: false);
+                int stackCookie = CreateStackCookie();
                 string? capturePos = null;
                 if (isInLoop)
                 {
@@ -3239,7 +3273,7 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         EmitUncaptureUntil(StackPop());
                     }
-                    EmitStackPop(endingPos, startingPos);
+                    EmitStackPop(stackCookie, endingPos, startingPos);
                 }
                 else if (expressionHasCaptures)
                 {
@@ -3294,7 +3328,7 @@ namespace System.Text.RegularExpressions.Generator
                     // We're in a loop and thus can't rely on locals correctly holding the state we
                     // need (the locals could be overwritten by a subsequent iteration).  Push the state
                     // on to the backtracking stack.
-                    EmitStackPush(expressionHasCaptures ?
+                    EmitStackPush(stackCookie, expressionHasCaptures ?
                         [startingPos, endingPos, "base.Crawlpos()"] :
                         [startingPos, endingPos]);
                 }
@@ -3535,9 +3569,10 @@ namespace System.Text.RegularExpressions.Generator
                 if (isInLoop)
                 {
                     writer.WriteLine();
+                    int stackCookie = CreateStackCookie();
 
                     // Store the loop's state.
-                    EmitStackPush(
+                    EmitStackPush(stackCookie,
                         capturePos is not null && iterationCount is not null ? [startingPos, capturePos, iterationCount] :
                         capturePos is not null ? [startingPos, capturePos] :
                         iterationCount is not null ? [startingPos, iterationCount] :
@@ -3553,7 +3588,7 @@ namespace System.Text.RegularExpressions.Generator
                     MarkLabel(backtrack, emitSemicolon: false);
 
                     // Restore the loop's state.
-                    EmitStackPop(
+                    EmitStackPop(stackCookie,
                         capturePos is not null && iterationCount is not null ? [iterationCount, capturePos, startingPos] :
                         capturePos is not null ? [capturePos, startingPos] :
                         iterationCount is not null ? [iterationCount, startingPos] :
@@ -3640,8 +3675,13 @@ namespace System.Text.RegularExpressions.Generator
                 // iterations, this state needs to be stored on to the backtracking stack.
                 if (!isAtomic)
                 {
-                    int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
-                    EmitStackPush(
+                    int stackCookie = CreateStackCookie();
+                    int entriesPerIteration =
+                        1/*pos*/ +
+                        (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) +
+                        (expressionHasCaptures ? 1/*Crawlpos*/ : 0) +
+                        (stackCookie != 0 ? 1 : 0);
+                    EmitStackPush(stackCookie,
                         expressionHasCaptures && iterationMayBeEmpty ? ["pos", startingPos!, sawEmpty!, "base.Crawlpos()"] :
                         iterationMayBeEmpty ? ["pos", startingPos!, sawEmpty!] :
                         expressionHasCaptures ? ["pos", "base.Crawlpos()"] :
@@ -3721,7 +3761,7 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             EmitUncaptureUntil(StackPop());
                         }
-                        EmitStackPop(iterationMayBeEmpty ?
+                        EmitStackPop(stackCookie, iterationMayBeEmpty ?
                             [sawEmpty!, startingPos!, "pos"] :
                             ["pos"]);
                         SliceInputSpan();
@@ -3778,7 +3818,8 @@ namespace System.Text.RegularExpressions.Generator
                     // of another loop, then any number of iterations might have such state that needs to be stored,
                     // and thus it needs to be pushed on to the backtracking stack.
                     bool isInLoop = rm.Analysis.IsInLoop(node);
-                    EmitStackPush(
+                    stackCookie = CreateStackCookie();
+                    EmitStackPush(stackCookie,
                         !isInLoop ? (expressionHasCaptures ? ["pos", "base.Crawlpos()"] : ["pos"]) :
                         iterationMayBeEmpty ? (expressionHasCaptures ? ["pos", iterationCount, startingPos!, sawEmpty!, "base.Crawlpos()"] : ["pos", iterationCount, startingPos!, sawEmpty!]) :
                         expressionHasCaptures ? ["pos", iterationCount, "base.Crawlpos()"] :
@@ -3800,7 +3841,7 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         EmitUncaptureUntil(StackPop());
                     }
-                    EmitStackPop(
+                    EmitStackPop(stackCookie,
                         !isInLoop ? ["pos"] :
                         iterationMayBeEmpty ? [sawEmpty!, startingPos!, iterationCount, "pos"] :
                         [iterationCount, "pos"]);
@@ -4183,6 +4224,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
+                int stackCookie = CreateStackCookie();
 
                 // Special-case some repeaters.
                 if (minIterations == maxIterations)
@@ -4261,7 +4303,7 @@ namespace System.Text.RegularExpressions.Generator
                 // need to know where each iteration began so when backtracking we can jump back to that location.  This is
                 // true even if the loop is atomic, as we might need to backtrack within the loop in order to match the
                 // minimum iteration count.
-                EmitStackPush(
+                EmitStackPush(stackCookie,
                     expressionHasCaptures && iterationMayBeEmpty ? ["base.Crawlpos()", startingPos!, "pos"] :
                     expressionHasCaptures ? ["base.Crawlpos()", "pos"] :
                     iterationMayBeEmpty ? [startingPos!, "pos"] :
@@ -4371,13 +4413,14 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine("// Unable to match the remainder of the expression after exhausting the loop.");
                     Goto(originalDoneLabel);
                 }
-                EmitStackPop(iterationMayBeEmpty ?
+                EmitStackPop(0, iterationMayBeEmpty ? // stack cookie handled is explicitly 0 to handle it below
                     ["pos", startingPos!] :
                     ["pos"]);
                 if (expressionHasCaptures)
                 {
                     EmitUncaptureUntil(StackPop());
                 }
+                EmitStackCookieValidate(stackCookie);
                 SliceInputSpan();
 
                 // If there's a required minimum iteration count, validate now that we've processed enough iterations.
@@ -4487,7 +4530,8 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine();
 
                         // Store the loop's state
-                        EmitStackPush(
+                        stackCookie = CreateStackCookie();
+                        EmitStackPush(stackCookie,
                             startingPos is not null && startingStackpos is not null ? [startingPos, startingStackpos, iterationCount] :
                             startingPos is not null ? [startingPos, iterationCount] :
                             startingStackpos is not null ? [startingStackpos, iterationCount] :
@@ -4501,7 +4545,7 @@ namespace System.Text.RegularExpressions.Generator
                         // Emit a backtracking section that restores the loop's state and then jumps to the previous done label
                         string backtrack = ReserveName("LoopBacktrack");
                         MarkLabel(backtrack, emitSemicolon: false);
-                        EmitStackPop(
+                        EmitStackPop(stackCookie,
                             startingPos is not null && startingStackpos is not null ? [iterationCount, startingStackpos, startingPos] :
                             startingPos is not null ? [iterationCount, startingPos] :
                             startingStackpos is not null ? [iterationCount, startingStackpos] :
@@ -4552,7 +4596,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             /// <summary>Pushes values on to the backtracking stack.</summary>
-            void EmitStackPush(params string[] args)
+            void EmitStackPush(int stackCookie, params string[] args)
             {
                 Debug.Assert(args.Length is >= 1);
 
@@ -4596,41 +4640,134 @@ namespace System.Text.RegularExpressions.Generator
                     requiredHelpers.Add(key, lines);
                 }
 
+                if (stackCookie != 0)
+                {
+                    EmitStackCookie(stackCookie);
+                }
                 writer.WriteLine($"{HelpersTypeName}.{MethodName}(ref base.runstack!, ref stackpos, {string.Join(", ", args)});");
             }
 
             /// <summary>Pops values from the backtracking stack into the specified locations.</summary>
-            void EmitStackPop(params string[] args)
+            void EmitStackPop(int stackCookie, params string[] args)
             {
                 Debug.Assert(args.Length is >= 1);
 
                 if (args.Length == 1)
                 {
                     writer.WriteLine($"{args[0]} = {StackPop()};");
-                    return;
                 }
-
-                const string MethodName = "StackPop";
-                string key = $"{MethodName}{args.Length}";
-
-                if (!requiredHelpers.ContainsKey(key))
+                else
                 {
-                    var lines = new string[5 + args.Length];
-                    lines[0] = $"/// <summary>Pops {args.Length} value{(args.Length == 1 ? "" : "s")} from the backtracking stack.</summary>";
-                    lines[1] = $"[MethodImpl(MethodImplOptions.AggressiveInlining)]";
-                    lines[2] = $"internal static void {MethodName}(int[] stack, ref int pos{FormatN(", out int arg{0}", args.Length)})";
-                    lines[3] = $"{{";
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        lines[4 + i] = $"    arg{i} = stack[--pos];";
-                    }
-                    lines[4 + args.Length] = $"}}";
+                    const string MethodName = "StackPop";
+                    string key = $"{MethodName}{args.Length}";
 
-                    requiredHelpers.Add(key, lines);
+                    if (!requiredHelpers.ContainsKey(key))
+                    {
+                        var lines = new string[5 + args.Length];
+                        lines[0] = $"/// <summary>Pops {args.Length} value{(args.Length == 1 ? "" : "s")} from the backtracking stack.</summary>";
+                        lines[1] = $"[MethodImpl(MethodImplOptions.AggressiveInlining)]";
+                        lines[2] = $"internal static void {MethodName}(int[] stack, ref int pos{FormatN(", out int arg{0}", args.Length)})";
+                        lines[3] = $"{{";
+                        for (int i = 0; i < args.Length; i++)
+                        {
+                            lines[4 + i] = $"    arg{i} = stack[--pos];";
+                        }
+                        lines[4 + args.Length] = $"}}";
+
+                        requiredHelpers.Add(key, lines);
+                    }
+
+                    writer.WriteLine($"{HelpersTypeName}.{MethodName}(base.runstack!, ref stackpos, out {string.Join(", out ", args)});");
                 }
 
-                writer.WriteLine($"{HelpersTypeName}.{MethodName}(base.runstack!, ref stackpos, out {string.Join(", out ", args)});");
+                if (stackCookie != 0)
+                {
+                    EmitStackCookieValidate(stackCookie);
+                }
             }
+
+            /// <summary>Initializes a debug stack cookie for a new backtracking stack push.</summary>
+            int CreateStackCookie() =>
+#if DEBUG
+#pragma warning disable RS1035 // Random is banned from generators due to non-determinism, but this Random is seeded with a constant and it's only for debug builds
+                stackCookieGenerator.Next() + 1;
+#pragma warning restore RS1035
+#else
+                0;
+#endif
+
+            /// <summary>Emits a debug stack cookie for a new backtracking stack push.</summary>
+            void EmitStackCookie(int stackCookie)
+            {
+#if DEBUG
+                EmitStackPush(0, stackCookie.ToString());
+#endif
+            }
+
+            /// <summary>Emits validation for a debug stack cookie.</summary>
+            void EmitStackCookieValidate(int stackCookie, [CallerLineNumber] int? lineNumber = null)
+            {
+#if DEBUG
+                writer.WriteLine($"{StackCookieValidate(stackCookie, lineNumber)};");
+#endif
+            }
+
+            /// <summary>
+            /// Returns an expression that:
+            /// In debug, pops item 1 from the backtracking stack, pops item 2 and validates it against the cookie, then evaluates to item1.
+            /// In release, pops and evaluates to an item from the backtracking stack.
+            /// </summary>
+            string ValidateStackCookieWithAdditionAndReturnPoppedStack(int stackCookie, [CallerLineNumber] int? lineNumber = null)
+            {
+#if DEBUG
+                const string MethodName = "ValidateStackCookieWithAdditionAndReturnPoppedStack";
+                if (!requiredHelpers.ContainsKey(MethodName))
+                {
+                    requiredHelpers.Add(MethodName,
+                    [
+                        $"/// <summary>Validates that a stack cookie popped off the backtracking stack holds the expected value. Debug only.</summary>",
+                        $"internal static int {MethodName}(int poppedStack, int expectedCookie, int actualCookie)",
+                        $"{{",
+                        $"    expectedCookie += poppedStack;",
+                        $"    if (expectedCookie != actualCookie)",
+                        $"    {{",
+                        $"          throw new Exception($\"Backtracking stack imbalance detected (L{lineNumber}). Expected {{expectedCookie}}. Actual {{actualCookie}}.\");",
+                        $"    }}",
+                        $"    return poppedStack;",
+                        $"}}",
+                    ]);
+                }
+
+                return $"{HelpersTypeName}.{MethodName}({StackPop()}, {stackCookie}, {StackPop()})";
+#else
+                return StackPop();
+#endif
+            }
+
+#if DEBUG
+            /// <summary>Returns an expression that validates and returns a debug stack cookie.</summary>
+            string StackCookieValidate(int stackCookie, [CallerLineNumber] int? lineNumber = null)
+            {
+                const string MethodName = "ValidateStackCookie";
+                if (!requiredHelpers.ContainsKey(MethodName))
+                {
+                    requiredHelpers.Add(MethodName,
+                    [
+                        $"/// <summary>Validates that a stack cookie popped off the backtracking stack holds the expected value. Debug only.</summary>",
+                        $"internal static int {MethodName}(int expected, int actual)",
+                        $"{{",
+                        $"    if (expected != actual)",
+                        $"    {{",
+                        $"        throw new Exception($\"Backtracking stack imbalance detected (L{lineNumber}). Expected {{expected}}. Actual {{actual}}.\");",
+                        $"    }}",
+                        $"    return actual;",
+                        $"}}",
+                    ]);
+                }
+
+                return $"{HelpersTypeName}.{MethodName}({stackCookie}, {StackPop()})";
+            }
+#endif
 
             /// <summary>Expression for popping the next item from the backtracking stack.</summary>
             string StackPop() => "base.runstack![--stackpos]";
