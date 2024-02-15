@@ -636,6 +636,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                         if ((prevExceptionSet != curExceptionSet) &&
                             vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
                         {
+                            JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
+                                    "more exceptions\n",
+                                    prevTree->gtTreeID, tree->gtTreeID);
                             prevTree->gtCSEnum = 0;
                             hashDsc->csdStmt   = stmt;
                             hashDsc->csdTree   = tree;
