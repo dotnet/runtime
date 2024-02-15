@@ -1683,7 +1683,9 @@ namespace System.Net
                     try
                     {
                         //Start dns resolve
-                        IPAddress[] addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false);
+                        IPAddress[] addresses = parameters.Async ?
+                            await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken).ConfigureAwait(false) :
+                            Dns.GetHostAddresses(context.DnsEndPoint.Host);
                         if (parameters.ServicePoint is { } servicePoint)
                         {
                             if (servicePoint.ReceiveBufferSize != -1)
@@ -1698,43 +1700,45 @@ namespace System.Net
                                 socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, keepAlive.Interval);
                             }
 
-                            if (servicePoint.BindIPEndPointDelegate is not null)
+                            BindHelper(servicePoint, addresses, socket, context.DnsEndPoint.Port);
+                            static void BindHelper(ServicePoint servicePoint, IPAddress[] addresses, Socket socket, int port)
                             {
-                                var bindHelper = () =>
+                                if (servicePoint.BindIPEndPointDelegate is null)
                                 {
-                                    const int MaxRetries = 100;
-                                    foreach (IPAddress address in addresses)
-                                    {
-                                        int retryCount = 0;
-                                        for (; retryCount < MaxRetries; retryCount++)
-                                        {
-                                            IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, context.DnsEndPoint.Port), retryCount);
-                                            if (endPoint is null) // Get other address to try
-                                            {
-                                                break;
-                                            }
-                                            try
-                                            {
-                                                socket.Bind(endPoint);
-                                                return; // Bind successful, exit loops.
-                                            }
-                                            catch
-                                            {
-                                                continue;
-                                            }
-                                        }
+                                    return;
+                                }
 
-                                        if (retryCount >= MaxRetries)
+                                const int MaxRetries = 100;
+                                foreach (IPAddress address in addresses)
+                                {
+                                    int retryCount = 0;
+                                    for (; retryCount < MaxRetries; retryCount++)
+                                    {
+                                        IPEndPoint? endPoint = servicePoint.BindIPEndPointDelegate(servicePoint, new IPEndPoint(address, port), retryCount);
+                                        if (endPoint is null) // Get other address to try
                                         {
-                                            throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                            break;
+                                        }
+                                        try
+                                        {
+                                            socket.Bind(endPoint);
+                                            return; // Bind successful, exit loops.
+                                        }
+                                        catch
+                                        {
+                                            continue;
                                         }
                                     }
-                                };
-                                bindHelper();
-                            }
 
-                            socket.NoDelay = !servicePoint.UseNagleAlgorithm;
+                                    if (retryCount >= MaxRetries)
+                                    {
+                                        throw new OverflowException(); //TODO (aaksoy): Add SR for this.
+                                    }
+                                }
+                            }
                         }
+
+                        socket.NoDelay = !(parameters.ServicePoint?.UseNagleAlgorithm) ?? true;
 
                         if (parameters.Async)
                         {
