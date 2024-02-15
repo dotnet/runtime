@@ -790,6 +790,7 @@ static void InvokeActivationHandler(CONTEXT *pWinContext)
     g_activationFunction(pWinContext);
 }
 
+__attribute__((noinline))
 DISABLE_ASAN
 static void HoldContextAndInvokeActivationHandler(CONTEXT* pWinContext)
 {
@@ -953,6 +954,7 @@ void PAL_IgnoreProfileSignal(int signalNum)
 #endif
 }
 
+__attribute__((noinline))
 DISABLE_ASAN
 static bool CallSEHProcessException(CONTEXT* pContext, PAL_SEHException* pException, ucontext_t* ucontext)
 {
