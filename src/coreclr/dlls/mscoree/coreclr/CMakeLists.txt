@@ -109,6 +109,7 @@ set(CORECLR_LIBRARIES
     interop
     coreclrminipal
     gc_pal
+    datastream
 )
 
 if(CLR_CMAKE_TARGET_WIN32)

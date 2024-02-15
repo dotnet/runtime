@@ -310,6 +310,7 @@ set(VM_SOURCES_WKS
     customattribute.cpp
     custommarshalerinfo.cpp
     autotrace.cpp
+    debug_stream.cpp
     dllimport.cpp
     dllimportcallback.cpp
     dynamicinterfacecastable.cpp
@@ -410,6 +411,7 @@ set(VM_HEADERS_WKS
     customattribute.h
     custommarshalerinfo.h
     autotrace.h
+    debug_stream.h
     diagnosticserveradapter.h
     dllimport.h
     dllimportcallback.h

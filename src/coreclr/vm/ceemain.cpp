@@ -163,6 +163,7 @@
 #include "jithost.h"
 #include "pgo.h"
 #include "pendingload.h"
+#include "debug_stream.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -821,6 +822,10 @@ void EEStartupHelper()
         // modules are loaded.
         InitializeDebugger(); // throws on error
 #endif // DEBUGGING_SUPPORTED
+
+        // Initialize the debug stream in the runtime.
+        if (!debug_stream::init())
+            IfFailGo(E_FAIL);
 
 #ifdef PROFILING_SUPPORTED
         // Initialize the profiling services.
