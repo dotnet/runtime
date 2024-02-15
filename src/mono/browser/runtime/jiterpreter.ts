@@ -44,7 +44,7 @@ export const
     //  dump a list of the most common ones when dumping stats
     countCallTargets = false,
     // Trace when encountering branches
-    traceBranchDisplacements = true,
+    traceBranchDisplacements = false,
     // Trace when we reject something for being too small
     traceTooSmall = false,
     // For instrumented methods, trace their exact IP during execution
@@ -60,7 +60,7 @@ export const
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
-    traceBackBranches = 2,
+    traceBackBranches = 1,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode

@@ -109,6 +109,7 @@ function is_backward_branch_target(
     if (!backwardBranchTable)
         return false;
 
+    // TODO: sort the table and exploit that for faster scan. Not important yet
     for (let i = 0; i < backwardBranchTable.length; i++) {
         const actualOffset = (backwardBranchTable[i] * 2) + <any>startOfBody;
         if (actualOffset === ip)
@@ -133,30 +134,56 @@ function get_known_constant_value(builder: WasmBuilder, localOffset: number): Kn
 // We do this here to match the exact way that the jiterp calculates branch targets, since
 //  there were previously corner cases where jiterp and interp disagreed.
 export function generateBackwardBranchTable(
-    ip: MintOpcodePtr, startOfBody: MintOpcodePtr, endOfBody: MintOpcodePtr,
+    ip: MintOpcodePtr, startOfBody: MintOpcodePtr, sizeOfBody: MintOpcodePtr,
 ): Uint16Array | null {
-    const table : MintOpcodePtr[] = [];
+    const endOfBody = <any>startOfBody + <any>sizeOfBody;
+    // TODO: Cache this table object instance and reuse it to reduce gc pressure?
+    const table : number[] = [];
+    // IP of the start of the trace in U16s, relative to startOfBody.
+    const rbase16 = (<any>ip - <any>startOfBody) / 2;
+
     while (ip < endOfBody) {
-        const rip = <any>ip - <any>startOfBody;
+        // IP of the current opcode in U16s, relative to startOfBody. This is what the back branch table uses
+        const rip16 = (<any>ip - <any>startOfBody) / 2;
         const opcode = <MintOpcode>getU16(ip);
         // HACK
         if (opcode === MintOpcode.MINT_SWITCH)
             break;
 
         const opLengthU16 = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Length);
+        // Any opcode with a branch argtype will have a decoded displacement, even if we don't
+        //  implement the opcode. Everything else will return undefined here and be skipped
         const displacement = getBranchDisplacement(ip, opcode);
-        if (typeof (displacement) === "number") {
-            const rtarget = rip + (displacement * 2);
-            mono_assert(rtarget >= 0, () => `opcode @${ip} branch target before start of body: ${rtarget}`);
+        if (typeof (displacement) !== "number") {
+            ip += <any>(opLengthU16 * 2);
+            continue;
         }
 
+        // These checks shouldn't fail unless memory is corrupted or something is wrong with the decoder.
+        // We don't want to cause decoder bugs to make the application exit, though - graceful degradation.
+        if (displacement === 0) {
+            mono_log_info(`opcode @${ip} branch target is self. aborting backbranch table generation`);
+            break;
+        }
+
+        const rtarget16 = rip16 + (displacement);
+        if (rtarget16 < 0) {
+            mono_log_info(`opcode @${ip}'s displacement of ${displacement} goes before body: ${rtarget16}. aborting backbranch table generation`);
+            break;
+        }
+
+        // If the relative target is before the start of the trace, don't record it.
+        // The trace will be unable to successfully branch to it so it would just make the table bigger.
+        if (rtarget16 >= rbase16)
+            table.push(rtarget16);
+
         switch (opcode) {
-            // While this formally isn't a backward branch target, we want to record
-            //  the offset of its following instruction so that the jiterpreter knows
-            //  to generate the necessary dispatch code to enable branching back to it.
             case MintOpcode.MINT_CALL_HANDLER:
             case MintOpcode.MINT_CALL_HANDLER_S:
-                mono_log_info("not implemented: record call_handler rip as backbranch target");
+                // While this formally isn't a backward branch target, we want to record
+                //  the offset of its following instruction so that the jiterpreter knows
+                //  to generate the necessary dispatch code to enable branching back to it.
+                table.push(rip16 + opLengthU16);
                 break;
         }
 
@@ -165,8 +192,9 @@ export function generateBackwardBranchTable(
 
     if (table.length <= 0)
         return null;
-    table.sort((a, b) => <any>a - <any>b);
-    return new Uint16Array(<any>table);
+    // Not important yet, so not doing it
+    // table.sort((a, b) => a - b);
+    return new Uint16Array(table);
 }
 
 export function generateWasmBody(
