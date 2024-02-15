@@ -2381,10 +2381,11 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send response headers
                     await connection.SendResponseHeadersAsync(streamId, endStream: false);
-                    connection.IgnoreWindowUpdates();
+
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
