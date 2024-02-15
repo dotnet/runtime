@@ -12,7 +12,7 @@
     <Target Name="PrepareToWriteNativeLibraryCMakeFragment" Condition="'$(PublishAot)' == 'true'">
         <PropertyGroup>
             <NativeLibraryCMakeVarPrefix>$(TargetName.ToUpper())</NativeLibraryCMakeVarPrefix>
-            <NativeLibraryCMakeFragmentPath Condition="'$(NativeLibraryCMakeFragmentPath)' == ''">$(PublishDir)/$(MSBuildProjectName).cmake</NativeLibraryCMakeFragmentPath>
+            <NativeLibraryCMakeFragmentPath Condition="'$(NativeLibraryCMakeFragmentPath)' == ''">$(ArtifactsObjDir)\$(TargetName)\$(TargetName).cmake</NativeLibraryCMakeFragmentPath>
             <NativeLibraryArtifactName>$(TargetName)</NativeLibraryArtifactName>
             <NativeLibraryArtifactExt>$(NativeBinaryExt)</NativeLibraryArtifactExt>
             <NativeLibraryArtifactLibPath>$(PublishDir)/</NativeLibraryArtifactLibPath>
@@ -38,7 +38,7 @@
             <NativeLibraryArtifactIlcSdkPath>$(NativeLibraryArtifactIlcSdkPath.Replace('\', '\\'))</NativeLibraryArtifactIlcSdkPath>
         </PropertyGroup>
         <ItemGroup>
-            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_MODE &quot;static&quot;)" />
+            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_MODE &quot;STATIC&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_NAME &quot;$(NativeLibraryArtifactName)&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_EXT &quot;$(NativeLibraryArtifactExt)&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_LIBPATH &quot;$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))&quot;)" />
@@ -58,7 +58,7 @@
             <NativeLibraryArtifactImpLibFullPath>$(NativeLibraryArtifactImpLibFullPath.Replace('\', '\\'))</NativeLibraryArtifactImpLibFullPath>
         </PropertyGroup>
         <ItemGroup>
-            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_MODE &quot;shared&quot;)" />
+            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_MODE &quot;SHARED&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_NAME &quot;$(NativeLibraryArtifactName)&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_EXT &quot;$(NativeLibraryArtifactExt)&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_LIBPATH &quot;$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))&quot;)" />

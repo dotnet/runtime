@@ -1,5 +1,9 @@
 add_definitions(-DFEATURE_NO_HOST)
 
+include(${CLR_ARTIFACTS_OBJ_DIR}/libhellomanaged/libhellomanaged.cmake)
+
+message(STATUS "Using libhellomanaged in ${LIBHELLOMANAGED_MODE} mode")
+
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -37,9 +41,12 @@ include_directories(${ARCH_SOURCES_DIR})
 
 convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 
+add_imported_nativeaot_library_clr(libhellomanagedTarget LIBHELLOMANAGED)
+
 add_library_clr(daccess ${DACCESS_SOURCES})
 set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
+target_link_libraries(daccess PRIVATE libhellomanagedTarget)
 
 add_dependencies(daccess eventing_headers)
 
