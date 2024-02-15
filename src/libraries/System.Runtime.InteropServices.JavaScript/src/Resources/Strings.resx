@@ -138,8 +138,8 @@
   <data name="MissingManagedEntrypointHandle" xml:space="preserve">
     <value>Managed entrypoint handle is not set.</value>
   </data>
-  <data name="CannotResolveManagedEntrypointHandle" xml:space="preserve">
-    <value>Cannot resolve managed entrypoint handle.</value>
+  <data name="CannotResolveManagedEntrypoint" xml:space="preserve">
+    <value>Cannot resolve managed entrypoint {0} in assembly {1}.</value>
   </data>
   <data name="ReturnTypeNotSupportedForMain" xml:space="preserve">
     <value>Return type '{0}' from main method in not supported.</value>
