@@ -2234,6 +2234,16 @@ public:
         return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
+    bool IsTlsIconHandle()
+    {
+        if (IsIconHandle())
+        {
+            GenTreeFlags tlsFlags = (GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL);
+            return ((gtFlags & tlsFlags) == tlsFlags);
+        }
+        return false;
+    }
+
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {

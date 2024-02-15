@@ -1476,6 +1476,11 @@ void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int of
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
+void emitIns_Adrp_Ldr_Add(emitAttr  attr,
+                          regNumber reg1,
+                          regNumber reg2,
+                          ssize_t addr DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,
                   regNumber   ireg,

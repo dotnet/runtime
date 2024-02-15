@@ -215,7 +215,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
-            assert(isGeneralRegister(id->idReg3()));
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+            {
+                assert(isGeneralRegister(id->idReg1()));
+                assert(id->idAddr()->iiaAddr != nullptr);
+            }
+            else
+            {
+                assert(isGeneralRegister(id->idReg3()));
+            }
             break;
 
         case IF_LS_1A: // LS_1A   .X......iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
@@ -227,7 +235,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isIntegerRegister(id->idReg1()) || // ZR
                    isVectorRegister(id->idReg1()));
             assert(isIntegerRegister(id->idReg2())); // SP
-            assert(emitGetInsSC(id) == 0);
+            assert((emitGetInsSC(id) == 0) || (id->idIsTlsGD()));
             assert(insOptsNone(id->idInsOpt()));
             break;
 
@@ -9542,7 +9550,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
         reg2 = encodingSPtoZR(reg2);
 
         ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-        if (imm == 0)
+        if (imm == 0 || EA_IS_CNS_TLSGD_RELOC(attr))
         {
             assert(insOptsNone(opt)); // PRE/POST Index doesn't make sense with an immediate of zero
 
@@ -9649,7 +9657,11 @@ void emitter::emitIns_R_R_I(instruction     ins,
 
     id->idReg1(reg1);
     id->idReg2(reg2);
-
+    if (EA_IS_CNS_TLSGD_RELOC(attr))
+    {
+        assert(imm != 0);
+        id->idSetTlsGD();
+    }
     dispIns(id);
     appendToCurIG(id);
 }
@@ -15396,6 +15408,61 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
     NYI("emitIns_R_AR");
 }
 
+// This generates code to populate the access for TLS on linux
+void emitter::emitIns_Adrp_Ldr_Add(emitAttr  attr,
+                                   regNumber reg1,
+                                   regNumber reg2,
+                                   ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
+{
+    assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    assert(TargetOS::IsUnix);
+    assert(EA_IS_RELOC(attr));
+    assert(EA_IS_CNS_TLSGD_RELOC(attr));
+
+    emitAttr      size    = EA_SIZE(attr);
+    insFormat     fmt     = IF_DI_1E;
+    bool          needAdd = false;
+    instrDescJmp* id      = emitNewInstrJmp();
+
+    // adrp
+    id->idIns(INS_adrp);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idOpSize(size);
+    id->idAddr()->iiaAddr = (BYTE*)addr;
+    id->idReg1(reg1);
+    id->idSetIsDspReloc();
+    id->idSetTlsGD();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+
+    // ldr
+    emitIns_R_R_I(INS_ldr, attr, reg2, reg1, (ssize_t)addr);
+
+    // add
+    fmt              = IF_DI_2A;
+    instrDesc* addId = emitNewInstr(attr);
+    assert(id->idIsReloc());
+
+    addId->idIns(INS_add);
+    addId->idInsFmt(fmt);
+    addId->idInsOpt(INS_OPTS_NONE);
+    addId->idOpSize(size);
+    addId->idAddr()->iiaAddr = (BYTE*)addr;
+    addId->idReg1(reg1);
+    addId->idReg2(reg1);
+    addId->idSetTlsGD();
+
+    dispIns(addId);
+    appendToCurIG(addId);
+}
+
 // This computes address from the immediate which is relocatable.
 void emitter::emitIns_R_AI(instruction ins,
                            emitAttr    attr,
@@ -15909,8 +15976,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
         id->idIns(ins);
         id->idInsFmt(fmt);
 
-        id->idReg3(ireg);
         assert(xreg == REG_NA);
+        if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(retSize))
+        {
+            // For NativeAOT linux/arm64, we need to also record the relocation of methHnd.
+            // Since we do not have space to embed it in instrDesc, we store the register in
+            // reg1 and instead use the `iiaAdd` to store the method handle. Likewise, during
+            // emitOutputInstr, we retrieve the register from reg1 for this specific case.
+            id->idSetTlsGD();
+            id->idReg1(ireg);
+            id->idAddr()->iiaAddr = (BYTE*)methHnd;
+        }
+        else
+        {
+            id->idReg3(ireg);
+        }
     }
     else
     {
@@ -20106,10 +20186,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(insOptsNone(id->idInsOpt()));
             assert((ins == INS_br_tail) || (ins == INS_blr));
             code = emitInsCode(ins, fmt);
-            code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
 
-            sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
+            if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idIsTlsGD())
+            {
+                emitRecordRelocation(odst, (CORINFO_METHOD_HANDLE)id->idAddr()->iiaAddr,
+                                     IMAGE_REL_AARCH64_TLSDESC_CALL);
+                code |= insEncodeReg_Rn(id->idReg1()); // nnnnn
+            }
+            else
+            {
+                code |= insEncodeReg_Rn(id->idReg3()); // nnnnn
+            }
             dst += emitOutputCall(ig, dst, id, code);
+            sz = id->idIsLargeCall() ? sizeof(instrDescCGCA) : sizeof(instrDesc);
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
@@ -20138,6 +20227,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             code |= insEncodeReg_Rn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
+            if (id->idIsTlsGD())
+            {
+                emitRecordRelocation(odst, (void*)emitGetInsSC(id), IMAGE_REL_AARCH64_TLSDESC_LD64_LO12);
+            }
             break;
 
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
@@ -20403,7 +20496,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = emitInsCode(ins, fmt);
                 code |= insEncodeReg_Rd(id->idReg1()); // ddddd
                 dst += emitOutput_Instr(dst, code);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEBASE_REL21);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21
+                                                                                  : IMAGE_REL_ARM64_PAGEBASE_REL21);
             }
             else
             {
@@ -20446,7 +20540,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr, id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
+                                                                                  : IMAGE_REL_ARM64_PAGEOFFSET_12A);
             }
             break;
 
@@ -23962,7 +24057,7 @@ void emitter::emitDispInsHelp(
 
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
             assert(insOptsNone(id->idInsOpt()));
-            assert(emitGetInsSC(id) == 0);
+            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD());
             emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
             emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
             break;
