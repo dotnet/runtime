@@ -1166,6 +1166,16 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- NativeAOT arm32 specific excludes -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/Casting/punning*">
+            <Issue>https://github.com/dotnet/runtime/issues/98493</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/Desktop/boxunboxvaluetype_*">
+            <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
          Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
          and running them separately from superpmicollect test. These should be excluded regardless of RuntimeFlavor/os/arch-->
