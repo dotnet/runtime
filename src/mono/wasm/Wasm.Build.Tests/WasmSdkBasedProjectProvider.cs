@@ -105,7 +105,10 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             _ => throw new ArgumentOutOfRangeException(nameof(assertOptions.ExpectedFileType))
         };
         string buildType = assertOptions.IsPublish ? "publish" : "build";
-        foreach (string nativeFilename in new[] { "dotnet.native.wasm", "dotnet.native.js" })
+        var nativeFilesToCheck = assertOptions.RuntimeType == RuntimeVariant.MultiThreaded ?
+            new[] { "dotnet.native.wasm", "dotnet.native.js", "dotnet.native.worker.js" } :
+            new[] { "dotnet.native.wasm", "dotnet.native.js" };
+        foreach (string nativeFilename in nativeFilesToCheck)
         {
             if (!actualDotnetFiles.TryGetValue(nativeFilename, out DotNetFileName? dotnetFile))
             {
