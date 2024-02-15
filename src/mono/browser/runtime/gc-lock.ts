@@ -5,10 +5,10 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { ENVIRONMENT_IS_PTHREAD } from "./globals";
 import cwraps from "./cwraps";
 
-let locked = false;
+export let gc_locked = false;
 
 export function mono_wasm_gc_lock(): void {
-    if (locked) {
+    if (gc_locked) {
         throw new Error("GC is already locked");
     }
     if (WasmEnableThreads) {
@@ -17,11 +17,11 @@ export function mono_wasm_gc_lock(): void {
         }
         cwraps.mono_wasm_gc_lock();
     }
-    locked = true;
+    gc_locked = true;
 }
 
 export function mono_wasm_gc_unlock(): void {
-    if (!locked) {
+    if (!gc_locked) {
         throw new Error("GC is not locked");
     }
     if (WasmEnableThreads) {
@@ -30,5 +30,5 @@ export function mono_wasm_gc_unlock(): void {
         }
         cwraps.mono_wasm_gc_unlock();
     }
-    locked = false;
+    gc_locked = false;
 }

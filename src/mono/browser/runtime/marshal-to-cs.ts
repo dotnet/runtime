@@ -25,6 +25,7 @@ import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
 import { mono_log_debug } from "./logging";
 import { complete_task } from "./managed-exports";
+import { gc_locked } from "./gc-lock";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -556,6 +557,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
+                mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
                 cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
@@ -567,6 +569,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
+                mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
                 cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
