@@ -730,10 +730,9 @@ namespace System
                     Recursive(powersOf1e9, digitsUpper, upperBuffer);
                     upperBuffer = upperBuffer.Slice(0, BigIntegerCalculator.ActualLength(upperBuffer));
                     ReadOnlySpan<uint> multiplier = powersOf1e9.GetSpan(log2);
-                    Span<uint> bitsUpper = bits.Slice(0, upperBuffer.Length + multiplier.Length);
-
                     int multiplierTrailingZeroCountUInt32 = (MaxPartialDigits * (1 << log2)) >> 5;
-                    multiplier = multiplier.Slice(multiplierTrailingZeroCountUInt32);
+
+                    Span<uint> bitsUpper = bits.Slice(0, upperBuffer.Length + multiplier.Length + multiplierTrailingZeroCountUInt32);
                     bitsUpper = bitsUpper.Slice(multiplierTrailingZeroCountUInt32);
 
                     if (multiplier.Length < upperBuffer.Length)
@@ -896,41 +895,42 @@ namespace System
             //    for (int i = 0; i + 1 < indexes.Length; i++)
             //    {
             //        int length = unchecked((int)(digitRatio * (1 << i)) + 1);
+            //        length -= (9*(1<<i)) >> 5;
             //        indexes[i+1] = indexes[i] + length;
             //    }
             private static ReadOnlySpan<int> Indexes => new int[] {
                 0,
                 1,
                 3,
-                7,
-                15,
-                30,
-                60,
-                120,
-                240,
-                480,
-                959,
-                1916,
-                3830,
-                7657,
-                15311,
-                30619,
-                61234,
-                122464,
-                244924,
-                489844,
-                979683,
-                1959360,
-                3918713,
-                7837419,
-                15674831,
-                31349655,
-                62699302,
-                125398596,
-                250797183,
-                501594357,
-                1003188704,
-                2006377398,
+                6,
+                12,
+                23,
+                44,
+                86,
+                170,
+                338,
+                673,
+                1342,
+                2680,
+                5355,
+                10705,
+                21405,
+                42804,
+                85602,
+                171198,
+                342390,
+                684773,
+                1369538,
+                2739067,
+                5478125,
+                10956241,
+                21912473,
+                43824936,
+                87649862,
+                175299713,
+                484817143,
+                969634274,
+                1939268536,
             };
 
             public PowersOf1e9(Span<uint> pow1E9)
@@ -948,14 +948,29 @@ namespace System
                         break;
                     Span<uint> dst = pow1E9.Slice(toExclusive, src.Length << 1);
                     BigIntegerCalculator.Square(src, dst);
+                    if (dst[0] == 0)
+                    {
+                        dst.Slice(1).CopyTo(dst);
+                        dst[^1] = 0;
+                    }
                     int from = toExclusive;
                     toExclusive = Indexes[i + 1];
                     src = pow1E9.Slice(from, toExclusive - from);
+                    Debug.Assert(toExclusive == pow1E9.Length || pow1E9[toExclusive] == 0);
                 }
+#if DEBUG
+                for (int i = 0; i + 1 < Indexes.Length; i++)
+                {
+                    int startIndex = Indexes[i];
+                    int endIndex = Indexes[i + 1];
+                    if (endIndex >= pow1E9.Length) break;
+                    Debug.Assert(pow1E9[startIndex] != 0);
+                }
+#endif
             }
             public ReadOnlySpan<uint> GetSpan(int index)
             {
-                // Returns 1E9^(1<<index)
+                // Returns 1E9^(1<<index) >> (32*(9*(1<<index)/32)
                 int from = Indexes[index];
                 int toExclusive = Indexes[index + 1];
                 return pow1E9[from..toExclusive];
@@ -1007,36 +1022,35 @@ namespace System
                 // Copy first
                 int fi = BitOperations.TrailingZeroCount(trailingPartialCount);
                 {
-                    ReadOnlySpan<uint> first = GetSpan(fi);
-                    first.CopyTo(curBits);
-                    curLength = first.Length;
                     curTrailingZeroCount = MaxPartialDigits * (1 << fi);
                     trailingPartialCount >>= fi;
                     trailingPartialCount >>= 1;
+
+                    ReadOnlySpan<uint> first = GetSpan(fi);
+                    first.CopyTo(curBits.Slice(curTrailingZeroCount >> 5));
+
+                    curLength = first.Length;
                 }
 
 
                 for (int i = fi + 1; trailingPartialCount != 0 && i + 1 < Indexes.Length; i++, trailingPartialCount >>= 1)
                 {
-                    Debug.Assert(GetSpan(i).Length >= curLength);
+                    Debug.Assert(GetSpan(i).Length >= curLength - (curTrailingZeroCount >> 5));
                     if ((trailingPartialCount & 1) != 0)
                     {
-                        ReadOnlySpan<uint> power = GetSpan(i);
-                        Span<uint> src = curBits.Slice(0, curLength);
-                        Span<uint> dst = otherBits.Slice(0, curLength += power.Length);
-
                         int powerTrailingZeroCount = MaxPartialDigits * (1 << i);
                         int powerTrailingZeroCountUInt32 = powerTrailingZeroCount >> 5;
                         int curTrailingZeroCountUInt32 = curTrailingZeroCount >> 5;
 
-                        Debug.Assert(powerTrailingZeroCountUInt32 < power.Length
-                            && power.Slice(0, powerTrailingZeroCountUInt32).Trim(0u).Length == 0
-                            && power[powerTrailingZeroCountUInt32] != 0);
+                        ReadOnlySpan<uint> power = GetSpan(i);
+                        Span<uint> src = curBits.Slice(0, curLength);
+                        Span<uint> dst = otherBits.Slice(0, curLength += power.Length + powerTrailingZeroCountUInt32);
+
                         Debug.Assert(curTrailingZeroCountUInt32 < src.Length
                             && src.Slice(0, curTrailingZeroCountUInt32).Trim(0u).Length == 0
                             && src[curTrailingZeroCountUInt32] != 0);
 
-                        BigIntegerCalculator.Multiply(power.Slice(powerTrailingZeroCountUInt32), src.Slice(curTrailingZeroCountUInt32), dst.Slice(powerTrailingZeroCountUInt32 + curTrailingZeroCountUInt32));
+                        BigIntegerCalculator.Multiply(power, src.Slice(curTrailingZeroCountUInt32), dst.Slice(powerTrailingZeroCountUInt32 + curTrailingZeroCountUInt32));
 
                         curTrailingZeroCount += powerTrailingZeroCount;
 
