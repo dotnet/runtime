@@ -14,7 +14,6 @@ namespace Mono.Linker
 
 		public InterfaceImplementor (TypeDefinition implementor, InterfaceImplementation interfaceImplementation, TypeDefinition? interfaceType)
 		{
-			Debug.Assert(implementor.Interfaces.Contains (interfaceImplementation));
 			Implementor = implementor;
 			InterfaceImplementation = interfaceImplementation;
 			InterfaceType = interfaceType;
