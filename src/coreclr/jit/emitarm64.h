@@ -715,19 +715,19 @@ static bool isValidSimm4_MultipleOf32(ssize_t value)
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
 };
 
-// Returns true if 'value' is a legal signed multiple of 2 immediate 5 bit encoding (such as for LD1H).
+// Returns true if 'value' is a legal unsigned multiple of 2 immediate 5 bit encoding (such as for LD1H).
 static bool isValidUimm5_MultipleOf2(ssize_t value)
 {
     return (0 <= value) && (value <= 62) && (value % 2 == 0);
 };
 
-// Returns true if 'value' is a legal signed multiple of 4 immediate 5 bit encoding (such as for LD1W).
+// Returns true if 'value' is a legal unsigned multiple of 4 immediate 5 bit encoding (such as for LD1W).
 static bool isValidUimm5_MultipleOf4(ssize_t value)
 {
     return (0 <= value) && (value <= 124) && (value % 4 == 0);
 };
 
-// Returns true if 'value' is a legal signed multiple of 8 immediate 5 bit encoding (such as for LD1D).
+// Returns true if 'value' is a legal unsigned multiple of 8 immediate 5 bit encoding (such as for LD1D).
 static bool isValidUimm5_MultipleOf8(ssize_t value)
 {
     return (0 <= value) && (value <= 248) && (value % 8 == 0);
