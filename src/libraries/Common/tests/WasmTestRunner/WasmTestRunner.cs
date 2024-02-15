@@ -9,8 +9,8 @@ using Microsoft.DotNet.XHarness.TestRunners.Xunit;
 
 public class WasmTestRunner : WasmApplicationEntryPoint
 {
-    // TODO: Set max threads for run in parallel
-    // protected override int? MaxParallelThreads => RunInParallel ? 8 : base.MaxParallelThreads;
+    protected int MaxParallelThreadsFromArg { get; set; }
+    protected override int? MaxParallelThreads => RunInParallel ? MaxParallelThreadsFromArg : base.MaxParallelThreads;
 
     public static async Task<int> Main(string[] args)
     {
@@ -65,9 +65,11 @@ public class WasmTestRunner : WasmApplicationEntryPoint
                     break;
                 case "-threads":
                     runner.IsThreadless = false;
-                    // TODO: Enable run in parallel
-                    // runner.RunInParallel = true;
-                    // Console.WriteLine($"Running in parallel with {runner.MaxParallelThreads} threads.");
+                    break;
+                case "-parallelThreads":
+                    runner.RunInParallel = true;
+                    runner.MaxParallelThreadsFromArg = int.Parse(args[i + 1]);
+                    i++;
                     break;
                 case "-verbosity":
                     runner.MinimumLogLevel = Enum.Parse<MinimumLogLevel>(args[i + 1]);
@@ -104,5 +106,13 @@ public class WasmTestRunner : WasmApplicationEntryPoint
         while(res == 0 && untilFailed);
 
         return res;
+    }
+
+    public override Task RunAsync()
+    {
+        if (RunInParallel)
+            Console.WriteLine($"Running in parallel with {MaxParallelThreads} threads.");
+
+        return base.RunAsync();
     }
 }
