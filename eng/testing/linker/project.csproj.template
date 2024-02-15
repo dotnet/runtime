@@ -75,12 +75,12 @@
     {AdditionalProjectReferences}
   </ItemGroup>
 
-  <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults">
+  <Target Name="RemoveInvariantGlobalization" BeforeTargets="_SetWasmBuildNativeDefaults" Condition="'$(TargetArchitecture)' == 'wasm'>
     <ItemGroup>
       <_BoolPropertiesThatTriggerRelinking Remove="InvariantGlobalization" />
     </ItemGroup>
   </Target>
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm'>
     <PrepareInputsForWasmBuildDependsOn>
       $(PrepareInputsForWasmBuildDependsOn);
       RemoveInvariantGlobalization;
