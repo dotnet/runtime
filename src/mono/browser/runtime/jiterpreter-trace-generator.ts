@@ -33,7 +33,7 @@ import {
 
     disabledOpcodes, countCallTargets,
     callTargetCounts,
-    trace, traceOnError, traceOnRuntimeError,
+    trace, traceOnError,
     emitPadding, traceBranchDisplacements,
     traceEip, nullCheckValidation,
     traceNullCheckOptimizations,
@@ -1615,7 +1615,7 @@ export function generateWasmBody(
                 }
             }
 
-            if ((trace > 1) || traceOnError || traceOnRuntimeError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
+            if ((trace > 1) || traceOnError || mostRecentOptions!.dumpTraces || instrumentedTraceId) {
                 let stmtText = `${(<any>ip).toString(16)} ${opname} `;
                 const firstDreg = <any>ip + 2;
                 const firstSreg = firstDreg + (numDregs * 2);
@@ -2644,7 +2644,6 @@ function append_call_handler_store_ret_ip(
 function getBranchDisplacement(
     ip: MintOpcodePtr, opcode: MintOpcode
 ) : number | undefined {
-    // opsymbol, opstring, oplength, num_dregs, num_sregs, optype
     const opArgType = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.OpArgType),
         payloadOffset = cwraps.mono_jiterp_get_opcode_info(opcode, OpcodeInfoType.Sregs),
         payloadAddress = <any>ip + 2 + (payloadOffset * 2);

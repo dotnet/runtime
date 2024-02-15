@@ -34,10 +34,6 @@ export const
     // Record a trace of all managed interpreter opcodes then dump it to console
     //  if an error occurs while compiling the output wasm
     traceOnError = false,
-    // Record trace but dump it when the trace has a runtime error instead
-    //  requires trapTraceErrors to work and will slow trace compilation +
-    //  increase memory usage
-    traceOnRuntimeError = false,
     // Trace the method name, location and reason for each abort
     traceAbortLocations = false,
     // Count the number of times a given method is seen as a call target, then
@@ -60,7 +56,7 @@ export const
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
     // 1 = failures only, 2 = full detail
-    traceBackBranches = 1,
+    traceBackBranches = 0,
     // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
     //  opcodes previously, up to this many potential return addresses. If a trace contains more potential
     //  return addresses than this we will not emit code for the ENDFINALLY opcode
@@ -73,7 +69,7 @@ export const
     // Generate compressed names for imports so that modules have more space for code
     compressImportNames = true,
     // Always grab method full names
-    useFullNames = true,
+    useFullNames = false,
     // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
     useDebugCount = false,
     // Web browsers limit synchronous module compiles to 4KB
@@ -94,7 +90,6 @@ export const disabledOpcodes: Array<MintOpcode> = [
 // Having any items in this list will add some overhead to the jitting of *all* traces
 // These names can be substrings and instrumentation will happen if the substring is found in the full name
 export const instrumentedMethodNames: Array<string> = [
-    "SequenceEqualByte",
 ];
 
 export class InstrumentedTraceState {
