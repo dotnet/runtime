@@ -118,9 +118,14 @@ namespace System.Numerics
             // otherwise returns the larger of the inputs. It
             // treats +0 as larger than -0 as per the specification.
 
-            if ((x != y) && !TSelf.IsNaN(x))
+            if (x != y)
             {
-                return x < y ? x : y;
+                if (!TSelf.IsNaN(x))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
             }
 
             return TSelf.IsNegative(x) ? x : y;
@@ -160,6 +165,10 @@ namespace System.Numerics
         {
             if (value != TSelf.Zero)
             {
+                if (TSelf.IsNaN(value))
+                {
+                    ThrowHelper.ThrowArithmeticException(SR.Arithmetic_NaN);
+                }
                 return TSelf.IsNegative(value) ? -1 : +1;
             }
             return 0;
