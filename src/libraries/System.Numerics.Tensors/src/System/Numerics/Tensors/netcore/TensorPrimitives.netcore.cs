@@ -17268,75 +17268,11 @@ namespace System.Numerics.Tensors
         internal readonly struct TanPiOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
-
+            public static bool Vectorizable => false;
             public static T Invoke(T x) => T.TanPi(x);
-
-            public static Vector128<T> Invoke(Vector128<T> x)
-            {
-                Vector128<T> xpi = x * Vector128.Create(T.Pi);
-                if (typeof(T) == typeof(float))
-                {
-                    if (Vector128.GreaterThanAny(Vector128.Abs(xpi).AsUInt32(), Vector128.Create(TanOperatorSingle.MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<TanPiOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector128.GreaterThanAny(Vector128.Abs(xpi).AsUInt64(), Vector128.Create(TanOperatorDouble.MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<TanPiOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-                }
-
-                return TanOperator<T>.Invoke(xpi);
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                Vector256<T> xpi = x * Vector256.Create(T.Pi);
-                if (typeof(T) == typeof(float))
-                {
-                    if (Vector256.GreaterThanAny(Vector256.Abs(xpi).AsUInt32(), Vector256.Create(TanOperatorSingle.MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<TanPiOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector256.GreaterThanAny(Vector256.Abs(xpi).AsUInt64(), Vector256.Create(TanOperatorDouble.MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<TanPiOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-                }
-
-                return TanOperator<T>.Invoke(xpi);
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                Vector512<T> xpi = x * Vector512.Create(T.Pi);
-                if (typeof(T) == typeof(float))
-                {
-                    if (Vector512.GreaterThanAny(Vector512.Abs(xpi).AsUInt32(), Vector512.Create(TanOperatorSingle.MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<TanPiOperator<float>>(x.AsSingle()).As<float, T>();
-                    }
-                }
-                else
-                {
-                    Debug.Assert(typeof(T) == typeof(double));
-                    if (Vector512.GreaterThanAny(Vector512.Abs(xpi).AsUInt64(), Vector512.Create(TanOperatorDouble.MaxVectorizedValue)))
-                    {
-                        return ApplyScalar<TanPiOperator<double>>(x.AsDouble()).As<double, T>();
-                    }
-                }
-
-                return TanOperator<T>.Invoke(xpi);
-            }
+            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
+            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
+            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
         }
 
         /// <summary>T.Tanh(x)</summary>
