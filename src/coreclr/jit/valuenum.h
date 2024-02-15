@@ -511,6 +511,8 @@ public:
         return nullptr;
     }
 
+    CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {

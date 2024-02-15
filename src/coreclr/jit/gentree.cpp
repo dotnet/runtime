@@ -18790,35 +18790,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
     }
 
-    if (vnBased && (objClass == NO_CLASS_HANDLE) || (!*pIsExact))
+    if (vnBased && ((objClass == NO_CLASS_HANDLE) || (!*pIsExact)))
     {
-        const ValueNum vn = tree->gtVNPair.GetConservative();
-        if (vnStore->IsVNObjHandle(vn))
-        {
-            size_t handle = vnStore->CoercedConstantValue<size_t>(vn);
-            objClass      = info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)handle);
-            *pIsNonNull   = true;
-            *pIsExact     = true;
-        }
-        else
-        {
-            VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(vn, &funcApp) &&
-                ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf) ||
-                 (funcApp.m_func == VNF_JitNew)))
-            {
-                ssize_t  clsHandle;
-                ValueNum clsVN = funcApp.m_args[0];
-                if (vnStore->IsVNTypeHandle(clsVN) &&
-                    vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle))
-                {
-                    objClass = (CORINFO_CLASS_HANDLE)clsHandle;
-                    // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
-                    *pIsNonNull = funcApp.m_func == VNF_JitNew;
-                    *pIsExact   = funcApp.m_func == VNF_JitNew;
-                }
-            }
-        }
+        // Try VN if we haven't found a class handle yet, or we're not sure if the one we have is exact.
+        objClass = vnStore->GetObjectType(tree->gtVNPair.GetConservative(), pIsExact, pIsNonNull);
     }
 
     if ((objClass != NO_CLASS_HANDLE) && !*pIsExact && JitConfig.JitEnableExactDevirtualization())
