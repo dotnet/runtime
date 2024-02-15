@@ -501,9 +501,9 @@ namespace System.Numerics.Tests
                 return succeeded;
 
             }
-            static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToChecked<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToChecked(value, out result);
-            static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToSaturating<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToSaturating(value, out result);
-            static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToTruncating<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToTruncating(value, out result);
+            static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToChecked<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToChecked(value.Value, out result);
+            static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToSaturating<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToSaturating(value.Value, out result);
+            static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToTruncating<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToTruncating(value.Value, out result);
 
             public static BinaryIntegerWrapper<T> operator +(BinaryIntegerWrapper<T> value) => +value.Value;
             public static BinaryIntegerWrapper<T> operator +(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value + right.Value;
@@ -709,9 +709,9 @@ namespace System.Numerics.Tests
                 return succeeded;
 
             }
-            static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToChecked<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToChecked(value, out result);
-            static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToSaturating<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToSaturating(value, out result);
-            static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToTruncating<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToTruncating(value, out result);
+            static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToChecked<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToChecked(value.Value, out result);
+            static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToSaturating<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToSaturating(value.Value, out result);
+            static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToTruncating<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToTruncating(value.Value, out result);
 
             public static BinaryFloatingPointIeee754Wrapper<T> operator +(BinaryFloatingPointIeee754Wrapper<T> value) => +value.Value;
             public static BinaryFloatingPointIeee754Wrapper<T> operator +(BinaryFloatingPointIeee754Wrapper<T> left, BinaryFloatingPointIeee754Wrapper<T> right) => left.Value + right.Value;
