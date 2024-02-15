@@ -2678,10 +2678,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
 {
     switch (call->GetHelperNum())
     {
-        //
-        // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
-        // where CAST is either ISINST or CASTCLASS.
-        //
         case CORINFO_HELP_CHKCASTARRAY:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTINTERFACE:
@@ -2691,10 +2687,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
         case CORINFO_HELP_ISINSTANCEOFANY:
         case CORINFO_HELP_ISINSTANCEOFINTERFACE:
         {
-            GenTree* castClsArg   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
-            GenTree* castObjArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
-            ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
-            ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
+            GenTree* castClsArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* castObjArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
             {
@@ -2703,6 +2697,35 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 // won't throw any exceptions. But we should not forget about the EarlyNode (setup args)
                 return nullptr;
             }
+
+            bool isExact;
+            bool isNonNull;
+
+            // Try to obtain obj's real type via gtGetClassHandle and check if we can fold the cast
+            CORINFO_CLASS_HANDLE objCls = gtGetClassHandle(castObjArg, &isExact, &isNonNull, true);
+            if ((objCls != NO_CLASS_HANDLE) && castClsArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            {
+                CORINFO_CLASS_HANDLE castToCls  = gtGetHelperArgClassHandle(castClsArg);
+                TypeCompareState     castResult = info.compCompHnd->compareTypesForCast(objCls, castToCls);
+                if (castResult == TypeCompareState::Must)
+                {
+                    // The outer cast is redundant, remove it and preserve its side effects
+                    // We do ignoreRoot here because the actual cast node never throws any exceptions.
+                    GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    fgSetTreeSeq(result);
+                    return result;
+                }
+                // TODO-CQ: castResult == TypeCompareState::MustNot means isinst can be folded to just null
+                return nullptr;
+            }
+
+            //
+            // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
+            // where CAST is either ISINST or CASTCLASS. Most cases like this are expected to be handled
+            // by gtGetClassHandle above, except the casts involving runtime lookups.
+            //
+            ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
+            ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
 
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(castObjArgVN, &funcApp) && (funcApp.m_func == VNF_IsInstanceOf))

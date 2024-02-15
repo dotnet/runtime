@@ -18500,6 +18500,7 @@ bool Compiler::gtStoreDefinesField(
 //    tree -- tree to find handle for
 //    pIsExact   [out] -- whether handle is exact type
 //    pIsNonNull [out] -- whether tree value is known not to be null
+//    vnBased          -- can we rely on value numbering to find the handle?
 //
 // Return Value:
 //    nullptr if class handle is unknown,
@@ -18509,7 +18510,7 @@ bool Compiler::gtStoreDefinesField(
 //    *pIsNonNull set true if tree value is known not to be null,
 //        otherwise a null value is possible.
 
-CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull)
+CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull, bool vnBased)
 {
     // Set default values for our out params.
     *pIsNonNull                   = false;
@@ -18786,6 +18787,35 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         default:
         {
             break;
+        }
+    }
+
+    if (vnBased && (objClass == NO_CLASS_HANDLE) || (!*pIsExact))
+    {
+        const ValueNum vn = tree->gtVNPair.GetConservative();
+        if (vnStore->IsVNObjHandle(vn))
+        {
+            size_t handle = vnStore->CoercedConstantValue<size_t>(vn);
+            objClass      = info.compCompHnd->getObjectType((CORINFO_OBJECT_HANDLE)handle);
+            *pIsNonNull   = true;
+            *pIsExact     = true;
+        }
+        else
+        {
+            VNFuncApp funcApp;
+            if (vnStore->GetVNFunc(vn, &funcApp) &&
+                ((funcApp.m_func == VNF_CastClass) || (funcApp.m_func == VNF_IsInstanceOf) ||
+                 (funcApp.m_func == VNF_JitNew)))
+            {
+                ValueNum clsVN = funcApp.m_args[0];
+                if (vnStore->IsVNTypeHandle(clsVN))
+                {
+                    objClass = (CORINFO_CLASS_HANDLE)vnStore->CoercedConstantValue<size_t>(clsVN);
+                    // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
+                    *pIsNonNull = funcApp.m_func == VNF_JitNew;
+                    *pIsExact   = funcApp.m_func == VNF_JitNew;
+                }
+            }
         }
     }
 
