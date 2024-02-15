@@ -85,7 +85,7 @@
       $(PrepareInputsForWasmBuildDependsOn);
       RemoveInvariantGlobalization;
     </PrepareInputsForWasmBuildDependsOn>
- </PropertyGroup>
+  </PropertyGroup>
 
   <Target Name="LocateNativeCompiler"
           Condition="'$(PublishAot)' == 'true' and '$(_hostOS)' != 'win'"
