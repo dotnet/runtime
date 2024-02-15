@@ -2503,5 +2503,34 @@ internal class Dummy
                 }
             }
         }
+
+        [Fact]
+        public void ConstructorOfGenericTypeReferencedCorrectly()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                FieldBuilder field = type.DefineField("Field", typeof(int?), FieldAttributes.Public);
+                ConstructorBuilder ctor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, Type.EmptyTypes);
+                ILGenerator ctorIL = ctor.GetILGenerator();
+                ctorIL.Emit(OpCodes.Ldarg_0);
+                ctorIL.Emit(OpCodes.Call, typeof(object).GetConstructor(Type.EmptyTypes));
+                ctorIL.Emit(OpCodes.Ldarg_0);
+                ctorIL.Emit(OpCodes.Ldc_I4_1);
+                ctorIL.Emit(OpCodes.Newobj, typeof(int?).GetConstructor([typeof(int)]));
+                ctorIL.Emit(OpCodes.Stfld, field);
+                ctorIL.Emit(OpCodes.Ret);
+                type.CreateType();
+                ab.Save(file.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file.Path).GetType("MyType");
+                FieldInfo fieldFromDisk = typeFromDisk.GetField("Field");
+                object obj = Activator.CreateInstance(typeFromDisk);
+                Assert.Equal(typeof(int?), fieldFromDisk.FieldType);
+                Assert.Equal(1, fieldFromDisk.GetValue(obj));
+                tlc.Unload();
+            }
+        }
     }
 }

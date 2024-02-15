@@ -9022,12 +9022,6 @@ retry:
 	if (td->optimized) {
 		MONO_TIME_TRACK (mono_interp_stats.optimize_time, interp_optimize_code (td));
 		interp_alloc_offsets (td);
-		// Offset allocator uses computed ref counts from var values. We have to free this
-		// table later here.
-		if (td->var_values != NULL) {
-			g_free (td->var_values);
-			td->var_values = NULL;
-		}
 		interp_squash_initlocals (td);
 #if HOST_BROWSER
 		if (mono_interp_opt & INTERP_OPT_JITERPRETER)
@@ -9036,6 +9030,15 @@ retry:
 	}
 
 	generate_compacted_code (rtm, td);
+
+	if (td->optimized) {
+		// Offset allocator and compacted code generation use computed ref counts
+		// from var values. We have to free this table later here.
+		if (td->var_values != NULL) {
+			g_free (td->var_values);
+			td->var_values = NULL;
+		}
+	}
 
 	if (td->total_locals_size >= G_MAXUINT16) {
 		if (td->disable_inlining && td->optimized) {

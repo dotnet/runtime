@@ -2076,6 +2076,75 @@ void CallArgs::Remove(CallArg* arg)
     assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
+#ifdef TARGET_XARCH
+//---------------------------------------------------------------
+// NeedsVzeroupper: Determines if the call needs a vzeroupper emitted before it is invoked
+//
+// Parameters:
+//   comp - the compiler
+//
+// Returns:
+//   true if a vzeroupper needs to be emitted; otherwise, false
+//
+bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
+{
+    bool needsVzeroupper = false;
+
+    if (IsPInvoke() && comp->canUseVexEncoding())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        switch (gtCallType)
+        {
+            case CT_USER_FUNC:
+            case CT_INDIRECT:
+            {
+                // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
+                // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
+
+                needsVzeroupper = true;
+                break;
+            }
+
+            case CT_HELPER:
+            {
+                // Most helpers are well known to not use any floating-point or SIMD logic internally, but
+                // a few do exist so we need to ensure they are handled. They are identified by taking or
+                // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
+
+                if (varTypeUsesFloatReg(this))
+                {
+                    needsVzeroupper = true;
+                }
+                else
+                {
+                    for (CallArg& arg : gtArgs.Args())
+                    {
+                        if (varTypeUsesFloatReg(arg.GetSignatureType()))
+                        {
+                            needsVzeroupper = true;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    return needsVzeroupper;
+}
+#endif // TARGET_XARCH
+
 //---------------------------------------------------------------
 // GetOtherRegMask: Get the reg mask of gtOtherRegs of call node
 //
@@ -12031,12 +12100,12 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else
             {
-                ssize_t dspIconVal =
-                    tree->IsIconHandle() ? dspPtr(tree->AsIntCon()->gtIconVal) : tree->AsIntCon()->gtIconVal;
+                ssize_t iconVal    = tree->AsIntCon()->gtIconVal;
+                ssize_t dspIconVal = tree->IsIconHandle() ? dspPtr(iconVal) : iconVal;
 
                 if (tree->TypeGet() == TYP_REF)
                 {
-                    if (tree->AsIntCon()->gtIconVal == 0)
+                    if (iconVal == 0)
                     {
                         printf(" null");
                     }
@@ -12046,12 +12115,12 @@ void Compiler::gtDispConst(GenTree* tree)
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
-                else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
+                else if ((iconVal > -1000) && (iconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
                 }
 #ifdef TARGET_64BIT
-                else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
+                else if ((iconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
                     if (dspIconVal >= 0)
                     {
@@ -12083,13 +12152,13 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" scope");
                             break;
                         case GTF_ICON_CLASS_HDL:
-                            printf(" class");
+                            printf(" class %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                             break;
                         case GTF_ICON_METHOD_HDL:
-                            printf(" method");
+                            printf(" method %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
                             break;
                         case GTF_ICON_FIELD_HDL:
-                            printf(" field");
+                            printf(" field %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
                             break;
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
@@ -17061,6 +17130,41 @@ bool Compiler::gtSplitTree(
     *splitNodeUse = splitter.SplitNodeUse;
 
     return splitter.MadeChanges;
+}
+
+//------------------------------------------------------------------------
+// gtWrapWithSideEffects: Extracts side effects from sideEffectSource (if any)
+//    and wraps the input tree with a COMMA node with them.
+//
+// Arguments:
+//    tree              - the expression tree to wrap with side effects (if any)
+//                        it has to be either a side effect free subnode of sideEffectsSource
+//                        or any tree outside sideEffectsSource's hierarchy
+//    sideEffectsSource - the expression tree to extract side effects from
+//    sideEffectsFlags  - side effect flags to be considered
+//    ignoreRoot        - ignore side effects on the expression root node
+//
+// Return Value:
+//    The original tree wrapped with a COMMA node that contains the side effects
+//    or just the tree itself if sideEffectSource has no side effects.
+//
+GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
+                                         GenTree*     sideEffectsSource,
+                                         GenTreeFlags sideEffectsFlags,
+                                         bool         ignoreRoot)
+{
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(sideEffectsSource, &sideEffects, sideEffectsFlags, ignoreRoot);
+    if (sideEffects != nullptr)
+    {
+        // TODO: assert if tree is a subnode of sideEffectsSource and the tree has its own side effects
+        // otherwise the resulting COMMA might have some side effects to be duplicated
+        // It should be possible to be smarter here and allow such cases by extracting the side effects
+        // properly for this particular case. For now, caller is responsible for avoiding such cases.
+
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+    }
+    return tree;
 }
 
 //------------------------------------------------------------------------
