@@ -4833,7 +4833,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
         
             if (classInstCount != 0)
             {
-                TypeHandle* pClassInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount * sizeof(TypeHandle))));
+                TypeHandle* pClassInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(classInstCount) * S_SIZE_T(sizeof(TypeHandle))));
                 for (DWORD i = 0; i < classInstCount; i++)
                 {
                     pClassInst[i] = typeContext->m_classInst[i];
@@ -4843,7 +4843,7 @@ VASigCookie *Module::GetVASigCookieWorker(Module* pDefiningModule, Module* pLoad
 
             if (methodInstCount != 0)
             {
-                TypeHandle* pMethodInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount * sizeof(TypeHandle))));
+                TypeHandle* pMethodInst = (TypeHandle*)(void*)amt.Track(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(methodInstCount) * S_SIZE_T(sizeof(TypeHandle))));
                 for (DWORD i = 0; i < methodInstCount; i++)
                 {
                     pMethodInst[i] = typeContext->m_methodInst[i];
