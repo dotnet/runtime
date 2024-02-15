@@ -19110,7 +19110,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
@@ -19121,7 +19121,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
@@ -19132,7 +19132,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm)
