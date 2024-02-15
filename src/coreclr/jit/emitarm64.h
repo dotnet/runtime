@@ -533,6 +533,9 @@ static code_t insEncodeSveElemsize_sz_21(emitAttr size);
 // This specifically encodes the field 'tszh:tszl' at bit locations '22:20-19'.
 static code_t insEncodeSveElemsize_tszh_22_tszl_20_to_19(emitAttr size);
 
+// Returns the encoding for the field 'i1:tszh:tszl' at bit locations '23-22:20-18'.
+static code_t insEncodeSveElemsize_tszh_tszl_and_imm(const insOpts opt, const ssize_t imm);
+
 // Returns the encoding to select the constant values 90 or 270 for an Arm64 SVE vector instruction
 // This specifically encode the field 'rot' at bit location '16'.
 static code_t insEncodeSveImm90_or_270_rot(ssize_t imm);
@@ -848,6 +851,10 @@ static insOpts optMakeArrangement(emitAttr datasize, emitAttr elemsize);
 //    For the given 'datasize' and 'opt' returns true if it specifies a valid vector register arrangement
 static bool isValidArrangement(emitAttr datasize, insOpts opt);
 
+// Expands an option that has different size operands (INS_OPTS_*_TO_*) into a pair of scalable options where
+// the first describes the size of the destination operand and the second describes the size of the source operand.
+static void optExpandConversionPair(insOpts opt, insOpts& dst, insOpts& src);
+
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
 static emitAttr optGetDatasize(insOpts arrangement);
 
@@ -1154,6 +1161,11 @@ inline static bool insOpts64BitExtend(insOpts opt)
 inline static bool insOptsAnyArrangement(insOpts opt)
 {
     return ((opt >= INS_OPTS_8B) && (opt <= INS_OPTS_2D));
+}
+
+inline static bool insOptsConvertFloatStepwise(insOpts opt)
+{
+    return (opt == INS_OPTS_H_TO_S || opt == INS_OPTS_S_TO_H || opt == INS_OPTS_D_TO_S || opt == INS_OPTS_S_TO_D);
 }
 
 inline static bool insOptsConvertFloatToFloat(insOpts opt)

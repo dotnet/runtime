@@ -2994,137 +2994,9 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         fgReplaceJumpTarget(enterBlock, header, preheader);
     }
 
-    optSetPreheaderWeight(loop, preheader);
+    optSetWeightForPreheaderOrExit(loop, preheader);
 
     return true;
-}
-
-//-----------------------------------------------------------------------------
-// optSetPreheaderWeight: Set the weight of a newly created preheader, after it
-// has been added to the flowgraph.
-//
-// Parameters:
-//   loop      - The loop
-//   preheader - The new preheader block
-//
-void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader)
-{
-    if (loop->EntryEdges().size() == 0)
-    {
-        return;
-    }
-
-    // The preheader is only considered to have profile weights when all the
-    // following conditions are true:
-    // - The loop header has a profile weight
-    // - All entering blocks have a profile weight
-    // - The successors of all entering blocks have a profile weight (so that
-    //   we can trust the computed taken/not taken ratio)
-    //
-    bool     hasProfWeight   = fgIsUsingProfileWeights();
-    weight_t preheaderWeight = BB_ZERO_WEIGHT;
-
-    for (FlowEdge* entryEdge : loop->EntryEdges())
-    {
-        BasicBlock* prevEntering = entryEdge->getSourceBlock();
-
-        hasProfWeight &= prevEntering->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY;
-
-        if (!fgIsUsingProfileWeights() || !prevEntering->HasFlag(BBF_PROF_WEIGHT) ||
-            !loop->GetHeader()->HasFlag(BBF_PROF_WEIGHT) || prevEntering->KindIs(BBJ_ALWAYS))
-        {
-            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
-            continue;
-        }
-
-        bool succsHaveProfileWeights = true;
-        bool useEdgeWeights          = fgHaveValidEdgeWeights;
-
-        weight_t loopEnterCount = 0;
-        weight_t loopSkipCount  = 0;
-
-        if (useEdgeWeights)
-        {
-            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
-                FlowEdge* edge       = fgGetPredForBlock(succ, prevEntering);
-                weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
-
-                if (succ == preheader)
-                {
-                    loopEnterCount += edgeWeight;
-                }
-                else
-                {
-                    succsHaveProfileWeights &= succ->hasProfileWeight();
-                    loopSkipCount += edgeWeight;
-                }
-                return BasicBlockVisit::Continue;
-            });
-
-            // Watch out for cases where edge weights were not properly maintained
-            // so that it appears no profile flow enters the loop.
-            //
-            useEdgeWeights = !fgProfileWeightsConsistent(loopEnterCount, BB_ZERO_WEIGHT);
-        }
-
-        if (!useEdgeWeights)
-        {
-            loopEnterCount = 0;
-            loopSkipCount  = 0;
-
-            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
-                if (succ == preheader)
-                {
-                    loopEnterCount += succ->bbWeight;
-                }
-                else
-                {
-                    succsHaveProfileWeights &= succ->hasProfileWeight();
-                    loopSkipCount += succ->bbWeight;
-                }
-
-                return BasicBlockVisit::Continue;
-            });
-        }
-
-        if (!succsHaveProfileWeights)
-        {
-            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
-            hasProfWeight = false;
-            continue;
-        }
-
-        weight_t loopTakenRatio = loopEnterCount / (loopEnterCount + loopSkipCount);
-
-        JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
-                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnterCount,
-                loopSkipCount, loopTakenRatio);
-
-        weight_t enterContribution = prevEntering->bbWeight * loopTakenRatio;
-        preheaderWeight += enterContribution;
-
-        // Normalize prevEntering -> preheader edge
-        FlowEdge* const edgeToPreheader = fgGetPredForBlock(preheader, prevEntering);
-        assert(edgeToPreheader != nullptr);
-        edgeToPreheader->setEdgeWeights(enterContribution, enterContribution, preheader);
-    }
-
-    preheader->bbWeight = preheaderWeight;
-    if (hasProfWeight)
-    {
-        preheader->SetFlags(BBF_PROF_WEIGHT);
-    }
-
-    if (preheaderWeight == BB_ZERO_WEIGHT)
-    {
-        preheader->SetFlags(BBF_RUN_RARELY);
-        return;
-    }
-
-    // Normalize preheader -> header weight
-    FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
-    assert(edgeFromPreheader != nullptr);
-    edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
 }
 
 //-----------------------------------------------------------------------------
@@ -3146,8 +3018,10 @@ bool Compiler::optCanonicalizeExits(FlowGraphNaturalLoop* loop)
         // Find all blocks outside the loop from this exiting block. Those
         // blocks are exits. Note that we may see preheaders created by
         // previous canonicalization here, which are not part of the DFS tree
-        // or properly maintained in a parent loop. The canonicalization here
-        // works despite this.
+        // or properly maintained in a parent loop. This also means the
+        // destination block of the exit edge may no longer be right, so we
+        // cannot use VisitRegularExitBlocks. The canonicalization here works
+        // despite this.
         edge->getSourceBlock()->VisitRegularSuccs(this, [=, &changed](BasicBlock* succ) {
             if (!loop->ContainsBlock(succ))
             {
@@ -3246,7 +3120,7 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
         }
     }
 
-    optSetExitWeight(loop, newExit);
+    optSetWeightForPreheaderOrExit(loop, newExit);
     return true;
 }
 
@@ -3336,60 +3210,61 @@ weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, b
 }
 
 //-----------------------------------------------------------------------------
-// optSetExitWeight: Set the weight of a newly created exit, after it
-// has been added to the flowgraph.
+// optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
+// or exit, after it has been added to the flowgraph.
 //
 // Parameters:
-//   loop      - The loop
-//   preheader - The new exit block
+//   loop  - The loop
+//   block - The new preheader or exit block
 //
-void Compiler::optSetExitWeight(FlowGraphNaturalLoop* loop, BasicBlock* exit)
+void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block)
 {
     bool hasProfWeight = true;
 
-    // Inherit first estimate from the exit target; optEstimateEdgeLikelihood
+    assert(block->GetUniqueSucc() != nullptr);
+    // Inherit first estimate from the target target; optEstimateEdgeLikelihood
     // may use it in its estimate if we do not have edge weights to estimate
-    // from (we also assume the exiting -> exit edges already inherited their
-    // edge weights from the previous edge).
-    exit->inheritWeight(exit->GetTarget());
+    // from (we also assume the edges into 'block' already inherited their edge
+    // weights from the previous edge).
+    block->inheritWeight(block->GetTarget());
 
-    weight_t exitWeight = BB_ZERO_WEIGHT;
-    for (FlowEdge* exitEdge : exit->PredEdges())
+    weight_t newWeight = BB_ZERO_WEIGHT;
+    for (FlowEdge* edge : block->PredEdges())
     {
-        BasicBlock* exiting = exitEdge->getSourceBlock();
+        BasicBlock* predBlock = edge->getSourceBlock();
 
         bool     fromProfile = false;
-        weight_t likelihood  = optEstimateEdgeLikelihood(exiting, exit, &fromProfile);
+        weight_t likelihood  = optEstimateEdgeLikelihood(predBlock, block, &fromProfile);
         hasProfWeight &= fromProfile;
 
-        weight_t contribution = exiting->bbWeight * likelihood;
+        weight_t contribution = predBlock->bbWeight * likelihood;
         JITDUMP("  Estimated likelihood " FMT_BB " -> " FMT_BB " to be " FMT_WT " (contribution: " FMT_WT ")\n",
-                exiting->bbNum, exit->bbNum, likelihood, contribution);
+                predBlock->bbNum, block->bbNum, likelihood, contribution);
 
-        exitWeight += contribution;
+        newWeight += contribution;
 
-        // Normalize exiting -> new exit weight
-        exitEdge->setEdgeWeights(contribution, contribution, exit);
+        // Normalize pred -> new block weight
+        edge->setEdgeWeights(contribution, contribution, block);
     }
 
-    exit->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
+    block->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
 
-    exit->bbWeight = exitWeight;
+    block->bbWeight = newWeight;
     if (hasProfWeight)
     {
-        exit->SetFlags(BBF_PROF_WEIGHT);
+        block->SetFlags(BBF_PROF_WEIGHT);
     }
 
-    if (exitWeight == BB_ZERO_WEIGHT)
+    if (newWeight == BB_ZERO_WEIGHT)
     {
-        exit->SetFlags(BBF_RUN_RARELY);
+        block->SetFlags(BBF_RUN_RARELY);
         return;
     }
 
-    // Normalize new exit -> old exit weight
-    FlowEdge* const edgeFromNewExit = fgGetPredForBlock(exit->GetTarget(), exit);
-    assert(edgeFromNewExit != nullptr);
-    edgeFromNewExit->setEdgeWeights(exit->bbWeight, exit->bbWeight, exit->GetTarget());
+    // Normalize block -> target weight
+    FlowEdge* const edgeFromBlock = fgGetPredForBlock(block->GetTarget(), block);
+    assert(edgeFromBlock != nullptr);
+    edgeFromBlock->setEdgeWeights(block->bbWeight, block->bbWeight, block->GetTarget());
 }
 
 /*****************************************************************************

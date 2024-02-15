@@ -4710,14 +4710,8 @@ void FlowGraphNaturalLoop::Dump(FlowGraphNaturalLoop* loop)
         for (FlowEdge* const edge : loop->ExitEdges())
         {
             BasicBlock* const exitingBlock = edge->getSourceBlock();
-            printf("%s" FMT_BB " ->", first ? "" : "; ", exitingBlock->bbNum);
-            exitingBlock->VisitRegularSuccs(comp, [=](BasicBlock* succ) {
-                if (comp->fgGetPredForBlock(succ, exitingBlock) == edge)
-                {
-                    printf(" " FMT_BB, succ->bbNum);
-                }
-                return BasicBlockVisit::Continue;
-            });
+            BasicBlock* const exitBlock    = edge->getDestinationBlock();
+            printf("%s" FMT_BB " -> " FMT_BB, first ? "" : "; ", exitingBlock->bbNum, exitBlock->bbNum);
             first = false;
         }
     }
@@ -4993,7 +4987,7 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info)
         info->TestBlock    = cond;
         info->IterVar      = iterVar;
         info->IterTree     = iterTree;
-        info->ExitedOnTrue = !ContainsBlock(cond->GetTrueTarget());
+        info->ExitedOnTrue = exitEdge->getDestinationBlock() == cond->GetTrueTarget();
         break;
     }
 
