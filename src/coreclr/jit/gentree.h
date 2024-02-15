@@ -6387,6 +6387,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBroadcastScalar() const;
     bool OperIsCreateScalarUnsafe() const;
     bool OperIsBitwiseHWIntrinsic() const;
+    bool OperIsEmbRoundingEnabled() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
