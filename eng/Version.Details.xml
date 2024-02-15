@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-preview.2.24105.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-preview.2.24112.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>0664e5d5a59ae8ad8fe0cc1e82ed8a32baac43f7</Sha>
+      <Sha>1b9c03a1103cf622ee2f7850d16aa1095a719e56</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24067.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -90,14 +90,14 @@
       <Sha>a045dd54a4c44723c215d992288160eb1401bb7f</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.24105.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.24112.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>93dcb576e191a965008eae9b622527436653873f</Sha>
+      <Sha>ca7e93445acbd94bfa696c16fa039f2a6130f2cb</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.4-alpha.24105.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.cecil" Version="0.11.4-alpha.24112.1">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>93dcb576e191a965008eae9b622527436653873f</Sha>
+      <Sha>ca7e93445acbd94bfa696c16fa039f2a6130f2cb</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-9.0.100.Transport" Version="9.0.0-preview.2.24114.5">
@@ -352,17 +352,17 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>9699f39112b2aea89a05a74199baf9049db85537</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.24112.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="9.0.0-prerelease.24112.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>2f3f51a1adec18475563c8a49fd9b668ae9f2f31</Sha>
+      <Sha>11ae3663fe3de366ea3566d7ae9b4731adee2ca3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.24112.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="9.0.0-prerelease.24112.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>2f3f51a1adec18475563c8a49fd9b668ae9f2f31</Sha>
+      <Sha>11ae3663fe3de366ea3566d7ae9b4731adee2ca3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.24112.1">
+    <Dependency Name="Microsoft.DotNet.XHarness.CLI" Version="9.0.0-prerelease.24112.4">
       <Uri>https://github.com/dotnet/xharness</Uri>
-      <Sha>2f3f51a1adec18475563c8a49fd9b668ae9f2f31</Sha>
+      <Sha>11ae3663fe3de366ea3566d7ae9b4731adee2ca3</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.PackageTesting" Version="9.0.0-beta.24112.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -384,9 +384,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>db9f1c2362565f3ef41c8e8feb5ed49ab11a6459</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24105.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="9.0.0-alpha.0.24112.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>c3893319be301c7acdd167c276a5178c1004f10f</Sha>
+      <Sha>465874b5842702bf69bbb6bacd94a52d8ea2a073</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="9.0.0-beta.24108.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
