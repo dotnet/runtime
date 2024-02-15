@@ -44,6 +44,9 @@ public partial class UpdateChromeVersions : MBU.Task
     [Required, NotNull]
     public string ChromeVersionsPath { get; set; } = string.Empty;
 
+    [Required, NotNull]
+    public string EnvVarsForPRPath { get; set; } = string.Empty;
+
     public int MaxMajorVersionsToCheck { get; set; } = 2;
 
     // start at the branch position found in all.json, and try to
@@ -69,6 +72,7 @@ public partial class UpdateChromeVersions : MBU.Task
 
             XmlDocument chromeVersionsXmlDoc = new XmlDocument();
             chromeVersionsXmlDoc.Load(ChromeVersionsPath);
+            using StreamWriter envVarsWriter = new StreamWriter(EnvVarsForPRPath);
             var osInfo = OSIdentifiers.Zip(OSPrefixes, (num, str) => new { Identifier = num, Prefix = str });
             foreach (var info in osInfo)
             {
@@ -76,7 +80,8 @@ public partial class UpdateChromeVersions : MBU.Task
                 bool hasMajorChanges = AreVersionsChanged(chromeVersionsXmlDoc, version, baseUrl);
                 if (hasMajorChanges)
                 {
-                    VersionsChanged = UpdateChromeVersionsFile(chromeVersionsXmlDoc, version, baseUrl);
+                    VersionsChanged = UpdateChromeVersionsFile(chromeVersionsXmlDoc, version, baseUrl)
+                        && UpdateEnvVarsForPRFile(envVarsWriter, version);
                 }
             }
             return !Log.HasLoggedErrors;
@@ -134,6 +139,23 @@ public partial class UpdateChromeVersions : MBU.Task
             throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}");
         }
         xmlDoc.Save(ChromeVersionsPath);
+        return true;
+    }
+
+    private static bool UpdateEnvVarsForPRFile(StreamWriter writer, ChromeVersionSpec version)
+    {
+        if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
+        {
+            writer.WriteLine($"CHROME_LINUX_VER={version.version}");
+        }
+        else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
+        {
+            writer.WriteLine($"CHROME_WIN_VER={version.version}");
+        }
+        else
+        {
+            throw new Exception($"UpdateEnvVarsForPRFile task was used with unknown OS: {version.os}");
+        }
         return true;
     }
 
