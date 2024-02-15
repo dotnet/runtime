@@ -191,10 +191,11 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
                 throw new PlatformNotSupportedException();
-#if FEATURE_WASM_MANAGED_THREADS
-            JSProxyContext.AssertIsInteropThread();
-#endif
-            return BindManagedFunctionImpl(fullyQualifiedName, signatureHash, signatures);
+
+            // this could be called by assembly module initializer from Net7 code-gen
+            // on wrong thread, in which case we will bind it to UI thread
+
+            return JSHostImplementation.BindManagedFunction(fullyQualifiedName, signatureHash, signatures);
         }
 
 #if !DEBUG
@@ -253,7 +254,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
             // so it could take some time, while target is CPU busy, but not forever
             // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.NativeTID, functionHandle, args);
+            Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.JSNativeTID, functionHandle, args);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
             if (exceptionArg.slot.Type != MarshalerType.None)
@@ -360,7 +361,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
             // so it could take some time, while target is CPU busy, but not forever
             // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Interop.Runtime.InvokeJSImportSyncSend(targetContext.NativeTID, args, sig);
+            Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, args, sig);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
             if (exceptionArg.slot.Type != MarshalerType.None)
@@ -384,7 +385,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we already know that we are not on the right thread
             // this will return quickly after sending the message
             // async
-            Interop.Runtime.InvokeJSImportAsyncPost(targetContext.NativeTID, (nint)cpy, sig);
+            Interop.Runtime.InvokeJSImportAsyncPost(targetContext.JSNativeTID, (nint)cpy, sig);
 
         }
 
@@ -403,21 +404,6 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
 #endif
-
-            return signature;
-        }
-
-        internal static unsafe JSFunctionBinding BindManagedFunctionImpl(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
-        {
-            var signature = JSHostImplementation.GetMethodSignature(signatures, null, null);
-
-            Interop.Runtime.BindCSFunction(fullyQualifiedName, signatureHash, signature.Header, out int isException, out object exceptionMessage);
-            if (isException != 0)
-            {
-                throw new JSException((string)exceptionMessage);
-            }
-
-            JSHostImplementation.FreeMethodSignatureBuffer(signature);
 
             return signature;
         }
@@ -455,7 +441,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Unsafe.CopyBlock(cpy, src, (uint)bytes);
 
                 // async
-                Interop.Runtime.ResolveOrRejectPromisePost(targetContext.NativeTID, (nint)cpy);
+                Interop.Runtime.ResolveOrRejectPromisePost(targetContext.JSNativeTID, (nint)cpy);
 
                 // this never throws directly
             }

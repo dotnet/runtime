@@ -172,9 +172,6 @@
     -->
     <UseAppHost>false</UseAppHost>
 
-    <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
-    <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
-
     <!-- Post Wasm MVP features -->
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>

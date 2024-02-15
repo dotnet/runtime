@@ -9,6 +9,7 @@ import { mono_wasm_pthread_on_pthread_created } from "../worker";
 import { PThreadLibrary, PThreadWorker, getModulePThread, getUnusedWorkerPool } from "./emscripten-internals";
 import { loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
+import { PThreadPtrNull } from "./types";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with
@@ -46,7 +47,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
         // we can't reuse the worker, because user code could leave the worker JS globals in a dirty state
         worker.info.isRunning = false;
         resolveThreadPromises(worker.pthread_ptr, undefined);
-        worker.info.pthreadId = 0;
+        worker.info.pthreadId = PThreadPtrNull;
         if (worker.thread?.port) {
             worker.thread.port.close();
         }
@@ -116,7 +117,7 @@ function allocateUnusedWorker(): PThreadWorker {
     getUnusedWorkerPool().push(worker);
     worker.loaded = false;
     worker.info = {
-        pthreadId: 0,
+        pthreadId: PThreadPtrNull,
         reuseCount: 0,
         updateCount: 0,
         threadPrefix: "          -    ",

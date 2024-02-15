@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 internal static partial class Interop
@@ -25,8 +26,6 @@ internal static partial class Interop
         public static extern void InvokeJSFunctionSend(nint targetNativeTID, nint functionHandle, nint data);
 #endif
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ResolveOrRejectPromise(nint data);
 #if FEATURE_WASM_MANAGED_THREADS
@@ -65,7 +64,7 @@ internal static partial class Interop
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void CancelPromise(nint gcHandle);
 #endif
-
-
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void SetEntryAssembly(Assembly assembly, int entryPointMetadataToken);
     }
 }

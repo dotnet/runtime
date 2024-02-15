@@ -8,7 +8,7 @@ import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
@@ -24,6 +24,8 @@ import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerTo
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
 import { mono_log_debug } from "./logging";
+import { complete_task } from "./managed-exports";
+import { gc_locked } from "./gc-lock";
 
 export const jsinteropDoc = "For more information see https://aka.ms/dotnet-wasm-jsinterop";
 
@@ -32,7 +34,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.Array, marshal_array_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Span, _marshal_span_to_cs);
         js_to_cs_marshalers.set(MarshalerType.ArraySegment, _marshal_array_segment_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.Boolean, _marshal_bool_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.Boolean, marshal_bool_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Byte, _marshal_byte_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Char, _marshal_char_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Int16, _marshal_int16_to_cs);
@@ -44,7 +46,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.IntPtr, marshal_intptr_to_cs);
         js_to_cs_marshalers.set(MarshalerType.DateTime, _marshal_date_time_to_cs);
         js_to_cs_marshalers.set(MarshalerType.DateTimeOffset, _marshal_date_time_offset_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.String, _marshal_string_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.String, marshal_string_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Exception, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSException, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSObject, marshal_js_object_to_cs);
@@ -96,7 +98,7 @@ export function get_marshaler_to_cs_by_type(marshaler_type: MarshalerType): Mars
     return converter;
 }
 
-function _marshal_bool_to_cs(arg: JSMarshalerArgument, value: any): void {
+export function marshal_bool_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -218,7 +220,7 @@ function _marshal_date_time_offset_to_cs(arg: JSMarshalerArgument, value: Date):
     }
 }
 
-function _marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
+export function marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -358,7 +360,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
             // so that managed user code running in the continuation could allocate the same GCHandle number and the local registry would be already ok with that
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, false, null, data, res_converter || _marshal_cs_object_to_cs);
+            complete_task(gc_handle, false, null, data, res_converter || _marshal_cs_object_to_cs);
         }
         catch (ex) {
             try {
@@ -385,7 +387,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(holder, gc_handle, /*skipManaged: */ true);
             // order of operations with teardown_managed_proxy matters
-            runtimeHelpers.javaScriptExports.complete_task(gc_handle, holder.isCanceled, reason, null, undefined);
+            complete_task(gc_handle, holder.isCanceled, reason, null, undefined);
         }
         catch (ex) {
             try {
@@ -555,17 +557,19 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
+                mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
                 cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(<any>buffer_ptr, index);
-                _marshal_string_to_cs(element_arg, value[index]);
+                marshal_string_to_cs(element_arg, value[index]);
             }
         }
         else if (element_type == MarshalerType.Object) {
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
             if (!WasmEnableJsInteropByValue) {
+                mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when creating a GC root");
                 cwraps.mono_wasm_register_root(buffer_ptr, buffer_length, "marshal_array_to_cs");
             }
             for (let index = 0; index < length; index++) {
