@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
@@ -292,6 +292,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Numerics\DimTests.GenericMath.cs" />
     <Compile Include="System\Numerics\GenericMathDimHelpers.cs" />
     <Compile Include="System\Numerics\IBinaryNumberTests.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
