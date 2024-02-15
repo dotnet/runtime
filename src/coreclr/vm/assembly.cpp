@@ -117,8 +117,7 @@ void Assembly::Initialize()
 // It cannot do any allocations or operations that might fail. Those operations should be done
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
-Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
-    m_pDomain(pDomain),
+Assembly::Assembly(PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
     m_pModule(NULL),
@@ -136,10 +135,7 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembl
     m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET),
 #endif
     m_debuggerFlags(debuggerFlags),
-    m_fTerminated(FALSE),
-#if FEATURE_READYTORUN
-    m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
-#endif // FEATURE_READYTORUN
+    m_fTerminated(FALSE)
 {
     STANDARD_VM_CONTRACT;
 }
@@ -168,8 +164,8 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
         if (!IsCollectible())
         {
             // pLoaderAllocator will only be non-null for reflection emit assemblies
-            _ASSERTE((pLoaderAllocator == NULL) || (pLoaderAllocator == GetDomain()->AsAppDomain()->GetLoaderAllocator()));
-            m_pLoaderAllocator = GetDomain()->AsAppDomain()->GetLoaderAllocator();
+            _ASSERTE((pLoaderAllocator == NULL) || (pLoaderAllocator == AppDomain::GetCurrentDomain()->GetLoaderAllocator()));
+            m_pLoaderAllocator = AppDomain::GetCurrentDomain()->GetLoaderAllocator();
         }
         else
         {
@@ -322,7 +318,6 @@ void Assembly::Terminate( BOOL signalProfiler )
 }
 
 Assembly * Assembly::Create(
-    BaseDomain *                 pDomain,
     PEAssembly *                 pPEAssembly,
     DebuggerAssemblyControlFlags debuggerFlags,
     BOOL                         fIsCollectible,
@@ -331,7 +326,7 @@ Assembly * Assembly::Create(
 {
     STANDARD_VM_CONTRACT;
 
-    NewHolder<Assembly> pAssembly (new Assembly(pDomain, pPEAssembly, debuggerFlags, fIsCollectible));
+    NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, debuggerFlags, fIsCollectible));
 
 #ifdef PROFILING_SUPPORTED
     {
@@ -437,7 +432,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         pPEAssembly->SetFallbackBinder(pBinder);
     }
 
-    AppDomain* pDomain = GetAppDomain();
+    AppDomain* pDomain = ::GetAppDomain();
 
     NewHolder<DomainAssembly> pDomainAssembly;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
@@ -483,7 +478,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         }
 
         // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pDomain, pPEAssembly, pLoaderAllocator);
+        pDomainAssembly = new DomainAssembly(pPEAssembly, pLoaderAllocator);
         if (pDomainAssembly->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -501,7 +496,7 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
         {
             GCX_PREEMP();
             // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
-            pAssem = Assembly::Create(pDomain, pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
+            pAssem = Assembly::Create(pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetModule();
 
@@ -604,27 +599,6 @@ PTR_LoaderHeap Assembly::GetStubHeap()
 
     return GetLoaderAllocator()->GetStubHeap();
 }
-
-
-PTR_BaseDomain Assembly::GetDomain()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    _ASSERTE(m_pDomain);
-    return (m_pDomain);
-}
-
-#ifndef DACCESS_COMPILE
-
-void Assembly::SetParent(BaseDomain* pParent)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pDomain = pParent;
-}
-
-#endif // !DACCCESS_COMPILE
 
 Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                                            Loader::LoadFlag loadFlag,
@@ -1640,119 +1614,6 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     return result;
 }
 
-#ifdef FEATURE_READYTORUN
-BOOL Assembly::IsInstrumented()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
-    // This will set the value of m_isInstrumentedStatus by calling IsInstrumentedHelper()
-    // that method performs string pattern matching using the Config value of ZapBBInstr
-    // We cache the value returned from that method in m_isInstrumentedStatus
-    //
-    if (m_isInstrumentedStatus == IS_INSTRUMENTED_UNSET)
-    {
-        EX_TRY
-        {
-            FAULT_NOT_FATAL();
-
-            if (IsInstrumentedHelper())
-            {
-                m_isInstrumentedStatus = IS_INSTRUMENTED_TRUE;
-            }
-            else
-            {
-                m_isInstrumentedStatus = IS_INSTRUMENTED_FALSE;
-            }
-        }
-
-        EX_CATCH
-        {
-            m_isInstrumentedStatus = IS_INSTRUMENTED_FALSE;
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
-    }
-
-    // At this point m_isInstrumentedStatus can't have the value of IS_INSTRUMENTED_UNSET
-    _ASSERTE(m_isInstrumentedStatus != IS_INSTRUMENTED_UNSET);
-
-    return (m_isInstrumentedStatus == IS_INSTRUMENTED_TRUE);
-}
-
-BOOL Assembly::IsInstrumentedHelper()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
-    // Dynamic Assemblies cannot be instrumented
-    if (IsDynamic())
-        return false;
-
-    // We must have a native image in order to perform IBC instrumentation
-    if (!GetPEAssembly()->IsReadyToRun())
-        return false;
-
-    // @Consider using the full name instead of the short form
-    // (see GetFusionAssemblyName()->IsEqual).
-
-    LPCUTF8 szZapBBInstr = g_pConfig->GetZapBBInstr();
-    LPCUTF8 szAssemblyName = GetSimpleName();
-
-    if (!szZapBBInstr || !szAssemblyName ||
-        (*szZapBBInstr == '\0') || (*szAssemblyName == '\0'))
-        return false;
-
-    // Convert to unicode so that we can do a case insensitive comparison
-
-    SString instrumentedAssemblyNamesList(SString::Utf8, szZapBBInstr);
-    SString assemblyName(SString::Utf8, szAssemblyName);
-
-    const WCHAR *wszInstrumentedAssemblyNamesList = instrumentedAssemblyNamesList.GetUnicode();
-    const WCHAR *wszAssemblyName                  = assemblyName.GetUnicode();
-
-    // wszInstrumentedAssemblyNamesList is a space separated list of assembly names.
-    // We need to determine if wszAssemblyName is in this list.
-    // If there is a "*" in the list, then all assemblies match.
-
-    const WCHAR * pCur = wszInstrumentedAssemblyNamesList;
-
-    do
-    {
-        _ASSERTE(pCur[0] != W('\0'));
-        const WCHAR * pNextSpace = u16_strchr(pCur, W(' '));
-        _ASSERTE(pNextSpace == NULL || pNextSpace[0] == W(' '));
-
-        if (pCur != pNextSpace)
-        {
-            // pCur is not pointing to a space
-            _ASSERTE(pCur[0] != W(' '));
-
-            if (pCur[0] == W('*') && (pCur[1] == W(' ') || pCur[1] == W('\0')))
-                return true;
-
-            if (pNextSpace == NULL)
-            {
-                // We have reached the last name in the list. There are no more spaces.
-                return (SString::_wcsicmp(wszAssemblyName, pCur) == 0);
-            }
-            else
-            {
-                if (SString::_wcsnicmp(wszAssemblyName, pCur, static_cast<COUNT_T>(pNextSpace - pCur)) == 0)
-                    return true;
-            }
-        }
-
-        pCur = pNextSpace + 1;
-    }
-    while (pCur[0] != W('\0'));
-
-    return false;
-}
-#endif // FEATURE_READYTORUN
-
-
 #ifdef FEATURE_COMINTEROP
 
 ITypeLib * const Assembly::InvalidTypeLib = (ITypeLib *)-1;
@@ -2053,10 +1914,6 @@ Assembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
     else
     {
-        if (m_pDomain.IsValid())
-        {
-            m_pDomain->EnumMemoryRegions(flags, true);
-        }
         if (m_pClassLoader.IsValid())
         {
             m_pClassLoader->EnumMemoryRegions(flags);

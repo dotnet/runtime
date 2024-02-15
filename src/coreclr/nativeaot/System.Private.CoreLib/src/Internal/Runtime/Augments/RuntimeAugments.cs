@@ -33,7 +33,7 @@ using ReflectionPointer = System.Reflection.Pointer;
 
 namespace Internal.Runtime.Augments
 {
-    public static class RuntimeAugments
+    public static unsafe class RuntimeAugments
     {
         /// <summary>
         /// Callbacks used for metadata-based stack trace resolution.
@@ -66,7 +66,7 @@ namespace Internal.Runtime.Augments
         //
         public static object RawNewObject(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhNewObject(typeHandle.ToEETypePtr());
+            return RuntimeImports.RhNewObject(typeHandle.ToMethodTable());
         }
 
         //
@@ -75,8 +75,8 @@ namespace Internal.Runtime.Augments
         public static Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             // Don't make the easy mistake of passing in the element MethodTable rather than the "array of element" MethodTable.
-            Debug.Assert(typeHandleForArrayType.ToEETypePtr().IsSzArray);
-            return RuntimeImports.RhNewArray(typeHandleForArrayType.ToEETypePtr(), count);
+            Debug.Assert(typeHandleForArrayType.ToMethodTable()->IsSzArray);
+            return RuntimeImports.RhNewArray(typeHandleForArrayType.ToMethodTable(), count);
         }
 
         //
@@ -107,8 +107,8 @@ namespace Internal.Runtime.Augments
             {
                 // We just checked above that all lower bounds are zero. In that case, we should actually allocate
                 // a new SzArray instead.
-                Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType))!;
-                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), lengths[0]);
+                Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(typeHandleForArrayType.ToMethodTable()->RelatedParameterType))!;
+                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToMethodTable(), lengths[0]);
             }
 
             // Create a local copy of the lengths that cannot be modified by the caller
@@ -116,12 +116,12 @@ namespace Internal.Runtime.Augments
             for (int i = 0; i < lengths.Length; i++)
                 pImmutableLengths[i] = lengths[i];
 
-            return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pImmutableLengths, lengths.Length);
+            return Array.NewMultiDimArray(typeHandleForArrayType.ToMethodTable(), pImmutableLengths, lengths.Length);
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(type.ToEETypePtr(), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetRuntimeHelperForType(type.ToMethodTable(), RuntimeHelperKind.AllocateObject);
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -134,7 +134,7 @@ namespace Internal.Runtime.Augments
         //
         public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
-            return Delegate.CreateDelegate(typeHandleForDelegate.ToEETypePtr(), ldftnResult, thisObject, isStatic: isStatic, isOpen: isOpen);
+            return Delegate.CreateDelegate(typeHandleForDelegate.ToMethodTable(), ldftnResult, thisObject, isStatic: isStatic, isOpen: isOpen);
         }
 
         //
@@ -143,14 +143,6 @@ namespace Internal.Runtime.Augments
         public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint)
         {
             return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver, out isInterpreterEntrypoint);
-        }
-
-        public static void GetDelegateData(Delegate delegateObj, out object firstParameter, out object helperObject, out IntPtr extraFunctionPointerOrData, out IntPtr functionPointer)
-        {
-            firstParameter = delegateObj.m_firstParameter;
-            helperObject = delegateObj.m_helperObject;
-            extraFunctionPointerOrData = delegateObj.m_extraFunctionPointerOrData;
-            functionPointer = delegateObj.m_functionPointer;
         }
 
         // Low level method that returns the loaded modules as array. ReadOnlySpan returning overload
@@ -177,7 +169,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetPointerFromTypeHandle(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().RawValue;
+            return (IntPtr)typeHandle.ToMethodTable();
         }
 
         public static unsafe TypeManagerHandle GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
@@ -185,51 +177,48 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToMethodTable()->TypeManager;
         }
 
-        public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
+        public static unsafe RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
         {
-            return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));
+            return new RuntimeTypeHandle((MethodTable*)ldTokenResult);
         }
 
         public static unsafe void StoreValueTypeField(IntPtr address, object fieldValue, RuntimeTypeHandle fieldType)
         {
-            RuntimeImports.RhUnbox(fieldValue, ref *(byte*)address, fieldType.ToEETypePtr());
-        }
-
-        public static unsafe ref byte GetRawData(object obj)
-        {
-            return ref obj.GetRawData();
+            RuntimeImports.RhUnbox(fieldValue, ref *(byte*)address, fieldType.ToMethodTable());
         }
 
         public static unsafe object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return RuntimeImports.RhBox(fieldType.ToEETypePtr(), ref *(byte*)address);
+            return RuntimeImports.RhBox(fieldType.ToMethodTable(), ref *(byte*)address);
         }
 
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return ReflectionPointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
-        }
+            if (fieldType.ToMethodTable()->IsFunctionPointer)
+                return *(IntPtr*)address;
 
-        public static unsafe void StoreValueTypeField(ref byte address, object fieldValue, RuntimeTypeHandle fieldType)
-        {
-            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
+            return ReflectionPointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
         }
 
         public static unsafe void StoreValueTypeField(object obj, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
+            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToMethodTable());
         }
 
         public static unsafe object LoadValueTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            return RuntimeImports.RhBox(fieldType.ToEETypePtr(), ref address);
+            return RuntimeImports.RhBox(fieldType.ToMethodTable(), ref address);
         }
 
         public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
+
+            if (fieldType.ToMethodTable()->IsFunctionPointer)
+                return RuntimeImports.RhBox(MethodTable.Of<IntPtr>(), ref address);
+
             return ReflectionPointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
         }
 
@@ -258,24 +247,24 @@ namespace Internal.Runtime.Augments
         [CLSCompliant(false)]
         public static void StoreValueTypeFieldValueIntoValueType(TypedReference typedReference, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldTypeHandle)
         {
-            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
 
-            RuntimeImports.RhUnbox(fieldValue, ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldTypeHandle.ToEETypePtr());
+            RuntimeImports.RhUnbox(fieldValue, ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldTypeHandle.ToMethodTable());
         }
 
         [CLSCompliant(false)]
         public static object LoadValueTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
         {
-            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
-            Debug.Assert(fieldTypeHandle.ToEETypePtr().IsValueType);
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
+            Debug.Assert(fieldTypeHandle.ToMethodTable()->IsValueType);
 
-            return RuntimeImports.RhBox(fieldTypeHandle.ToEETypePtr(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            return RuntimeImports.RhBox(fieldTypeHandle.ToMethodTable(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
         }
 
         [CLSCompliant(false)]
         public static void StoreReferenceTypeFieldValueIntoValueType(TypedReference typedReference, int fieldOffset, object fieldValue)
         {
-            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
 
             Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset)) = fieldValue;
         }
@@ -283,7 +272,7 @@ namespace Internal.Runtime.Augments
         [CLSCompliant(false)]
         public static object LoadReferenceTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset)
         {
-            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
 
             return Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
         }
@@ -291,10 +280,12 @@ namespace Internal.Runtime.Augments
         [CLSCompliant(false)]
         public static unsafe object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
         {
-            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
-            Debug.Assert(fieldTypeHandle.ToEETypePtr().IsPointer);
-
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
             IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+
+            if (fieldTypeHandle.ToMethodTable()->IsFunctionPointer)
+                return ptrValue;
+
             return ReflectionPointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
         }
 
@@ -309,7 +300,7 @@ namespace Internal.Runtime.Augments
             return length / IntPtr.Size;
         }
 
-        public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
+        public static unsafe int ObjectHeaderSize => sizeof(ObjHeader);
 
         public static unsafe void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
         {
@@ -319,9 +310,9 @@ namespace Internal.Runtime.Augments
 
         public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
         {
-            Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);
+            Debug.Assert(enumTypeHandle.ToMethodTable()->IsEnum);
 
-            EETypeElementType elementType = enumTypeHandle.ToEETypePtr().ElementType;
+            EETypeElementType elementType = enumTypeHandle.ToMethodTable()->ElementType;
             switch (elementType)
             {
                 case EETypeElementType.Boolean:
@@ -351,7 +342,7 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
-            EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;
+            MethodTable* elementType = parameterTypeHandle.ToMethodTable()->RelatedParameterType;
             return new RuntimeTypeHandle(elementType);
         }
 
@@ -363,24 +354,17 @@ namespace Internal.Runtime.Augments
 
         public static bool IsValueType(RuntimeTypeHandle type)
         {
-            return type.ToEETypePtr().IsValueType;
+            return type.ToMethodTable()->IsValueType;
         }
 
         public static bool IsInterface(RuntimeTypeHandle type)
         {
-            return type.ToEETypePtr().IsInterface;
+            return type.ToMethodTable()->IsInterface;
         }
 
         public static unsafe object Box(RuntimeTypeHandle type, IntPtr address)
         {
-            return RuntimeImports.RhBox(type.ToEETypePtr(), ref *(byte*)address);
-        }
-
-        // Used to mutate the first parameter in a closed static delegate.  Note that this does no synchronization of any kind;
-        // use only on delegate instances you're sure nobody else is using.
-        public static void SetClosedStaticDelegateFirstParameter(Delegate del, object firstParameter)
-        {
-            del.SetClosedStaticFirstParameter(firstParameter);
+            return RuntimeImports.RhBox(type.ToMethodTable(), ref *(byte*)address);
         }
 
         //==============================================================================================
@@ -404,8 +388,8 @@ namespace Internal.Runtime.Augments
         //
         public static bool IsAssignableFrom(RuntimeTypeHandle dstType, RuntimeTypeHandle srcType)
         {
-            EETypePtr dstEEType = dstType.ToEETypePtr();
-            EETypePtr srcEEType = srcType.ToEETypePtr();
+            MethodTable* dstEEType = dstType.ToMethodTable();
+            MethodTable* srcEEType = srcType.ToMethodTable();
 
             return RuntimeImports.AreTypesAssignable(srcEEType, dstEEType);
         }
@@ -418,42 +402,37 @@ namespace Internal.Runtime.Augments
         //
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
-            EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef || eeType.IsFunctionPointer)
+            MethodTable* eeType = typeHandle.ToMethodTable();
+            if (eeType->IsGenericTypeDefinition || eeType->IsPointer || eeType->IsByRef || eeType->IsFunctionPointer)
             {
                 baseTypeHandle = default(RuntimeTypeHandle);
                 return false;
             }
-            baseTypeHandle = new RuntimeTypeHandle(eeType.BaseType);
+            baseTypeHandle = new RuntimeTypeHandle(eeType->BaseType);
             return true;
         }
 
         public static int GetGCDescSize(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetGCDescSize(typeHandle.ToEETypePtr());
+            return RuntimeImports.RhGetGCDescSize(typeHandle.ToMethodTable());
         }
 
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().Interfaces.Count;
+            return typeHandle.ToMethodTable()->NumInterfaces;
         }
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
         {
-            return new RuntimeTypeHandle(typeHandle.ToEETypePtr().Interfaces[index]);
+            return new RuntimeTypeHandle(typeHandle.ToMethodTable()->InterfaceMap[index]);
         }
 
         public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
         {
-            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(interfaceTypeHandle.ToEETypePtr(), slotNumber);
+            IntPtr cell = RuntimeImports.RhNewInterfaceDispatchCell(interfaceTypeHandle.ToMethodTable(), slotNumber);
             if (cell == IntPtr.Zero)
                 throw new OutOfMemoryException();
             return cell;
-        }
-
-        public static int GetValueTypeSize(RuntimeTypeHandle typeHandle)
-        {
-            return (int)typeHandle.ToEETypePtr().ValueTypeSize;
         }
 
         [Intrinsic]
@@ -465,65 +444,60 @@ namespace Internal.Runtime.Augments
 
         public static RuntimeTypeHandle GetGenericDefinition(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = typeHandle.ToEETypePtr();
-            Debug.Assert(eeType.IsGeneric);
-            return new RuntimeTypeHandle(eeType.GenericDefinition);
+            MethodTable* eeType = typeHandle.ToMethodTable();
+            Debug.Assert(eeType->IsGeneric);
+            return new RuntimeTypeHandle(eeType->GenericDefinition);
         }
 
         public static RuntimeTypeHandle GetGenericArgument(RuntimeTypeHandle typeHandle, int argumentIndex)
         {
-            EETypePtr eeType = typeHandle.ToEETypePtr();
-            Debug.Assert(eeType.IsGeneric);
-            return new RuntimeTypeHandle(eeType.Instantiation[argumentIndex]);
+            MethodTable* eeType = typeHandle.ToMethodTable();
+            Debug.Assert(eeType->IsGeneric);
+            return new RuntimeTypeHandle(eeType->GenericArguments[argumentIndex]);
         }
 
         public static RuntimeTypeHandle GetGenericInstantiation(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
         {
-            EETypePtr eeType = typeHandle.ToEETypePtr();
+            MethodTable* eeType = typeHandle.ToMethodTable();
 
-            Debug.Assert(eeType.IsGeneric);
+            Debug.Assert(eeType->IsGeneric);
 
-            var instantiation = eeType.Instantiation;
-            genericTypeArgumentHandles = new RuntimeTypeHandle[instantiation.Length];
-            for (int i = 0; i < instantiation.Length; i++)
+            MethodTableList instantiation = eeType->GenericArguments;
+            genericTypeArgumentHandles = new RuntimeTypeHandle[eeType->GenericArity];
+            for (int i = 0; i < genericTypeArgumentHandles.Length; i++)
             {
                 genericTypeArgumentHandles[i] = new RuntimeTypeHandle(instantiation[i]);
             }
 
-            return new RuntimeTypeHandle(eeType.GenericDefinition);
+            return new RuntimeTypeHandle(eeType->GenericDefinition);
         }
 
         public static bool IsGenericType(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().IsGeneric;
+            return typeHandle.ToMethodTable()->IsGeneric;
         }
 
         public static bool IsArrayType(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().IsArray;
+            return typeHandle.ToMethodTable()->IsArray;
         }
 
-        public static bool IsByRefLike(RuntimeTypeHandle typeHandle) => typeHandle.ToEETypePtr().IsByRefLike;
+        public static bool IsByRefLike(RuntimeTypeHandle typeHandle) => typeHandle.ToMethodTable()->IsByRefLike;
 
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().IsDynamicType;
+            return typeHandle.ToMethodTable()->IsDynamicType;
         }
 
         public static bool HasCctor(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().HasCctor;
-        }
-
-        public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
-        {
-            return RuntimeImports.RhResolveDispatchOnType(instanceType.ToEETypePtr(), interfaceType.ToEETypePtr(), checked((ushort)slot));
+            return typeHandle.ToMethodTable()->HasCctor;
         }
 
         public static unsafe IntPtr ResolveStaticDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot, out RuntimeTypeHandle genericContext)
         {
-            EETypePtr genericContextPtr = default;
-            IntPtr result = RuntimeImports.RhResolveDispatchOnType(instanceType.ToEETypePtr(), interfaceType.ToEETypePtr(), checked((ushort)slot), &genericContextPtr);
+            MethodTable* genericContextPtr = default;
+            IntPtr result = RuntimeImports.RhResolveDispatchOnType(instanceType.ToMethodTable(), interfaceType.ToMethodTable(), checked((ushort)slot), &genericContextPtr);
             if (result != IntPtr.Zero)
                 genericContext = new RuntimeTypeHandle(genericContextPtr);
             else
@@ -531,19 +505,14 @@ namespace Internal.Runtime.Augments
             return result;
         }
 
-        public static IntPtr ResolveDispatch(object instance, RuntimeTypeHandle interfaceType, int slot)
-        {
-            return RuntimeImports.RhResolveDispatch(instance, interfaceType.ToEETypePtr(), checked((ushort)slot));
-        }
-
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().IsPointer;
+            return typeHandle.ToMethodTable()->IsPointer;
         }
 
         public static bool IsFunctionPointerType(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().IsFunctionPointer;
+            return typeHandle.ToMethodTable()->IsFunctionPointer;
         }
 
         public static unsafe RuntimeTypeHandle GetFunctionPointerReturnType(RuntimeTypeHandle typeHandle)
@@ -585,56 +554,30 @@ namespace Internal.Runtime.Augments
 
         public static bool IsByRefType(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().IsByRef;
+            return typeHandle.ToMethodTable()->IsByRef;
         }
 
         public static bool IsGenericTypeDefinition(RuntimeTypeHandle typeHandle)
         {
-            return typeHandle.ToEETypePtr().IsGenericTypeDefinition;
-        }
-
-        //
-        // This implements the equivalent of the desktop's InvokeUtil::CanPrimitiveWiden() routine.
-        //
-        public static bool CanPrimitiveWiden(RuntimeTypeHandle srcType, RuntimeTypeHandle dstType)
-        {
-            EETypePtr srcEEType = srcType.ToEETypePtr();
-            EETypePtr dstEEType = dstType.ToEETypePtr();
-
-            if (srcEEType.IsGenericTypeDefinition || dstEEType.IsGenericTypeDefinition)
-                return false;
-            if (srcEEType.IsPointer || dstEEType.IsPointer)
-                return false;
-            if (srcEEType.IsFunctionPointer || dstEEType.IsFunctionPointer)
-                return false;
-            if (srcEEType.IsByRef || dstEEType.IsByRef)
-                return false;
-
-            if (!srcEEType.IsPrimitive)
-                return false;
-            if (!dstEEType.IsPrimitive)
-                return false;
-            if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstEEType.CorElementType))
-                return false;
-            return true;
+            return typeHandle.ToMethodTable()->IsGenericTypeDefinition;
         }
 
         public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToMethodTable(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }
 
         // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from
         // the other Reflection api.
         public static object CheckArgumentForDirectFieldAccess(object srcObject, RuntimeTypeHandle dstType)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.SetFieldDirect, binderBundle: null);
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToMethodTable(), InvokeUtils.CheckArgumentSemantics.SetFieldDirect, binderBundle: null);
         }
 
         public static bool IsAssignable(object srcObject, RuntimeTypeHandle dstType)
         {
-            EETypePtr srcEEType = srcObject.GetEETypePtr();
-            return RuntimeImports.AreTypesAssignable(srcEEType, dstType.ToEETypePtr());
+            MethodTable* srcEEType = srcObject.GetMethodTable();
+            return RuntimeImports.AreTypesAssignable(srcEEType, dstType.ToMethodTable());
         }
 
         //==============================================================================================
@@ -642,12 +585,12 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         public static bool IsNullable(RuntimeTypeHandle declaringTypeHandle)
         {
-            return declaringTypeHandle.ToEETypePtr().IsNullable;
+            return declaringTypeHandle.ToMethodTable()->IsNullable;
         }
 
         public static RuntimeTypeHandle GetNullableType(RuntimeTypeHandle nullableType)
         {
-            EETypePtr theT = nullableType.ToEETypePtr().NullableType;
+            MethodTable* theT = nullableType.ToMethodTable()->NullableType;
             return new RuntimeTypeHandle(theT);
         }
 
@@ -690,14 +633,6 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         // Internals
         //==============================================================================================
-
-        internal static TypeLoaderCallbacks TypeLoaderCallbacksIfAvailable
-        {
-            get
-            {
-                return s_typeLoaderCallbacks;
-            }
-        }
 
         internal static TypeLoaderCallbacks TypeLoaderCallbacks
         {
@@ -763,16 +698,6 @@ namespace Internal.Runtime.Augments
             return ((ThunksHeap)thunksHeap).TryGetThunkData(thunkAddress, out context, out target);
         }
 
-        public static int GetThunkSize()
-        {
-            return RuntimeImports.RhpGetThunkSize();
-        }
-
-        public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)
-        {
-            return Delegate.CreateObjectArrayDelegate(delegateType, invoker);
-        }
-
         public static IntPtr RhHandleAlloc(object value, GCHandleType type)
         {
             return RuntimeImports.RhHandleAlloc(value, type);
@@ -781,30 +706,6 @@ namespace Internal.Runtime.Augments
         public static void RhHandleFree(IntPtr handle)
         {
             RuntimeImports.RhHandleFree(handle);
-        }
-
-        public static IntPtr RhpGetCurrentThread()
-        {
-            return RuntimeImports.RhpGetCurrentThread();
-        }
-
-        public static void RhpInitiateThreadAbort(IntPtr thread, bool rude)
-        {
-            Exception ex = new ThreadAbortException();
-            RuntimeImports.RhpInitiateThreadAbort(thread, ex, rude);
-        }
-
-        public static void RhpCancelThreadAbort(IntPtr thread)
-        {
-            RuntimeImports.RhpCancelThreadAbort(thread);
-        }
-
-        public static bool SupportsRelativePointers
-        {
-            get
-            {
-                return Internal.Runtime.MethodTable.SupportsRelativePointers;
-            }
         }
     }
 }

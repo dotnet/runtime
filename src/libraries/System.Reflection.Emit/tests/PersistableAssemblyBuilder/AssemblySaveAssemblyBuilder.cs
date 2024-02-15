@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
                 aName.CultureInfo = new CultureInfo("en");
                 aName.Flags = AssemblyNameFlags.Retargetable;
 
-                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndSaveMethod(aName, null, typeof(string), out MethodInfo saveMethod);
+                AssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(aName);
 
                 ab.SetCustomAttribute(new CustomAttributeBuilder(typeof(AssemblyDelaySignAttribute).GetConstructor([typeof(bool)]), [true]));
 
@@ -134,16 +134,16 @@ namespace System.Reflection.Emit.Tests
                 fb.SetCustomAttribute(cattrb);
                 tbFields.CreateType();
 
-                // Data TODO: not supported yet
-                //module.DefineUninitializedData("data1", 16, FieldAttributes.Public);
-                //module.DefineInitializedData("data2", new byte[] { 1, 2, 3, 4, 5, 6 }, FieldAttributes.Public);
+                // Data
+                module.DefineUninitializedData("Data1", 16, FieldAttributes.Public);
+                module.DefineInitializedData("Data2", new byte[] { 1, 2, 3, 4, 5, 6 }, FieldAttributes.Public);
 
                 // Methods and signatures
                 TypeBuilder tb5 = module.DefineType("TypeMethods", TypeAttributes.Public, typeof(object));
                 // .ctor
                 var cmodsReq1 = new Type[] { typeof(object) };
                 var cmodsOpt1 = new Type[] { typeof(int) };
-                var ctorb = tb5.DefineConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName, CallingConventions.HasThis, [typeof(int), typeof(object)], new Type[][] { cmodsReq1, null }, new Type[][] { cmodsOpt1, null });
+                var ctorb = tb5.DefineConstructor(MethodAttributes.Public | MethodAttributes.RTSpecialName, CallingConventions.HasThis, [typeof(int), typeof(object)], [cmodsReq1, null], [cmodsOpt1, null]);
                 ctorb.SetImplementationFlags(MethodImplAttributes.NoInlining);
                 ctorb.GetILGenerator().Emit(OpCodes.Ret);
                 // Parameters
@@ -156,7 +156,7 @@ namespace System.Reflection.Emit.Tests
                 var ctorb2 = tb5.DefineConstructor(MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.RTSpecialName, CallingConventions.Standard, [typeof(int), typeof(object)]);
                 ctorb2.GetILGenerator().Emit(OpCodes.Ret);
                 // method
-                var mb = tb5.DefineMethod("Method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), cmodsReq1, cmodsOpt1, [typeof(int), typeof(object)], new Type[][] { cmodsReq1, null }, new Type[][] { cmodsOpt1, null });
+                var mb = tb5.DefineMethod("Method1", MethodAttributes.Public, CallingConventions.Standard, typeof(int), cmodsReq1, cmodsOpt1, [typeof(int), typeof(object)], [cmodsReq1, null], [cmodsOpt1, null]);
                 mb.SetImplementationFlags(MethodImplAttributes.NoInlining);
                 mb.GetILGenerator().Emit(OpCodes.Ldc_I4_0);
                 mb.GetILGenerator().Emit(OpCodes.Ret);
@@ -213,10 +213,12 @@ namespace System.Reflection.Emit.Tests
                 eventb.SetRemoveOnMethod(mbRemove);
                 tbEvents.CreateType();
 
-                saveMethod.Invoke(ab, [file.Path]);
+                ab.Save(file.Path);
 
-                Assembly assemblyFromDisk = AssemblySaveTools.LoadAssemblyFromPath(file.Path);
-                CheckAssembly(assemblyFromDisk);
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    CheckAssembly(mlc.LoadFromAssemblyPath(file.Path));
+                }
             }
         }
 
@@ -322,14 +324,14 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(42, field.GetRawConstantValue());
             field = type4.GetField("FieldOffset");
             Assert.NotNull(field);
-            /* TODO: Not supported yet
+            
             field = type4.GetField("FieldModopt");
             var cmods = field.GetRequiredCustomModifiers();
             Assert.Equal(1, cmods.Length);
-            Assert.Equal(typeof(int), cmods[0]);
+            Assert.Equal(typeof(int).FullName, cmods[0].FullName);
             cmods = field.GetOptionalCustomModifiers();
             Assert.Equal(1, cmods.Length);
-            Assert.Equal(typeof(uint), cmods[0]);*/
+            Assert.Equal(typeof(uint).FullName, cmods[0].FullName);
             // Simple marshal
             field = type4.GetField("FieldMarshal1");
             CheckMarshallAttribute(field.GetCustomAttributesData(), UnmanagedType.U4);
@@ -347,11 +349,11 @@ namespace System.Reflection.Emit.Tests
             field = type4.GetField("FieldCAttr");
             CheckCattr(field.GetCustomAttributesData());
 
-            // TODO: Global fields
-            /*field = a.ManifestModule.GetField("Data1");
+            // Global fields
+            field = a.ManifestModule.GetField("Data1");
             Assert.NotNull(field);
             field = a.ManifestModule.GetField("Data2");
-            Assert.NotNull(field);*/
+            Assert.NotNull(field);
 
             // Methods and signatures
             var typeMethods = a.GetType("TypeMethods");
@@ -367,13 +369,12 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(int).FullName, parameters[0].ParameterType.FullName);
             Assert.Equal(16, parameters[0].RawDefaultValue);
             CheckCattr(parameters[0].GetCustomAttributesData());
-            /* TODO: Not supported yet
             cmods = parameters[0].GetRequiredCustomModifiers();
             Assert.Equal(1, cmods.Length);
-            Assert.Equal(typeof(object), cmods[0]);
+            Assert.Equal(typeof(object).FullName, cmods[0].FullName);
             cmods = parameters[0].GetOptionalCustomModifiers();
             Assert.Equal(1, cmods.Length);
-            Assert.Equal(typeof(int), cmods[0]);*/
+            Assert.Equal(typeof(int).FullName, cmods[0].FullName);
             Assert.Equal("param2", parameters[1].Name);
             Assert.Equal(ParameterAttributes.Out | ParameterAttributes.HasFieldMarshal, parameters[1].Attributes);
             Assert.Equal(typeof(object).FullName, parameters[1].ParameterType.FullName);
@@ -412,12 +413,12 @@ namespace System.Reflection.Emit.Tests
 
             // return type
             var rparam = method.ReturnParameter;
-            /*cmods = rparam.GetRequiredCustomModifiers();
+            cmods = rparam.GetRequiredCustomModifiers();
             Assert.Equal(1, cmods.Length);
-            Assert.Equal(typeof(object), cmods[0]);
+            Assert.Equal(typeof(object).FullName, cmods[0].FullName);
             cmods = rparam.GetOptionalCustomModifiers();
             Assert.Equal(1, cmods.Length);
-            Assert.Equal(typeof(int), cmods[0]);*/
+            Assert.Equal(typeof(int).FullName, cmods[0].FullName);
             CheckMarshallAttribute(rparam.GetCustomAttributesData(), UnmanagedType.U4);
             CheckCattr(rparam.GetCustomAttributesData());
 

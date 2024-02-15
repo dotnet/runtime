@@ -361,6 +361,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                 break;
             case GlobalizationMode.Hybrid:
                 expected.Add("icudt_hybrid.dat");
+                expected.Add("segmentation-rules.json");
                 break;
             case GlobalizationMode.PredefinedIcu:
                 if (string.IsNullOrEmpty(assertOptions.PredefinedIcudt))
@@ -380,9 +381,17 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         }
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
-        AssertFilesOnDisk(expected, actual);
+        if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
+            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
+        AssertFileNames(expected, actual);
         if (assertOptions.GlobalizationMode is GlobalizationMode.PredefinedIcu)
-            TestUtils.AssertSameFile(assertOptions.PredefinedIcudt!, actual.Single());
+        {
+            string srcPath = assertOptions.PredefinedIcudt!;
+            string runtimePackDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(assertOptions.TargetFramework, assertOptions.RuntimeType);
+            if (!Path.IsPathRooted(srcPath))
+                srcPath = Path.Combine(runtimePackDir, assertOptions.PredefinedIcudt!);
+            TestUtils.AssertSameFile(srcPath, actual.Single());
+        }
     }
 
     public void AssertBootJson(AssertBundleOptionsBase options)
@@ -467,7 +476,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return config;
     }
 
-    private void AssertFilesOnDisk(IEnumerable<string> expected, IEnumerable<string> actual)
+    private void AssertFileNames(IEnumerable<string> expected, IEnumerable<string> actual)
     {
         expected = expected.Order().Select(f => Path.GetFileName(f)).Distinct();
         var actualFileNames = actual.Order().Select(f => Path.GetFileName(f));

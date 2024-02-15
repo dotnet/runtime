@@ -189,10 +189,6 @@ size_t printClassName(
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;
 
-CorInfoInlineTypeCheck canInlineTypeCheck(
-          CORINFO_CLASS_HANDLE cls,
-          CorInfoInlineTypeCheckSource source) override;
-
 uint32_t getClassAttribs(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -342,6 +338,9 @@ bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
 
+bool isExactType(
+          CORINFO_CLASS_HANDLE cls) override;
+
 TypeCompareState isEnum(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CLASS_HANDLE* underlyingType) override;
@@ -401,6 +400,9 @@ uint32_t getThreadLocalFieldInfo(
 void getThreadLocalStaticBlocksInfo(
           CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
           bool isGCType) override;
+
+void getThreadLocalStaticInfo_NativeAOT(
+          CORINFO_THREAD_STATIC_INFO_NATIVEAOT* pInfo) override;
 
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;

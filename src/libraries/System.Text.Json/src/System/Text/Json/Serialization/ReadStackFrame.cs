@@ -21,7 +21,7 @@ namespace System.Text.Json
         public bool UseExtensionProperty;
 
         // Support JSON Path on exceptions and non-string Dictionary keys.
-        // This is Utf8 since we don't want to convert to string until an exception is thown.
+        // This is Utf8 since we don't want to convert to string until an exception is thrown.
         // For dictionary keys we don't want to convert to TKey until we have both key and value when parsing the dictionary elements on stream cases.
         public byte[]? JsonPropertyName;
         public string? JsonPropertyNameAsString; // This is used for string dictionary keys and re-entry cases that specify a property name.
@@ -29,9 +29,15 @@ namespace System.Text.Json
         // Stores the non-string dictionary keys for continuation.
         public object? DictionaryKey;
 
-#if DEBUG
-        // Validation state.
+        /// <summary>
+        /// Records the Utf8JsonReader Depth at the start of the current value.
+        /// </summary>
         public int OriginalDepth;
+#if DEBUG
+        /// <summary>
+        /// Records the Utf8JsonReader TokenType at the start of the current value.
+        /// Only used to validate debug builds.
+        /// </summary>
         public JsonTokenType OriginalTokenType;
 #endif
 
@@ -69,7 +75,7 @@ namespace System.Text.Json
 
         // Represents required properties which have value assigned.
         // Each bit corresponds to a required property.
-        // False means that property is not set (not yet occured in the payload).
+        // False means that property is not set (not yet occurred in the payload).
         // Length of the BitArray is equal to number of required properties.
         // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
         public BitArray? RequiredPropertiesSet;

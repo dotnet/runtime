@@ -44,7 +44,9 @@ namespace ILCompiler.ObjectWriter
         public const uint SHT_PREINIT_ARRAY = 16;
         public const uint SHT_GROUP = 17;
         public const uint SHT_SYMTAB_SHNDX = 18;
-        public const uint SHT_IA_64_UNWIND = 1879048193;
+        public const uint SHT_IA_64_UNWIND = 0x70000001;
+        public const uint SHT_ARM_EXIDX = 0x70000001;
+        public const uint SHT_ARM_ATTRIBUTES = 0x70000003;
 
         // Section header flags
         public const uint SHF_WRITE = 1;
@@ -182,7 +184,7 @@ namespace ILCompiler.ObjectWriter
         public const uint R_ARM_THM_ABS5 = 7;
         public const uint R_ARM_ABS8 = 8;
         public const uint R_ARM_SBREL32 = 9;
-        public const uint R_ARM_THM_PC22 = 10;
+        public const uint R_ARM_THM_CALL = 10;
         public const uint R_ARM_THM_PC8 = 11;
         public const uint R_ARM_AMP_VCALL9 = 12;
         public const uint R_ARM_SWI24 = 13;

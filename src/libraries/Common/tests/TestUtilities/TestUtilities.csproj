@@ -108,8 +108,6 @@
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
-    <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibraryVersion)" />
     <!-- Use the arcade fork of xunit.assert for AOT-compat -->
     <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" />
   </ItemGroup>

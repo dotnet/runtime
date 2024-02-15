@@ -78,7 +78,7 @@ namespace ILCompiler.ObjectWriter
             IBufferWriter<byte> bufferWriter = _sectionData.BufferWriter;
             int size = relocType == RelocType.IMAGE_REL_BASED_DIR64 ? sizeof(ulong) : sizeof(uint);
             Span<byte> buffer = bufferWriter.GetSpan(size);
-            buffer.Clear();
+            buffer.Slice(0, size).Clear();
             _objectWriter.EmitRelocation(
                 SectionIndex,
                 Position,

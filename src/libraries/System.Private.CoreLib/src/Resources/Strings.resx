@@ -257,7 +257,7 @@
     <value>Must specify property Set or Get or method call for a COM Object.</value>
   </data>
   <data name="Arg_COMException" xml:space="preserve">
-    <value>Error HRESULT E_FAIL has been returned from a call to a COM component.</value>
+    <value>Unexpected HRESULT has been returned from a call to a COM component.</value>
   </data>
   <data name="Arg_COMPropSetPut" xml:space="preserve">
     <value>Only one of the following binding flags can be set: BindingFlags.SetProperty, BindingFlags.PutDispProperty,  BindingFlags.PutRefDispProperty.</value>
@@ -273,6 +273,12 @@
   </data>
   <data name="Arg_CustomAttributeFormatException" xml:space="preserve">
     <value>Binary format of the specified custom attribute was invalid.</value>
+  </data>
+  <data name="Arg_CustomAttributeUnknownNamedArgument" xml:space="preserve">
+    <value>Known custom attribute named arg not recognized.</value>
+  </data>
+  <data name="Arg_CustomAttributeDuplicateNamedArgument" xml:space="preserve">
+    <value>Known custom attribute blob has repeated named argument.</value>
   </data>
   <data name="Arg_DataMisalignedException" xml:space="preserve">
     <value>A datatype misalignment was detected in a load or store instruction.</value>
@@ -1641,6 +1647,9 @@
   </data>
   <data name="Argument_WaitHandleNameTooLong" xml:space="preserve">
     <value>The length of the name exceeds the maximum limit.</value>
+  </data>
+  <data name="Argument_WrongSizeArrayInNativeStruct" xml:space="preserve">
+    <value>Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout.</value>
   </data>
   <data name="ArgumentException_BadMethodImplBody" xml:space="preserve">
     <value>MethodOverride's body must be from this type.</value>
@@ -3527,6 +3536,9 @@
   <data name="Task_WaitMulti_NullTask" xml:space="preserve">
     <value>The tasks array included at least one null element.</value>
   </data>
+  <data name="Task_MustBeCompleted" xml:space="preserve">
+    <value>The provided task must have already completed.</value>
+  </data>
   <data name="TaskT_ConfigureAwait_InvalidOptions" xml:space="preserve">
     <value>Task&lt;TResult&gt;.ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing. To suppress throwing, instead cast the Task&lt;TResult&gt; to its base class Task and await that with SuppressThrowing.</value>
   </data>
@@ -4100,6 +4112,9 @@
   <data name="PlatformNotSupported_HybridGlobalization" xml:space="preserve">
     <value>{0} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
+  <data name="PlatformNotSupportedWithReason_HybridGlobalization" xml:space="preserve">
+    <value>{0} is not supported for {1}, when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
   <data name="NotSupported_BodyRemoved" xml:space="preserve">
     <value>The body of this method was removed by the AOT compiler because it's not callable.</value>
   </data>
@@ -4282,5 +4297,14 @@
   </data>
   <data name="Reflection_Disabled" xml:space="preserve">
     <value>This operation is not available because the reflection support was disabled at compile time.</value>
+  </data>
+  <data name="RFLCT_CannotSetInitonlyStaticField" xml:space="preserve">
+    <value>Cannot set initonly static field '{0}' after type '{1}' is initialized.</value>
+  </data>
+  <data name="NotSupported_AssemblySave" xml:space="preserve">
+    <value>This AssemblyBuilder instance doesn't support saving. Use AssemblyBuilder.DefinePersistedAssembly to create an AssemblyBuilder instance that supports saving.</value>
+  </data>
+  <data name="WasmThreads_BlockingWaitNotSupportedOnJSInterop" xml:space="preserve">
+    <value>Blocking wait is not supported on the JS interop threads.</value>
   </data>
 </root>

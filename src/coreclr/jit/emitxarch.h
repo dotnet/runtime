@@ -65,6 +65,7 @@ UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code, int val);
 
+BYTE* emitOutputData16(BYTE* dst);
 BYTE* emitOutputNOP(BYTE* dst, size_t nBytes);
 BYTE* emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst);
 BYTE* emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc = nullptr);
@@ -105,7 +106,6 @@ unsigned insSSval(unsigned scale);
 
 static bool IsSSEInstruction(instruction ins);
 static bool IsSSEOrAVXInstruction(instruction ins);
-static bool IsAvx512OrPriorInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
@@ -156,6 +156,8 @@ bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
+
+insOpts GetEmbRoundingMode(uint8_t mode) const;
 
 bool hasRexPrefix(code_t code)
 {
@@ -336,6 +338,50 @@ code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
 }
 
 //------------------------------------------------------------------------
+// SetEvexBroadcastIfNeeded: set embedded broadcast if needed.
+//
+// Arguments:
+//    id - instruction descriptor
+//    instOptions - emit options
+void SetEvexBroadcastIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) == INS_OPTS_EVEX_eb_er_rd)
+    {
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetEvexEmbMaskIfNeeded: set embedded mask if needed.
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_EVEX_aaa_MASK) != 0)
+    {
+        assert(UseEvexEncoding());
+        id->idSetEvexAaaContext(instOptions);
+
+        if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
+        {
+            id->idSetEvexZContext();
+        }
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
 // AddSimdPrefixIfNeeded: Add the correct SIMD prefix.
 // Check if the prefix already exists befpre adding.
 //
@@ -420,6 +466,16 @@ bool Contains256bitOrMoreAVX() const
 void SetContains256bitOrMoreAVX(bool value)
 {
     contains256bitOrMoreAVXInstruction = value;
+}
+
+bool containsCallNeedingVzeroupper = false;
+bool ContainsCallNeedingVzeroupper() const
+{
+    return containsCallNeedingVzeroupper;
+}
+void SetContainsCallNeedingVzeroupper(bool value)
+{
+    containsCallNeedingVzeroupper = value;
 }
 
 bool IsDstDstSrcAVXInstruction(instruction ins) const;
@@ -562,6 +618,8 @@ void emitInsRMW(instruction inst, emitAttr attr, GenTreeStoreInd* storeInd);
 
 void emitIns_Nop(unsigned size);
 
+void emitIns_Data16();
+
 void emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
@@ -627,7 +685,12 @@ void emitIns_R_R_S(instruction ins,
                    int         offs,
                    insOpts     instOptions = INS_OPTS_NONE);
 
-void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3);
+void emitIns_R_R_R(instruction ins,
+                   emitAttr    attr,
+                   regNumber   reg1,
+                   regNumber   reg2,
+                   regNumber   reg3,
+                   insOpts     instOptions = INS_OPTS_NONE);
 
 void emitIns_R_R_A_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, int ival, insFormat fmt);
@@ -738,7 +801,12 @@ void emitIns_SIMD_R_R_C(instruction          ins,
                         CORINFO_FIELD_HANDLE fldHnd,
                         int                  offs,
                         insOpts              instOptions = INS_OPTS_NONE);
-void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg);
+void emitIns_SIMD_R_R_R(instruction ins,
+                        emitAttr    attr,
+                        regNumber   targetReg,
+                        regNumber   op1Reg,
+                        regNumber   op2Reg,
+                        insOpts     instOptions = INS_OPTS_NONE);
 void emitIns_SIMD_R_R_S(instruction ins,
                         emitAttr    attr,
                         regNumber   targetReg,
@@ -897,7 +965,7 @@ inline bool emitIsUncondJump(instrDesc* jmp)
 //
 inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 {
-    return id->idIsEvexbContext();
+    return id->idIsEvexbContextSet();
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;

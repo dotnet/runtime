@@ -334,6 +334,13 @@ typedef struct _CONTEXT {
     void SetArg1Reg(uintptr_t val) { Edx = val; }
     uintptr_t GetIp() { return Eip; }
     uintptr_t GetSp() { return Esp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint32_t* pReg = &Eax; pReg < &Eip; pReg++)
+            lambda((size_t*)pReg);
+    }
 } CONTEXT, *PCONTEXT;
 #include "poppack.h"
 

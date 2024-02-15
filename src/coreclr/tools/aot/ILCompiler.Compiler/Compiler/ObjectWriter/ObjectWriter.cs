@@ -12,6 +12,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 using Internal.TypeSystem.TypesDebugInfo;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
+using static ILCompiler.DependencyAnalysis.RelocType;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -144,7 +145,7 @@ namespace ILCompiler.ObjectWriter
             return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
         }
 
-        private void EmitOrResolveRelocation(
+        private unsafe void EmitOrResolveRelocation(
             int sectionIndex,
             long offset,
             Span<byte> data,
@@ -153,32 +154,50 @@ namespace ILCompiler.ObjectWriter
             long addend)
         {
             if (!_usesSubsectionsViaSymbols &&
-                relocType is RelocType.IMAGE_REL_BASED_REL32 or RelocType.IMAGE_REL_BASED_RELPTR32 or RelocType.IMAGE_REL_BASED_ARM64_BRANCH26 &&
+                relocType is IMAGE_REL_BASED_REL32 or IMAGE_REL_BASED_RELPTR32 or IMAGE_REL_BASED_ARM64_BRANCH26
+                or IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL &&
                 _definedSymbols.TryGetValue(symbolName, out SymbolDefinition definedSymbol) &&
                 definedSymbol.SectionIndex == sectionIndex)
             {
                 // Resolve the relocation to already defined symbol and write it into data
-                switch (relocType)
+                fixed (byte *pData = data)
                 {
-                    case RelocType.IMAGE_REL_BASED_REL32:
-                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
-                        addend -= 4;
-                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
-                        return;
+                    // RyuJIT generates the Thumb bit in the addend and we also get it from
+                    // the symbol value. The AAELF ABI specification defines the R_ARM_THM_JUMP24
+                    // and R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) – P.
+                    // The thumb bit is thus supposed to be only added once.
+                    // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
+                    long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
+                    long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
+                    long adjustedAddend = addend;
 
-                    case RelocType.IMAGE_REL_BASED_RELPTR32:
-                        addend += BinaryPrimitives.ReadInt32LittleEndian(data);
-                        BinaryPrimitives.WriteInt32LittleEndian(data, (int)(definedSymbol.Value - offset) + (int)addend);
-                        return;
+                    adjustedAddend -= relocType switch
+                    {
+                        IMAGE_REL_BASED_REL32 => 4,
+                        IMAGE_REL_BASED_THUMB_BRANCH24 => 4,
+                        IMAGE_REL_BASED_THUMB_MOV32_PCREL => 12,
+                        _ => 0
+                    };
 
-                    case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
-                        var ins = BinaryPrimitives.ReadUInt32LittleEndian(data) & 0xFC000000;
-                        BinaryPrimitives.WriteUInt32LittleEndian(data, (((uint)(int)(definedSymbol.Value - offset) >> 2) & 0x3FFFFFF) | ins);
-                        return;
+                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
+                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
+                    adjustedAddend -= offset;
+
+                    if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
+                    {
+                        EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+                    }
+                    else
+                    {
+                        Relocation.WriteValue(relocType, (void*)pData, adjustedAddend);
+                    }
                 }
             }
-
-            EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+            else
+            {
+                EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
+            }
         }
 
         /// <summary>
@@ -319,6 +338,13 @@ namespace ILCompiler.ObjectWriter
             INodeWithDebugInfo debugNode,
             bool hasSequencePoints);
 
+        private protected virtual void EmitDebugThunkInfo(
+            string methodName,
+            SymbolDefinition methodSymbol,
+            INodeWithDebugInfo debugNode)
+        {
+        }
+
         private protected abstract void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols);
 
         private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
@@ -386,19 +412,20 @@ namespace ILCompiler.ObjectWriter
 
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
+                bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
+                long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
-                    bool isMethod = n.Offset == 0 && node is IMethodNode or AssemblyStubNode;
                     sectionWriter.EmitSymbolDefinition(
                         n == node ? currentSymbolName : GetMangledName(n),
-                        n.Offset,
-                        isMethod ? nodeContents.Data.Length : 0);
+                        n.Offset + thumbBit,
+                        n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0);
                     if (_nodeFactory.GetSymbolAlternateName(n) is string alternateName)
                     {
                         sectionWriter.EmitSymbolDefinition(
                             ExternCName(alternateName),
-                            n.Offset,
-                            isMethod ? nodeContents.Data.Length : 0,
+                            n.Offset + thumbBit,
+                            n.Offset == 0 && isMethod ? nodeContents.Data.Length : 0,
                             global: true);
                     }
                 }
@@ -470,15 +497,21 @@ namespace ILCompiler.ObjectWriter
                         _userDefinedTypeDescriptor.GetTypeIndex(methodTable.Type, needsCompleteType: true);
                     }
 
-                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode and IMethodNode methodNode)
+                    if (node is INodeWithDebugInfo debugNode and ISymbolDefinitionNode symbolDefinitionNode)
                     {
-                        bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
-                        uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
                         string methodName = GetMangledName(symbolDefinitionNode);
-
                         if (_definedSymbols.TryGetValue(methodName, out var methodSymbol))
                         {
-                            EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            if (node is IMethodNode methodNode)
+                            {
+                                bool hasSequencePoints = debugNode.GetNativeSequencePoints().Any();
+                                uint methodTypeIndex = hasSequencePoints ? _userDefinedTypeDescriptor.GetMethodFunctionIdTypeIndex(methodNode.Method) : 0;
+                                EmitDebugFunctionInfo(methodTypeIndex, methodName, methodSymbol, debugNode, hasSequencePoints);
+                            }
+                            else
+                            {
+                                EmitDebugThunkInfo(methodName, methodSymbol, debugNode);
+                            }
                         }
                     }
                 }

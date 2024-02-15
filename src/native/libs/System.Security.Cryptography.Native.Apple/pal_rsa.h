@@ -32,6 +32,14 @@ PALEXPORT int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
                                                    CFErrorRef* pErrorOut);
 
 /*
+Decrypt the contents of pbData using the provided privateKey without validating or removing padding.
+
+Follows pal_seckey return conventions.
+*/
+PALEXPORT int32_t AppleCryptoNative_RsaDecryptRaw(
+    SecKeyRef privateKey, uint8_t* pbData, int32_t cbData, CFDataRef* pDecryptedOut, CFErrorRef* pErrorOut);
+
+/*
 Decrypt the contents of pbData using the provided privateKey under PKCS#1 padding.
 
 Follows pal_seckey return conventions.

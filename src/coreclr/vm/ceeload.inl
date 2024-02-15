@@ -463,14 +463,14 @@ inline MethodTable* Module::GetDynamicClassMT(DWORD dynamicClassID)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(m_cDynamicEntries > dynamicClassID);
-    return m_pDynamicStaticsInfo[dynamicClassID].pEnclosingMT;
+    return VolatileLoadWithoutBarrier(&m_pDynamicStaticsInfo)[dynamicClassID].pEnclosingMT;
 }
 
 #ifdef FEATURE_CODE_VERSIONING
 inline CodeVersionManager * Module::GetCodeVersionManager()
 {
     LIMITED_METHOD_CONTRACT;
-    return GetDomain()->GetCodeVersionManager();
+    return AppDomain::GetCurrentDomain()->GetCodeVersionManager();
 }
 #endif // FEATURE_CODE_VERSIONING
 

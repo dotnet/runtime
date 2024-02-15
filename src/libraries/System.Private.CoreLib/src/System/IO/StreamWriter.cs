@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -27,7 +28,7 @@ namespace System.IO
         private const int MinBufferSize = 128;
 
         // Bit bucket - Null has no backing store. Non closable.
-        public static new readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, leaveOpen: true);
+        public static new readonly StreamWriter Null = new NullStreamWriter();
 
         private readonly Stream _stream;
         private readonly Encoding _encoding;
@@ -157,6 +158,15 @@ namespace System.IO
         public StreamWriter(string path, Encoding encoding, FileStreamOptions options)
             : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, DefaultFileStreamBufferSize)
         {
+        }
+
+        private StreamWriter()
+        {
+            Debug.Assert(GetType() == typeof(NullStreamWriter));
+            _stream = Stream.Null;
+            _encoding = UTF8NoBOM;
+            _encoder = null!;
+            _charBuffer = Array.Empty<char>();
         }
 
         private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
@@ -972,6 +982,73 @@ namespace System.IO
             }
 
             void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_WriterClosed);
+        }
+
+        private sealed class NullStreamWriter : StreamWriter
+        {
+            public override bool AutoFlush { get => false; set { } }
+            [AllowNull]
+            public override string NewLine { get => base.NewLine; set { } }
+            public override IFormatProvider FormatProvider => CultureInfo.InvariantCulture;
+
+            // To avoid all unnecessary overhead in the base, and to ensure StreamWriter's uninitialized state is never touched,
+            // override all methods as pure nops.
+            public override void Close() { }
+            protected override void Dispose(bool disposing) { }
+            public override ValueTask DisposeAsync() => default;
+            public override void Flush() { }
+            public override Task FlushAsync() => Task.CompletedTask;
+            public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public override void Write(char value) { }
+            public override void Write(char[]? buffer) { }
+            public override void Write(char[] buffer, int index, int count) { }
+            public override void Write(ReadOnlySpan<char> buffer) { }
+            public override void Write(bool value) { }
+            public override void Write(int value) { }
+            public override void Write(uint value) { }
+            public override void Write(long value) { }
+            public override void Write(ulong value) { }
+            public override void Write(float value) { }
+            public override void Write(double value) { }
+            public override void Write(decimal value) { }
+            public override void Write(string? value) { }
+            public override void Write(object? value) { }
+            public override void Write(StringBuilder? value) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override Task WriteAsync(char value) => Task.CompletedTask;
+            public override Task WriteAsync(string? value) => Task.CompletedTask;
+            public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteAsync(char[] buffer, int index, int count) => Task.CompletedTask;
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override void WriteLine() { }
+            public override void WriteLine(char value) { }
+            public override void WriteLine(char[]? buffer) { }
+            public override void WriteLine(char[] buffer, int index, int count) { }
+            public override void WriteLine(ReadOnlySpan<char> buffer) { }
+            public override void WriteLine(bool value) { }
+            public override void WriteLine(int value) { }
+            public override void WriteLine(uint value) { }
+            public override void WriteLine(long value) { }
+            public override void WriteLine(ulong value) { }
+            public override void WriteLine(float value) { }
+            public override void WriteLine(double value) { }
+            public override void WriteLine(decimal value) { }
+            public override void WriteLine(string? value) { }
+            public override void WriteLine(StringBuilder? value) { }
+            public override void WriteLine(object? value) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override Task WriteLineAsync(char value) => Task.CompletedTask;
+            public override Task WriteLineAsync(string? value) => Task.CompletedTask;
+            public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteLineAsync(char[] buffer, int index, int count) => Task.CompletedTask;
+            public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteLineAsync() => Task.CompletedTask;
         }
     }
 }

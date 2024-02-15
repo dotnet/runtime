@@ -1,0 +1,109 @@
+<!-- Whenever altering this or other SourceBuild* files, please include @dotnet/source-build-internal as a reviewer. -->
+
+<Project>
+
+  <PropertyGroup>
+    <GitHubRepositoryName>runtime</GitHubRepositoryName>
+
+    <BaseInnerSourceBuildCommand Condition="'$(OS)' == 'Windows_NT'">.\build.cmd</BaseInnerSourceBuildCommand>
+    <BaseInnerSourceBuildCommand Condition="'$(OS)' != 'Windows_NT'">./build.sh</BaseInnerSourceBuildCommand>
+
+    <_hostRid>$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
+    <!-- TargetRid names what gets built. -->
+    <TargetRid Condition="'$(TargetRid)' == ''">$(_hostRid)</TargetRid>
+
+    <!-- Split e.g. 'fedora.33-x64' into 'fedora.33' and 'x64'. -->
+    <_targetRidPlatformIndex>$(TargetRid.LastIndexOf('-'))</_targetRidPlatformIndex>
+    <TargetArch>$(TargetRid.Substring($(_targetRidPlatformIndex)).TrimStart('-'))</TargetArch>
+    <TargetOS>$(TargetRid.Substring(0, $(_targetRidPlatformIndex)))</TargetOS>
+
+    <_hostRidPlatformIndex>$(_hostRid.LastIndexOf('-'))</_hostRidPlatformIndex>
+    <_hostArch>$(_hostRid.Substring($(_hostRidPlatformIndex)).TrimStart('-'))</_hostArch>
+
+    <LogVerbosity Condition="'$(LogVerbosity)' == ''">minimal</LogVerbosity>
+  </PropertyGroup>
+
+  <PropertyGroup Label="ShortStacks">
+    <ShortStack Condition="'$(TargetOS)' == 'wasi'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'browser'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'ios'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'iossimulator'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'tvos'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'tvossimulator'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'maccatalyst'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'android'">true</ShortStack>
+    <ShortStack Condition="'$(TargetOS)' == 'linux-bionic'">true</ShortStack>
+  </PropertyGroup>
+
+  <Target Name="GetRuntimeSourceBuildCommandConfiguration"
+          BeforeTargets="GetSourceBuildCommandConfiguration">
+    <PropertyGroup>
+      <!-- Properties that control the source-build configuration should be added to the repository and guarded with the DotNetBuildFromSource Condition.
+           This allows to build the repository using './build.sh <args> /p:DotNetBuildFromSource=true'.
+           Properties that control flags from source-build, and the expected output for source-build should be added to this file. -->
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)arch $(TargetArch)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildSourceOnly)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)os $(TargetOS)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(TargetArch)' != '$(_hostArch)' and '$(ShortStack)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)cross</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)configuration $(Configuration)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(ShortStack)' != 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)allconfigurations</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)verbosity $(LogVerbosity)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)nodereuse $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
+      <InnerBuildArgs>$(InnerBuildArgs) $(FlagParameterPrefix)warnAsError $(ArcadeFalseBoolBuildArg)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)usemonoruntime</InnerBuildArgs>
+      <!-- TODO: This parameter is only available on the Unix script. Intentional? -->
+      <InnerBuildArgs Condition="'$(OS)' != 'Windows_NT'">$(InnerBuildArgs) --outputrid $(TargetRid)</InnerBuildArgs>
+      <!-- PackageOS and ToolsOS control the rids of prebuilts consumed by the build.
+           They are set to RuntimeOS so they match with the build SDK rid. -->
+      <InnerBuildArgs Condition="'$(RuntimeOS)' != ''">$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS) /p:ToolsOS=$(RuntimeOS)</InnerBuildArgs>
+      <!-- BaseOS is an expected known rid in the graph that TargetRid is compatible with.
+           It's used to add TargetRid in the graph if the parent can't be detected. -->
+      <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
+      <!-- Pass through special build modes controlled by properties -->
+      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeWasmEnableThreads)' == 'true'">$(InnerBuildArgs) /p:WasmEnableThreads=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildRuntimeNativeAOTRuntimePack)' == 'true'">$(InnerBuildArgs) $(FlagParameterPrefix)s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true</InnerBuildArgs>
+
+      <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overriden above -->
+      <InnerBuildArgs Condition="'$(ArcadeBuildFromSource)' == 'true'">$(InnerBuildArgs) /p:ArcadeBuildFromSource=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(ArcadeBuildVertical)' == 'true'">$(InnerBuildArgs) /p:ArcadeBuildVertical=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(RestoreConfigFile)' != ''">$(InnerBuildArgs) /p:RestoreConfigFile=$(RestoreConfigFile)</InnerBuildArgs>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CategorizeRuntimeSupplementalArtifacts"
+          BeforeTargets="GetCategorizedIntermediateNupkgContents">
+    <PropertyGroup>
+      <!-- Symbols archive is too big for main intermediate package, add it to a different one. -->
+      <SymbolsIntermediateNupkgCategory>runtime</SymbolsIntermediateNupkgCategory>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!--
+        Runtime artifacts are too large to fit into a single package (Azure DevOps feeds 500 mb constraint).
+        Split large components into separate packages.
+      -->
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-runtime-*$(ArchiveExtension)" Category="runtime" />
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*Microsoft.DotNet.ILCompiler.*.nupkg" Category="ILCompiler" />
+
+      <IntermediateNupkgArtifactFile
+        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\Microsoft.NETCore.App.Crossgen2.*.nupkg"
+        Category="Crossgen2Pack" />
+
+        <IntermediateNupkgArtifactFile
+        Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\dotnet-crossgen2-*$(ArchiveExtension)"
+        Category="Crossgen2Archive" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(DotNetBuildOrchestrator)' == 'true'">
+      <!-- Include installers when in product VMR builds. These are not necessary when building the repo-only build as we don't
+           need them in downstream source-only PR legs. We could include them, but it may bump us over the package size limit. -->
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.msi" />
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.deb" />
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.rpm" />
+      <IntermediateNupkgArtifactFile Include="$(CurrentRepoSourceBuildArtifactsPackagesDir)Shipping\*.pkg" />
+    </ItemGroup>
+  </Target>
+
+</Project>

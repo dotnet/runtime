@@ -12,7 +12,7 @@ namespace System.Threading.Channels
 
         /// <summary>Initializes a new instance of the <see cref="ChannelClosedException"/> class.</summary>
         /// <param name="message">The message that describes the error.</param>
-        public ChannelClosedException(string? message) : base(message) { }
+        public ChannelClosedException(string? message) : base(message ?? SR.ChannelClosedException_DefaultMessage) { }
 
         /// <summary>Initializes a new instance of the <see cref="ChannelClosedException"/> class.</summary>
         /// <param name="innerException">The exception that is the cause of this exception.</param>
@@ -22,6 +22,6 @@ namespace System.Threading.Channels
         /// <summary>Initializes a new instance of the <see cref="ChannelClosedException"/> class.</summary>
         /// <param name="message">The message that describes the error.</param>
         /// <param name="innerException">The exception that is the cause of this exception.</param>
-        public ChannelClosedException(string? message, Exception? innerException) : base(message, innerException) { }
+        public ChannelClosedException(string? message, Exception? innerException) : base(message ?? SR.ChannelClosedException_DefaultMessage, innerException) { }
     }
 }

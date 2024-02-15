@@ -1988,9 +1988,6 @@ TypeHandle SigPointer::GetTypeVariable(CorElementType et,
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // will return TypeHandle() if index is out of range
         SUPPORTS_DAC;
-#ifndef DACCESS_COMPILE
-        //        POSTCONDITION(RETVAL.IsNull() || RETVAL.IsRestored() || RETVAL.GetMethodTable()->IsRestoring());
-#endif
         MODE_ANY;
     }
     CONTRACT_END
@@ -4204,8 +4201,6 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
     SigPointer inst1 = pSubst1->GetInst();
     SigPointer inst2 = pSubst2->GetInst();
 
-    TokenPairList visited { pVisited };
-    CompareState state{ &visited };
     for (DWORD i = 0; i < pTypeDef1->GetNumGenericArgs(); i++)
     {
         PCCOR_SIGNATURE startInst1 = inst1.GetPtr();
@@ -4214,6 +4209,8 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
         PCCOR_SIGNATURE startInst2 = inst2.GetPtr();
         IfFailThrow(inst2.SkipExactlyOne());
         PCCOR_SIGNATURE endInst2ptr = inst2.GetPtr();
+        TokenPairList visited{ pVisited };
+        CompareState state{ &visited };
         if (!CompareElementType(
                 startInst1,
                 startInst2,
@@ -4382,8 +4379,6 @@ MetaSig::CompareMethodSigs(
     IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &ArgCount1));
     IfFailThrow(CorSigUncompressData_EndPtr(pSig2, pEndSig2, &ArgCount2));
 
-    TokenPairList visited{ pVisited };
-
     if (ArgCount1 != ArgCount2)
     {
         if ((callConv & IMAGE_CEE_CS_CALLCONV_MASK) != IMAGE_CEE_CS_CALLCONV_VARARG)
@@ -4405,7 +4400,6 @@ MetaSig::CompareMethodSigs(
         // to correctly handle overloads, where there are a number of varargs methods
         // to pick from, like m1(int,...) and m2(int,int,...), etc.
 
-        CompareState state{ &visited };
         // <= because we want to include a check of the return value!
         for (i = 0; i <= ArgCount1; i++)
         {
@@ -4437,6 +4431,8 @@ MetaSig::CompareMethodSigs(
             else
             {
                 // We are in bounds on both sides.  Compare the element.
+                TokenPairList visited{ pVisited };
+                CompareState state{ &visited };
                 if (!CompareElementType(
                     pSig1,
                     pSig2,
@@ -4461,7 +4457,6 @@ MetaSig::CompareMethodSigs(
     }
 
     // do return type as well
-    CompareState state{ &visited };
     for (i = 0; i <= ArgCount1; i++)
     {
         if (i == 0 && skipReturnTypeSig)
@@ -4476,6 +4471,8 @@ MetaSig::CompareMethodSigs(
         }
         else
         {
+            TokenPairList visited{ pVisited };
+            CompareState state{ &visited };
             if (!CompareElementType(
                 pSig1,
                 pSig2,

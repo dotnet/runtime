@@ -181,7 +181,7 @@ namespace System.Transactions
         ///
         /// </summary>
         /// <param name="message"></param>
-        public TransactionAbortedException(string? message) : base(message)
+        public TransactionAbortedException(string? message) : base(message ?? SR.TransactionAborted)
         {
         }
 
@@ -190,7 +190,7 @@ namespace System.Transactions
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
-        public TransactionAbortedException(string? message, Exception? innerException) : base(message, innerException)
+        public TransactionAbortedException(string? message, Exception? innerException) : base(message ?? SR.TransactionAborted, innerException)
         {
         }
 
@@ -259,7 +259,7 @@ namespace System.Transactions
         ///
         /// </summary>
         /// <param name="message"></param>
-        public TransactionInDoubtException(string? message) : base(message)
+        public TransactionInDoubtException(string? message) : base(message ?? SR.TransactionIndoubt)
         {
         }
 
@@ -268,7 +268,7 @@ namespace System.Transactions
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
-        public TransactionInDoubtException(string? message, Exception? innerException) : base(message, innerException)
+        public TransactionInDoubtException(string? message, Exception? innerException) : base(message ?? SR.TransactionIndoubt, innerException)
         {
         }
 
@@ -318,7 +318,7 @@ namespace System.Transactions
         ///
         /// </summary>
         /// <param name="message"></param>
-        public TransactionManagerCommunicationException(string? message) : base(message)
+        public TransactionManagerCommunicationException(string? message) : base(message ?? SR.TransactionManagerCommunicationException)
         {
         }
 
@@ -330,7 +330,7 @@ namespace System.Transactions
         public TransactionManagerCommunicationException(
             string? message,
             Exception? innerException
-            ) : base(message, innerException)
+            ) : base(message ?? SR.TransactionManagerCommunicationException, innerException)
         {
         }
 
@@ -361,7 +361,7 @@ namespace System.Transactions
         ///
         /// </summary>
         /// <param name="message"></param>
-        public TransactionPromotionException(string? message) : base(message)
+        public TransactionPromotionException(string? message) : base(message ?? SR.PromotionFailed)
         {
         }
 
@@ -370,7 +370,7 @@ namespace System.Transactions
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
-        public TransactionPromotionException(string? message, Exception? innerException) : base(message, innerException)
+        public TransactionPromotionException(string? message, Exception? innerException) : base(message ?? SR.PromotionFailed, innerException)
         {
         }
 

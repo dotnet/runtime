@@ -386,14 +386,14 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
-        public static void FailedAllocation(EETypePtr pEEType, bool fIsOverflow)
+        public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
             ExceptionIDs exID = fIsOverflow ? ExceptionIDs.Overflow : ExceptionIDs.OutOfMemory;
 
             // Throw the out of memory exception defined by the classlib, using the input MethodTable*
             // to find the correct classlib.
 
-            throw pEEType.ToPointer()->GetClasslibException(exID);
+            throw pEEType->GetClasslibException(exID);
         }
 
 #if !INPLACE_RUNTIME
@@ -1084,27 +1084,21 @@ namespace System.Runtime
 
             return TypeCast.IsInstanceOfException(pClauseType, exception);
 #else
-            bool retry = false;
-            do
+            if (tryUnwrapException && exception is RuntimeWrappedException ex)
             {
-                MethodTable* mt = RuntimeHelpers.GetMethodTable(exception);
-                while (mt != null)
-                {
-                    if (pClauseType == mt)
-                    {
-                        return true;
-                    }
-
-                    mt = mt->ParentMethodTable;
-                }
-
-                if (tryUnwrapException && exception is RuntimeWrappedException ex)
-                {
-                    exception = ex.WrappedException;
-                    retry = true;
-                }
+                exception = ex.WrappedException;
             }
-            while (retry);
+
+            MethodTable* mt = RuntimeHelpers.GetMethodTable(exception);
+            while (mt != null)
+            {
+                if (pClauseType == mt)
+                {
+                    return true;
+                }
+
+                mt = mt->ParentMethodTable;
+            }
 
             return false;
 #endif

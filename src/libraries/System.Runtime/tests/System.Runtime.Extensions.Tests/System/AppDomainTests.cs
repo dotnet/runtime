@@ -46,6 +46,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasHostExecutable))]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "The dotnet sdk will not be available on these platforms")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/96727", typeof(PlatformDetection), nameof(PlatformDetection.IsReadyToRunCompiled))]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -511,9 +512,14 @@ namespace System.Tests
         {
             RemoteExecutor.Invoke(() => {
                 bool AssemblyLoadFlag = false;
+                bool isMono = PlatformDetection.IsMonoRuntime;
                 AssemblyLoadEventHandler handler = (sender, args) =>
                 {
-                    Assert.Equal(AppDomain.CurrentDomain, sender);
+                    if (isMono)
+                        Assert.True(AppDomain.CurrentDomain == sender);
+                    else
+                        Assert.Equal(AppDomain.CurrentDomain, sender);
+
                     Assert.NotNull(args);
                     Assert.NotNull(args.LoadedAssembly);
 

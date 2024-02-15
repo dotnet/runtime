@@ -71,9 +71,8 @@ public unsafe class HandleRefTest
     }
 
     [Fact]
+    [SkipOnCoreClr("WaitForPendingFinalizers() not supported with GCStress", RuntimeTestModes.AnyGCStress)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
-    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/96364", RuntimeTestModes.GCStress3)]
-    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/96364", RuntimeTestModes.GCStressC)]
     public static void Validate_NoGC()
     {
         HandleRef hr = CreateHandleRef();

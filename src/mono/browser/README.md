@@ -117,9 +117,23 @@ The wrapper script used to actually run these tests, accepts:
 
 ### Using a local build of xharness
 
+XHarness consists of two pieces for WASM
+
+#### 1. CLI/host
+
 * set `XHARNESS_CLI_PATH=/path/to/xharness/artifacts/bin/Microsoft.DotNet.XHarness.CLI/Debug/net7.0/Microsoft.DotNet.XHarness.CLI.dll`
 
 **Note:** Additional msbuild arguments can be passed with: `make ..  MSBUILD_ARGS="/p:a=b"`
+
+#### 2. Test runner running inside of the browser
+
+All library tests are hosted by `WasmTestRunner.csproj`. The project references XHarness nuget for running tests using Xunit. To make changes and iterate quickly
+
+- Add property `<RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);LOCAL_CLONE_OF_XHARNESS\artifacts\packages\Debug\Shipping</RestoreAdditionalProjectSources>` in `WasmTestRunner.csproj`.
+- Set environment variable in your terminal `$env:NUGET_PACKAGES="$pwd\.nuget"` (so that nuget packages are restored to local folder `.nuget`)
+- Run "Pack" in the XHarness solution in Visual Studio on `Microsoft.DotNet.XHarness.TestRunners.Common` or `Microsoft.DotNet.XHarness.TestRunners.Xunit` based on your changes (it will generate a nuget package in `LOCAL_CLONE_OF_XHARNESS\artifacts\packages\Debug\Shipping`).
+- Build WasmTestRunner `.\dotnet.cmd build -c Debug .\src\libraries\Common\tests\WasmTestRunner\WasmTestRunner.csproj`.
+- If you need to iterate, delete Xunit or Common nuget cache `rm -r .\.nuget\microsoft.dotnet.xharness.testrunners.xunit\` or `rm -r .\.nuget\microsoft.dotnet.xharness.testrunners.common\`.
 
 ### Symbolicating traces
 
@@ -244,7 +258,7 @@ Two things to keep in mind:
 
 The steps below will download the `vsts-npm-auth` tool from https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet-public-npm/connect/npm
 
-In folder `src\mono\wasm\runtime\`
+In folder `src\mono\browser\runtime\`
 
 ```sh
 rm -rf node_modules

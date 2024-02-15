@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 using System.Threading;
 using System.Threading.Channels;
 using System.Runtime.CompilerServices;
-using System.Collections.Generic;
 using WorkItemQueueType = System.Threading.Channels.Channel<System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.WorkItem>;
 
 namespace System.Runtime.InteropServices.JavaScript
@@ -21,13 +20,16 @@ namespace System.Runtime.InteropServices.JavaScript
     internal sealed class JSSynchronizationContext : SynchronizationContext
     {
         internal readonly JSProxyContext ProxyContext;
-        private readonly Action _DataIsAvailable;// don't allocate Action on each call to UnsafeOnCompleted
+        private readonly Action _ScheduleJSPump;// don't allocate Action on each call to UnsafeOnCompleted
         private readonly WorkItemQueueType Queue;
 
         internal SynchronizationContext? previousSynchronizationContext;
         internal bool _isDisposed;
+        internal bool _isCancellationRequested;
+        internal bool _isRunning;
+        private CancellationTokenRegistration _cancellationTokenRegistration;
 
-        internal readonly struct WorkItem
+        internal struct WorkItem
         {
             public readonly SendOrPostCallback Callback;
             public readonly object? Data;
@@ -41,38 +43,127 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public JSSynchronizationContext(bool isMainThread)
+        // this need to be called from JSWebWorker or UI thread
+        public static JSSynchronizationContext InstallWebWorkerInterop(bool isMainThread, CancellationToken cancellationToken)
+        {
+            var ctx = new JSSynchronizationContext(isMainThread, cancellationToken);
+            ctx.previousSynchronizationContext = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(ctx);
+
+            // FIXME: make this configurable
+            // we could have 3 different modes of this
+            // 1) throwing on UI + JSWebWorker
+            // 2) throwing only on UI - small risk, more convenient.
+            // 3) not throwing at all - quite risky
+            // deadlock scenarios are:
+            // - .Wait for more than 5000ms and deadlock the GC suspend
+            // - .Wait on the Task from HTTP client, on the same thread as the HTTP client needs to resolve the Task/Promise. This could be also be a chain of promises.
+            // - try to create new pthread when UI thread is blocked and we run out of posix/emscripten pool of loaded workers.
+            // Things which lead to it are
+            // - Task.Wait, Signal.Wait etc
+            // - Monitor.Enter etc, if the lock is held by another thread for long time
+            // - synchronous [JSExport] into managed code, which would block
+            // - synchronous [JSImport] to another thread, which would block
+            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
+            Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+
+            var proxyContext = ctx.ProxyContext;
+            JSProxyContext.CurrentThreadContext = proxyContext;
+            JSProxyContext.ExecutionContext = proxyContext;
+            if (isMainThread)
+            {
+                JSProxyContext.MainThreadContext = proxyContext;
+            }
+
+            ctx.AwaitNewData();
+
+            Interop.Runtime.InstallWebWorkerInterop(proxyContext.ContextHandle);
+
+            return ctx;
+        }
+
+        // this need to be called from JSWebWorker thread
+        internal void UninstallWebWorkerInterop()
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+            if (!_isRunning)
+            {
+                return;
+            }
+
+            var jsProxyContext = JSProxyContext.AssertIsInteropThread();
+            if (jsProxyContext != ProxyContext)
+            {
+                Environment.FailFast($"UninstallWebWorkerInterop failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+            }
+            if (SynchronizationContext.Current == this)
+            {
+                SynchronizationContext.SetSynchronizationContext(this.previousSynchronizationContext);
+            }
+
+            // this will runtimeKeepalivePop()
+            // and later maybeExit() -> __emscripten_thread_exit()
+            // this will also call JSSynchronizationContext.Dispose() on this instance
+            jsProxyContext.Dispose();
+
+            JSProxyContext.CurrentThreadContext = null;
+            JSProxyContext.ExecutionContext = null;
+            _isRunning = false;
+        }
+
+        public JSSynchronizationContext(bool isMainThread, CancellationToken cancellationToken)
         {
             ProxyContext = new JSProxyContext(isMainThread, this);
             Queue = Channel.CreateUnbounded<WorkItem>(new UnboundedChannelOptions { SingleWriter = false, SingleReader = true, AllowSynchronousContinuations = true });
-            _DataIsAvailable = DataIsAvailable;
-        }
+            _ScheduleJSPump = ScheduleJSPump;
 
-        internal JSSynchronizationContext(JSProxyContext proxyContext, WorkItemQueueType queue, Action dataIsAvailable)
-        {
-            ProxyContext = proxyContext;
-            Queue = queue;
-            _DataIsAvailable = dataIsAvailable;
+            // receive callback (on any thread) that cancelation is requested
+            _cancellationTokenRegistration = cancellationToken.Register(() =>
+            {
+
+                _isCancellationRequested = true;
+                Queue.Writer.TryComplete();
+
+                while (Queue.Reader.TryRead(out var item))
+                {
+                    // the Post is checking _isCancellationRequested after .Wait()
+                    item.Signal?.Set();
+                }
+            });
         }
 
         public override SynchronizationContext CreateCopy()
         {
-            return new JSSynchronizationContext(ProxyContext, Queue, _DataIsAvailable);
+            return this;
         }
 
+        // this must be called from the worker thread
         internal void AwaitNewData()
         {
             if (_isDisposed)
             {
-                // FIXME: there could be abandoned work, but here we have no way how to propagate the failure
-                // ObjectDisposedException.ThrowIf(_isDisposed, this);
+                return;
+            }
+            if (_isCancellationRequested)
+            {
+                UninstallWebWorkerInterop();
+                return;
+            }
+            _isRunning = true;
+
+            var vt = Queue.Reader.WaitToReadAsync();
+            if (_isCancellationRequested)
+            {
+                UninstallWebWorkerInterop();
                 return;
             }
 
-            var vt = Queue.Reader.WaitToReadAsync();
             if (vt.IsCompleted)
             {
-                DataIsAvailable();
+                ScheduleJSPump();
                 return;
             }
 
@@ -81,23 +172,36 @@ namespace System.Runtime.InteropServices.JavaScript
             //  fire a callback that will schedule a background job to pump the queue on the main thread.
             var awaiter = vt.AsTask().ConfigureAwait(false).GetAwaiter();
             // UnsafeOnCompleted avoids spending time flowing the execution context (we don't need it.)
-            awaiter.UnsafeOnCompleted(_DataIsAvailable);
+            awaiter.UnsafeOnCompleted(_ScheduleJSPump);
         }
 
-        private unsafe void DataIsAvailable()
+        private unsafe void ScheduleJSPump()
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            TargetThreadScheduleBackgroundJob(ProxyContext.JSNativeTID, (delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
+            if (_isCancellationRequested)
+            {
+                // propagate the cancellation to the caller
+                throw new OperationCanceledException(_cancellationTokenRegistration.Token);
+            }
 
             var workItem = new WorkItem(d, state, null);
             if (!Queue.Writer.TryWrite(workItem))
+            {
+                if (_isCancellationRequested)
+                {
+                    // propagate the cancellation to the caller
+                    throw new OperationCanceledException(_cancellationTokenRegistration.Token);
+                }
+                ObjectDisposedException.ThrowIf(_isDisposed, this);
                 Environment.FailFast($"JSSynchronizationContext.Post failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+            }
         }
 
         // This path can only run when threading is enabled
@@ -113,13 +217,30 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
+            Thread.AssureBlockingPossible();
+
             using (var signal = new ManualResetEventSlim(false))
             {
                 var workItem = new WorkItem(d, state, signal);
                 if (!Queue.Writer.TryWrite(workItem))
+                {
+                    if (_isCancellationRequested)
+                    {
+                        // propagate the cancellation to the caller
+                        throw new OperationCanceledException(_cancellationTokenRegistration.Token);
+                    }
+                    ObjectDisposedException.ThrowIf(_isDisposed, this);
+
                     Environment.FailFast($"JSSynchronizationContext.Send failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+                }
 
                 signal.Wait();
+
+                if (_isCancellationRequested)
+                {
+                    // propagate the cancellation to the caller
+                    throw new OperationCanceledException(_cancellationTokenRegistration.Token);
+                }
             }
         }
 
@@ -138,10 +259,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private void Pump()
         {
-            if (_isDisposed)
+            if (_isDisposed || _isCancellationRequested)
             {
-                // FIXME: there could be abandoned work, but here we have no way how to propagate the failure
-                // ObjectDisposedException.ThrowIf(_isDisposed, this);
+                UninstallWebWorkerInterop();
                 return;
             }
             try
@@ -159,36 +279,38 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         item.Signal?.Set();
                     }
+                    if (_isDisposed || _isCancellationRequested)
+                    {
+                        UninstallWebWorkerInterop();
+                        return;
+                    }
                 }
+                // if anything throws unhandled exception, we will abort the program
+                // otherwise, we could schedule another round
+                AwaitNewData();
             }
             catch (Exception e)
             {
                 Environment.FailFast($"JSSynchronizationContext.BackgroundJobHandler failed, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {e.StackTrace}");
             }
-            finally
-            {
-                // If an item throws, we want to ensure that the next pump gets scheduled appropriately regardless.
-                if (!_isDisposed) AwaitNewData();
-            }
         }
 
-        private void Dispose(bool disposing)
-        {
-            if (!_isDisposed)
-            {
-                if (disposing)
-                {
-                    Queue.Writer.Complete();
-                }
-                previousSynchronizationContext = null;
-                _isDisposed = true;
-            }
-        }
 
         internal void Dispose()
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (!_isDisposed)
+            {
+                _isCancellationRequested = true;
+                Queue.Writer.TryComplete();
+                while (Queue.Reader.TryRead(out var item))
+                {
+                    // the Post is checking _isCancellationRequested after .Wait()
+                    item.Signal?.Set();
+                }
+                _isDisposed = true;
+                _cancellationTokenRegistration.Dispose();
+                previousSynchronizationContext = null;
+            }
         }
     }
 }

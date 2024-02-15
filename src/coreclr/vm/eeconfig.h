@@ -424,8 +424,6 @@ public:
 
     bool    NgenBindOptimizeNonGac()        const { LIMITED_METHOD_CONTRACT; return fNgenBindOptimizeNonGac; }
 
-    LPUTF8  GetZapBBInstr()                 const { LIMITED_METHOD_CONTRACT; return szZapBBInstr; }
-    LPWSTR  GetZapBBInstrDir()              const { LIMITED_METHOD_CONTRACT; return szZapBBInstrDir; }
     DWORD   DisableStackwalkCache()         const {LIMITED_METHOD_CONTRACT;  return dwDisableStackwalkCache; }
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
@@ -443,12 +441,6 @@ public:
     int AllocNumThreshold()                 const { LIMITED_METHOD_CONTRACT; return iPerfNumAllocsThreshold;  }
 
 #endif // _DEBUG
-
-#ifdef _DEBUG
-    DWORD  NgenForceFailureMask()     { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureMask; }
-    DWORD  NgenForceFailureCount()    { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureCount; }
-    DWORD  NgenForceFailureKind()     { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureKind;  }
-#endif
 
 #ifdef _DEBUG
 
@@ -612,9 +604,6 @@ private: //----------------------------------------------------------------
     // Stackwalk optimization flag
     DWORD dwDisableStackwalkCache;
 
-    LPUTF8 szZapBBInstr;
-    LPWSTR szZapBBInstrDir;
-
 #ifdef _DEBUG
     // interop logging
     int       m_TraceWrapper;
@@ -627,12 +616,6 @@ private: //----------------------------------------------------------------
     TypeNamesList* pPerfTypesToLog;     // List of types whose allocations are to be logged
 
 #endif // _DEBUG
-
-#ifdef _DEBUG
-    DWORD dwNgenForceFailureMask;
-    DWORD dwNgenForceFailureCount;
-    DWORD dwNgenForceFailureKind;
-#endif
 
 #ifdef _DEBUG
     DWORD fShouldInjectFault;
@@ -692,10 +675,6 @@ public:
         CallSite_7 = 0x0040,
         CallSite_8 = 0x0080,
     };
-
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
-    void DebugCheckAndForceIBCFailure(BitForMask bitForMask);
-#endif
 
 #if defined(_DEBUG)
 #if defined(TARGET_AMD64)

@@ -45,7 +45,7 @@ namespace MonoTests.System.Data
             Assert.Same(c1, c2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void EqualsTest()
         {
             DataRowComparer<DataRow> c = DataRowComparer.Default;
@@ -123,7 +123,7 @@ namespace MonoTests.System.Data
             Assert.False(c.Equals(r1, r4), "#H2");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Equals_Rows_Detached()
         {
             DataRowComparer<DataRow> c = DataRowComparer.Default;
@@ -160,7 +160,7 @@ namespace MonoTests.System.Data
             Assert.True(c.Equals(r2, r3), "#C3");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public void Equals_Rows_Deleted()
         {
             DataRowComparer<DataRow> c = DataRowComparer.Default;

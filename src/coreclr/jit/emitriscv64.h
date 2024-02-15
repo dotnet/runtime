@@ -73,15 +73,15 @@ void emitDispBranchLabel(const instrDesc* id) const;
 bool emitDispBranchInstrType(unsigned opcode2) const;
 void emitDispIllegalInstruction(code_t instructionCode);
 
-emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/);
+emitter::code_t emitInsCode(instruction ins /*, insFormat fmt*/) const;
 
 // Generate code for a load or store operation and handle the case of contained GT_LEA op1 with [base + offset]
 void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir);
 
 // Emit the 32-bit RISCV64 instruction 'code' into the 'dst'  buffer
-unsigned emitOutput_Instr(BYTE* dst, code_t code);
+unsigned emitOutput_Instr(BYTE* dst, code_t code) const;
 
-ssize_t emitOutputInstrJumpDistance(const BYTE* dst, const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
+ssize_t emitOutputInstrJumpDistance(const BYTE* src, const insGroup* ig, instrDescJmp* jmp);
 void emitOutputInstrJumpDistanceHelper(const insGroup* ig,
                                        instrDescJmp*   jmp,
                                        UNATIVE_OFFSET& dstOffs,
@@ -93,6 +93,58 @@ static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
 bool IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
+
+static code_t insEncodeRTypeInstr(
+    unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned rs2, unsigned funct7);
+static code_t insEncodeITypeInstr(unsigned opcode, unsigned rd, unsigned funct3, unsigned rs1, unsigned imm12);
+static code_t insEncodeSTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm12);
+static code_t insEncodeUTypeInstr(unsigned opcode, unsigned rd, unsigned imm20);
+static code_t insEncodeBTypeInstr(unsigned opcode, unsigned funct3, unsigned rs1, unsigned rs2, unsigned imm13);
+static code_t insEncodeJTypeInstr(unsigned opcode, unsigned rd, unsigned imm21);
+
+#ifdef DEBUG
+static void emitOutput_RTypeInstr_SanityCheck(instruction ins, regNumber rd, regNumber rs1, regNumber rs2);
+static void emitOutput_ITypeInstr_SanityCheck(
+    instruction ins, regNumber rd, regNumber rs1, unsigned immediate, unsigned opcode);
+static void emitOutput_STypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2);
+static void emitOutput_UTypeInstr_SanityCheck(instruction ins, regNumber rd);
+static void emitOutput_BTypeInstr_SanityCheck(instruction ins, regNumber rs1, regNumber rs2);
+static void emitOutput_JTypeInstr_SanityCheck(instruction ins, regNumber rd);
+#endif // DEBUG
+
+static unsigned castFloatOrIntegralReg(regNumber reg);
+
+unsigned emitOutput_RTypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2) const;
+unsigned emitOutput_ITypeInstr(BYTE* dst, instruction ins, regNumber rd, regNumber rs1, unsigned imm12) const;
+unsigned emitOutput_STypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm12) const;
+unsigned emitOutput_UTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm20) const;
+unsigned emitOutput_BTypeInstr(BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm13) const;
+unsigned emitOutput_BTypeInstr_InvertComparation(
+    BYTE* dst, instruction ins, regNumber rs1, regNumber rs2, unsigned imm13) const;
+unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigned imm21) const;
+
+BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
+BYTE* emitOutputInstr_OptsI(BYTE* dst, const instrDesc* id);
+BYTE* emitOutputInstr_OptsI8(BYTE* dst, const instrDesc* id, ssize_t immediate, regNumber reg1);
+BYTE* emitOutputInstr_OptsI32(BYTE* dst, ssize_t immediate, regNumber reg1);
+BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
+BYTE* emitOutputInstr_OptsRcReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
+BYTE* emitOutputInstr_OptsRcNoReloc(BYTE* dst, instruction* ins, unsigned offset, regNumber reg1);
+BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
+BYTE* emitOutputInstr_OptsRlReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
+BYTE* emitOutputInstr_OptsRlNoReloc(BYTE* dst, ssize_t igOffs, regNumber reg1);
+BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
+BYTE* emitOutputInstr_OptsJalr8(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate);
+BYTE* emitOutputInstr_OptsJalr24(BYTE* dst, ssize_t immediate);
+BYTE* emitOutputInstr_OptsJalr28(BYTE* dst, const instrDescJmp* jmp, ssize_t immediate);
+BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
+BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
+BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
+
+static unsigned TrimSignedToImm12(int imm12);
+static unsigned TrimSignedToImm13(int imm13);
+static unsigned TrimSignedToImm20(int imm20);
+static unsigned TrimSignedToImm21(int imm21);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -285,7 +337,7 @@ void emitIns_Call(EmitCallType          callType,
                   ssize_t          disp   = 0,
                   bool             isJump = false);
 
-unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
+unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 

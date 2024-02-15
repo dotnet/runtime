@@ -4,11 +4,11 @@
 import BuildConfiguration from "consts:configuration";
 
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, LoadBootResourceCallback } from "../types";
-import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
+import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
-import { mono_exit, register_exit_handlers } from "./exit";
+import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
 import { mono_download_assets, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
@@ -61,20 +61,11 @@ export class HostBuilder implements DotnetHostBuilder {
 
     // internal
     withExitOnUnhandledError(): DotnetHostBuilder {
-        const handler = function fatal_handler(event: Event, error: any) {
-            event.preventDefault();
-            try {
-                if (!error || !error.silent) mono_exit(1, error);
-            } catch (err) {
-                // no not re-throw from the fatal handler
-            }
-        };
         try {
-            // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
-            if (ENVIRONMENT_IS_WEB) {
-                globalThis.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
-                globalThis.addEventListener("error", (event) => handler(event, event.error));
-            }
+            deep_merge_config(monoConfig, {
+                exitOnUnhandledError: true
+            });
+            installUnhandledErrorHandler();
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -135,6 +126,19 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
+    withDumpThreadsOnNonZeroExit(): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                dumpThreadsOnNonZeroExit: true
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
     withAssertAfterExit(): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
@@ -153,18 +157,6 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 waitForDebugger: level
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    withStartupMemoryCache(value: boolean): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                startupMemoryCache: value
             });
             return this;
         } catch (err) {
@@ -382,8 +374,7 @@ export class HostBuilder implements DotnetHostBuilder {
             if (!this.instance) {
                 await this.create();
             }
-            mono_assert(emscriptenModule.config.mainAssemblyName, "Null moduleConfig.config.mainAssemblyName");
-            return this.instance!.runMainAndExit(emscriptenModule.config.mainAssemblyName);
+            return this.instance!.runMainAndExit();
         } catch (err) {
             mono_exit(1, err);
             throw err;
@@ -392,7 +383,7 @@ export class HostBuilder implements DotnetHostBuilder {
 }
 
 export async function createApi(): Promise<RuntimeAPI> {
-    if (ENVIRONMENT_IS_WEB && (loaderHelpers.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
         setup_proxy_console("main", globalThis.console, globalThis.location.origin);
     }
     mono_assert(emscriptenModule, "Null moduleConfig");
@@ -424,7 +415,7 @@ export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api
         mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
     }
 
-    register_exit_handlers();
+    registerEmscriptenExitHandlers();
 
     return emscriptenModule.ENVIRONMENT_IS_PTHREAD
         ? createEmscriptenWorker()
@@ -521,6 +512,16 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
     await loaderHelpers.afterConfigLoaded.promise;
 
     prepareAssetsWorker();
+
+    setTimeout(async () => {
+        try {
+            // load subset which is on JS heap rather than in WASM linear memory
+            await mono_download_assets();
+        }
+        catch (err) {
+            mono_exit(1, err);
+        }
+    }, 0);
 
     const promises = importModules();
     const es6Modules = await Promise.all(promises);

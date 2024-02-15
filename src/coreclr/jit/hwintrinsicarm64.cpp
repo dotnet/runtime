@@ -857,6 +857,27 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_CreateSequence:
+        case NI_Vector128_CreateSequence:
+        {
+            assert(sig->numArgs == 2);
+
+            if (varTypeIsLong(simdBaseType) && !impStackTop(0).val->OperIsConst())
+            {
+                // TODO-ARM64-CQ: We should support long/ulong multiplication.
+                break;
+            }
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            retNode = gtNewSimdCreateSequenceNode(retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_CreateScalarUnsafe:
         {
@@ -1073,8 +1094,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 op1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseJitType, simdSize);
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8);
-                op1 = gtNewSimdHWIntrinsicNode(genActualType(simdBaseType), op1, NI_Vector64_ToScalar, simdBaseJitType,
-                                               8);
+                op1 = gtNewSimdToScalarNode(genActualType(simdBaseType), op1, simdBaseJitType, 8);
                 op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
 
                 GenTree* zero  = gtNewZeroConNode(TYP_SIMD16);
@@ -1082,8 +1102,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 op2 = gtNewSimdGetUpperNode(TYP_SIMD8, op2, simdBaseJitType, simdSize);
                 op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8);
-                op2 = gtNewSimdHWIntrinsicNode(genActualType(simdBaseType), op2, NI_Vector64_ToScalar, simdBaseJitType,
-                                               8);
+                op2 = gtNewSimdToScalarNode(genActualType(simdBaseType), op2, simdBaseJitType, 8);
                 op2 = gtNewCastNode(TYP_INT, op2, /* isUnsigned */ true, TYP_INT);
 
                 op2     = gtNewOperNode(GT_LSH, TYP_INT, op2, gtNewIconNode(8));
@@ -1112,8 +1131,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                    simdSize);
                 }
 
-                retNode = gtNewSimdHWIntrinsicNode(genActualType(simdBaseType), op1, NI_Vector64_ToScalar,
-                                                   simdBaseJitType, 8);
+                retNode = gtNewSimdToScalarNode(genActualType(simdBaseType), op1, simdBaseJitType, 8);
 
                 if ((simdBaseType != TYP_INT) && (simdBaseType != TYP_UINT))
                 {

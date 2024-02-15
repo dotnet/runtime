@@ -74,7 +74,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(item1, coll[3]);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void Add_RelativeKey()
         {
             var coll = new Collection();
@@ -175,7 +175,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<ArgumentOutOfRangeException>("Index", () => coll.RemoveAt(-1)); // Index < 0
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void Remove_Key()
         {
             var coll = CreateKeyedCollection(10);
@@ -185,7 +185,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.False(coll.Contains("Key3"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void Remove_InvalidKey_ThrowsArgumentException()
         {
             var coll = CreateKeyedCollection(10);
@@ -242,7 +242,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.False(coll.Contains(new Foo()));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void Contains_ByKey()
         {
             var coll = CreateKeyedCollection(10);
@@ -275,7 +275,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Throws<ArgumentException>(() => coll[(object)Guid.Empty]); // Neither string nor int
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void Item_GetByKey()
         {
             Collection coll = CreateKeyedCollection(10);
@@ -291,7 +291,7 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(CreateValue(11), coll[(object)'X']);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
+        [Fact]
         public static void Item_GetByKey_InvalidIndex_ThrowsIndexOutOfRangeException()
         {
             Collection coll = CreateKeyedCollection(10);

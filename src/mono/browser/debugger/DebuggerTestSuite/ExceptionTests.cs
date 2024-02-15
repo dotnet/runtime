@@ -25,7 +25,7 @@ namespace DebuggerTests
 
             await SetPauseOnException("all");
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_native (" +
                 $"'{entry_method_name}'" +
                 "); }, 1);";
 
@@ -157,7 +157,7 @@ namespace DebuggerTests
                 {
                     type = "object",
                     subtype = "error",
-                    className = "Error" // BUG?: "DebuggerTests.CustomException"
+                    className = "ManagedError" // BUG?: "DebuggerTests.CustomException"
                 }), "exception");
 
                 return;
@@ -201,7 +201,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("function () { exceptions_test (); }", null, 0, 0, "exception_uncaught_test", "RangeError", "exception uncaught")]
-        [InlineData("function () { invoke_static_method ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
+        [InlineData("function () { invoke_static_method_native ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
             "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "DebuggerTests.ExceptionTestsClass.TestUncaughtException.run",
             "DebuggerTests.CustomException", "not implemented uncaught")]
         public async Task ExceptionTestUncaught(string eval_fn, string loc, int line, int col, string fn_name,
@@ -240,7 +240,7 @@ namespace DebuggerTests
                                     }));
             await insp.WaitFor(Inspector.APP_READY);
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_native (" +
                 $"'{entry_method_name}'" +
                 "); }, 1);";
 
@@ -303,7 +303,7 @@ namespace DebuggerTests
             await taskWait;
             _testOutput.WriteLine ($"* Resumed {count} times");
 
-            var eval_expr = "window.setTimeout(function() { invoke_static_method (" +
+            var eval_expr = "window.setTimeout(function() { invoke_static_method_native (" +
                 $"'{entry_method_name}'" +
                 "); }, 1);";
 

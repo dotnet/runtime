@@ -136,7 +136,6 @@ namespace System.Linq.Parallel.Tests
 
         // Check that some queries run in parallel by default, and some require forcing.
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/91661", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
         [MemberData(nameof(WithExecutionModeQueryData), new[] { 1, 4 })] // DOP of 1 to verify sequential and 4 to verify parallel
         public static void WithExecutionMode(
             Labeled<ParallelQuery<int>> labeled,
