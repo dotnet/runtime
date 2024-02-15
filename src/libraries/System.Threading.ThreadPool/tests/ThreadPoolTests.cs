@@ -1240,6 +1240,7 @@ namespace System.Threading.ThreadPools.Tests
                     ManualResetEvent[] waitEvents = [eventListener.TPWaitIOEnqueueEvent, eventListener.TPWaitIODequeueEvent];
                     WaitHandle.WaitAll(waitEvents, TimeSpan.FromSeconds(15));
                     Assert.True(eventListener.TPIOEnqueue > 0);
+                    Assert.True(eventListener.TPIODequeue > 0);
                 }
             }).Dispose();
         }
