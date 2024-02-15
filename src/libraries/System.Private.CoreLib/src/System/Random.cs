@@ -321,8 +321,8 @@ namespace System
 
                 if (j != i)
                 {
-                    ref T first = Unsafe.Add(ref values, (uint)i);
-                    ref T second = Unsafe.Add(ref values, (uint)j);
+                    ref T first = ref Unsafe.Add(ref values, (uint)i);
+                    ref T second = ref Unsafe.Add(ref values, (uint)j);
                     T temp = first;
                     first = second;
                     second = temp;
