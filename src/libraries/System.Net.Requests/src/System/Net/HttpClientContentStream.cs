@@ -27,7 +27,6 @@ namespace System.Net
             {
                 _disposed = true;
 
-                _buffer.AbortRead();
                 _buffer.Dispose();
             }
 
