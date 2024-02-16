@@ -11749,6 +11749,28 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_STM: {
+			LLVMTypeRef tuple_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
+
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
+
+			LLVMValueRef value_tuple = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "load_param");
+
+			int len = LLVMGetArrayLength (tuple_t);
+
+			LLVMValueRef *args = g_alloca ((len + 1) * sizeof (LLVMValueRef));
+
+			for (int i = 0; i < len; i++) {
+				LLVMValueRef elem = LLVMBuildExtractValue (builder, value_tuple, i, "extract_elem");
+				args [i] = elem;
+			}
+			args [len] = lhs;
+
+			call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+			break;
+		}
 		case OP_ARM64_ST1: {
 			LLVMTypeRef t = LLVMTypeOf (rhs);
 			LLVMValueRef address = convert (ctx, lhs, pointer_type (t));
