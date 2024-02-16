@@ -403,24 +403,10 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             break;
 #endif // !TARGET_64BIT
 
-#ifdef TARGET_64BIT
         case TYP_FLOAT:
         case TYP_DOUBLE:
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
             this->vlType       = VLT_REG_FP;
             this->vlReg.vlrReg = varDsc->GetRegNum();
-            break;
-
-#else // !TARGET_64BIT
-
-        case TYP_FLOAT:
-        case TYP_DOUBLE:
-            if (isFloatRegType(type))
-            {
-                this->vlType         = VLT_FPSTK;
-                this->vlFPstk.vlfReg = varDsc->GetRegNum();
-            }
             break;
 
 #endif // !TARGET_64BIT
@@ -436,9 +422,6 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         {
             this->vlType = VLT_REG_FP;
 
-            // TODO-AMD64-Bug: ndp\clr\src\inc\corinfo.h has a definition of RegNum that only goes up to R15,
-            // so no XMM registers can get debug information.
-            //
             // Note: Need to initialize vlrReg field, otherwise during jit dump hitting an assert
             // in eeDispVar() --> getRegName() that regNumber is valid.
             this->vlReg.vlrReg = varDsc->GetRegNum();
