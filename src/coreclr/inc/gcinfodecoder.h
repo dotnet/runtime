@@ -503,6 +503,8 @@ public:
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     bool IsSafePoint();
+    bool AreSafePointsInterruptible();
+    bool IsInterruptibleSafePoint();
 
     // This is used for gccoverage
     bool IsSafePoint(UINT32 codeOffset);
