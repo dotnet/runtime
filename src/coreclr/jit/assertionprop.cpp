@@ -2708,8 +2708,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             // Let's see if gtGetClassHandle may help us to fold the cast (since VNForCast did not).
             if (castClsArg->IsIconHandle(GTF_ICON_CLASS_HDL))
             {
-                bool isExact;
-                bool isNonNull;
+                bool                 isExact;
+                bool                 isNonNull;
                 CORINFO_CLASS_HANDLE castFrom = gtGetClassHandle(castObjArg, &isExact, &isNonNull, true);
                 if (castFrom != NO_CLASS_HANDLE)
                 {
