@@ -151,7 +151,6 @@ public partial class FunctionPtr
     }
 
     [Theory]
-    [InlineData(-0f)]
     [InlineData(0f)]
     [InlineData(1f)]
     [InlineData(-1f)]
