@@ -454,12 +454,7 @@ void Compiler::fgChangeEhfBlock(BasicBlock* oldBlock, BasicBlock* newBlock)
     for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
     {
         FlowEdge* succEdge = ehfDesc->bbeSuccs[i];
-        assert(succEdge != nullptr);
-
-        // Redirect edge's source block from oldBlock to newBlock
-        //
-        assert(succEdge->getSourceBlock() == oldBlock);
-        succEdge->setSourceBlock(newBlock);
+        fgReplacePred(succEdge, newBlock);
     }
 }
 
@@ -487,18 +482,20 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     const unsigned   succCount = ehfDesc->bbeCount;
     FlowEdge** const succTab   = ehfDesc->bbeSuccs;
 
-    // Walk the successor table looking for the old successor, which we expect to find.
+    // Walk the successor table looking for the old successor, which we expect to find only once.
     unsigned oldSuccNum = UINT_MAX;
     unsigned newSuccNum = UINT_MAX;
     for (unsigned i = 0; i < succCount; i++)
     {
         if (succTab[i]->getDestinationBlock() == newSucc)
         {
+            assert(newSuccNum == UINT_MAX);
             newSuccNum = i;
         }
 
         if (succTab[i]->getSourceBlock() == oldSucc)
         {
+            assert(oldSuccNum == UINT_MAX);
             oldSuccNum = i;
         }
     }
@@ -508,7 +505,7 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     if (newSuccNum != UINT_MAX)
     {
         // The new successor is already in the table; simply remove the old one.
-        fgRemoveEhfSuccessor(block, oldSucc);
+        fgRemoveEhfSuccessor(block, oldSuccNum);
 
         JITDUMP("Remove existing BBJ_EHFINALLYRET " FMT_BB " successor " FMT_BB "; replacement successor " FMT_BB
                 " already exists in list\n",
@@ -534,60 +531,96 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
 }
 
 //------------------------------------------------------------------------
-// fgRemoveEhfSuccessor: update BBJ_EHFINALLYRET block to remove `succ` as a successor.
-// Updates the predecessor list of `succ`.
+// fgRemoveEhfSuccessor: update BBJ_EHFINALLYRET block to remove the successor at `succIndex`
+// in the block's jump table.
+// Updates the predecessor list of the successor, if necessary.
 //
 // Arguments:
-//   block   - BBJ_EHFINALLYRET block
-//   succ    - successor
+//   block     - BBJ_EHFINALLYRET block
+//   succIndex - index of the successor in block->GetEhfTargets()->bbeSuccs
 //
-void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ)
+void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
 {
     assert(block != nullptr);
-    assert(succ != nullptr);
+    assert(block->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
+
+    BBehfDesc* const ehfDesc = block->GetEhfTargets();
+    const unsigned succCount = ehfDesc->bbeCount;
+    FlowEdge** succTab = ehfDesc->bbeSuccs;
+    assert(succIndex < succCount);
+    FlowEdge* succEdge = succTab[succIndex];
+
+    fgRemoveRefPred(succEdge);
+
+    // If succEdge not the last entry, move everything after in the table down one slot.
+    if ((succIndex + 1) < succCount)
+    {
+        memmove_s(&succTab[succIndex], (succCount - succIndex) * sizeof(FlowEdge*), &succTab[succIndex + 1],
+                  (succCount - succIndex - 1) * sizeof(FlowEdge*));
+    }
+
+#ifdef DEBUG
+    // We only expect to see a successor once in the table.
+    for (unsigned i = succIndex; i < (succCount - 1); i++)
+    {
+        assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
+    }
+#endif // DEBUG
+   
+    ehfDesc->bbeCount--;
+}
+
+//------------------------------------------------------------------------
+// fgRemoveEhfSuccessor: Removes `succEdge` from its BBJ_EHFINALLYRET source block's jump table.
+// Updates the predecessor list of the successor block, if necessary.
+//
+// Arguments:
+//   block     - BBJ_EHFINALLYRET block
+//   succEdge - FlowEdge* to be removed from predecessor block's jump table
+//
+void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
+{
+    assert(succEdge != nullptr);
+    assert(fgPredsComputed);
+
+    BasicBlock* block = succEdge->getSourceBlock();
+    assert(block != nullptr);
     assert(block->KindIs(BBJ_EHFINALLYRET));
 
-    // Don't `assert(succ->isBBCallFinallyPairTail())`; we've already unlinked the CALLFINALLY
-    assert(succ->KindIs(BBJ_CALLFINALLYRET));
+    fgRemoveRefPred(succEdge);
 
-    fgRemoveRefPred(succ, block);
+    BBehfDesc* const ehfDesc = block->GetEhfTargets();
+    const unsigned succCount = ehfDesc->bbeCount;
+    FlowEdge** succTab = ehfDesc->bbeSuccs;
+    bool found = false;
 
-    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
-    unsigned         succCount = ehfDesc->bbeCount;
-    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
-    bool             found     = false;
-
-    // Walk the successor table looking for the specified successor block.
+    // Search succTab for succEdge so we can splice it out of the table.
     for (unsigned i = 0; i < succCount; i++)
     {
-        if (succTab[i]->getDestinationBlock() == succ)
+        if (succTab[i] == succEdge)
         {
-            // If it's not the last one, move everything after in the table down one slot.
-            if (i + 1 < succCount)
+            // If succEdge not the last entry, move everything after in the table down one slot.
+            if ((i + 1) < succCount)
             {
                 memmove_s(&succTab[i], (succCount - i) * sizeof(FlowEdge*), &succTab[i + 1],
                           (succCount - i - 1) * sizeof(FlowEdge*));
             }
 
-            --succCount;
-
             found = true;
 
 #ifdef DEBUG
             // We only expect to see a successor once in the table.
-            for (; i < succCount; i++)
+            for (; i < (succCount - 1); i++)
             {
-                assert(succTab[i]->getDestinationBlock() != succ);
+                assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
             }
 #endif // DEBUG
-
-            break;
         }
     }
-    assert(found);
 
-    ehfDesc->bbeCount = succCount;
+    assert(found);
+    ehfDesc->bbeCount--;
 }
 
 //------------------------------------------------------------------------
@@ -764,6 +797,39 @@ void Compiler::fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock*
     {
         block->ensurePredListOrder(this);
     }
+}
+
+//------------------------------------------------------------------------
+// fgReplacePred: redirects the given edge to a new predecessor block
+//
+// Arguments:
+//   edge - the edge whose source block we want to update
+//   newPred - the new predecessor block for edge
+//
+// Notes:
+//
+// This function assumes that all branches from the predecessor (practically, that all
+// switch cases that target the successor block) are changed to branch from the new predecessor,
+// with the same dup count.
+//
+// Note that the successor block's bbRefs is not changed, since it has the same number of
+// references as before, just from a different predecessor block.
+//
+// Also note this may cause sorting of the pred list.
+//
+void Compiler::fgReplacePred(FlowEdge* edge, BasicBlock* const newPred)
+{
+    assert(edge != nullptr);
+    assert(newPred != nullptr);
+    assert(edge->getSourceBlock() != newPred);
+
+    edge->setSourceBlock(newPred);
+
+    // We may now need to reorder the pred list.
+    //
+    BasicBlock* succBlock = edge->getDestinationBlock();
+    assert(succBlock != nullptr);
+    succBlock->ensurePredListOrder(this);
 }
 
 /*****************************************************************************
@@ -5365,9 +5431,9 @@ void Compiler::fgPrepareCallFinallyRetForRemoval(BasicBlock* block)
     // However, we might not have marked the BBJ_CALLFINALLY as BBF_RETLESS_CALL even though it is.
     // (Some early flow optimization should probably aggressively mark these as BBF_RETLESS_CALL
     // and not depend on fgRemoveBlock() to do that.)
-    for (BasicBlock* const leavePredBlock : block->PredBlocks())
+    for (FlowEdge* leavePredEdge : block->PredEdges())
     {
-        fgRemoveEhfSuccessor(leavePredBlock, block);
+        fgRemoveEhfSuccessor(leavePredEdge);
     }
     assert(block->bbRefs == 0);
     assert(block->bbPreds == nullptr);

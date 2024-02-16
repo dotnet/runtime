@@ -340,6 +340,44 @@ FlowEdge* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
 }
 
 //------------------------------------------------------------------------
+// fgRemoveRefPred: Decrements the reference count of `edge`, removing it from its successor block's pred list
+// if the reference count is zero.
+//
+// Arguments:
+//    edge -- The FlowEdge* to decrement the reference count of.
+//
+// Notes:
+//    -- succBlock->bbRefs is decremented by one to account for the reduction in incoming edges.
+//    -- fgModified is set if a flow edge is removed, indicating that the flow graph shape has changed.
+//
+void Compiler::fgRemoveRefPred(FlowEdge* edge)
+{
+    assert(edge != nullptr);
+    assert(fgPredsComputed);
+
+    BasicBlock* predBlock = edge->getSourceBlock();
+    BasicBlock* succBlock = edge->getDestinationBlock();
+    assert(predBlock != nullptr);
+    assert(succBlock != nullptr);
+
+    succBlock->bbRefs--;
+
+    assert(edge->getDupCount() > 0);
+    edge->decrementDupCount();
+
+    if (edge->getDupCount() == 0)
+    {
+        // Splice out the predecessor edge in succBlock's pred list, since it's no longer necessary.
+        FlowEdge** ptrToPred;
+        FlowEdge* pred = fgGetPredForBlock(succBlock, predBlock, &ptrToPred);
+        *ptrToPred = pred->getNextPredEdge();
+
+        // Any changes to the flow graph invalidate the dominator sets.
+        fgModified = true;
+    }
+}
+
+//------------------------------------------------------------------------
 // fgRemoveAllRefPreds: Removes a predecessor edge from one block to another, no matter what the "dup count" is.
 //
 // Arguments:
@@ -406,11 +444,14 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_EHFINALLYRET:
-            for (BasicBlock* const succ : block->EHFinallyRetSuccs())
+        { 
+            BBehfDesc* const ehfDesc = block->GetEhfTargets();
+            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
             {
-                fgRemoveRefPred(succ, block);
+                fgRemoveRefPred(ehfDesc->bbeSuccs[i]);
             }
             break;
+        }
 
         case BBJ_EHFAULTRET:
         case BBJ_THROW:
