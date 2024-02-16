@@ -984,8 +984,10 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //     2. We need to store the wide IV back into the narrow one in each of
 //     the exits where the narrow IV is live-in.
 //
-bool Compiler::optIsIVWideningProfitable(
-    unsigned lclNum, BasicBlock* initBlock, bool initedToConstant, FlowGraphNaturalLoop* loop)
+bool Compiler::optIsIVWideningProfitable(unsigned              lclNum,
+                                         BasicBlock*           initBlock,
+                                         bool                  initedToConstant,
+                                         FlowGraphNaturalLoop* loop)
 {
     for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
     {
@@ -1405,7 +1407,7 @@ PhaseStatus Compiler::optInductionVariables()
             // Start value should always be an SSA use from outside the loop
             // since we only widen primary IVs.
             assert(addRec->Start->OperIs(ScevOper::Local));
-            ScevLocal* startLocal = (ScevLocal*)addRec->Start;
+            ScevLocal*    startLocal     = (ScevLocal*)addRec->Start;
             int64_t       startConstant  = 0;
             bool          initToConstant = startLocal->GetConstantValue(this, &startConstant);
             LclSsaVarDsc* startSsaDsc    = lclDsc->GetPerSsaData(startLocal->SsaNum);
@@ -1449,17 +1451,16 @@ PhaseStatus Compiler::optInductionVariables()
                 assert(narrowInitStmt != nullptr);
             }
 
-            Statement* initStmt = nullptr;
-            unsigned newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
+            Statement* initStmt  = nullptr;
+            unsigned   newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
             INDEBUG(lclDsc = nullptr);
             assert(startLocal->LclNum == lcl->GetLclNum());
 
             if (initBlock != preheader)
             {
-                JITDUMP(
-                    "Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
-                    "\n",
-                    initBlock->bbNum);
+                JITDUMP("Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
+                        "\n",
+                        initBlock->bbNum);
             }
             else
             {
