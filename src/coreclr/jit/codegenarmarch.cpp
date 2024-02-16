@@ -439,7 +439,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CMPXCHG:
             genCodeForCmpXchg(treeNode->AsCmpXchg());
             break;
-
 #endif // TARGET_ARM64
 
 #ifdef SWIFT_SUPPORT
