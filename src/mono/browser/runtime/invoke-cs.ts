@@ -11,19 +11,16 @@ import {
     get_sig, get_signature_argument_count,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
-import { MonoMethod, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, MarshalerType, MonoAssembly } from "./types/internal";
-import cwraps from "./cwraps";
+import { MonoMethod, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { assert_js_interop } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
 import { bind_assembly_exports, invoke_sync_method } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 
-const _assembly_cache_by_name = new Map<string, MonoAssembly>();
-
 export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
     const fullyQualifiedName = `[${assemblyName}] ${namespaceName}.${shortClassName}:${methodName}`;
     const mark = startMeasure();
-    mono_log_debug(`Binding [JSExport] ${assemblyName}.${shortClassName} from ${assemblyName} assembly`);
+    mono_log_debug(`Binding [JSExport] ${namespaceName}.${shortClassName}:${methodName} from ${assemblyName} assembly`);
     const version = get_signature_version(signature);
     mono_assert(version === 2, () => `Signature version ${version} mismatch.`);
 
@@ -356,13 +353,4 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
     }
 
     return exportsByAssembly.get(assembly) || {};
-}
-
-export function assembly_load(name: string): MonoAssembly {
-    if (_assembly_cache_by_name.has(name))
-        return <MonoAssembly>_assembly_cache_by_name.get(name);
-
-    const result = cwraps.mono_wasm_assembly_load(name);
-    _assembly_cache_by_name.set(name, result);
-    return result;
 }
