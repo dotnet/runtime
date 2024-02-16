@@ -2374,7 +2374,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg3()));
             break;
 
-        case IF_SVE_IV_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)
+        case IF_SVE_IV_3A: // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)
             elemsize = id->idOpSize();
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
             assert(isScalableVectorSize(elemsize));
@@ -2402,7 +2402,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isValidUimm5_MultipleOf8(emitGetInsSC(id)));
             break;
 
-        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             elemsize = id->idOpSize();
             assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
             assert(isScalableVectorSize(elemsize));
@@ -19484,7 +19484,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
  *  for the 'dtypeh' and 'dtypel' fields.
  */
 
-/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtypeh_dtypel(instruction ins, insFormat fmt, emitAttr size, code_t code)
+/*static*/ emitter::code_t emitter::insEncodeSveElemsize_dtypeh_dtypel(instruction ins,
+                                                                       insFormat   fmt,
+                                                                       emitAttr    size,
+                                                                       code_t      code)
 {
     switch (fmt)
     {
@@ -23392,7 +23395,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SVE_IC_3A:   // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
+        case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());   // ttttt
@@ -26985,12 +26988,12 @@ void emitter::emitDispInsHelp(
         // {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
         case IF_SVE_HX_3A_E: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
         // {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
-        case IF_SVE_IV_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)
+        case IF_SVE_IV_3A: // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)
         // {<Zt>.S }, <Pg>, [<Zn>.S{, #<imm>}]
         // {<Zt>.D }, <Pg>, [<Zn>.D{, #<imm>}]
         case IF_SVE_JI_3A_A: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit scatter store (vector plus immediate)
         // {<Zt>.D }, <Pg>, [<Zn>.D{, #<imm>}]
-        case IF_SVE_JL_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit scatter store (vector plus immediate)
+        case IF_SVE_JL_3A: // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit scatter store (vector plus immediate)
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
         case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
         // {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>}]
