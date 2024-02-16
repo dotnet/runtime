@@ -11650,7 +11650,7 @@ MONO_RESTORE_WARNING
 				LLVMValueRef retval = LLVMGetUndef (ret_t);
 				args [idx - 1] = const_int64 (i);
 				LLVMValueRef result_loaded = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
-				for (int j = 0; j < n_elem_tuple; j++) {
+				for (unsigned int j = 0; j < n_elem_tuple; j++) {
 					LLVMValueRef elem = LLVMBuildExtractValue (builder, result_loaded,  j, "extract_elem");
 					retval = LLVMBuildInsertValue (builder, retval, elem, j, "insert_val");
 				}
