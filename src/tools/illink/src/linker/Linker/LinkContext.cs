@@ -1148,7 +1148,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Substitute "featuredefault" settings for substitution XMLs, and
-		/// FeatureGuard(typeof(RequiresUnreferencedCodeAttribute)) properties for features not
+		/// FeatureCheck(typeof(RequiresUnreferencedCodeAttribute)) properties for features not
 		/// explicitly given values on the command-line.
 		/// </summary>
 		SubstituteFeatureChecks = 1 << 25,

@@ -60,7 +60,7 @@ namespace Mono.Linker
 				return embeddedXml.MethodStubValues.TryGetValue (method, out value);
 			}
 
-			// If there are no substitutions for the method, look for FeatureGuardAttribute on the property,
+			// If there are no substitutions for the method, look for FeatureCheckAttribute on the property,
 			// and substitute 'false' for guards for features that are known to be disabled.
 			if (_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureChecks, method)
 				&& IsGuardForDisabledFeature (method)) {
@@ -82,9 +82,9 @@ namespace Mono.Linker
 					continue;
 
 				// Include non-static, non-bool properties with setters as those will get validated inside GetLinkerAttributes.
-				foreach (var featureGuardAttribute in _context.Annotations.GetLinkerAttributes<FeatureGuardAttribute> (property)) {
+				foreach (var featureCheckAttribute in _context.Annotations.GetLinkerAttributes<FeatureCheckAttribute> (property)) {
 					// When trimming, we assume that a feature check for RequiresUnreferencedCodeAttribute returns false.
-					var requiresAttributeType = featureGuardAttribute.RequiresAttributeType;
+					var requiresAttributeType = featureCheckAttribute.FeatureType;
 					if (requiresAttributeType.Name == "RequiresUnreferencedCodeAttribute" && requiresAttributeType.Namespace == "System.Diagnostics.CodeAnalysis")
 						return true;
 				}

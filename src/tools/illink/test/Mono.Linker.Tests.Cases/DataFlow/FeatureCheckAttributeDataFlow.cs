@@ -410,7 +410,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
-			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool SetOnlyProperty { set => throw null; }
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]
@@ -421,7 +421,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL4001", ProducedBy = Tool.Analyzer | Tool.Trimmer)]
-			[FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+			[FeatureCheck (typeof(RequiresUnreferencedCodeAttribute))]
 			static bool GetAndSetProperty { get => true; set => throw null; }
 
 			[ExpectedWarning ("IL2026", nameof (RequiresUnreferencedCodeAttribute))]

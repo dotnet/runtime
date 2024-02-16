@@ -3,13 +3,14 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-	sealed class FeatureGuardAttribute : Attribute
-	{
-		public Type RequiresAttributeType { get; }
+    [AttributeUsage (AttributeTargets.Property, Inherited=false)]
+    public sealed class FeatureCheckAttribute : Attribute
+    {
+        public Type FeatureType { get; }
 
-		public FeatureGuardAttribute (Type requiresAttributeType)
-		{
-			RequiresAttributeType = requiresAttributeType;
-		}
-	}
+        public FeatureCheckAttribute (Type featureType)
+        {
+            FeatureType = featureType;
+        }
+    }
 }

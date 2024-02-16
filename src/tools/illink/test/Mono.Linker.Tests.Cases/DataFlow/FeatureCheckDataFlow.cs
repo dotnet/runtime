@@ -1226,7 +1226,7 @@ namespace System.Runtime.CompilerServices
 {
 	class RuntimeFeature
 	{
-		[FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+		[FeatureCheck (typeof(RequiresDynamicCodeAttribute))]
 		public static bool IsDynamicCodeSupported => true;
 	}
 }

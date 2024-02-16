@@ -1364,7 +1364,7 @@ namespace Mono.Linker
 			Console.WriteLine ("                               unreachablebodies: Instance methods that are marked but not executed are converted to throws");
 			Console.WriteLine ("                               unusedinterfaces: Removes interface types from declaration when not used");
 			Console.WriteLine ("                               unusedtypechecks: Inlines never successful type checks");
-			Console.WriteLine ("                               substitutefeaturechecks: Substitutes feature checks marked FeatureGuard(typeof(RequiresUnreferencedCode)) to false");
+			Console.WriteLine ("                               substitutefeaturechecks: Substitutes feature checks marked FeatureCheck(typeof(RequiresUnreferencedCode)) to false");
 			Console.WriteLine ("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
 			Console.WriteLine ("                               sealer: Any method or type which does not have override is marked as sealed");
 			Console.WriteLine ("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
