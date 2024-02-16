@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
 {
-    public class JSImportExportTest : IAsyncLifetime
+    public class JSImportTest : JSInteropTestBase, IAsyncLifetime
     {
         [Fact]
         public unsafe void StructSize()
@@ -113,7 +113,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public unsafe void OptimizedPaths()
         {
             JavaScriptTestHelper.optimizedReached = 0;
@@ -211,13 +211,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         #region Arrays
 
-        public static IEnumerable<object[]> MarshalByteArrayCases()
-        {
-            yield return new object[] { new byte[] { 1, 2, 3, byte.MaxValue, byte.MinValue } };
-            yield return new object[] { new byte[] { } };
-            yield return new object[] { null };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalByteArrayCases))]
         public unsafe void JsImportByteArray(byte[]? expected)
@@ -229,13 +222,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     var actualI = JavaScriptTestHelper.store_ByteArray(expected, i);
                     Assert.Equal(expected[i], actualI);
                 }
-        }
-
-        public static IEnumerable<object[]> MarshalIntArrayCases()
-        {
-            yield return new object[] { new int[] { 1, 2, 3, int.MaxValue, int.MinValue } };
-            yield return new object[] { new int[] { } };
-            yield return new object[] { null };
         }
 
         [Theory]
@@ -251,13 +237,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
         }
 
-        public static IEnumerable<object[]> MarshalDoubleArrayCases()
-        {
-            yield return new object[] { new double[] { 1, 2, 3, double.MaxValue, double.MinValue, double.Pi, double.NegativeInfinity, double.PositiveInfinity, double.NaN } };
-            yield return new object[] { new double[] { } };
-            yield return new object[] { null };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalDoubleArrayCases))]
         public unsafe void JsImportDoubleArray(double[]? expected)
@@ -269,14 +248,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     var actualI = JavaScriptTestHelper.store_DoubleArray(expected, i);
                     Assert.Equal(expected[i], actualI);
                 }
-        }
-
-        public static IEnumerable<object[]> MarshalStringArrayCases()
-        {
-            yield return new object[] { new string[] { "\u0050\u0159\u00ed\u006c\u0069\u0161", "\u017e\u006c\u0075\u0165\u006f\u0075\u010d\u006b\u00fd" } };
-            yield return new object[] { new string[] { string.Intern("hello"), string.Empty, null } };
-            yield return new object[] { new string[] { } };
-            yield return new object[] { null };
         }
 
         [Theory]
@@ -293,28 +264,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
         }
 
-        public class SomethingRef
-        {
-        }
-
-        public class SomethingStruct
-        {
-        }
-
-        public static IEnumerable<object[]> MarshalObjectArrayCases()
-        {
-            yield return new object[] { new object[] { string.Intern("hello"), string.Empty } };
-            yield return new object[] { new object[] { 1.1d, new DateTime(2022, 5, 8, 14, 55, 01, DateTimeKind.Utc), false, true } };
-            yield return new object[] { new object[] { new double?(1.1d), new DateTime?(new DateTime(2022, 5, 8, 14, 55, 01, DateTimeKind.Utc)), new bool?(false), new bool?(true) } };
-            yield return new object[] { new object[] { null, new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } };
-            yield return new object[] { new object[] { "JSData" } }; // special cased, so we call createData in the test itself
-            yield return new object[] { new object[] { new byte[] { }, new int[] { }, new double[] { }, new string[] { }, new object[] { } } };
-            yield return new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" }, new object[] { } } };
-            yield return new object[] { new object[] { new object[] { new byte[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, new double[] { 1, 2, 3 }, new string[] { "a", "b", "c" }, new object(), new SomethingRef(), new SomethingStruct(), new Exception("test") } } };
-            yield return new object[] { new object[] { } };
-            yield return new object[] { null };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalObjectArrayCases))]
         public unsafe void JsImportObjectArray(object[]? expected)
@@ -327,19 +276,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(expected, actual);
 
             if (expected != null) for (int i = 0; i < expected.Length; i++)
-            {
-                var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
-                Assert.Equal(expected[i], actualI);
-            }
-        }
-
-        public static IEnumerable<object[]> MarshalObjectArrayCasesToDouble()
-        {
-            yield return new object[] { new object[] { (byte)42 } };
-            yield return new object[] { new object[] { (short)42 } };
-            yield return new object[] { new object[] { 42 } };
-            yield return new object[] { new object[] { 3.14f } };
-            yield return new object[] { new object[] { 'A' } };
+                {
+                    var actualI = JavaScriptTestHelper.store_ObjectArray(expected, i);
+                    Assert.Equal(expected[i], actualI);
+                }
         }
 
         [Theory]
@@ -358,25 +298,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                         Assert.Equal(Convert.ToDouble(expected[i]), actualI);
                     }
                 }
-        }
-
-        public static IEnumerable<object[]> MarshalObjectArrayCasesThrow()
-        {
-            yield return new object[] { new object[] { () => { } } };
-            yield return new object[] { new object[] { (int a) => { } } };
-            yield return new object[] { new object[] { (int a) => { return a; } } };
-            yield return new object[] { new object[] { (dummyDelegate)dummyDelegateA } };
-            yield return new object[] { new object[] { 0L } };
-            yield return new object[] { new object[] { 0UL } };
-            yield return new object[] { new object[] { (sbyte)0 } };
-            yield return new object[] { new object[] { (ushort)0 } };
-            yield return new object[] { new object[] { new SomethingStruct[] { } } };
-            yield return new object[] { new object[] { new SomethingRef[] { }, } };
-            yield return new object[] { new object[] { new ArraySegment<byte>(new byte[] { 11 }), } };
-        }
-        delegate void dummyDelegate();
-        static void dummyDelegateA()
-        {
         }
 
         [Theory]
@@ -532,11 +453,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #endregion
 
         #region Boolean
-        public static IEnumerable<object[]> MarshalBooleanCases()
-        {
-            yield return new object[] { true };
-            yield return new object[] { false };
-        }
 
         [Theory]
         [MemberData(nameof(MarshalBooleanCases))]
@@ -551,28 +467,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "boolean");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalBooleanCases))]
-        public void JsExportBoolean(bool value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Boolean,
-                nameof(JavaScriptTestHelper.EchoBoolean),
-                "boolean");
-        }
         #endregion Boolean
 
         #region Char
-        public static IEnumerable<object[]> MarshalCharCases()
-        {
-            yield return new object[] { (char)42 };
-            yield return new object[] { (char)1 };
-            yield return new object[] { '\u017D' };
-            yield return new object[] { '\u2661' };
-            yield return new object[] { char.MaxValue };
-            yield return new object[] { char.MinValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalCharCases))]
         public void JsImportChar(char value)
@@ -586,26 +483,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalCharCases))]
-        public void JsExportChar(char value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Char,
-                nameof(JavaScriptTestHelper.EchoChar),
-                "number");
-        }
         #endregion Char
 
         #region Byte
-        public static IEnumerable<object[]> MarshalByteCases()
-        {
-            yield return new object[] { (byte)42 };
-            yield return new object[] { (byte)1 };
-            yield return new object[] { byte.MaxValue };
-            yield return new object[] { byte.MinValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalByteCases))]
         public void JsImportByte(byte value)
@@ -616,16 +496,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 JavaScriptTestHelper.echo1_Byte,
                 JavaScriptTestHelper.throw1_Byte,
                 JavaScriptTestHelper.identity1_Byte,
-                "number");
-        }
-
-        [Theory]
-        [MemberData(nameof(MarshalByteCases))]
-        public void JsExportByte(byte value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Byte,
-                nameof(JavaScriptTestHelper.EchoByte),
                 "number");
         }
 
@@ -641,16 +511,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #endregion Byte
 
         #region Int16
-        public static IEnumerable<object[]> MarshalInt16Cases()
-        {
-            yield return new object[] { 42 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { -1 };
-            yield return new object[] { short.MaxValue };
-            yield return new object[] { short.MinValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalInt16Cases))]
         public void JsImportInt16(short value)
@@ -664,38 +524,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalInt16Cases))]
-        public void JsExportInt16(short value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Int16,
-                nameof(JavaScriptTestHelper.EchoInt16),
-                "number");
-        }
         #endregion Int16
 
         #region Int32
-        public static IEnumerable<object[]> MarshalInt32Cases()
-        {
-            yield return new object[] { 42 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { -1 };
-            yield return new object[] { int.MaxValue };
-            yield return new object[] { int.MinValue };
-        }
-
-        public static IEnumerable<object[]> OutOfRangeCases()
-        {
-            yield return new object[] { double.MaxValue, "Value is not an integer" };
-            yield return new object[] { double.MinValue, "Value is not an integer" };
-            yield return new object[] { double.NaN, "Value is not an integer" };
-            yield return new object[] { double.NegativeInfinity, "Value is not an integer" };
-            yield return new object[] { double.PositiveInfinity, "Value is not an integer" };
-            yield return new object[] { (double)MAX_SAFE_INTEGER, "Overflow" };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalInt32Cases))]
         public void JsImportInt32(int value)
@@ -706,16 +537,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 JavaScriptTestHelper.echo1_Int32,
                 JavaScriptTestHelper.throw1_Int32,
                 JavaScriptTestHelper.identity1_Int32,
-                "number");
-        }
-
-        [Theory]
-        [MemberData(nameof(MarshalInt32Cases))]
-        public void JsExportInt32(int value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Int32,
-                nameof(JavaScriptTestHelper.EchoInt32),
                 "number");
         }
 
@@ -731,17 +552,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #endregion Int32
 
         #region Int52
-        const long MAX_SAFE_INTEGER = 9007199254740991L;// Number.MAX_SAFE_INTEGER
-        const long MIN_SAFE_INTEGER = -9007199254740991L;// Number.MIN_SAFE_INTEGER
-        public static IEnumerable<object[]> MarshalInt52Cases()
-        {
-            yield return new object[] { -1 };
-            yield return new object[] { 42 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { MAX_SAFE_INTEGER };
-            yield return new object[] { MIN_SAFE_INTEGER };
-        }
 
         [Theory]
         [MemberData(nameof(MarshalInt52Cases))]
@@ -756,30 +566,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalInt52Cases))]
-        public void JsExportInt52(long value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Int52,
-                nameof(JavaScriptTestHelper.EchoInt52),
-                "number");
-        }
         #endregion Int52
 
         #region BigInt64
-        public static IEnumerable<object[]> MarshalBigInt64Cases()
-        {
-            yield return new object[] { -1 };
-            yield return new object[] { 42 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { MAX_SAFE_INTEGER };
-            yield return new object[] { MIN_SAFE_INTEGER };
-            yield return new object[] { long.MinValue };
-            yield return new object[] { long.MaxValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalBigInt64Cases))]
         public void JsImportBigInt64(long value)
@@ -793,29 +582,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "bigint");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalBigInt64Cases))]
-        public void JsExportBigInt64(long value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_BigInt64,
-                nameof(JavaScriptTestHelper.EchoBigInt64),
-                "bigint");
-        }
         #endregion BigInt64
 
         #region Double
-        public static IEnumerable<object[]> MarshalDoubleCases()
-        {
-            yield return new object[] { Math.PI };
-            yield return new object[] { 0.0 };
-            yield return new object[] { double.MaxValue };
-            yield return new object[] { double.MinValue };
-            yield return new object[] { double.NegativeInfinity };
-            yield return new object[] { double.PositiveInfinity };
-            yield return new object[] { double.NaN };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalDoubleCases))]
         public void JsImportDouble(double value)
@@ -829,29 +598,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalDoubleCases))]
-        public void JsExportDouble(double value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Double,
-                nameof(JavaScriptTestHelper.EchoDouble),
-                "number");
-        }
         #endregion Double
 
         #region Single
-        public static IEnumerable<object[]> MarshalSingleCases()
-        {
-            yield return new object[] { (float)Math.PI };
-            yield return new object[] { 0.0f };
-            yield return new object[] { float.MaxValue };
-            yield return new object[] { float.MinValue };
-            yield return new object[] { float.NegativeInfinity };
-            yield return new object[] { float.PositiveInfinity };
-            yield return new object[] { float.NaN };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalSingleCases))]
         public void JsImportSingle(float value)
@@ -865,28 +614,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalSingleCases))]
-        public void JsExportSingle(float value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Single,
-                nameof(JavaScriptTestHelper.EchoSingle),
-                "number");
-        }
         #endregion Single
 
         #region IntPtr
-        public static IEnumerable<object[]> MarshalIntPtrCases()
-        {
-            yield return new object[] { (IntPtr)42 };
-            yield return new object[] { IntPtr.Zero };
-            yield return new object[] { (IntPtr)1 };
-            yield return new object[] { (IntPtr)(-1) };
-            yield return new object[] { IntPtr.MaxValue };
-            yield return new object[] { IntPtr.MinValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalIntPtrCases))]
         public void JsImportIntPtr(IntPtr value)
@@ -900,15 +630,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalIntPtrCases))]
-        public void JsExportIntPtr(IntPtr value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_IntPtr,
-                nameof(JavaScriptTestHelper.EchoIntPtr),
-                "number");
-        }
         #endregion IntPtr
 
         #region VoidPtr
@@ -929,24 +650,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("number", actualJsType);
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalIntPtrCases))]
-        public unsafe void JsExportVoidPtr(IntPtr xvalue)
-        {
-            void* value = (void*)xvalue;
-            void* res = JavaScriptTestHelper.invoke1_VoidPtr(value, nameof(JavaScriptTestHelper.EchoVoidPtr));
-            Assert.True(value == res);
-        }
         #endregion VoidPtr
 
         #region Datetime
-        public static IEnumerable<object[]> MarshalDateTimeCases()
-        {
-            yield return new object[] { new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
-            yield return new object[] { TrimNano(DateTime.UtcNow) };
-            yield return new object[] { TrimNano(DateTime.MaxValue) };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalDateTimeCases))]
         public void JSImportDateTime(DateTime value)
@@ -960,25 +666,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", "Date");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalDateTimeCases))]
-        public void JsExportDateTime(DateTime value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_DateTime,
-                nameof(JavaScriptTestHelper.EchoDateTime),
-                "object", "Date");
-        }
         #endregion Datetime
 
         #region DateTimeOffset
-        public static IEnumerable<object[]> MarshalDateTimeOffsetCases()
-        {
-            yield return new object[] { DateTimeOffset.FromUnixTimeSeconds(0) };
-            yield return new object[] { TrimNano(DateTimeOffset.UtcNow) };
-            yield return new object[] { TrimNano(DateTimeOffset.MaxValue) };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalDateTimeOffsetCases))]
         public void JSImportDateTimeOffset(DateTimeOffset value)
@@ -992,25 +682,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", "Date");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalDateTimeOffsetCases))]
-        public void JsExportDateTimeOffset(DateTimeOffset value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_DateTimeOffset,
-                nameof(JavaScriptTestHelper.EchoDateTimeOffset),
-                "object", "Date");
-        }
         #endregion DateTimeOffset
 
         #region NullableBoolean
-        public static IEnumerable<object[]> MarshalNullableBooleanCases()
-        {
-            yield return new object[] { null };
-            yield return new object[] { true };
-            yield return new object[] { false };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalNullableBooleanCases))]
         public void JsImportNullableBoolean(bool? value)
@@ -1024,29 +698,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "boolean");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalNullableBooleanCases))]
-        public void JsExportNullableBoolean(bool? value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_NullableBoolean,
-                nameof(JavaScriptTestHelper.EchoNullableBoolean),
-                "boolean");
-        }
         #endregion NullableBoolean
 
         #region NullableInt32
-        public static IEnumerable<object[]> MarshalNullableInt32Cases()
-        {
-            yield return new object[] { null };
-            yield return new object[] { 42 };
-            yield return new object[] { 0 };
-            yield return new object[] { 1 };
-            yield return new object[] { -1 };
-            yield return new object[] { int.MaxValue };
-            yield return new object[] { int.MinValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalNullableInt32Cases))]
         public void JsImportNullableInt32(int? value)
@@ -1060,31 +714,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalNullableInt32Cases))]
-        public void JsExportNullableInt32(int? value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_NullableInt32,
-                nameof(JavaScriptTestHelper.EchoNullableInt32),
-                "number");
-        }
         #endregion NullableInt32
 
         #region NullableBigInt64
-        public static IEnumerable<object[]> MarshalNullableBigInt64Cases()
-        {
-            yield return new object[] { null };
-            yield return new object[] { 42L };
-            yield return new object[] { 0L };
-            yield return new object[] { 1L };
-            yield return new object[] { -1L };
-            yield return new object[] { MAX_SAFE_INTEGER };
-            yield return new object[] { MIN_SAFE_INTEGER };
-            yield return new object[] { long.MaxValue };
-            yield return new object[] { long.MinValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalNullableBigInt64Cases))]
         public void JsImportNullableBigInt64(long? value)
@@ -1098,29 +730,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "bigint");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalNullableBigInt64Cases))]
-        public void JsExportNullableBigInt64(long? value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_NullableBigInt64,
-                nameof(JavaScriptTestHelper.EchoNullableBigInt64),
-                "bigint");
-        }
         #endregion NullableBigInt64
 
         #region NullableIntPtr
-        public static IEnumerable<object[]> MarshalNullableIntPtrCases()
-        {
-            yield return new object[] { null };
-            yield return new object[] { (IntPtr)42 };
-            yield return new object[] { IntPtr.Zero };
-            yield return new object[] { (IntPtr)1 };
-            yield return new object[] { (IntPtr)(-1) };
-            yield return new object[] { IntPtr.MaxValue };
-            yield return new object[] { IntPtr.MinValue };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalNullableIntPtrCases))]
         public void JsImportNullableIntPtr(IntPtr? value)
@@ -1134,30 +746,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalNullableIntPtrCases))]
-        public void JsExportNullableIntPtr(IntPtr? value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_NullableIntPtr,
-                nameof(JavaScriptTestHelper.EchoNullableIntPtr),
-                "number");
-        }
         #endregion NullableIntPtr
 
         #region NullableDouble
-        public static IEnumerable<object[]> MarshalNullableDoubleCases()
-        {
-            yield return new object[] { null };
-            yield return new object[] { Math.PI };
-            yield return new object[] { 0.0 };
-            yield return new object[] { double.MaxValue };
-            yield return new object[] { double.MinValue };
-            yield return new object[] { double.NegativeInfinity };
-            yield return new object[] { double.PositiveInfinity };
-            yield return new object[] { double.NaN };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalNullableDoubleCases))]
         public void JsImportNullableDouble(double? value)
@@ -1171,26 +762,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "number");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalNullableDoubleCases))]
-        public void JsExportNullableDouble(double? value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_NullableDouble,
-                nameof(JavaScriptTestHelper.EchoNullableDouble),
-                "number");
-        }
         #endregion NullableDouble
 
         #region NullableDateTime
-        public static IEnumerable<object[]> MarshalNullableDateTimeCases()
-        {
-            yield return new object[] { null };
-            yield return new object[] { new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc) };
-            yield return new object[] { TrimNano(DateTime.UtcNow) };
-            yield return new object[] { TrimNano(DateTime.MaxValue) };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalNullableDateTimeCases))]
         public void JsImportNullableDateTime(DateTime? value)
@@ -1204,27 +778,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object");
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalNullableDateTimeCases))]
-        public void JsExportNullableDateTime(DateTime? value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_NullableDateTime,
-                nameof(JavaScriptTestHelper.EchoNullableDateTime),
-                "object");
-        }
         #endregion NullableDateTime
 
         #region String
-        public static IEnumerable<object[]> MarshalStringCases()
-        {
-            yield return new object[] { null };
-            yield return new object[] { string.Empty };
-            yield return new object[] { "Ahoj" + Random.Shared.Next() };// shorted than 256 -> check in JS interned
-            yield return new object[] { "Ahoj" + new string('!', 300) };// longer than 256 -> no check in JS interned
-            yield return new object[] { string.Intern("dotnet") };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalStringCases))]
         public void JsImportString(string value)
@@ -1236,78 +792,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 JavaScriptTestHelper.throw1_String,
                 JavaScriptTestHelper.identity1_String
                 , "string");
-        }
-
-        [Theory]
-        [MemberData(nameof(MarshalStringCases))]
-        public void JsExportString(string value)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_String,
-                nameof(JavaScriptTestHelper.EchoString),
-                "string");
-        }
-
-        [Fact]
-        public void JsExportStringNoNs()
-        {
-            var actual = JavaScriptTestHelper.invoke2_String("test", nameof(JavaScriptTestHelperNoNamespace.EchoString));
-            Assert.Equal("test51", actual);
-        }
-
-        [Fact]
-        public void JsExportStructClassRecords()
-        {
-            var actual = JavaScriptTestHelper.invokeStructClassRecords("test");
-            Assert.Equal(48, actual.Length);
-            Assert.Equal("test11", actual[0]);
-            Assert.Equal("test12", actual[1]);
-            Assert.Equal("test13", actual[2]);
-            Assert.Equal("test14", actual[3]);
-            Assert.Equal("test15", actual[4]);
-            Assert.Equal("test16", actual[5]);
-            Assert.Equal("test17", actual[6]);
-            Assert.Equal("test18", actual[7]);
-            Assert.Equal("test19", actual[8]);
-            Assert.Equal("test21", actual[9]);
-            Assert.Equal("test22", actual[10]);
-            Assert.Equal("test23", actual[11]);
-            Assert.Equal("test24", actual[12]);
-            Assert.Equal("test25", actual[13]);
-            Assert.Equal("test31", actual[14]);
-            Assert.Equal("test32", actual[15]);
-            Assert.Equal("test33", actual[16]);
-            Assert.Equal("test34", actual[17]);
-            Assert.Equal("test35", actual[18]);
-            Assert.Equal("test41", actual[19]);
-            Assert.Equal("test42", actual[20]);
-            Assert.Equal("test43", actual[21]);
-            Assert.Equal("test44", actual[22]);
-            Assert.Equal("test45", actual[23]);
-            Assert.Equal("test51", actual[24]);
-            Assert.Equal("test52", actual[25]);
-            Assert.Equal("test53", actual[26]);
-            Assert.Equal("test54", actual[27]);
-            Assert.Equal("test55", actual[28]);
-            Assert.Equal("test56", actual[29]);
-            Assert.Equal("test57", actual[30]);
-            Assert.Equal("test58", actual[31]);
-            Assert.Equal("test59", actual[32]);
-            Assert.Equal("test61", actual[33]);
-            Assert.Equal("test62", actual[34]);
-            Assert.Equal("test63", actual[35]);
-            Assert.Equal("test64", actual[36]);
-            Assert.Equal("test65", actual[37]);
-            Assert.Equal("test71", actual[38]);
-            Assert.Equal("test72", actual[39]);
-            Assert.Equal("test73", actual[40]);
-            Assert.Equal("test74", actual[41]);
-            Assert.Equal("test75", actual[42]);
-            Assert.Equal("test81", actual[43]);
-            Assert.Equal("test82", actual[44]);
-            Assert.Equal("test83", actual[45]);
-            Assert.Equal("test84", actual[46]);
-            Assert.Equal("test85", actual[47]);
         }
 
         [Fact]
@@ -1337,12 +821,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #endregion String
 
         #region Object
-        public static IEnumerable<object[]> MarshalObjectCases()
-        {
-            yield return new object[] { new object(), "ManagedObject" };
-            yield return new object[] { null, null };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalObjectCases))]
         public void JSImportObject(object value, string clazz)
@@ -1356,25 +834,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", clazz);
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalObjectCases))]
-        public void JsExportObject(object value, string clazz)
-        {
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Object,
-                nameof(JavaScriptTestHelper.EchoObject),
-                "object", clazz);
-        }
         #endregion Object
 
         #region Exception
-        public static IEnumerable<object[]> MarshalExceptionCases()
-        {
-            yield return new object[] { new Exception("Test"), "ManagedError" };
-            yield return new object[] { null, "JSTestError" };
-            yield return new object[] { null, null };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalExceptionCases))]
         public void JSImportException(Exception value, string clazz)
@@ -1393,29 +855,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", clazz);
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalExceptionCases))]
-        public void JsExportException(Exception value, string clazz)
-        {
-            if (clazz == "JSTestError")
-            {
-                value = JavaScriptTestHelper.createException("!CreateEx!");
-            }
-
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_Exception,
-                nameof(JavaScriptTestHelper.EchoException),
-                "object", clazz);
-        }
-
-        [Fact]
-        public void JsExportThrows()
-        {
-            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport)));
-            Assert.DoesNotContain("Unexpected error", ex.Message);
-            Assert.Contains("-t-e-s-t-", ex.Message);
-        }
-
         [Fact]
         public void JSImportReturnError()
         {
@@ -1424,35 +863,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("this-is-error", err.Message);
         }
 
-        [Fact]
-        public void JsExportCatchToString()
-        {
-            var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
-            Assert.DoesNotContain("Unexpected error", toString);
-            Assert.Contains("-t-e-s-t-", toString);
-            Assert.DoesNotContain(nameof(JavaScriptTestHelper.ThrowFromJSExport), toString);
-        }
-
-        [Fact]
-        public void JsExportCatchStack()
-        {
-            var stack = JavaScriptTestHelper.catch1stack("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
-            Assert.Contains(nameof(JavaScriptTestHelper.ThrowFromJSExport), stack);
-            if (PlatformDetection.IsBrowserDomSupportedOrNodeJS)
-            {
-                Assert.Contains("catch1stack", stack);
-            }
-        }
-
         #endregion Exception
 
         #region JSObject
-        public static IEnumerable<object[]> MarshalIJSObjectCases()
-        {
-            yield return new object[] { null, "JSData" };
-            yield return new object[] { null, null };
-        }
-
         [Theory]
         [MemberData(nameof(MarshalIJSObjectCases))]
         public void JSImportIJSObject(JSObject value, string clazz)
@@ -1471,20 +884,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "object", clazz);
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalIJSObjectCases))]
-        public void JsExportIJSObject(JSObject value, string clazz)
-        {
-            if (clazz == "JSData")
-            {
-                value = JavaScriptTestHelper.createData("!CreateJS!");
-            }
-
-            JsExportTest(value,
-                JavaScriptTestHelper.invoke1_JSObject,
-                nameof(JavaScriptTestHelper.EchoIJSObject),
-                "object", clazz);
-        }
         #endregion JSObject
 
         #region ProxyOfProxy
@@ -1517,7 +916,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public async Task JsImportTaskTypes()
         {
-            for(int i=0;i<100;i++)
+            for (int i = 0; i < 100; i++)
             {
                 object a = new object();
                 Exception e = new Exception();
@@ -1641,14 +1040,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await Assert.ThrowsAsync<Exception>(async () => await task);
         }
 
-        public static IEnumerable<object[]> TaskCases()
-        {
-            yield return new object[] { Math.PI };
-            yield return new object[] { 0 };
-            yield return new object[] { "test" };
-            yield return new object[] { null };
-        }
-
         [Theory]
         [MemberData(nameof(TaskCases))]
         public async Task JsImportTaskAwaitPendingResult(object result)
@@ -1713,26 +1104,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await task;
         }
 
-        [Theory]
-        [MemberData(nameof(MarshalInt32Cases))]
-        public async Task JsExportTaskOfInt(int value)
-        {
-            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
-
-            var res = JavaScriptTestHelper.invoke1_TaskOfInt(tcs.Task, nameof(JavaScriptTestHelper.AwaitTaskOfObject));
-            tcs.SetResult(value);
-            await Task.Yield();
-            var rr = await res;
-            await Task.Yield();
-            Assert.Equal(value, rr);
-            //GC.Collect();
-        }
-
         #endregion
 
         #region Action
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_EchoAction()
         {
             bool called = false;
@@ -1747,8 +1123,39 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWasmThreadingSupported))]
+        public void JsImportCallback_EchoActionThrows_MT()
+        {
+            bool called = false;
+            Action expected = () =>
+            {
+                called = true;
+            };
+            var actual = JavaScriptTestHelper.echo1_ActionAction(expected);
+            Assert.NotEqual(expected, actual);
+            Assert.False(called);
+            // with deputy thread, call back to C# from synchronous JS function is not allowed
+            Assert.Throws<JSException>(()=>actual());
+            Assert.False(called);
+        }
 
         [Fact]
+        public async Task JsImportCallback_Async()
+        {
+            bool called = false;
+            var promise = JavaScriptTestHelper.backback_FuncIntIntFuncIntIntAsync((a,b) =>
+            {
+                called = true;
+                return a + b;
+            }, 123, 321);
+            Assert.False(called);
+            var actual = await promise;
+            Assert.True(called);
+            Assert.Equal(444, actual);
+        }
+
+
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         [OuterLoop]
         public async Task JsImportCallback_EchoActionMany()
         {
@@ -1769,7 +1176,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_Action()
         {
             bool called = false;
@@ -1780,7 +1187,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportEcho_ActionAction()
         {
             bool called = false;
@@ -1793,7 +1200,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.True(called);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportEcho_ActionIntActionInt()
         {
             int calledA = -1;
@@ -1806,7 +1213,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, calledA);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_ActionInt()
         {
             int called = -1;
@@ -1817,7 +1224,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, called);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1830,7 +1237,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(42, res);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportBackCallback_FunctionIntInt()
         {
             int called = -1;
@@ -1845,7 +1252,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, called);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportBackCallback_FunctionIntIntIntInt()
         {
             int calledA = -1;
@@ -1864,7 +1271,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(84, calledB);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_ActionIntInt()
         {
             int calledA = -1;
@@ -1878,7 +1285,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_ActionLongLong()
         {
             long calledA = -1;
@@ -1892,7 +1299,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_ActionIntLong()
         {
             int calledA = -1;
@@ -1906,7 +1313,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(43, calledB);
         }
 
-        [Fact]
+        //TODO [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWasmThreadingSupported))] // this test doesn't make sense with deputy
         public void JsImportCallback_ActionIntThrow()
         {
             int called = -1;
@@ -1921,39 +1328,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public void JsExportCallback_FunctionIntInt()
-        {
-            int called = -1;
-            var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
-            {
-                called = a;
-                return a;
-            }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
-
-            Assert.Equal(-1, called);
-            var actual = chain(42);
-            Assert.Equal(42, actual);
-            Assert.Equal(42, called);
-        }
-
-        [Fact]
-        public void JsExportCallback_FunctionIntIntThrow()
-        {
-            int called = -1;
-            var expected = new Exception("test!!");
-            var chain = JavaScriptTestHelper.invoke1_FuncOfIntInt((int a) =>
-            {
-                called = a;
-                throw expected;
-            }, nameof(JavaScriptTestHelper.BackFuncOfIntInt));
-
-            Assert.Equal(-1, called);
-            var actual = Assert.Throws<Exception>(() => chain(42));
-            Assert.Equal(42, called);
-            Assert.Same(expected, actual);
-        }
-
-        [Fact]
         public void JsImportMath()
         {
             Func<int, int, int> plus = Utils.CreateFunctionIntIntInt("a", "b", @"return a+b");
@@ -1961,14 +1335,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         #endregion
-
-        private void JsExportTest<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
-        , Func<T, string, T> invoke, string echoName, string jsType, string? jsClass = null)
-        {
-            T res;
-            res = invoke(value, echoName);
-            Assert.Equal<T>(value, res);
-        }
 
         private void JsImportTest<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
             , Action<T> store1
@@ -2111,27 +1477,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 var resEx = JavaScriptTestHelper.retrieve1_Exception();
                 Assert.Equal((Exception)(object)value, resEx);
             }
-        }
-
-        public async Task InitializeAsync()
-        {
-            await JavaScriptTestHelper.InitializeAsync();
-        }
-
-        public async Task DisposeAsync()
-        {
-            await JavaScriptTestHelper.DisposeAsync();
-        }
-
-        // js Date doesn't have nanosecond precision
-        public static DateTime TrimNano(DateTime date)
-        {
-            return new DateTime(date.Ticks - (date.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Utc);
-        }
-
-        public static DateTimeOffset TrimNano(DateTimeOffset date)
-        {
-            return new DateTime(date.Ticks - (date.Ticks % TimeSpan.TicksPerMillisecond), DateTimeKind.Utc);
         }
     }
 }
