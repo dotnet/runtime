@@ -483,23 +483,38 @@ namespace System.Numerics.Tests
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertFromChecked<TOther>(TOther value, out BinaryIntegerWrapper<T> result)
             {
                 bool succeeded = T.TryConvertFromChecked(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToChecked(value, out actualResult);
+                }
+
                 result = actualResult;
                 return succeeded;
-
             }
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertFromSaturating<TOther>(TOther value, out BinaryIntegerWrapper<T> result)
             {
                 bool succeeded = T.TryConvertFromSaturating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToSaturating(value, out actualResult);
+                }
+
                 result = actualResult;
                 return succeeded;
-
             }
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertFromTruncating<TOther>(TOther value, out BinaryIntegerWrapper<T> result)
             {
                 bool succeeded = T.TryConvertFromTruncating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToTruncating(value, out actualResult);
+                }
+
                 result = actualResult;
                 return succeeded;
-
             }
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToChecked<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToChecked(value.Value, out result);
             static bool INumberBase<BinaryIntegerWrapper<T>>.TryConvertToSaturating<TOther>(BinaryIntegerWrapper<T> value, out TOther result) => T.TryConvertToSaturating(value.Value, out result);
@@ -691,13 +706,24 @@ namespace System.Numerics.Tests
             static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertFromChecked<TOther>(TOther value, out BinaryFloatingPointIeee754Wrapper<T> result)
             {
                 bool succeeded = T.TryConvertFromChecked(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToChecked(value, out actualResult);
+                }
+
                 result = actualResult;
                 return succeeded;
-
             }
             static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertFromSaturating<TOther>(TOther value, out BinaryFloatingPointIeee754Wrapper<T> result)
             {
                 bool succeeded = T.TryConvertFromSaturating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToSaturating(value, out actualResult);
+                }
+
                 result = actualResult;
                 return succeeded;
 
@@ -705,9 +731,14 @@ namespace System.Numerics.Tests
             static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertFromTruncating<TOther>(TOther value, out BinaryFloatingPointIeee754Wrapper<T> result)
             {
                 bool succeeded = T.TryConvertFromTruncating(value, out T actualResult);
+
+                if (!succeeded)
+                {
+                    succeeded = TOther.TryConvertToTruncating(value, out actualResult);
+                }
+
                 result = actualResult;
                 return succeeded;
-
             }
             static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToChecked<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToChecked(value.Value, out result);
             static bool INumberBase<BinaryFloatingPointIeee754Wrapper<T>>.TryConvertToSaturating<TOther>(BinaryFloatingPointIeee754Wrapper<T> value, out TOther result) => T.TryConvertToSaturating(value.Value, out result);
