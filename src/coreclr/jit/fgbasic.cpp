@@ -2904,10 +2904,9 @@ void Compiler::fgLinkBasicBlocks()
     //
     fgFirstBB->bbRefs = 1;
 
-    // Special args to fgAddRefPred so it will use the initialization fast path.
+    // Special arg to fgAddRefPred so it will use the initialization fast path.
     //
-    FlowEdge* const oldEdge           = nullptr;
-    bool const      initializingPreds = true;
+    const bool initializingPreds = true;
 
     for (BasicBlock* const curBBdesc : Blocks())
     {
@@ -2915,15 +2914,16 @@ void Compiler::fgLinkBasicBlocks()
         {
             case BBJ_COND:
             {
-                BasicBlock* const trueTarget = fgLookupBB(curBBdesc->GetTargetOffs());
+                BasicBlock* const trueTarget  = fgLookupBB(curBBdesc->GetTargetOffs());
+                BasicBlock* const falseTarget = curBBdesc->Next();
                 curBBdesc->SetTrueTarget(trueTarget);
-                curBBdesc->SetFalseTarget(curBBdesc->Next());
-                fgAddRefPred<initializingPreds>(trueTarget, curBBdesc, oldEdge);
-                fgAddRefPred<initializingPreds>(curBBdesc->GetFalseTarget(), curBBdesc, oldEdge);
+                curBBdesc->SetFalseTarget(falseTarget);
+                fgAddRefPred<initializingPreds>(trueTarget, curBBdesc);
+                fgAddRefPred<initializingPreds>(falseTarget, curBBdesc);
 
-                if (curBBdesc->GetTrueTarget()->bbNum <= curBBdesc->bbNum)
+                if (trueTarget->bbNum <= curBBdesc->bbNum)
                 {
-                    fgMarkBackwardJump(curBBdesc->GetTrueTarget(), curBBdesc);
+                    fgMarkBackwardJump(trueTarget, curBBdesc);
                 }
 
                 if (curBBdesc->IsLast())
@@ -2945,7 +2945,7 @@ void Compiler::fgLinkBasicBlocks()
                 // Redundantly use SetKindAndTarget() instead of SetTarget() just this once,
                 // so we don't break the HasInitializedTarget() invariant of SetTarget().
                 curBBdesc->SetKindAndTarget(curBBdesc->GetKind(), jumpDest);
-                fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
+                fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
 
                 if (curBBdesc->GetTarget()->bbNum <= curBBdesc->bbNum)
                 {
@@ -2978,7 +2978,7 @@ void Compiler::fgLinkBasicBlocks()
                 {
                     BasicBlock* jumpDest = fgLookupBB((unsigned)*(size_t*)jumpPtr);
                     *jumpPtr             = jumpDest;
-                    fgAddRefPred<initializingPreds>(jumpDest, curBBdesc, oldEdge);
+                    fgAddRefPred<initializingPreds>(jumpDest, curBBdesc);
                     if ((*jumpPtr)->bbNum <= curBBdesc->bbNum)
                     {
                         fgMarkBackwardJump(*jumpPtr, curBBdesc);
@@ -3839,7 +3839,8 @@ void Compiler::fgFindBasicBlocks()
                 {
                     // Mark catch handler as successor.
                     block->SetTarget(hndBegBB);
-                    fgAddRefPred(hndBegBB, block);
+                    FlowEdge* const newEdge = fgAddRefPred(hndBegBB, block);
+                    newEdge->setLikelihood(1.0);
                     assert(block->GetTarget()->bbCatchTyp == BBCT_FILTER_HANDLER);
                     break;
                 }

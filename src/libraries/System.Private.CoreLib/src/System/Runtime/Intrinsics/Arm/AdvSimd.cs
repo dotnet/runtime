@@ -1719,9 +1719,6 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static unsafe Vector128<ulong> LoadAndReplicateToVector128(ulong* address) => LoadAndReplicateToVector128(address);
 
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
             /// <summary>
             ///   A64: LD2R { Vn.16B, Vn+1.16B }, [Xn]
             /// </summary>
@@ -1871,7 +1868,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LD4R { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadAndReplicateToVector128x4(double* address) => LoadAndReplicateToVector128x4(address);
-#endif
 
             /// <summary>
             ///   A64: LDP Dt1, Dt2, [Xn]
@@ -2102,9 +2098,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LDNP Qt1, Qt2, [Xn]
             /// </summary>
             public static unsafe (Vector128<ulong> Value1, Vector128<ulong> Value2) LoadPairVector128NonTemporal(ulong* address) => LoadPairVector128NonTemporal(address);
-
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
 
             /// <summary>
             ///   A64: LD2 { Vn.16B, Vn+1.16B }, [Xn]
@@ -2405,7 +2398,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LD1 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadVector128x4(double* address) => LoadVector128x4(address);
-#endif
 
             /// <summary>
             /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
@@ -9379,9 +9371,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector128<uint> LoadAndReplicateToVector128(uint* address) => LoadAndReplicateToVector128(address);
 
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
         /// <summary>
         ///   A64: LD2R { Vn.8B, Vn+1.8B }, [Xn]
         /// </summary>
@@ -9486,7 +9475,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD4R { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadAndReplicateToVector64x4(float* address) => LoadAndReplicateToVector64x4(address);
-#endif
 
         /// <summary>
         /// uint8x8_t vld1_u8 (uint8_t const * ptr)
@@ -9627,9 +9615,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2D, [Xn]
         /// </summary>
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) => LoadVector128(address);
-
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
 
         /// <summary>
         ///   A64: LD2 { Vn.8B, Vn+1.8B }, [Xn]
@@ -9840,7 +9825,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadVector64x4(float* address) => LoadVector64x4(address);
-#endif
 
         /// <summary>
         /// uint8x8_t vmax_u8 (uint8x8_t a, uint8x8_t b)

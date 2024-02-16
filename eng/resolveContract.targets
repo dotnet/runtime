@@ -51,6 +51,7 @@
   <PropertyGroup>
     <ApiCompatContractItemName>ResolvedMatchingContract</ApiCompatContractItemName>
     <ApiCompatStrictMode Condition="'$(ApiCompatStrictMode)' == ''">true</ApiCompatStrictMode>
+    <ApiCompatUseRoslynToolsetPackagePath Condition="'$(DotNetBuildSourceOnly)' == 'true'">true</ApiCompatUseRoslynToolsetPackagePath>
 
     <!-- Optional rules -->
     <ApiCompatEnableRuleAttributesMustMatch>true</ApiCompatEnableRuleAttributesMustMatch>

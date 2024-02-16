@@ -856,12 +856,13 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
             case O2K_IND_CNS_INT:
                 if (curAssertion->op1.kind == O1K_EXACT_TYPE)
                 {
-                    printf("Exact Type MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
-                    assert(curAssertion->op2.HasIconFlag());
+                    ssize_t iconVal = curAssertion->op2.u1.iconVal;
+                    printf("Exact Type MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
-                    printf("MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
+                    ssize_t iconVal = curAssertion->op2.u1.iconVal;
+                    printf("MT(0x%p %s)", dspPtr(iconVal), eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                     assert(curAssertion->op2.HasIconFlag());
                 }
                 else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
@@ -1368,7 +1369,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     {
                         noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
-                        if (_isnan(op2->AsDblCon()->DconValue()))
+                        if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
@@ -1691,8 +1692,8 @@ bool Compiler::optAssertionVnInvolvesNan(AssertionDsc* assertion)
         if (vnStore->IsVNConstant(vns[i]))
         {
             var_types type = vnStore->TypeOfVN(vns[i]);
-            if ((type == TYP_FLOAT && _isnan(vnStore->ConstantValue<float>(vns[i])) != 0) ||
-                (type == TYP_DOUBLE && _isnan(vnStore->ConstantValue<double>(vns[i])) != 0))
+            if ((type == TYP_FLOAT && FloatingPointUtils::isNaN(vnStore->ConstantValue<float>(vns[i])) != 0) ||
+                (type == TYP_DOUBLE && FloatingPointUtils::isNaN(vnStore->ConstantValue<double>(vns[i])) != 0))
             {
                 return true;
             }
@@ -4351,7 +4352,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             // which will yield a false correctly. Instead if IL had "op1 != NaN", then we already
             // made op1 NaN which will yield a true correctly. Note that this is irrespective of the
             // assertion we have made.
-            allowReverse = (_isnan(constant) == 0);
+            allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeGet() == TYP_FLOAT)
         {
@@ -4359,7 +4360,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             op1->BashToConst(constant);
 
             // See comments for TYP_DOUBLE.
-            allowReverse = (_isnan(constant) == 0);
+            allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeGet() == TYP_REF)
         {

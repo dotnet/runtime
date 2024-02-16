@@ -80,6 +80,14 @@ const skipInstantiateByAssetTypes: {
     "segmentation-rules": true,
 };
 
+// load again for each worker
+const loadIntoWorker: {
+    [k: string]: boolean
+} = {
+    "symbols": true,
+    "segmentation-rules": true,
+};
+
 export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
     return !(asset.behavior == "icu" && asset.name != loaderHelpers.preferredIcuAsset);
 }
@@ -266,7 +274,7 @@ export function prepareAssets() {
             }
         }
 
-        if (config.debugLevel != 0 && resources.pdb) {
+        if (config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && resources.pdb) {
             for (const name in resources.pdb) {
                 assetsToLoad.push({
                     name,
@@ -360,6 +368,9 @@ export function prepareAssetsWorker() {
 
     for (const asset of config.assets) {
         set_single_asset(asset);
+        if (loadIntoWorker[asset.behavior]) {
+            assetsToLoad.push(asset);
+        }
     }
 }
 
