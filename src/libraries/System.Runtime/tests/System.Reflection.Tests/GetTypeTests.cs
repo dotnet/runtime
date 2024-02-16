@@ -297,6 +297,26 @@ namespace System.Reflection.Tests
             args = new object[1] { Activator.CreateInstance(otherEquivalentValueType) };
             Assert.Equal(42, mi.Invoke(null, args));
         }
+
+        [Fact]
+        public void IgnoreLeadingDotForTypeNamesWithoutNamespace()
+        {
+            Type typeWithNoNamespace = typeof(NoNamespace);
+
+            Assert.Equal(typeWithNoNamespace, Type.GetType($".{typeWithNoNamespace.AssemblyQualifiedName}"));
+            Assert.Equal(typeWithNoNamespace, Type.GetType(typeWithNoNamespace.AssemblyQualifiedName));
+
+            Assert.Equal(typeWithNoNamespace, typeWithNoNamespace.Assembly.GetType($".{typeWithNoNamespace.FullName}"));
+            Assert.Equal(typeWithNoNamespace, typeWithNoNamespace.Assembly.GetType(typeWithNoNamespace.FullName));
+
+            Assert.Equal(typeof(List<NoNamespace>), Type.GetType($"{typeof(List<>).FullName}[[{typeWithNoNamespace.AssemblyQualifiedName}]]"));
+            Assert.Equal(typeof(List<NoNamespace>), Type.GetType($"{typeof(List<>).FullName}[[.{typeWithNoNamespace.AssemblyQualifiedName}]]"));
+
+            Type typeWithNamespace = typeof(int);
+
+            Assert.Equal(typeWithNamespace, Type.GetType(typeWithNamespace.AssemblyQualifiedName));
+            Assert.Null(Type.GetType($".{typeWithNamespace.AssemblyQualifiedName}"));
+        }
     }
 
     namespace MyNamespace1
@@ -351,4 +371,9 @@ namespace System.Reflection.Tests
     public class MyClass1 { }
 
     public class GenericClass<T> { }
+}
+
+public class NoNamespace
+{
+
 }
