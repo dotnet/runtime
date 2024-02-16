@@ -637,7 +637,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_SWIFT_ERROR:
             srcCount = 0;
             assert(dstCount == 1);
-            
+
             // After a Swift call potentially trashes the error register,
             // the register can be used again only if there is a GT_SWIFT_ERROR node to consume it
             // (i.e. the register's value is saved to a SwiftError)
