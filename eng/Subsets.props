@@ -44,7 +44,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- If we're building from source, then we want to build all of the assets even in a PGO-instrumented build as downstream repos will not be able to pull assets from a matching non-PGO-instrumented build. -->
+    <!-- If we're building in the VMR, then we want to build all of the assets even in a PGO-instrumented build as downstream repos will not be able to pull assets from a matching non-PGO-instrumented build. -->
     <BuildOnlyPgoInstrumentedAssets Condition="'$(PgoInstrument)' == 'true' and '$(DotNetBuild)' != 'true'">true</BuildOnlyPgoInstrumentedAssets>
   </PropertyGroup>
 
