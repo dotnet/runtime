@@ -58,6 +58,9 @@
 
 #include "exinfo.h"
 
+using std::isfinite;
+using std::isnan;
+
 //========================================================================
 //
 // This file contains implementation of all JIT helpers. The helpers are

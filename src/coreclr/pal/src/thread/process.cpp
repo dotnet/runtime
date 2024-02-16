@@ -85,6 +85,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #ifdef __APPLE__
 #include <libproc.h>
+#include <pwd.h>
 #include <sys/sysctl.h>
 #include <sys/posix_sem.h>
 #include <mach/task.h>
