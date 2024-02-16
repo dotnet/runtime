@@ -31,6 +31,8 @@ export function strings_init(): void {
         }
         mono_wasm_string_decoder_buffer = Module._malloc(12);
     }
+    if (!mono_wasm_string_root)
+        mono_wasm_string_root = mono_wasm_new_root();
 }
 
 export function stringToUTF8(str: string): Uint8Array {
@@ -257,8 +259,6 @@ let mono_wasm_string_root: any;
 export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
     if (mono_string === MonoStringNull)
         return null;
-    if (!mono_wasm_string_root)
-        mono_wasm_string_root = mono_wasm_new_root();
 
     mono_wasm_string_root.value = mono_string;
     const result = monoStringToString(mono_wasm_string_root);

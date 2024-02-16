@@ -352,7 +352,15 @@ type SingleAssetBehaviors =
 /**
  * Typically blazor.boot.json
  */
- | "manifest";
+ | "manifest"
+/**
+ * The debugging symbols
+ */
+ | "symbols"
+/**
+ * Load segmentation rules file for Hybrid Globalization.
+ */
+ | "segmentation-rules";
 type AssetBehaviors = SingleAssetBehaviors | 
 /**
  * Load asset as a managed resource assembly.
@@ -381,15 +389,7 @@ type AssetBehaviors = SingleAssetBehaviors |
 /**
  * The javascript module that came from nuget package .
  */
- | "js-module-library-initializer"
-/**
- * The javascript module for threads.
- */
- | "symbols"
-/**
- * Load segmentation rules file for Hybrid Globalization.
- */
- | "segmentation-rules";
+ | "js-module-library-initializer";
 declare const enum GlobalizationMode {
     /**
      * Load sharded ICU data.

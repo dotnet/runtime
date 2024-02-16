@@ -48,12 +48,9 @@ const fn_signatures: SigLine[] = [
 
     [true, "mono_wasm_assembly_load", "number", ["string"]],
     [true, "mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
-    [true, "mono_wasm_runtime_run_module_cctor", "void", ["number"]],
     [true, "mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
-    [false, "mono_wasm_invoke_method_ref", "void", ["number", "number", "number", "number", "number"]],
     [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
     [true, "mono_wasm_intern_string_ref", "void", ["number"]],
-    [true, "mono_wasm_assembly_get_entry_point", "number", ["number", "number"]],
 
     [false, "mono_wasm_exit", "void", ["number"]],
     [false, "mono_wasm_abort", "void", []],
@@ -64,8 +61,7 @@ const fn_signatures: SigLine[] = [
     [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
-    [false, "mono_wasm_invoke_method_bound", "number", ["number", "number", "number"]],
-    [false, "mono_wasm_invoke_method_raw", "number", ["number", "number"]],
+    [false, "mono_wasm_invoke_method", "void", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
     [true, "mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
     [true, "mono_wasm_i52_to_f64", "number", ["number", "number"]],
@@ -172,9 +168,7 @@ export interface t_Cwraps {
     mono_wasm_assembly_load(name: string): MonoAssembly;
     mono_wasm_assembly_find_class(assembly: MonoAssembly, namespace: string, name: string): MonoClass;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
-    mono_wasm_invoke_method_ref(method: MonoMethod, this_arg: MonoObjectRef, params: VoidPtr, out_exc: MonoObjectRef, out_result: MonoObjectRef): void;
     mono_wasm_string_from_utf16_ref(str: CharPtr, len: number, result: MonoObjectRef): void;
-    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly, idx: number): MonoMethod;
     mono_wasm_intern_string_ref(strRef: MonoStringRef): void;
 
     mono_wasm_exit(exit_code: number): void;
@@ -182,15 +176,13 @@ export interface t_Cwraps {
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
-    mono_wasm_invoke_method_bound(method: MonoMethod, args: JSMarshalerArguments, fail: MonoStringRef): number;
-    mono_wasm_invoke_method_raw(method: MonoMethod, fail: MonoStringRef): number;
+    mono_wasm_invoke_method(method: MonoMethod, args: JSMarshalerArguments): void;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
     mono_wasm_i52_to_f64(source: VoidPtr, error: Int32Ptr): number;
     mono_wasm_u52_to_f64(source: VoidPtr, error: Int32Ptr): number;
     mono_wasm_f64_to_i52(destination: VoidPtr, value: number): I52Error;
     mono_wasm_f64_to_u52(destination: VoidPtr, value: number): I52Error;
-    mono_wasm_runtime_run_module_cctor(assembly: MonoAssembly): void;
     mono_wasm_method_get_name(method: MonoMethod): CharPtr;
     mono_wasm_method_get_full_name(method: MonoMethod): CharPtr;
     mono_wasm_gc_lock(): void;
