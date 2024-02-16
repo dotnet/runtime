@@ -24,6 +24,11 @@
     <SharedLibraryInstallName>@rpath/$(MSBuildProjectName).dylib</SharedLibraryInstallName>
   </PropertyGroup>
 
+  <PropertyGroup>
+      <!-- our CI doesn't have bfd? -->
+      <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
+  </PropertyGroup>
+
 
   <!-- TODO: emit a cmake fragment that includes the location of the ilcompiler nuget's sdk and framework files. -->
 
