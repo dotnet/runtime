@@ -9907,9 +9907,6 @@ PhaseStatus Compiler::fgValueNumber()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // TODO: use this property in asserts to prevent using VN in wrong phases.
-    fgVnValid = true;
-
     // Allocate the value number store.
     assert(fgVNPassesCompleted > 0 || vnStore == nullptr);
     if (fgVNPassesCompleted == 0)

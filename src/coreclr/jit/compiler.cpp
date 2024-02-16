@@ -1946,7 +1946,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaValid                 = false;
-    fgVnValid                  = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -5010,7 +5009,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             }
 
             // Conservatively mark all VNs as stale
-            fgVnValid = false;
+            vnStore = nullptr;
 
             if (fgModified)
             {
@@ -5809,7 +5808,6 @@ void Compiler::ResetOptAnnotations()
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
     fgSsaValid           = false;
-    fgVnValid            = false;
 
     for (BasicBlock* const block : Blocks())
     {

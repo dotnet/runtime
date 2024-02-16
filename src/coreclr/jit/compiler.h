@@ -5501,7 +5501,6 @@ public:
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
     bool     fgSsaValid;           // True if SSA info is valid and can be cross-checked versus IR
-    bool     fgVnValid;            // True if VN info is valid
 
 #ifdef DEBUG
     void DumpSsaSummary();
