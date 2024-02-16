@@ -369,8 +369,8 @@ void Compiler::fgRemoveRefPred(FlowEdge* edge)
     {
         // Splice out the predecessor edge in succBlock's pred list, since it's no longer necessary.
         FlowEdge** ptrToPred;
-        FlowEdge* pred = fgGetPredForBlock(succBlock, predBlock, &ptrToPred);
-        *ptrToPred = pred->getNextPredEdge();
+        FlowEdge*  pred = fgGetPredForBlock(succBlock, predBlock, &ptrToPred);
+        *ptrToPred      = pred->getNextPredEdge();
 
         // Any changes to the flow graph invalidate the dominator sets.
         fgModified = true;
@@ -444,7 +444,7 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_EHFINALLYRET:
-        { 
+        {
             BBehfDesc* const ehfDesc = block->GetEhfTargets();
             for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
             {

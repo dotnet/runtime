@@ -647,9 +647,9 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
 
             for (unsigned i = 0; i < newEhfDesc->bbeCount; i++)
             {
-                FlowEdge* const inspiringEdge = currEhfDesc->bbeSuccs[i];
-                BasicBlock* const ehfTarget = inspiringEdge->getDestinationBlock();
-                FlowEdge* newEdge;
+                FlowEdge* const   inspiringEdge = currEhfDesc->bbeSuccs[i];
+                BasicBlock* const ehfTarget     = inspiringEdge->getDestinationBlock();
+                FlowEdge*         newEdge;
 
                 // Determine if newBlk should target ehfTarget, or be redirected
                 if (redirectMap->Lookup(ehfTarget, &newTarget))

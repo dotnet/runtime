@@ -547,9 +547,9 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
     assert(block->KindIs(BBJ_EHFINALLYRET));
     assert(fgPredsComputed);
 
-    BBehfDesc* const ehfDesc = block->GetEhfTargets();
-    const unsigned succCount = ehfDesc->bbeCount;
-    FlowEdge** succTab = ehfDesc->bbeSuccs;
+    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
+    const unsigned   succCount = ehfDesc->bbeCount;
+    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
     assert(succIndex < succCount);
     FlowEdge* succEdge = succTab[succIndex];
 
@@ -569,7 +569,7 @@ void Compiler::fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex)
         assert(succTab[i]->getDestinationBlock() != succEdge->getDestinationBlock());
     }
 #endif // DEBUG
-   
+
     ehfDesc->bbeCount--;
 }
 
@@ -592,10 +592,10 @@ void Compiler::fgRemoveEhfSuccessor(FlowEdge* succEdge)
 
     fgRemoveRefPred(succEdge);
 
-    BBehfDesc* const ehfDesc = block->GetEhfTargets();
-    const unsigned succCount = ehfDesc->bbeCount;
-    FlowEdge** succTab = ehfDesc->bbeSuccs;
-    bool found = false;
+    BBehfDesc* const ehfDesc   = block->GetEhfTargets();
+    const unsigned   succCount = ehfDesc->bbeCount;
+    FlowEdge**       succTab   = ehfDesc->bbeSuccs;
+    bool             found     = false;
 
     // Search succTab for succEdge so we can splice it out of the table.
     for (unsigned i = 0; i < succCount; i++)
