@@ -409,8 +409,6 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
             this->vlReg.vlrReg = varDsc->GetRegNum();
             break;
 
-#endif // !TARGET_64BIT
-
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
         case TYP_SIMD12:
