@@ -85,8 +85,26 @@ endfunction()
 function(add_imported_nativeaot_library targetName symbolPrefix)
   message(STATUS "${symbolPrefix}_MODE is ${${symbolPrefix}_MODE}")
   if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED")
-    add_library(${targetName} IMPORTED SHARED)
-    # FIXME: finish this
+    add_library(${targetName} INTERFACE)
+
+    set(libName "${${symbolPrefix}_NAME}") # typically same as targetName
+    set(libPath "${${symbolPrefix}_LIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/publish
+    set(libFilename "${libName}${${symbolPrefix}_EXT}") # <libName>.dll, <libName>.so or <libName>.dylib
+    set(libFullPath "${libPath}/${libFilename}")
+    # windows import library
+    set(libImpLibFullPath "${${symbolPrefix}_IMPLIBPATH}") # typically \...\artifacts\bin\<libName>\<config>\<rid>\native\<libName>.lib
+
+    add_library(${targetName}-shared SHARED IMPORTED)
+    set_property(TARGET ${targetName}-shared PROPERTY IMPORTED_LOCATION "${libFullPath}")
+
+    if("${CLR_CMAKE_HOST_WIN32}")
+      set_property(TARGET ${targetName}-shared PROPERTY IMPORTED_IMPLIB "${libImpLibFullPath}")
+    endif()
+
+    # TODO bake this into the cmake fragment?
+    target_include_directories(${targetName}-shared INTERFACE "${CLR_SRC_NATIVE_DIR}/${libName}/inc")
+
+    target_link_libraries(${targetName} INTERFACE ${targetName}-shared)
   elseif ("${${symbolPrefix}_MODE}" STREQUAL "STATIC")
     add_nativeAotFramework_targets_once()
 
@@ -138,7 +156,14 @@ endfunction()
 # before calling this function.
 function(add_imported_nativeaot_library_clr targetName symbolPrefix)
   add_imported_nativeaot_library(${ARGV})
-  if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-    strip_symbols(${ARGV0} symbolFile)
-  endif()
+  # FIXME: target xyz-shared is imported and does not build here
+  #if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+  #  strip_symbols("${ARGV0}-shared" symbolFile)
+  #endif()
 endfunction()
+
+# TODO: copy the shared lib to the correct output folder
+#if("${LIBNAOTHELLO_MODE}" STREQUAL "shared")
+#  add_custom_command(TARGET helloLib POST_BUILD
+#    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:naothello-shared>" "$<TARGET_FILE_DIR:helloLib>")
+#endif()
