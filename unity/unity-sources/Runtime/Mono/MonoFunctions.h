@@ -79,8 +79,6 @@ typedef int (*vprintf_func)(const char* msg, va_list args);
 
 typedef void(*MonoDataFunc) (void *data, void *userData);
 
-DO_API(uint32_t, mono_unity_allocation_granularity, ())
-
 // GLib functions
 #define g_free mono_unity_g_free
 DO_API(void, mono_unity_g_free, (void* p))

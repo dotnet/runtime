@@ -67,7 +67,6 @@ EXPORTS
         mono_thread_current
         mono_thread_detach
         mono_type_get_type
-        mono_unity_allocation_granularity
         mono_unity_class_has_failure
         mono_unity_g_free
         unity_coreclr_create_delegate

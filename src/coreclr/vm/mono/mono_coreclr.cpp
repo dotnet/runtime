@@ -871,12 +871,6 @@ retry:
     }
 }
 
-extern "C" EXPORT_API uint32_t EXPORT_CC mono_unity_allocation_granularity ()
-{
-    ASSERT_NOT_IMPLEMENTED;
-    return 0;
-}
-
 #if defined(HOST_OSX) || defined(HOST_UNIX)
 extern "C" EXPORT_API int EXPORT_CC mono_unity_backtrace_from_context(void* context, void* array[], int count)
 {
