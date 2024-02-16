@@ -1048,10 +1048,10 @@ namespace System.Net
 
         public override Stream GetRequestStream()
         {
-            return InternalGetRequestStream(async: false).Result;
+            return InternalGetRequestStream().Result;
         }
 
-        private Task<Stream> InternalGetRequestStream(bool async)
+        private Task<Stream> InternalGetRequestStream()
         {
             CheckAbort();
 
@@ -1076,14 +1076,19 @@ namespace System.Net
             }
 
             // Create stream buffer for transferring data from RequestStream to the StreamContent.
-            StreamBuffer streamBuffer = new StreamBuffer(maxBufferSize: int.MaxValue);
+            StreamBuffer streamBuffer = new StreamBuffer(
+                maxBufferSize: AllowWriteStreamBuffering is false ? int.MaxValue : StreamBuffer.DefaultMaxBufferSize);
+
             // If we aren't buffering we need to open the connection right away.
+            // Because we need to send the data as soon as possible when it's available from the RequestStream.
+            // Making this allows us to keep the sync send request path for buffering cases.
             if (AllowWriteStreamBuffering is false)
             {
-                _sendRequestTask = SendRequest(async, new StreamContent(new HttpClientContentStream(streamBuffer)));
+                // We're calling SendRequest with async, because we need to open the connection and send the request
+                // Otherwise, sync path will block the current thread until the request is sent.
+                _sendRequestTask = SendRequest(true, new StreamContent(new HttpClientContentStream(streamBuffer)));
             }
 
-            // If any parameter changed, change the RequestStream.
             _requestStream = new RequestStream(streamBuffer);
 
             return Task.FromResult((Stream)_requestStream);
@@ -1111,7 +1116,7 @@ namespace System.Net
             }
 
             _requestStreamCallback = callback;
-            _requestStreamOperation = InternalGetRequestStream(async: true).ToApm(callback, state);
+            _requestStreamOperation = InternalGetRequestStream().ToApm(callback, state);
 
             return _requestStreamOperation.Task;
         }
