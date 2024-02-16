@@ -355,6 +355,26 @@ namespace System.Reflection.Tests
             Assert.Equal(type, assembly.GetType(type.FullName.ToLower(), throwOnError: true, ignoreCase: true));
             Assert.Equal(type, assembly.GetType(type.FullName.ToUpper(), throwOnError: true, ignoreCase: true));
         }
+
+        [Fact]
+        public void EscapingCharacterThatDoesNotRequireEscapingIsTreatedAsError()
+        {
+            for (char character = (char)0; character <= 255; character++)
+            {
+                Func<Type> testCode = () => Type.GetType($"System.\\{character}", throwOnError: true);
+
+                if (character is '\\' or '[' or ']' or '+' or '*' or '&' or ',')
+                {
+                    Assert.Throws<TypeLoadException>(testCode); // such type does not exist
+                }
+                else
+                {
+                    Assert.Throws<ArgumentException>(testCode); // such name is invalid
+                }
+
+                Assert.Null(Type.GetType($"System.\\{character}", throwOnError: false));
+            }
+        }
     }
 
     namespace MyNamespace1
