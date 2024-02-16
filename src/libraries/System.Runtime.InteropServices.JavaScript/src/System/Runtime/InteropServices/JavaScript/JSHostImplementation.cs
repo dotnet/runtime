@@ -391,7 +391,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static (string assemblyName, string className, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
         {
             ReadOnlySpan<char> fqnSpan = fqn.AsSpan();
-            ReadOnlySpan assemblyStart = fqnSpan.Slice(fqnSpan.IndexOf('[') + 1);
+            ReadOnlySpan<char> assemblyStart = fqnSpan.Slice(fqnSpan.IndexOf('[') + 1);
             int assemblyEnd = assemblyStart.IndexOf(']');
 
             if (assemblyEnd == -1 || assemblyStart.Length == fqnSpan.Length)
