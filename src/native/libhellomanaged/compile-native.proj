@@ -10,16 +10,23 @@
         <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)src/libhellomanaged.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
+    <PropertyGroup>
+        <!-- disable on Mono, for now -->
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and '$(RuntimeFlavor)' == 'Mono'">false</SupportsNativeAotComponents>
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == '' and ('$(TargetsWindows)' == 'true' or '$(TargetsOSX)' == 'true' or ('$(TargetsLinux)' == 'true' and '$(TargetsAndroid)' != 'true'))">true</SupportsNativeAotComponents>
+        <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$(SupportsNativeAotComponents)">
         <ProjectReference Include="@(NativeLibsProjectsToBuild)" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <!-- FIXME: incremental build -->
-    <Target Name="BuildNativeLibs" BeforeTargets="Build">
+    <Target Name="BuildNativeLibs" BeforeTargets="Build" Condition="$(SupportsNativeAotComponents)">
         <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
         <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(TargetOS)-$(TargetArchitecture);NativeLib=$(NativeLibKind)"
+                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)"
                  Targets="Restore;Build;Publish" />
     </Target>
 </Project>
