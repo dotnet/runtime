@@ -985,8 +985,30 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //     the exits where the narrow IV is live-in.
 //
 bool Compiler::optIsIVWideningProfitable(
-    unsigned lclNum, bool reusedIV, BasicBlock* initBlock, bool initedToConstant, FlowGraphNaturalLoop* loop)
+    unsigned lclNum, BasicBlock* initBlock, bool initedToConstant, FlowGraphNaturalLoop* loop)
 {
+    for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
+    {
+        if (otherLoop == loop)
+            continue;
+
+        for (Statement* stmt : otherLoop->GetHeader()->Statements())
+        {
+            if (!stmt->IsPhiDefnStmt())
+                break;
+
+            if (stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() == lclNum)
+            {
+                JITDUMP("  V%02u has a phi [%06u] in " FMT_LP "'s header " FMT_BB "\n", lclNum,
+                        dspTreeID(stmt->GetRootNode()), otherLoop->GetIndex(), otherLoop->GetHeader()->bbNum);
+                // TODO-CQ: We can legally widen these cases, but LSRA is
+                // unhappy about some of the lifetimes we create when we do
+                // this. This particularly affects cloned loops.
+                return false;
+            }
+        }
+    }
+
     struct CountZeroExtensionsVisitor : GenTreeVisitor<CountZeroExtensionsVisitor>
     {
     private:
@@ -1014,7 +1036,7 @@ bool Compiler::optIsIVWideningProfitable(
             }
 
             GenTreeCast* cast = node->AsCast();
-            if ((cast->gtCastType != TYP_LONG) || !cast->IsUnsigned())
+            if ((cast->gtCastType != TYP_LONG) || !cast->IsUnsigned() || cast->gtOverflow())
             {
                 return WALK_CONTINUE;
             }
@@ -1062,14 +1084,7 @@ bool Compiler::optIsIVWideningProfitable(
         return BasicBlockVisit::Continue;
     });
 
-    if (reusedIV)
-    {
-        // If we are reusing the IV then widening is going to remove a use of
-        // the original narrow local, and we assume this leads to more DCE.
-        savedSize += ExtensionSize;
-        savedCost += initBlock->getBBWeight(this) * ExtensionCost;
-    }
-    else if (!initedToConstant)
+    if (!initedToConstant)
     {
         // We will need to store the narrow IV into the wide one in the init
         // block. We only cost this when init value is not a constant since
@@ -1194,8 +1209,7 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
             if (node->OperIs(GT_CAST))
             {
                 GenTreeCast* cast = node->AsCast();
-                // TODO: Overflows
-                if ((cast->gtCastType == TYP_LONG) && cast->IsUnsigned())
+                if ((cast->gtCastType == TYP_LONG) && cast->IsUnsigned() && !cast->gtOverflow())
                 {
                     GenTree* op = cast->CastOp();
                     if (op->OperIs(GT_LCL_VAR) && IsLocal(op->AsLclVarCommon()))
@@ -1327,19 +1341,6 @@ PhaseStatus Compiler::optInductionVariables()
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
     ScalarEvolutionContext scevContext(this);
-    struct WidenedIV
-    {
-        unsigned LclNum;
-        unsigned InitSsaNum;
-        unsigned NewLclNum;
-
-        WidenedIV(unsigned lclNum, unsigned initSsaNum, unsigned newLclNum)
-            : LclNum(lclNum), InitSsaNum(initSsaNum), NewLclNum(newLclNum)
-        {
-        }
-    };
-    ArrayStack<WidenedIV> widenedIVs(getAllocator(CMK_LoopScalarEvolution));
-
     JITDUMP("Widening primary induction variables:\n");
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
@@ -1375,32 +1376,6 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
-            bool hasOtherUses = false;
-            for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
-            {
-                if (otherLoop == loop)
-                    continue;
-
-                for (Statement* stmt : otherLoop->GetHeader()->Statements())
-                {
-                    if (!stmt->IsPhiDefnStmt())
-                        break;
-
-                    if (stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum())
-                    {
-                        hasOtherUses = true;
-                        JITDUMP("  V%02u has a phi [%06u] in " FMT_LP "'s header " FMT_BB "\n", lcl->GetLclNum(),
-                                dspTreeID(stmt->GetRootNode()), otherLoop->GetIndex(), otherLoop->GetHeader()->bbNum);
-                        break;
-                    }
-                }
-            }
-
-            if (hasOtherUses)
-            {
-                continue;
-            }
-
             Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
             if (scev == nullptr)
             {
@@ -1431,40 +1406,18 @@ PhaseStatus Compiler::optInductionVariables()
             // since we only widen primary IVs.
             assert(addRec->Start->OperIs(ScevOper::Local));
             ScevLocal* startLocal = (ScevLocal*)addRec->Start;
-            unsigned   newLclNum  = BAD_VAR_NUM;
-            for (int i = 0; i < widenedIVs.Height(); i++)
-            {
-                WidenedIV& wiv = widenedIVs.BottomRef(i);
-                if ((wiv.LclNum == startLocal->LclNum) && (wiv.InitSsaNum == startLocal->SsaNum))
-                {
-                    newLclNum = wiv.NewLclNum;
-                    JITDUMP("  Reusing previously widened version with initial value V%02u.%u, new local V%02u\n",
-                            wiv.LclNum, wiv.InitSsaNum, wiv.NewLclNum);
-                    break;
-                }
-            }
-
             int64_t       startConstant  = 0;
             bool          initToConstant = startLocal->GetConstantValue(this, &startConstant);
             LclSsaVarDsc* startSsaDsc    = lclDsc->GetPerSsaData(startLocal->SsaNum);
 
             BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
             BasicBlock* initBlock = preheader;
-            if (newLclNum != BAD_VAR_NUM)
+            if (startSsaDsc->GetBlock() != nullptr)
             {
-                assert(startSsaDsc->GetBlock() != nullptr);
                 initBlock = startSsaDsc->GetBlock();
             }
-            else
-            {
-                if (startSsaDsc->GetBlock() != nullptr)
-                {
-                    initBlock = startSsaDsc->GetBlock();
-                }
-            }
 
-            bool reusedIV = newLclNum != BAD_VAR_NUM;
-            if (!optIsIVWideningProfitable(lcl->GetLclNum(), reusedIV, initBlock, initToConstant, loop))
+            if (!optIsIVWideningProfitable(lcl->GetLclNum(), initBlock, initToConstant, loop))
             {
                 continue;
             }
@@ -1497,51 +1450,45 @@ PhaseStatus Compiler::optInductionVariables()
             }
 
             Statement* initStmt = nullptr;
-            if (newLclNum == BAD_VAR_NUM)
+            unsigned newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
+            INDEBUG(lclDsc = nullptr);
+            assert(startLocal->LclNum == lcl->GetLclNum());
+
+            if (initBlock != preheader)
             {
-                newLclNum = lvaGrabTemp(false DEBUGARG(printfAlloc("Widened IV V%02u", lcl->GetLclNum())));
-                INDEBUG(lclDsc = nullptr);
-                assert(startLocal->LclNum == lcl->GetLclNum());
-
-                if (initBlock != preheader)
-                {
-                    JITDUMP(
-                        "Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
-                        "\n",
-                        initBlock->bbNum);
-
-                    // Any other use of this IV can reuse the same wide local/initialization.
-                    widenedIVs.Emplace(startLocal->LclNum, startLocal->SsaNum, newLclNum);
-                }
-                else
-                {
-                    JITDUMP("Adding initialization of new widened local to preheader " FMT_BB "\n", initBlock->bbNum);
-                }
-
-                GenTree* initVal;
-                if (initToConstant)
-                {
-                    initVal = gtNewIconNode((int64_t)(uint32_t)startConstant, TYP_LONG);
-                }
-                else
-                {
-                    initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), TYP_INT), true, TYP_LONG);
-                }
-
-                GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
-                initStmt            = fgNewStmtFromTree(widenStore);
-                if (narrowInitStmt != nullptr)
-                {
-                    fgInsertStmtAfter(initBlock, narrowInitStmt, initStmt);
-                }
-                else
-                {
-                    fgInsertStmtNearEnd(initBlock, initStmt);
-                }
-
-                DISPSTMT(initStmt);
-                JITDUMP("\n");
+                JITDUMP(
+                    "Adding initialization of new widened local to same block as reaching def outside loop, " FMT_BB
+                    "\n",
+                    initBlock->bbNum);
             }
+            else
+            {
+                JITDUMP("Adding initialization of new widened local to preheader " FMT_BB "\n", initBlock->bbNum);
+            }
+
+            GenTree* initVal;
+            if (initToConstant)
+            {
+                initVal = gtNewIconNode((int64_t)(uint32_t)startConstant, TYP_LONG);
+            }
+            else
+            {
+                initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), TYP_INT), true, TYP_LONG);
+            }
+
+            GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
+            initStmt            = fgNewStmtFromTree(widenStore);
+            if (narrowInitStmt != nullptr)
+            {
+                fgInsertStmtAfter(initBlock, narrowInitStmt, initStmt);
+            }
+            else
+            {
+                fgInsertStmtNearEnd(initBlock, initStmt);
+            }
+
+            DISPSTMT(initStmt);
+            JITDUMP("\n");
 
             JITDUMP("  Replacing uses of V%02u with widened version V%02u\n", lcl->GetLclNum(), newLclNum);
 
