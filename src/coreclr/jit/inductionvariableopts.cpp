@@ -1376,6 +1376,31 @@ PhaseStatus Compiler::optInductionVariables()
                 continue;
             }
 
+            bool hasOtherUses = false;
+            for (FlowGraphNaturalLoop* otherLoop : m_loops->InReversePostOrder())
+            {
+                if (otherLoop == loop)
+                    continue;
+
+                for (Statement* stmt : otherLoop->GetHeader()->Statements())
+                {
+                    if (!stmt->IsPhiDefnStmt())
+                        break;
+
+                    if (stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum())
+                    {
+                        hasOtherUses = true;
+                        JITDUMP("  V%02u has a phi [%06u] in " FMT_LP "'s header " FMT_BB "\n", lcl->GetLclNum(), dspTreeID(stmt->GetRootNode()), otherLoop->GetIndex(), otherLoop->GetHeader()->bbNum);
+                        break;
+                    }
+                }
+            }
+
+            if (hasOtherUses)
+            {
+                continue;
+            }
+
             Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
             if (scev == nullptr)
             {
