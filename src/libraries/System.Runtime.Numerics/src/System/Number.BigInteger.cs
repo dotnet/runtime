@@ -862,6 +862,7 @@ namespace System
         }
         internal readonly ref struct PowersOf1e9
         {
+            // Holds 1000000000^(1<<<n).
             private readonly ReadOnlySpan<uint> pow1E9;
             public const uint TenPowMaxPartial = 1000000000;
             public const int MaxPartialDigits = 9;
@@ -879,7 +880,8 @@ namespace System
             //        length -= (9*(1<<i)) >> 5;
             //        indexes[i+1] = indexes[i] + length;
             //    }
-            private static ReadOnlySpan<int> Indexes => new int[] {
+            private static ReadOnlySpan<int> Indexes => new int[]
+            {
                 0,
                 1,
                 3,
@@ -914,40 +916,91 @@ namespace System
                 1939268536,
             };
 
+            // The PowersOf1e9 structure holds 1000000000^(1<<<n). However, if the lower element is zero,
+            // it is truncated. Therefore, if the lower element becomes zero in the process of calculating
+            // 1000000000^(1<<<n), it must be truncated. If 1000000000^(1<<<<n) is calculated in advance
+            // for less than 6, there is no need to consider the case where the lower element becomes zero
+            // during the calculation process, since 1000000000^(1<<<<n) mod 32 is always zero.
+            private static ReadOnlySpan<uint> FivePowers1E9 => new uint[]
+            {
+                // 1000000000^(1<<0)
+                1000000000,
+                // 1000000000^(1<<1)
+                2808348672,
+                232830643,
+                // 1000000000^(1<<2)
+                3008077584,
+                2076772117,
+                12621774,
+                // 1000000000^(1<<3)
+                4130660608,
+                835571558,
+                1441351422,
+                977976457,
+                264170013,
+                37092,
+                // 1000000000^(1<<4)
+                767623168,
+                4241160024,
+                1260959332,
+                2541775228,
+                2965753944,
+                1796720685,
+                484800439,
+                1311835347,
+                2945126454,
+                3563705203,
+                1375821026,
+                // 1000000000^(1<<5)
+                3940379521,
+                184513341,
+                2872588323,
+                2214530454,
+                38258512,
+                2980860351,
+                114267010,
+                2188874685,
+                234079247,
+                2101059099,
+                1948702207,
+                947446250,
+                864457656,
+                507589568,
+                1321007357,
+                3911984176,
+                1011110295,
+                2382358050,
+                2389730781,
+                730678769,
+                440721283,
+            };
+
             public PowersOf1e9(Span<uint> pow1E9)
             {
+                Debug.Assert(pow1E9.Length >= 1);
+                Debug.Assert(Indexes[6] == FivePowers1E9.Length);
+                if (pow1E9.Length < Indexes[7])
+                {
+                    this.pow1E9 = FivePowers1E9;
+                    return;
+                }
+                FivePowers1E9.CopyTo(pow1E9.Slice(0, FivePowers1E9.Length));
                 this.pow1E9 = pow1E9;
 
-                Debug.Assert(pow1E9.Length >= 1);
-                pow1E9[0] = TenPowMaxPartial;
-                ReadOnlySpan<uint> src = pow1E9.Slice(0, 1);
-                int toExclusive = 1;
-                for (int i = 1; i + 1 < Indexes.Length; i++)
+                ReadOnlySpan<uint> src = pow1E9.Slice(Indexes[5], Indexes[6] - Indexes[5]);
+                int toExclusive = Indexes[6];
+                for (int i = 6; i + 1 < Indexes.Length; i++)
                 {
                     Debug.Assert(2 * src.Length - (Indexes[i + 1] - Indexes[i]) is 0 or 1);
                     if (pow1E9.Length - toExclusive < (src.Length << 1))
                         break;
                     Span<uint> dst = pow1E9.Slice(toExclusive, src.Length << 1);
                     BigIntegerCalculator.Square(src, dst);
-                    if (dst[0] == 0)
-                    {
-                        dst.Slice(1).CopyTo(dst);
-                        dst[^1] = 0;
-                    }
                     int from = toExclusive;
                     toExclusive = Indexes[i + 1];
                     src = pow1E9.Slice(from, toExclusive - from);
                     Debug.Assert(toExclusive == pow1E9.Length || pow1E9[toExclusive] == 0);
                 }
-#if DEBUG
-                for (int i = 0; i + 1 < Indexes.Length; i++)
-                {
-                    int startIndex = Indexes[i];
-                    int endIndex = Indexes[i + 1];
-                    if (endIndex >= pow1E9.Length) break;
-                    Debug.Assert(pow1E9[startIndex] != 0);
-                }
-#endif
             }
 
             public static int GetBufferSize(int digits)
