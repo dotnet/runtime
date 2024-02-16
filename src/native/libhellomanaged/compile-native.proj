@@ -26,10 +26,17 @@
 
     <!-- FIXME: incremental build -->
     <Target Name="BuildNativeLibs" BeforeTargets="Build" Condition="$(SupportsNativeAotComponents)">
+        <Message Importance="High" Text="Restoring native libs @(NativeLibsProjectsToBuild)" />
+        <Message Importance="High" Text="Restoring native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
+        <!-- workaround https://github.com/dotnet/msbuild/issues/2811 - Restore has to be a separate exectution with a different evaluation -->
+        <MSBuild Projects="@(NativeLibsProjectsToBuild)"
+                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind);_RandomPropertyToPleaseMSBuild=Restoring"
+                 Targets="Restore" />
+
         <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
         <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)"
-                 Targets="Restore;Build;Publish" />
+                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind);_RandomOtherPropertyToPleaseMSBuild=BuildingAndPublishing"
+                 Targets="Build;Publish" />
     </Target>
 </Project>
