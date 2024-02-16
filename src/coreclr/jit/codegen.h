@@ -357,7 +357,7 @@ protected:
 
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskGpr maskArgRegsLiveIn);
 
-    void genPoisonFrame(regMaskMixed bbRegLiveIn);
+    void genPoisonFrame(regMaskGpr bbRegLiveIn);
 
 #if defined(TARGET_ARM)
 

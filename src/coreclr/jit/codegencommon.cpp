@@ -8317,7 +8317,7 @@ unsigned CodeGenInterface::getCurrentStackLevel() const
 //   This function emits code to poison address exposed non-zero-inited local variables. We expect this function
 //   to be called when emitting code for the scratch BB that comes right after the prolog.
 //   The variables are poisoned using 0xcdcdcdcd.
-void CodeGen::genPoisonFrame(regMaskMixed regLiveIn)
+void CodeGen::genPoisonFrame(regMaskGpr regLiveIn)
 {
     assert(compiler->compShouldPoisonFrame());
 #if defined(TARGET_XARCH)
