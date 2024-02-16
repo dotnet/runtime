@@ -54,6 +54,14 @@ handle_enum:
 			goto handle_enum;
 		}
 
+		// https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md#function-signatures
+		// Any struct or union that recursively (including through nested structs, unions, and arrays)
+		//  contains just a single scalar value and is not specified to have greater than natural alignment.
+		// FIXME: Handle the scenario where there are fields of struct types that contain no members
+		MonoType *scalar_vtype;
+		if (mini_wasm_is_scalar_vtype (t, &scalar_vtype))
+			return type_to_c (scalar_vtype);
+
 		return 'I';
 	case MONO_TYPE_GENERICINST:
 		if (m_class_is_valuetype (t->data.klass))

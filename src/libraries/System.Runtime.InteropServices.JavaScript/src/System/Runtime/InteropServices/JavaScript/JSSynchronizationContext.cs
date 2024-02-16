@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 using System.Threading;
 using System.Threading.Channels;
@@ -50,6 +50,23 @@ namespace System.Runtime.InteropServices.JavaScript
             ctx.previousSynchronizationContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(ctx);
 
+            // FIXME: make this configurable
+            // we could have 3 different modes of this
+            // 1) throwing on UI + JSWebWorker
+            // 2) throwing only on UI - small risk, more convenient.
+            // 3) not throwing at all - quite risky
+            // deadlock scenarios are:
+            // - .Wait for more than 5000ms and deadlock the GC suspend
+            // - .Wait on the Task from HTTP client, on the same thread as the HTTP client needs to resolve the Task/Promise. This could be also be a chain of promises.
+            // - try to create new pthread when UI thread is blocked and we run out of posix/emscripten pool of loaded workers.
+            // Things which lead to it are
+            // - Task.Wait, Signal.Wait etc
+            // - Monitor.Enter etc, if the lock is held by another thread for long time
+            // - synchronous [JSExport] into managed code, which would block
+            // - synchronous [JSImport] to another thread, which would block
+            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
+            Thread.ThrowOnBlockingWaitOnJSInteropThread = true;
+
             var proxyContext = ctx.ProxyContext;
             JSProxyContext.CurrentThreadContext = proxyContext;
             JSProxyContext.ExecutionContext = proxyContext;
@@ -89,12 +106,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
             // this will runtimeKeepalivePop()
             // and later maybeExit() -> __emscripten_thread_exit()
+            // this will also call JSSynchronizationContext.Dispose() on this instance
             jsProxyContext.Dispose();
 
             JSProxyContext.CurrentThreadContext = null;
             JSProxyContext.ExecutionContext = null;
             _isRunning = false;
-            Dispose();
         }
 
         public JSSynchronizationContext(bool isMainThread, CancellationToken cancellationToken)
@@ -162,7 +179,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            TargetThreadScheduleBackgroundJob(ProxyContext.NativeTID, (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            TargetThreadScheduleBackgroundJob(ProxyContext.JSNativeTID, (delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
         public override void Post(SendOrPostCallback d, object? state)
@@ -199,6 +216,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 d(state);
                 return;
             }
+
+            Thread.AssureBlockingPossible();
 
             using (var signal = new ManualResetEventSlim(false))
             {
@@ -276,24 +295,22 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private void Dispose(bool disposing)
+
+        internal void Dispose()
         {
             if (!_isDisposed)
             {
-                if (disposing)
+                _isCancellationRequested = true;
+                Queue.Writer.TryComplete();
+                while (Queue.Reader.TryRead(out var item))
                 {
-                    Queue.Writer.TryComplete();
+                    // the Post is checking _isCancellationRequested after .Wait()
+                    item.Signal?.Set();
                 }
                 _isDisposed = true;
                 _cancellationTokenRegistration.Dispose();
                 previousSynchronizationContext = null;
             }
-        }
-
-        internal void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

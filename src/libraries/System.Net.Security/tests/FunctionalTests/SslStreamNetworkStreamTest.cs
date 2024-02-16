@@ -28,7 +28,7 @@ namespace System.Net.Security.Tests
         public CertificateSetup()
         {
             TestHelper.CleanupCertificates(nameof(SslStreamNetworkStreamTest));
-            (serverCert, serverChain) = TestHelper.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
+            (serverCert, serverChain) = Configuration.Certificates.GenerateCertificates("localhost", nameof(SslStreamNetworkStreamTest), longChain: true);
         }
 
         public void Dispose()
@@ -863,7 +863,7 @@ namespace System.Net.Security.Tests
             StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
             List<SslStream> streams = new List<SslStream>();
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
 
             using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
             {
@@ -918,7 +918,7 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientCertificateContext_SendsChain()
         {
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
 
             var clientOptions = new SslClientAuthenticationOptions()
@@ -942,7 +942,7 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task SslStream_EphemeralKey_Throws()
         {
-            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = TestHelper.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
             TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
 
             var clientOptions = new SslClientAuthenticationOptions()

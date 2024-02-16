@@ -326,12 +326,22 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_propagateExceptionContext(NULL),
 #endif // HOST_UNIX
     m_CurrentClause({}),
-    m_pMDToReportFunctionLeave(NULL),
-    m_exContext({})
+    m_pMDToReportFunctionLeave(NULL)
 {
     m_StackTraceInfo.AllocateStackTrace();
     pThread->GetExceptionState()->m_pCurrentTracker = this;
-    m_exContext.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    if (exceptionKind == ExKind::HardwareFault)
+    {
+        // Hardware exception handling needs to start on the FaultingExceptionFrame, so we are
+        // passing in a context with zeroed out IP.
+        SetIP(&m_exContext, 0);
+        m_exContext.ContextFlags = CONTEXT_FULL;
+    }
+    else
+    {
+        memcpy(&m_exContext, pExceptionContext, sizeof(CONTEXT));
+        m_exContext.ContextFlags = m_exContext.ContextFlags & (CONTEXT_FULL | CONTEXT_EXCEPTION_ACTIVE);
+    }
 }
 
 #if defined(TARGET_UNIX)

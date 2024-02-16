@@ -118,8 +118,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static AndroidCertificatePal ReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool ephemeralSpecified)
         {
-            using (var reader = new AndroidPkcs12Reader(rawData))
+            using (var reader = new AndroidPkcs12Reader())
             {
+                reader.ParsePkcs12(rawData);
                 reader.Decrypt(password, ephemeralSpecified);
 
                 UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();

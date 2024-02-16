@@ -1197,16 +1197,16 @@
   <data name="RedundantSuppressionTitle" xml:space="preserve">
     <value>Unused 'UnconditionalSuppressMessageAttribute' found. Consider removing the unused warning suppression.</value>
   </data>
-  <data name="ReturnValueDoesNotMatchFeatureGuardsMessage" xml:space="preserve">
-    <value>Return value does not match FeatureGuardAttribute '{1}'.</value>
+  <data name="ReturnValueDoesNotMatchFeatureChecksMessage" xml:space="preserve">
+    <value>Return value does not match FeatureCheckAttribute '{1}'.</value>
   </data>
-  <data name="ReturnValueDoesNotMatchFeatureGuardsTitle" xml:space="preserve">
-    <value>Return value does not match feature guards of the property.</value>
+  <data name="ReturnValueDoesNotMatchFeatureChecksTitle" xml:space="preserve">
+    <value>Return value does not match feature check annotations of the property.</value>
   </data>
-  <data name="InvalidFeatureGuardMessage" xml:space="preserve">
-    <value>Invalid FeatureGuardAttribute. Ensure the attribute is plated on a static boolean property with a get accessor and no set accessor.</value>
+  <data name="InvalidFeatureCheckMessage" xml:space="preserve">
+    <value>Invalid FeatureCheckAttribute. Ensure the attribute is plated on a static boolean property with a get accessor and no set accessor.</value>
   </data>
-  <data name="InvalidFeatureGuardTitle" xml:space="preserve">
-    <value>Invalid FeatureGuardAttribute.</value>
+  <data name="InvalidFeatureCheckTitle" xml:space="preserve">
+    <value>Invalid FeatureCheckAttribute.</value>
   </data>
 </root>

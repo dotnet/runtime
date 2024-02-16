@@ -140,7 +140,7 @@ namespace Mono.Linker
 
 			// property must be a static bool get-only property
 			if (property.HasThis || property.PropertyType.MetadataType != MetadataType.Boolean || property.SetMethod != null) {
-				context.LogWarning ((IMemberDefinition) provider, DiagnosticId.InvalidFeatureGuard);
+				context.LogWarning ((IMemberDefinition) provider, DiagnosticId.InvalidFeatureCheck);
 				return null;
 			}
 

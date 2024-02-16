@@ -411,6 +411,12 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
         // instruction selection due to different memory placement at runtime.
         if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
         {
+            if (EA_IS_CNS_TLSGD_RELOC(origAttr))
+            {
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
+                GetEmitter()->emitIns_Data16();
+            }
             if (!EA_IS_CNS_SEC_RELOC(origAttr))
             {
                 // We will use lea so displacement and not immediate will be relocatable
@@ -624,9 +630,16 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
 
-            if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+            if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
-                attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+                }
+                else if (con->IsIconHandle(GTF_ICON_TLSGD_OFFSET))
+                {
+                    attr = EA_SET_FLG(attr, EA_CNS_TLSGD_RELOC);
+                }
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
@@ -1057,7 +1070,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
         // all have RMW semantics if VEX support is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, op1reg, op2, isRMW, INS_OPTS_NONE);
 
         genProduceReg(treeNode);
         return;
@@ -1466,6 +1479,13 @@ void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
     regNumber reg = genConsumeReg(op);
     inst_RV_RV(INS_test, reg, reg, genActualType(op));
     inst_JMP(EJ_jne, compiler->compCurBB->GetTrueTarget());
+
+    // If we cannot fall into the false target, emit a jump to it
+    BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
+    if (!compiler->compCurBB->CanRemoveJumpToTarget(falseTarget, compiler))
+    {
+        inst_JMP(EJ_jmp, falseTarget);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4424,6 +4444,7 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
 void CodeGen::genLockedInstructions(GenTreeOp* node)
 {
     assert(node->OperIs(GT_XADD, GT_XCHG, GT_XORR, GT_XAND));
+    assert(node->OperIs(GT_XCHG) || !varTypeIsSmall(node->TypeGet()));
 
     GenTree* addr = node->gtGetOp1();
     GenTree* data = node->gtGetOp2();
@@ -4431,7 +4452,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
 
     assert(addr->isUsedFromReg());
     assert(data->isUsedFromReg());
-    assert((size == EA_4BYTE) || (size == EA_PTRSIZE) || (size == EA_GCREF));
+    assert((size <= EA_PTRSIZE) || (size == EA_GCREF));
 
     genConsumeOperands(node);
 
@@ -4499,7 +4520,15 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
         instGen(INS_lock);
     }
 
-    GetEmitter()->emitIns_AR_R(ins, size, node->GetRegNum(), addr->GetRegNum(), 0);
+    regNumber targetReg = node->GetRegNum();
+    GetEmitter()->emitIns_AR_R(ins, size, targetReg, addr->GetRegNum(), 0);
+
+    if (varTypeIsSmall(node->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(node->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, targetReg, /* canSkip */ false);
+    }
+
     genProduceReg(node);
 }
 
@@ -4515,6 +4544,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
+    emitAttr  size       = emitTypeSize(tree->TypeGet());
 
     GenTree* location  = tree->Addr();      // arg1
     GenTree* value     = tree->Data();      // arg2
@@ -4535,10 +4565,18 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     // location is Rm
     instGen(INS_lock);
 
-    GetEmitter()->emitIns_AR_R(INS_cmpxchg, emitTypeSize(targetType), value->GetRegNum(), location->GetRegNum(), 0);
+    GetEmitter()->emitIns_AR_R(INS_cmpxchg, size, value->GetRegNum(), location->GetRegNum(), 0);
 
     // Result is in RAX
-    inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    if (varTypeIsSmall(tree->TypeGet()))
+    {
+        instruction mov = varTypeIsSigned(tree->TypeGet()) ? INS_movsx : INS_movzx;
+        GetEmitter()->emitIns_Mov(mov, size, targetReg, REG_RAX, /* canSkip */ false);
+    }
+    else
+    {
+        inst_Mov(targetType, targetReg, REG_RAX, /* canSkip */ true);
+    }
 
     genProduceReg(tree);
 }
@@ -6036,16 +6074,18 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    // When it's a PInvoke call and the call type is USER function, we issue VZEROUPPER here
-    // if the function contains 256bit AVX instructions, this is to avoid AVX-256 to Legacy SSE
-    // transition penalty, assuming the user function contains legacy SSE instruction.
-    // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
-    // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
-    // when there's preceding 256-bit AVX to legacy SSE transition penalty.
-    // This applies to 512bit AVX512 instructions as well.
-    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && (GetEmitter()->Contains256bitOrMoreAVX()))
+    if (GetEmitter()->Contains256bitOrMoreAVX() && call->NeedsVzeroupper(compiler))
     {
-        assert(compiler->canUseVexEncoding());
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        // This method contains a call that needs vzeroupper but also uses 256-bit or higher
+        // AVX itself. This means we couldn't optimize to only emitting a single vzeroupper in
+        // the method prologue and instead need to insert one before each call that needs it.
+
         instGen(INS_vzeroupper);
     }
 
@@ -6365,29 +6405,54 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
         else
         {
-            // We have already generated code for gtControlExpr evaluating it into a register.
-            // We just need to emit "call reg" in this case.
-            assert(genIsValidIntReg(target->GetRegNum()));
-
-            // For fast tailcalls this is happening in epilog, so we should
-            // have already consumed target in genCall.
-            if (!call->IsFastTailCall())
+            if (!compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (call->gtFlags & GTF_TLS_GET_ADDR) == 0)
             {
-                genConsumeReg(target);
-            }
+                // We have already generated code for gtControlExpr evaluating it into a register.
+                // We just need to emit "call reg" in this case.
+                assert(genIsValidIntReg(target->GetRegNum()));
 
-            // clang-format off
-            genEmitCall(emitter::EC_INDIR_R,
-                        methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo)
-                        nullptr // addr
-                        X86_ARG(argSizeForEmitter),
-                        retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                        di,
-                        target->GetRegNum(),
-                        call->IsFastTailCall());
-            // clang-format on
+                // For fast tailcalls this is happening in epilog, so we should
+                // have already consumed target in genCall.
+                if (!call->IsFastTailCall())
+                {
+                    genConsumeReg(target);
+                }
+
+                // clang-format off
+                genEmitCall(emitter::EC_INDIR_R,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            nullptr // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
+            }
+            else
+            {
+                GenTree* tlsGetAddr = (GenTree*)call->gtCallMethHnd;
+
+                // NativeAOT code needs special code sequence prefix of call so the
+                // linker will do the fixup and emit accurate TLS access information.
+                GetEmitter()->emitIns_Data16();
+                GetEmitter()->emitIns_Data16();
+
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN,
+                            (CORINFO_METHOD_HANDLE)1,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            (void*)tlsGetAddr->AsIntCon()->gtIconVal // addr
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            di,
+                            target->GetRegNum(),
+                            call->IsFastTailCall());
+                // clang-format on
+            }
         }
     }
     else
@@ -7438,7 +7503,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
         // is not available
 
         bool isRMW = !compiler->canUseVexEncoding();
-        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW);
+        inst_RV_RV_TT(ins, emitTypeSize(dstType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
     }
 
     genProduceReg(treeNode);
@@ -7550,7 +7615,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // is not available
 
     bool isRMW = !compiler->canUseVexEncoding();
-    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW);
+    inst_RV_RV_TT(ins, emitTypeSize(srcType), targetReg, targetReg, op1, isRMW, INS_OPTS_NONE);
 
     // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
     // will interpret ULONG value as LONG.  Hence we need to adjust the
@@ -8071,7 +8136,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             regNumber targetReg = treeNode->GetRegNum();
             bool      isRMW     = !compiler->canUseVexEncoding();
 
-            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW);
+            inst_RV_RV_TT(ins, emitTypeSize(treeNode), targetReg, targetReg, srcNode, isRMW, INS_OPTS_NONE);
             break;
         }
 
@@ -11125,11 +11190,26 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 //             funclet frames: this will be FuncletInfo.fiSpDelta.
 void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
 {
-    genVzeroupperIfNeeded(false);
     regMaskTP regMask = compiler->compCalleeFPRegsSavedMask;
 
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
+
+    if (GetEmitter()->ContainsCallNeedingVzeroupper() && !GetEmitter()->Contains256bitOrMoreAVX())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        // This method contains a call that needs vzeroupper but also doesn't use 256-bit or higher
+        // AVX itself. Thus we can optimize to only emitting a single vzeroupper in the function prologue
+        // This reduces the overall amount of codegen, particularly for more common paths not using any
+        // SIMD or floating-point.
+
+        instGen(INS_vzeroupper);
+    }
 
     // fast path return
     if (regMask == RBM_NONE)
@@ -11178,10 +11258,20 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
     // Only callee saved floating point registers should be in regMask
     assert((regMask & RBM_FLT_CALLEE_SAVED) == regMask);
 
+    if (GetEmitter()->Contains256bitOrMoreAVX())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        instGen(INS_vzeroupper);
+    }
+
     // fast path return
     if (regMask == RBM_NONE)
     {
-        genVzeroupperIfNeeded();
         return;
     }
 
@@ -11223,37 +11313,6 @@ void CodeGen::genRestoreCalleeSavedFltRegs(unsigned lclFrameSize)
             regMask &= ~regBit;
             offset -= XMM_REGSIZE_BYTES;
         }
-    }
-    genVzeroupperIfNeeded();
-}
-
-// Generate Vzeroupper instruction as needed to zero out upper 128b-bit of all YMM registers so that the
-// AVX/Legacy SSE transition penalties can be avoided. This function is been used in genPreserveCalleeSavedFltRegs
-// (prolog) and genRestoreCalleeSavedFltRegs (epilog). Issue VZEROUPPER in Prolog if the method contains
-// 128-bit or 256-bit AVX code, to avoid legacy SSE to AVX transition penalty, which could happen when native
-// code contains legacy SSE code calling into JIT AVX code (e.g. reverse pinvoke). Issue VZEROUPPER in Epilog
-// if the method contains 256-bit AVX code, to avoid AVX to legacy SSE transition penalty.
-//
-// Params
-//   check256bitOnly  - true to check if the function contains 256-bit AVX instruction and generate Vzeroupper
-//      instruction, false to check if the function contains AVX instruction (either 128-bit or 256-bit).
-//
-void CodeGen::genVzeroupperIfNeeded(bool check256bitOnly /* = true*/)
-{
-    bool emitVzeroUpper = false;
-    if (check256bitOnly)
-    {
-        emitVzeroUpper = GetEmitter()->Contains256bitOrMoreAVX();
-    }
-    else
-    {
-        emitVzeroUpper = GetEmitter()->ContainsAVX();
-    }
-
-    if (emitVzeroUpper)
-    {
-        assert(compiler->canUseVexEncoding());
-        instGen(INS_vzeroupper);
     }
 }
 

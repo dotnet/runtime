@@ -92,7 +92,7 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowHwEx
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
+ALTERNATE_ENTRY RhpThrowHwEx2
 
         ;; no return
         int 3
@@ -184,7 +184,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
+ALTERNATE_ENTRY RhpThrowEx2
 
         ;; no return
         int 3
@@ -269,7 +269,7 @@ NESTED_ENTRY RhpRethrow, _TEXT
         ;; rdx contains the address of the new ExInfo
         call    RhRethrow
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
+ALTERNATE_ENTRY RhpRethrow2
 
         ;; no return
         int 3
@@ -428,7 +428,7 @@ endif
         mov     rdx, [rsp + rsp_offsetof_arguments + 0h]            ;; rdx <- exception object
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
+ALTERNATE_ENTRY RhpCallCatchFunclet2
 
         mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
 
@@ -601,7 +601,7 @@ endif
         mov     rcx, [rdx + OFFSETOF__REGDISPLAY__SP]               ;; rcx <- establisher frame
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
+ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
         mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
 
@@ -666,7 +666,7 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
         call    rax
 
-        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
+ALTERNATE_ENTRY RhpCallFilterFunclet2
 
         ;; RAX contains the result of the filter execution
 

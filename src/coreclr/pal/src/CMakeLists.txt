@@ -129,14 +129,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
 endif()
 
 set(SOURCES
-  cruntime/file.cpp
-  cruntime/filecrt.cpp
   cruntime/malloc.cpp
-  cruntime/math.cpp
   cruntime/misc.cpp
-  cruntime/printfcpp.cpp
-  cruntime/string.cpp
-  cruntime/stringtls.cpp
   cruntime/thread.cpp
   cruntime/wchar.cpp
   debug/debug.cpp
@@ -184,10 +178,8 @@ set(SOURCES
   safecrt/sscanf_s.cpp
   safecrt/strcat_s.cpp
   safecrt/strcpy_s.cpp
-  safecrt/strlen_s.cpp
   safecrt/strncat_s.cpp
   safecrt/strncpy_s.cpp
-  safecrt/strtok_s.cpp
   safecrt/vsprintf.cpp
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
@@ -195,7 +187,6 @@ set(SOURCES
   safecrt/wcslwr_s.cpp
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
-  safecrt/wcstok_s.cpp
   safecrt/wmakepath_s.cpp
   safecrt/xtoa_s.cpp
   safecrt/xtow_s.cpp

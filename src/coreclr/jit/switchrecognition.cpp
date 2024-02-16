@@ -349,6 +349,31 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     assert((jumpCount > 0) && (jumpCount <= SWITCH_MAX_DISTANCE + 1));
     const auto jmpTab = new (this, CMK_BasicBlock) BasicBlock*[jumpCount + 1 /*default case*/];
 
+    // Quirk: lastBlock's false target may have diverged from bbNext. If the false target is behind firstBlock,
+    // we may create a cycle in the BasicBlock list by setting firstBlock->bbNext to it.
+    // Add a new BBJ_ALWAYS to the false target to avoid this.
+    // (We only need this if the false target is behind firstBlock,
+    // but it's cheaper to just check if the false target has diverged)
+    // TODO-NoFallThrough: Revisit this quirk?
+    bool skipPredRemoval = false;
+    if (!lastBlock->FalseTargetIs(lastBlock->Next()))
+    {
+        if (isReversed)
+        {
+            assert(lastBlock->FalseTargetIs(blockIfTrue));
+            fgRemoveRefPred(blockIfTrue, firstBlock);
+            blockIfTrue = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, blockIfTrue);
+            fgAddRefPred(blockIfTrue->GetTarget(), blockIfTrue);
+            skipPredRemoval = true;
+        }
+        else
+        {
+            assert(lastBlock->FalseTargetIs(blockIfFalse));
+            blockIfFalse = fgNewBBafter(BBJ_ALWAYS, firstBlock, true, blockIfFalse);
+            fgAddRefPred(blockIfFalse->GetTarget(), blockIfFalse);
+        }
+    }
+
     fgHasSwitch                                   = true;
     firstBlock->GetSwitchTargets()->bbsCount      = jumpCount + 1;
     firstBlock->GetSwitchTargets()->bbsHasDefault = true;
@@ -368,7 +393,10 @@ bool Compiler::optSwitchConvert(BasicBlock* firstBlock, int testsCount, ssize_t*
     }
 
     // Unlink blockIfTrue from firstBlock, we're going to link it again in the loop below.
-    fgRemoveRefPred(blockIfTrue, firstBlock);
+    if (!skipPredRemoval)
+    {
+        fgRemoveRefPred(blockIfTrue, firstBlock);
+    }
 
     for (unsigned i = 0; i < jumpCount; i++)
     {

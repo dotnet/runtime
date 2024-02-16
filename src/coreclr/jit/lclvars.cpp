@@ -2357,16 +2357,12 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 // Now grab the temp for the field local.
 
 #ifdef DEBUG
-        char        buf[200];
         char        fieldNameBuffer[128];
         const char* fieldName =
             compiler->eeGetFieldName(pFieldInfo->diagFldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
-        sprintf_s(buf, sizeof(buf), "field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
-        // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
-        size_t len  = strlen(buf) + 1;
-        char*  bufp = compiler->getAllocator(CMK_DebugOnly).allocate<char>(len);
-        strcpy_s(bufp, len, buf);
+        const char* bufp =
+            compiler->printfAlloc("field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
         if (index > 0)
         {
@@ -3651,6 +3647,7 @@ void Compiler::lvaSortByRefCount()
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 case TYP_SIMD64:
+                case TYP_MASK:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
                 case TYP_STRUCT:

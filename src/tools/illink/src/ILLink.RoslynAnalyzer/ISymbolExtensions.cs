@@ -71,32 +71,56 @@ namespace ILLink.RoslynAnalyzer
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
-		internal static ValueSet<string> GetFeatureGuardAnnotations (
+		internal static ValueSet<string> GetFeatureCheckAnnotations (
 			this IPropertySymbol propertySymbol,
 			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
 		{
 			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
 			foreach (var attributeData in propertySymbol.GetAttributes ()) {
-				if (IsFeatureGuardAttribute (attributeData, out string? featureName))
-					featureSet.Add (featureName);
+				if (IsFeatureCheckAttribute (attributeData, out INamedTypeSymbol? featureType))
+					AddFeatures (featureType);
 			}
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
 
-			bool IsFeatureGuardAttribute (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
-				featureName = null;
-				if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute))
-					return false;
-
-				if (attributeData.ConstructorArguments is not [TypedConstant { Value: INamedTypeSymbol featureType }])
-					return false;
-
+			void AddFeatures (INamedTypeSymbol featureType) {
 				foreach (var analyzer in enabledRequiresAnalyzers) {
 					if (featureType.HasName (analyzer.RequiresAttributeFullyQualifiedName)) {
-						featureName = analyzer.RequiresAttributeFullyQualifiedName;
-						return true;
+						featureSet.Add (analyzer.RequiresAttributeFullyQualifiedName);
+						// Don't need to continue looking for dependencies because the
+						// analyzer attributes don't have dependencies.
+						return;
 					}
 				}
-				return false;
+
+				// Look at FeatureDependsOn attributes on the feature type.
+				foreach (var featureTypeAttributeData in featureType.GetAttributes ()) {
+					if (IsFeatureDependsOnAttribute (featureTypeAttributeData, out INamedTypeSymbol? featureDependsOnType))
+						AddFeatures (featureDependsOnType);
+				}
+
+				static bool IsFeatureDependsOnAttribute (AttributeData attributeData, [NotNullWhen (true)] out INamedTypeSymbol? featureType) {
+					featureType = null;
+					if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureDependsOnAttribute))
+						return false;
+
+					if (attributeData.ConstructorArguments is not [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
+						return false;
+
+					featureType = featureTypeSymbol;
+					return true;
+				}
+			}
+
+			static bool IsFeatureCheckAttribute (AttributeData attributeData, [NotNullWhen (true)] out INamedTypeSymbol? featureType) {
+				featureType = null;
+				if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureCheckAttribute))
+					return false;
+
+				if (attributeData.ConstructorArguments is not [TypedConstant { Value: INamedTypeSymbol featureTypeSymbol }])
+					return false;
+
+				featureType = featureTypeSymbol;
+				return true;
 			}
 		}
 

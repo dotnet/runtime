@@ -83,7 +83,7 @@ jobs:
 
     # Linux PPC64le
     - ${{ if eq(parameters.platform, 'linux_ppc64le') }}:
-        - Ubuntu.2004.PPC64le.Experimental.Open
+        - Ubuntu.2204.PPC64le.Experimental.Open
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:

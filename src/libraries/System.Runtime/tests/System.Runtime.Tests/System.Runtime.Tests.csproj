@@ -16,6 +16,8 @@
     <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
     <!-- Same for ILLink -->
     <DebuggerSupport>true</DebuggerSupport>
+    <!-- Active issue: https://github.com/dotnet/runtime/issues/97809 -->
+    <ShouldILStrip>false</ShouldILStrip>
   </PropertyGroup>
 
   <!--

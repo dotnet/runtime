@@ -1099,8 +1099,7 @@ PhaseStatus Compiler::fgCloneFinally()
             }
             else
             {
-                newBlock->CopyTarget(this, block);
-                optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
+                optRedirectBlock(block, newBlock, &blockMap);
             }
         }
 
@@ -2041,7 +2040,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
                 case BBJ_SWITCH:
                 {
                     JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
-                    fgReplaceSwitchJumpTarget(predBlock, canonicalBlock, nonCanonicalBlock);
+                    fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
                     updated = true;
                 }
                 break;
