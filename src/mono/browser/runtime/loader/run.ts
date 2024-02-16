@@ -513,6 +513,16 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
 
     prepareAssetsWorker();
 
+    setTimeout(async () => {
+        try {
+            // load subset which is on JS heap rather than in WASM linear memory
+            await mono_download_assets();
+        }
+        catch (err) {
+            mono_exit(1, err);
+        }
+    }, 0);
+
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
     await initializeModules(es6Modules as any);

@@ -449,6 +449,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>]
         internal static partial Func<int, int, int> backback_FuncIntIntFuncIntInt([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Func<int, int, int> fun, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] int b);
 
+        [JSImport("backbackAsync", "JavaScriptTestHelper")]
+        internal static partial Task<int> backback_FuncIntIntFuncIntIntAsync([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Func<int, int, int> fun, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] int b);
+
         [JSImport("back3", "JavaScriptTestHelper")]
         internal static partial void back3_ActionInt([JSMarshalAs<JSType.Function<JSType.Number>>] Action<int>? action, [JSMarshalAs<JSType.Number>] int a);
 
@@ -500,6 +503,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool invoke1_Boolean([JSMarshalAs<JSType.Boolean>] bool value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSImport("invoke1Async", "JavaScriptTestHelper")]
+        internal static partial Task<bool> invoke1_BooleanAsync(bool value, string name);
+
         [JSExport]
         [return: JSMarshalAs<JSType.Boolean>]
         public static bool EchoBoolean([JSMarshalAs<JSType.Boolean>] bool arg1)
