@@ -387,7 +387,7 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     if (decoder.IsInterruptible())
         return true;
 
-    if (decoder.IsSafePoint())
+    if (decoder.IsInterruptibleSafePoint())
         return true;
 
     return false;
@@ -446,6 +446,8 @@ void CoffNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                 GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                 codeOffset - 1
             );
+
+            assert(decoder.IsInterruptibleSafePoint());
         }
     }
 
