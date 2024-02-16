@@ -71,20 +71,20 @@ namespace ILLink.RoslynAnalyzer
 			return (DynamicallyAccessedMemberTypes) dynamicallyAccessedMembers.ConstructorArguments[0].Value!;
 		}
 
-		internal static ValueSet<string> GetFeatureGuardAnnotations (
+		internal static ValueSet<string> GetFeatureCheckAnnotations (
 			this IPropertySymbol propertySymbol,
 			IEnumerable<RequiresAnalyzerBase> enabledRequiresAnalyzers)
 		{
 			ImmutableArray<string>.Builder featureSet = ImmutableArray.CreateBuilder<string> ();
 			foreach (var attributeData in propertySymbol.GetAttributes ()) {
-				if (IsFeatureGuardAttribute (attributeData, out string? featureName))
+				if (IsFeatureCheckAttribute (attributeData, out string? featureName))
 					featureSet.Add (featureName);
 			}
 			return featureSet.Count == 0 ? ValueSet<string>.Empty : new ValueSet<string> (featureSet);
 
-			bool IsFeatureGuardAttribute (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
+			bool IsFeatureCheckAttribute (AttributeData attributeData, [NotNullWhen (true)] out string? featureName) {
 				featureName = null;
-				if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureGuardAttribute))
+				if (attributeData.AttributeClass is not { } attrClass || !attrClass.HasName (DynamicallyAccessedMembersAnalyzer.FullyQualifiedFeatureCheckAttribute))
 					return false;
 
 				if (attributeData.ConstructorArguments is not [TypedConstant { Value: INamedTypeSymbol featureType }])

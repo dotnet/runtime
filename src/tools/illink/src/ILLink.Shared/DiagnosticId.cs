@@ -204,8 +204,8 @@ namespace ILLink.Shared
 		RequiresDynamicCodeOnStaticConstructor = 3056,
 
 		// Feature guard diagnostic ids.
-		ReturnValueDoesNotMatchFeatureGuards = 4000,
-		InvalidFeatureGuard = 4001
+		ReturnValueDoesNotMatchFeatureChecks = 4000,
+		InvalidFeatureCheck = 4001
 	}
 
 	public static class DiagnosticIdExtensions

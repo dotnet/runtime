@@ -13,18 +13,18 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 	public readonly record struct TrimAnalysisReturnValuePattern
 	{
 		public FeatureChecksValue ReturnValue { get; init; }
-		public ValueSet<string> FeatureGuardAnnotations { get; init; }
+		public ValueSet<string> FeatureCheckAnnotations { get; init; }
 		public IOperation Operation { get; init; }
 		public IPropertySymbol OwningSymbol { get; init; }
 
 		public TrimAnalysisReturnValuePattern (
 			FeatureChecksValue returnValue,
-			ValueSet<string> featureGuardAnnotations,
+			ValueSet<string> featureCheckAnnotations,
 			IOperation operation,
 			IPropertySymbol owningSymbol)
 		{
 			ReturnValue = returnValue.DeepCopy ();
-			FeatureGuardAnnotations = featureGuardAnnotations.DeepCopy ();
+			FeatureCheckAnnotations = featureCheckAnnotations.DeepCopy ();
 			Operation = operation;
 			OwningSymbol = owningSymbol;
 		}
@@ -32,12 +32,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		public IEnumerable<Diagnostic> CollectDiagnostics (DataFlowAnalyzerContext context)
 		{
 			var diagnosticContext = new DiagnosticContext (Operation.Syntax.GetLocation ());
-			// For now, feature guard validation is enabled only when trim analysis is enabled.
+			// For now, feature check validation is enabled only when trim analysis is enabled.
 			if (context.EnableTrimAnalyzer) {
 				if (!OwningSymbol.IsStatic || OwningSymbol.Type.SpecialType != SpecialType.System_Boolean) {
-					// Warn about invalid feature guards (non-static or non-bool properties)
+					// Warn about invalid feature checks (non-static or non-bool properties)
 					diagnosticContext.AddDiagnostic (
-						DiagnosticId.InvalidFeatureGuard);
+						DiagnosticId.InvalidFeatureCheck);
 					return diagnosticContext.Diagnostics;
 				}
 
@@ -45,12 +45,12 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				// For any feature that this property is declared to guard,
 				// the abstract return value must include that feature
 				// (indicating it is known to be enabled when the return value is true).
-				foreach (string featureGuard in FeatureGuardAnnotations.GetKnownValues ()) {
-					if (!returnValueFeatures.Contains (featureGuard)) {
+				foreach (string feature in FeatureCheckAnnotations.GetKnownValues ()) {
+					if (!returnValueFeatures.Contains (feature)) {
 						diagnosticContext.AddDiagnostic (
-							DiagnosticId.ReturnValueDoesNotMatchFeatureGuards,
+							DiagnosticId.ReturnValueDoesNotMatchFeatureChecks,
 							OwningSymbol.GetDisplayName (),
-							featureGuard);
+							feature);
 					}
 				}
 			}
