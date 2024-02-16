@@ -569,6 +569,7 @@ namespace System
         int
             BigIntegerParseNaiveThreshold = 1233,
             BigIntegerParseNaiveThresholdInRecursive = 9 * (1 << 7);
+
         private static ParsingStatus NumberToBigInteger(ref NumberBuffer number, out BigInteger result)
         {
             const uint TenPowMaxPartial = PowersOf1e9.TenPowMaxPartial;
@@ -647,7 +648,6 @@ namespace System
 
                 PowersOf1e9 powersOf1e9 = new PowersOf1e9(powersOf1e9Buffer);
 
-                const double digitRatio = 0.103810253; // log_{2^32}(10)
 
                 if (trailingZeroCount > 0)
                 {
@@ -662,29 +662,10 @@ namespace System
                     Recursive(powersOf1e9, intDigits, leading);
                     leading = leading.Slice(0, BigIntegerCalculator.ActualLength(leading));
 
-                    int trailingZeroBufferLength = checked((int)(digitRatio * trailingZeroCount) + 2);
-                    uint[]? trailingZeroBufferFromPool = null;
-                    Span<uint> trailingZeroBuffer = (
-                        trailingZeroBufferLength <= BigIntegerCalculator.StackAllocThreshold
-                        ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                        : trailingZeroBufferFromPool = ArrayPool<uint>.Shared.Rent(trailingZeroBufferLength)).Slice(0, trailingZeroBufferLength);
-                    trailingZeroBuffer.Clear();
-
-                    powersOf1e9.CalculatePowerOfTen(trailingZeroCount, trailingZeroBuffer);
-                    trailingZeroBuffer = trailingZeroBuffer.Slice(0, BigIntegerCalculator.ActualLength(trailingZeroBuffer));
-
-                    // Merge leading and trailing
-                    Span<uint> bitsResult = bits.Slice(0, trailingZeroBuffer.Length + leading.Length);
-
-                    if (trailingZeroBuffer.Length < leading.Length)
-                        BigIntegerCalculator.Multiply(leading, trailingZeroBuffer, bitsResult);
-                    else
-                        BigIntegerCalculator.Multiply(trailingZeroBuffer, leading, bitsResult);
+                    powersOf1e9.MultiplyPowerOfTen(leading, trailingZeroCount, bits);
 
                     if (leadingFromPool != null)
                         ArrayPool<uint>.Shared.Return(leadingFromPool);
-                    if (trailingZeroBufferFromPool != null)
-                        ArrayPool<uint>.Shared.Return(trailingZeroBufferFromPool);
                 }
                 else
                 {
@@ -730,7 +711,7 @@ namespace System
                     Recursive(powersOf1e9, digitsUpper, upperBuffer);
                     upperBuffer = upperBuffer.Slice(0, BigIntegerCalculator.ActualLength(upperBuffer));
                     ReadOnlySpan<uint> multiplier = powersOf1e9.GetSpan(log2);
-                    int multiplierTrailingZeroCountUInt32 = (MaxPartialDigits * (1 << log2)) >> 5;
+                    int multiplierTrailingZeroCountUInt32 = PowersOf1e9.OmittedLength(log2);
 
                     Span<uint> bitsUpper = bits.Slice(0, upperBuffer.Length + multiplier.Length + multiplierTrailingZeroCountUInt32);
                     bitsUpper = bitsUpper.Slice(multiplierTrailingZeroCountUInt32);
@@ -968,123 +949,6 @@ namespace System
                 }
 #endif
             }
-            public ReadOnlySpan<uint> GetSpan(int index)
-            {
-                // Returns 1E9^(1<<index) >> (32*(9*(1<<index)/32)
-                int from = Indexes[index];
-                int toExclusive = Indexes[index + 1];
-                return pow1E9[from..toExclusive];
-            }
-
-            public void CalculatePowerOfTen(int trailingZeroCount, Span<uint> bits)
-            {
-                Debug.Assert(bits.Length > unchecked((int)(0.934292276687070661 / 9 * trailingZeroCount)) + 1);
-                Debug.Assert(trailingZeroCount >= 0);
-
-                int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
-
-                if (trailingPartialCount == 0)
-                {
-                    bits[0] = UInt32PowersOfTen[remainingTrailingZeroCount];
-                    return;
-                }
-
-                int popCount = BitOperations.PopCount((uint)trailingPartialCount);
-
-                int bits2Length = (bits.Length + 1) >> 1;
-                uint[]? bits2FromPool = null;
-                scoped Span<uint> bits2;
-                if (popCount > 1)
-                {
-                    bits2 = (
-                        bits2Length <= BigIntegerCalculator.StackAllocThreshold
-                        ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                        : bits2FromPool = ArrayPool<uint>.Shared.Rent(bits2Length)).Slice(0, bits2Length);
-                    bits2.Clear();
-                }
-                else
-                    bits2 = default;
-
-                int curLength, curTrailingZeroCount;
-                scoped Span<uint> curBits, otherBits;
-
-                if ((popCount & 1) != 0)
-                {
-                    curBits = bits;
-                    otherBits = bits2;
-                }
-                else
-                {
-                    curBits = bits2;
-                    otherBits = bits;
-                }
-
-                // Copy first
-                int fi = BitOperations.TrailingZeroCount(trailingPartialCount);
-                {
-                    curTrailingZeroCount = MaxPartialDigits * (1 << fi);
-                    trailingPartialCount >>= fi;
-                    trailingPartialCount >>= 1;
-
-                    ReadOnlySpan<uint> first = GetSpan(fi);
-                    first.CopyTo(curBits.Slice(curTrailingZeroCount >> 5));
-
-                    curLength = first.Length;
-                }
-
-
-                for (int i = fi + 1; trailingPartialCount != 0 && i + 1 < Indexes.Length; i++, trailingPartialCount >>= 1)
-                {
-                    Debug.Assert(GetSpan(i).Length >= curLength - (curTrailingZeroCount >> 5));
-                    if ((trailingPartialCount & 1) != 0)
-                    {
-                        int powerTrailingZeroCount = MaxPartialDigits * (1 << i);
-                        int powerTrailingZeroCountUInt32 = powerTrailingZeroCount >> 5;
-                        int curTrailingZeroCountUInt32 = curTrailingZeroCount >> 5;
-
-                        ReadOnlySpan<uint> power = GetSpan(i);
-                        Span<uint> src = curBits.Slice(0, curLength);
-                        Span<uint> dst = otherBits.Slice(0, curLength += power.Length + powerTrailingZeroCountUInt32);
-
-                        Debug.Assert(curTrailingZeroCountUInt32 < src.Length
-                            && src.Slice(0, curTrailingZeroCountUInt32).Trim(0u).Length == 0
-                            && src[curTrailingZeroCountUInt32] != 0);
-
-                        BigIntegerCalculator.Multiply(power, src.Slice(curTrailingZeroCountUInt32), dst.Slice(powerTrailingZeroCountUInt32 + curTrailingZeroCountUInt32));
-
-                        curTrailingZeroCount += powerTrailingZeroCount;
-
-                        Span<uint> tmp = curBits;
-                        curBits = otherBits;
-                        otherBits = tmp;
-                        otherBits.Clear();
-
-                        // Trim
-                        while (--curLength >= 0 && curBits[curLength] == 0) ;
-                        ++curLength;
-                    }
-                }
-
-                Debug.Assert(Unsafe.AreSame(ref bits[0], ref curBits[0]));
-
-                curBits = curBits.Slice(0, curLength);
-                uint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
-                uint carry = 0;
-                for (int i = (curTrailingZeroCount >> 5); i < curBits.Length; i++)
-                {
-                    ulong p = (ulong)multiplier * curBits[i] + carry;
-                    curBits[i] = (uint)p;
-                    carry = (uint)(p >> 32);
-                }
-
-                if (carry != 0)
-                {
-                    bits[curLength] = carry;
-                }
-
-                if (bits2FromPool != null)
-                    ArrayPool<uint>.Shared.Return(bits2FromPool);
-            }
 
             public static int GetBufferSize(int digits)
             {
@@ -1092,7 +956,116 @@ namespace System
                 int log2 = BitOperations.Log2((uint)scale1E9) + 1;
                 return (uint)log2 < (uint)Indexes.Length ? Indexes[log2] + 1 : Indexes[^1];
             }
+
+            public ReadOnlySpan<uint> GetSpan(int index)
+            {
+                // Returns 1E9^(1<<index) >> (32*(9*(1<<index)/32))
+                int from = Indexes[index];
+                int toExclusive = Indexes[index + 1];
+                return pow1E9.Slice(from, toExclusive - from);
+            }
+
+            public static int OmittedLength(int index)
+            {
+                // Returns 9*(1<<index)/32
+                return (MaxPartialDigits * (1 << index)) >> 5;
+            }
+
+            public void MultiplyPowerOfTen(ReadOnlySpan<uint> left, int trailingZeroCount, Span<uint> bits)
+            {
+                Debug.Assert(trailingZeroCount >= 0);
+                if (trailingZeroCount <= UInt32PowersOfTen.Length)
+                {
+                    BigIntegerCalculator.Multiply(left, UInt32PowersOfTen[trailingZeroCount], bits.Slice(0, left.Length + 1));
+                    return;
+                }
+
+                uint[]? powersOfTenFromPool = null;
+
+                Span<uint> powersOfTen = (
+                    bits.Length <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : powersOfTenFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+                scoped Span<uint> powersOfTen2 = bits;
+
+                int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
+
+                int fi = BitOperations.TrailingZeroCount(trailingPartialCount);
+                int omittedLength = OmittedLength(fi);
+
+                // Copy first
+                ReadOnlySpan<uint> first = GetSpan(fi);
+                int curLength = first.Length;
+                trailingPartialCount >>= fi;
+                trailingPartialCount >>= 1;
+
+                if ((BitOperations.PopCount((uint)trailingPartialCount) & 1) != 0)
+                {
+                    powersOfTen2 = powersOfTen;
+                    powersOfTen = bits;
+                    powersOfTen2.Clear();
+                }
+
+                first.CopyTo(powersOfTen);
+
+                for (++fi; trailingPartialCount != 0; ++fi, trailingPartialCount >>= 1)
+                {
+                    Debug.Assert(fi + 1 < Indexes.Length);
+                    if ((trailingPartialCount & 1) != 0)
+                    {
+                        omittedLength += OmittedLength(fi);
+
+                        ReadOnlySpan<uint> power = GetSpan(fi);
+                        Span<uint> src = powersOfTen.Slice(0, curLength);
+                        Span<uint> dst = powersOfTen2.Slice(0, curLength += power.Length);
+
+                        if (power.Length < src.Length)
+                            BigIntegerCalculator.Multiply(src, power, dst);
+                        else
+                            BigIntegerCalculator.Multiply(power, src, dst);
+
+                        Span<uint> tmp = powersOfTen;
+                        powersOfTen = powersOfTen2;
+                        powersOfTen2 = tmp;
+                        powersOfTen2.Clear();
+
+                        // Trim
+                        while (--curLength >= 0 && powersOfTen[curLength] == 0) ;
+                        ++curLength;
+                    }
+                }
+
+                Debug.Assert(Unsafe.AreSame(ref bits[0], ref powersOfTen2[0]));
+
+                powersOfTen = powersOfTen.Slice(0, curLength);
+                Span<uint> bits2 = bits.Slice(omittedLength, curLength += left.Length);
+                if (left.Length < powersOfTen.Length)
+                    BigIntegerCalculator.Multiply(powersOfTen, left, bits2);
+                else
+                    BigIntegerCalculator.Multiply(left, powersOfTen, bits2);
+
+                if (powersOfTenFromPool != null)
+                    ArrayPool<uint>.Shared.Return(powersOfTenFromPool);
+
+                if (remainingTrailingZeroCount > 0)
+                {
+                    uint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
+                    uint carry = 0;
+                    for (int i = 0; i < bits2.Length; i++)
+                    {
+                        ulong p = (ulong)multiplier * bits2[i] + carry;
+                        bits2[i] = (uint)p;
+                        carry = (uint)(p >> 32);
+                    }
+
+                    if (carry != 0)
+                    {
+                        bits[curLength] = carry;
+                    }
+                }
+            }
         }
+
 
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
