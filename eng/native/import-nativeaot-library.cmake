@@ -105,6 +105,16 @@ function(add_imported_nativeaot_library targetName symbolPrefix)
     target_include_directories(${targetName}-shared INTERFACE "${CLR_SRC_NATIVE_DIR}/${libName}/inc")
 
     target_link_libraries(${targetName} INTERFACE ${targetName}-shared)
+
+    # FIXME: this installs into artifacts/bin/coreclr/<triple>/lib/
+    # we instead need to add a IMPORTED_RUNTIME_ARTIFACTS mode for install_clr() so that it installs
+    #  with the component
+    if("${CLR_CMAKE_HOST_WIN32}")
+      install(IMPORTED_RUNTIME_ARTIFACTS ${targetName}-shared RUNTIME) # dlls are "runtime" on Windows
+    else()
+      install(IMPORTED_RUNTIME_ARTIFACTS ${targetName}-shared LIBRARY) # .so/.dylib are "library"
+    endif()
+
   elseif ("${${symbolPrefix}_MODE}" STREQUAL "STATIC")
     add_nativeAotFramework_targets_once()
 
