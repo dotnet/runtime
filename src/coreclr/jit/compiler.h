@@ -7407,9 +7407,8 @@ public:
 
     PhaseStatus optInductionVariables();
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
-    bool optIsIVWideningProfitable(unsigned lclNum, bool reusedIV, BasicBlock* initBlock, bool initedToConstant, FlowGraphNaturalLoop* loop);
-    void optBestEffortReplaceNarrowIVUsesWith(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
-    void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
+    bool optIsIVWideningProfitable(unsigned lclNum, struct ScevAddRec* addRec, FlowGraphNaturalLoop* loop);
+    void optReplaceWidenedIV(unsigned lclNum, unsigned newLclNum, Statement* stmt);
     bool optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
     // Redundant branch opts
