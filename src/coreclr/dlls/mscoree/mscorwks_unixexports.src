@@ -52,7 +52,6 @@ mono_signature_get_return_type
 mono_thread_attach
 mono_thread_current
 mono_thread_detach
-mono_thread_has_sufficient_execution_stack
 mono_type_get_type
 mono_unity_allocation_granularity
 mono_unity_backtrace_from_context

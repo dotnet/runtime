@@ -51,7 +51,6 @@ DO_API(gint32, mono_class_array_element_size, (MonoClass * ac))
 DO_API(MonoThread *, mono_thread_attach, (MonoDomain * domain))
 
 DO_API(void, mono_thread_detach, (MonoThread * thread))
-DO_API(gboolean, mono_thread_has_sufficient_execution_stack, (void))
 
 DO_API(MonoThread *, mono_thread_current, (void))
 

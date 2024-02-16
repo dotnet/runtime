@@ -770,12 +770,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_thread_detach(MonoThread *thread)
     thread_clr->DetachThread(FALSE);
 }
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_thread_has_sufficient_execution_stack (void)
-{
-    // TODO: Investigate if we need to implement this
-    return TRUE;
-}
-
 extern "C" EXPORT_API int EXPORT_CC mono_type_get_type(MonoType *type)
 {
 retry:
