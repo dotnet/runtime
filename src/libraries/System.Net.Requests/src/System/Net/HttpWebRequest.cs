@@ -1065,11 +1065,6 @@ namespace System.Net
                 throw new ProtocolViolationException(SR.net_nouploadonget);
             }
 
-            if (AllowWriteStreamBuffering is false && SendChunked is false && ContentLength < 0)
-            {
-                throw new ProtocolViolationException(SR.net_nobuffering_nochunked);
-            }
-
             if (RequestSubmitted)
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
