@@ -15,15 +15,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 	[KeptMemberInAssembly ("library.dll", typeof(Program), "CallMethod<#1>()")]
 	[KeptTypeInAssembly ("library.dll", typeof(Program.IBase))]
 	[KeptMemberInAssembly ("library.dll", typeof(Program.IBase), "Method()")]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.I2))]
-	[KeptMemberInAssembly ("library.dll", typeof(Program.I2), "Program.IBase.Method()")]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I2), "library.dll", typeof (Program.IBase))]
-	// https://github.com/dotnet/runtime/issues/98536
-	//[KeptTypeInAssembly ("library.dll", typeof(Program.I3))]
-	//[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I3), "library.dll", typeof (Program.I2))]
 	[KeptTypeInAssembly ("library.dll", typeof(Program.I4))]
 	// https://github.com/dotnet/runtime/issues/98536
-	//[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I4), "library.dll", typeof (Program.I3))]
+	// [KeptTypeInAssembly ("library.dll", typeof(Program.I2))]
+	// [KeptMemberInAssembly ("library.dll", typeof(Program.I2), "Program.IBase.Method()")]
+	// [KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I2), "library.dll", typeof (Program.IBase))]
+	// [KeptTypeInAssembly ("library.dll", typeof(Program.I3))]
+	// [KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I3), "library.dll", typeof (Program.I2))]
+	// [KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.I4), "library.dll", typeof (Program.I3))]
 #endif
 	class StaticDimProvidedByUnreferencedIfaceInHierarchy
 	{

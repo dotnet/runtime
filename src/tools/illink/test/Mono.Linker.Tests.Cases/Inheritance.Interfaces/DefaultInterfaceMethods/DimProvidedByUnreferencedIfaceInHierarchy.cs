@@ -12,14 +12,14 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.DefaultInterfaceMethods
 	[SkipILVerify]
 
 #if IL_ASSEMBLY_AVAILABLE
-	[KeptMemberInAssembly ("library.dll", typeof(Program.IBar), "Program.IFoo.Method()")]
 	[KeptMemberInAssembly ("library.dll", typeof(Program.IFoo), "Method()")]
-	[KeptTypeInAssembly ("library.dll", typeof(Program.IBar))]
-	[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBar), "library.dll", typeof (Program.IFoo))]
 	// https://github.com/dotnet/runtime/issues/98536
-	//[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.MyFoo), "library.dll", typeof (Program.IBaz))]
-	//[KeptTypeInAssembly ("library.dll", typeof(Program.IBaz))]
-	//[KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBaz), "library.dll", typeof (Program.IBar))]
+	// [KeptTypeInAssembly ("library.dll", typeof(Program.IBar))]
+	// [KeptMemberInAssembly ("library.dll", typeof(Program.IBar), "Program.IFoo.Method()")]
+	// [KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBar), "library.dll", typeof (Program.IFoo))]
+	// [KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.MyFoo), "library.dll", typeof (Program.IBaz))]
+	// [KeptTypeInAssembly ("library.dll", typeof(Program.IBaz))]
+	// [KeptInterfaceOnTypeInAssembly ("library.dll", typeof (Program.IBaz), "library.dll", typeof (Program.IBar))]
 	[KeptMemberInAssembly ("library.dll", typeof(Program), "CallMethod(Program/IFoo)")]
 #endif
 	class DimProvidedByUnreferencedIfaceInHierarchy
