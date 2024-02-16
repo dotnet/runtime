@@ -79,7 +79,6 @@ typedef int (__cdecl *vprintf_func)(const char* msg, va_list args);
 #else
 typedef int (*vprintf_func)(const char* msg, va_list args);
 #endif
-DO_API(void, mono_unity_set_vprintf_func, (vprintf_func func))
 
 typedef void(*MonoDataFunc) (void *data, void *userData);
 
