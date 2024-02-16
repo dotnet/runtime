@@ -644,24 +644,24 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
             BBehfDesc* newEhfDesc  = new (this, CMK_BasicBlock) BBehfDesc;
             newEhfDesc->bbeCount   = currEhfDesc->bbeCount;
             newEhfDesc->bbeSuccs   = new (this, CMK_FlowEdge) FlowEdge*[newEhfDesc->bbeCount];
-            FlowEdge** jumpPtr     = newEhfDesc->bbeSuccs;
 
-            for (BasicBlock* const ehfTarget : blk->EHFinallyRetSuccs())
+            for (unsigned i = 0; i < newEhfDesc->bbeCount; i++)
             {
+                FlowEdge* const inspiringEdge = currEhfDesc->bbeSuccs[i];
+                BasicBlock* const ehfTarget = inspiringEdge->getDestinationBlock();
                 FlowEdge* newEdge;
 
                 // Determine if newBlk should target ehfTarget, or be redirected
                 if (redirectMap->Lookup(ehfTarget, &newTarget))
                 {
-                    newEdge = fgAddRefPred(newTarget, newBlk);
+                    newEdge = fgAddRefPred(newTarget, newBlk, inspiringEdge);
                 }
                 else
                 {
-                    newEdge = fgAddRefPred(ehfTarget, newBlk);
+                    newEdge = fgAddRefPred(ehfTarget, newBlk, inspiringEdge);
                 }
 
-                *jumpPtr = newEdge;
-                jumpPtr++;
+                newEhfDesc->bbeSuccs[i] = newEdge;
             }
 
             newBlk->SetEhf(newEhfDesc);
