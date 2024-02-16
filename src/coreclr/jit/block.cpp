@@ -838,46 +838,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
 }
 
 //------------------------------------------------------------------------
-// CopyTarget: Copy the block kind and targets. The targets in the `from` block remain valid.
-// Use `TransferTarget` to copy the pointer to the target descriptor (e.g., for BBJ_SWITCH/BBJ_EHFINALLYRET)
-// after which the `from` block target is invalid.
-//
-// Arguments:
-//    compiler - Jit compiler instance
-//    from - Block to copy from
-//
-void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
-{
-    switch (from->GetKind())
-    {
-        case BBJ_SWITCH:
-            SetSwitch(new (compiler, CMK_BasicBlock) BBswtDesc(compiler, from->GetSwitchTargets()));
-            break;
-        case BBJ_EHFINALLYRET:
-            SetEhf(new (compiler, CMK_BasicBlock) BBehfDesc(compiler, from->GetEhfTargets()));
-            break;
-        case BBJ_COND:
-            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
-            break;
-        case BBJ_ALWAYS:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
-            CopyFlags(from, BBF_NONE_QUIRK);
-            break;
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_EHCATCHRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_LEAVE:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
-            break;
-        default:
-            SetKindAndTarget(from->GetKind()); // Clear the target
-            break;
-    }
-    assert(KindIs(from->GetKind()));
-}
-
-//------------------------------------------------------------------------
 // TransferTarget: Like CopyTarget, but copies the target descriptors for block types which have
 // them (BBJ_SWITCH/BBJ_EHFINALLYRET), that is, take their memory, after which the `from` block
 // target is invalid.
@@ -1779,6 +1739,22 @@ bool BasicBlock::hasEHBoundaryOut() const
 #endif // FEATURE_EH_FUNCLETS
 
     return returnVal;
+}
+
+//------------------------------------------------------------------------
+// BBswtDesc copy ctor: copy a switch descriptor, but don't set up the jump table
+//
+// Arguments:
+//    other - existing switch descriptor to copy (except for its jump table)
+//
+BBswtDesc::BBswtDesc(const BBswtDesc* other)
+    : bbsDstTab(nullptr)
+    , bbsCount(other->bbsCount)
+    , bbsDominantCase(other->bbsDominantCase)
+    , bbsDominantFraction(other->bbsDominantFraction)
+    , bbsHasDefault(other->bbsHasDefault)
+    , bbsHasDominantCase(other->bbsHasDominantCase)
+{
 }
 
 //------------------------------------------------------------------------
