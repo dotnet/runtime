@@ -99,7 +99,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     NewCallArg       extraArg;
 
 #ifdef SWIFT_SUPPORT
-    // Swift calls may use special register types that require additional IL,
+    // Swift calls may use special register types that require additional IR to handle,
     // so if we're importing a Swift call, look for these types in the signature
     int swiftErrorIndex = -1;
 #endif // SWIFT_SUPPORT
