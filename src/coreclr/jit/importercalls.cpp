@@ -675,7 +675,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #ifdef SWIFT_SUPPORT
         // We are importing an unmanaged Swift call, which might require special parameter handling:
         // - SwiftError* is passed to capture the address of an error thrown during the Swift call.
-        // - SwiftSelf is passed to enable calling an instance method of a Swift object.
         if (call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Swift)
         {
             // Check the signature of the Swift call for the special types.
