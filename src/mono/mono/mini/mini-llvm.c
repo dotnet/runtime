@@ -11665,11 +11665,7 @@ MONO_RESTORE_WARNING
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
 
-			LLVMValueRef value_tuple = values [ins->sreg2];
-
-			if (!value_tuple) {
-				value_tuple = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "load_param");
-			}
+			LLVMValueRef value_tuple = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "load_param");
 
 			int len = LLVMGetArrayLength (tuple_t);
 

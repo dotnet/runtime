@@ -4374,11 +4374,8 @@ emit_arm64_intrinsics (
 			default: g_assert_not_reached ();
 			}
 
-			MonoClass* value = mono_class_from_mono_type_internal (fsig->params [1]);
-
-			MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_ARM64_STM, opcode, arg0_type, fsig, args);
-			ins->klass = value;
-			return ins;
+			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass_tuple_var, OP_ARM64_STM, opcode, arg0_type, fsig, args);
 		}
 		default:
 			g_assert_not_reached ();
