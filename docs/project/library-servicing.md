@@ -41,7 +41,7 @@ All the servicing change must go through an approval process. You have two ways 
 For all cases, you must:
 
 - Fill out the template of the PR description.
-- Bring it to the attention of the [engineering lead responsible for the area](~/docs/area-owners.md).
+- Bring it to the attention of the [engineering lead responsible for the area](/docs/area-owners.md).
 - If the fix is a product change, the area owner will:
   - Add the `Servicing-consider` label.
   - Ask the area owner to champion your PR in the .NET Tactics meeting to request merge approval.

@@ -8,7 +8,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -86,6 +85,12 @@ extern "C" volatile GSCookie __security_cookie = 0;
 
 #endif // TARGET_UNIX
 
+static RhConfig g_sRhConfig;
+RhConfig* g_pRhConfig = &g_sRhConfig;
+
+void InitializeGCEventLock();
+bool InitializeGC();
+
 static bool InitDLL(HANDLE hPalInstance)
 {
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
@@ -95,6 +100,8 @@ static bool InitDLL(HANDLE hPalInstance)
     if (!InitializeInterfaceDispatch())
         return false;
 #endif
+
+    InitializeGCEventLock();
 
 #ifdef FEATURE_PERFTRACING
     // Initialize EventPipe
@@ -146,7 +153,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    if (!RedhawkGCInterface::InitializeSubsystems())
+    if (!InitializeGC())
         return false;
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);

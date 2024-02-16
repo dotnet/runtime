@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection;
 using System.Reflection.Runtime.CustomAttributes;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -148,7 +148,7 @@ namespace System.Reflection.Runtime.MethodInfos
             return methodInfo;
         }
 
-        public sealed override MethodBase MetadataDefinitionMethod
+        internal sealed override MethodBase MetadataDefinitionMethod
         {
             get
             {
@@ -309,7 +309,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (invoker != null)
                     return invoker;
 
-                return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
+                return GetUncachedMethodInvoker(GenericTypeParameters, this);
             }
         }
 

@@ -41,6 +41,11 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.AllowOutOfOrderMetadataProperties"/> when set.
+        /// </summary>
+        public bool AllowOutOfOrderMetadataProperties { get; set; }
+
+        /// <summary>
         /// Specifies the default value of <see cref="JsonSerializerOptions.AllowTrailingCommas"/> when set.
         /// </summary>
         public bool AllowTrailingCommas { get; set; }
@@ -124,6 +129,16 @@ namespace System.Text.Json.Serialization
         /// Specifies the default value of <see cref="JsonSerializerOptions.WriteIndented"/> when set.
         /// </summary>
         public bool WriteIndented { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.IndentCharacter"/> when set.
+        /// </summary>
+        public char IndentCharacter { get; set; }
+
+        /// <summary>
+        /// Specifies the default value of <see cref="JsonSerializerOptions.IndentCharacter"/> when set.
+        /// </summary>
+        public int IndentSize { get; set; }
 
         /// <summary>
         /// Specifies the default source generation mode for type declarations that don't set a <see cref="JsonSerializableAttribute.GenerationMode"/>.

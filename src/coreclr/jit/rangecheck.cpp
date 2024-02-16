@@ -96,7 +96,7 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 #ifdef DEBUG
     if (m_pCompiler->verbose)
     {
-        printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler->getAllocatorDebugOnly()), 0);
+        printf("%s BetweenBounds <%d, ", range.ToString(m_pCompiler), 0);
         Compiler::printTreeID(upper);
         printf(">\n");
     }
@@ -359,7 +359,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         return;
     }
 
-    JITDUMP("Range value %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+    JITDUMP("Range value %s\n", range.ToString(m_pCompiler));
     m_pSearchPath->RemoveAll();
     Widen(block, treeIndex, &range);
 
@@ -917,7 +917,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 break;
         }
         JITDUMP("The range after edge merging:");
-        JITDUMP(pRange->ToString(m_pCompiler->getAllocatorDebugOnly()));
+        JITDUMP(pRange->ToString(m_pCompiler));
         JITDUMP("\n");
     }
 }
@@ -935,13 +935,14 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     {
         GenTreePhiArg* arg  = (GenTreePhiArg*)op;
         BasicBlock*    pred = arg->gtPredBB;
-        if (pred->bbFallsThrough() && pred->NextIs(block))
+        if (pred->KindIs(BBJ_COND) && pred->FalseTargetIs(block))
         {
             assertions = pred->bbAssertionOut;
             JITDUMP("Merge assertions from pred " FMT_BB " edge: ", pred->bbNum);
             Compiler::optDumpAssertionIndices(assertions, "\n");
         }
-        else if (pred->KindIs(BBJ_COND, BBJ_ALWAYS) && pred->HasJumpTo(block))
+        else if ((pred->KindIs(BBJ_ALWAYS) && pred->TargetIs(block)) ||
+                 (pred->KindIs(BBJ_COND) && pred->TrueTargetIs(block)))
         {
             if (m_pCompiler->bbJtrueAssertionOut != nullptr)
             {
@@ -1006,7 +1007,7 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
         if (icon >= 0)
         {
             Range range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, icon));
-            JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+            JITDUMP("Limit range to %s\n", range.ToString(m_pCompiler));
             return range;
         }
         // Generalized range computation not implemented for these operators
@@ -1067,32 +1068,28 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
     if (binop->OperIs(GT_ADD))
     {
         r = RangeOps::Add(op1Range, op2Range);
-        JITDUMP("BinOp add ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+        JITDUMP("BinOp add ranges %s %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
+                r.ToString(m_pCompiler));
     }
     else if (binop->OperIs(GT_MUL))
     {
         r = RangeOps::Multiply(op1Range, op2Range);
-        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
+                r.ToString(m_pCompiler));
     }
     else if (binop->OperIs(GT_LSH))
     {
         // help the next step a bit, convert the LSH rhs to a multiply
         Range convertedOp2Range = RangeOps::ConvertShiftToMultiply(op2Range);
         r                       = RangeOps::Multiply(op1Range, convertedOp2Range);
-        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                convertedOp2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+        JITDUMP("BinOp multiply ranges %s %s = %s\n", op1Range.ToString(m_pCompiler),
+                convertedOp2Range.ToString(m_pCompiler), r.ToString(m_pCompiler));
     }
     else if (binop->OperIs(GT_RSH))
     {
         r = RangeOps::ShiftRight(op1Range, op2Range);
-        JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                op2Range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                r.ToString(m_pCompiler->getAllocatorDebugOnly()));
+        JITDUMP("Right shift range: %s >> %s = %s\n", op1Range.ToString(m_pCompiler), op2Range.ToString(m_pCompiler),
+                r.ToString(m_pCompiler));
     }
     return r;
 }
@@ -1264,9 +1261,8 @@ bool RangeCheck::DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop)
         return true;
     }
 
-    JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()),
-            op1Range->ToString(m_pCompiler->getAllocatorDebugOnly()),
-            op2Range->ToString(m_pCompiler->getAllocatorDebugOnly()));
+    JITDUMP("Checking bin op overflow %s %s %s\n", GenTree::OpName(binop->OperGet()), op1Range->ToString(m_pCompiler),
+            op2Range->ToString(m_pCompiler));
 
     if (binop->OperIs(GT_ADD))
     {
@@ -1357,9 +1353,9 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
-    // GT_AND, GT_UMOD, GT_LSH and GT_RSH don't overflow
+    // These operators don't overflow.
     // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
-    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD, GT_NEG))
     {
         overflows = false;
     }
@@ -1457,6 +1453,12 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
+    else if (expr->OperIs(GT_NEG))
+    {
+        // Compute range for negation, e.g.: [0..8] -> [-8..0]
+        Range op1Range = GetRange(block, expr->gtGetOp1(), monIncreasing DEBUGARG(indent + 1));
+        range          = RangeOps::Negate(op1Range);
+    }
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperIs(GT_PHI))
     {
@@ -1475,16 +1477,15 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
             assert(!argRange.LowerLimit().IsUndef());
             assert(!argRange.UpperLimit().IsUndef());
             MergeAssertion(block, use.GetNode(), &argRange DEBUGARG(indent + 1));
-            JITDUMP("Merging ranges %s %s:", range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                    argRange.ToString(m_pCompiler->getAllocatorDebugOnly()));
+            JITDUMP("Merging ranges %s %s:", range.ToString(m_pCompiler), argRange.ToString(m_pCompiler));
             range = RangeOps::Merge(range, argRange, monIncreasing);
-            JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+            JITDUMP("%s\n", range.ToString(m_pCompiler));
         }
     }
-    else if (varTypeIsSmallInt(expr->TypeGet()))
+    else if (varTypeIsSmall(expr))
     {
         range = GetRangeFromType(expr->TypeGet());
-        JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+        JITDUMP("%s\n", range.ToString(m_pCompiler));
     }
     else if (expr->OperIs(GT_COMMA))
     {
@@ -1539,7 +1540,7 @@ Range RangeCheck::GetRange(BasicBlock* block, GenTree* expr, bool monIncreasing 
     {
         Indent(indent);
         JITDUMP("   %s Range [%06d] => %s\n", (pRange == nullptr) ? "Computed" : "Cached", Compiler::dspTreeID(expr),
-                range.ToString(m_pCompiler->getAllocatorDebugOnly()));
+                range.ToString(m_pCompiler));
         Indent(indent);
         JITDUMP("}\n", expr);
     }

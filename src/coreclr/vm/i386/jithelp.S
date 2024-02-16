@@ -679,7 +679,7 @@ NESTED_END JIT_StackProbe, _TEXT
 //  the compares just for EAX, which won't work for other registers.
 //
 //  READ THIS!!!!!!
-//  it is imperative that the addresses of of the values that we overwrite
+//  it is imperative that the addresses of the values that we overwrite
 //  (card table, ephemeral region ranges, etc) are naturally aligned since
 //  there are codepaths that will overwrite these values while the EE is running.
 //

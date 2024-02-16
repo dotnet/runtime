@@ -154,7 +154,7 @@ namespace System.Tests
             public int Field = 0;
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/803", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/803", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming))]
         [Fact]
         [StringValue("\uDFFF")]
         public static void StringArgument_InvalidCodeUnits_FallbackUsed()
@@ -167,7 +167,14 @@ namespace System.Tests
 
             string stringArg = cad.ConstructorArguments[0].Value as string;
             Assert.NotNull(stringArg);
-            Assert.Equal("\uFFFD\uFFFD", stringArg);
+
+            // Validate that each character is 'invalid'.
+            // The runtimes are inconsistent with respect to conversion
+            // failure modes so we just validate each character.
+            foreach (char c in stringArg)
+            {
+                Assert.Equal('\uFFFD', c);
+            }
         }
 
         public static IEnumerable<object[]> Equals_TestData()

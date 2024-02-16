@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Numerics;
 using Test.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -353,19 +355,10 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [ConditionalFact]
+        [ConditionalFact(nameof(PlatformSupportsEmptyRSAEncryption))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RoundtripEmptyArray()
         {
-            if (OperatingSystem.IsIOS() && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
-            {
-                throw new SkipTestException("iOS prior to 13.6 does not reliably support RSA encryption of empty data.");
-            }
-            if (OperatingSystem.IsTvOS() && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
-            {
-                throw new SkipTestException("tvOS prior to 14.0 does not reliably support RSA encryption of empty data.");
-            }
-
             using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
                 void RoundtripEmpty(RSAEncryptionPadding paddingMode)
@@ -725,6 +718,139 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [ConditionalTheory]
+        [InlineData(new byte[] { 1, 2, 3, 4 })]
+        [InlineData(new byte[0])]
+        public void Decrypt_Pkcs1_ErrorsForInvalidPadding(byte[] data)
+        {
+            if (data.Length == 0 && !PlatformSupportsEmptyRSAEncryption)
+            {
+                throw new SkipTestException("Platform does not support RSA encryption of empty data.");
+            }
+
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
+            {
+                byte[] encrypted = Encrypt(rsa, data, RSAEncryptionPadding.Pkcs1);
+                encrypted[1] ^= 0xFF;
+
+                // PKCS#1, the data, and the key are all deterministic so this should always throw an exception.
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, encrypted, RSAEncryptionPadding.Pkcs1));
+            }
+        }
+
+        [Fact]
+        public void Decrypt_Pkcs1_BadPadding()
+        {
+            if ((PlatformDetection.IsWindows && !PlatformDetection.IsWindows10Version2004OrGreater))
+            {
+                return;
+            }
+
+            RSAParameters keyParams = TestData.RSA2048Params;
+            BigInteger e = new BigInteger(keyParams.Exponent, true, true);
+            BigInteger n = new BigInteger(keyParams.Modulus, true, true);
+            byte[] buf = new byte[keyParams.Modulus.Length];
+            byte[] c = new byte[buf.Length];
+
+            buf[1] = 2;
+            buf.AsSpan(2).Fill(1);
+
+            ref byte afterMinPadding = ref buf[10];
+            ref byte lastByte = ref buf[^1];
+            afterMinPadding = 0;
+
+            using (RSA rsa = RSAFactory.Create(keyParams))
+            {
+                RawEncrypt(buf, e, n, c);
+                // Assert.NoThrow, check that manual padding is coherent
+                Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1);
+
+                // All RSA encryption schemes start with 00, so pick any other number.
+                //
+                // If buf > modulus then encrypt should fail, so this
+                // is the largest legal-but-invalid value to test.
+                buf[0] = keyParams.Modulus[0];
+                RawEncrypt(buf, e, n, c);
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+
+                // Check again with a zero length payload
+                (afterMinPadding, lastByte) = (lastByte, afterMinPadding);
+                RawEncrypt(buf, e, n, c);
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+
+                // Back to valid padding
+                buf[0] = 0;
+                (afterMinPadding, lastByte) = (lastByte, afterMinPadding);
+                RawEncrypt(buf, e, n, c);
+                Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1);
+
+                // This is (sort of) legal for PKCS1 signatures, but not decryption.
+                buf[1] = 1;
+                RawEncrypt(buf, e, n, c);
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+
+                // No RSA PKCS1 padding scheme starts with 00 FF.
+                buf[1] = 255;
+                RawEncrypt(buf, e, n, c);
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+
+                // Check again with a zero length payload
+                (afterMinPadding, lastByte) = (lastByte, afterMinPadding);
+                RawEncrypt(buf, e, n, c);
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+
+                // Back to valid padding
+                buf[1] = 2;
+                (afterMinPadding, lastByte) = (lastByte, afterMinPadding);
+                RawEncrypt(buf, e, n, c);
+                Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1);
+
+                // Try a zero in every possible required padding position
+                for (int i = 2; i < 10; i++)
+                {
+                    buf[i] = 0;
+
+                    RawEncrypt(buf, e, n, c);
+                    Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+
+                    // It used to be 1, now it's 2, still not zero.
+                    buf[i] = 2;
+                }
+
+                // Back to valid padding
+                RawEncrypt(buf, e, n, c);
+                Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1);
+
+                // Make it such that
+                // "there is no octet with hexadecimal value 0x00 to separate PS from M"
+                // (RFC 3447 sec 7.2.2, rule 3, third clause)
+                buf.AsSpan(10).Fill(3);
+                RawEncrypt(buf, e, n, c);
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+
+                // Every possible problem, for good measure.
+                buf[0] = 2;
+                buf[1] = 0;
+                buf[4] = 0;
+                RawEncrypt(buf, e, n, c);
+                Assert.ThrowsAny<CryptographicException>(() => Decrypt(rsa, c, RSAEncryptionPadding.Pkcs1));
+            }
+
+            static void RawEncrypt(ReadOnlySpan<byte> source, BigInteger e, BigInteger n, Span<byte> destination)
+            {
+                BigInteger m = new BigInteger(source, true, true);
+                BigInteger c = BigInteger.ModPow(m, e, n);
+                int shift = destination.Length - c.GetByteCount(true);
+                destination.Slice(0, shift).Clear();
+                bool wrote = c.TryWriteBytes(destination.Slice(shift), out int written, true, true);
+
+                if (!wrote || written + shift != destination.Length)
+                {
+                    throw new UnreachableException();
+                }
+            }
+        }
+
         public static IEnumerable<object[]> OaepPaddingModes
         {
             get
@@ -744,6 +870,24 @@ namespace System.Security.Cryptography.Rsa.Tests
                     yield return new object[] { RSAEncryptionPadding.OaepSHA3_384 };
                     yield return new object[] { RSAEncryptionPadding.OaepSHA3_512 };
                 }
+            }
+        }
+
+        public static bool PlatformSupportsEmptyRSAEncryption
+        {
+            get
+            {
+                if (OperatingSystem.IsIOS() && !OperatingSystem.IsIOSVersionAtLeast(13, 6))
+                {
+                    return false;
+                }
+
+                if (OperatingSystem.IsTvOS() && !OperatingSystem.IsTvOSVersionAtLeast(14, 0))
+                {
+                    return false;
+                }
+
+                return true;
             }
         }
     }

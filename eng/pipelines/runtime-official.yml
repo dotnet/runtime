@@ -38,13 +38,12 @@ extends:
       # Localization build
       #
 
-      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/release/8.0') }}:
-        - template: /eng/common/templates/job/onelocbuild.yml
-          parameters:
-            MirrorRepo: runtime
-            MirrorBranch: release/8.0
-            LclSource: lclFilesfromPackage
-            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      - template: /eng/common/templates/job/onelocbuild.yml
+        parameters:
+          MirrorRepo: runtime
+          MirrorBranch: main
+          LclSource: lclFilesfromPackage
+          LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build
@@ -310,8 +309,16 @@ extends:
           - iossimulator_x64
           - iossimulator_arm64
           - ios_arm64
-          - linux_bionic_arm64
+          - linux_x64
+          - linux_arm
+          - linux_arm64
+          - linux_musl_x64
+          - linux_musl_arm
+          - linux_musl_arm64
           - linux_bionic_x64
+          - linux_bionic_arm64
+          - windows_x64
+          - windows_arm64
           jobParameters:
             buildArgs: -s clr.nativeaotlibs+clr.nativeaotruntime+libs+packs -c $(_BuildConfig) /p:BuildNativeAOTRuntimePack=true /p:SkipLibrariesNativeRuntimePackages=true
             nameSuffix: NativeAOT
@@ -389,7 +396,7 @@ extends:
           platforms:
           - browser_wasm
           jobParameters:
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
             nameSuffix: Mono_multithread
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             runtimeVariant: multithread
@@ -407,6 +414,7 @@ extends:
           platforms:
           - android_x64
           - browser_wasm
+          - wasi_wasm
           - tvos_arm64
           - ios_arm64
           - maccatalyst_x64
@@ -428,15 +436,17 @@ extends:
           - linux_musl_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -453,15 +463,17 @@ extends:
           - windows_x64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser+wasi /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             postBuildSteps:
               - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -478,18 +490,20 @@ extends:
           - osx_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
-                      /p:MonoCrossAOTTargetOS=android+browser+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                      /p:MonoCrossAOTTargetOS=android+browser+wasi+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
             nameSuffix: CrossAOT_Mono
             runtimeVariant: crossaot
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             - mono_tvos_offsets
             - mono_ios_offsets
             - mono_maccatalyst_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             - tvos
             - ios
             - maccatalyst

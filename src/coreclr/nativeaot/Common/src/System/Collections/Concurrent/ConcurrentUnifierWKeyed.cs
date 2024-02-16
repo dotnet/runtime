@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 
 namespace System.Collections.Concurrent
 {
@@ -84,7 +84,7 @@ namespace System.Collections.Concurrent
     {
         protected ConcurrentUnifierWKeyed()
         {
-            _lock = new Lock();
+            _lock = new Lock(useTrivialWaits: true);
             _container = new Container(this);
         }
 

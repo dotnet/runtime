@@ -2988,7 +2988,7 @@ namespace System.Xml.XslCompiledTransformApiTests
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
             LoadXSL("MyObject_CaseSensitive.xsl", xslInputType, readerType);
             var e = Assert.ThrowsAny<XsltException>(() => Transform_ArgList("fruits.xml", outputType, navType));
-            var exceptionSourceAssembly = PlatformDetection.IsNetFramework ? "System.Data.SqlXml" : "System.Xml";
+            var exceptionSourceAssembly = "System.Xml";
             CheckExpectedError(e, exceptionSourceAssembly, "XmlIl_NoExtensionMethod", new[] { "urn:my-object", "FN3", "0" });
         }
 
@@ -3252,7 +3252,7 @@ namespace System.Xml.XslCompiledTransformApiTests
         [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData("sort.xsl", "sort.txt", XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void AddExtObject33(object param0, object param1, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             ExObj obj = new ExObj(0, _output);

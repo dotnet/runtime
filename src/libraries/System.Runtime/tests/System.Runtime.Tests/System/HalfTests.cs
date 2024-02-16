@@ -411,7 +411,7 @@ namespace System.Tests
         public static void ExplicitConversion_ToSingle(Half value, float expected) // Check the underlying bits for verifying NaNs
         {
             float f = (float)value;
-            Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(f));
+            AssertExtensions.Equal(expected, f);
         }
 
         public static IEnumerable<object[]> ExplicitConversion_ToDouble_TestData()
@@ -466,7 +466,7 @@ namespace System.Tests
         public static void ExplicitConversion_ToDouble(Half value, double expected) // Check the underlying bits for verifying NaNs
         {
             double d = (double)value;
-            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(d));
+            AssertExtensions.Equal(expected, d);
         }
 
         // ---------- Start of To-half conversion tests ----------
@@ -554,7 +554,7 @@ namespace System.Tests
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
-            Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
+            AssertExtensions.Equal(expected, h);
         }
 
         public static IEnumerable<object[]> ExplicitConversion_FromDouble_TestData()
@@ -648,7 +648,7 @@ namespace System.Tests
         public static void ExplicitConversion_FromDouble(double d, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)d;
-            Assert.Equal(BitConverter.HalfToUInt16Bits(expected), BitConverter.HalfToUInt16Bits(h));
+            AssertExtensions.Equal(expected, h);
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -921,11 +921,24 @@ namespace System.Tests
             if (value != null)
             {
                 ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
-                Assert.Throws(exceptionType, () => float.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+                Exception e = Assert.Throws(exceptionType, () => Half.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+                if (e is FormatException fe)
+                {
+                    Assert.Contains(value, fe.Message);
+                }
 
                 Assert.False(float.TryParse(valueUtf8, style, provider, out float result));
                 Assert.Equal(0, result);
             }
+        }
+
+        [Fact]
+        public static void Parse_Utf8Span_InvalidUtf8()
+        {
+            FormatException fe = Assert.Throws<FormatException>(() => Half.Parse([0xA0]));
+            Assert.DoesNotContain("A0", fe.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("ReadOnlySpan", fe.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("\uFFFD", fe.Message, StringComparison.Ordinal);
         }
 
         public static IEnumerable<object[]> ToString_TestData()
@@ -1092,7 +1105,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString());
-            Assert.Equal(BitConverter.HalfToUInt16Bits((Half)value), BitConverter.HalfToUInt16Bits(result));
+            AssertExtensions.Equal((Half)value, result);
         }
 
         [Theory]
@@ -1101,7 +1114,7 @@ namespace System.Tests
         {
             float value = o_value is float floatValue ? floatValue : (float)(Half)o_value;
             Half result = Half.Parse(value.ToString("R"));
-            Assert.Equal(BitConverter.HalfToUInt16Bits((Half)value), BitConverter.HalfToUInt16Bits(result));
+            AssertExtensions.Equal((Half)value, result);
         }
 
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()

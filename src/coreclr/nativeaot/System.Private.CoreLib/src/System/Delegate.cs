@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Runtime;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+
 using Internal.Reflection.Augments;
-using Internal.Runtime.Augments;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -40,10 +40,10 @@ namespace System
 
         // New Delegate Implementation
 
-        internal object m_firstParameter;
-        internal object m_helperObject;
-        internal nint m_extraFunctionPointerOrData;
-        internal IntPtr m_functionPointer;
+        private object m_firstParameter;
+        private object m_helperObject;
+        private nint m_extraFunctionPointerOrData;
+        private IntPtr m_functionPointer;
 
         // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
         // Do not change their values without updating the values in the calling convention converter component
@@ -111,7 +111,7 @@ namespace System
             else
             {
                 if (m_firstParameter != null)
-                    typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(m_firstParameter.GetEETypePtr());
+                    typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(m_firstParameter.GetMethodTable());
 
                 // TODO! Implementation issue for generic invokes here ... we need another IntPtr for uniqueness.
 
@@ -233,24 +233,12 @@ namespace System
             m_extraFunctionPointerOrData = functionPointer;
         }
 
-        internal void SetClosedStaticFirstParameter(object firstParameter)
-        {
-            // Closed static delegates place a value in m_helperObject that they pass to the target method.
-            Debug.Assert(m_functionPointer == GetThunk(ClosedStaticThunk));
-            m_helperObject = firstParameter;
-        }
-
         // This function is only ever called by the open instance method thunk, and in that case,
         // m_extraFunctionPointerOrData always points to an OpenMethodResolver
         [MethodImpl(MethodImplOptions.NoInlining)]
         private IntPtr GetActualTargetFunctionPointer(object thisObject)
         {
             return OpenMethodResolver.ResolveMethod(m_extraFunctionPointerOrData, thisObject);
-        }
-
-        public override int GetHashCode()
-        {
-            return GetType().GetHashCode();
         }
 
         internal bool IsDynamicDelegate()
@@ -287,14 +275,6 @@ namespace System
         protected virtual MethodInfo GetMethodImpl()
         {
             return ReflectionAugments.ReflectionCoreCallbacks.GetDelegateMethod(this);
-        }
-
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            // It is expected that all real uses of the Equals method will hit the MulticastDelegate.Equals logic instead of this
-            // therefore, instead of duplicating the desktop behavior where direct calls to this Equals function do not behave
-            // correctly, we'll just throw here.
-            throw new PlatformNotSupportedException();
         }
 
         public object Target
@@ -347,20 +327,20 @@ namespace System
             }
         }
 
-        internal static bool InternalEqualTypes(object a, object b)
+        internal static unsafe bool InternalEqualTypes(object a, object b)
         {
-            return a.GetEETypePtr() == b.GetEETypePtr();
+            return a.GetMethodTable() == b.GetMethodTable();
         }
 
         // Returns a new delegate of the specified type whose implementation is provided by the
         // provided delegate.
-        internal static Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
+        internal static unsafe Delegate CreateObjectArrayDelegate(Type t, Func<object?[], object?> handler)
         {
             RuntimeTypeHandle typeHandle = t.TypeHandle;
 
-            EETypePtr delegateEEType = typeHandle.ToEETypePtr();
-            Debug.Assert(!delegateEEType.IsNull);
-            Debug.Assert(delegateEEType.IsCanonical);
+            MethodTable* delegateEEType = typeHandle.ToMethodTable();
+            Debug.Assert(delegateEEType != null);
+            Debug.Assert(delegateEEType->IsCanonical);
 
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 
@@ -382,9 +362,9 @@ namespace System
         // Note that delegates constructed the normal way do not come through here. The IL transformer generates the equivalent of
         // this code customized for each delegate type.
         //
-        internal static Delegate CreateDelegate(EETypePtr delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
+        internal static unsafe Delegate CreateDelegate(MethodTable* delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
-            Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
+            Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
             // What? No constructor call? That's right, and it's not an oversight. All "construction" work happens in
             // the Initialize() methods. This helper has a hard dependency on this invariant.
@@ -415,6 +395,366 @@ namespace System
                 }
             }
             return del;
+        }
+
+        private unsafe MulticastDelegate NewMulticastDelegate(Delegate[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
+        {
+            // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
+            MulticastDelegate result = (MulticastDelegate)RuntimeImports.RhNewObject(this.GetMethodTable());
+
+            // Performance optimization - if this already points to a true multicast delegate,
+            // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
+            if (thisIsMultiCastAlready)
+            {
+                result.m_functionPointer = this.m_functionPointer;
+            }
+            else
+            {
+                result.m_functionPointer = GetThunk(MulticastThunk);
+            }
+            result.m_firstParameter = result;
+            result.m_helperObject = invocationList;
+            result.m_extraFunctionPointerOrData = (IntPtr)invocationCount;
+
+            return result;
+        }
+
+        private static bool TrySetSlot(Delegate[] a, int index, Delegate o)
+        {
+            if (a[index] == null && System.Threading.Interlocked.CompareExchange<Delegate>(ref a[index], o, null) == null)
+                return true;
+
+            // The slot may be already set because we have added and removed the same method before.
+            // Optimize this case, because it's cheaper than copying the array.
+            if (a[index] != null)
+            {
+                MulticastDelegate d = (MulticastDelegate)o;
+                MulticastDelegate dd = (MulticastDelegate)a[index];
+
+                if (object.ReferenceEquals(dd.m_firstParameter, d.m_firstParameter) &&
+                    object.ReferenceEquals(dd.m_helperObject, d.m_helperObject) &&
+                    dd.m_extraFunctionPointerOrData == d.m_extraFunctionPointerOrData &&
+                    dd.m_functionPointer == d.m_functionPointer)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // This method will combine this delegate with the passed delegate
+        //  to form a new delegate.
+        protected virtual Delegate CombineImpl(Delegate? d)
+        {
+            if (d is null) // cast to object for a more efficient test
+                return this;
+
+            // Verify that the types are the same...
+            if (!InternalEqualTypes(this, d))
+                throw new ArgumentException(SR.Arg_DlgtTypeMis);
+
+            if (IsDynamicDelegate() && d.IsDynamicDelegate())
+            {
+                throw new InvalidOperationException();
+            }
+
+            MulticastDelegate dFollow = (MulticastDelegate)d;
+            Delegate[]? resultList;
+            int followCount = 1;
+            Delegate[]? followList = dFollow.m_helperObject as Delegate[];
+            if (followList != null)
+                followCount = (int)dFollow.m_extraFunctionPointerOrData;
+
+            int resultCount;
+            Delegate[]? invocationList = m_helperObject as Delegate[];
+            if (invocationList == null)
+            {
+                resultCount = 1 + followCount;
+                resultList = new Delegate[resultCount];
+                resultList[0] = this;
+                if (followList == null)
+                {
+                    resultList[1] = dFollow;
+                }
+                else
+                {
+                    for (int i = 0; i < followCount; i++)
+                        resultList[1 + i] = followList[i];
+                }
+                return NewMulticastDelegate(resultList, resultCount);
+            }
+            else
+            {
+                int invocationCount = (int)m_extraFunctionPointerOrData;
+                resultCount = invocationCount + followCount;
+                resultList = null;
+                if (resultCount <= invocationList.Length)
+                {
+                    resultList = invocationList;
+                    if (followList == null)
+                    {
+                        if (!TrySetSlot(resultList, invocationCount, dFollow))
+                            resultList = null;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < followCount; i++)
+                        {
+                            if (!TrySetSlot(resultList, invocationCount + i, followList[i]))
+                            {
+                                resultList = null;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (resultList == null)
+                {
+                    int allocCount = invocationList.Length;
+                    while (allocCount < resultCount)
+                        allocCount *= 2;
+
+                    resultList = new Delegate[allocCount];
+
+                    for (int i = 0; i < invocationCount; i++)
+                        resultList[i] = invocationList[i];
+
+                    if (followList == null)
+                    {
+                        resultList[invocationCount] = dFollow;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < followCount; i++)
+                            resultList[invocationCount + i] = followList[i];
+                    }
+                }
+                return NewMulticastDelegate(resultList, resultCount, true);
+            }
+        }
+
+        private Delegate[] DeleteFromInvocationList(Delegate[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
+        {
+            Delegate[] thisInvocationList = (Delegate[])m_helperObject;
+            int allocCount = thisInvocationList.Length;
+            while (allocCount / 2 >= invocationCount - deleteCount)
+                allocCount /= 2;
+
+            Delegate[] newInvocationList = new Delegate[allocCount];
+
+            for (int i = 0; i < deleteIndex; i++)
+                newInvocationList[i] = invocationList[i];
+
+            for (int i = deleteIndex + deleteCount; i < invocationCount; i++)
+                newInvocationList[i - deleteCount] = invocationList[i];
+
+            return newInvocationList;
+        }
+
+        private static bool EqualInvocationLists(Delegate[] a, Delegate[] b, int start, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (!(a[start + i].Equals(b[i])))
+                    return false;
+            }
+            return true;
+        }
+
+        // This method currently looks backward on the invocation list
+        //  for an element that has Delegate based equality with value.  (Doesn't
+        //  look at the invocation list.)  If this is found we remove it from
+        //  this list and return a new delegate.  If its not found a copy of the
+        //  current list is returned.
+        protected virtual Delegate? RemoveImpl(Delegate d)
+        {
+            // There is a special case were we are removing using a delegate as
+            //    the value we need to check for this case
+            //
+            MulticastDelegate? v = d as MulticastDelegate;
+
+            if (v is null)
+                return this;
+            if (v.m_helperObject as Delegate[] == null)
+            {
+                Delegate[]? invocationList = m_helperObject as Delegate[];
+                if (invocationList == null)
+                {
+                    // they are both not real Multicast
+                    if (this.Equals(v))
+                        return null;
+                }
+                else
+                {
+                    int invocationCount = (int)m_extraFunctionPointerOrData;
+                    for (int i = invocationCount; --i >= 0;)
+                    {
+                        if (v.Equals(invocationList[i]))
+                        {
+                            if (invocationCount == 2)
+                            {
+                                // Special case - only one value left, either at the beginning or the end
+                                return invocationList[1 - i];
+                            }
+                            else
+                            {
+                                Delegate[] list = DeleteFromInvocationList(invocationList, invocationCount, i, 1);
+                                return NewMulticastDelegate(list, invocationCount - 1, true);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Delegate[]? invocationList = m_helperObject as Delegate[];
+                if (invocationList != null)
+                {
+                    int invocationCount = (int)m_extraFunctionPointerOrData;
+                    int vInvocationCount = (int)v.m_extraFunctionPointerOrData;
+                    for (int i = invocationCount - vInvocationCount; i >= 0; i--)
+                    {
+                        if (EqualInvocationLists(invocationList, v.m_helperObject as Delegate[], i, vInvocationCount))
+                        {
+                            if (invocationCount - vInvocationCount == 0)
+                            {
+                                // Special case - no values left
+                                return null;
+                            }
+                            else if (invocationCount - vInvocationCount == 1)
+                            {
+                                // Special case - only one value left, either at the beginning or the end
+                                return invocationList[i != 0 ? 0 : invocationCount - 1];
+                            }
+                            else
+                            {
+                                Delegate[] list = DeleteFromInvocationList(invocationList, invocationCount, i, vInvocationCount);
+                                return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return this;
+        }
+
+        public virtual Delegate[] GetInvocationList()
+        {
+            Delegate[] del;
+            Delegate[]? invocationList = m_helperObject as Delegate[];
+            if (invocationList == null)
+            {
+                del = new Delegate[1];
+                del[0] = this;
+            }
+            else
+            {
+                // Create an array of delegate copies and each
+                //    element into the array
+                int invocationCount = (int)m_extraFunctionPointerOrData;
+                del = new Delegate[invocationCount];
+
+                for (int i = 0; i < del.Length; i++)
+                    del[i] = invocationList[i];
+            }
+            return del;
+        }
+
+        private bool InvocationListEquals(MulticastDelegate d)
+        {
+            Delegate[] invocationList = (Delegate[])m_helperObject;
+            if (d.m_extraFunctionPointerOrData != m_extraFunctionPointerOrData)
+                return false;
+
+            int invocationCount = (int)m_extraFunctionPointerOrData;
+            for (int i = 0; i < invocationCount; i++)
+            {
+                Delegate dd = invocationList[i];
+                Delegate[] dInvocationList = (Delegate[])d.m_helperObject;
+                if (!dd.Equals(dInvocationList[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            if (obj == null)
+                return false;
+            if (object.ReferenceEquals(this, obj))
+                return true;
+            if (!InternalEqualTypes(this, obj))
+                return false;
+
+            // Since this is a MulticastDelegate and we know
+            // the types are the same, obj should also be a
+            // MulticastDelegate
+            Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
+            var d = Unsafe.As<MulticastDelegate>(obj);
+
+            // there are 2 kind of delegate kinds for comparison
+            // 1- Multicast (m_helperObject is Delegate[])
+            // 2- Single-cast delegate, which can be compared with a structural comparison
+
+            IntPtr multicastThunk = GetThunk(MulticastThunk);
+            if (m_functionPointer == multicastThunk)
+            {
+                return d.m_functionPointer == multicastThunk && InvocationListEquals(d);
+            }
+            else
+            {
+                if (!object.ReferenceEquals(m_helperObject, d.m_helperObject) ||
+                    (!FunctionPointerOps.Compare(m_extraFunctionPointerOrData, d.m_extraFunctionPointerOrData)) ||
+                    (!FunctionPointerOps.Compare(m_functionPointer, d.m_functionPointer)))
+                {
+                    return false;
+                }
+
+                // Those delegate kinds with thunks put themselves into the m_firstParameter, so we can't
+                // blindly compare the m_firstParameter fields for equality.
+                if (object.ReferenceEquals(m_firstParameter, this))
+                {
+                    return object.ReferenceEquals(d.m_firstParameter, d);
+                }
+
+                return object.ReferenceEquals(m_firstParameter, d.m_firstParameter);
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            Delegate[]? invocationList = m_helperObject as Delegate[];
+            if (invocationList == null)
+            {
+                return base.GetHashCode();
+            }
+            else
+            {
+                int hash = 0;
+                for (int i = 0; i < (int)m_extraFunctionPointerOrData; i++)
+                {
+                    hash = hash * 33 + invocationList[i].GetHashCode();
+                }
+
+                return hash;
+            }
+        }
+
+        public bool HasSingleTarget => !(m_helperObject is Delegate[]);
+
+        // Used by delegate invocation list enumerator
+        internal Delegate? TryGetAt(int index)
+        {
+            if (!(m_helperObject is Delegate[] invocationList))
+            {
+                return (index == 0) ? this : null;
+            }
+            else
+            {
+                return ((uint)index < (uint)m_extraFunctionPointerOrData) ? invocationList[index] : null;
+            }
         }
     }
 }

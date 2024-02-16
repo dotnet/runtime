@@ -41,6 +41,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			LocalStateLattice = localStateLattice;
 			ContextLattice = contextLattice;
+			Top = new (LocalStateLattice.Top, ContextLattice.Top);
 		}
 
 		public LocalStateAndContext<TValue, TContext> Top { get; }

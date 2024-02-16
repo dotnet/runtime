@@ -89,7 +89,7 @@ namespace System.Tests
         //  Name abbreviations, if available, are used instead
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
-            if (PlatformDetection.IsBrowser || (!PlatformDetection.IsHybridGlobalizationOnOSX  && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS)))
+            if (PlatformDetection.IsBrowser || (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform  && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS)))
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "PST", "PDT", null },
@@ -100,7 +100,7 @@ namespace System.Tests
                     { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", null, "NST", "NDT", null },
                     { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", null, "-03", "-02", null }
                 };
-            else if (PlatformDetection.IsHybridGlobalizationOnOSX && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS))
+            else if (PlatformDetection.IsHybridGlobalizationOnApplePlatform && (PlatformDetection.IsMacCatalyst || PlatformDetection.IsiOS || PlatformDetection.IstvOS))
                 return new TheoryData<TimeZoneInfo, string, string, string, string, string>
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "Pacific Standard Time", "Pacific Daylight Time", "Pacific Summer Time" },
@@ -3194,6 +3194,32 @@ namespace System.Tests
         public static void LocalTzIsNotUtc()
         {
             Assert.NotEqual(TimeZoneInfo.Utc.StandardName, TimeZoneInfo.Local.StandardName);
+        }
+
+        private static bool SupportICUAndRemoteExecution => PlatformDetection.IsIcuGlobalization && RemoteExecutor.IsSupported;
+
+        [InlineData("Pacific Standard Time")]
+        [InlineData("America/Los_Angeles")]
+        [ConditionalTheory(nameof(SupportICUAndRemoteExecution))]
+        public static void TestZoneNamesUsingAlternativeId(string zoneId)
+        {
+            RemoteExecutor.Invoke(id =>
+            {
+                TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(id);
+                Assert.False(string.IsNullOrEmpty(tzi.StandardName), $"StandardName for '{id}' is null or empty.");
+                Assert.False(string.IsNullOrEmpty(tzi.DaylightName), $"DaylightName for '{id}' is null or empty.");
+                Assert.False(string.IsNullOrEmpty(tzi.DisplayName), $"DisplayName for '{id}' is null or empty.");
+            }, zoneId).Dispose();
+        }
+
+        [Fact]
+        public static void TestCustomTimeZonesWithNullNames()
+        {
+            TimeZoneInfo custom = TimeZoneInfo.CreateCustomTimeZone("Custom Time Zone With Null Names", TimeSpan.FromHours(-8), null, null);
+            Assert.Equal("Custom Time Zone With Null Names", custom.Id);
+            Assert.Equal(string.Empty, custom.StandardName);
+            Assert.Equal(string.Empty, custom.DaylightName);
+            Assert.Equal(string.Empty, custom.DisplayName);
         }
 
         private static bool IsEnglishUILanguage => CultureInfo.CurrentUICulture.Name.Length == 0 || CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en";

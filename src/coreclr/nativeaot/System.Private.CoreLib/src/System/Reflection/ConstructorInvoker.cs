@@ -1,10 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Reflection.Core.Execution;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.MethodInfos;
+
+using Internal.Reflection.Core.Execution;
+
 using static System.Reflection.DynamicInvokeInfo;
 
 namespace System.Reflection
@@ -13,13 +15,11 @@ namespace System.Reflection
     {
         private readonly MethodBaseInvoker _methodBaseInvoker;
         private readonly int _parameterCount;
-        private readonly RuntimeTypeHandle _declaringTypeHandle;
 
         internal ConstructorInvoker(RuntimeConstructorInfo constructor)
         {
             _methodBaseInvoker = constructor.MethodInvoker;
             _parameterCount = constructor.GetParametersAsSpan().Length;
-            _declaringTypeHandle = constructor.DeclaringType.TypeHandle;
         }
 
         public static ConstructorInvoker Create(ConstructorInfo constructor)
@@ -40,7 +40,7 @@ namespace System.Reflection
                 ThrowForArgCountMismatch();
             }
 
-            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(new Span<object?>());
+            object result = _methodBaseInvoker.CreateInstanceWithFewArgs(default);
             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }

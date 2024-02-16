@@ -13,7 +13,7 @@
     <ProjectReference Include="oob-src.proj" OutputItemType="OOBAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
-                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
@@ -55,7 +55,7 @@
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
       <!-- Unnecessary suppressions - disable for now since we didn't clean the runtime yet -->
       <OOBILLinkArgs>$(ILLinkArgs) --nowarn IL2121</OOBILLinkArgs>
-      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
+      <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes "@(OOBLibrarySuppressionsXml->'%(FullPath)', '" --link-attributes "')"</OOBILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(OOBAssembliesTrimDir)" />

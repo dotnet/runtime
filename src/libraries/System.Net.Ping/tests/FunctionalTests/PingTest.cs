@@ -73,7 +73,7 @@ namespace System.Net.NetworkInformation.Tests
 
         private static byte[] GetPingPayload(AddressFamily addressFamily)
             // On Unix, Non-root processes cannot send arbitrary data in the ping packet payload
-            => Capability.CanUseRawSockets(addressFamily) || PlatformDetection.IsOSXLike
+            => Capability.CanUseRawSockets(addressFamily) || PlatformDetection.IsApplePlatform
                 ? TestSettings.PayloadAsBytes
                 : Array.Empty<byte>();
 

@@ -115,10 +115,15 @@
       <TestAssemblies Include="%(TestAssemblyPaths.Identity)" Condition="Exists(%(TestAssemblyPaths.Identity))" />
       <TestDirsWithDuplicates Include="$([System.IO.Path]::GetDirectoryName('%(TestAssemblies.Identity)'))" />
     </ItemGroup>
+      
+    <Error 
+      Text="No tests found for Mono AOT compilation. Make sure that the desired test cases are not excluded from AOT compilation."
+      Condition="!Exists(%(TestAssemblies.Identity))" />
+
     <RemoveDuplicates Inputs="@(TestDirsWithDuplicates)">
       <Output TaskParameter="Filtered" ItemName="TestDirs" />
     </RemoveDuplicates>
-    <ItemGroup>
+    <ItemGroup>  
       <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/**/*.dll" Exclude="@(NoMonoAotAssemblyPaths)" />
       <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll;$(CORE_ROOT)/Microsoft.CodeAnalysis.VisualBasic.dll" />
       <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
@@ -309,7 +314,7 @@
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;$(MicrosoftNetCoreAppRuntimePackDir)/native/icudt.dat" />
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;" />
       <EntryPoints Include="testdir-%(TestDlls.Filename)/%(TestDlls.Filename).dll" />
       <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
         <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
@@ -435,10 +440,6 @@
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
-      <GlobalizationNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat;
-                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicudata.a;
-                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicuuc.a;
-                                        $(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/libicui18n.a" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppleBuildDir)" />

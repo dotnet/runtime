@@ -161,6 +161,8 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PT
 
 #else // !FEATURE_EH_FUNCLETS
 
+#include "exceptionhandling.h"
+
 enum RhEHClauseKind
 {
     RH_EH_CLAUSE_TYPED = 0,
@@ -194,10 +196,16 @@ enum class ExKind : uint8_t
     InstructionFaultFlag = 0x10
 };
 
-struct ExInfo
-{
-    ExInfo(Thread *pThread, CONTEXT *pCtx, REGDISPLAY *pRD, ExKind exceptionKind);
+struct PAL_SEHException;
 
+struct ExInfo : public ExceptionTrackerBase
+{
+    ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind);
+
+    // Releases all the resources owned by the ExInfo
+    void ReleaseResources();
+
+    // Make debugger and profiler callbacks before and after an exception handler (catch, finally, filter) is called
     void MakeCallbacksRelatedToHandler(
         bool fBeforeCallingHandler,
         Thread*                pThread,
@@ -206,8 +214,20 @@ struct ExInfo
         DWORD_PTR              dwHandlerStartPC,
         StackFrame             sf);
 
-    // Previous ExInfo in the chain of exceptions rethrown from their catch / finally handlers
-    PTR_ExInfo m_pPrevExInfo;
+    static void PopExInfos(Thread *pThread, void *targetSp);
+
+    // Padding to make the ExInfo offsets that the managed EH code needs to access
+    // the same for debug / release and Unix / Windows.
+#ifdef TARGET_UNIX
+    // sizeof(EHWatsonBucketTracker)
+    BYTE m_padding[2 * sizeof(void*) + sizeof(DWORD)];
+#else // TARGET_UNIX
+#ifndef _DEBUG
+    //  sizeof(EHWatsonBucketTracker::m_DebugFlags)
+    BYTE m_padding[sizeof(DWORD)];
+#endif // _DEBUG
+#endif // TARGET_UNIX
+
     // Context used by the stack frame iterator
     CONTEXT* m_pExContext;
     // actual exception object reference
@@ -221,15 +241,9 @@ struct ExInfo
     // Stack frame iterator used to walk stack frames while handling the exception
     StackFrameIterator m_frameIter;
     volatile size_t m_notifyDebuggerSP;
-    REGDISPLAY *m_pRD;
-    // Stack trace of the current exception
-    StackTraceInfo m_stackTraceInfo;
     // Initial explicit frame
     Frame* m_pFrame;
 
-    // Low and high bounds of the stack unwound by the exception. They are updated during 2nd pass only.
-    StackFrame          m_sfLowBound;
-    StackFrame          m_sfHighBound;
     // Stack frame of the caller of the currently running exception handling clause (catch, finally, filter)
     CallerStackFrame    m_csfEHClause;
     // Stack frame of the caller of the code that encloses the currently running exception handling clause
@@ -240,29 +254,25 @@ struct ExInfo
     EE_ILEXCEPTION_CLAUSE m_ClauseForCatch;
 
 #ifdef TARGET_UNIX
+    // Set to TRUE to take ownership of the EXCEPTION_RECORD and CONTEXT_RECORD in the m_ptrs. When set, the
+    // memory of those records is freed using PAL_FreeExceptionRecords when the ExInfo is destroyed.
+    BOOL m_fOwnsExceptionPointers;
     // Exception propagation callback and context for ObjectiveC exception propagation support
     void(*m_propagateExceptionCallback)(void* context);
     void *m_propagateExceptionContext;
 #endif // TARGET_UNIX
 
-    // thrown exception object handle
-    OBJECTHANDLE    m_hThrowable;
-
     // The following fields are for profiler / debugger use only
     EE_ILEXCEPTION_CLAUSE m_CurrentClause;
-    DebuggerExState m_DebuggerExState;
-    EHClauseInfo   m_EHClauseInfo;
-    ExceptionFlags m_ExceptionFlags;
+    // Method to report to the debugger / profiler when stack frame iterator leaves a frame
+    MethodDesc    *m_pMDToReportFunctionLeave;
+    // CONTEXT and REGDISPLAY used by the StackFrameIterator for stack walking
+    CONTEXT        m_exContext;
+    REGDISPLAY     m_regDisplay;
 
-#ifndef TARGET_UNIX
-    EHWatsonBucketTracker m_WatsonBucketTracker;
-
-    inline PTR_EHWatsonBucketTracker GetWatsonBucketTracker()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ExInfo, this, m_WatsonBucketTracker));
-    }
-#endif // !TARGET_UNIX
+#if defined(TARGET_UNIX)
+    void TakeExceptionPointersOwnership(PAL_SEHException* ex);
+#endif // TARGET_UNIX
 
 };
 

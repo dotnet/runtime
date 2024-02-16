@@ -3,8 +3,8 @@
 
 using System.IO;
 using System.Text;
+using System.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace System
 {
@@ -72,8 +72,8 @@ namespace System
 
     internal static partial class ConsolePal
     {
-        [JSImport("globalThis.console.clear")]
-        public static partial void Clear();
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void Clear();
 
         private static Encoding? s_outputEncoding;
 

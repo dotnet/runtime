@@ -9,7 +9,7 @@
  *          ld/st/cmp   -- load/store/compare instruction
  *          encode      -- encoding 1
  *
-******************************************************************************/
+ ******************************************************************************/
 
 #if !defined(TARGET_RISCV64)
 #error Unexpected target type
@@ -31,7 +31,7 @@
 // clang-format off
 
 // RV32I & RV64I
-INST(invalid,       "INVALID",        0,    0x00000000)
+INST(invalid,       "INVALID",        0,    BAD_CODE)
 INST(nop,           "nop",            0,    0x00000013)
 
 //// R_R

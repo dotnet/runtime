@@ -545,6 +545,13 @@ public:
                 pcsExceptionHandler->EmitINITOBJ(m_slIL.GetDispatchCodeStream()->GetToken(returnTypeHnd));
             }
             break;
+        case ELEMENT_TYPE_PTR:
+            pcsExceptionHandler->EmitPOP();
+            pcsExceptionHandler->EmitLDC(0);
+            pcsExceptionHandler->EmitCONV_U();
+            _ASSERTE(retvalLocalNum != (DWORD)-1);
+            pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
+            break;
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_CHAR:
         case ELEMENT_TYPE_I1:
@@ -2103,11 +2110,8 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
 
-                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pNDirectTarget));
                 pcsEmit->EmitADD();
-
-                pcsEmit->EmitLDIND_I();
-
                 pcsEmit->EmitLDIND_I();
             }
 #ifdef FEATURE_COMINTEROP
@@ -3169,7 +3173,6 @@ HRESULT NDirect::HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken t
 
     return S_FALSE;
 }
-
 
 // Either MD or signature & module must be given.
 /*static*/
@@ -4260,7 +4263,8 @@ static void CreateNDirectStubAccessMetadata(
     {
         if (unmgdCallConv == CorInfoCallConvExtension::Managed ||
             unmgdCallConv == CorInfoCallConvExtension::Fastcall ||
-            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction)
+            unmgdCallConv == CorInfoCallConvExtension::FastcallMemberFunction ||
+            unmgdCallConv == CorInfoCallConvExtension::Swift)
         {
             COMPlusThrow(kTypeLoadException, IDS_INVALID_PINVOKE_CALLCONV);
         }
@@ -4898,7 +4902,7 @@ namespace
             ILStubCreatorHelper ilStubCreatorHelper(pTargetMD, &params);
 
             // take the domain level lock
-            ListLockHolder pILStubLock(pLoaderModule->GetDomain()->GetILStubGenLock());
+            ListLockHolder pILStubLock(AppDomain::GetCurrentDomain()->GetILStubGenLock());
 
             {
                 ilStubCreatorHelper.GetStubMethodDesc();
@@ -5786,8 +5790,7 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    NDirectWriteableData* pWriteableData = GetWriteableData();
-    pWriteableData->m_pNDirectTarget = pTarget;
+    ndirect.m_pNDirectTarget = pTarget;
 }
 
 void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)
@@ -5869,7 +5872,7 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()
+            _ASSERTE((pThread->GetFrame() != FRAME_TOP && pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr())
                 || pMD->ShouldSuppressGCTransition());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());

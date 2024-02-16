@@ -56,6 +56,7 @@
     <Compile Include="System\Net\ServicePoint\SecurityProtocolType.cs" />
     <Compile Include="System\Net\ServicePoint\ServicePoint.cs" />
     <Compile Include="System\Net\ServicePoint\ServicePointManager.cs" />
+    <Compile Include="System\Net\ServicePoint\TcpKeepAlive.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"

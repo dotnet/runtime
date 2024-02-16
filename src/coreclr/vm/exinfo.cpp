@@ -113,6 +113,7 @@ void ExInfo::Init()
     m_StackAddress = this;
     DestroyExceptionHandle();
     m_hThrowable = NULL;
+    m_ExceptionCode = 0;
 
     // By default, mark the tracker as not having delivered the first
     // chance exception notification
@@ -309,33 +310,87 @@ void ExInfo::SetExceptionCode(const EXCEPTION_RECORD *pCER)
 
 #ifndef DACCESS_COMPILE
 
-ExInfo::ExInfo(Thread *pThread, CONTEXT *pCtx, REGDISPLAY *pRD, ExKind exceptionKind) :
-    m_pExContext(pCtx),
+ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pExceptionContext, ExKind exceptionKind) :
+    ExceptionTrackerBase(pExceptionRecord, pExceptionContext, pThread->GetExceptionState()->GetCurrentExceptionTracker()),
+    m_pExContext(&m_exContext),
     m_exception((Object*)NULL),
     m_kind(exceptionKind),
     m_passNumber(1),
     m_idxCurClause(0xffffffff),
     m_notifyDebuggerSP(NULL),
-    m_pRD(pRD),
     m_pFrame(pThread->GetFrame()),
     m_ClauseForCatch({}),
 #ifdef HOST_UNIX
+    m_fOwnsExceptionPointers(FALSE),
     m_propagateExceptionCallback(NULL),
     m_propagateExceptionContext(NULL),
 #endif // HOST_UNIX
-    m_hThrowable(NULL),
-    m_CurrentClause({})
+    m_CurrentClause({}),
+    m_pMDToReportFunctionLeave(NULL)
 {
-    m_pPrevExInfo = pThread->GetExceptionState()->GetCurrentExInfo();
-    m_stackTraceInfo.Init();
-    m_stackTraceInfo.AllocateStackTrace();
-    m_sfLowBound.SetMaxVal();
-    pThread->GetExceptionState()->SetCurrentExInfo(this);
+    m_StackTraceInfo.AllocateStackTrace();
+    pThread->GetExceptionState()->m_pCurrentTracker = this;
+    if (exceptionKind == ExKind::HardwareFault)
+    {
+        // Hardware exception handling needs to start on the FaultingExceptionFrame, so we are
+        // passing in a context with zeroed out IP.
+        SetIP(&m_exContext, 0);
+        m_exContext.ContextFlags = CONTEXT_FULL;
+    }
+    else
+    {
+        memcpy(&m_exContext, pExceptionContext, sizeof(CONTEXT));
+        m_exContext.ContextFlags = m_exContext.ContextFlags & (CONTEXT_FULL | CONTEXT_EXCEPTION_ACTIVE);
+    }
 }
 
-#endif // DACCESS_COMPILE
+#if defined(TARGET_UNIX)
+void ExInfo::TakeExceptionPointersOwnership(PAL_SEHException* ex)
+{
+    _ASSERTE(ex->GetExceptionRecord() == m_ptrs.ExceptionRecord);
+    _ASSERTE(ex->GetContextRecord() == m_ptrs.ContextRecord);
+    ex->Clear();
+    m_fOwnsExceptionPointers = TRUE;
+}
+#endif // TARGET_UNIX
 
-bool IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC)
+void ExInfo::ReleaseResources()
+{
+    if (m_hThrowable)
+    {
+        if (!CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
+        {
+            DestroyHandle(m_hThrowable);
+        }
+        m_hThrowable = NULL;
+    }
+    m_StackTraceInfo.FreeStackTrace();
+
+#ifndef TARGET_UNIX
+    // Clear any held Watson Bucketing details
+    GetWatsonBucketTracker()->ClearWatsonBucketDetails();
+#else // !TARGET_UNIX
+    if (m_fOwnsExceptionPointers)
+    {
+        PAL_FreeExceptionRecords(m_ptrs.ExceptionRecord, m_ptrs.ContextRecord);
+        m_fOwnsExceptionPointers = FALSE;
+    }
+#endif // !TARGET_UNIX
+}
+
+// static
+void ExInfo::PopExInfos(Thread *pThread, void *targetSp)
+{
+    ExInfo *pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+    while (pExInfo && pExInfo < (void*)targetSp)
+    {
+        pExInfo->ReleaseResources();
+        pExInfo = (PTR_ExInfo)pExInfo->m_pPrevNestedInfo;
+    }
+    pThread->GetExceptionState()->m_pCurrentTracker = pExInfo;
+}
+
+static bool IsFilterStartOffset(EE_ILEXCEPTION_CLAUSE* pEHClause, DWORD_PTR dwHandlerStartPC)
 {
     EECodeInfo codeInfo((PCODE)dwHandlerStartPC);
     _ASSERTE(codeInfo.IsValid());
@@ -352,6 +407,7 @@ void ExInfo::MakeCallbacksRelatedToHandler(
     StackFrame             sf
     )
 {
+#ifdef DEBUGGING_SUPPORTED
     // Here we need to make an extra check for filter handlers because we could be calling the catch handler
     // associated with a filter handler and yet the EH clause we have saved is for the filter handler.
     BOOL fIsFilterHandler         = IsFilterHandler(pEHClause) && IsFilterStartOffset(pEHClause, dwHandlerStartPC);
@@ -359,13 +415,14 @@ void ExInfo::MakeCallbacksRelatedToHandler(
 
     if (fBeforeCallingHandler)
     {
+        m_EHClauseInfo.SetManagedCodeEntered(TRUE);
         StackFrame sfToStore = sf;
-        if ((m_pPrevExInfo != NULL) &&
-            (m_pPrevExInfo->m_csfEnclosingClause == m_csfEnclosingClause))
+        if ((m_pPrevNestedInfo != NULL) &&
+            (((PTR_ExInfo)m_pPrevNestedInfo)->m_csfEnclosingClause == m_csfEnclosingClause))
         {
             // If this is a nested exception which has the same enclosing clause as the previous exception,
             // we should just propagate the clause info from the previous exception.
-            sfToStore = m_pPrevExInfo->m_EHClauseInfo.GetStackFrameForEHClause();
+            sfToStore = m_pPrevNestedInfo->m_EHClauseInfo.GetStackFrameForEHClause();
         }
         m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_NONE, (UINT_PTR)dwHandlerStartPC, sfToStore);
 
@@ -429,8 +486,12 @@ void ExInfo::MakeCallbacksRelatedToHandler(
             }
         }
 
+        m_EHClauseInfo.SetManagedCodeEntered(FALSE);
         m_EHClauseInfo.ResetInfo();
     }
+#endif // DEBUGGING_SUPPORTED
 }
+
+#endif // DACCESS_COMPILE
 
 #endif // !FEATURE_EH_FUNCLETS

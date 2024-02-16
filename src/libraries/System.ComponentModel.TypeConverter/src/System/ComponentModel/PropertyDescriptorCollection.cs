@@ -18,7 +18,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly PropertyDescriptorCollection Empty = new PropertyDescriptorCollection(null, true);
 
-        private IDictionary? _cachedFoundProperties;
+        private Hashtable? _cachedFoundProperties;
         private bool _cachedIgnoreCase;
         private PropertyDescriptor[] _properties;
         private readonly string[]? _namedSort;

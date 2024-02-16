@@ -123,8 +123,8 @@ namespace ILCompiler.Dataflow
             }
 
             Stack<StackSlot> newStack = new Stack<StackSlot>(a.Count);
-            IEnumerator<StackSlot> aEnum = a.GetEnumerator();
-            IEnumerator<StackSlot> bEnum = b.GetEnumerator();
+            Stack<StackSlot>.Enumerator aEnum = a.GetEnumerator();
+            Stack<StackSlot>.Enumerator bEnum = b.GetEnumerator();
             while (aEnum.MoveNext() && bEnum.MoveNext())
             {
                 newStack.Push(MergeStackElement(aEnum.Current, bEnum.Current));
@@ -188,8 +188,7 @@ namespace ILCompiler.Dataflow
                     _foundEndOfPrevBlock = false;
                 }
 
-                var reader = new ILReader(_methodBody.GetILBytes());
-                reader.Seek(offset);
+                var reader = new ILReader(_methodBody.GetILBytes(), offset);
                 ILOpcode opcode = reader.ReadILOpcode();
                 if (opcode.IsControlFlowInstruction())
                 {
@@ -210,7 +209,7 @@ namespace ILCompiler.Dataflow
                     continue;
 
                 MultiValue localValue = localVariable.Value.Value;
-                foreach (var val in localValue)
+                foreach (var val in localValue.AsEnumerable ())
                 {
                     if (val is LocalVariableReferenceValue localReference && localReference.ReferencedType.IsByRefOrPointer())
                     {
@@ -309,7 +308,8 @@ namespace ILCompiler.Dataflow
 
                 // Flow state through all methods encountered so far, as long as there
                 // are changes discovered in the hoisted local state on entry to any method.
-                foreach (var methodBodyValue in oldInterproceduralState.MethodBodies)
+                Debug.Assert (!oldInterproceduralState.MethodBodies.IsUnknown ());
+                foreach (var methodBodyValue in oldInterproceduralState.MethodBodies.GetKnownValues ())
                     Scan(methodBodyValue.MethodBody, ref interproceduralState);
             }
 
@@ -327,7 +327,8 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                Debug.Assert(interproceduralState.MethodBodies.Count() == 1);
+                Debug.Assert (!interproceduralState.MethodBodies.IsUnknown ());
+                Debug.Assert(interproceduralState.MethodBodies.GetKnownValues ().Count() == 1);
             }
 #endif
         }
@@ -1018,7 +1019,7 @@ namespace ILCompiler.Dataflow
         /// <exception cref="LinkerFatalErrorException">Throws if <paramref name="target"/> is not a valid target for an indirect store.</exception>
         protected void StoreInReference(MultiValue target, MultiValue source, MethodIL method, int offset, ValueBasicBlockPair?[] locals, int curBasicBlock, ref InterproceduralState ipState)
         {
-            foreach (var value in target)
+            foreach (var value in target.AsEnumerable ())
             {
                 switch (value)
                 {
@@ -1137,7 +1138,7 @@ namespace ILCompiler.Dataflow
                 return;
             }
 
-            foreach (var value in HandleGetField(methodBody, offset, field))
+            foreach (var value in HandleGetField(methodBody, offset, field).AsEnumerable ())
             {
                 // GetFieldValue may return different node types, in which case they can't be stored to.
                 // At least not yet.
@@ -1189,7 +1190,7 @@ namespace ILCompiler.Dataflow
             ref InterproceduralState interproceduralState)
         {
             MultiValue dereferencedValue = MultiValueLattice.Top;
-            foreach (var value in maybeReferenceValue)
+            foreach (var value in maybeReferenceValue.AsEnumerable ())
             {
                 switch (value)
                 {
@@ -1324,7 +1325,7 @@ namespace ILCompiler.Dataflow
 
             foreach (var param in methodArguments)
             {
-                foreach (var v in param)
+                foreach (var v in param.AsEnumerable ())
                 {
                     if (v is ArrayValue arr)
                     {
@@ -1366,7 +1367,7 @@ namespace ILCompiler.Dataflow
             StackSlot indexToStoreAt = PopUnknown(currentStack, 1, methodBody, offset);
             StackSlot arrayToStoreIn = PopUnknown(currentStack, 1, methodBody, offset);
             int? indexToStoreAtInt = indexToStoreAt.Value.AsConstInt();
-            foreach (var array in arrayToStoreIn.Value)
+            foreach (var array in arrayToStoreIn.Value.AsEnumerable ())
             {
                 if (array is ArrayValue arrValue)
                 {

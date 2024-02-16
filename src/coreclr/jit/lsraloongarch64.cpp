@@ -645,11 +645,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
-        else if (addr->OperGet() == GT_CLS_VAR_ADDR)
-        {
-            // Reserve int to load constant from memory (IF_LARGELDC)
-            buildInternalIntRegisterDefForNode(indirTree);
-        }
     }
 
 #ifdef FEATURE_SIMD
@@ -1103,6 +1098,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
             }
             break;
+
+            case GenTreeBlk::BlkOpKindLoop:
+                // Needed for offsetReg
+                buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                break;
 
             case GenTreeBlk::BlkOpKindHelper:
                 assert(!src->isContained());

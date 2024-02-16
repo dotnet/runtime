@@ -84,8 +84,6 @@ if(ENABLE_MINIMAL)
   process_enable_minimal()
 endif()
 
-set(DISABLE_COM 1)
-
 # Dependencies between options
 if(ENABLE_INTERP_LIB)
   set(DISABLE_INTERPRETER 1)
@@ -114,9 +112,7 @@ set(HAVE_MOVING_COLLECTOR 1)
 set(HAVE_CONC_GC_AS_DEFAULT 1)
 set(MONO_INSIDE_RUNTIME 1)
 
-TEST_BIG_ENDIAN(IS_BIG_ENDIAN)
-
-if(IS_BIG_ENDIAN)
+if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
   set(TARGET_BYTE_ORDER G_BIG_ENDIAN)
 else()
   set(TARGET_BYTE_ORDER G_LITTLE_ENDIAN)
@@ -279,17 +275,17 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
   set(MONO_ZERO_LEN_ARRAY 1)
   set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
-  add_compile_options(/W4)   # set warning level 4
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W4>)     # set warning level 4
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>)     # treat warnings as errors
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4324>) # 'struct_name' : structure was padded due to __declspec(align())
-  add_compile_options(/EHsc) # set exception handling behavior
-  add_compile_options(/FC)   # use full pathnames in diagnostics
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/EHsc>)   # set exception handling behavior
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/FC>)     # use full pathnames in diagnostics
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(/Oi)   # enable intrinsics
-    add_compile_options(/GF)   # enable string pooling
-    add_compile_options(/Zi)   # enable debugging information
-    add_compile_options(/GL)   # whole program optimization
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
@@ -748,9 +744,16 @@ elseif(HOST_BROWSER)
   set(ICU_LIBS "icucore")
 elseif(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
+  if(HOST_IOS)
+    string(APPEND ICU_FLAGS " -DTARGET_IOS")
+  elseif(HOST_TVOS)
+    string(APPEND ICU_FLAGS " -DTARGET_TVOS")
+  elseif(HOST_MACCAT)
+    string(APPEND ICU_FLAGS " -DTARGET_MACCATALYST")
+  endif()
+  string(APPEND ICU_FLAGS " -DAPPLE_HYBRID_GLOBALIZATION")
   set(HAVE_SYS_ICU 1)
   set(STATIC_ICU 1)
-  set(ICU_LIBS icuuc icui18n icudata)
 elseif(HOST_ANDROID)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
@@ -950,10 +953,10 @@ set(FULL_VERSION ${product_version_string})
 # OS SPECIFIC CHECKS
 ######################################
 
-if(CLR_CMAKE_HOST_ALPINE_LINUX)
-  # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
+if(CLR_CMAKE_TARGET_LINUX_MUSL)
+  # Setting RLIMIT_NOFILE breaks debugging of coreclr on musl-libc for some reason
   add_definitions(-DDONT_SET_RLIMIT_NOFILE)
-  # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
+  # On musl-libc, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif()

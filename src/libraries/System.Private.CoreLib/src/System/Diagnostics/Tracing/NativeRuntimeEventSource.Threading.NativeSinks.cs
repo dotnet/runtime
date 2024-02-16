@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Diagnostics.Tracing
 {
@@ -32,6 +32,8 @@ namespace System.Diagnostics.Tracing
             public const string IOEnqueue = "NativeOverlapped={0};\nOverlapped={1};\nMultiDequeues={2};\nClrInstanceID={3}";
             public const string IO = "NativeOverlapped={0};\nOverlapped={1};\nClrInstanceID={2}";
             public const string WorkingThreadCount = "Count={0};\nClrInstanceID={1}";
+            public const string WaitHandleWaitStart = "WaitSource={0};\nAssociatedObjectID={1};\nClrInstanceID={2}";
+            public const string WaitHandleWaitStop = "ClrInstanceID={0}";
         }
 
         // The task definitions for the ETW manifest
@@ -43,6 +45,7 @@ namespace System.Diagnostics.Tracing
             public const EventTask ThreadPool = (EventTask)23;
             public const EventTask ThreadPoolWorkingThreadCount = (EventTask)22;
             public const EventTask ThreadPoolMinMaxThreads = (EventTask)38;
+            public const EventTask WaitHandleWait = (EventTask)39;
         }
 
         public static partial class Opcodes // this name and visibility is important for EventSource
@@ -74,6 +77,12 @@ namespace System.Diagnostics.Tracing
             Starvation,
             ThreadTimedOut,
             CooperativeBlocking,
+        }
+
+        public enum WaitHandleWaitSourceMap : byte
+        {
+            Unknown,
+            MonitorWait,
         }
 
         [Event(90, Level = EventLevel.Informational, Message = Messages.ContentionLockCreated, Task = Tasks.Contention, Opcode = EventOpcode.Info, Version = 0, Keywords = Keywords.ContentionKeyword)]
@@ -208,7 +217,7 @@ namespace System.Diagnostics.Tracing
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            IntPtr Overlapped, // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
@@ -221,9 +230,14 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+#if TARGET_WINDOWS
+                IntPtr overlapped = ThreadPool.UseWindowsThreadPool ? 0 : (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#else
+                IntPtr overlapped = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#endif
                 ThreadPoolIOEnqueue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    overlapped,
                     false);
             }
         }
@@ -245,7 +259,7 @@ namespace System.Diagnostics.Tracing
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIODequeue(
             IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            IntPtr Overlapped, // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
@@ -257,9 +271,14 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+#if TARGET_WINDOWS
+                IntPtr overlapped = ThreadPool.UseWindowsThreadPool ? 0 : (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#else
+                IntPtr overlapped = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#endif
                 ThreadPoolIODequeue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    overlapped);
             }
         }
 
@@ -291,16 +310,21 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
             {
+#if TARGET_WINDOWS
+                IntPtr overlapped = ThreadPool.UseWindowsThreadPool ? 0 : (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#else
+                IntPtr overlapped = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#endif
                 ThreadPoolIOPack(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    overlapped);
             }
         }
 
         [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         private unsafe void ThreadPoolIOPack(
             IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            IntPtr Overlapped,  // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);
@@ -319,6 +343,30 @@ namespace System.Diagnostics.Tracing
             {
                 LogThreadPoolMinMaxThreads(MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID);
             }
+        }
+
+        [Event(301, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStart, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Start, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
+        private void WaitHandleWaitStart(
+            WaitHandleWaitSourceMap WaitSource,
+            nint AssociatedObjectID,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
+            LogWaitHandleWaitStart(WaitSource, AssociatedObjectID, ClrInstanceID);
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void WaitHandleWaitStart(
+            WaitHandleWaitSourceMap waitSource = WaitHandleWaitSourceMap.Unknown,
+            object? associatedObject = null) =>
+            WaitHandleWaitStart(waitSource, *(nint*)Unsafe.AsPointer(ref associatedObject));
+
+        [Event(302, Level = EventLevel.Verbose, Message = Messages.WaitHandleWaitStop, Task = Tasks.WaitHandleWait, Opcode = EventOpcode.Stop, Version = 0, Keywords = Keywords.WaitHandleKeyword)]
+        public void WaitHandleWaitStop(ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            Debug.Assert(IsEnabled(EventLevel.Verbose, Keywords.WaitHandleKeyword));
+            LogWaitHandleWaitStop(ClrInstanceID);
         }
     }
 }

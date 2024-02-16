@@ -15,7 +15,7 @@ The WebAssembly version of .NET exposes a number of MSBuild properties that can 
 
 For a support matrix of WebAssembly features see [https://webassembly.org/roadmap/](https://webassembly.org/roadmap/). †
 
-For the full set of MSBuild properties that configure a client application's use of these features, see the top of [WasmApp.targets](./build/WasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
+For the full set of MSBuild properties that configure a client application's use of these features, see the top of [BrowserWasmApp.targets](../browser/build/BrowserWasmApp.targets). All of these properties must be placed in your application's `.csproj` file (inside of a `PropertyGroup`) to have any effect.
 
 Some of these properties require a unique build of the runtime, which means that changing them will produce a different set of `.wasm` and `.js` files for your application. Some of these properties also require you to install the [wasm-tools workload](#wasm-tools-workload).
 
@@ -31,7 +31,7 @@ For more information, see [SharedArrayBuffer security requirements](https://deve
 
 JavaScript interop with managed code via `[JSExport]`/`[JSImport]` is currently limited to the main thread even if multi-threading support is enabled.
 
-Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` is not supported by browsers and very dangerous. The work on the proper design for this still in progress.
+Blocking on the main thread with operations like `Task.Wait` or `Monitor.Enter` are not supported by browsers and are very dangerous. The work on the proper design for this is still in progress.
 
 ### SIMD - Single instruction, multiple data
 WebAssembly SIMD provides significant performance improvements for operations on spans, strings, vectors and arrays. This feature requires a somewhat recent browser and may also not be supported by older hardware. It is currently enabled by default.
@@ -111,7 +111,7 @@ To add custom C source files into the runtime at compilation time, include nativ
 This requires that you have the [wasm-tools workload](#wasm-tools-workload) installed.
 
 ## JavaScript host API
-When the .NET runtime is hosted inside of a browser or other JavaScript environment, we expose a JavaScript API that can be used to configure and communicate with the runtime. It is documented in [dotnet.d.ts](https://github.com/dotnet/runtime/blob/main/src/mono/wasm/runtime/dotnet.d.ts) and you can see some examples of its use in our [samples](../sample/wasm/).
+When the .NET runtime is hosted inside of a browser or other JavaScript environment, we expose a JavaScript API that can be used to configure and communicate with the runtime. It is documented in [dotnet.d.ts](../browser/runtime/dotnet.d.ts) and you can see some examples of its use in our [samples](../sample/wasm/).
 
 ### Browser application template
 You can create a simple WebAssembly application by running `dotnet new wasmbrowser`. Then to run it, use `dotnet run` and open the URL which it wrote to the console inside your browser of choice. For example `http://localhost:5292/index.html`
@@ -369,7 +369,7 @@ You can add following elements in your .csproj
 ```
 
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
-For more details see also [debugger.md](debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
+For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
 
 ### Runtime logging and tracing
 
@@ -424,4 +424,4 @@ We have initial implementation of diagnostic server and [event pipe](https://lea
 
 At the moment it requires multi-threaded build of the runtime.
 
-For more details see [diagnostic-server.md](runtime/diagnostics/diagnostic-server.md)
+For more details see [diagnostic-server.md](../browser/runtime/diagnostics/diagnostic-server.md)

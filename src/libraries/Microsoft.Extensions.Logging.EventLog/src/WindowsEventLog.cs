@@ -3,8 +3,8 @@
 
 using System;
 using System.Diagnostics;
-using System.Security;
 using System.Runtime.Versioning;
+using System.Security;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {

@@ -56,6 +56,7 @@ typedef struct SeqPointInfo SeqPointInfo;
 #include <mono/jit/jit.h>
 #include "cfgdump.h"
 #include "tiered.h"
+#include "llvm-runtime.h"
 
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/marshal.h"
@@ -90,6 +91,12 @@ typedef struct SeqPointInfo SeqPointInfo;
 #else
 #define COMPILE_LLVM(cfg) (0)
 #define LLVM_ENABLED FALSE
+#endif
+
+#ifdef MONO_ARCH_SIMD_INTRINSICS
+#define ARCH_SIMD_ENABLED TRUE
+#else
+#define ARCH_SIMD_ENABLED FALSE
 #endif
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
@@ -295,24 +302,11 @@ enum {
 /* Determine whenever 'ins' represents a load of the 'this' argument */
 #define MONO_CHECK_THIS(ins) (mono_method_signature_internal (cfg->method)->hasthis && ((ins)->opcode == OP_MOVE) && ((ins)->sreg1 == cfg->args [0]->dreg))
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
-
-#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI)  || ((ins)->opcode == OP_XPHI))
-#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_XMOVE))
-#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || ((ins)->opcode == OP_XZERO))
-
-#else
-
-#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI))
-#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE))
-/*A real MOVE is one that isn't decomposed such as a VMOVE or LMOVE*/
-#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_RMOVE))
-#define MONO_IS_ZERO(ins) ((ins)->opcode == OP_VZERO)
-
-#endif
+#define MONO_IS_PHI(ins) (((ins)->opcode == OP_PHI) || ((ins)->opcode == OP_FPHI) || ((ins)->opcode == OP_VPHI)  || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XPHI))
+#define MONO_IS_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || ((ins)->opcode == OP_VMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
+#define MONO_IS_NON_FP_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_VMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE))
+#define MONO_IS_REAL_MOVE(ins) (((ins)->opcode == OP_MOVE) || ((ins)->opcode == OP_FMOVE) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XMOVE) || ((ins)->opcode == OP_RMOVE))
+#define MONO_IS_ZERO(ins) (((ins)->opcode == OP_VZERO) || (ARCH_SIMD_ENABLED && (ins)->opcode == OP_XZERO))
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 #define EMIT_NEW_X86_LEA(cfg,dest,sr1,sr2,shift,imm) do { \
@@ -341,6 +335,7 @@ extern int mono_break_at_bb_bb_num;
 extern gboolean mono_do_x86_stack_align;
 extern int mini_verbose;
 extern int valgrind_register;
+extern int mono_llvmonly_do_unwind_flag;
 
 #define INS_INFO(opcode) (&mini_ins_info [((opcode) - OP_START - 1) * 4])
 
@@ -678,6 +673,8 @@ typedef struct {
 	/* Parameter index in the LLVM signature */
 	int pindex;
 	MonoType *type;
+	/* Only if storage == LLVMArgWasmVtypeAsScalar */
+	MonoType *etype;
 	/* Only if storage == LLVMArgAsFpArgs. Dummy fp args to insert before this arg */
 	int ndummy_fpargs;
 } LLVMArgInfo;
@@ -1253,7 +1250,6 @@ typedef struct {
 	guint            no_unaligned_access : 1;
 	guint            disable_div_with_mul : 1;
 	guint            explicit_null_checks : 1;
-	guint            optimized_div : 1;
 	int              monitor_enter_adjustment;
 	int              dyn_call_param_area;
 } MonoBackend;
@@ -1414,6 +1410,7 @@ typedef struct {
 	/* Points to the call to mini_init_method_rgctx () */
 	MonoInst *init_method_rgctx_ins;
 	MonoInst *init_method_rgctx_ins_arg;
+	MonoInst *init_method_rgctx_ins_load;
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
@@ -1511,7 +1508,8 @@ typedef struct {
 	guint            disable_inline_rgctx_fetch : 1;
 	guint            deopt : 1;
 	guint            prefer_instances : 1;
-	guint8           uses_simd_intrinsics;
+	guint            init_method_rgctx_elim : 1;
+	guint8           uses_simd_intrinsics : 1;
 	int              r4_stack_type;
 	gpointer         debug_info;
 	guint32          lmf_offset;
@@ -1692,10 +1690,6 @@ typedef enum {
 	MONO_CFG_NEEDS_DECOMPOSE = 1 << 8,
 	MONO_CFG_HAS_TYPE_CHECK = 1 << 9
 } MonoCompileFlags;
-
-typedef enum {
-	MONO_CFG_USES_SIMD_INTRINSICS = 1 << 0,
-} MonoSimdIntrinsicsFlags;
 
 typedef struct {
 	gint32 methods_compiled;
@@ -2179,7 +2173,7 @@ void      mono_link_bblock                  (MonoCompile *cfg, MonoBasicBlock *f
 void      mono_unlink_bblock                (MonoCompile *cfg, MonoBasicBlock *from, MonoBasicBlock* to);
 gboolean  mono_bblocks_linked               (MonoBasicBlock *bb1, MonoBasicBlock *bb2);
 void      mono_remove_bblock                (MonoCompile *cfg, MonoBasicBlock *bb);
-void      mono_nullify_basic_block          (MonoBasicBlock *bb);
+void      mono_nullify_basic_block          (MonoCompile *cfg, MonoBasicBlock *bb);
 void      mono_merge_basic_blocks           (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *bbn);
 void      mono_optimize_branches            (MonoCompile *cfg);
 
@@ -2532,6 +2526,7 @@ gpointer mono_arch_get_ftnptr_arg_trampoline    (MonoMemoryManager *mem_manager,
 gpointer mono_arch_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr);
 void     mono_arch_patch_plt_entry              (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr);
+void     mono_arch_patch_jump_trampoline        (guint8 *jump_tramp, guint8 *addr);
 int      mono_arch_get_this_arg_reg             (guint8 *code);
 gpointer mono_arch_get_this_arg_from_call       (host_mgreg_t *regs, guint8 *code);
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target);
@@ -2559,6 +2554,10 @@ void mono_arch_set_native_call_context_ret      (CallContext *ccontext, gpointer
 gpointer mono_arch_get_native_call_context_args     (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
 // After the pinvoke call is done, this moves return value from the ccontext to the InterpFrame.
 void mono_arch_get_native_call_context_ret      (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info);
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+// After the pinvoke call is done, this return an error context value from the ccontext.
+gpointer mono_arch_get_swift_error 				(CallContext *ccontext, MonoMethodSignature *sig, int *arg_index);
+#endif
 /* Free the structure returned by mono_arch_get_interp_native_call_info (NULL, sig) */
 void mono_arch_free_interp_native_call_info (gpointer call_info);
 #endif
@@ -2625,6 +2624,9 @@ MonoBoolean mono_get_frame_info            (gint32 skip, MonoMethod **out_method
 											MonoDebugSourceLocation **out_location,
 											gint32 *iloffset, gint32 *native_offset);
 void mono_set_cast_details                      (MonoClass *from, MonoClass *to);
+void mono_llvm_catch_exception (MonoLLVMInvokeCallback cb, gpointer arg, gboolean *out_thrown);
+void mono_llvm_start_native_unwind (void);
+void mono_llvm_stop_native_unwind (void);
 
 void mono_decompose_typechecks (MonoCompile *cfg);
 /* Dominator/SSA methods */
@@ -2717,6 +2719,9 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type);
 
 gboolean
 mono_method_needs_static_rgctx_invoke (MonoMethod *method, gboolean allow_type_vars);
+
+gboolean
+mono_method_needs_mrgctx_arg_for_eh (MonoMethod *method);
 
 int
 mono_class_rgctx_get_array_size (int n, gboolean mrgctx);
@@ -2915,6 +2920,7 @@ typedef enum {
 	MONO_CPU_ARM64_NEON   = 1 << 4,
 	MONO_CPU_ARM64_RDM    = 1 << 5,
 	MONO_CPU_ARM64_DP     = 1 << 6,
+	MONO_CPU_ARM64_SVE    = 1 << 7,
 #endif
 } MonoCPUFeatures;
 
@@ -2951,13 +2957,12 @@ MonoTypeEnum mini_get_simd_type_info (MonoClass *klass, guint32 *nelems);
 const char *mono_arch_xregname (int reg);
 MonoCPUFeatures mono_arch_get_cpu_features (void);
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 void        mono_simd_decompose_intrinsic (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins);
 MonoInst*   mono_emit_common_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *addr);
 void        mono_simd_intrinsics_init (void);
-#endif
+gboolean    mono_simd_unsupported_aggressive_inline_intrinsic_type (MonoMethod *cmethod);
 
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared
@@ -2986,7 +2991,7 @@ mini_class_is_simd (MonoCompile *cfg, MonoClass *klass)
 		return TRUE;
 	int size = mono_type_size (m_class_get_byval_arg (klass), NULL);
 #ifdef TARGET_ARM64
-	if (size == 8 || size == 16)
+	if (size == 8 || size == 12 || size == 16)
 		return TRUE;
 #else
 	if (size == 16)

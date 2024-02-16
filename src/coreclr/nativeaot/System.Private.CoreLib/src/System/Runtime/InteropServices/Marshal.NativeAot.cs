@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerHelpers;
 
@@ -15,12 +16,9 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-        internal static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        internal static int SizeOfHelper(RuntimeType t, bool throwIfNotMarshalable)
         {
             Debug.Assert(throwIfNotMarshalable);
-
-            if (t is not RuntimeType)
-                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             if (t.IsPointer /* or IsFunctionPointer */)
                 return IntPtr.Size;
@@ -32,7 +30,7 @@ namespace System.Runtime.InteropServices
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr OffsetOf(Type t, string fieldName)
+        public static unsafe IntPtr OffsetOf(Type t, string fieldName)
         {
             ArgumentNullException.ThrowIfNull(t);
 
@@ -46,18 +44,15 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
 
-            if (t.TypeHandle.IsGenericTypeDefinition())
+            if (t.TypeHandle.ToMethodTable()->IsGenericTypeDefinition)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             return new IntPtr(RuntimeInteropData.GetStructFieldOffset(t.TypeHandle, fieldName));
         }
 
-        private static void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
+        private static unsafe void PtrToStructureHelper(IntPtr ptr, object structure, bool allowValueClasses)
         {
-            ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structure);
-
-            if (!allowValueClasses && structure.GetEETypePtr().IsValueType)
+            if (!allowValueClasses && structure.GetMethodTable()->IsValueType)
             {
                 throw new ArgumentException(SR.Argument_StructMustNotBeValueClass, nameof(structure));
             }
@@ -67,7 +62,8 @@ namespace System.Runtime.InteropServices
 
         internal static unsafe void PtrToStructureImpl(IntPtr ptr, object structure)
         {
-            RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
+            MethodTable* structureMT = structure.GetMethodTable();
+            RuntimeTypeHandle structureTypeHandle = new RuntimeTypeHandle(structureMT);
 
             IntPtr unmarshalStub;
             if (structureTypeHandle.IsBlittable())
@@ -84,7 +80,7 @@ namespace System.Runtime.InteropServices
 
             if (unmarshalStub != IntPtr.Zero)
             {
-                if (structureTypeHandle.IsValueType())
+                if (structureMT->IsValueType)
                 {
                     ((delegate*<ref byte, ref byte, void>)unmarshalStub)(ref *(byte*)ptr, ref structure.GetRawData());
                 }
@@ -106,16 +102,16 @@ namespace System.Runtime.InteropServices
         public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             ArgumentNullException.ThrowIfNull(ptr);
-            ArgumentNullException.ThrowIfNull(structuretype, "structureType");
+            ArgumentNullException.ThrowIfNull(structuretype, nameof(structuretype));
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
-            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, "structure");
+            if (structureTypeHandle.ToMethodTable()->IsGeneric)
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structuretype));
 
-            if (structureTypeHandle.IsEnum() ||
-                structureTypeHandle.IsInterface() ||
-                InteropExtensions.AreTypesAssignable(typeof(Delegate).TypeHandle, structureTypeHandle))
+            if (structureTypeHandle.ToMethodTable()->IsEnum ||
+                structureTypeHandle.ToMethodTable()->IsInterface ||
+                RuntimeImports.AreTypesAssignable(MethodTable.Of<Delegate>(), structureTypeHandle.ToMethodTable()))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             }
@@ -143,14 +139,10 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(structure);
             ArgumentNullException.ThrowIfNull(ptr);
 
-            if (fDeleteOld)
-            {
-                DestroyStructure(ptr, structure.GetType());
-            }
+            MethodTable* structureMT = structure.GetMethodTable();
+            RuntimeTypeHandle structureTypeHandle = new RuntimeTypeHandle(structureMT);
 
-            RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
-
-            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
+            if (structureMT->IsGeneric)
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(structure));
             }
@@ -168,9 +160,14 @@ namespace System.Runtime.InteropServices
                 marshalStub = RuntimeInteropData.GetStructMarshalStub(structureTypeHandle);
             }
 
+            if (fDeleteOld)
+            {
+                DestroyStructure(ptr, structure.GetType());
+            }
+
             if (marshalStub != IntPtr.Zero)
             {
-                if (structureTypeHandle.IsValueType())
+                if (structureMT->IsValueType)
                 {
                     ((delegate*<ref byte, ref byte, void>)marshalStub)(ref structure.GetRawData(), ref *(byte*)ptr);
                 }
@@ -190,7 +187,7 @@ namespace System.Runtime.InteropServices
         // This method is effectively a no-op for NativeAOT, everything pre-generated.
         static partial void PrelinkCore(MethodInfo m);
 
-        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
+        internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
         {
             return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, t.TypeHandle);
         }
@@ -210,9 +207,9 @@ namespace System.Runtime.InteropServices
             PInvokeMarshal.t_lastError = error;
         }
 
-        internal static bool IsPinnable(object o)
+        internal static unsafe bool IsPinnable(object o)
         {
-            return (o == null) || !o.GetEETypePtr().ContainsGCPointers;
+            return (o == null) || !o.GetMethodTable()->ContainsGCPointers;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -275,7 +272,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.GetEETypePtr().IsArray ||
+            if (ptr.GetMethodTable()->IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {
@@ -355,7 +352,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.GetEETypePtr().IsArray ||
+            if (ptr.GetMethodTable()->IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {

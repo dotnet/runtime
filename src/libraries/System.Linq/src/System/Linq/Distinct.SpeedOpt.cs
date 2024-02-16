@@ -11,7 +11,7 @@ namespace System.Linq
         {
             public TSource[] ToArray() => Enumerable.HashSetToArray(new HashSet<TSource>(_source, _comparer));
 
-            public List<TSource> ToList() => Enumerable.HashSetToList(new HashSet<TSource>(_source, _comparer));
+            public List<TSource> ToList() => new List<TSource>(new HashSet<TSource>(_source, _comparer));
 
             public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : new HashSet<TSource>(_source, _comparer).Count;
         }

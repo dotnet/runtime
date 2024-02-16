@@ -12,7 +12,7 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64"]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64"]
     },
     "wasm-experimental": {
       "description": ".NET WebAssembly experimental tooling",
@@ -21,17 +21,18 @@
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
       ],
       "extends": [ "wasm-tools" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64" ]
     },
     "wasi-experimental": {
       "description": ".NET WASI experimental",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk",
         "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm",
-        "Microsoft.NET.Runtime.WebAssembly.Templates"
+        "Microsoft.NET.Runtime.WebAssembly.Templates",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.wasi-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64" ]
     },
     "mobile-librarybuilder": {
       "description": "Mobile SDK for building a self-contained .NET native library",
@@ -368,8 +369,24 @@
         "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.browser-wasm",
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.browser-wasm",
         "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.browser-wasm",
+        "linux-musl-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-musl-x64.Cross.browser-wasm",
+        "linux-musl-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-musl-arm64.Cross.browser-wasm",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm",
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.browser-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.wasi-wasm": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.wasi-wasm",
+        "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-arm64.Cross.wasi-wasm",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.wasi-wasm",
+        "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.wasi-wasm",
+        "linux-musl-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-musl-x64.Cross.wasi-wasm",
+        "linux-musl-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-musl-arm64.Cross.wasi-wasm",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.wasi-wasm",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.wasi-wasm"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.browser-wasm" : {

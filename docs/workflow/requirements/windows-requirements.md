@@ -30,7 +30,9 @@ git config --system core.longpaths true
 
 ### Visual Studio
 
-Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge. Visual Studio 2022 17.3 or later is required. Note that Visual Studio and the development tools described below are required, regardless of whether you plan to use the IDE or not. The installation process goes as follows:
+Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The Community edition is available free of charge. Visual Studio 2022 17.8 or later is required. Note that as we ramp up on a given release the libraries code may start using preview language features. While an older IDE may still succeed in building the projects, the IDE may report mismatched diagnostics in the Errors and Warnings window. Using the latest public preview of Visual Studio is required to ensure the IDE experience is well behaved in such scenarios.
+
+Note that Visual Studio and the development tools described below are required, regardless of whether you plan to use the IDE or not. The installation process goes as follows:
 
 * It's recommended to use **Workloads** installation approach. The following are the minimum requirements:
   * **.NET Desktop Development** with all default components,
@@ -38,7 +40,7 @@ Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The
 * To build for Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_.
 * To build the tests, you will need some additional components:
-  * **C++/CLI support for v142 build tools (Latest)**.
+  * **C++/CLI support for v143 build tools (Latest)**.
 
 A `.vsconfig` file is included in the root of the _dotnet/runtime_ repository that includes all components needed to build the _dotnet/runtime_ repository. You can [import `.vsconfig` in your Visual Studio installer](https://docs.microsoft.com/visualstudio/install/import-export-installation-configurations?view=vs-2022#import-a-configuration) to install all necessary components.
 

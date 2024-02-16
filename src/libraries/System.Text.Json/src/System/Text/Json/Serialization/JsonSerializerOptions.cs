@@ -41,16 +41,31 @@ namespace System.Text.Json
             [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
             get
             {
-                if (s_defaultOptions is not JsonSerializerOptions options)
-                {
-                    options = GetOrCreateDefaultOptionsInstance();
-                }
-
-                return options;
+                return s_defaultOptions ?? GetOrCreateSingleton(ref s_defaultOptions, JsonSerializerDefaults.General);
             }
         }
 
         private static JsonSerializerOptions? s_defaultOptions;
+
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the web configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Web
+        {
+            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                return s_webOptions ?? GetOrCreateSingleton(ref s_webOptions, JsonSerializerDefaults.Web);
+            }
+        }
+
+        private static JsonSerializerOptions? s_webOptions;
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
@@ -68,6 +83,7 @@ namespace System.Text.Json
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
+        private bool _allowOutOfOrderMetadataProperties;
         private bool _allowTrailingCommas;
         private bool _ignoreNullValues;
         private bool _ignoreReadOnlyProperties;
@@ -75,6 +91,8 @@ namespace System.Text.Json
         private bool _includeFields;
         private bool _propertyNameCaseInsensitive;
         private bool _writeIndented;
+        private char _indentCharacter = JsonConstants.DefaultIndentCharacter;
+        private int _indentSize = JsonConstants.DefaultIndentSize;
 
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
@@ -117,6 +135,7 @@ namespace System.Text.Json
 
             _defaultBufferSize = options._defaultBufferSize;
             _maxDepth = options._maxDepth;
+            _allowOutOfOrderMetadataProperties = options._allowOutOfOrderMetadataProperties;
             _allowTrailingCommas = options._allowTrailingCommas;
             _ignoreNullValues = options._ignoreNullValues;
             _ignoreReadOnlyProperties = options._ignoreReadOnlyProperties;
@@ -124,6 +143,8 @@ namespace System.Text.Json
             _includeFields = options._includeFields;
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
+            _indentCharacter = options._indentCharacter;
+            _indentSize = options._indentSize;
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
@@ -228,6 +249,32 @@ namespace System.Text.Json
         /// </remarks>
         public IList<IJsonTypeInfoResolver> TypeInfoResolverChain => _typeInfoResolverChain ??= new(this);
         private OptionsBoundJsonTypeInfoResolverChain? _typeInfoResolverChain;
+
+        /// <summary>
+        /// Allows JSON metadata properties to be specified after regular properties in a deserialized JSON object.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        /// <remarks>
+        /// When set to <see langword="true" />, removes the requirement that JSON metadata properties
+        /// such as $id and $type should be specified at the very start of the deserialized JSON object.
+        ///
+        /// It should be noted that enabling this setting can result in over-buffering
+        /// when deserializing large JSON payloads in the context of streaming deserialization.
+        /// </remarks>
+        public bool AllowOutOfOrderMetadataProperties
+        {
+            get
+            {
+                return _allowOutOfOrderMetadataProperties;
+            }
+            set
+            {
+                VerifyMutable();
+                _allowOutOfOrderMetadataProperties = value;
+            }
+        }
 
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
@@ -646,6 +693,50 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Defines the indentation character being used when <see cref="WriteIndented" /> is enabled. Defaults to the space character.
+        /// </summary>
+        /// <remarks>Allowed characters are space and horizontal tab.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> contains an invalid character.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public char IndentCharacter
+        {
+            get
+            {
+                return _indentCharacter;
+            }
+            set
+            {
+                JsonWriterHelper.ValidateIndentCharacter(value);
+                VerifyMutable();
+                _indentCharacter = value;
+            }
+        }
+
+        /// <summary>
+        /// Defines the indentation size being used when <see cref="WriteIndented" /> is enabled. Defaults to two.
+        /// </summary>
+        /// <remarks>Allowed values are all integers between 0 and 127, included.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is out of the allowed range.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this property is set after serialization or deserialization has occurred.
+        /// </exception>
+        public int IndentSize
+        {
+            get
+            {
+                return _indentSize;
+            }
+            set
+            {
+                JsonWriterHelper.ValidateIndentSize(value);
+                VerifyMutable();
+                _indentSize = value;
+            }
+        }
+
+        /// <summary>
         /// Configures how object references are handled when reading and writing JSON.
         /// </summary>
         public ReferenceHandler? ReferenceHandler
@@ -752,7 +843,7 @@ namespace System.Text.Json
             {
                 // Even if a resolver has already been specified, we need to root
                 // the default resolver to gain access to the default converters.
-                DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
+                DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.DefaultInstance;
 
                 switch (_typeInfoResolver)
                 {
@@ -876,6 +967,8 @@ namespace System.Text.Json
             {
                 Encoder = Encoder,
                 Indented = WriteIndented,
+                IndentCharacter = IndentCharacter,
+                IndentSize = IndentSize,
                 MaxDepth = EffectiveMaxDepth,
 #if !DEBUG
                 SkipValidation = true
@@ -938,22 +1031,24 @@ namespace System.Text.Json
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static JsonSerializerOptions GetOrCreateDefaultOptionsInstance()
+        private static JsonSerializerOptions GetOrCreateSingleton(
+            ref JsonSerializerOptions? location,
+            JsonSerializerDefaults defaults)
         {
-            var options = new JsonSerializerOptions
+            var options = new JsonSerializerOptions(defaults)
             {
                 // Because we're marking the default instance as read-only,
                 // we need to specify a resolver instance for the case where
                 // reflection is disabled by default: use one that returns null for all types.
 
                 TypeInfoResolver = JsonSerializer.IsReflectionEnabledByDefault
-                    ? DefaultJsonTypeInfoResolver.RootDefaultInstance()
+                    ? DefaultJsonTypeInfoResolver.DefaultInstance
                     : JsonTypeInfoResolver.Empty,
 
                 _isReadOnly = true,
             };
 
-            return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
+            return Interlocked.CompareExchange(ref location, options, null) ?? options;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

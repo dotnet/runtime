@@ -154,7 +154,6 @@ namespace System.Tests
         public static IEnumerable<object[]> CreateInstance_InvalidType_TestData()
         {
             yield return new object[] { typeof(void) };
-            yield return new object[] { typeof(void).MakeArrayType() };
             yield return new object[] { typeof(ArgIterator) };
         }
 

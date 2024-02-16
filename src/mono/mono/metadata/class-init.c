@@ -40,9 +40,6 @@
 gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 
-/* Set by the EE */
-gint32 mono_simd_register_size;
-
 /* Statistics */
 static gint32 classes_size;
 static gint32 inflated_classes_size;
@@ -315,11 +312,6 @@ mono_class_setup_fields (MonoClass *klass)
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
 	if (explicit_size)
 		instance_size += real_size;
-
-	if (mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System.Numerics") && !strcmp (klass->name, "Register")) {
-		if (mono_simd_register_size)
-			instance_size += mono_simd_register_size;
-	}
 
 	/*
 	 * This function can recursively call itself.
@@ -1170,12 +1162,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->rank = GUINT32_TO_UINT8 (rank);
 	klass->element_class = eclass;
 
-	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
-		/*Arrays of those two types are invalid.*/
-		ERROR_DECL (prepared_error);
-		mono_error_set_invalid_program (prepared_error, "Arrays of System.TypedReference types are invalid.");
-		mono_class_set_failure (klass, mono_error_box (prepared_error, klass->image));
-		mono_error_cleanup (prepared_error);
+	if (MONO_TYPE_IS_VOID (m_class_get_byval_arg (eclass))) {
+		mono_class_set_type_load_failure (klass, "Arrays of System.Void types are invalid.");
 	} else if (m_class_is_byreflike (eclass)) {
 		/* .NET Core throws a type load exception: "Could not create array type 'fullname[]'" */
 		char *full_name = mono_type_get_full_name (eclass);
@@ -3200,20 +3188,6 @@ mono_class_init_checked (MonoClass *klass, MonoError *error)
 	return success;
 }
 
-#ifndef DISABLE_COM
-/*
- * COM initialization is delayed until needed.
- * However when a [ComImport] attribute is present on a type it will trigger
- * the initialization. This is not a problem unless the BCL being executed
- * lacks the types that COM depends on (e.g. Variant on Silverlight).
- */
-static void
-init_com_from_comimport (MonoClass *klass)
-{
-	/* FIXME : we should add an extra checks to ensure COM can be initialized properly before continuing */
-}
-#endif /*DISABLE_COM*/
-
 /*
  * LOCKING: this assumes the loader lock is held
  */
@@ -3238,14 +3212,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 	}
 
 	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
-		/* Imported COM Objects always derive from __ComObject. */
-#ifndef DISABLE_COM
-		if (MONO_CLASS_IS_IMPORT (klass)) {
-			init_com_from_comimport (klass);
-			if (parent == mono_defaults.object_class)
-				parent = mono_class_get_com_object_class ();
-		}
-#endif
 		if (!parent) {
 			/* set the parent to something useful and safe, but mark the type as broken */
 			parent = mono_defaults.object_class;
@@ -3266,9 +3232,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 
 		klass->delegate  = parent->delegate;
 
-		if (MONO_CLASS_IS_IMPORT (klass) || mono_class_is_com_object (parent))
-			mono_class_set_is_com_object (klass);
-
 		if (system_namespace) {
 			if (klass->name [0] == 'D' && !strcmp (klass->name, "Delegate"))
 				klass->delegate  = 1;
@@ -3282,11 +3245,6 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 		}
 		/*klass->enumtype = klass->parent->enumtype; */
 	} else {
-		/* initialize com types if COM interfaces are present */
-#ifndef DISABLE_COM
-		if (MONO_CLASS_IS_IMPORT (klass))
-			init_com_from_comimport (klass);
-#endif
 		klass->parent = NULL;
 	}
 

@@ -4,10 +4,10 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.Tracing;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -71,7 +71,7 @@ namespace System
             {
                 Exception self = this;
                 MonoStackFrame[]? frames = null;
-                Diagnostics.StackTrace.GetTrace (ObjectHandleOnStack.Create (ref self), ObjectHandleOnStack.Create (ref frames), 0, true);
+                Diagnostics.StackTrace.GetTrace(ObjectHandleOnStack.Create(ref self), ObjectHandleOnStack.Create(ref frames), 0, true);
                 stackFrames = frames!;
                 if (stackFrames.Length > 0)
                     stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;

@@ -1358,7 +1358,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             _stateMachineMethodTable.Add(new StateMachineMethodRow
             {
-                MoveNextMethod  = moveNextMethod.RowId,
+                MoveNextMethod = moveNextMethod.RowId,
                 KickoffMethod = kickoffMethod.RowId
             });
         }

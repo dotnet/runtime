@@ -65,8 +65,7 @@ namespace TestStackOverflow
         LargeStruct4096 se;
         LargeStruct4096 sf;
     }
-
-    internal class StackOverflow
+    class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void InfiniteRecursionA()
@@ -135,7 +134,7 @@ namespace TestStackOverflow
             }
         }
 
-        internal static void Run(string[] args)
+        static void Main(string[] args)
         {
             bool smallframe = (args[0] == "smallframe");
             if (args[1] == "secondary")

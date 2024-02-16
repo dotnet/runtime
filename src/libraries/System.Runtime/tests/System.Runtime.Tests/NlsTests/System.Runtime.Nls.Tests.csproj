@@ -30,6 +30,8 @@
              Link="System\Text\RuneTests.TestData.cs" />
     <Compile Include="..\System\Text\StringBuilderTests.cs"
              Link="System\Text\StringBuilderTests.cs" />
+    <Compile Include="..\System\Text\StringBuilderReplaceTests.cs"
+             Link="System\Text\StringBuilderReplaceTests.cs" />
     <Compile Include="..\System\Uri.CreateStringTests.cs"
              Link="System\Uri.CreateStringTests.cs" />
     <Compile Include="..\System\Uri.CreateUriTests.cs"

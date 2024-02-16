@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.TypeInfos;
+using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
 
@@ -222,7 +222,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(multiDim || rank == 1);
 
-            if (elementType.IsByRef)
+            if (elementType.IsByRef || elementType.IsVoid)
                 throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
         }
     }
@@ -396,7 +396,7 @@ namespace System.Reflection.Runtime.TypeInfos
             return typeInfo;
         }
 
-        delegate bool TryGetConstructedGenericTypeDelegate(RuntimeTypeHandle genericDefinition, RuntimeTypeHandle[] genericArguments, out RuntimeTypeHandle result);
+        private delegate bool TryGetConstructedGenericTypeDelegate(RuntimeTypeHandle genericDefinition, RuntimeTypeHandle[] genericArguments, out RuntimeTypeHandle result);
 
         private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, TryGetConstructedGenericTypeDelegate constructor)
         {

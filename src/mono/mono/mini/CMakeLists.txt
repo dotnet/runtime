@@ -57,18 +57,31 @@ if(HAVE_SYS_ICU)
   endif()
 
   set(icu_shim_sources_base
+      pal_idna.c
+      pal_common.c
+      entrypoints.c
+      ${pal_icushim_sources_base})
+
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
-      pal_common.c
-      pal_idna.c
       pal_locale.c
       pal_localeNumberData.c
       pal_localeStringData.c
       pal_normalization.c
       pal_timeZoneInfo.c
-      entrypoints.c
-      ${pal_icushim_sources_base})
+    )
+endif()
+
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
+      pal_placeholders.c
+    )
+endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 
@@ -95,6 +108,9 @@ if(HAVE_SYS_ICU)
   endif()
   if(ICU_LIBDIR)
     set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+  endif()
+  if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(ICU_LDFLAGS "-licucore")
   endif()
 
   add_library(icu_shim_objects OBJECT "${icu_shim_sources}")
@@ -298,6 +314,7 @@ set(interp_sources
     interp/mintops.h
     interp/mintops.c
     interp/transform.c
+    interp/transform-opt.c
     interp/tiering.h
     interp/tiering.c
     interp/jiterpreter.c
@@ -404,10 +421,10 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
   endif()
   target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   if(MONO_SET_RPATH_ORIGIN)
     set_target_properties(monosgen-shared PROPERTIES INSTALL_RPATH "$ORIGIN")
@@ -426,7 +443,11 @@ if(NOT DISABLE_SHARED_LIBS)
     # to avoid a conflict we rename the import library with the .import.lib suffix
     set_target_properties(monosgen-shared PROPERTIES IMPORT_SUFFIX ".import.lib")
   endif()
-  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${Z_LIBS})
+  else()
+    target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  endif()
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
@@ -610,10 +631,10 @@ if(NOT DISABLE_EXECUTABLES)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()
   target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")

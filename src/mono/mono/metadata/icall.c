@@ -989,16 +989,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return NULL;
 	}
-
-	int swizzle = 1;
-	int align;
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	swizzle = mono_type_size (type, &align);
-#endif
-
-	int dummy;
-	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
-	return (gpointer)mono_field_get_rva (field_handle, swizzle);
+	return mono_get_span_data_from_field (field_handle, field_type, type, count);
 }
 
 void
@@ -2167,6 +2158,7 @@ ves_icall_RuntimeFieldInfo_SetValueInternal (MonoReflectionFieldHandle field, Mo
 		case MONO_TYPE_R8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 			isref = FALSE;
 			if (!MONO_HANDLE_IS_NULL (value)) {
 				if (m_class_is_valuetype (mono_handle_class (value)))
@@ -2821,7 +2813,7 @@ ves_icall_RuntimeType_GetCallingConventionFromFunctionPointerInternal (MonoQCall
 	MonoType *type = type_handle.type;
 	g_assert (type->type == MONO_TYPE_FNPTR);
 	// FIXME: Once we address: https://github.com/dotnet/runtime/issues/90308 this should not be needed anymore
-	return GUINT_TO_INT8 (type->data.method->suppress_gc_transition ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
+	return GUINT_TO_INT8 (mono_method_signature_has_ext_callconv (type->data.method, MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION) ? MONO_CALL_UNMANAGED_MD : type->data.method->call_convention);
 }
 
 MonoBoolean
@@ -2938,17 +2930,6 @@ ves_icall_RuntimeType_GetFunctionPointerTypeModifiers (MonoQCallTypeHandle type_
 		g_assert (type->data.method->param_count > position - 1);
 		return type_array_from_modifiers (type->data.method->params[position - 1], optional, error);
 	}
-}
-
-MonoBoolean
-ves_icall_RuntimeTypeHandle_IsComObject (MonoQCallTypeHandle type_handle, MonoError *error)
-{
-	MonoType *type = type_handle.type;
-	MonoClass *klass = mono_class_from_mono_type_internal (type);
-	mono_class_init_checked (klass, error);
-	return_val_if_nok (error, FALSE);
-
-	return mono_class_is_com_object (klass);
 }
 
 void
@@ -5966,9 +5947,9 @@ check_for_invalid_array_type (MonoType *type, MonoError *error)
 	gboolean allowed = TRUE;
 	char *name;
 
-	if (m_type_is_byref (type))
+	if (MONO_TYPE_IS_VOID (type))
 		allowed = FALSE;
-	else if (type->type == MONO_TYPE_TYPEDBYREF)
+	else if (m_type_is_byref (type))
 		allowed = FALSE;
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
@@ -6702,72 +6683,6 @@ ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObjectHandle obj,
 {
 	return mono_reflection_get_custom_attrs_data_checked (obj, error);
 }
-
-#ifndef DISABLE_COM
-
-int
-ves_icall_System_Runtime_InteropServices_Marshal_GetHRForException_WinRT(MonoExceptionHandle ex, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.Marshal.GetHRForException_WinRT internal call is not implemented.");
-	return 0;
-}
-
-MonoObjectHandle
-ves_icall_System_Runtime_InteropServices_Marshal_GetNativeActivationFactory(MonoObjectHandle type, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.Marshal.GetNativeActivationFactory internal call is not implemented.");
-	return NULL_HANDLE;
-}
-
-void*
-ves_icall_System_Runtime_InteropServices_Marshal_GetRawIUnknownForComObjectNoAddRef(MonoObjectHandle obj, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.Marshal.GetRawIUnknownForComObjectNoAddRef internal call is not implemented.");
-	return NULL;
-}
-
-MonoObjectHandle
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_GetRestrictedErrorInfo(MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.GetRestrictedErrorInfo internal call is not implemented.");
-	return NULL_HANDLE;
-}
-
-MonoBoolean
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_RoOriginateLanguageException (int ierr, MonoStringHandle message, void* languageException, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.RoOriginateLanguageException internal call is not implemented.");
-	return FALSE;
-}
-
-void
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_RoReportUnhandledError (MonoObjectHandle oerr, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.RoReportUnhandledError internal call is not implemented.");
-}
-
-int
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsCreateString(MonoStringHandle sourceString, int length, void** hstring, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsCreateString internal call is not implemented.");
-	return 0;
-}
-
-int
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsDeleteString(void* hstring, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsDeleteString internal call is not implemented.");
-	return 0;
-}
-
-mono_unichar2*
-ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_WindowsGetStringRawBuffer(void* hstring, unsigned* length, MonoError *error)
-{
-	mono_error_set_not_implemented (error, "System.Runtime.InteropServices.WindowsRuntime.UnsafeNativeMethods.WindowsGetStringRawBuffer internal call is not implemented.");
-	return NULL;
-}
-
-#endif
 
 static const MonoIcallTableCallbacks *icall_table;
 static mono_mutex_t icall_mutex;

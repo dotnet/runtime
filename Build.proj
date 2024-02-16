@@ -8,7 +8,7 @@
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
-  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
 
   <Target Name="BuildLocalTasks"
           BeforeTargets="Build">

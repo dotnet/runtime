@@ -32,6 +32,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             Diagnostic diagnostic = Assert.Single(result.Diagnostics);
             Assert.True(diagnostic.Id == "SYSLIB1102");
+            Assert.Contains("C# 12", diagnostic.Descriptor.MessageFormat.ToString(CultureInfo.InvariantCulture));
             Assert.Contains("C# 12", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
             Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }

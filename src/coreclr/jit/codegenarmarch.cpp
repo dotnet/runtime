@@ -521,17 +521,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM
-
-        case GT_CLS_VAR_ADDR:
-            emit->emitIns_R_C(INS_lea, EA_PTRSIZE, targetReg, treeNode->AsClsVar()->gtClsVarHnd, 0);
-            genProduceReg(treeNode);
-            break;
-
         case GT_LONG:
             assert(treeNode->isUsedFromReg());
             genConsumeRegs(treeNode);
             break;
-
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
@@ -812,7 +805,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             regNumber srcReg = genConsumeReg(source);
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
 
-            assert(compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+            assert(compAppleArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
 
 #ifdef TARGET_ARM64
             if (treeNode->GetStackByteSize() == 12)
@@ -832,7 +825,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
 
         var_types slotType = genActualType(source);
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             // Small typed args do not get their own full stack slots, so make
             // sure we do not overwrite adjacent arguments.
@@ -3251,6 +3244,72 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
+
+#ifndef TARGET_ARM64
+    GenTree* const zeroNode = initBlkNode->Data();
+    genConsumeReg(zeroNode);
+    const regNumber zeroReg = zeroNode->GetRegNum();
+#else
+    const regNumber zeroReg = REG_ZR;
+#endif
+
+    if (initBlkNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier();
+    }
+
+    //  str     xzr, [dstReg]
+    //  mov     offsetReg, <block size>
+    //.LOOP:
+    //  str     xzr, [dstReg, offsetReg]
+    //  subs    offsetReg, offsetReg, #8
+    //  bne     .LOOP
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
+    GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+
+        GetEmitter()->emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
+#ifdef TARGET_ARM64
+        GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
+#else
+        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE, INS_FLAGS_SET);
+#endif
+        inst_JMP(EJ_ne, loop);
+
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
+}
+
+//------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
 void CodeGen::genCall(GenTreeCall* call)
@@ -3564,6 +3623,44 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //
         assert(genIsValidIntReg(target->GetRegNum()));
 
+#ifdef TARGET_ARM64
+        bool isTlsHandleTarget =
+            compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && target->IsTlsIconHandle();
+
+        if (isTlsHandleTarget)
+        {
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
+            emitter*       emitter  = GetEmitter();
+            emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
+            GenTreeIntCon* iconNode = target->AsIntCon();
+            methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
+
+            // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
+            // it as part of the call. Generating individual instructions is tricky to get it
+            // correct in the format the way linker needs. Also, we might end up spilling or
+            // reloading a register, which can break the pattern.
+            //
+            //      mrs  x1, tpidr_el0
+            //      adrp x0, :tlsdesc:tlsRoot   ; R_AARCH64_TLSDESC_ADR_PAGE21
+            //      ldr  x2, [x0]               ; R_AARCH64_TLSDESC_LD64_LO12
+            //      add  x0, x0, #0             ; R_AARCH64_TLSDESC_ADD_LO12
+            //      blr  x2                     ; R_AARCH64_TLSDESC_CALL
+            //      add  x0, x1, x0
+            // We guaranteed in LSRA that r0, r1 and r2 are assigned to this node.
+
+            // mrs
+            emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
+
+            // adrp
+            // ldr
+            // add
+            emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
+                                          (ssize_t)methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                              DEBUGARG(iconNode->gtFlags));
+        }
+#endif
+
         // clang-format off
         genEmitCall(emitter::EC_INDIR_R,
                     methHnd,
@@ -3574,6 +3671,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
+
+#ifdef TARGET_ARM64
+        if (isTlsHandleTarget)
+        {
+            // add x0, x1, x0
+            GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
+        }
+#endif
         // clang-format on
     }
     else
@@ -4520,6 +4625,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             genCodeForCpObj(blkOp->AsBlk());
             break;
 
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             assert(!blkOp->gtBlkOpGcUnsafe);
             if (isCopyBlk)
@@ -5435,7 +5545,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 

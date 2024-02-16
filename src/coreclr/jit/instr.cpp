@@ -79,7 +79,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrsarm64sve.h"
 
 #elif defined(TARGET_LOONGARCH64)
-        #define INST(id, nm, ldst, e1) nm,
+        #define INST(id, nm, ldst, e1, msk, fmt) nm,
         #include "instrs.h"
 
 #elif defined(TARGET_RISCV64)
@@ -840,7 +840,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     assert(varTypeIsFloating(simdBaseType));
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT, GT_LEA))
+                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CNS_INT, GT_LEA))
                     {
                         addr = hwintrinsic->Op(1);
                         break;
@@ -925,9 +925,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 offset = addr->AsLclFld()->GetLclOffs();
                 break;
             }
-
-            case GT_CLS_VAR_ADDR:
-                return OperandDesc(addr->AsClsVar()->gtClsVarHnd);
 
             default:
                 return (memIndir != nullptr) ? OperandDesc(memIndir) : OperandDesc(op->TypeGet(), addr);
@@ -1214,6 +1211,22 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 
     return op->AsHWIntrinsic()->OperIsBroadcastScalar();
 }
+
+//------------------------------------------------------------------------
+// AddEmbBroadcastMode: Adds the embedded broadcast mode to the insOpts
+//
+// Arguments:
+//    instOptions - The existing insOpts
+//
+// Return Value:
+//    The modified insOpts
+//
+static insOpts AddEmbBroadcastMode(insOpts instOptions)
+{
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    unsigned result = static_cast<unsigned>(instOptions);
+    return static_cast<insOpts>(result | INS_OPTS_EVEX_eb_er_rd);
+}
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
@@ -1228,21 +1241,26 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 //    op1Reg       -- The first operand register
 //    op2          -- The second operand, which may be a memory node or a node producing a register
 //    isRMW        -- true if the instruction is RMW; otherwise, false
-void CodeGen::inst_RV_RV_TT(
-    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
+//    instOptions  -- The options that modify how the instruction is generated
+void CodeGen::inst_RV_RV_TT(instruction ins,
+                            emitAttr    size,
+                            regNumber   targetReg,
+                            regNumber   op1Reg,
+                            GenTree*    op2,
+                            bool        isRMW,
+                            insOpts     instOptions)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
-    // TODO-XArch-CQ: Commutative operations can have op1 be contained
-    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+// TODO-XArch-CQ: Commutative operations can have op1 be contained
+// TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    insOpts instOptions = INS_OPTS_NONE;
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
-    if (IsEmbBroadcast)
+    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
     {
-        instOptions = INS_OPTS_EVEX_b;
+        instOptions = AddEmbBroadcastMode(instOptions);
+
         if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
         {
             switch (ins)
@@ -1269,7 +1287,9 @@ void CodeGen::inst_RV_RV_TT(
         }
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
+
     OperandDesc op2Desc = genOperandDesc(op2);
+
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
@@ -1309,7 +1329,7 @@ void CodeGen::inst_RV_RV_TT(
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+            emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg, instOptions);
         }
         break;
 

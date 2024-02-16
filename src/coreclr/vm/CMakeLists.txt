@@ -882,6 +882,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
+        ${ARCH_SOURCES_DIR}/singlestepper.cpp
         gcinfodecoder.cpp
     )
 endif()

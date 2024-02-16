@@ -9,7 +9,7 @@ parameters:
 steps:
 ## Run NuGet Authentication for each of the side containers
 - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-  - task: NuGetAuthenticate@0
+  - task: NuGetAuthenticate@1
     target: ${{ parameters.target }}
 - script: |
     $(Build.SourcesDirectory)/build.sh \

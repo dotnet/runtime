@@ -403,7 +403,7 @@ namespace System.SpanTests
         private static class SearchValuesTestHelper
         {
             private const int MaxNeedleLength = 10;
-            private const int MaxHaystackLength = 100;
+            private const int MaxHaystackLength = 200;
 
             private static readonly char[] s_randomAsciiChars;
             private static readonly char[] s_randomLatin1Chars;

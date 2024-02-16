@@ -61,6 +61,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_CreateScalar,
 	SN_CreateScalarUnsafe,
 	SN_Equals,
+	SN_EqualsAny,
 	SN_ExtractMostSignificantBits,
 	SN_GreaterThan,
 	SN_LessThan,
@@ -314,7 +315,7 @@ emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMetho
 {
 	td->sp -= csignature->param_count;
 	for (int i = 0; i < csignature->param_count; i++)
-		td->last_ins->sregs [i] = td->sp [i].local;
+		td->last_ins->sregs [i] = td->sp [i].var;
 
 	int ret_mt = mono_mint_type (csignature->ret);
 	if (csignature->ret->type == MONO_TYPE_VOID) {
@@ -323,10 +324,10 @@ emit_common_simd_epilogue (TransformData *td, MonoClass *vector_klass, MonoMetho
 	} else if (ret_mt == MINT_TYPE_VT) {
 		// For these intrinsics, if we return a VT then it is a V128
 		push_type_vt (td, vector_klass, vector_size);
-		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 	} else {
 		push_simple_type (td, stack_type [ret_mt]);
-		interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+		interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 	}
 	td->ip += 5;
 }
@@ -346,14 +347,14 @@ emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClas
 	int *call_args = (int*)mono_mempool_alloc (td->mempool, (num_args + 1) * sizeof (int));
 	td->sp -= csignature->param_count;
 	for (int i = 0; i < num_args; i++)
-		call_args [i] = td->sp [i].local;
+		call_args [i] = td->sp [i].var;
 	call_args [num_args] = -1;
 	init_last_ins_call (td);
 	td->last_ins->info.call_info->call_args = call_args;
 	if (!td->optimized)
 		td->last_ins->info.call_info->call_offset = get_tos_offset (td);
 	push_type_vt (td, vector_klass, vector_size);
-	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 }
 
 static gboolean
@@ -418,6 +419,13 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EQUALS;
 			else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EQUALS;
 			else if (atype == MONO_TYPE_R4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_R4_EQUALS;
+			break;
+		case SN_EqualsAny:
+			simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			if (atype == MONO_TYPE_I1 || atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_EQUALS_ANY;
+			else if (atype == MONO_TYPE_I2 || atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_EQUALS_ANY;
+			else if (atype == MONO_TYPE_I4 || atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EQUALS_ANY;
+			else if (atype == MONO_TYPE_I8 || atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EQUALS_ANY;
 			break;
 		case SN_ExtractMostSignificantBits:
 			simd_opcode = MINT_SIMD_INTRINS_P_P;

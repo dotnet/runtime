@@ -79,20 +79,20 @@ void Validate_Numeric_In_ReturnByRef()
         lcid,
         &methodId));
 
-    BYTE b1 = 24;
-    BYTE b2;
-    SHORT s1 = 53;
-    SHORT s2;
-    USHORT us1 = 74;
-    USHORT us2;
+    uint8_t b1 = 24;
+    uint8_t b2;
+    int16_t s1 = 53;
+    int16_t s2;
+    uint16_t us1 = 74;
+    uint16_t us2;
     LONG i1 = 34;
     LONG i2;
     ULONG ui1 = 854;
     ULONG ui2;
-    LONGLONG l1 = 894;
-    LONGLONG l2;
-    ULONGLONG ul1 = 4168;
-    ULONGLONG ul2;
+    int64_t l1 = 894;
+    int64_t l2;
+    uint64_t ul1 = 4168;
+    uint64_t ul2;
 
     {
         DISPPARAMS params;
@@ -159,7 +159,7 @@ void Validate_Numeric_In_ReturnByRef()
         l2 = 0;
         ul2 = 0;
 
-        THROW_IF_FAILED(dispatchTesting->DoubleNumeric_ReturnByRef(b1, &b2, s1, &s2, us1, &us2, i1, (INT*)&i2, ui1, (UINT*)&ui2, l1, &l2, ul1, &ul2));
+        THROW_IF_FAILED(dispatchTesting->DoubleNumeric_ReturnByRef(b1, &b2, s1, &s2, us1, &us2, i1, (int32_t*)&i2, ui1, (uint32_t*)&ui2, l1, &l2, ul1, &ul2));
 
         THROW_FAIL_IF_FALSE(b2 == b1 * 2);
         THROW_FAIL_IF_FALSE(s2 == s1 * 2);

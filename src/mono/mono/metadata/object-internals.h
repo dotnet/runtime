@@ -510,14 +510,6 @@ typedef struct {
 TYPED_HANDLE_DECL (MonoComObject);
 
 typedef struct {
-	MonoRealProxy real_proxy;
-	MonoComObject *com_object;
-	gint32 ref_count;
-} MonoComInteropProxy;
-
-TYPED_HANDLE_DECL (MonoComInteropProxy);
-
-typedef struct {
 	MonoObject	 object;
 	MonoRealProxy	*rp;
 	MonoRemoteClass *remote_class;
@@ -2160,5 +2152,8 @@ mono_method_get_unmanaged_wrapper_ftnptr_internal (MonoMethod *method, gboolean 
 
 void
 mono_runtime_run_startup_hooks (void);
+
+MONO_COMPONENT_API gpointer
+mono_get_span_data_from_field (MonoClassField *field_handle, MonoType *field_type, MonoType *target_type, gint32 *count);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

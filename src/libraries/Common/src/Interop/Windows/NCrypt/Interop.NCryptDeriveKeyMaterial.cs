@@ -5,8 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Internal.Cryptography;
-using Microsoft.Win32.SafeHandles;
 using Internal.NativeCrypto;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {

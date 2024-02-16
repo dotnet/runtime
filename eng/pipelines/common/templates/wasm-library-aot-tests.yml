@@ -7,7 +7,7 @@ parameters:
   buildAOTOnHelix: true
   nameSuffix: ''
   platforms: []
-  runAOT: false 
+  runAOT: false
   shouldRunSmokeOnly: false
   shouldContinueOnError: false
 
@@ -17,11 +17,11 @@ jobs:
 # Build for Browser/wasm, with EnableAggressiveTrimming=true
 #
 # non-windows - run only with v8
-- ${{ if containsValue(parameters.platforms, 'browser_wasm') }}:
+- ${{ each platform in parameters.platforms }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
-        - browser_wasm
+        - ${{ platform }}
       nameSuffix: ${{ parameters.nameSuffix }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
@@ -31,21 +31,7 @@ jobs:
       shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       scenarios:
-        - normal
-
-# windows - run only with browser
-- ${{ if containsValue(parameters.platforms, 'browser_wasm_win') }}:
-  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm_win
-      nameSuffix: ${{ parameters.nameSuffix }}
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
-      extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
-      alwaysRun: ${{ parameters.alwaysRun }}
-      shouldRunSmokeOnly: ${{ parameters.shouldRunSmokeOnly }}
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-      scenarios:
-        - WasmTestOnBrowser
+        - ${{ if eq(platform, 'browser_wasm_win') }}:
+          - WasmTestOnBrowser
+        - ${{ if ne(platform, 'browser_wasm_win') }}:
+          - normal

@@ -79,7 +79,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			while (!interproceduralState.Equals (oldInterproceduralState)) {
 				oldInterproceduralState = interproceduralState.Clone ();
 
-				foreach (var method in oldInterproceduralState.Methods) {
+				Debug.Assert (!oldInterproceduralState.Methods.IsUnknown ());
+				foreach (var method in oldInterproceduralState.Methods.GetKnownValues ()) {
 					AnalyzeMethod (method, ref interproceduralState);
 				}
 			}

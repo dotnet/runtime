@@ -7,10 +7,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Tests
 {
@@ -1862,11 +1860,17 @@ namespace System.Tests
                     // Use CreateInstance(Type, int)
                     Array array1 = Array.CreateInstance(elementType, lengths[0]);
                     VerifyArray(array1, elementType, lengths, lowerBounds, repeatedValue);
+                    // Use CreateInstanceFromArrayType(Type, int)
+                    array1 = Array.CreateInstanceFromArrayType(array1.GetType(), lengths[0]);
+                    VerifyArray(array1, elementType, lengths, lowerBounds, repeatedValue);
                 }
                 else if (lengths.Length == 2)
                 {
                     // Use CreateInstance(Type, int, int)
                     Array array2 = Array.CreateInstance(elementType, lengths[0], lengths[1]);
+                    VerifyArray(array2, elementType, lengths, lowerBounds, repeatedValue);
+                    // Use CreateInstanceFromArrayType(Type, int, int)
+                    array2 = Array.CreateInstanceFromArrayType(array2.GetType(), lengths[0], lengths[1]);
                     VerifyArray(array2, elementType, lengths, lowerBounds, repeatedValue);
                 }
                 else if (lengths.Length == 3)
@@ -1874,19 +1878,28 @@ namespace System.Tests
                     // Use CreateInstance(Type, int, int, int)
                     Array array3 = Array.CreateInstance(elementType, lengths[0], lengths[1], lengths[2]);
                     VerifyArray(array3, elementType, lengths, lowerBounds, repeatedValue);
+                    // Use CreateInstanceFromArrayType(Type, int, int, int)
+                    array3 = Array.CreateInstanceFromArrayType(array3.GetType(), lengths[0], lengths[1], lengths[2]);
+                    VerifyArray(array3, elementType, lengths, lowerBounds, repeatedValue);
                 }
 
                 // Use CreateInstance(Type, int[])
                 Array array4 = Array.CreateInstance(elementType, lengths);
                 VerifyArray(array4, elementType, lengths, lowerBounds, repeatedValue);
 
+                // Use CreateInstanceFromArrayType(Type, int[])
+                array4 = Array.CreateInstanceFromArrayType(array4.GetType(), lengths);
+                VerifyArray(array4, elementType, lengths, lowerBounds, repeatedValue);
+
                 // Use CreateInstance(Type, long[])
                 Array array5 = Array.CreateInstance(elementType, lengths.Select(length => (long)length).ToArray());
                 VerifyArray(array5, elementType, lengths, lowerBounds, repeatedValue);
-
             }
             // Use CreateInstance(Type, int[], int[])
             Array array6 = Array.CreateInstance(elementType, lengths, lowerBounds);
+            VerifyArray(array6, elementType, lengths, lowerBounds, repeatedValue);
+            // Use CreateInstanceFromArrayType(Type, int[], int[])
+            array6 = Array.CreateInstanceFromArrayType(array6.GetType(), lengths, lowerBounds);
             VerifyArray(array6, elementType, lengths, lowerBounds, repeatedValue);
         }
 
@@ -1899,6 +1912,12 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new int[1]));
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new long[1]));
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new int[1], new int[1]));
+
+            AssertExtensions.Throws<ArgumentNullException>("arrayType", () => Array.CreateInstanceFromArrayType(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("arrayType", () => Array.CreateInstanceFromArrayType(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("arrayType", () => Array.CreateInstanceFromArrayType(null, 0, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("arrayType", () => Array.CreateInstanceFromArrayType(null, new int[1]));
+            AssertExtensions.Throws<ArgumentNullException>("arrayType", () => Array.CreateInstanceFromArrayType(null, new int[1], new int[1]));
         }
 
         public static IEnumerable<object[]> CreateInstance_NotSupportedType_TestData()
@@ -1926,6 +1945,30 @@ namespace System.Tests
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new int[1], new int[1]));
         }
 
+        [Theory]
+        [InlineData(typeof(GenericClass<>))]
+        public void CreateInstanceFromArrayType_NotSupportedArrayType_ThrowsNotSupportedException(Type elementType)
+        {
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(rank: 2), 0, 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(rank: 3), 0, 0, 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), new int[1]));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstanceFromArrayType(elementType.MakeArrayType(), new int[1], new int[1]));
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(GenericClass<>))]
+        [InlineData(typeof(Span<int>))]
+        public void CreateInstanceFromArrayType_NotAnArrayType_ThrowsArgumentException(Type notAnArrayType)
+        {
+            Assert.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(notAnArrayType, 0));
+            Assert.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(notAnArrayType, 0, 0));
+            Assert.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(notAnArrayType, 0, 0, 0));
+            Assert.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(notAnArrayType, new int[1]));
+            Assert.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(notAnArrayType, new int[1], new int[1]));
+        }
+
         [Fact]
         public void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
         {
@@ -1938,6 +1981,12 @@ namespace System.Tests
                 AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1]));
                 AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new long[1]));
                 AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(elementType, new int[1], new int[1]));
+
+                AssertExtensions.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(elementType, 1));
+                AssertExtensions.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(elementType, 1, 1));
+                AssertExtensions.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(elementType, 1, 1, 1));
+                AssertExtensions.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(elementType, new int[1]));
+                AssertExtensions.Throws<ArgumentException>("arrayType", () => Array.CreateInstanceFromArrayType(elementType, new int[1], new int[1]));
             }
         }
 
@@ -1950,6 +1999,12 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 }));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new long[] { -1 }));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 }, new int[1]));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstanceFromArrayType(typeof(int[]), -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[,]), -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[,,]), -1, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[] { -1 }));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[] { -1 }, new int[1]));
         }
 
         [Fact]
@@ -1957,12 +2012,17 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1, 0));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[1]", () => Array.CreateInstanceFromArrayType(typeof(int[,]), 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[1]", () => Array.CreateInstanceFromArrayType(typeof(int[,,]), 0, -1, 0));
         }
 
         [Fact]
         public void CreateInstance_NegativeLength3_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length3", () => Array.CreateInstance(typeof(int), 0, 0, -1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[2]", () => Array.CreateInstanceFromArrayType(typeof(int[,,]), 0, 0, -1));
         }
 
         [Fact]
@@ -1971,6 +2031,9 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), (int[])null));
             AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), (long[])null));
             AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null, new int[1]));
+
+            AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstanceFromArrayType(typeof(int[]), (int[])null));
+            AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstanceFromArrayType(typeof(int[]), null, new int[1]));
         }
 
         [Fact]
@@ -1980,12 +2043,36 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new long[0]));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0], new int[1]));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0], new int[0]));
+
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[0], new int[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[0], new int[0]));
         }
 
         [Fact]
         public void CreateInstance_LowerBoundNull_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("lowerBounds", () => Array.CreateInstance(typeof(int), new int[] { 1 }, null));
+
+            AssertExtensions.Throws<ArgumentNullException>("lowerBounds", () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[] { 1 }, null));
+        }
+
+        [Fact]
+        public void CreateInstanceFromTemplate_Rank1()
+        {
+            Type variableBoundArrayType = typeof(object).MakeArrayType(1);
+            Assert.NotEqual(typeof(object[]), variableBoundArrayType);
+
+            Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, 12).GetType());
+            Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [22]).GetType());
+            Assert.Equal(typeof(object[]), Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [0]).GetType());
+
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                Assert.Equal(variableBoundArrayType, Array.CreateInstanceFromArrayType(variableBoundArrayType, [33], [22]).GetType());
+            }
+
+            Assert.Throws<ArgumentException>(() => Array.CreateInstanceFromArrayType(typeof(object[]), [7], [8]));
         }
 
         [Theory]
@@ -2002,6 +2089,8 @@ namespace System.Tests
         public void CreateInstance_LengthsAndLowerBoundsHaveDifferentLengths_ThrowsArgumentException(int length)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[1], new int[length]));
+
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[1], new int[length]));
         }
 
         [Theory]
@@ -2014,12 +2103,16 @@ namespace System.Tests
             var lengths = new int[length];
             var lowerBounds = new int[length];
             Assert.Throws<TypeLoadException>(() => Array.CreateInstance(typeof(int), lengths, lowerBounds));
+
+            Assert.Throws<ArgumentException>(() => Array.CreateInstanceFromArrayType(typeof(int[]), lengths, lowerBounds));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void CreateInstance_Type_LengthsPlusLowerBoundOverflows_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstance(typeof(int), new int[] { int.MaxValue }, new int[] { 2 }));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstanceFromArrayType(typeof(int).MakeArrayType(1), new int[] { int.MaxValue }, new int[] { 2 }));
         }
 
         [Fact]

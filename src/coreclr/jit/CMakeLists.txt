@@ -230,6 +230,7 @@ set( JIT_I386_SOURCES
 set( JIT_ARM64_SOURCES
   codegenarmarch.cpp
   codegenarm64.cpp
+  codegenarm64test.cpp
   emitarm64.cpp
   lowerarmarch.cpp
   lsraarmarch.cpp
@@ -346,6 +347,7 @@ set( JIT_HEADERS
   namedintrinsiclist.h
   objectalloc.h
   opcode.h
+  optcse.h
   phase.h
   promotion.h
   rangecheck.h
@@ -400,6 +402,7 @@ set( JIT_ARM64_HEADERS
     emitfmtsarm64.h
     emitfmtsarm64sve.h
     hwintrinsiclistarm64.h
+    hwintrinsiclistarm64sve.h
     instrsarm64.h
     instrsarm64sve.h
     registerarm64.h

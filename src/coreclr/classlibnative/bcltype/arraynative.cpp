@@ -114,27 +114,28 @@ FCIMPL2(FC_BOOL_RET, ArrayNative::IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst
 FCIMPLEND
 
 
+// Return values for CanAssignArrayType
+enum AssignArrayEnum
+{
+    AssignWrongType,
+    AssignMustCast,
+    AssignBoxValueClassOrPrimitive,
+    AssignUnboxValueClass,
+    AssignPrimitiveWiden,
+};
+
 // Returns an enum saying whether you can copy an array of srcType into destType.
-ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF pSrc, const BASEARRAYREF pDest)
+static AssignArrayEnum CanAssignArrayType(const TypeHandle srcTH, const TypeHandle destTH)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pSrc != NULL);
-        PRECONDITION(pDest != NULL);
+        PRECONDITION(!srcTH.IsNull());
+        PRECONDITION(!destTH.IsNull());
     }
     CONTRACTL_END;
 
-    // This first bit is a minor optimization: e.g. when copying byte[] to byte[]
-    // we do not need to call GetArrayElementTypeHandle().
-    MethodTable *pSrcMT = pSrc->GetMethodTable();
-    MethodTable *pDestMT = pDest->GetMethodTable();
-    _ASSERTE(pSrcMT != pDestMT); // Handled by fast path
-
-    TypeHandle srcTH = pSrcMT->GetArrayElementTypeHandle();
-    TypeHandle destTH = pDestMT->GetArrayElementTypeHandle();
     _ASSERTE(srcTH != destTH);  // Handled by fast path
 
     // Value class boxing
@@ -190,434 +191,21 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayType(const BASEARRAYREF 
     return AssignWrongType;
 }
 
-
-// Casts and assigns each element of src array to the dest array type.
-void ArrayNative::CastCheckEachElement(const BASEARRAYREF pSrcUnsafe, const unsigned int srcIndex, BASEARRAYREF pDestUnsafe, unsigned int destIndex, const unsigned int len)
+extern "C" int QCALLTYPE Array_CanAssignArrayType(void* srcTH, void* destTH)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pSrcUnsafe != NULL);
-        PRECONDITION(srcIndex >= 0);
-        PRECONDITION(pDestUnsafe != NULL);
-        PRECONDITION(len > 0);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT;
 
-    // pSrc is either a PTRARRAYREF or a multidimensional array.
-    TypeHandle destTH = pDestUnsafe->GetArrayElementTypeHandle();
+    INT32 ret = 0;
 
-    struct _gc
-    {
-        OBJECTREF obj;
-        BASEARRAYREF pDest;
-        BASEARRAYREF pSrc;
-    } gc;
+    BEGIN_QCALL;
 
-    gc.obj = NULL;
-    gc.pDest = pDestUnsafe;
-    gc.pSrc = pSrcUnsafe;
+    ret = CanAssignArrayType(TypeHandle::FromPtr(srcTH), TypeHandle::FromPtr(destTH));
 
-    GCPROTECT_BEGIN(gc);
+    END_QCALL;
 
-    for(unsigned int i=srcIndex; i<srcIndex + len; ++i)
-    {
-        gc.obj = ObjectToOBJECTREF(*((Object**) gc.pSrc->GetDataPtr() + i));
-
-        // Now that we have grabbed obj, we are no longer subject to races from another
-        // mutator thread.
-        if (gc.obj != NULL && !ObjIsInstanceOf(OBJECTREFToObject(gc.obj), destTH))
-            COMPlusThrow(kInvalidCastException, W("InvalidCast_DownCastArrayElement"));
-
-        OBJECTREF * destData = (OBJECTREF*)(gc.pDest->GetDataPtr()) + i - srcIndex + destIndex;
-        SetObjectReference(destData, gc.obj);
-    }
-
-    GCPROTECT_END();
-
-    return;
+    return ret;
 }
 
-
-// Will box each element in an array of value classes or primitives into an array of Objects.
-void ArrayNative::BoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pSrc != NULL);
-        PRECONDITION(srcIndex >= 0);
-        PRECONDITION(pDest != NULL);
-        PRECONDITION(length > 0);
-    }
-    CONTRACTL_END;
-
-    // pDest is either a PTRARRAYREF or a multidimensional array.
-    _ASSERTE(pSrc!=NULL && srcIndex>=0 && pDest!=NULL && destIndex>=0 && length>=0);
-    TypeHandle srcTH = pSrc->GetArrayElementTypeHandle();
-#ifdef _DEBUG
-    TypeHandle destTH = pDest->GetArrayElementTypeHandle();
-#endif
-    _ASSERTE(srcTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || srcTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pSrc->GetArrayElementType()));
-    _ASSERTE(!destTH.GetMethodTable()->IsValueType());
-
-    // Get method table of type we're copying from - we need to allocate objects of that type.
-    MethodTable * pSrcMT = srcTH.AsMethodTable();
-    PREFIX_ASSUME(pSrcMT != NULL);
-
-    if (!pSrcMT->IsClassInited())
-    {
-        BASEARRAYREF pSrcTmp = pSrc;
-        BASEARRAYREF pDestTmp = pDest;
-        GCPROTECT_BEGIN (pSrcTmp);
-        GCPROTECT_BEGIN (pDestTmp);
-        pSrcMT->CheckRunClassInitThrowing();
-        pSrc = pSrcTmp;
-        pDest = pDestTmp;
-        GCPROTECT_END ();
-        GCPROTECT_END ();
-    }
-
-    const unsigned int srcSize = pSrcMT->GetNumInstanceFieldBytes();
-    unsigned int srcArrayOffset = srcIndex * srcSize;
-
-    struct _gc
-    {
-        BASEARRAYREF src;
-        BASEARRAYREF dest;
-        OBJECTREF obj;
-    }  gc;
-
-    gc.src = pSrc;
-    gc.dest = pDest;
-    gc.obj = NULL;
-
-    void* srcPtr = 0;
-    GCPROTECT_BEGIN(gc);
-    GCPROTECT_BEGININTERIOR(srcPtr);
-    for (unsigned int i=destIndex; i < destIndex+length; i++, srcArrayOffset += srcSize)
-    {
-        srcPtr = (BYTE*)gc.src->GetDataPtr() + srcArrayOffset;
-        gc.obj = pSrcMT->FastBox(&srcPtr);
-
-        OBJECTREF * destData = (OBJECTREF*)((gc.dest)->GetDataPtr()) + i;
-        SetObjectReference(destData, gc.obj);
-    }
-    GCPROTECT_END();
-    GCPROTECT_END();
-}
-
-
-// Unboxes from an Object[] into a value class or primitive array.
-void ArrayNative::UnBoxEachElement(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pSrc != NULL);
-        PRECONDITION(srcIndex >= 0);
-        PRECONDITION(pDest != NULL);
-        PRECONDITION(destIndex >= 0);
-        PRECONDITION(length > 0);
-    }
-    CONTRACTL_END;
-
-#ifdef _DEBUG
-    TypeHandle srcTH = pSrc->GetArrayElementTypeHandle();
-#endif
-    TypeHandle destTH = pDest->GetArrayElementTypeHandle();
-    _ASSERTE(destTH.GetSignatureCorElementType() == ELEMENT_TYPE_CLASS || destTH.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE || CorTypeInfo::IsPrimitiveType(pDest->GetArrayElementType()));
-    _ASSERTE(!srcTH.GetMethodTable()->IsValueType());
-
-    MethodTable * pDestMT = destTH.AsMethodTable();
-    PREFIX_ASSUME(pDestMT != NULL);
-
-    SIZE_T destSize = pDest->GetComponentSize();
-    BYTE* srcData = (BYTE*) pSrc->GetDataPtr() + srcIndex * sizeof(OBJECTREF);
-    BYTE* data = (BYTE*) pDest->GetDataPtr() + destIndex * destSize;
-
-    for(; length>0; length--, srcData += sizeof(OBJECTREF), data += destSize)
-    {
-        OBJECTREF obj = ObjectToOBJECTREF(*(Object**)srcData);
-
-        // Now that we have retrieved the element, we are no longer subject to race
-        // conditions from another array mutator.
-
-        if (!pDestMT->UnBoxInto(data, obj))
-            goto fail;
-    }
-    return;
-
-fail:
-    COMPlusThrow(kInvalidCastException, W("InvalidCast_DownCastArrayElement"));
-}
-
-
-// Widen primitive types to another primitive type.
-void ArrayNative::PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(pSrc != NULL);
-        PRECONDITION(srcIndex >= 0);
-        PRECONDITION(pDest != NULL);
-        PRECONDITION(destIndex >= 0);
-        PRECONDITION(length > 0);
-    }
-    CONTRACTL_END;
-
-    // Get appropriate sizes, which requires method tables.
-    TypeHandle srcTH = pSrc->GetArrayElementTypeHandle();
-    TypeHandle destTH = pDest->GetArrayElementTypeHandle();
-
-    const CorElementType srcElType = srcTH.GetVerifierCorElementType();
-    const CorElementType destElType = destTH.GetVerifierCorElementType();
-    const unsigned int srcSize = GetSizeForCorElementType(srcElType);
-    const unsigned int destSize = GetSizeForCorElementType(destElType);
-
-    BYTE* srcData = (BYTE*) pSrc->GetDataPtr() + srcIndex * srcSize;
-    BYTE* data = (BYTE*) pDest->GetDataPtr() + destIndex * destSize;
-
-    _ASSERTE(srcElType != destElType);  // We shouldn't be here if these are the same type.
-    _ASSERTE(CorTypeInfo::IsPrimitiveType_NoThrow(srcElType) && CorTypeInfo::IsPrimitiveType_NoThrow(destElType));
-
-    for(; length>0; length--, srcData += srcSize, data += destSize)
-    {
-        // We pretty much have to do some fancy datatype mangling every time here, for
-        // converting w/ sign extension and floating point conversions.
-        switch (srcElType)
-        {
-            case ELEMENT_TYPE_U1:
-                switch (destElType)
-                {
-                    case ELEMENT_TYPE_R4:
-                        *(float*)data = *(UINT8*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R8:
-                        *(double*)data = *(UINT8*)srcData;
-                        break;
-#ifndef BIGENDIAN
-                    default:
-                        *(UINT8*)data = *(UINT8*)srcData;
-                        memset(data+1, 0, destSize - 1);
-                        break;
-#else // BIGENDIAN
-                    case ELEMENT_TYPE_CHAR:
-                    case ELEMENT_TYPE_I2:
-                    case ELEMENT_TYPE_U2:
-                        *(INT16*)data = *(UINT8*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_I4:
-                    case ELEMENT_TYPE_U4:
-                        *(INT32*)data = *(UINT8*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_I8:
-                    case ELEMENT_TYPE_U8:
-                        *(INT64*)data = *(UINT8*)srcData;
-                        break;
-
-                    default:
-                        _ASSERTE(!"Array.Copy from U1 to another type hit unsupported widening conversion");
-#endif // BIGENDIAN
-                }
-                break;
-
-
-            case ELEMENT_TYPE_I1:
-                switch (destElType)
-                {
-                    case ELEMENT_TYPE_I2:
-                        *(INT16*)data = *(INT8*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_I4:
-                        *(INT32*)data = *(INT8*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_I8:
-                        *(INT64*)data = *(INT8*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R4:
-                        *(float*)data = *(INT8*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R8:
-                        *(double*)data = *(INT8*)srcData;
-                        break;
-
-                    default:
-                        _ASSERTE(!"Array.Copy from I1 to another type hit unsupported widening conversion");
-                }
-                break;
-
-
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_CHAR:
-                switch (destElType)
-                {
-                    case ELEMENT_TYPE_R4:
-                        *(float*)data = *(UINT16*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R8:
-                        *(double*)data = *(UINT16*)srcData;
-                        break;
-#ifndef BIGENDIAN
-                    default:
-                        *(UINT16*)data = *(UINT16*)srcData;
-                        memset(data+2, 0, destSize - 2);
-                        break;
-#else // BIGENDIAN
-                    case ELEMENT_TYPE_U2:
-                    case ELEMENT_TYPE_CHAR:
-                        *(UINT16*)data = *(UINT16*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_I4:
-                    case ELEMENT_TYPE_U4:
-                        *(UINT32*)data = *(UINT16*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_I8:
-                    case ELEMENT_TYPE_U8:
-                        *(UINT64*)data = *(UINT16*)srcData;
-                        break;
-
-                    default:
-                        _ASSERTE(!"Array.Copy from U1 to another type hit unsupported widening conversion");
-#endif // BIGENDIAN
-                }
-                break;
-
-
-            case ELEMENT_TYPE_I2:
-                switch (destElType)
-                {
-                    case ELEMENT_TYPE_I4:
-                        *(INT32*)data = *(INT16*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_I8:
-                        *(INT64*)data = *(INT16*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R4:
-                        *(float*)data = *(INT16*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R8:
-                        *(double*)data = *(INT16*)srcData;
-                        break;
-
-                    default:
-                        _ASSERTE(!"Array.Copy from I2 to another type hit unsupported widening conversion");
-                }
-                break;
-
-
-            case ELEMENT_TYPE_I4:
-                switch (destElType)
-                {
-                    case ELEMENT_TYPE_I8:
-                        *(INT64*)data = *(INT32*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R4:
-                        *(float*)data = (float)*(INT32*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R8:
-                        *(double*)data = *(INT32*)srcData;
-                        break;
-
-                    default:
-                        _ASSERTE(!"Array.Copy from I4 to another type hit unsupported widening conversion");
-                }
-                break;
-
-
-            case ELEMENT_TYPE_U4:
-                switch (destElType)
-                {
-                    case ELEMENT_TYPE_I8:
-                    case ELEMENT_TYPE_U8:
-                        *(INT64*)data = *(UINT32*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R4:
-                        *(float*)data = (float)*(UINT32*)srcData;
-                        break;
-
-                    case ELEMENT_TYPE_R8:
-                        *(double*)data = *(UINT32*)srcData;
-                        break;
-
-                    default:
-                        _ASSERTE(!"Array.Copy from U4 to another type hit unsupported widening conversion");
-                }
-                break;
-
-
-            case ELEMENT_TYPE_I8:
-                if (destElType == ELEMENT_TYPE_R4)
-                {
-                    *(float*) data = (float) *(INT64*)srcData;
-                }
-                else
-                {
-                    _ASSERTE(destElType==ELEMENT_TYPE_R8);
-                    *(double*) data = (double) *(INT64*)srcData;
-                }
-                break;
-
-
-            case ELEMENT_TYPE_U8:
-                if (destElType == ELEMENT_TYPE_R4)
-                {
-                    //*(float*) data = (float) *(UINT64*)srcData;
-                    INT64 srcVal = *(INT64*)srcData;
-                    float f = (float) srcVal;
-                    if (srcVal < 0)
-                        f += 4294967296.0f * 4294967296.0f; // This is 2^64
-
-                    *(float*) data = f;
-                }
-                else
-                {
-                    _ASSERTE(destElType==ELEMENT_TYPE_R8);
-                    //*(double*) data = (double) *(UINT64*)srcData;
-                    INT64 srcVal = *(INT64*)srcData;
-                    double d = (double) srcVal;
-                    if (srcVal < 0)
-                        d += 4294967296.0 * 4294967296.0;   // This is 2^64
-
-                    *(double*) data = d;
-                }
-                break;
-
-
-            case ELEMENT_TYPE_R4:
-                *(double*) data = *(float*)srcData;
-                break;
-
-            default:
-                _ASSERTE(!"Fell through outer switch in PrimitiveWiden!  Unknown primitive type for source array!");
-        }
-    }
-}
 
 //
 // This is a GC safe variant of the memmove intrinsic. It sets the cards, and guarantees that the object references in the GC heap are
@@ -653,81 +241,10 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
     }
 }
 
-FCIMPL5(void, ArrayNative::CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        BASEARRAYREF pSrc;
-        BASEARRAYREF pDst;
-    } gc;
-
-    gc.pSrc = (BASEARRAYREF)pSrc;
-    gc.pDst = (BASEARRAYREF)pDst;
-
-    // cannot pass null for source or destination
-    _ASSERTE(gc.pSrc != NULL && gc.pDst != NULL);
-
-    // source and destination must be arrays
-    _ASSERTE(gc.pSrc->GetMethodTable()->IsArray());
-    _ASSERTE(gc.pDst->GetMethodTable()->IsArray());
-
-    _ASSERTE(gc.pSrc->GetRank() == gc.pDst->GetRank());
-
-    // array bounds checking
-    _ASSERTE(iLength >= 0);
-    _ASSERTE(iSrcIndex >= 0);
-    _ASSERTE(iDstIndex >= 0);
-    _ASSERTE((DWORD)(iSrcIndex + iLength) <= gc.pSrc->GetNumComponents());
-    _ASSERTE((DWORD)(iDstIndex + iLength) <= gc.pDst->GetNumComponents());
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    int r = CanAssignArrayType(gc.pSrc, gc.pDst);
-
-    if (r == AssignWrongType)
-        COMPlusThrow(kArrayTypeMismatchException, W("ArrayTypeMismatch_CantAssignType"));
-
-    if (iLength > 0)
-    {
-        switch (r)
-        {
-            case AssignUnboxValueClass:
-                UnBoxEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            case AssignBoxValueClassOrPrimitive:
-                BoxEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            case AssignMustCast:
-                CastCheckEachElement(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            case AssignPrimitiveWiden:
-                PrimitiveWiden(gc.pSrc, iSrcIndex, gc.pDst, iDstIndex, iLength);
-                break;
-
-            default:
-                _ASSERTE(!"Fell through switch in Array.Copy!");
-        }
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 
 // Check we're allowed to create an array with the given element type.
-void ArrayNative::CheckElementType(TypeHandle elementType)
+static void CheckElementType(TypeHandle elementType)
 {
-    // Checks apply recursively for arrays of arrays etc.
-    while (elementType.IsArray())
-    {
-        elementType = elementType.GetArrayElementTypeHandle();
-    }
-
     // Check for simple types first.
     if (!elementType.IsTypeDesc())
     {
@@ -738,7 +255,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
             COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLikeArray"));
 
         // Check for open generic types.
-        if (pMT->IsGenericTypeDefinition() || pMT->ContainsGenericVariables())
+        if (pMT->ContainsGenericVariables())
             COMPlusThrow(kNotSupportedException, W("NotSupported_OpenType"));
 
         // Check for Void.
@@ -753,62 +270,67 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
     }
 }
 
-FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTypeUNSAFE, INT32 rank, INT32* pLengths, INT32* pLowerBounds)
+void QCALLTYPE Array_CreateInstance(QCall::TypeHandle pTypeHnd, INT32 rank, INT32* pLengths, INT32* pLowerBounds, BOOL createFromArrayType, QCall::ObjectHandleOnStack retArray)
 {
     CONTRACTL {
-        FCALL_CHECK;
+        QCALL_CHECK;
         PRECONDITION(rank > 0);
         PRECONDITION(CheckPointer(pLengths));
         PRECONDITION(CheckPointer(pLowerBounds, NULL_OK));
     } CONTRACTL_END;
 
-    OBJECTREF pRet = NULL;
+    BEGIN_QCALL;
 
-    REFLECTCLASSBASEREF pElementType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pElementTypeUNSAFE);
+    TypeHandle typeHnd = pTypeHnd.AsTypeHandle();
 
-    // pLengths and pLowerBounds are pinned buffers. No need to protect them.
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(pElementType);
-
-    TypeHandle elementType(pElementType->GetType());
-
-    CheckElementType(elementType);
-
-    CorElementType CorType = elementType.GetSignatureCorElementType();
-
-    CorElementType kind = ELEMENT_TYPE_ARRAY;
-
-    // Is it ELEMENT_TYPE_SZARRAY array?
-    if (rank == 1 && (pLowerBounds == NULL || pLowerBounds[0] == 0)
-#ifdef FEATURE_64BIT_ALIGNMENT
-        // On platforms where 64-bit types require 64-bit alignment and don't obtain it naturally force us
-        // through the slow path where this will be handled.
-        && (CorType != ELEMENT_TYPE_I8)
-        && (CorType != ELEMENT_TYPE_U8)
-        && (CorType != ELEMENT_TYPE_R8)
-#endif
-        )
+    if (createFromArrayType)
     {
-        // Shortcut for common cases
-        if (CorTypeInfo::IsPrimitiveType(CorType))
+        _ASSERTE((INT32)typeHnd.GetRank() == rank);
+        _ASSERTE(typeHnd.IsArray());
+
+        if (typeHnd.GetArrayElementTypeHandle().ContainsGenericVariables())
+            COMPlusThrow(kNotSupportedException, W("NotSupported_OpenType"));
+
+        if (!typeHnd.AsMethodTable()->IsMultiDimArray())
         {
-            pRet = AllocatePrimitiveArray(CorType,pLengths[0]);
+            _ASSERTE(pLowerBounds == NULL || pLowerBounds[0] == 0);
+
+            GCX_COOP();
+            retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
             goto Done;
         }
-        else
-        if (CorTypeInfo::IsObjRef(CorType))
+    }
+    else
+    {
+        CheckElementType(typeHnd);
+
+        // Is it ELEMENT_TYPE_SZARRAY array?
+        if (rank == 1 && (pLowerBounds == NULL || pLowerBounds[0] == 0))
         {
-            pRet = AllocateObjectArray(pLengths[0],elementType);
-            goto Done;
+            CorElementType corType = typeHnd.GetSignatureCorElementType();
+
+            // Shortcut for common cases
+            if (CorTypeInfo::IsPrimitiveType(corType))
+            {
+                GCX_COOP();
+                retArray.Set(AllocatePrimitiveArray(corType, pLengths[0]));
+                goto Done;
+            }
+
+            typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd);
+
+            {
+                GCX_COOP();
+                retArray.Set(AllocateSzArray(typeHnd, pLengths[0]));
+                goto Done;
+            }
         }
 
-        kind = ELEMENT_TYPE_SZARRAY;
-        pLowerBounds = NULL;
+        // Find the Array class...
+        typeHnd = ClassLoader::LoadArrayTypeThrowing(typeHnd, ELEMENT_TYPE_ARRAY, rank);
     }
 
     {
-        // Find the Array class...
-        TypeHandle typeHnd = ClassLoader::LoadArrayTypeThrowing(elementType, kind, rank);
-
         _ASSERTE(rank <= MAX_RANK); // Ensures that the stack buffer size allocations below won't overflow
 
         DWORD boundsSize = 0;
@@ -834,15 +356,15 @@ FCIMPL4(Object*, ArrayNative::CreateInstance, ReflectClassBaseObject* pElementTy
                 bounds[i] = pLengths[i];
         }
 
-        pRet = AllocateArrayEx(typeHnd, bounds, boundsSize);
+        {
+            GCX_COOP();
+            retArray.Set(AllocateArrayEx(typeHnd, bounds, boundsSize));
+        }
     }
 
 Done: ;
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(pRet);
+    END_QCALL;
 }
-FCIMPLEND
 
 FCIMPL3(void, ArrayNative::SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex)
 {

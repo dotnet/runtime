@@ -271,6 +271,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -309,6 +310,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -353,6 +355,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -384,6 +387,7 @@ extends:
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       # Build and test clr tools
@@ -441,6 +445,7 @@ extends:
           platforms:
           - android_x64
           - browser_wasm
+          - wasi_wasm
           - tvos_arm64
           - ios_arm64
           - maccatalyst_x64
@@ -516,6 +521,20 @@ extends:
           scenarios:
             - WasmTestOnBrowser
 
+      # Library tests with full threading
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+            #- browser_wasm_win
+          nameSuffix: _Threading
+          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          alwaysRun: ${{ variables.isRollingBuild }}
+          shouldRunSmokeOnly: onLibrariesAndIllinkChanges
+          scenarios:
+            - WasmTestOnBrowser
+            #- WasmTestOnNodeJS - this is not supported yet, https://github.com/dotnet/runtime/issues/85592
+
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -525,27 +544,21 @@ extends:
           runAOT: false
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
 
       # AOT Library tests
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _AOT
+            - browser_wasm_win
+            - wasi_wasm
+            - wasi_wasm_win
+          nameSuffix: _Smoke_AOT
           runAOT: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm_win
-          nameSuffix: _AOT
-          runAOT: true
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
 
       # For Wasm.Build.Tests - runtime pack builds
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -566,7 +579,7 @@ extends:
             - browser_wasm_win
           condition: or(eq(variables.isRollingBuild, true), eq(variables.wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline, true))
           nameSuffix: MultiThreaded
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          extraBuildArgs: /p:WasmEnableThreads=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           publishArtifactsForWorkload: true
           publishWBT: false
 
@@ -595,18 +608,6 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-
-      # Build and Smoke Tests only - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _Threading_Smoke
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - WasmTestOnBrowser
 
       # WASI/WASM
 
@@ -930,9 +931,11 @@ extends:
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
@@ -952,12 +955,14 @@ extends:
             dependsOn:
             - mono_android_offsets
             - mono_browser_offsets
+            - mono_wasi_offsets
             - mono_tvos_offsets
             - mono_ios_offsets
             - mono_maccatalyst_offsets
             monoCrossAOTTargetOS:
             - android
             - browser
+            - wasi
             - tvos
             - ios
             - maccatalyst

@@ -149,12 +149,12 @@
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">“GeneratedComInterfaceAttribute”的使用未遵循建议。{0}</target>
         <note />
       </trans-unit>
       <trans-unit id="ComInterfaceUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'GeneratedComInterfaceAttribute' does not follow recommendations.</target>
+        <target state="translated">“GeneratedComInterfaceAttribute”的使用未遵循建议。</target>
         <note />
       </trans-unit>
       <trans-unit id="ComMethodReturningIntWillBeOutParameterMessage">
@@ -449,17 +449,17 @@
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructMessage">
         <source>The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</source>
-        <target state="new">The type '{0}' will be treated as a struct in the native signature, not as a native HRESULT. To treat this as an HRESULT, add '[return:MarshalAs(UnmanagedType.Error)]' to the method.</target>
+        <target state="translated">类型“{0}”将被视为本机签名中的结构，而不是本机 HRESULT。若要将其视为 HRESULT，请将“[return:MarshalAs(UnmanagedType.Error)]”添加到方法。</target>
         <note />
       </trans-unit>
       <trans-unit id="HResultTypeWillBeTreatedAsStructTitle">
         <source>This type will be treated as a struct in the native signature, not as a native HRESULT</source>
-        <target state="new">This type will be treated as a struct in the native signature, not as a native HRESULT</target>
+        <target state="translated">此类型将被视为本机签名中的结构，而不是本机 HRESULT</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
-        <target state="new">The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</target>
+        <target state="translated">“[In]”特性仅在数组参数上受支持。默认情况下，按值参数视为只读。</target>
         <note />
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedWithoutOutBlittableArray">
@@ -484,7 +484,7 @@
       </trans-unit>
       <trans-unit id="InOutAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</source>
-        <target state="new">The '[In]' and '[Out]' attributes are only supported on array parameters. Consider using the 'ref' keyword to make the parameter mutable.</target>
+        <target state="translated">“[In]”和“[Out]”属性仅在数组参数上受支持。请考虑使用“ref”关键字使参数可变。</target>
         <note />
       </trans-unit>
       <trans-unit id="InOutAttributes">
@@ -729,12 +729,12 @@
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</target>
+        <target state="translated">“LibraryImportAttribute”的使用未遵循建议。{0}</target>
         <note />
       </trans-unit>
       <trans-unit id="LibraryImportUsageDoesNotFollowBestPracticesTitle">
         <source>The usage of 'LibraryImportAttribute' does not follow recommendations.</source>
-        <target state="new">The usage of 'LibraryImportAttribute' does not follow recommendations.</target>
+        <target state="translated">“LibraryImportAttribute”的使用未遵循建议。</target>
         <note />
       </trans-unit>
       <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
@@ -939,7 +939,7 @@
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
         <source>The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
-        <target state="new">The '[Out]' attribute is only supported on array parameters. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
+        <target state="translated">"[Out]" 属性仅在数组参数上受支持。请考虑使用“out”或“ref”关键字使参数可变。</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -954,7 +954,7 @@
       </trans-unit>
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
-        <target state="new">It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</target>
+        <target state="translated">建议对数组参数使用显式“[In]”和“[Out]”属性。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">

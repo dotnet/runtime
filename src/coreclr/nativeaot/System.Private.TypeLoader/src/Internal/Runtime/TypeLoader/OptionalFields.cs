@@ -61,7 +61,7 @@ namespace Internal.Runtime.TypeLoader
             if (eLastTag == EETypeOptionalFieldTag.Count)
                 return 0;
 
-            _encoder = new NativePrimitiveEncoder();
+            _encoder = default(NativePrimitiveEncoder);
             _encoder.Init();
 
             for (EETypeOptionalFieldTag eTag = 0; eTag < EETypeOptionalFieldTag.Count; eTag++)

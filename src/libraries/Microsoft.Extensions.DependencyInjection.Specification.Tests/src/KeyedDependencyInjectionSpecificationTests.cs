@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
-using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using System.Linq;
 using System.Security.Cryptography;
+using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
@@ -98,6 +98,64 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             var services = provider.GetKeyedServices<IService>("service").ToList();
             Assert.Equal(new[] { service2, service3, service4 }, services);
+        }
+
+        [Fact]
+        public void ResolveKeyedServicesAnyKey()
+        {
+            var service1 = new Service();
+            var service2 = new Service();
+            var service3 = new Service();
+            var service4 = new Service();
+            var service5 = new Service();
+            var service6 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service1);
+            serviceCollection.AddKeyedSingleton<IService>("service", service2);
+            serviceCollection.AddKeyedSingleton<IService>("service", service3);
+            serviceCollection.AddKeyedSingleton<IService>("service", service4);
+            serviceCollection.AddKeyedSingleton<IService>(null, service5);
+            serviceCollection.AddSingleton<IService>(service6);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            // Return all services registered with a non null key
+            var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
+            Assert.Equal(4, allServices.Count);
+            Assert.Equal(new[] { service1, service2, service3, service4 }, allServices);
+
+            // Check again (caching)
+            var allServices2 = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
+            Assert.Equal(allServices, allServices2);
+        }
+
+        [Fact]
+        public void ResolveKeyedServicesAnyKeyWithAnyKeyRegistration()
+        {
+            var service1 = new Service();
+            var service2 = new Service();
+            var service3 = new Service();
+            var service4 = new Service();
+            var service5 = new Service();
+            var service6 = new Service();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddKeyedTransient<IService>(KeyedService.AnyKey, (sp, key) => new Service());
+            serviceCollection.AddKeyedSingleton<IService>("first-service", service1);
+            serviceCollection.AddKeyedSingleton<IService>("service", service2);
+            serviceCollection.AddKeyedSingleton<IService>("service", service3);
+            serviceCollection.AddKeyedSingleton<IService>("service", service4);
+            serviceCollection.AddKeyedSingleton<IService>(null, service5);
+            serviceCollection.AddSingleton<IService>(service6);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            _ = provider.GetKeyedService<IService>("something-else");
+            _ = provider.GetKeyedService<IService>("something-else-again");
+
+            // Return all services registered with a non null key, but not the one "created" with KeyedService.AnyKey
+            var allServices = provider.GetKeyedServices<IService>(KeyedService.AnyKey).ToList();
+            Assert.Equal(5, allServices.Count);
+            Assert.Equal(new[] { service1, service2, service3, service4 }, allServices.Skip(1));
         }
 
         [Fact]

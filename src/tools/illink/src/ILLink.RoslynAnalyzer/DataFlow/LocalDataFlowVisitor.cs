@@ -342,9 +342,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Seems like this can't happen with a flow capture operation.
 				Debug.Assert (operation.Target is not IFlowCaptureReferenceOperation);
 				break;
-			case IInvalidOperation:
-				// This can happen for a field assignment in an attribute instance.
-				// TODO: validate against the field attributes.
 			case IInstanceReferenceOperation:
 				// Assignment to 'this' is not tracked currently.
 				// Not relevant for trimming dataflow.
@@ -365,16 +362,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// can show up in a flow capture reference (for example, where the right-hand side
 			// is a null-coalescing operator).
 			default:
-				// NoneOperation represents operations which are unimplemented by Roslyn
-				// (don't have specific I*Operation types), such as pointer dereferences.
-				if (targetOperation.Kind is OperationKind.None)
-					break;
-
-				// Assert on anything else as it means we need to implement support for it
-				// but do not throw here as it means new Roslyn version could cause the analyzer to crash
-				// which is not fixable by the user. The analyzer is not going to be 100% correct no matter what we do
-				// so effectively ignoring constructs it doesn't understand is OK.
-				Debug.Fail ($"{targetOperation.GetType ()}: {targetOperation.Syntax.GetLocation ().GetLineSpan ()}");
+				UnexpectedOperationHandler.Handle (targetOperation);
 				break;
 			}
 			return Visit (operation.Value, state);
@@ -409,9 +397,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			Debug.Assert (IsLValueFlowCapture (flowCaptureReference.Id));
 			Debug.Assert (flowCaptureReference.GetValueUsageInfo (OwningSymbol).HasFlag (ValueUsageInfo.Write));
 			var capturedReferences = state.Current.LocalState.CapturedReferences.Get (flowCaptureReference.Id);
+			Debug.Assert (!capturedReferences.IsUnknown ());
 			if (!capturedReferences.HasMultipleValues) {
 				// Single captured reference. Treat this as an overwriting assignment.
-				var enumerator = capturedReferences.GetEnumerator ();
+				var enumerator = capturedReferences.GetKnownValues ().GetEnumerator ();
 				enumerator.MoveNext ();
 				targetOperation = enumerator.Current.Reference;
 				return ProcessSingleTargetAssignment (targetOperation, operation, state, merge: false);
@@ -428,7 +417,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			// if the RHS has dataflow warnings.
 
 			TValue value = TopValue;
-			foreach (var capturedReference in capturedReferences) {
+			foreach (var capturedReference in capturedReferences.GetKnownValues ()) {
 				targetOperation = capturedReference.Reference;
 				var singleValue = ProcessSingleTargetAssignment (targetOperation, operation, state, merge: true);
 				value = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (value, singleValue);
@@ -536,7 +525,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 						// If an r-value captures an l-value, we must dereference the l-value
 						// and copy out the value to capture.
 						capturedValue = TopValue;
-						foreach (var capturedReference in state.Current.LocalState.CapturedReferences.Get (captureRef.Id)) {
+						var capturedReferences = state.Current.LocalState.CapturedReferences.Get (captureRef.Id);
+						Debug.Assert (!capturedReferences.IsUnknown ());
+						foreach (var capturedReference in capturedReferences.GetKnownValues ()) {
 							var value = Visit (capturedReference.Reference, state);
 							capturedValue = LocalStateAndContextLattice.LocalStateLattice.Lattice.ValueLattice.Meet (capturedValue, value);
 						}
@@ -576,24 +567,22 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					targetMethodSymbol = lambda.Symbol;
 					break;
 				case IMethodReferenceOperation methodReference:
-					IMethodSymbol method = methodReference.Method.OriginalDefinition;
-					if (method.ContainingSymbol is IMethodSymbol) {
+					IMethodSymbol methodDefinition = methodReference.Method.OriginalDefinition;
+					if (methodDefinition.ContainingSymbol is IMethodSymbol) {
 						// Track references to local functions
-						var localFunction = method;
+						var localFunction = methodDefinition;
 						Debug.Assert (localFunction.MethodKind == MethodKind.LocalFunction);
 						var localFunctionCFG = ControlFlowGraph.GetLocalFunctionControlFlowGraphInScope (localFunction);
 						InterproceduralState.TrackMethod (new MethodBodyValue (localFunction, localFunctionCFG));
 					}
-					targetMethodSymbol = method;
+					targetMethodSymbol = methodReference.Method;
 					break;
 				case IMemberReferenceOperation:
 				case IInvocationOperation:
 					// No method symbol.
 					break;
 				default:
-					// Unimplemented case that might need special handling.
-					// Fail in debug mode only.
-					Debug.Fail ($"{operation.Target.GetType ()}: {operation.Target.Syntax.GetLocation ().GetLineSpan ()}");
+					UnexpectedOperationHandler.Handle (operation.Target);
 					break;
 			}
 
@@ -603,7 +592,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return HandleDelegateCreation (targetMethodSymbol, operation, state.Current.Context);
 		}
 
-		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation, TContext context);
+		public abstract TValue HandleDelegateCreation (IMethodSymbol methodReference, IOperation operation, in TContext context);
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
 		{
@@ -788,7 +777,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					argumentOperation = callOperation.Arguments[argumentIndex];
 					break;
 				default:
-					Debug.Fail ($"Unexpected operation {operation} for parameter {parameter.GetDisplayName ()}");
+					UnexpectedOperationHandler.Handle (operation);
 					continue;
 				};
 

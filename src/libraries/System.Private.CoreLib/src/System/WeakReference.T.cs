@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
-
+using System.Runtime.Serialization;
 using static System.WeakReferenceHandleTags;
 
 namespace System

@@ -5,15 +5,9 @@
     <Optimize>false</Optimize>
     <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->
     <GCStressIncompatible>true</GCStressIncompatible>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="stackoverflowtester.cs" />
-    <Compile Include="stackoverflow3.cs" />
-    <Compile Include="stackoverflow.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>
+

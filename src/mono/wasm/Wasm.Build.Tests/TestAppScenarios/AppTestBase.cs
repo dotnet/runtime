@@ -30,17 +30,21 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
         LogPath = Path.Combine(s_buildEnv.LogRootPath, Id);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, assetName), Path.Combine(_projectDir!));
+
+        // WasmBasicTestApp consists of App + Library projects
+        if (assetName == "WasmBasicTestApp")
+            _projectDir = Path.Combine(_projectDir!, "App");
     }
 
-    protected void BuildProject(string configuration)
+    protected void BuildProject(string configuration, params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(Id, configuration));
+        (CommandResult result, _) = BlazorBuild(new BlazorBuildOptions(Id, configuration), extraArgs);
         result.EnsureSuccessful();
     }
 
-    protected void PublishProject(string configuration)
+    protected void PublishProject(string configuration, params string[] extraArgs)
     {
-        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration));
+        (CommandResult result, _) = BlazorPublish(new BlazorBuildOptions(Id, configuration), extraArgs);
         result.EnsureSuccessful();
     }
 
@@ -48,7 +52,13 @@ public abstract class AppTestBase : BlazorWasmTestBase
         .WithWorkingDirectory(_projectDir!)
         .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir);
 
-    protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
+    protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
+        => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);
+    
+    protected Task<RunResult> RunSdkStyleAppForPublish(RunOptions options)
+        => RunSdkStyleApp(options, BlazorRunHost.WebServer);
+
+    private async Task<RunResult> RunSdkStyleApp(RunOptions options, BlazorRunHost host = BlazorRunHost.DotnetRun)
     {
         string queryString = "?test=" + options.TestScenario;
         if (options.BrowserQueryString != null)
@@ -63,9 +73,10 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 CheckCounter: false,
                 Config: options.Configuration,
                 OnConsoleMessage: OnConsoleMessage,
-                QueryString: queryString);
+                QueryString: queryString,
+                Host: host);
 
-        await BlazorRunForBuildWithDotnetRun(blazorRunOptions);
+        await BlazorRunTest(blazorRunOptions);
 
         void OnConsoleMessage(IConsoleMessage msg)
         {

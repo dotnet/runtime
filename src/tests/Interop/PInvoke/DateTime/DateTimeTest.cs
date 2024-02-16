@@ -26,27 +26,20 @@ class NativeDateTime
 public class DateTimeTest
 {
     [Fact]
-    public static int TestEntryPoint()
+    [SkipOnMono("needs triage")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    public static void TestEntryPoint()
     {
-        try
-        {
-            DateTime currentDate = new DateTime(2019, 5, 2);
+        DateTime currentDate = new DateTime(2019, 5, 2);
 
-            Assert.Equal(currentDate.AddDays(1), NativeDateTime.GetTomorrow(currentDate));
+        Assert.Equal(currentDate.AddDays(1), NativeDateTime.GetTomorrow(currentDate));
 
-            NativeDateTime.GetTomorrowByRef(currentDate, out DateTime nextDay);
+        NativeDateTime.GetTomorrowByRef(currentDate, out DateTime nextDay);
 
-            Assert.Equal(currentDate.AddDays(1), nextDay);
+        Assert.Equal(currentDate.AddDays(1), nextDay);
 
-            DateWrapper wrapper = new DateWrapper { date = currentDate };
+        DateWrapper wrapper = new DateWrapper { date = currentDate };
 
-            Assert.Equal(currentDate.AddDays(1), NativeDateTime.GetTomorrowWrapped(wrapper).date);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"Test Failure: {e}");
-            return 101;
-        }
-        return 100;
+        Assert.Equal(currentDate.AddDays(1), NativeDateTime.GetTomorrowWrapped(wrapper).date);
     }
 }

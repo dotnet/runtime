@@ -35,46 +35,47 @@ unsafe partial class GenericsNative
     public static extern Point4<uint> AddPoint4Us(in Point4<uint> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestPoint4U()
+    [Fact]
+    public static void TestPoint4U()
     {
         GenericsNative.Point4<uint> value = GenericsNative.GetPoint4U(1u, 2u, 3u, 4u);
-        Assert.Equal(value.e00, 1u);
-        Assert.Equal(value.e01, 2u);
-        Assert.Equal(value.e02, 3u);
-        Assert.Equal(value.e03, 4u);
+        Assert.Equal(1u, value.e00);
+        Assert.Equal(2u, value.e01);
+        Assert.Equal(3u, value.e02);
+        Assert.Equal(4u, value.e03);
 
         GenericsNative.Point4<uint> value2;
         GenericsNative.GetPoint4UOut(1u, 2u, 3u, 4u, &value2);
-        Assert.Equal(value2.e00, 1u);
-        Assert.Equal(value2.e01, 2u);
-        Assert.Equal(value2.e02, 3u);
-        Assert.Equal(value2.e03, 4u);
+        Assert.Equal(1u, value2.e00);
+        Assert.Equal(2u, value2.e01);
+        Assert.Equal(3u, value2.e02);
+        Assert.Equal(4u, value2.e03);
 
         GenericsNative.GetPoint4UOut(1u, 2u, 3u, 4u, out GenericsNative.Point4<uint> value3);
-        Assert.Equal(value3.e00, 1u);
-        Assert.Equal(value3.e01, 2u);
-        Assert.Equal(value3.e02, 3u);
-        Assert.Equal(value3.e03, 4u);
+        Assert.Equal(1u, value3.e00);
+        Assert.Equal(2u, value3.e01);
+        Assert.Equal(3u, value3.e02);
+        Assert.Equal(4u, value3.e03);
 
         GenericsNative.Point4<uint>* value4 = GenericsNative.GetPoint4UPtr(1u, 2u, 3u, 4u);
-        Assert.Equal(value4->e00, 1u);
-        Assert.Equal(value4->e01, 2u);
-        Assert.Equal(value4->e02, 3u);
-        Assert.Equal(value4->e03, 4u);
+        Assert.Equal(1u, value4->e00);
+        Assert.Equal(2u, value4->e01);
+        Assert.Equal(3u, value4->e02);
+        Assert.Equal(4u, value4->e03);
 
         ref readonly GenericsNative.Point4<uint> value5 = ref GenericsNative.GetPoint4URef(1u, 2u, 3u, 4u);
-        Assert.Equal(value5.e00, 1u);
-        Assert.Equal(value5.e01, 2u);
-        Assert.Equal(value5.e02, 3u);
-        Assert.Equal(value5.e03, 4u);
+        Assert.Equal(1u, value5.e00);
+        Assert.Equal(2u, value5.e01);
+        Assert.Equal(3u, value5.e02);
+        Assert.Equal(4u, value5.e03);
 
         GenericsNative.Point4<uint> result = GenericsNative.AddPoint4U(value, value);
-        Assert.Equal(result.e00, 2u);
-        Assert.Equal(result.e01, 4u);
-        Assert.Equal(result.e02, 6u);
-        Assert.Equal(result.e03, 8u);
+        Assert.Equal(2u, result.e00);
+        Assert.Equal(4u, result.e01);
+        Assert.Equal(6u, result.e02);
+        Assert.Equal(8u, result.e03);
 
         GenericsNative.Point4<uint>[] values = new GenericsNative.Point4<uint>[] {
             value,
@@ -87,22 +88,22 @@ unsafe partial class GenericsTest
         fixed (GenericsNative.Point4<uint>* pValues = &values[0])
         {
             GenericsNative.Point4<uint> result2 = GenericsNative.AddPoint4Us(pValues, values.Length);
-            Assert.Equal(result2.e00, 5u);
-            Assert.Equal(result2.e01, 10u);
-            Assert.Equal(result2.e02, 15u);
-            Assert.Equal(result2.e03, 20u);
+            Assert.Equal(5u, result2.e00);
+            Assert.Equal(10u, result2.e01);
+            Assert.Equal(15u, result2.e02);
+            Assert.Equal(20u, result2.e03);
         }
 
         GenericsNative.Point4<uint> result3 = GenericsNative.AddPoint4Us(values, values.Length);
-        Assert.Equal(result3.e00, 5u);
-        Assert.Equal(result3.e01, 10u);
-        Assert.Equal(result3.e02, 15u);
-        Assert.Equal(result3.e03, 20u);
+        Assert.Equal(5u, result3.e00);
+        Assert.Equal(10u, result3.e01);
+        Assert.Equal(15u, result3.e02);
+        Assert.Equal(20u, result3.e03);
 
         GenericsNative.Point4<uint> result4 = GenericsNative.AddPoint4Us(in values[0], values.Length);
-        Assert.Equal(result4.e00, 5u);
-        Assert.Equal(result4.e01, 10u);
-        Assert.Equal(result4.e02, 15u);
-        Assert.Equal(result4.e03, 20u);
+        Assert.Equal(5u, result4.e00);
+        Assert.Equal(10u, result4.e01);
+        Assert.Equal(15u, result4.e02);
+        Assert.Equal(20u, result4.e03);
     }
 }

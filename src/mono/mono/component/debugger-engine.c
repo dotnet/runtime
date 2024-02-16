@@ -35,6 +35,7 @@ static DebuggerEngineCallbacks rt_callbacks;
 static int log_level;
 static FILE *log_file;
 
+static bool using_icordbg = FALSE;
 
 /*
  * Locking
@@ -154,6 +155,19 @@ insert_breakpoint (MonoSeqPointInfo *seq_points, MonoDomain *domain, MonoJitInfo
 			if (it.seq_point.il_offset != METHOD_ENTRY_IL_OFFSET &&
 				it.seq_point.il_offset != METHOD_EXIT_IL_OFFSET &&
 				it.seq_point.il_offset + 1 == bp->il_offset) {
+				it_has_sp = TRUE;
+				break;
+			}
+		}
+	}
+
+	if (!it_has_sp && using_icordbg)
+	{
+		mono_seq_point_iterator_init (&it, seq_points);
+		while (mono_seq_point_iterator_next (&it)) {
+			if (it.seq_point.il_offset != METHOD_ENTRY_IL_OFFSET &&
+				it.seq_point.il_offset != METHOD_EXIT_IL_OFFSET &&
+				it.seq_point.il_offset > bp->il_offset) {
 				it_has_sp = TRUE;
 				break;
 			}
@@ -581,10 +595,10 @@ ss_req_cleanup (void)
 void
 mono_de_start_single_stepping (void)
 {
-	int val = mono_atomic_inc_i32 (&ss_count);
+		int val = mono_atomic_inc_i32 (&ss_count);
 
 	if (val == 1) {
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_start_single_stepping ();
 #endif
 		mini_get_interp_callbacks_api ()->start_single_stepping ();
@@ -594,10 +608,10 @@ mono_de_start_single_stepping (void)
 void
 mono_de_stop_single_stepping (void)
 {
-	int val = mono_atomic_dec_i32 (&ss_count);
+		int val = mono_atomic_dec_i32 (&ss_count);
 
 	if (val == 0) {
-#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
+		#ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 		mono_arch_stop_single_stepping ();
 #endif
 		mini_get_interp_callbacks_api ()->stop_single_stepping ();
@@ -1532,6 +1546,12 @@ mono_de_set_log_level (int level, FILE *file)
 {
 	log_level = level;
 	log_file = file;
+}
+
+void
+mono_de_set_using_icordbg (void)
+{
+	using_icordbg = TRUE;
 }
 
 /*

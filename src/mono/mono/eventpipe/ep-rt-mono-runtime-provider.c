@@ -187,7 +187,7 @@ typedef struct _AssemblyEventData AssemblyEventData;
 typedef enum {
 	TYPE_FLAGS_DELEGATE = 0x1,
 	TYPE_FLAGS_FINALIZABLE = 0x2,
-	TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
+	// unused = 0x4,
 	TYPE_FLAGS_ARRAY = 0x8,
 
 	TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
@@ -1547,8 +1547,6 @@ bulk_type_log_single_type (
 		val->fixed_sized_data.flags |= TYPE_FLAGS_FINALIZABLE;
 	if (m_class_is_delegate (klass))
 		val->fixed_sized_data.flags |= TYPE_FLAGS_DELEGATE;
-	if (mono_class_is_com_object (klass))
-		val->fixed_sized_data.flags |= TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
 	val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
 
 	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
@@ -2781,6 +2779,30 @@ ep_rt_write_event_contention_stop (
 		contention_flags,
 		clr_instance_id,
 		duration_ns,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_wait_handle_wait_start (
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	return FireEtwWaitHandleWaitStart (
+		wait_source,
+		(const void *)associated_object_id,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_wait_handle_wait_stop (
+	uint16_t clr_instance_id)
+{
+	return FireEtwWaitHandleWaitStop (
+		clr_instance_id,
 		NULL,
 		NULL) == 0 ? true : false;
 }

@@ -68,10 +68,10 @@ namespace System.Tests
             string[] strings = new[] { "a", "b", "AB", "A", "cde", "abc", "f", "123", "ab" };
 
             Array.Sort(strings, StringComparer.OrdinalIgnoreCase);
-            Assert.Equal<string>(strings, new[] { "123", "a", "A", "AB", "ab", "abc", "b", "cde", "f" });
+            Assert.Equal(strings, new[] { "123", "a", "A", "AB", "ab", "abc", "b", "cde", "f" });
 
             Array.Sort(strings, StringComparer.Ordinal);
-            Assert.Equal<string>(strings, new[] { "123", "A", "AB", "a", "ab", "abc", "b", "cde", "f" });
+            Assert.Equal(strings, new[] { "123", "A", "AB", "a", "ab", "abc", "b", "cde", "f" });
         }
 
         [Fact]

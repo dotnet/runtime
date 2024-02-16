@@ -10,6 +10,7 @@ schedules:
   always: true
 
 variables:
+  - template: /eng/pipelines/common/variables.yml
   # Set toolName variable from pipeline name so we can use it during template expansion
   - name: toolName
     value: ${{ variables['Build.DefinitionName'] }}

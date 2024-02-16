@@ -9,11 +9,11 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Runtime.ExceptionServices;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.ExceptionServices;
 
 namespace System.Threading.Tasks
 {
@@ -238,7 +238,7 @@ namespace System.Threading.Tasks
             {
                 // If we've gotten this far, it's time to process the actions.
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
                 // Web browsers need special treatment that is implemented in TaskReplicator
                 if (OperatingSystem.IsBrowser() ||
 #else

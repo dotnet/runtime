@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.Logging.Debug
                 return;
             }
 
-            message = $"{ logLevel }: {message}";
+            message = $"{logLevel}: {message}";
 
             if (exception != null)
             {

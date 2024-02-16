@@ -33,7 +33,8 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.JSHandle != IntPtr.Zero)
             {
                 // this is JSException round-trip
-                jsException = JSHostImplementation.CreateCSOwnedProxy(slot.JSHandle);
+                var ctx = ToManagedContext;
+                jsException = ctx.CreateCSOwnedProxy(slot.JSHandle);
             }
 
             string? message;
@@ -65,19 +66,32 @@ namespace System.Runtime.InteropServices.JavaScript
                 var jse = cpy as JSException;
                 if (jse != null && jse.jsException != null)
                 {
-#if FEATURE_WASM_THREADS
-                    JSObject.AssertThreadAffinity(value);
+                    var jsException = jse.jsException;
+                    jsException.AssertNotDisposed();
+#if FEATURE_WASM_MANAGED_THREADS
+                    var ctx = jsException.ProxyContext;
+
+                    if (JSProxyContext.CapturingState == JSProxyContext.JSImportOperationState.JSImportParams)
+                    {
+                        JSProxyContext.CaptureContextFromParameter(ctx);
+                        slot.ContextHandle = ctx.ContextHandle;
+                    }
+                    else if (slot.ContextHandle != ctx.ContextHandle)
+                    {
+                        Environment.FailFast($"ContextHandle mismatch, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+                    }
 #endif
                     // this is JSException roundtrip
-                    ObjectDisposedException.ThrowIf(jse.jsException.IsDisposed, value);
                     slot.Type = MarshalerType.JSException;
-                    slot.JSHandle = jse.jsException.JSHandle;
+                    slot.JSHandle = jsException.JSHandle;
                 }
                 else
                 {
                     ToJS(cpy.Message);
                     slot.Type = MarshalerType.Exception;
-                    slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cpy);
+
+                    var ctx = ToJSContext;
+                    slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cpy);
                 }
             }
         }

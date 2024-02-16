@@ -448,7 +448,7 @@ int __cdecl main(int argc, char* argv[])
                 {
                     LogError("More than %d methods failed%s. Skip compiling remaining methods.",
                         o.failureLimit, (o.nameOfJit2 == nullptr) ? "" : " by JIT1");
-                    break;
+                    goto doneRepeatCount;
                 }
                 if ((o.reproName != nullptr) && (o.indexCount == -1))
                 {
@@ -507,7 +507,7 @@ int __cdecl main(int argc, char* argv[])
                     if (errorCount2 == o.failureLimit)
                     {
                         LogError("More than %d methods compilation failed by JIT2. Skip compiling remaining methods.", o.failureLimit);
-                        break;
+                        goto doneRepeatCount;
                     }
                 }
             }
@@ -735,6 +735,7 @@ int __cdecl main(int argc, char* argv[])
 
         delete mc;
     }
+doneRepeatCount:
     delete reader;
 
     // NOTE: these output status strings are parsed by parallelsuperpmi.cpp::ProcessChildStdOut().

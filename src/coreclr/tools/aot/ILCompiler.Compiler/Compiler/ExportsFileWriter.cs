@@ -12,13 +12,15 @@ namespace ILCompiler
 {
     public class ExportsFileWriter
     {
-        private string _exportsFile;
-        private List<EcmaMethod> _methods;
-        private TypeSystemContext _context;
+        private readonly string _exportsFile;
+        private readonly IEnumerable<string> _exportSymbols;
+        private readonly List<EcmaMethod> _methods;
+        private readonly TypeSystemContext _context;
 
-        public ExportsFileWriter(TypeSystemContext context, string exportsFile)
+        public ExportsFileWriter(TypeSystemContext context, string exportsFile, IEnumerable<string> exportSymbols)
         {
             _exportsFile = exportsFile;
+            _exportSymbols = exportSymbols;
             _context = context;
             _methods = new List<EcmaMethod>();
         }
@@ -34,11 +36,15 @@ namespace ILCompiler
                 if (_context.Target.IsWindows)
                 {
                     streamWriter.WriteLine("EXPORTS");
+                    foreach (string symbol in _exportSymbols)
+                        streamWriter.WriteLine($"   {symbol.Replace(',', ' ')}");
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"   {method.GetUnmanagedCallersOnlyExportName()}");
                 }
-                else if(_context.Target.IsOSXLike)
+                else if(_context.Target.IsApplePlatform)
                 {
+                    foreach (string symbol in _exportSymbols)
+                        streamWriter.WriteLine($"_{symbol}");
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"_{method.GetUnmanagedCallersOnlyExportName()}");
                 }
@@ -46,6 +52,8 @@ namespace ILCompiler
                 {
                     streamWriter.WriteLine("V1.0 {");
                     streamWriter.WriteLine("    global: _init; _fini;");
+                    foreach (string symbol in _exportSymbols)
+                        streamWriter.WriteLine($"        {symbol};");
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"        {method.GetUnmanagedCallersOnlyExportName()};");
                     streamWriter.WriteLine("    local: *;");

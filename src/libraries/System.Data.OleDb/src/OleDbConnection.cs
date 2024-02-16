@@ -210,6 +210,14 @@ namespace System.Data.OleDb
             }
         }
 
+        protected override DbProviderFactory DbProviderFactory
+        {
+            get
+            {
+                return OleDbFactory.Instance;
+            }
+        }
+
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public void ResetState()
         {

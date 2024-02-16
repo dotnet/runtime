@@ -4,11 +4,11 @@
 using System;
 using System.Collections;
 using System.Collections.Specialized;
-using System.Threading;
 using System.Diagnostics;
-using System.Security;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using System.Security;
+using System.Threading;
 
 namespace System.Runtime.Caching
 {

@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
-
-using System.Reflection.Runtime.TypeInfos;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.Assemblies;
-
-using Internal.Reflection.Core.Execution;
+using System.Reflection.Runtime.TypeInfos;
 
 using Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core.Execution;
+
 using NativeFormatModifiedType = global::Internal.Metadata.NativeFormat.ModifiedType;
 
 namespace System.Reflection.Runtime.General

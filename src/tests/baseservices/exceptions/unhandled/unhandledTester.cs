@@ -14,16 +14,17 @@ namespace TestUnhandledExceptionTester
 {
     public class Program
     {
-        [Fact]
-        public static void TestEntryPoint()
+        static void RunExternalProcess(string unhandledType)
         {
             List<string> lines = new List<string>();
 
             Process testProcess = new Process();
 
             testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll");
+            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "unhandled.dll") + " " + unhandledType;
             testProcess.StartInfo.RedirectStandardError = true;
+            // Disable creating dump since the target process is expected to fail with an unhandled exception
+            testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
             testProcess.ErrorDataReceived += (sender, line) => 
             {
                 Console.WriteLine($"\"{line.Data}\"");
@@ -68,26 +69,55 @@ namespace TestUnhandledExceptionTester
                 {
                     throw new Exception("Missing Unhandled exception header");
                 }
-                if (lines[1] != "System.Exception: Test")
+                if (unhandledType == "main")
                 {
-                    throw new Exception("Missing exception type and message");
+                    if (lines[1] != "System.Exception: Test")
+                    {
+                        throw new Exception("Missing exception type and message");
+                    }
+                }
+                else if (unhandledType == "foreign")
+                {
+                    if (lines[1] != "System.EntryPointNotFoundException: HelloCpp")
+                    {
+                        throw new Exception("Missing exception type and message");
+                    }
                 }
 
                 exceptionStackFrameLine = 2;
             }
             else
             {
-                if (lines[0] != "Unhandled exception. System.Exception: Test")
+                if (unhandledType == "main")
                 {
-                    throw new Exception("Missing Unhandled exception header");
+                    if (lines[0] != "Unhandled exception. System.Exception: Test")
+                    {
+                        throw new Exception("Missing Unhandled exception header");
+                    }
                 }
-
+                else if (unhandledType == "foreign")
+                {
+                    if (!lines[0].StartsWith("Unhandled exception. System.DllNotFoundException:"))
+                    {
+                        throw new Exception("Missing Unhandled exception header");
+                    }
+                }
             }
 
-            if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
+            if (unhandledType == "main")
             {
-                throw new Exception("Missing exception source frame");
+                if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
+                {
+                    throw new Exception("Missing exception source frame");
+                }
             }
+        }
+
+        [Fact]
+        public static void TestEntryPoint()
+        {
+            RunExternalProcess("main");
+            RunExternalProcess("foreign");
         }
     }
 }

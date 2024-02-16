@@ -208,12 +208,12 @@ namespace System.Text.RegularExpressions.Generator
 
             return result;
 
-            static bool IsAllowedKind(SyntaxKind kind) =>
-                kind == SyntaxKind.ClassDeclaration ||
-                kind == SyntaxKind.StructDeclaration ||
-                kind == SyntaxKind.RecordDeclaration ||
-                kind == SyntaxKind.RecordStructDeclaration ||
-                kind == SyntaxKind.InterfaceDeclaration;
+            static bool IsAllowedKind(SyntaxKind kind) => kind is
+                SyntaxKind.ClassDeclaration or
+                SyntaxKind.StructDeclaration or
+                SyntaxKind.RecordDeclaration or
+                SyntaxKind.RecordStructDeclaration or
+                SyntaxKind.InterfaceDeclaration;
 
             // Get a Location object that doesn't store a reference to the compilation.
             // That allows it to compare equally across compilations.

@@ -137,9 +137,10 @@ namespace System.Net.Sockets.Tests
         [InlineData("[::ffff:1.1.1.1]", true, false)]
         public async Task ConnectGetsCanceledByDispose(string addressString, bool useDns, bool owning)
         {
-            if (UsesSync && PlatformDetection.IsLinux)
+            // Skip test on Linux kernels that may have a regression that was fixed in 6.6.
+            // See TcpReceiveSendGetsCanceledByDispose test for additional information.
+            if (UsesSync && PlatformDetection.IsLinux && Environment.OSVersion.Version < new Version(6, 6))
             {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/94149", TestPlatforms.Linux)]
                 return;
             }
 
@@ -235,7 +236,7 @@ namespace System.Net.Sockets.Tests
             await ConnectAsync(s, new IPEndPoint(listenAt, ((IPEndPoint)listener.LocalEndPoint).Port));
             Assert.True(s.Connected);
             // According to the OSX man page, it's enough connecting to an invalid address to dissolve the connection. (0 port connection returns error on OSX)
-            await ConnectAsync(s, new IPEndPoint(secondConnection, PlatformDetection.IsOSXLike ? 1 : 0));
+            await ConnectAsync(s, new IPEndPoint(secondConnection, PlatformDetection.IsApplePlatform ? 1 : 0));
             Assert.True(s.Connected);
         }
     }

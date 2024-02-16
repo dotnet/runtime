@@ -43,14 +43,14 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.315.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.15-helix-amd64
+        - (Alpine.316.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.16-helix-amd64
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Alpine.317.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.17-helix-amd64
+        - (Alpine.318.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-amd64
 
     # Linux musl arm64
     - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
-      - (Alpine.317.Arm64.Open)ubuntu.2004.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.17-helix-arm64v8
-      - (Alpine.315.Arm64.Open)ubuntu.2004.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.15-helix-arm64v8
+      - (Alpine.318.Arm64.Open)ubuntu.2004.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.18-helix-arm64v8
+      - (Alpine.316.Arm64.Open)ubuntu.2004.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.16-helix-arm64v8
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
@@ -83,7 +83,7 @@ jobs:
 
     # Linux PPC64le
     - ${{ if eq(parameters.platform, 'linux_ppc64le') }}:
-        - Ubuntu.2004.PPC64le.Experimental.Open
+        - Ubuntu.2204.PPC64le.Experimental.Open
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
@@ -97,7 +97,7 @@ jobs:
     - ${{ if in(parameters.platform, 'android_x86', 'android_x64', 'linux_bionic_x64') }}:
       - Ubuntu.2204.Amd64.Android.29.Open
     - ${{ if in(parameters.platform, 'android_arm', 'android_arm64', 'linux_bionic_arm64') }}:
-      - Windows.10.Amd64.Android.Open
+      - Windows.11.Amd64.Android.Open
 
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'maccatalyst_arm64', 'iossimulator_arm64') }}:
@@ -181,6 +181,6 @@ jobs:
 
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
-      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly-net8
+      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly
 
     ${{ insert }}: ${{ parameters.jobParameters }}

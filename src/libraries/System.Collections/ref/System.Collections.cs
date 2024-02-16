@@ -379,6 +379,7 @@ namespace System.Collections.Generic
         public Stack(System.Collections.Generic.IEnumerable<T> collection) { }
         public Stack(int capacity) { }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public void Clear() { }
@@ -394,6 +395,7 @@ namespace System.Collections.Generic
         public int EnsureCapacity(int capacity) { throw null; }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
+        public void TrimExcess(int capacity) { }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public bool TryPop([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
@@ -447,6 +449,7 @@ namespace System.Collections.Generic
         protected Dictionary(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         public TValue this[TKey key] { get { throw null; } set { } }
         public System.Collections.Generic.Dictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }
@@ -582,6 +585,7 @@ namespace System.Collections.Generic
         protected HashSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Collections.Generic.IEqualityComparer<T> Comparer { get { throw null; } }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         bool System.Collections.Generic.ICollection<T>.IsReadOnly { get { throw null; } }
         public bool Add(T item) { throw null; }
         public void Clear() { }
@@ -611,6 +615,7 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public void TrimExcess() { }
+        public void TrimExcess(int capacity) { }
         public bool TryGetValue(T equalValue, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T actualValue) { throw null; }
         public void UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
@@ -713,6 +718,7 @@ namespace System.Collections.Generic
         public Queue(System.Collections.Generic.IEnumerable<T> collection) { }
         public Queue(int capacity) { }
         public int Count { get { throw null; } }
+        public int Capacity { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public void Clear() { }
@@ -727,6 +733,7 @@ namespace System.Collections.Generic
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public T[] ToArray() { throw null; }
         public void TrimExcess() { }
+        public void TrimExcess(int capacity) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }

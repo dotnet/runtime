@@ -304,6 +304,20 @@ typedef ptrdiff_t ssize_t;
 #include "utils.h"
 #include "targetosarch.h"
 
+// The late disassembler is built in for certain platforms, for DEBUG builds. It is enabled by using
+// DOTNET_JitLateDisasm. It can be built in for non-DEBUG builds if desired.
+
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_AMD64)
+#ifdef DEBUG
+#define LATE_DISASM 1
+#define USE_COREDISTOOLS
+#endif // DEBUG
+#endif // platforms
+
+#if defined(LATE_DISASM) && (LATE_DISASM == 0)
+#undef LATE_DISASM
+#endif
+
 #ifdef DEBUG
 #define INDEBUG(x) x
 #define DEBUGARG(x) , x
@@ -454,14 +468,6 @@ public:
 #include "vartype.h"
 
 /*****************************************************************************/
-
-// Late disassembly is OFF by default. Can be turned ON by
-// adding /DLATE_DISASM=1 on the command line.
-// Always OFF in the non-debug version
-
-#if defined(LATE_DISASM) && (LATE_DISASM == 0)
-#undef LATE_DISASM
-#endif
 
 /*****************************************************************************/
 
@@ -895,6 +901,19 @@ struct LikelyClassMethodRecord
     intptr_t handle;
     UINT32   likelihood;
 };
+
+struct LikelyValueRecord
+{
+    ssize_t value;
+    UINT32  likelihood;
+};
+
+extern "C" UINT32 WINAPI getLikelyValues(LikelyValueRecord*                     pLikelyValues,
+                                         UINT32                                 maxLikelyValues,
+                                         ICorJitInfo::PgoInstrumentationSchema* schema,
+                                         UINT32                                 countSchemaItems,
+                                         BYTE*                                  pInstrumentationData,
+                                         int32_t                                ilOffset);
 
 extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
                                           UINT32                                 maxLikelyClasses,

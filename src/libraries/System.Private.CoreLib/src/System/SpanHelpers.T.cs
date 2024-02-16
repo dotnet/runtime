@@ -1077,7 +1077,7 @@ namespace System
         {
             Debug.Assert(length >= 0, "Expected non-negative length");
 
-            for (int i = length -1; i >= 0; i--)
+            for (int i = length - 1; i >= 0; i--)
             {
                 if (!EqualityComparer<T>.Default.Equals(Unsafe.Add(ref searchSpace, i), value0))
                 {

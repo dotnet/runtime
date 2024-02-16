@@ -132,7 +132,10 @@ namespace System.Linq.Tests
         {
             var largeSeq = new FastInfiniteEnumerator<byte>();
             var thrownException = Assert.ThrowsAny<Exception>(() => { largeSeq.ToArray(); });
-            Assert.True(thrownException.GetType() == typeof(OverflowException) || thrownException.GetType() == typeof(OutOfMemoryException));
+            Assert.True(
+                thrownException.GetType() == typeof(OverflowException) ||
+                thrownException.GetType() == typeof(OutOfMemoryException),
+                $"Expected OverflowException or OutOfMemoryException, got {thrownException}");
         }
 
         [Theory]

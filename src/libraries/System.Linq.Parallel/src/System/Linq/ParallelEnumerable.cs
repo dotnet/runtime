@@ -12,14 +12,14 @@
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Diagnostics;
-using System.Linq.Parallel;
-using System.Collections.Concurrent;
 using System.Collections;
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq.Parallel;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Linq
 {
@@ -64,7 +64,7 @@ namespace System.Linq
 
         // When running in single partition mode, PLINQ operations will occur on a single partition and will not
         // be executed in parallel, but will retain PLINQ semantics (exceptions wrapped as aggregates, etc).
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
         [System.Runtime.Versioning.SupportedOSPlatformGuard("browser")]
         internal static bool SinglePartitionMode => OperatingSystem.IsBrowser();
 #else
@@ -152,7 +152,7 @@ namespace System.Linq
 
             if (!(source is ParallelEnumerableWrapper<TSource> || source is IParallelPartitionable<TSource>))
             {
-                if (source is PartitionerQueryOperator<TSource>  partitionerOp)
+                if (source is PartitionerQueryOperator<TSource> partitionerOp)
                 {
                     if (!partitionerOp.Orderable)
                     {
@@ -5110,7 +5110,7 @@ namespace System.Linq
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(
-            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector) where TKey: notnull
+            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector) where TKey : notnull
         {
             return ToLookup(source, keySelector, EqualityComparer<TKey>.Default);
         }
@@ -5135,7 +5135,7 @@ namespace System.Linq
         /// The query was canceled.
         /// </exception>
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(
-            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey: notnull
+            this ParallelQuery<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer) where TKey : notnull
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(keySelector);

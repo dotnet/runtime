@@ -7,7 +7,7 @@ namespace Internal.Runtime
 {
     internal unsafe partial class FrozenObjectHeapManager
     {
-        static void* ClrVirtualReserve(nuint size)
+        private static void* ClrVirtualReserve(nuint size)
         {
             // The shim will return null for failure
             return (void*)Interop.Sys.MMap(
@@ -20,7 +20,7 @@ namespace Internal.Runtime
 
         }
 
-        static void* ClrVirtualCommit(void* pBase, nuint size)
+        private static void* ClrVirtualCommit(void* pBase, nuint size)
         {
             int result = Interop.Sys.MProtect(
                 (nint)pBase,
@@ -30,7 +30,7 @@ namespace Internal.Runtime
             return result == 0 ? pBase : null;
         }
 
-        static void ClrVirtualFree(void* pBase, nuint size)
+        private static void ClrVirtualFree(void* pBase, nuint size)
         {
             Debug.Assert(size != 0);
             Interop.Sys.MUnmap((nint)pBase, size);

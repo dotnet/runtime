@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Library\Json.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
+  </ItemGroup>
+</Project>

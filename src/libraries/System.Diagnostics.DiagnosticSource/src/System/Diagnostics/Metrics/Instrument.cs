@@ -111,7 +111,7 @@ namespace System.Diagnostics.Metrics
         public string? Unit { get; }
 
         /// <summary>
-        /// Returns the tags associated with the Meter.
+        /// Returns the tags associated with the instrument.
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 

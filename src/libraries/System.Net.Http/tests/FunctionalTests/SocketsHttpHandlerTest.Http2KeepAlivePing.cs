@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
         private CancellationTokenSource _incomingFramesCts = new CancellationTokenSource();
         private Task _incomingFramesTask;
         private TaskCompletionSource _serverFinished = new TaskCompletionSource();
-        private int _sendPingResponse = 1;
+        private bool _sendPingResponse = true;
 
         private static Http2Options NoAutoPingResponseHttp2Options => new Http2Options() { EnableTransparentPingResponse = false };
 
@@ -90,7 +90,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(_pingCounter <= 1);
 
                 await TerminateLoopbackConnectionAsync();
-            }).WaitAsync(TestTimeout);
+            });
         }
 
         [OuterLoop("Runs long")]
@@ -168,13 +168,15 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 Assert.False(unexpectedFrames.Any(), "Received unexpected frames: \n" + string.Join('\n', unexpectedFrames.Select(f => f.ToString()).ToArray()));
-            }, NoAutoPingResponseHttp2Options).WaitAsync(TestTimeout);
+            }, NoAutoPingResponseHttp2Options);
         }
 
         [OuterLoop("Runs long")]
         [Fact]
         public async Task KeepAliveConfigured_NoPingResponseDuringActiveStream_RequestShouldFail()
         {
+            _sendPingResponse = false;
+
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
@@ -190,7 +192,11 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response0.StatusCode);
 
                 // Actual request:
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                Exception ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+
+                // The request should fail due to the connection being torn down due to KeepAlivePingTimeout.
+                HttpProtocolException pex = Assert.IsType<HttpProtocolException>(ex.InnerException);
+                Assert.Equal(HttpRequestError.HttpProtocolError, pex.HttpRequestError);
 
                 // Let connection live until server finishes:
                 await _serverFinished.Task;
@@ -203,25 +209,19 @@ namespace System.Net.Http.Functional.Tests
                 int streamId1 = await ReadRequestHeaderAsync();
                 await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
 
-                // Request under the test scope.
-                int streamId2 = await ReadRequestHeaderAsync();
-
-                DisablePingResponse();
-
-                // Simulate inactive period:
-                await Task.Delay(6_000);
-
-                // Finish the response:
-                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
+                // Wait for the client to disconnect due to hitting the KeepAliveTimeout
+                await _incomingFramesTask;
 
                 await TerminateLoopbackConnectionAsync();
-            }, NoAutoPingResponseHttp2Options).WaitAsync(TestTimeout);
+            }, NoAutoPingResponseHttp2Options);
         }
 
         [OuterLoop("Runs long")]
         [Fact]
         public async Task HttpKeepAlivePingPolicy_Always_NoPingResponseBetweenStreams_SecondRequestShouldFail()
         {
+            _sendPingResponse = false;
+
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
@@ -236,10 +236,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage response0 = await client.GetAsync(uri);
                 Assert.Equal(HttpStatusCode.OK, response0.StatusCode);
 
-                // Second request should fail:
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
-
-                // Let connection live until server finishes:
+                // Simulate inactive period by waiting until server finishes:
                 await _serverFinished.Task;
             },
             async server =>
@@ -250,19 +247,11 @@ namespace System.Net.Http.Functional.Tests
                 int streamId1 = await ReadRequestHeaderAsync();
                 await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
 
-                DisablePingResponse();
-
-                // Simulate inactive period:
-                await Task.Delay(6_000);
-
-                // Request under the test scope.
-                int streamId2 = await ReadRequestHeaderAsync();
-
-                // Finish the response:
-                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
+                // Wait for the client to disconnect due to hitting the KeepAliveTimeout
+                await _incomingFramesTask;
 
                 await TerminateLoopbackConnectionAsync();
-            }, NoAutoPingResponseHttp2Options).WaitAsync(TestTimeout);
+            }, NoAutoPingResponseHttp2Options);
         }
 
         private async Task ProcessIncomingFramesAsync(CancellationToken cancellationToken)
@@ -272,6 +261,11 @@ namespace System.Net.Http.Functional.Tests
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     Frame frame = await _connection.ReadFrameAsync(cancellationToken);
+
+                    if (frame is null)
+                    {
+                        break;
+                    }
 
                     if (frame is PingFrame pingFrame)
                     {
@@ -285,7 +279,7 @@ namespace System.Net.Http.Functional.Tests
                             _output?.WriteLine($"Received PING ({pingFrame.Data})");
                             Interlocked.Increment(ref _pingCounter);
 
-                            if (_sendPingResponse > 0)
+                            if (_sendPingResponse)
                             {
                                 await GuardConnectionWriteAsync(() => _connection.SendPingAckAsync(pingFrame.Data, cancellationToken), cancellationToken);
                             }
@@ -295,7 +289,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         _output?.WriteLine($"Received WINDOW_UPDATE");
                     }
-                    else if (frame is not null)
+                    else
                     {
                         //_output?.WriteLine($"Received {frame}");
                         await _framesChannel.Writer.WriteAsync(frame, cancellationToken);
@@ -309,8 +303,6 @@ namespace System.Net.Http.Functional.Tests
             _output?.WriteLine("ProcessIncomingFramesAsync finished");
             await _connection.DisposeAsync();
         }
-
-        private void DisablePingResponse() => Interlocked.Exchange(ref _sendPingResponse, 0);
 
         private async Task EstablishConnectionAsync(Http2LoopbackServer server)
         {

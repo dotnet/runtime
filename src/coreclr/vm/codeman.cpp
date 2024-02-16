@@ -1291,6 +1291,12 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_VectorT256);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_VectorT512) != 0) && (maxVectorTBitWidth >= 512))
+    {
+        // We require 512-bit Vector<T> to be opt-in
+        CPUCompileFlags.Set(InstructionSet_VectorT512);
+    }
+
     // TODO-XArch: Add support for 512-bit Vector<T>
     _ASSERTE(!CPUCompileFlags.IsSet(InstructionSet_VectorT512));
 
@@ -1511,6 +1517,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_Sha256);
     }
 
+    if (((cpuFeatures & ARM64IntrinsicConstants_Sve) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve))
+    {
+        CPUCompileFlags.Set(InstructionSet_Sve);
+    }
+
     // DCZID_EL0<4> (DZP) indicates whether use of DC ZVA instructions is permitted (0) or prohibited (1).
     // DCZID_EL0<3:0> (BS) specifies Log2 of the block size in words.
     //
@@ -1538,8 +1549,6 @@ void EEJitManager::SetCpuInfo()
     // Clean up mutually exclusive ISAs
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
-        // We don't currently support InstructionSet_VectorT512, but just to
-        // make it future proof.
         CPUCompileFlags.Clear(InstructionSet_VectorT256);
         CPUCompileFlags.Clear(InstructionSet_VectorT128);
     }
@@ -1978,7 +1987,7 @@ BOOL EEJitManager::LoadJIT()
             // We have some inconsistency all over the place with osx vs macos, let's handle both here
             if ((_wcsicmp(altJitOsConfig, W("macos")) == 0) || (_wcsicmp(altJitOsConfig, W("osx")) == 0))
             {
-                targetOs = CORINFO_MACOS;
+                targetOs = CORINFO_APPLE;
             }
             else if ((_wcsicmp(altJitOsConfig, W("linux")) == 0) || (_wcsicmp(altJitOsConfig, W("unix")) == 0))
             {

@@ -15,7 +15,8 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
 
-    <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <NoWarn>$(NoWarn);CA1859</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +24,7 @@
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
 
-    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
+    <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>
@@ -313,6 +314,10 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\Register.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_LoongArch64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_LoongArch64\TargetRegisterMap.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\AddrMode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\RiscV64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64Emitter.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\Register.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
@@ -425,6 +430,7 @@
     <Compile Include="Compiler\DependencyAnalysis\NotReadOnlyFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PointerTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectedDelegateNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />
@@ -432,6 +438,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMTentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64TentativeMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
@@ -442,15 +449,14 @@
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
-    <Compile Include="Compiler\DirectPInvokePolicy.cs" />
     <Compile Include="Compiler\Disassembler.cs" />
     <Compile Include="Compiler\DynamicInvokeThunkGenerationPolicy.cs" />
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
-    <Compile Include="Compiler\FeatureSwitchManager.cs" />
-    <Compile Include="Compiler\GeneratingMetadataManager.cs" />
+    <Compile Include="Compiler\SubstitutedILProvider.cs" />
+    <Compile Include="Compiler\SubstitutionProvider.cs" />
     <Compile Include="Compiler\GenericRootProvider.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="Compiler\HardwareIntrinsicILProvider.cs" />
@@ -472,7 +478,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteUnboxingThunkNode.cs" />
     <Compile Include="Compiler\ILScanner.cs" />
     <Compile Include="Compiler\ILScannerBuilder.cs" />
-    <Compile Include="Compiler\ILStreamReader.cs" />
     <Compile Include="Compiler\LibraryInitializers.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilerMetadataFieldLayoutAlgorithm.cs" />
@@ -557,7 +562,6 @@
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.NativeLayout.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NonGCStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleUseBasedDependencyAlgorithm.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
@@ -582,12 +586,48 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMJumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMReadyToRunGenericHelperNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMDebug.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64ReadyToRunGenericHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_LoongArch64\LoongArch64UnboxingStubNode.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfAbbrev.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCfiOpcode.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfCie.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfEhFrame.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfExpressionBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfFde.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfFileName.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfInfo.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfInfoWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfLineProgramTableWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfLineSequenceWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\Dwarf\DwarfNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewFileTableBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewSymbolsBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\CodeView\CodeViewTypesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\Eabi\EabiUnwindConverter.cs" />
+    <Compile Include="Compiler\ObjectWriter\LegacyObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\ObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
+    <Compile Include="Compiler\ObjectWriter\MachNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\MachObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\ElfNative.cs" />
+    <Compile Include="Compiler\ObjectWriter\ElfObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\UnixObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\CoffObjectWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\SectionData.cs" />
+    <Compile Include="Compiler\ObjectWriter\SectionWriter.cs" />
+    <Compile Include="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="Compiler\ReadOnlyFieldPolicy.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64JumpStubNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64ReadyToRunGenericHelperNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\Target_RiscV64\RiscV64UnboxingStubNode.cs" />
     <Compile Include="Compiler\UnmanagedEntryPointsRootProvider.cs" />
     <Compile Include="Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />

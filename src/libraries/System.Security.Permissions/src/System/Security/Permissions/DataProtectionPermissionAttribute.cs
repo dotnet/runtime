@@ -7,10 +7,10 @@ namespace System.Security.Permissions
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class
-     | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )]
+     | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class DataProtectionPermissionAttribute : CodeAccessSecurityAttribute
     {
-        public DataProtectionPermissionAttribute (SecurityAction action) : base(default(SecurityAction)) { }
+        public DataProtectionPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
         public DataProtectionPermissionFlags Flags { get; set; }
         public bool ProtectData { get; set; }
         public bool UnprotectData { get; set; }

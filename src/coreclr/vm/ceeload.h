@@ -607,7 +607,6 @@ private:
 
     enum {
         // These are the values set in m_dwTransientFlags.
-        // Note that none of these flags survive a prejit save/restore.
 
         MODULE_IS_TENURED           = 0x00000001,   // Set once we know for sure the Module will not be freed until the appdomain itself exits
         // unused                   = 0x00000002,
@@ -640,14 +639,10 @@ private:
         // Used to indicate that the module is loaded sufficiently for generic candidate instantiations to work
         MODULE_READY_FOR_TYPELOAD  = 0x00200000,
 
-        // Used during NGen only
-        TYPESPECS_TRIAGED           = 0x40000000,
-        MODULE_SAVED                = 0x80000000,
     };
 
     enum {
-        // These are the values set in m_dwPersistedFlags.  These will survive
-        // a prejit save/restore
+        // These are the values set in m_dwPersistedFlags.
         // unused                   = 0x00000001,
         COMPUTED_GLOBAL_CLASS       = 0x00000002,
 
@@ -658,8 +653,7 @@ private:
         COMPUTED_WRAP_EXCEPTIONS    = 0x00000010,
         WRAP_EXCEPTIONS             = 0x00000020,
 
-        // This flag applies to assembly, but it is stored so it can be cached in ngen image
-        COMPUTED_RELIABILITY_CONTRACT=0x00000040,
+        // unused                   = 0x00000040,
 
         // This flag applies to assembly, but is also stored here so that it can be cached in ngen image
         COLLECTIBLE_MODULE          = 0x00000080,
@@ -670,10 +664,6 @@ private:
         //If module has default dll import search paths attribute
         DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS      = 0x00000800,
 
-        //If m_MethodDefToPropertyInfoMap has been generated
-        COMPUTED_METHODDEF_TO_PROPERTYINFO_MAP = 0x00002000,
-
-        // unused                   = 0x00004000,
 
         //If setting has been cached
         RUNTIME_MARSHALLING_ENABLED_IS_CACHED = 0x00008000,
@@ -723,12 +713,8 @@ private:
 
     #define GENERIC_PARAM_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
-    #define GENERIC_TYPE_DEF_MAP_ALL_FLAGS            NO_MAP_FLAGS
-
     #define MANIFEST_MODULE_MAP_ALL_FLAGS             NO_MAP_FLAGS
         // For manifest module map, 0x1 cannot be used as a flag: reserved for FIXUP_POINTER_INDIRECTION bit
-
-    #define PROPERTY_INFO_MAP_ALL_FLAGS               NO_MAP_FLAGS
 
     // Linear mapping from TypeDef token to MethodTable *
     // For generic types, IsGenericTypeDefinition() is true i.e. instantiation at formals
@@ -743,15 +729,6 @@ private:
 
     // Linear mapping from GenericParam token to TypeVarTypeDesc*
     LookupMap<PTR_TypeVarTypeDesc>  m_GenericParamToDescMap;
-
-    // Linear mapping from TypeDef token to the MethodTable * for its canonical generic instantiation
-    // If the type is not generic, the entry is guaranteed to be NULL.  This means we are paying extra
-    // space in order to use the LookupMap infrastructure, but what it buys us is IBC support and
-    // a compressed format for NGen that makes up for it.
-    LookupMap<PTR_MethodTable>      m_GenericTypeDefToCanonMethodTableMap;
-
-    // Mapping from MethodDef token to pointer-sized value encoding property information
-    LookupMap<SIZE_T>           m_MethodDefToPropertyInfoMap;
 
     // IL stub cache with fabricated MethodTable parented by this module.
     ILStubCache                *m_pILStubCache;
@@ -914,7 +891,6 @@ protected:
     OBJECTREF GetExposedObject();
 
     ClassLoader *GetClassLoader();
-    PTR_BaseDomain GetDomain();
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager * GetCodeVersionManager();
 #endif
@@ -1192,22 +1168,6 @@ public:
         BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
 
         TypeHandle th = TypeHandle(m_TypeDefToMethodTableMap.GetElement(RidFromToken(token)));
-
-        if (pLoadLevel && !th.IsNull())
-        {
-            *pLoadLevel = th.GetLoadLevel();
-        }
-
-        return th;
-    }
-
-    TypeHandle LookupFullyCanonicalInstantiation(mdTypeDef token, ClassLoadLevel *pLoadLevel = NULL)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        BAD_FORMAT_NOTHROW_ASSERT(TypeFromToken(token) == mdtTypeDef);
-
-        TypeHandle th = TypeHandle(m_GenericTypeDefToCanonMethodTableMap.GetElement(RidFromToken(token)));
 
         if (pLoadLevel && !th.IsNull())
         {
@@ -1554,7 +1514,7 @@ public:
         return &m_FixupCrst;
     }
 
-    void                AllocateRegularStaticHandles(AppDomain* pDomainMT);
+    void                AllocateRegularStaticHandles();
 
     void                FreeModuleIndex();
 

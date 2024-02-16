@@ -3,8 +3,8 @@
 
 using System;
 using System.Threading;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
 {

@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
+using SourceGenerators.Tests;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -23,23 +24,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 	public abstract class TestCaseUtils
 	{
 		private static readonly string MonoLinkerTestsCases = "Mono.Linker.Tests.Cases";
-
-		public static readonly ReferenceAssemblies NetCoreAppReferencessemblies =
-		new ReferenceAssemblies (
-				"net8.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "8.0.0-rc.1.23419.4"),
-				Path.Combine ("ref", "net8.0"))
-			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
-
-		private static ImmutableArray<MetadataReference> s_netcoreappRefs;
-		public static async ValueTask<ImmutableArray<MetadataReference>> GetNet6References ()
-		{
-			if (s_netcoreappRefs.IsDefault) {
-				var refs = await NetCoreAppReferencessemblies.ResolveAsync (null, default);
-				ImmutableInterlocked.InterlockedInitialize (ref s_netcoreappRefs, refs);
-			}
-			return s_netcoreappRefs;
-		}
 
 		public static string FindTestSuiteDir (string rootDir, string suiteName)
 		{
@@ -58,7 +42,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static async Task RunTestFile (string suiteName, string testName, bool allowMissingWarnings, params (string, string)[] msbuildProperties)
 		{
-			GetDirectoryPaths (out string rootSourceDir, out string testAssemblyPath);
+			GetDirectoryPaths (out string rootSourceDir);
 			Debug.Assert (Path.GetFileName (rootSourceDir) == MonoLinkerTestsCases);
 			var testSuiteDir = FindTestSuiteDir (rootSourceDir, suiteName);
 			Assert.True (Directory.Exists (testSuiteDir));
@@ -80,7 +64,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				.Select (f => SyntaxFactory.ParseSyntaxTree (SourceText.From (File.OpenRead (f))));
 			var additionalFiles = GetAdditionalFiles (rootSourceDir, tree);
 
-			var (comp, model, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (
+			var (comp, model, exceptionDiagnostics) = TestCaseCompilation.CreateCompilation (
 					tree,
 					consoleApplication: false,
 					msbuildProperties,
@@ -162,16 +146,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 		}
 
-		public static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath)
+		public static void GetDirectoryPaths (out string rootSourceDirectory)
 		{
-			var artifactsBinDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.ArtifactsBinDir")!;
-			var LinkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
-			var configuration = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.Configuration")!;
-
-			const string tfm = "net8.0";
-
-			rootSourceDirectory = Path.GetFullPath(Path.Combine(LinkerTestDirectory, MonoLinkerTestsCases));
-			testAssemblyPath = Path.GetFullPath(Path.Combine(artifactsBinDirectory, "ILLink.RoslynAnalyzer.Tests", configuration, tfm));
+			string linkerTestDirectory = (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.LinkerTestDir")!;
+			rootSourceDirectory = Path.GetFullPath(Path.Combine(linkerTestDirectory, MonoLinkerTestsCases));
 		}
 
 		// Accepts typeof expressions, with a format specifier
@@ -234,11 +212,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static (string, string)[] UseMSBuildProperties (params string[] MSBuildProperties)
 		{
 			return MSBuildProperties.Select (msbp => ($"build_property.{msbp}", "true")).ToArray ();
-		}
-
-		public static string GetRepoRoot ()
-		{
-			return (string)AppContext.GetData("ILLink.RoslynAnalyzer.Tests.RepoRoot")!;
 		}
 	}
 }

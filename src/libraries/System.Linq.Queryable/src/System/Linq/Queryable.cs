@@ -926,6 +926,22 @@ namespace System.Linq
                     Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
+        /// <summary>Return index and the associated item.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">An <see cref="IQueryable{T}" /> to return an element from.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        [DynamicDependency("Index`1", typeof(Enumerable))]
+        public static IQueryable<(int Index, TSource Item)> Index<TSource>(this IQueryable<TSource> source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            return source.Provider.CreateQuery<(int Index, TSource Item)>(
+                Expression.Call(
+                    null,
+                    new Func<IQueryable<TSource>, IQueryable<(int Index, TSource Item)>>(Index).Method,
+                    source.Expression));
+        }
+
         [DynamicDependency("Intersect`1", typeof(Enumerable))]
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {

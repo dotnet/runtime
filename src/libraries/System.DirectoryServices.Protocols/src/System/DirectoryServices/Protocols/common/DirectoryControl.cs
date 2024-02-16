@@ -4,10 +4,10 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Text;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Runtime.Versioning;
+using System.Security.Principal;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {

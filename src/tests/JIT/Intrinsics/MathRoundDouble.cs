@@ -3,10 +3,11 @@
 //
 
 using System;
+using Xunit;
 
 namespace MathRoundDoubleTest
 {
-    class Program
+    public class Program
     {
         public const int Pass = 100;
         public const int Fail = 0;
@@ -31,7 +32,8 @@ namespace MathRoundDoubleTest
             8.8
         };
 
-        unsafe static int Main()
+        [Fact]
+        public unsafe static int TestEntryPoint()
         {
             double localValue = 9.9;
 

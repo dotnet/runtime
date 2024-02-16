@@ -134,14 +134,14 @@ namespace System.Diagnostics.Metrics
             // iterate over the negative exponent buckets
             const int LowestNegativeOffset = ExponentArraySize / 2;
             // exponent = ExponentArraySize-1 encodes infinity and NaN, which we want to ignore
-            for (int exponent = ExponentArraySize-2; exponent >= LowestNegativeOffset; exponent--)
+            for (int exponent = ExponentArraySize - 2; exponent >= LowestNegativeOffset; exponent--)
             {
                 int[]? mantissaCounts = counters[exponent];
                 if (mantissaCounts == null)
                 {
                     continue;
                 }
-                for (int mantissa = _mantissaMax-1; mantissa >= 0; mantissa--)
+                for (int mantissa = _mantissaMax - 1; mantissa >= 0; mantissa--)
                 {
                     int count = mantissaCounts[mantissa];
                     if (count > 0)
@@ -153,7 +153,7 @@ namespace System.Diagnostics.Metrics
 
             // iterate over the positive exponent buckets
             // exponent = lowestNegativeOffset-1 encodes infinity and NaN, which we want to ignore
-            for (int exponent = 0; exponent < LowestNegativeOffset-1; exponent++)
+            for (int exponent = 0; exponent < LowestNegativeOffset - 1; exponent++)
             {
                 int[]? mantissaCounts = counters[exponent];
                 if (mantissaCounts == null)

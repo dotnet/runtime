@@ -19,6 +19,7 @@ parameters:
   pgoRunType: ''                  # optional -- different PGO configurations
   physicalPromotionRunType: ''    # optional -- different physical promotion configurations
   r2rRunType: ''                  # optional -- different R2R configurations
+  experimentName: ''              # optional -- name of the experiment
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   projectFile: 'microbenchmarks.proj'   # optional -- project file to build helix workitems
@@ -88,6 +89,7 @@ jobs:
         export ORIGPYPATH=$PYTHONPATH
         export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;
         echo "** Installing prerequistes **";
+        sudo apt-get -y install python3-pip &&
         python3 -m pip install --user -U pip &&
         sudo apt-get -y install python3-venv &&
         python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv &&
@@ -165,11 +167,11 @@ jobs:
             _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
-    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal)$(Interpreter) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} -ExperimentName '${{ parameters.experimentName }}' -UseLocalCommitTime ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} --uselocalcommittime ${{ parameters.extraSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal)$(Interpreter) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.pgoRunType }} ${{ parameters.physicalPromotionRunType }} ${{ parameters.r2rRunType }} --experimentname '${{ parameters.experimentName }}' --uselocalcommittime ${{ parameters.extraSetupParameters }}
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
@@ -194,6 +196,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}_${{ parameters.r2rRunType }}'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_${{ parameters.logicalMachine }}_${{ parameters.javascriptEngine }}_${{ parameters.pgoRunType }}_${{ parameters.physicalPromotionRunType }}_${{ parameters.r2rRunType }}_${{ parameters.experimentName }}'
       continueOnError: true
       condition: always()

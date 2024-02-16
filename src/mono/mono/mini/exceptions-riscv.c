@@ -83,7 +83,7 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 	}
 
 	/* Adjust pc so it points into the call instruction */
-	pc -= 4;
+	pc--;
 
 	/* Initialize a ctx based on the arguments */
 	memset (&ctx, 0, sizeof (MonoContext));
@@ -112,8 +112,104 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 gpointer
 mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x37);
+	guint8 *code;
+	guint8 *start;
+	int size, offset, gregs_offset, fregs_offset, ctx_offset, frame_size;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+
+	size = 632;
+	start = code = mono_global_codeman_reserve (size);
+
+	/* Compute stack frame size and offsets */
+	offset = 0;
+	/* ra & fp */
+	offset += 2 * sizeof (host_mgreg_t);
+
+	/* gregs */
+	offset += RISCV_N_GREGS * sizeof (host_mgreg_t);
+	gregs_offset = offset;
+
+	/* fregs */
+	offset += RISCV_N_FREGS * sizeof (host_mgreg_t);
+	fregs_offset = offset;
+
+	/* ctx */
+	offset += sizeof (host_mgreg_t);
+	ctx_offset = offset;
+	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/*
+	 * We are being called from C code, ctx is in a0, the address to call is in a1.
+	 * We need to save state, restore ctx, make the call, then restore the previous state,
+	 * returning the value returned by the call.
+	 */
+
+	MINI_BEGIN_CODEGEN ();
+
+	// riscv_ebreak (code);
+
+	/* Setup a frame */
+	g_assert (RISCV_VALID_I_IMM (-frame_size));
+	riscv_addi (code, RISCV_SP, RISCV_SP, -frame_size);
+	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, frame_size - sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, frame_size - 2 * sizeof (host_mgreg_t), 0);
+	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
+
+	/* Save ctx */
+	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_FP, -ctx_offset, 0);
+	/* Save gregs */
+	code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_FP, -gregs_offset, FALSE);
+	/* Save fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+
+	/* Load regs from ctx */
+	code = mono_riscv_emit_load_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_A0,
+	                                      MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
+
+	/* Load fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code =
+		    mono_riscv_emit_load_regarray (code, 0xffffffff, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, fregs), TRUE);
+
+	/* Load fp */
+	// code = mono_riscv_emit_load (code, RISCV_FP, RISCV_A0, MONO_STRUCT_OFFSET (MonoContext, gregs) + (RISCV_FP *
+	// sizeof (host_mgreg_t)), 0);
+
+	/* Make the call */
+	riscv_jalr (code, RISCV_RA, RISCV_A1, 0);
+	/* For filters, the result is in R0 */
+
+	/* Restore fp */
+	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
+
+	/* Load ctx */
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -ctx_offset, 0);
+	/* Save registers back to ctx, except FP*/
+	/* This isn't strictly necessary since we don't allocate variables used in eh clauses to registers */
+	code = mono_riscv_emit_store_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS ^ (1 << RISCV_FP), RISCV_T0,
+	                                       MONO_STRUCT_OFFSET (MonoContext, gregs), FALSE);
+
+	/* Restore regs */
+	code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS, RISCV_FP, -gregs_offset, FALSE);
+	/* Restore fregs */
+	if (riscv_stdext_f || riscv_stdext_d)
+		code = mono_riscv_emit_load_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+
+	/* Destroy frame */
+	code = mono_riscv_emit_destroy_frame (code);
+
+	riscv_jalr (code, RISCV_X0, RISCV_RA, 0);
+
+	g_assert ((code - start) < size);
+
+	MINI_END_CODEGEN (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
+	if (info)
+		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
+
+	return MINI_ADDR_TO_FTNPTR (start);
 }
 
 static gpointer
@@ -227,15 +323,13 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x88);
+	return get_throw_trampoline (384, FALSE, TRUE, FALSE, FALSE, "rethrow_exception", info, aot, FALSE);
 }
 
 gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0x99);
+	return get_throw_trampoline (384, FALSE, TRUE, FALSE, FALSE, "rethrow_preserve_exception", info, aot, TRUE);
 }
 
 gpointer
@@ -331,6 +425,9 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 
 		gpointer ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
 
+		// printf ("%s %p %p\n", ji->d.method->name, ji->code_start, ip);
+		// mono_print_unwind_info (unwind_info, unwind_info_len);
+
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
 		                                      (guint8 *)ji->code_start + ji->code_size, (guint8 *)ip, NULL, regs,
 		                                      MONO_MAX_IREGS + 12 + 1, save_locations, MONO_MAX_IREGS, (guint8 **)&cfa);
@@ -350,7 +447,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (*lmf && (*lmf)->gregs [MONO_ARCH_LMF_REG_SP] &&
 		    (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [MONO_ARCH_LMF_REG_SP])) {
 			/* remove any unused lmf */
-			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
+			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
 		/* we subtract 1, so that the PC points into the call instruction */
@@ -369,6 +466,11 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		g_assert (MONO_ARCH_LMF_REGS == ((MONO_ARCH_CALLEE_SAVED_REGS) | (1 << RISCV_SP)));
 
 		memcpy (&new_ctx->gregs [0], &(*lmf)->gregs [0], sizeof (host_mgreg_t) * RISCV_N_GREGS);
+		for (int i = 0; i < RISCV_N_GREGS; i++) {
+			if (!(MONO_ARCH_LMF_REGS & (1 << i))) {
+				new_ctx->gregs [i] = ctx->gregs [i];
+			}
+		}
 		// new_ctx->gregs [RISCV_FP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_FP];
 		// new_ctx->gregs [RISCV_SP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_SP];
 		new_ctx->gregs [0] = (*lmf)->pc; // use [0] as pc reg since x0 is hard-wired zero
@@ -376,7 +478,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		/* we subtract 1, so that the PC points into the call instruction */
 		new_ctx->gregs [0]--;
 
-		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
+		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~3);
 
 		return TRUE;
 	}

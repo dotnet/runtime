@@ -53,7 +53,7 @@
       <iOSLikeLibraryBuilderTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'common'))</iOSLikeLibraryBuilderTargetsDir>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
 
-      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
+      <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.28.0-macos-universal.tar.gz</CMakeUrl>
 
       <_XHarnessAppleCustomCommand Condition="'$(NeedsiOSSDK)' == 'true'">
         source build-apple-app.sh
@@ -64,6 +64,7 @@
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
+      <HelixCorrelationPayload Include="$(LibraryBuilderDir)"                    Destination="build/LibraryBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Condition="'$(RuntimeFlavor)' == 'mono'"
                                                                                  Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS)-$(TargetArchitecture.ToLower())" />
@@ -141,7 +142,6 @@
   </Target>
 
   <Target Name="AfterBuildHelixWorkItems_Mobile" AfterTargets="BuildHelixWorkItems">
-    <Message Condition="'$(Scenario)' == ''" Importance="High" Text="Done building Helix work items. Work item count: @(XHarnessAppBundleToTest->Count())" />
 
     <PropertyGroup>
       <_TestPath Condition="'%(XHarnessAppBundleToTest.CustomCommands)' != ''">$([System.IO.Path]::GetDirectoryName('%(XHarnessAppBundleToTest.Identity)'))</_TestPath>

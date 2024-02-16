@@ -26,6 +26,7 @@ Param(
     [switch] $NoDynamicPGO,
     [switch] $PhysicalPromotion,
     [switch] $NoR2R,
+    [string] $ExperimentName,
     [switch] $iOSLlvmBuild,
     [switch] $iOSStripSymbols,
     [switch] $HybridGlobalization,
@@ -51,9 +52,9 @@ if ($Internal) {
     switch ($LogicalMachine) {
         "perftiger" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
         "perftiger_crossgen" { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
-        "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf" }
+        "perfowl" { $Queue = "Windows.11.Amd64.Owl.Perf" }
         "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf" }
-        "perfpixel4a" { $Queue = "Windows.10.Amd64.Pixel.Perf" }
+        "perfpixel4a" { $Queue = "Windows.11.Amd64.Pixel.Perf" }
         "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
         "cloudvm" { $Queue = "Windows.10.Amd64" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
@@ -97,6 +98,13 @@ if ($NoR2R) {
     $Configurations += " R2RType=nor2r"
 }
 
+if ($ExperimentName) {
+    $Configurations += " ExperimentName=$ExperimentName"
+    if ($ExperimentName -eq "memoryRandomization") {
+        $ExtraBenchmarkDotNetArguments += " --memoryRandomization true"
+    }
+}
+
 if ($iOSMono) {
     $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
     $Configurations += " iOSStripSymbols=$iOSStripSymbols"
@@ -129,6 +137,10 @@ if ($PhysicalPromotion) {
 
 if ($NoR2R) {
     $SetupArguments = "$SetupArguments --no-r2r"
+}
+
+if ($ExperimentName) {
+    $SetupArguments = "$SetupArguments --experiment-name '$ExperimentName'"
 }
 
 if ($UseLocalCommitTime) {

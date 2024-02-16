@@ -10,7 +10,7 @@ namespace System.Linq
     public static partial class Enumerable
     {
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) =>
-            ToLookup(source, keySelector, null);
+            ToLookup(source, keySelector, comparer: null);
 
         public static ILookup<TKey, TSource> ToLookup<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
@@ -24,11 +24,16 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
             }
 
+            if (IsEmptyArray(source))
+            {
+                return EmptyLookup<TKey, TSource>.Instance;
+            }
+
             return Lookup<TKey, TSource>.Create(source, keySelector, comparer);
         }
 
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector) =>
-            ToLookup(source, keySelector, elementSelector, null);
+            ToLookup(source, keySelector, elementSelector, comparer: null);
 
         public static ILookup<TKey, TElement> ToLookup<TSource, TKey, TElement>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector, IEqualityComparer<TKey>? comparer)
         {
@@ -45,6 +50,11 @@ namespace System.Linq
             if (elementSelector == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementSelector);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return EmptyLookup<TKey, TElement>.Instance;
             }
 
             return Lookup<TKey, TElement>.Create(source, keySelector, elementSelector, comparer);
@@ -121,14 +131,7 @@ namespace System.Linq
 
         public int Count => _count;
 
-        public IEnumerable<TElement> this[TKey key]
-        {
-            get
-            {
-                Grouping<TKey, TElement>? grouping = GetGrouping(key, create: false);
-                return grouping ?? Enumerable.Empty<TElement>();
-            }
-        }
+        public IEnumerable<TElement> this[TKey key] => GetGrouping(key, create: false) ?? Enumerable.Empty<TElement>();
 
         public bool Contains(TKey key) => GetGrouping(key, create: false) != null;
 
@@ -254,5 +257,18 @@ namespace System.Linq
 
             _groupings = newGroupings;
         }
+    }
+
+    [DebuggerDisplay("Count = 0")]
+    [DebuggerTypeProxy(typeof(SystemLinq_LookupDebugView<,>))]
+    internal sealed class EmptyLookup<TKey, TElement> : ILookup<TKey, TElement>
+    {
+        public static readonly EmptyLookup<TKey, TElement> Instance = new();
+
+        public IEnumerable<TElement> this[TKey key] => [];
+        public int Count => 0;
+        public bool Contains(TKey key) => false;
+        public IEnumerator<IGrouping<TKey, TElement>> GetEnumerator() => Enumerable.Empty<IGrouping<TKey, TElement>>().GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

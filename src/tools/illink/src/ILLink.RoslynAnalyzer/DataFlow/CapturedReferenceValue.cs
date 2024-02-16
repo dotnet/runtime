@@ -24,18 +24,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case OperationKind.InlineArrayAccess:
 			case OperationKind.ImplicitIndexerReference:
 				break;
-			case OperationKind.None:
 			case OperationKind.InstanceReference:
 			case OperationKind.Invocation:
-			case OperationKind.Invalid:
 				// These will just be ignored when referenced later.
 				break;
 			default:
-				// Assert on anything else as it means we need to implement support for it
-				// but do not throw here as it means new Roslyn version could cause the analyzer to crash
-				// which is not fixable by the user. The analyzer is not going to be 100% correct no matter what we do
-				// so effectively ignoring constructs it doesn't understand is OK.
-				Debug.Fail ($"{operation.GetType ()}: {operation.Syntax.GetLocation ().GetLineSpan ()}");
+				UnexpectedOperationHandler.Handle (operation);
 				break;
 			}
 			Reference = operation;

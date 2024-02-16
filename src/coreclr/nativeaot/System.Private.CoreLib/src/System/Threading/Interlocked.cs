@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -12,15 +12,43 @@ namespace System.Threading
         #region CompareExchange
 
         [Intrinsic]
+        public static byte CompareExchange(ref byte location1, byte value, byte comparand)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return CompareExchange(ref location1, value, comparand);
+#else
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
+        }
+
+        [Intrinsic]
+        public static short CompareExchange(ref short location1, short value, short comparand)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return CompareExchange(ref location1, value, comparand);
+#else
+            return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
+        }
+
+        [Intrinsic]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(ref location1, value, comparand);
+#else
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return CompareExchange(ref location1, value, comparand);
+#else
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
+#endif
         }
 
         [Intrinsic]
@@ -43,8 +71,45 @@ namespace System.Threading
         #region Exchange
 
         [Intrinsic]
+        public static byte Exchange(ref byte location1, byte value)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return Exchange(ref location1, value);
+#else
+            byte oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
+
+            return oldValue;
+#endif
+        }
+
+        [Intrinsic]
+        public static short Exchange(ref short location1, short value)
+        {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
+            return Exchange(ref location1, value);
+#else
+            short oldValue;
+
+            do
+            {
+                oldValue = location1;
+            } while (CompareExchange(ref location1, value, oldValue) != oldValue);
+
+            return oldValue;
+#endif
+        }
+
+        [Intrinsic]
         public static int Exchange(ref int location1, int value)
         {
+#if TARGET_X86 || TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return Exchange(ref location1, value);
+#else
             int oldValue;
 
             do
@@ -53,11 +118,15 @@ namespace System.Threading
             } while (CompareExchange(ref location1, value, oldValue) != oldValue);
 
             return oldValue;
+#endif
         }
 
         [Intrinsic]
         public static long Exchange(ref long location1, long value)
         {
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64
+            return Exchange(ref location1, value);
+#else
             long oldValue;
 
             do
@@ -66,6 +135,7 @@ namespace System.Threading
             } while (CompareExchange(ref location1, value, oldValue) != oldValue);
 
             return oldValue;
+#endif
         }
 
         [Intrinsic]

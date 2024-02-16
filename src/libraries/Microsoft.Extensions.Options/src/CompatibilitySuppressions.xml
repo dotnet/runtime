@@ -1,15 +1,18 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- net6.0 and net7.0 aren't supported by the current package and any errors should be suppressed. -->
   <Suppression>
-    <Left>lib/net6.0/Microsoft.Extensions.Options.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Extensions.Options.dll</Right>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptionsWithValidateOnStart``1(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)&lt;0&gt;:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>lib/net8.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/net8.0/Microsoft.Extensions.Options.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
-    <Left>lib/net7.0/Microsoft.Extensions.Options.dll</Left>
-    <Right>lib/netstandard2.1/Microsoft.Extensions.Options.dll</Right>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions.AddOptionsWithValidateOnStart``2(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String)&lt;0&gt;:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>lib/net8.0/Microsoft.Extensions.Options.dll</Left>
+    <Right>lib/net8.0/Microsoft.Extensions.Options.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
 </Suppressions>

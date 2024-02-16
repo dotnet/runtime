@@ -35,8 +35,8 @@
 // (C) 2001, 2002 Ximian, Inc.  http://www.ximian.com
 //
 
-using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {

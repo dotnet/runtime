@@ -12,10 +12,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 {
 	public readonly record struct TrimAnalysisReturnValuePattern
 	{
-		public FeatureChecksValue ReturnValue { init; get; }
-		public ValueSet<string> FeatureGuardAnnotations { init; get; }
-		public IOperation Operation { init; get; }
-		public IPropertySymbol OwningSymbol { init; get; }
+		public FeatureChecksValue ReturnValue { get; init; }
+		public ValueSet<string> FeatureGuardAnnotations { get; init; }
+		public IOperation Operation { get; init; }
+		public IPropertySymbol OwningSymbol { get; init; }
 
 		public TrimAnalysisReturnValuePattern (
 			FeatureChecksValue returnValue,
@@ -45,7 +45,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				// For any feature that this property is declared to guard,
 				// the abstract return value must include that feature
 				// (indicating it is known to be enabled when the return value is true).
-				foreach (string featureGuard in FeatureGuardAnnotations) {
+				foreach (string featureGuard in FeatureGuardAnnotations.GetKnownValues ()) {
 					if (!returnValueFeatures.Contains (featureGuard)) {
 						diagnosticContext.AddDiagnostic (
 							DiagnosticId.ReturnValueDoesNotMatchFeatureGuards,

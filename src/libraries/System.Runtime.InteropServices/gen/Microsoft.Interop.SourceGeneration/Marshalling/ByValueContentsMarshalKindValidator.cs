@@ -6,15 +6,15 @@ using System.Diagnostics;
 namespace Microsoft.Interop
 {
     /// <summary>
-    /// An <see cref="IMarshallingGeneratorFactory"/> implementation that wraps an inner <see cref="IMarshallingGeneratorFactory"/> instance and validates that the <see cref="TypePositionInfo.ByValueContentsMarshalKind"/> on the provided <see cref="TypePositionInfo"/> is valid in the current marshalling scenario.
+    /// An <see cref="IMarshallingGeneratorResolver"/> implementation that wraps an inner <see cref="IMarshallingGeneratorResolver"/> instance and validates that the <see cref="TypePositionInfo.ByValueContentsMarshalKind"/> on the provided <see cref="TypePositionInfo"/> is valid in the current marshalling scenario.
     /// </summary>
-    public class ByValueContentsMarshalKindValidator : IMarshallingGeneratorFactory
+    public sealed class ByValueContentsMarshalKindValidator : IMarshallingGeneratorResolver
     {
         private static readonly Forwarder s_forwarder = new();
 
-        private readonly IMarshallingGeneratorFactory _inner;
+        private readonly IMarshallingGeneratorResolver _inner;
 
-        public ByValueContentsMarshalKindValidator(IMarshallingGeneratorFactory inner)
+        public ByValueContentsMarshalKindValidator(IMarshallingGeneratorResolver inner)
         {
             _inner = inner;
         }
@@ -22,7 +22,7 @@ namespace Microsoft.Interop
         public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
             ResolvedGenerator generator = _inner.Create(info, context);
-            return generator.ResolvedSuccessfully ? ValidateByValueMarshalKind(info, context, generator) : generator;
+            return generator.IsResolvedWithoutErrors ? ValidateByValueMarshalKind(info, context, generator) : generator;
         }
 
         private static ResolvedGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, ResolvedGenerator generator)

@@ -55,20 +55,6 @@ public:
 
     static FCDECL3(void, DelegateConstruct, Object* refThis, Object* target, PCODE method);
 
-    static FCDECL1(Object*, InternalAlloc, ReflectClassBaseObject* target);
-    static FCDECL1(Object*, InternalAllocLike, Object* pThis);
-
-    static FCDECL3(PCODE, AdjustTarget, Object* refThis, Object* target, PCODE method);
-    static FCDECL2(PCODE, GetCallStub, Object* refThis, PCODE method);
-
-    static FCDECL5(FC_BOOL_RET, BindToMethodName, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectClassBaseObject *pMethodTypeUNSAFE, StringObject* methodNameUNSAFE, int flags);
-
-    static FCDECL5(FC_BOOL_RET, BindToMethodInfo, Object* refThisUNSAFE, Object* targetUNSAFE, ReflectMethodObject *method, ReflectClassBaseObject *pMethodTypeUNSAFE, int flags);
-
-    // This gets the MethodInfo for a delegate, creating it if necessary
-    static FCDECL1(ReflectMethodObject*, FindMethodHandle, Object* refThis);
-    static FCDECL2(FC_BOOL_RET, InternalEqualMethodHandles, Object *refLeftIn, Object *refRightIn);
-
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
     static FCDECL1(PCODE, GetMulticastInvoke, Object* refThis);
     static FCDECL1(MethodDesc*, GetInvokeMethod, Object* refThis);
@@ -132,13 +118,16 @@ public:
                                        bool        *pfIsOpenDelegate);
     static MethodDesc* GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData);
 
-private:
     static void BindToMethod(DELEGATEREF   *pRefThis,
                              OBJECTREF     *pRefFirstArg,
                              MethodDesc    *pTargetMethod,
                              MethodTable   *pExactMethodType,
                              BOOL           fIsOpenDelegate);
 };
+
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(QCall::ObjectHandleOnStack target, PCODE method);
+
+extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method);
 
 // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
 // values must be kept in sync with the definition in bcl\system\delegate.cs.
@@ -152,6 +141,21 @@ enum DelegateBindingFlags
     DBF_CaselessMatching    =   0x00000020, // Use case insensitive lookup for methods matched by name
     DBF_RelaxedSignature    =   0x00000040, // Allow relaxed signature matching (co/contra variance)
 };
+
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags);
+
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags);
+
+extern "C" void QCALLTYPE Delegate_InternalAlloc(QCall::TypeHandle pType, QCall::ObjectHandleOnStack d);
+
+extern "C" void QCALLTYPE Delegate_InternalAllocLike(QCall::ObjectHandleOnStack d);
+
+extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
+
+extern "C" BOOL QCALLTYPE Delegate_InternalEqualMethodHandles(QCall::ObjectHandleOnStack left, QCall::ObjectHandleOnStack right);
+
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);

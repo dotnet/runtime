@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -27,7 +25,7 @@ namespace System.Linq
         /// The type of the elements of source.
         /// </typeparam>
         /// <returns>
-        /// An <see cref="IEnumerable{T}"/> that contains the elements the input sequence split into chunks of size <paramref name="size"/>.
+        /// An <see cref="IEnumerable{T}"/> that contains the elements of the input sequence split into chunks of size <paramref name="size"/>.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="source"/> is null.
@@ -45,6 +43,11 @@ namespace System.Linq
             if (size < 1)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.size);
+            }
+
+            if (IsEmptyArray(source))
+            {
+                return [];
             }
 
             return ChunkIterator(source, size);

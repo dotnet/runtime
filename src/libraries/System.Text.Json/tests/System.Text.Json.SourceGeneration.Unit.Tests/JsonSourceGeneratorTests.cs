@@ -737,5 +737,90 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(languageVersion));
             CompilationHelper.RunJsonSourceGenerator(compilation);
         }
+
+        [Fact]
+        public void DoesNotWarnOnNullabilityMismatch()
+        {
+            string source = $$"""
+                using System.Collections.Generic;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+                #nullable enable
+
+                namespace HelloWorld
+                {
+                    public static class MyClass
+                    {
+                        public static string Test()
+                        {
+                            Dictionary<int, string?> values = new();
+                            return JsonSerializer.Serialize(values, JsonContext.Default.DictionaryInt32String);
+                        }
+                    }
+
+                    [JsonSerializable(typeof(Dictionary<int, string>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+
+#if ROSLYN4_4_OR_GREATER && NETCOREAPP
+        [Fact]
+        public void ShadowedMemberInitializers()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public record Base
+                {
+                    public string Value { get; init; }
+                }
+                public record Derived : Base
+                {
+                    public new string Value { get; init; }
+                }
+
+                [JsonSerializable(typeof(Derived))]
+                public partial class MyContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(LanguageVersion.CSharp11));
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
+#endif
+
+        [Fact]
+        public void FastPathWithReservedKeywordPropertyNames_CompilesSuccessfully()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/98050
+
+            string source = """
+                using System.Text.Json.Serialization;
+
+                public class Model
+                {
+                    public string type { get; set; }
+                    public string alias { get; set; }
+                    public string @class { get; set; }
+                    public string @struct { get; set; }
+                }
+
+                [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+                [JsonSerializable(typeof(Model))]
+                internal partial class ModelContext : JsonSerializerContext
+                {
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
     }
 }

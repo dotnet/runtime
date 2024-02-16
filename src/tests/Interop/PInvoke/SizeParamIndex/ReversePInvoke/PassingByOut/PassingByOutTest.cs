@@ -5,7 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-public class ReversePInvoke_MashalArrayByOut_AsManagedTest
+namespace SizeParamIndex.ReversePInvoke;
+public class PassingByOutTest
 {
     public static int arrSize = 10;
 
@@ -61,7 +62,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
 
     #region Test Method
 
-    //Type: byte ==> BYTE    Array Size: byte.MinValue ==> 20
+    //Type: byte ==> uint8_t    Array Size: byte.MinValue ==> 20
     public static bool TestMethodForByteArray_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out byte[] arrArg, out byte arraySize)
     {
         arrArg = Helper.GetExpChangeArray<byte>(20);
@@ -77,7 +78,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: short ==> SHORT  Array Size: -1 ==> 20(Actual 10 ==> 20)
+    //Type: short ==> int16_t  Array Size: -1 ==> 20(Actual 10 ==> 20)
     public static bool TestMethodForShortArray_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out short[] arrArg, out short arraySize)
     {
         arrArg = Helper.GetExpChangeArray<short>(20);
@@ -85,7 +86,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: short ==> SHORT  Array Size: 10 ==> -1(Actual 10 ==> 20)
+    //Type: short ==> int16_t  Array Size: 10 ==> -1(Actual 10 ==> 20)
     public static bool TestMethodForShortArrayReturnNegativeSize_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out short[] arrArg, out short arraySize)
     {
         arrArg = Helper.GetExpChangeArray<short>(20);
@@ -93,7 +94,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: ushort ==> USHORT  Array Size: ushort.MaxValue ==> 20
+    //Type: ushort ==> uint16_t  Array Size: ushort.MaxValue ==> 20
     public static bool TestMethodForUshortArray_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out ushort[] arrArg, out ushort arraySize)
     {
         arrArg = Helper.GetExpChangeArray<ushort>(20);
@@ -101,7 +102,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: Int32 ==> LONG    Array Size: 10 ==> 20
+    //Type: Int32 ==> int32_t    Array Size: 10 ==> 20
     public static bool TestMethodForInt32Array_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out Int32[] arrArg, out Int32 arraySize)
     {
         arrArg = Helper.GetExpChangeArray<Int32>(20);
@@ -109,7 +110,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: UInt32 ==> ULONG    Array Size: 10 ==> 20
+    //Type: UInt32 ==> uint32_t    Array Size: 10 ==> 20
     public static bool TestMethodForUint32Array_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out UInt32[] arrArg, out UInt32 arraySize)
     {
         arrArg = Helper.GetExpChangeArray<UInt32>(20);
@@ -117,7 +118,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: long ==> LONGLONG    Array Size: 10 ==> 20
+    //Type: long ==> int64_t    Array Size: 10 ==> 20
     public static bool TestMethodForLongArray_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out long[] arrArg, out long arraySize)
     {
         arrArg = Helper.GetExpChangeArray<long>(20);
@@ -125,7 +126,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         return true;
     }
 
-    //Type: ulong ==> ULONGLONG    Array Size: 10 ==> 20
+    //Type: ulong ==> uint64_t    Array Size: 10 ==> 20
     public static bool TestMethodForUlongArray_AsReversePInvokeByOut_AsCdecl([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out ulong[] arrArg, out ulong arraySize)
     {
         arrArg = Helper.GetExpChangeArray<ulong>(20);
@@ -148,7 +149,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         Console.WriteLine("ReversePInvoke C-Style Array marshaled by out with SizeParamIndex attribute(by out Array size).");
 
         //Common value type
-        Console.WriteLine("\tScenario 1 : byte ==> BYTE, Array_Size = byte.MinValue, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 1 : byte ==> uint8_t, Array_Size = byte.MinValue, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalByteArray_AsParam_AsByOut(new DelByteArrByOutAsCdeclCaller(TestMethodForByteArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalByteArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
@@ -156,31 +157,31 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         Assert.True(DoCallBack_MarshalSbyteArray_AsParam_AsByOut(new DelSbyteArrByOutAsCdeclCaller(TestMethodForSbyteArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalSbyteArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 3 : short ==> SHORT, Array_Size = -1, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 3 : short ==> int16_t, Array_Size = -1, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalShortArray_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalShortArray_AsReversePInvokeByOut_AsCdecl Failed!");
 
-        Console.WriteLine("\tScenario 4 : short ==> SHORT, Array_Size = 10, Return_Array_Size = -1");
+        Console.WriteLine("\tScenario 4 : short ==> int16_t, Array_Size = 10, Return_Array_Size = -1");
         Assert.True(DoCallBack_MarshalShortArrayReturnNegativeSize_AsParam_AsByOut(new DelShortArrByOutAsCdeclCaller(TestMethodForShortArrayReturnNegativeSize_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalShortArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 5 : ushort ==> USHORT, Array_Size = ushort.MaxValue, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 5 : ushort ==> uint16_t, Array_Size = ushort.MaxValue, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalUshortArray_AsParam_AsByOut(new DelUshortArrByOutAsCdeclCaller(TestMethodForUshortArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUshortArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 6 : Int32 ==> LONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 6 : Int32 ==> int32_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalInt32Array_AsParam_AsByOut(new DelInt32ArrByOutAsCdeclCaller(TestMethodForInt32Array_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalInt32Array_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 7 : UInt32 ==> ULONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 7 : UInt32 ==> uint32_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalUint32Array_AsParam_AsByOut(new DelUint32ArrByOutAsCdeclCaller(TestMethodForUint32Array_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUint32Array_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 8 : long ==> LONGLONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 8 : long ==> int64_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalLongArray_AsParam_AsByOut(new DelLongArrByOutAsCdeclCaller(TestMethodForLongArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalLongArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        Console.WriteLine("\tScenario 9 : ulong ==> ULONGLONG, Array_Size = 10, Return_Array_Size = 20");
+        Console.WriteLine("\tScenario 9 : ulong ==> uint64_t, Array_Size = 10, Return_Array_Size = 20");
         Assert.True(DoCallBack_MarshalUlongArray_AsParam_AsByOut(new DelUlongArrByOutAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUlongArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
@@ -193,6 +194,9 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34196", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/167", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try{

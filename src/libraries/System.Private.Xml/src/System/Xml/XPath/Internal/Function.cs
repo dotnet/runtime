@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Xml.XPath;
 
@@ -82,7 +83,8 @@ namespace MS.Internal.Xml.XPath
         public string? Prefix { get { return _prefix; } }
         public string? Name { get { return _name; } }
 
-        internal static XPathResultType[] ReturnTypes = {
+        internal static ReadOnlySpan<XPathResultType> ReturnTypes =>
+        [
             /* FunctionType.FuncLast            */ XPathResultType.Number,
             /* FunctionType.FuncPosition        */ XPathResultType.Number,
             /* FunctionType.FuncCount           */ XPathResultType.Number,
@@ -111,6 +113,6 @@ namespace MS.Internal.Xml.XPath
             /* FunctionType.FuncCeiling         */ XPathResultType.Number,
             /* FunctionType.FuncRound           */ XPathResultType.Number,
             /* FunctionType.FuncUserDefined     */ XPathResultType.Any
-        };
+        ];
     }
 }

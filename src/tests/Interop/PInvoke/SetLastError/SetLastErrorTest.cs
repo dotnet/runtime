@@ -63,6 +63,7 @@ public class SetLastErrorTest
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try

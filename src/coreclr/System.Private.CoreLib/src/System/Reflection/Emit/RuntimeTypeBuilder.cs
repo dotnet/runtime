@@ -4,98 +4,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    public abstract partial class TypeBuilder
-    {
-        #region Public Static Methods
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
-        public static MethodInfo GetMethod(Type type, MethodInfo method)
-        {
-            if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-
-            // The following checks establishes invariants that more simply put require type to be generic and
-            // method to be a generic method definition declared on the generic type definition of type.
-            // To create generic method G<Foo>.M<Bar> these invariants require that G<Foo>.M<S> be created by calling
-            // this function followed by MakeGenericMethod on the resulting MethodInfo to finally get G<Foo>.M<Bar>.
-            // We could also allow G<T>.M<Bar> to be created before G<Foo>.M<Bar> (BindGenParm followed by this method)
-            // if we wanted to but that just complicates things so these checks are designed to prevent that scenario.
-
-            if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
-                throw new ArgumentException(SR.Argument_NeedGenericMethodDefinition, nameof(method));
-
-            if (method.DeclaringType == null || !method.DeclaringType.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_MethodNeedGenericDeclaringType, nameof(method));
-
-            if (type.GetGenericTypeDefinition() != method.DeclaringType)
-                throw new ArgumentException(SR.Argument_InvalidMethodDeclaringType, nameof(type));
-
-            // The following converts from Type or TypeBuilder of G<T> to TypeBuilderInstantiation G<T>. These types
-            // both logically represent the same thing. The runtime displays a similar convention by having
-            // G<M>.M() be encoded by a typeSpec whose parent is the typeDef for G<M> and whose instantiation is also G<M>.
-            if (type.IsGenericTypeDefinition)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
-            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-
-            return MethodOnTypeBuilderInstantiation.GetMethod(method, typeBuilderInstantiation);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
-        public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
-        {
-            if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-
-            if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
-
-            if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
-                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
-
-            // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
-            if (type.IsGenericTypeDefinition)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
-            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-
-            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, typeBuilderInstantiation);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "MakeGenericType is only called on a TypeBuilder which is not subject to trimming")]
-        public static FieldInfo GetField(Type type, FieldInfo field)
-        {
-            if (type is not TypeBuilder and not TypeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-
-            if (!field.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
-
-            if (type.GetGenericTypeDefinition() != field.DeclaringType)
-                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
-
-            // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
-            if (type.IsGenericTypeDefinition)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
-            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
-
-            return FieldOnTypeBuilderInstantiation.GetField(field, typeBuilderInstantiation);
-        }
-        #endregion
-    }
-
     internal sealed partial class RuntimeTypeBuilder : TypeBuilder
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
@@ -231,9 +145,9 @@ namespace System.Reflection.Emit
             Type? runtimeType2;
 
             // set up the runtimeType and TypeBuilder type corresponding to t1 and t2
-            if (t1 is RuntimeTypeBuilder)
+            if (t1 is RuntimeTypeBuilder rtb1)
             {
-                tb1 = (RuntimeTypeBuilder)t1;
+                tb1 = rtb1;
                 // This will be null if it is not baked.
                 runtimeType1 = tb1.m_bakedRuntimeType;
             }
@@ -242,9 +156,9 @@ namespace System.Reflection.Emit
                 runtimeType1 = t1;
             }
 
-            if (t2 is RuntimeTypeBuilder)
+            if (t2 is RuntimeTypeBuilder rtb2)
             {
-                tb2 = (RuntimeTypeBuilder)t2;
+                tb2 = rtb2;
                 // This will be null if it is not baked.
                 runtimeType2 = tb2.m_bakedRuntimeType;
             }
@@ -1358,7 +1272,6 @@ namespace System.Reflection.Emit
 
             // Define the constructor Builder
             constBuilder = (RuntimeConstructorBuilder)DefineConstructor(attributes, CallingConventions.Standard, null);
-            m_constructorCount++;
 
             // generate the code to call the parent's default constructor
             ILGenerator il = constBuilder.GetILGenerator();

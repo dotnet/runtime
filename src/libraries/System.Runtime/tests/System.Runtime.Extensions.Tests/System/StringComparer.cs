@@ -87,7 +87,8 @@ namespace System.Tests
             yield return new object[] { "abcd",             "ABCD",         "en-US" };
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
 
-            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
+            // https://github.com/dotnet/runtime/issues/95503
+            if (PlatformDetection.IsNotInvariantGlobalization && PlatformDetection.IsNotHybridGlobalizationOnBrowser && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                 yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
@@ -179,16 +180,18 @@ namespace System.Tests
                 yield return new object[] { "turky i", "TURKY \u0130", "tr-TR", CompareOptions.IgnoreCase, true};
             }
 
-            yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
-            yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
-            yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+            if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
+            {
+                bool ignoreSymbolsIgnoresOnlyPunctuation = PlatformDetection.IsHybridGlobalizationOnBrowser;
+                yield return new object[] { "abcd", "ab cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab+cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
+                yield return new object[] { "abcd", "ab%cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab&cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, !ignoreSymbolsIgnoresOnlyPunctuation };
+                yield return new object[] { "a-bcd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "abcd*", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, true };
+                yield return new object[] { "ab$dd", "ab$cd", "en-US", CompareOptions.IgnoreSymbols, false };
+            }
         }
 
         public static TheoryData<string, string, string, CompareOptions, bool> CreateFromCultureAndOptionsStringSortData => new TheoryData<string, string, string, CompareOptions, bool>
@@ -197,7 +200,7 @@ namespace System.Tests
             { "abcd", "ABcd", "en-US", CompareOptions.StringSort, false },
         };
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         [MemberData(nameof(CreateFromCultureAndOptionsStringSortData))]
         public static void CreateFromCultureAndOptions(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
@@ -209,7 +212,7 @@ namespace System.Tests
             Assert.Equal(result, sc.Equals((object)actualString, (object)expectedString));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(CreateFromCultureAndOptionsData))]
         public static void CreateFromCultureAndOptionsStringSort(string actualString, string expectedString, string cultureName, CompareOptions options, bool result)
         {

@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Threading;
-using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Pipes
 {

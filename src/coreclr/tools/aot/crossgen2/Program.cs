@@ -915,8 +915,7 @@ namespace ILCompiler
                 .UseVersion()
                 .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
             {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableParseErrorReporting = true
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
             }.Invoke(args);
     }
 }

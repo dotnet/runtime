@@ -8,12 +8,9 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
-
-using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
-
 using Microsoft.Win32.SafeHandles;
-
 using static Interop.Crypt32;
+using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
 
 namespace Internal.Cryptography.Pal.Windows
 {

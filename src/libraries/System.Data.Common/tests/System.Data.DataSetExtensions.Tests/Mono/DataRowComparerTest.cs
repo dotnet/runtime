@@ -216,7 +216,7 @@ namespace MonoTests.System.Data
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void GetHashCodeWithVersions()
         {
             DataSet ds = new DataSet();

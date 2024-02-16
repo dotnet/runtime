@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
 using static System.Reflection.MethodInvokerCommon;
@@ -130,7 +130,7 @@ namespace System.Reflection
         /// <param name="arg3">The third argument for the invoked method.</param>
         public object Invoke(object? arg1, object? arg2, object? arg3)
         {
-            if (_argCount !=3)
+            if (_argCount != 3)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
             }
@@ -258,7 +258,7 @@ namespace System.Reflection
             // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                return _invokeFunc_ObjSpanArgs(obj : null, copyOfArgs)!;
+                return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs)!;
                 // No need to call CopyBack here since there are no ref values.
             }
 
