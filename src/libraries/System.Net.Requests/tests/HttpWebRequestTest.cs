@@ -2086,6 +2086,7 @@ namespace System.Net.Tests
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
                     request.AllowWriteStreamBuffering = false;
+                    request.SendChunked = true;
                     var stream = await request.GetRequestStreamAsync();
                     await Assert.ThrowsAnyAsync<Exception>(() => request.GetResponseAsync());
                 },
@@ -2149,7 +2150,6 @@ namespace System.Net.Tests
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = true;
                     request.ContinueTimeout = 30000;
-                    request.ContentLength = 8;
                     using (Stream requestStream = await request.GetRequestStreamAsync())
                     {
                         requestStream.Write("aaaa\r\n\r\n"u8);

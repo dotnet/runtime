@@ -1065,6 +1065,11 @@ namespace System.Net
                 throw new ProtocolViolationException(SR.net_nouploadonget);
             }
 
+            if (AllowWriteStreamBuffering is false && SendChunked is false && ContentLength < 0)
+            {
+                throw new ProtocolViolationException(SR.net_nobuffering_nochunked);
+            }
+
             if (RequestSubmitted)
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
@@ -1073,7 +1078,7 @@ namespace System.Net
             // Create stream buffer for transferring data from RequestStream to the StreamContent.
             StreamBuffer streamBuffer = new StreamBuffer(maxBufferSize: int.MaxValue);
             // If we're buffering we don't need to open the connection right away.
-            if (!AllowWriteStreamBuffering)
+            if (AllowWriteStreamBuffering is false)
             {
                 _sendRequestTask = SendRequest(async, new StreamContent(new HttpClientContentStream(streamBuffer)));
             }
