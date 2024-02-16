@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -316,6 +318,42 @@ namespace System.Reflection.Tests
 
             Assert.Equal(typeWithNamespace, Type.GetType(typeWithNamespace.AssemblyQualifiedName));
             Assert.Null(Type.GetType($".{typeWithNamespace.AssemblyQualifiedName}"));
+        }
+
+        public static IEnumerable<object[]> GetTypesThatRequireEscaping()
+        {
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TypeNamesThatRequireEscaping"), AssemblyBuilderAccess.Run);
+                ModuleBuilder module = assembly.DefineDynamicModule("TypeNamesThatRequireEscapingModule");
+
+                yield return new object[] { module.DefineType("TypeNameWith+ThatIsNotNestedType").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith\\TheEscapingCharacter").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith&Ampersand").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith*Asterisk").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith[OpeningSquareBracket").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith]ClosingSquareBracket").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith[]BothSquareBrackets").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith[[]]NestedSquareBrackets").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith,Comma").CreateType(), assembly };
+                yield return new object[] { module.DefineType("TypeNameWith\\[]+*&,AllSpecialCharacters").CreateType(), assembly };
+
+                TypeBuilder containingType = module.DefineType("ContainingTypeWithA+Plus");
+                _ = containingType.CreateType(); // containing type must exist!
+                yield return new object[] { containingType.DefineNestedType("NoSpecialCharacters").CreateType(), assembly };
+                yield return new object[] { containingType.DefineNestedType("Contains+Plus").CreateType(), assembly };
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [MemberData(nameof(GetTypesThatRequireEscaping))]
+        public void TypeNamesThatRequireEscaping(Type type, Assembly assembly)
+        {
+            Assert.Contains('\\', type.FullName);
+
+            Assert.Equal(type, assembly.GetType(type.FullName));
+            Assert.Equal(type, assembly.GetType(type.FullName.ToLower(), throwOnError: true, ignoreCase: true));
+            Assert.Equal(type, assembly.GetType(type.FullName.ToUpper(), throwOnError: true, ignoreCase: true));
         }
     }
 
