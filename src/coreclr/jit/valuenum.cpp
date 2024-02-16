@@ -4422,12 +4422,22 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_ROL:
             case GT_ROR:
 
-            case GT_EQ:
-            case GT_NE:
             case GT_GT:
             case GT_GE:
             case GT_LT:
             case GT_LE:
+                if (IsVNHandle(arg0VN) || IsVNHandle(arg1VN))
+                {
+                    return false;
+                }
+                break;
+
+            case GT_EQ:
+            case GT_NE:
+                if (IsVNHandle(arg0VN) != IsVNHandle(arg1VN))
+                {
+                    return false;
+                }
                 break;
 
             default:
@@ -4449,6 +4459,11 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case VNF_ADD_UN_OVF:
             case VNF_SUB_UN_OVF:
             case VNF_MUL_UN_OVF:
+                if (IsVNHandle(arg0VN) || IsVNHandle(arg1VN))
+                {
+                    return false;
+                }
+                break;
 
             case VNF_Cast:
             case VNF_CastOvf:
