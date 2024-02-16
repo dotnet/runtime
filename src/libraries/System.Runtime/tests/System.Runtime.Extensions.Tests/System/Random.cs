@@ -728,6 +728,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Shuffle_Array_Covariance()
+        {
+            Random random = new Random(0x70636A61);
+			string[] items = ["", ""];
+			object[] array = items;
+            random.Shuffle(array);
+            AssertExtensions.SequenceEqual(["", ""], items);
+        }
+
+        [Fact]
         public static void Shuffle_Array_ArgValidation()
         {
             Random random = new Random(0x70636A61);
