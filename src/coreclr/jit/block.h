@@ -1660,9 +1660,6 @@ public:
     // Clone block state and statements from `from` block to `to` block (which must be new/empty)
     static void CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from);
 
-    // Copy the block kind and targets. The `from` block is untouched.
-    void CopyTarget(Compiler* compiler, const BasicBlock* from);
-
     // Copy the block kind and take memory ownership of the targets.
     void TransferTarget(BasicBlock* from);
 
@@ -1838,6 +1835,8 @@ struct BBswtDesc
     BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false)
     {
     }
+
+    BBswtDesc(const BBswtDesc* other);
 
     BBswtDesc(Compiler* comp, const BBswtDesc* other);
 
