@@ -2139,6 +2139,40 @@ namespace System.Net.Tests
                 }
             );
         }
+
+        [Fact]
+        public async Task SendHttpRequest_WhenNotBuffering_SendSuccess()
+        {
+            TaskCompletionSource tcs = new();
+            await LoopbackServer.CreateClientAndServerAsync(
+                async (uri) =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    request.Method = "POST";
+                    request.ContentLength = 5;
+                    request.AllowWriteStreamBuffering = false;
+                    using (Stream requestStream = await request.GetRequestStreamAsync())
+                    {
+                        requestStream.Write("Hello"u8);
+                    }
+                    await tcs.Task;
+                    await request.GetResponseAsync();
+                },
+                async (server) =>
+                {
+                    await server.AcceptConnectionAsync(async (client) =>
+                    {
+                        byte[] buffer = new byte[5];
+                        await client.ReadRequestHeaderAsync();
+                        int readBytes = await client.ReadBlockAsync(buffer, 0, 5);
+                        Assert.Equal("Hello"u8.Length, readBytes);
+                        Assert.Equal("Hello"u8, buffer[0..5]);
+                        tcs.SetResult();
+                        await client.SendResponseAsync();
+                    });
+                }
+            );
+        }
         
         [Fact]
         public async Task SendHttpPostRequest_WithContinueTimeoutAndBody_BodyIsDelayed()
