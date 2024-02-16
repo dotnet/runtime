@@ -48,6 +48,9 @@ set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
 target_link_libraries(daccess PRIVATE libhellomanagedTarget)
 
+# FIXME: can we put this with mscordaccore instead?
+install_clr(TARGETS libhellomanagedTarget DESTINATIONS . sharedFramework COMPONENT debug)
+
 add_dependencies(daccess eventing_headers)
 
 if(CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS)

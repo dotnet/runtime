@@ -85,8 +85,6 @@ endfunction()
 function(add_imported_nativeaot_library targetName symbolPrefix)
   message(STATUS "${symbolPrefix}_MODE is ${${symbolPrefix}_MODE}")
   if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED")
-    add_library(${targetName} INTERFACE)
-
     set(libName "${${symbolPrefix}_NAME}") # typically same as targetName
     set(libPath "${${symbolPrefix}_LIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/publish
     set(libFilename "${libName}${${symbolPrefix}_EXT}") # <libName>.dll, <libName>.so or <libName>.dylib
@@ -94,26 +92,16 @@ function(add_imported_nativeaot_library targetName symbolPrefix)
     # windows import library
     set(libImpLibFullPath "${${symbolPrefix}_IMPLIBPATH}") # typically \...\artifacts\bin\<libName>\<config>\<rid>\native\<libName>.lib
 
-    add_library(${targetName}-shared SHARED IMPORTED)
-    set_property(TARGET ${targetName}-shared PROPERTY IMPORTED_LOCATION "${libFullPath}")
+    add_library(${targetName} SHARED IMPORTED GLOBAL)
+    set_property(TARGET ${targetName} PROPERTY IMPORTED_LOCATION "${libFullPath}")
+    set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY 1)
 
     if("${CLR_CMAKE_HOST_WIN32}")
-      set_property(TARGET ${targetName}-shared PROPERTY IMPORTED_IMPLIB "${libImpLibFullPath}")
+      set_property(TARGET ${targetName} PROPERTY IMPORTED_IMPLIB "${libImpLibFullPath}")
     endif()
 
     # TODO bake this into the cmake fragment?
-    target_include_directories(${targetName}-shared INTERFACE "${CLR_SRC_NATIVE_DIR}/${libName}/inc")
-
-    target_link_libraries(${targetName} INTERFACE ${targetName}-shared)
-
-    # FIXME: this installs into artifacts/bin/coreclr/<triple>/lib/
-    # we instead need to add a IMPORTED_RUNTIME_ARTIFACTS mode for install_clr() so that it installs
-    #  with the component
-    if("${CLR_CMAKE_HOST_WIN32}")
-      install(IMPORTED_RUNTIME_ARTIFACTS ${targetName}-shared RUNTIME) # dlls are "runtime" on Windows
-    else()
-      install(IMPORTED_RUNTIME_ARTIFACTS ${targetName}-shared LIBRARY) # .so/.dylib are "library"
-    endif()
+    target_include_directories(${targetName} INTERFACE "${CLR_SRC_NATIVE_DIR}/${libName}/inc")
 
   elseif ("${${symbolPrefix}_MODE}" STREQUAL "STATIC")
     add_nativeAotFramework_targets_once()
@@ -155,6 +143,7 @@ function(add_imported_nativeaot_library targetName symbolPrefix)
 
     add_library(${targetName} INTERFACE)
     target_link_libraries(${targetName} INTERFACE ${targetName}-static)
+    set_property(TARGET ${targetName} PROPERTY CLR_IMPORTED_NATIVEAOT_LIBRARY 1)
   else()
     message(FATAL_ERROR "${symbolPrefix}_MODE must be one of SHARED or STATIC")
   endif()

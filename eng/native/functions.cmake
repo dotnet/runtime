@@ -533,17 +533,28 @@ function(install_clr)
       endif()
       add_dependencies(${INSTALL_CLR_COMPONENT} ${targetName})
     endif()
+    get_target_property(targetImportedNativeAotLib ${targetName} CLR_IMPORTED_NATIVEAOT_LIBRARY)
     get_target_property(targetType ${targetName} TYPE)
-    if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS AND NOT "${targetType}" STREQUAL "STATIC_LIBRARY")
+    if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS AND NOT "${targetType}" STREQUAL "STATIC_LIBRARY" AND NOT "${targetImportedNativeAotLib}")
       get_symbol_file_name(${targetName} symbolFile)
     endif()
+    # FIXME: make symbol files for native aot libs too
 
     foreach(destination ${destinations})
       # We don't need to install the export libraries for our DLLs
       # since they won't be directly linked against.
-      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      if (NOT "${symbolFile}" STREQUAL "")
-        install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+      if (NOT "${targetImportedNativeAotLib}")
+        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+        if (NOT "${symbolFile}" STREQUAL "")
+          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+        endif()
+      elseif("${targetType}" STREQUAL "SHARED_LIBRARY")
+        #imported shared lib - install the imported artifacts
+        #imported static lib - nothing to install
+        install(IMPORTED_RUNTIME_ARTIFACTS ${targetName} DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+        if (NOT "${symbolFile}" STREQUAL "")
+          install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+        endif()
       endif()
 
       if(CLR_CMAKE_PGO_INSTRUMENT)
