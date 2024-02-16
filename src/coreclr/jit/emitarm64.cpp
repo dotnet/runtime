@@ -20049,6 +20049,39 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
+ *  Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6_MultipleOf2(imm));
+    return insEncodeUimm6_21_to_16(imm / 2);
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6_MultipleOf4(imm));
+    return insEncodeUimm6_21_to_16(imm / 4);
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6_MultipleOf8(imm));
+    return insEncodeUimm6_21_to_16(imm / 8);
+}
+
+/*****************************************************************************
+ *
  *  Returns the encoding for the immediate value as 5-bits at bit locations '20-16'.
  */
 
@@ -20173,6 +20206,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 /*static*/ emitter::code_t emitter::insEncodeUimm5_20_to_16(ssize_t imm)
 {
     assert(isValidUimm5(imm));
+    return (code_t)imm << 16;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeUimm6_21_to_16(ssize_t imm)
+{
+    assert(isValidUimm6(imm));
     return (code_t)imm << 16;
 }
 
@@ -27497,7 +27541,7 @@ void emitter::emitDispInsHelp(
             emitDispSvePrfop(id->idSvePrfop(), true);
             emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), true);
             emitDispSveImmMulVl(id->idReg2(), imm);
-            break
+            break;
             
         // {<Zt>.S }, <Pg>/Z, [<Zn>.S{, #<imm>}]
         // {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
