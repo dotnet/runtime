@@ -4,8 +4,9 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class Program
+public class Program
 {
     // Each of the module initializer, class constructor, and IncrementExitCode
     // should be executed exactly once, causing this to each 100 by program exit.
@@ -32,7 +33,8 @@ class Program
 
     int ExitCode;
 
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("hello from managed main");
         return s_exitCode;

@@ -1,17 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <MergedWrapperProjectReference Include="StartupHook/StartupHook.csproj" />
-    <MergedWrapperProjectReference Include="GenerateUnmanagedEntryPoints/**/*.??proj" />
-    <MergedWrapperProjectReference Include="SmokeTests/**/*.??proj" />
-
-    <MergedWrapperProjectReference Remove="SmokeTests/ControlFlowGuard/ControlFlowGuard.csproj" />
+    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <!-- <MergedWrapperProjectReference Remove="CustomMain/CustomMain.csproj" /> -->
     <MergedWrapperProjectReference Remove="SmokeTests/MultiModule/*.*" />
   </ItemGroup>
 
   <PropertyGroup>
     <BuildAsStandalone>false</BuildAsStandalone>
-    <!-- There's just too many of these warnings -->
-    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
