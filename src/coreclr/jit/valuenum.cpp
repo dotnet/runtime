@@ -13935,6 +13935,7 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
     VNFuncApp funcApp;
     if (!GetVNFunc(vn, &funcApp))
     {
+        // We can't make any assumptions about the object
         return NO_CLASS_HANDLE;
     }
 
@@ -13952,5 +13953,15 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
             return (CORINFO_CLASS_HANDLE)clsHandle;
         }
     }
+
+    // obj.GetType() is guaranteed to return a non-null RuntimeType object
+    if (func == VNF_ObjGetType)
+    {
+        *pIsNonNull = true;
+        // Let's not assume whether RuntimeType is exact or not here (it was not in the past for NAOT)
+        // Callers usually call isExact anyway.
+        return m_pComp->info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
+    }
+
     return NO_CLASS_HANDLE;
 }

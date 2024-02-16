@@ -18790,9 +18790,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
     }
 
-    if (vnBased && ((objClass == NO_CLASS_HANDLE) || (!*pIsExact)))
+    if (vnBased && (objClass == NO_CLASS_HANDLE))
     {
-        // Try VN if we haven't found a class handle yet, or we're not sure if the one we have is exact.
+        // Try VN if we haven't found a class handle yet
         objClass = vnStore->GetObjectType(tree->gtVNPair.GetConservative(), pIsExact, pIsNonNull);
     }
 
