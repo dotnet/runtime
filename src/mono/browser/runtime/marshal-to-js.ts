@@ -59,7 +59,7 @@ export function initialize_marshalers_to_js(): void {
 }
 
 export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToJs | undefined {
-    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard) {
         return undefined;
     }
 

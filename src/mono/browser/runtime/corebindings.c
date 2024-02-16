@@ -101,6 +101,7 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_js_function);
 	mono_add_internal_call ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
 	mono_add_internal_call ("Interop/Runtime::AssemblyGetEntryPoint", mono_wasm_assembly_get_entry_point);
+	mono_add_internal_call ("Interop/Runtime::BindAssemblyExports", mono_wasm_bind_assembly_exports);
 	mono_add_internal_call ("Interop/Runtime::GetAssemblyExport", mono_wasm_get_assembly_export);
 #endif /* DISABLE_THREADS */
 
@@ -129,43 +130,6 @@ static MonoAssembly* _mono_wasm_assembly_load (char *assembly_name)
 	free (assembly_name);
 
 	return res;
-}
-
-void mono_wasm_bind_assembly_exports (char *assembly_name)
-{
-	MonoError error;
-	MonoAssembly* assembly;
-	MonoImage *image;
-	MonoClass *klass;
-	MonoMethod *method;
-	PVOLATILE(MonoObject) temp_exc = NULL;
-
-	assert (assembly_name);
-	assembly = _mono_wasm_assembly_load (assembly_name);
-	assert (assembly);
-	image = mono_assembly_get_image (assembly);
-	assert (image);
-
-	klass = mono_class_from_name (image, "System.Runtime.InteropServices.JavaScript", "__GeneratedInitializer");
-	if (klass) {
-		method = mono_class_get_method_from_name (klass, "__Register_", -1);
-		if (method) {
-			mono_runtime_invoke (method, NULL, NULL, (MonoObject **)&temp_exc);
-			if (temp_exc) {
-				PVOLATILE(MonoObject) exc2 = NULL;
-				store_volatile((MonoObject**)temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
-				if (exc2) {
-					mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_bind_assembly_exports unexpected double fault", 1, NULL);
-				} else {
-					mono_wasm_trace_logger ("jsinterop", "critical", mono_string_to_utf8((MonoString*)temp_exc), 1, NULL);
-				}
-				abort ();
-			}
-		}
-	}
-	else if (!mono_runtime_run_module_cctor(image, &error)) {
-		//g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
-	}
 }
 
 void mono_wasm_assembly_get_entry_point (char *assembly_name, int auto_insert_breakpoint, MonoMethod **method_out)
@@ -230,6 +194,43 @@ end:
 		mono_wasm_set_entrypoint_breakpoint(mono_method_get_token (method));
 	}
 	*method_out = method;
+}
+
+void mono_wasm_bind_assembly_exports (char *assembly_name)
+{
+	MonoError error;
+	MonoAssembly* assembly;
+	MonoImage *image;
+	MonoClass *klass;
+	MonoMethod *method;
+	PVOLATILE(MonoObject) temp_exc = NULL;
+
+	assert (assembly_name);
+	assembly = _mono_wasm_assembly_load (assembly_name);
+	assert (assembly);
+	image = mono_assembly_get_image (assembly);
+	assert (image);
+
+	klass = mono_class_from_name (image, "System.Runtime.InteropServices.JavaScript", "__GeneratedInitializer");
+	if (klass) {
+		method = mono_class_get_method_from_name (klass, "__Register_", -1);
+		if (method) {
+			mono_runtime_invoke (method, NULL, NULL, (MonoObject **)&temp_exc);
+			if (temp_exc) {
+				PVOLATILE(MonoObject) exc2 = NULL;
+				store_volatile((MonoObject**)&temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
+				if (exc2) {
+					mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_bind_assembly_exports unexpected double fault", 1, NULL);
+				} else {
+					mono_wasm_trace_logger ("jsinterop", "critical", mono_string_to_utf8((MonoString*)temp_exc), 1, NULL);
+				}
+				abort ();
+			}
+		}
+	}
+	else if (!mono_runtime_run_module_cctor(image, &error)) {
+		//g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
+	}
 }
 
 void mono_wasm_get_assembly_export (char *assembly_name, char *namespace, char *classname, char *methodname, MonoMethod **method_out)

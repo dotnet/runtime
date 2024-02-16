@@ -274,13 +274,15 @@ namespace System.Runtime.InteropServices.JavaScript
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
+            var wrapper_name = $"__Wrapper_{methodName}_{signatureHash}";
+            var dllName = assemblyName + ".dll";
 
             IntPtr monoMethod;
             Interop.Runtime.GetAssemblyExport(
-                Marshal.StringToCoTaskMemUTF8(assemblyName + ".dll"),
+                Marshal.StringToCoTaskMemUTF8(dllName),
                 Marshal.StringToCoTaskMemUTF8(nameSpace),
                 Marshal.StringToCoTaskMemUTF8(shortClassName),
-                Marshal.StringToCoTaskMemUTF8(methodName),
+                Marshal.StringToCoTaskMemUTF8(wrapper_name),
                 &monoMethod);
 
             if (monoMethod == IntPtr.Zero)

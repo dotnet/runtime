@@ -242,7 +242,7 @@ mono_wasm_invoke_method (MonoMethod *method, void* args)
 	// so, if that happens, we should abort the runtime
 	if (temp_exc) {
 		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile((MonoObject**)temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
+		store_volatile((MonoObject**)&temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
 		if (exc2) {
 			mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_invoke_method unexpected double fault", 1, NULL);
 		} else {
