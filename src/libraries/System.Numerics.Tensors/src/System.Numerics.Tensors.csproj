@@ -16,6 +16,11 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Single.netcore.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.Conversions.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.Number.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.Integer.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.Operators.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.FloatingPoint.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.T.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.netcore.cs" />
   </ItemGroup>
