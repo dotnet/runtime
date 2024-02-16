@@ -370,4 +370,9 @@
   #define REG_ZERO_INIT_FRAME_REG2 REG_R10
   #define REG_ZERO_INIT_FRAME_SIMD REG_V16
 
+  #define SWIFT_SUPPORT
+  #define SWIFT_ERROR_REG REG_R21
+  #define SWIFT_ERROR_RBM RBM_R21
+  #define SWIFT_SELF_REG  REG_R20
+
 // clang-format on

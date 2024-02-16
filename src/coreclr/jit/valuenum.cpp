@@ -11256,6 +11256,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
 
             // These do not represent values.
+            case GT_SWIFT_ERROR:
             case GT_NO_OP:
             case GT_NOP:
             case GT_JMP:   // Control flow

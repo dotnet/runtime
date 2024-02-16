@@ -563,4 +563,9 @@
   #define RBM_STACK_PROBE_HELPER_TRASH RBM_RAX
 #endif // !UNIX_AMD64_ABI
 
+  #define SWIFT_SUPPORT
+  #define SWIFT_ERROR_REG REG_R12
+  #define SWIFT_ERROR_RBM RBM_R12
+  #define SWIFT_SELF_REG  REG_R13
+
 // clang-format on
