@@ -984,7 +984,8 @@ bool Compiler::optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop)
 //     2. We need to store the wide IV back into the narrow one in each of
 //     the exits where the narrow IV is live-in.
 //
-bool Compiler::optIsIVWideningProfitable(unsigned lclNum, bool reusedIV, BasicBlock* initBlock, bool initedToConstant, FlowGraphNaturalLoop* loop)
+bool Compiler::optIsIVWideningProfitable(
+    unsigned lclNum, bool reusedIV, BasicBlock* initBlock, bool initedToConstant, FlowGraphNaturalLoop* loop)
 {
     struct CountZeroExtensionsVisitor : GenTreeVisitor<CountZeroExtensionsVisitor>
     {
@@ -1170,8 +1171,10 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
 
         bool IsLocal(GenTreeLclVarCommon* tree)
         {
-            return (tree->GetLclNum() == m_lclNum) && ((m_ssaNum == SsaConfig::RESERVED_SSA_NUM) || (tree->GetSsaNum() == m_ssaNum));
+            return (tree->GetLclNum() == m_lclNum) &&
+                   ((m_ssaNum == SsaConfig::RESERVED_SSA_NUM) || (tree->GetSsaNum() == m_ssaNum));
         }
+
     public:
         bool MadeChanges = false;
 
@@ -1262,14 +1265,15 @@ void Compiler::optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned ne
 //   block     - Block to replace in
 //   firstStmt - First statement in "block" to start replacing in
 //
-void Compiler::optBestEffortReplaceNarrowIVUsesWith(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt)
+void Compiler::optBestEffortReplaceNarrowIVUsesWith(
+    unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt)
 {
-    JITDUMP("  Replacing V%02u -> V%02u in " FMT_BB " starting at " FMT_STMT "\n", lclNum, newLclNum, block->bbNum, firstStmt == nullptr ? 0 : firstStmt->GetID());
+    JITDUMP("  Replacing V%02u -> V%02u in " FMT_BB " starting at " FMT_STMT "\n", lclNum, newLclNum, block->bbNum,
+            firstStmt == nullptr ? 0 : firstStmt->GetID());
 
     for (Statement* stmt = firstStmt; stmt != nullptr; stmt = stmt->GetNextStmt())
     {
-        JITDUMP("  Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum,
-                dspTreeID(stmt->GetRootNode()));
+        JITDUMP("  Replacing V%02u -> V%02u in [%06u]\n", lclNum, newLclNum, dspTreeID(stmt->GetRootNode()));
         DISPSTMT(stmt);
         JITDUMP("\n");
 
@@ -1283,7 +1287,7 @@ void Compiler::optBestEffortReplaceNarrowIVUsesWith(unsigned lclNum, unsigned ss
         }
 
         return BasicBlockVisit::Continue;
-        });
+    });
 }
 
 //------------------------------------------------------------------------
@@ -1321,7 +1325,7 @@ PhaseStatus Compiler::optInductionVariables()
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
     m_dfsTree = fgComputeDfs();
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-    //m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
+    // m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
 
     fgDumpFlowGraph(PHASE_OPTIMIZE_INDUCTION_VARIABLES, PhasePosition::PostPhase);
 
@@ -1388,7 +1392,8 @@ PhaseStatus Compiler::optInductionVariables()
                     if (stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum())
                     {
                         hasOtherUses = true;
-                        JITDUMP("  V%02u has a phi [%06u] in " FMT_LP "'s header " FMT_BB "\n", lcl->GetLclNum(), dspTreeID(stmt->GetRootNode()), otherLoop->GetIndex(), otherLoop->GetHeader()->bbNum);
+                        JITDUMP("  V%02u has a phi [%06u] in " FMT_LP "'s header " FMT_BB "\n", lcl->GetLclNum(),
+                                dspTreeID(stmt->GetRootNode()), otherLoop->GetIndex(), otherLoop->GetHeader()->bbNum);
                         break;
                     }
                 }
@@ -1437,14 +1442,14 @@ PhaseStatus Compiler::optInductionVariables()
                 {
                     newLclNum = wiv.NewLclNum;
                     JITDUMP("  Reusing previously widened version with initial value V%02u.%u, new local V%02u\n",
-                        wiv.LclNum, wiv.InitSsaNum, wiv.NewLclNum);
+                            wiv.LclNum, wiv.InitSsaNum, wiv.NewLclNum);
                     break;
                 }
             }
 
-            int64_t startConstant  = 0;
-            bool    initToConstant = startLocal->GetConstantValue(this, &startConstant);
-            LclSsaVarDsc* startSsaDsc = lclDsc->GetPerSsaData(startLocal->SsaNum);
+            int64_t       startConstant  = 0;
+            bool          initToConstant = startLocal->GetConstantValue(this, &startConstant);
+            LclSsaVarDsc* startSsaDsc    = lclDsc->GetPerSsaData(startLocal->SsaNum);
 
             BasicBlock* preheader = loop->EntryEdge(0)->getSourceBlock();
             BasicBlock* initBlock = preheader;
@@ -1461,7 +1466,7 @@ PhaseStatus Compiler::optInductionVariables()
                 }
             }
 
-            bool    reusedIV       = newLclNum != BAD_VAR_NUM;
+            bool reusedIV = newLclNum != BAD_VAR_NUM;
             if (!optIsIVWideningProfitable(lcl->GetLclNum(), reusedIV, initBlock, initToConstant, loop))
             {
                 continue;
@@ -1526,8 +1531,8 @@ PhaseStatus Compiler::optInductionVariables()
                     initVal = gtNewCastNode(TYP_LONG, gtNewLclvNode(lcl->GetLclNum(), TYP_INT), true, TYP_LONG);
                 }
 
-                GenTree*   widenStore = gtNewTempStore(newLclNum, initVal);
-                initStmt   = fgNewStmtFromTree(widenStore);
+                GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
+                initStmt            = fgNewStmtFromTree(widenStore);
                 if (narrowInitStmt != nullptr)
                 {
                     fgInsertStmtAfter(initBlock, narrowInitStmt, initStmt);
@@ -1545,7 +1550,8 @@ PhaseStatus Compiler::optInductionVariables()
 
             if (initStmt != nullptr)
             {
-                optBestEffortReplaceNarrowIVUsesWith(lcl->GetLclNum(), startLocal->SsaNum, newLclNum, initBlock, initStmt->GetNextStmt());
+                optBestEffortReplaceNarrowIVUsesWith(lcl->GetLclNum(), startLocal->SsaNum, newLclNum, initBlock,
+                                                     initStmt->GetNextStmt());
             }
 
             loop->VisitLoopBlocks([=](BasicBlock* block) {
