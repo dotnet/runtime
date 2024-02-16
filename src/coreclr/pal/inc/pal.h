@@ -51,7 +51,12 @@ Abstract:
 #include <wctype.h>
 
 #ifdef __cplusplus
+extern "C++"
+{
+
 #include <new>
+
+}
 #endif
 
 #ifdef  __cplusplus
