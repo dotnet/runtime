@@ -171,16 +171,18 @@ int doStreamingSuperPMI(CommandLine::Options& o)
 
     JitInstance* jit = nullptr;
 
-    char line[2048];
+    enum { BUFSIZ = 2048 };
+
+    char line[BUFSIZ];
     const char* const seps = "!";
     char *next = nullptr;
 
     // Syntax is dddd { ! <jit-option>=value }*
     // Likes starting with '#' are ignored
     //
-    while (fgets(line, sizeof(line), streamFile) != nullptr)
+    while (fgets(line, BUFSIZ, streamFile) != nullptr)
     {
-        for (int i = 0; i < sizeof(line); i++)
+        for (int i = 0; i < BUFSIZ; i++)
         {
             if (line[i] == '\n' || line[i] == '\r')
             {
@@ -188,8 +190,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
                 break;
             }
         }
-
-        size_t len = strlen(line);
+        line[BUFSIZ - 1] = '0';
 
         LogDebug("[streaming] Request: '%s'", line);
 
@@ -304,7 +305,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
 
         // Protocol with clients is for them to read stdout. Let them know we're done.
         //
-        printf("[streaming] Done. Status=%d\n", res.Result);
+        printf("[streaming] Done. Status=%d\n", (int) res.Result);
         fflush(stdout);
 
         // Cleanup
