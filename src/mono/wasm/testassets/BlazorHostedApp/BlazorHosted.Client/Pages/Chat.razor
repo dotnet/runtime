@@ -46,10 +46,11 @@
     private async Task SignalRPassMessages() =>
         await Task.Run(async () =>
             {
-                Helper.TestOutputWriteLine($"Client: CurrentManagedThreadId={Environment.CurrentManagedThreadId} sends message={message}");
+                Helper.TestOutputWriteLine($"Client: sends message={message} with CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
                 await _hubConnection.SendAsync(
                     "SendMessage",
-                    $"{message} CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+                    message,
+                    Environment.CurrentManagedThreadId);
             });
 
     private void GetQueryParameters()
@@ -66,7 +67,7 @@
         }
         scenario = Helper.GetValue(parameters, "test");
         transport = Helper.GetValue(parameters, "transport");
-        message = $"[{transport}] {Helper.GetValue(parameters, "message")}" ;
+        message = $"[{transport} {Helper.GetValue(parameters, "message")}]" ;
     }
 
     private async Task Connect()
@@ -80,13 +81,12 @@
                 })
             .Build();
 
-        _hubConnection.On<string, string>("ReceiveMessage", async (transport, message) =>
+        _hubConnection.On<string>("ReceiveMessage", async (message) =>
         {
             chatMessages.Add(message);
-            string changedMessage = $"Client confirms receiving message={message}";
-            Helper.TestOutputWriteLine($"[{transport}] {changedMessage}");
+            Helper.TestOutputWriteLine($"Client: sends confirmation of receiving the reply from server = {message}, tread receiving the reply = {Environment.CurrentManagedThreadId}");
             // on this message server calls "Environment.Exit(0)"
-            await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExitWithSuccess", transport, changedMessage);
+            await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExitWithSuccess", message);
             Console.WriteLine("WASM EXIT 0");
         });
 
