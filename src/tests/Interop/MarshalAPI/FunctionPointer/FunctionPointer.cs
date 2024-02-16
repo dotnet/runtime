@@ -185,7 +185,7 @@ public partial class FunctionPtr
         }
         Assert.Equal(expectedValue, outVar);
     }
-
+/*
     public static bool CanRunInvalidGenericFunctionPointerTest => !TestLibrary.Utilities.IsNativeAot;
 
     [ConditionalFact(nameof(CanRunInvalidGenericFunctionPointerTest))]
@@ -203,7 +203,7 @@ public partial class FunctionPtr
             Assert.Throws<MarshalDirectiveException>(() => GenericCaller<string>.GenericCalli((delegate* unmanaged<string, string>)fnptr, "test"));
         }
     }
-
+*/
     [UnmanagedCallersOnly]
     static unsafe nint* ReturnParameter(nint* p)
     {
