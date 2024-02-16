@@ -2,8 +2,8 @@
     <PropertyGroup>
         <!-- We always want to use release for publishing using NativeAOT -->
         <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
-        <!-- TODO: default to shared on windows? -->
-        <NativeLib Condition="'$(NativeLib)' == ''">static</NativeLib>
+	<!-- we always want to make shared libs - static libs don't work for CoreCLR; except if you override NativeLibKind -->
+        <NativeLibKind Condition="'$(NativeLibKind)' == ''">shared</NativeLibKind>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,7 +19,7 @@
         <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
         <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(TargetOS)-$(TargetArchitecture);NativeLib=$(NativeLib)"
+                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(TargetOS)-$(TargetArchitecture);NativeLib=$(NativeLibKind)"
                  Targets="Restore;Build;Publish" />
     </Target>
 </Project>
