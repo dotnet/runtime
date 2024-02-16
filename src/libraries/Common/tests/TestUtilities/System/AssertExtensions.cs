@@ -491,6 +491,19 @@ namespace System
         }
 
         /// <summary>
+        /// Validates that the actual span is not equal to the expected span.
+        /// </summary>
+        /// <param name="expected">The sequence that <paramref name="actual"/> should be not be equal to.</param>
+        /// <param name="actual">The actual sequence.</param>
+        public static void SequenceNotEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual) where T : IEquatable<T>
+        {
+            if (expected.SequenceEqual(actual))
+            {
+                throw new XunitException($"Expected: Contents of expected to differ from actual but were the same.");
+            }
+        }
+
+        /// <summary>
         /// Validates that the actual span is equal to the expected span.
         /// If this fails, determine where the differences are and create an exception with that information.
         /// </summary>
