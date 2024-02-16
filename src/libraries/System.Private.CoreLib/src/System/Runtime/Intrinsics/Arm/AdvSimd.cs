@@ -3950,6 +3950,7 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: ST4 { Vt.2D, Vt+1.2D, Vt+2.2D, Vt+3.2D }[index], [Xn]
             /// </summary>
             public static unsafe void StoreSelectedScalar(double* address, (Vector128<double> value1, Vector128<double> value2, Vector128<double> value3, Vector128<double> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
+#endif
 
             /// <summary>
             ///   A64: ST2 { Vn.16B, Vn+1.16B }, [Xn]
@@ -4100,7 +4101,6 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: ST4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }, [Xn]
             /// </summary>
             public static unsafe void StoreVector128x4AndZip(double* address, (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) value) => StoreVector128x4AndZip(address, value);
-#endif
 
             /// <summary>
             ///   A64: ST1 { Vn.16B, Vn+1.16B }, [Xn]
@@ -16043,6 +16043,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST4 { Vt.2S, Vt+1.2S, Vt+2.2S, Vt+3.2S }[index], [Xn]
         /// </summary>
         public static unsafe void StoreSelectedScalar(float* address, (Vector64<float> value1, Vector64<float> value2, Vector64<float> value3, Vector64<float> value4) value, [ConstantExpected(Max = (byte)(1))] byte index) => StoreSelectedScalar(address, value, index);
+#endif
 
         /// <summary>
         ///   A64: ST2 { Vn.8B, Vn+1.8B }, [Xn]
@@ -16148,7 +16149,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ST4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }, [Xn]
         /// </summary>
         public static unsafe void StoreVector64x4AndZip(float* address, (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) value) => StoreVector64x4AndZip(address, value);
-#endif
 
         /// <summary>
         ///   A64: ST1 { Vn.8B, Vn+1.8B }, [Xn]

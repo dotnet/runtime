@@ -3958,11 +3958,17 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_StorePairScalarNonTemporal, OP_ARM64_STNP_SCALAR},
 	{SN_StoreSelectedScalar},
 	{SN_StoreVector128x2},
+	{SN_StoreVector128x2AndZip},
 	{SN_StoreVector128x3},
+	{SN_StoreVector128x3AndZip},
 	{SN_StoreVector128x4},
+	{SN_StoreVector128x4AndZip},
 	{SN_StoreVector64x2},
+	{SN_StoreVector64x2AndZip},
 	{SN_StoreVector64x3},
+	{SN_StoreVector64x3AndZip},
 	{SN_StoreVector64x4},
+	{SN_StoreVector64x4AndZip},
 	{SN_Subtract, OP_XBINOP, OP_ISUB, None, None, OP_XBINOP, OP_FSUB},
 	{SN_SubtractHighNarrowingLower, OP_ARM64_SUBHN},
 	{SN_SubtractHighNarrowingUpper, OP_ARM64_SUBHN2},
@@ -4362,7 +4368,13 @@ emit_arm64_intrinsics (
 		case SN_StoreVector128x4:
 		case SN_StoreVector64x2:
 		case SN_StoreVector64x3:
-		case SN_StoreVector64x4: {
+		case SN_StoreVector64x4:
+		case SN_StoreVector128x2AndZip:
+		case SN_StoreVector128x3AndZip:
+		case SN_StoreVector128x4AndZip:
+		case SN_StoreVector64x2AndZip:
+		case SN_StoreVector64x3AndZip:
+		case SN_StoreVector64x4AndZip: {
 			int opcode = 0;
 			switch (id) {
 			case SN_StoreVector128x2: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
@@ -4371,6 +4383,12 @@ emit_arm64_intrinsics (
 			case SN_StoreVector64x2: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
 			case SN_StoreVector64x3: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
 			case SN_StoreVector64x4: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
+			case SN_StoreVector128x2AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
+			case SN_StoreVector128x3AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
+			case SN_StoreVector128x4AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
+			case SN_StoreVector64x2AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
+			case SN_StoreVector64x3AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
+			case SN_StoreVector64x4AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
 			default: g_assert_not_reached ();
 			}
 
