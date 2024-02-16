@@ -487,13 +487,15 @@ void Compiler::fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, Bas
     unsigned newSuccNum = UINT_MAX;
     for (unsigned i = 0; i < succCount; i++)
     {
+        assert(succTab[i]->getSourceBlock() == block);
+
         if (succTab[i]->getDestinationBlock() == newSucc)
         {
             assert(newSuccNum == UINT_MAX);
             newSuccNum = i;
         }
 
-        if (succTab[i]->getSourceBlock() == oldSucc)
+        if (succTab[i]->getDestinationBlock() == oldSucc)
         {
             assert(oldSuccNum == UINT_MAX);
             oldSuccNum = i;
