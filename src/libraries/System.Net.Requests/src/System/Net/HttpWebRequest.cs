@@ -1072,7 +1072,7 @@ namespace System.Net
 
             // Create stream buffer for transferring data from RequestStream to the StreamContent.
             StreamBuffer streamBuffer = new StreamBuffer(maxBufferSize: int.MaxValue);
-            // If we're buffering we don't need to open the connection right away.
+            // If we aren't buffering we need to open the connection right away.
             if (!AllowWriteStreamBuffering)
             {
                 _sendRequestTask = SendRequest(async, new StreamContent(new HttpClientContentStream(streamBuffer)));
@@ -1202,8 +1202,7 @@ namespace System.Net
             }
 
             _sendRequestMessage.Version = ProtocolVersion;
-            HttpCompletionOption completionOption = _allowReadStreamBuffering ?
-                            HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
+            HttpCompletionOption completionOption = _allowReadStreamBuffering ? HttpCompletionOption.ResponseContentRead : HttpCompletionOption.ResponseHeadersRead;
             // If we're not buffering, there is no way to open the connection and not send the request without async.
             // So we should use Async, if we're not buffering.
             _sendRequestTask = async || !AllowWriteStreamBuffering ?
