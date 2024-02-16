@@ -375,6 +375,63 @@ namespace System.Reflection.Tests
                 Assert.Null(Type.GetType($"System.\\{character}", throwOnError: false));
             }
         }
+
+        public static IEnumerable<object[]> AllWhitespacesArguments()
+        {
+            // leading whitespaces are allowed for type names:
+            yield return new object[]
+            {
+                " \t\r\nSystem.Int32",
+                typeof(int)
+            };
+            yield return new object[]
+            {
+                $"System.Collections.Generic.List`1[\r\n\t [\t\r\n {typeof(int).AssemblyQualifiedName}]], {typeof(List<>).Assembly.FullName}",
+                typeof(List<int>)
+            };
+            yield return new object[]
+            {
+                $"System.Collections.Generic.List`1[\r\n\t{typeof(int).FullName}]",
+                typeof(List<int>)
+            };
+            // leading whitespaces are NOT allowed for modifiers:
+            yield return new object[]
+            {
+                "System.Int32\t\r\n []",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32\r\n\t [,]",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32 \r\n\t [*]",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32 *",
+                null
+            };
+            yield return new object[]
+            {
+                "System.Int32\t&",
+                null
+            };
+            // trailing whitespaces are NOT allowed:
+            yield return new object[]
+            {
+                $"System.Int32 \t\r\n",
+                null
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(AllWhitespacesArguments))]
+        public void AllWhitespaces(string input, Type? expectedType)
+            => Assert.Equal(expectedType, Type.GetType(input));
     }
 
     namespace MyNamespace1
