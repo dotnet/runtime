@@ -4421,6 +4421,11 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+               if (IsVNHandle(arg0VN) || IsVNHandle(arg1VN))
+                {
+                    return false;
+                }
+                break;
 
             case GT_GT:
             case GT_GE:
