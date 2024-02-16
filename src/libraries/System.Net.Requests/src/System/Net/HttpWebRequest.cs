@@ -1076,8 +1076,7 @@ namespace System.Net
             }
 
             // Create stream buffer for transferring data from RequestStream to the StreamContent.
-            StreamBuffer streamBuffer = new StreamBuffer(
-                maxBufferSize: AllowWriteStreamBuffering is false ? int.MaxValue : StreamBuffer.DefaultMaxBufferSize);
+            StreamBuffer streamBuffer = new StreamBuffer(maxBufferSize: AllowWriteStreamBuffering ? int.MaxValue : StreamBuffer.DefaultMaxBufferSize);
 
             // If we aren't buffering we need to open the connection right away.
             // Because we need to send the data as soon as possible when it's available from the RequestStream.
