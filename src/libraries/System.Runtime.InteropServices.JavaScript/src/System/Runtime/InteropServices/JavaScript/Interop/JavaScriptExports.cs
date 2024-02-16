@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
     internal static unsafe partial class JavaScriptExports
     {
         // the marshaled signature is:
-        // Task<int>? CallEntrypoint(string mainAssemblyName, string[] args, bool waitForDebugger)
+        // Task<int>? CallEntrypoint(char* assemblyNamePtr, string[] args)
         public static void CallEntrypoint(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
@@ -30,11 +30,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 arg_exc.AssertCurrentThreadContext();
 #endif
 
-                arg_1.ToManaged(out string? mainAssemblyName);
+                arg_1.ToManaged(out IntPtr assemblyNamePtr);
                 arg_2.ToManaged(out string?[]? args);
                 arg_3.ToManaged(out bool waitForDebugger);
 
-                Task<int>? result = JSHostImplementation.CallEntrypoint(mainAssemblyName, args, waitForDebugger);
+                Task<int>? result = JSHostImplementation.CallEntrypoint(assemblyNamePtr, args, waitForDebugger);
 
                 arg_result.ToJS(result, (ref JSMarshalerArgument arg, int value) =>
                 {

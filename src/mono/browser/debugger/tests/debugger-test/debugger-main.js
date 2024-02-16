@@ -44,7 +44,7 @@ try {
         try {
             const monoMethodPtr = App.exports.DebuggerTests.BindStaticMethod.GetMonoMethodPtr(method_name);
             // this is only implemented for void methods with no arguments
-            const invoker = runtime.Module.cwrap("mono_wasm_invoke_method", "number", ["number", "number", "number"]);
+            const invoker = runtime.Module.cwrap("mono_wasm_invoke_method", "void", ["number", "number"]);
             return function () {
                 try {
                     return invoker(monoMethodPtr, 0, 0);
