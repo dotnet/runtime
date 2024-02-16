@@ -48,7 +48,7 @@
     </Target>
 
     <Target Name="WriteNativeLibraryCMakeFragmentShared" DependsOnTargets="SetupProperties;PrepareToWriteNativeLibraryCMakeFragment" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(NativeLib)' == 'shared'">
-        <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
+        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
             <!-- the import lib is in the native sub-directory, not publish-->
             <NativeLibraryArtifactImpLibFullPath>$([System.IO.Path]::GetFullPath('$(NativeOutputPath)$(TargetName)$(LibSuffix)'))</NativeLibraryArtifactImpLibFullPath>
         </PropertyGroup>
@@ -62,7 +62,7 @@
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_NAME &quot;$(NativeLibraryArtifactName)&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_EXT &quot;$(NativeLibraryArtifactExt)&quot;)" />
             <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_LIBPATH &quot;$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))&quot;)" />
-            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_IMPLIBPATH &quot;$(NativeLibraryArtifactImpLibFullPath.TrimEnd('\\/'))&quot;)" Condition="'$(TargetOS)' != 'windows'"/>
+            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_IMPLIBPATH &quot;$(NativeLibraryArtifactImpLibFullPath.TrimEnd('\\/'))&quot;)" Condition="'$(TargetOS)' == 'windows'"/>
         </ItemGroup>
     </Target>
 
