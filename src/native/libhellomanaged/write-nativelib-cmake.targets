@@ -50,7 +50,7 @@
     <Target Name="WriteNativeLibraryCMakeFragmentShared" DependsOnTargets="SetupProperties;PrepareToWriteNativeLibraryCMakeFragment" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(NativeLib)' == 'shared'">
         <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
             <!-- the import lib is in the native sub-directory, not publish-->
-            <NativeLibraryArtifactImpLibFullPath>$([System.IO.Path]::GetFullPath('$(NativeOutputPath)$(TargetName)$(LibSuffix)'))</NativeLibraryArtifactImpLibFullPath>
+            <NativeLibraryArtifactImpLibFullPath>$([System.IO.Path]::GetFullPath('$(NativeOutputPath)$(TargetName)$(StaticLibSuffix)'))</NativeLibraryArtifactImpLibFullPath>
         </PropertyGroup>
         <!-- escape backslashes in windows-style paths to make cmake happy -->
         <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
