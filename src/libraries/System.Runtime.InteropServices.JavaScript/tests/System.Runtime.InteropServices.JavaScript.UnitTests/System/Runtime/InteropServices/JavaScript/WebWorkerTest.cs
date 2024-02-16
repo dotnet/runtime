@@ -440,25 +440,30 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public async Task WaitAssertsOnJSInteropThreads(Executor executor, NamedCall method)
         {
             CancellationTokenSource? cts = null;
-            Thread.ForceBlockingWait((_) => cts = CreateTestCaseTimeoutSource(), null);
-            await executor.Execute(Task () =>
+            try
             {
-                Exception? exception = null;
-                try
+                Thread.ForceBlockingWait((_) => cts = CreateTestCaseTimeoutSource(), null);
+                await executor.Execute(Task () =>
                 {
-                    method.Call(cts.Token);
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
-                }
+                    Exception? exception = null;
+                    try
+                    {
+                        method.Call(cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        exception = ex;
+                    }
 
-                executor.AssertBlockingWait(exception);
+                    executor.AssertBlockingWait(exception);
 
-                return Task.CompletedTask;
-            }, cts.Token);
-
-            cts?.Dispose();
+                    return Task.CompletedTask;
+                }, cts.Token);
+            }
+            finally
+            {
+                cts?.Dispose();
+            }
         }
 
         [Theory, MemberData(nameof(GetTargetThreads))]

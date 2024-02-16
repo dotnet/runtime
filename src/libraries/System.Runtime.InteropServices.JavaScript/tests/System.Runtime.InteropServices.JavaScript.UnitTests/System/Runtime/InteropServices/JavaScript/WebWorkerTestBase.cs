@@ -146,6 +146,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             override public string ToString() => Name;
         }
 
+        static void LocalCtsIgnoringCall(Action<CancellationToken> action)
+        {
+            var cts = new CancellationTokenSource(8);
+            try {
+                    action(cts.Token);
+            } catch (OperationCanceledException exception) {
+                if (exception.CancellationToken != cts.Token)
+                {
+                    throw;
+                }
+                /* ignore the local one */
+            }
+        }
+
         public static IEnumerable<NamedCall> BlockingCalls = new List<NamedCall>
         {
                 new NamedCall { Name = "Task.Wait", Call = delegate (CancellationToken ct) { Task.Delay(10, ct).Wait(ct); }},
@@ -153,17 +167,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 new NamedCall { Name = "Task.WaitAny", Call = delegate (CancellationToken ct) { Task.WaitAny(Task.Delay(10, ct)); }},
                 new NamedCall { Name = "ManualResetEventSlim.Wait", Call = delegate (CancellationToken ct) {
                     using var mr = new ManualResetEventSlim(false);
-                    using var cts = new CancellationTokenSource(8);
-                    try {
-                        mr.Wait(cts.Token);
-                    } catch (OperationCanceledException) { /* ignore */ }
+                    LocalCtsIgnoringCall(mr.Wait);
                 }},
                 new NamedCall { Name = "SemaphoreSlim.Wait", Call = delegate (CancellationToken ct) {
                     using var sem = new SemaphoreSlim(2);
-                    var cts = new CancellationTokenSource(8);
-                    try {
-                        sem.Wait(cts.Token);
-                    } catch (OperationCanceledException) { /* ignore */ }
+                    LocalCtsIgnoringCall(sem.Wait);
                 }},
                 new NamedCall { Name = "CancellationTokenSource.ctor", Call = delegate (CancellationToken ct) {
                     using var cts = new CancellationTokenSource(8);
