@@ -164,15 +164,20 @@ mono_native_thread_os_id_get (void)
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
+#ifdef __EMSCRIPTEN_PTHREADS__
+	return pthread_create (tid, NULL, (void *(*)(void *)) func, arg) == 0;
+#else
 	g_error ("WASM doesn't support threading");
+#endif
 }
-
-static const char *thread_name;
 
 void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 {
-	thread_name = g_strdup (name);
+#ifndef DISABLE_THREADS
+	// note there is also emscripten_set_thread_name, but it only changes the name for emscripten profiler
+	mono_wasm_pthread_set_name (name);
+#endif
 }
 
 gboolean

@@ -142,7 +142,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
     {
         if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallFinallyPairTail())
         {
-            res = new (this, CMK_FlowEdge) FlowEdge(bb, res);
+            res = new (this, CMK_FlowEdge) FlowEdge(bb, blk, res);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
@@ -164,7 +164,7 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
                 for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
                      filterBlk             = filterBlk->Next())
                 {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
                     assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
@@ -239,7 +239,7 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
                 for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
                      filterBlk             = filterBlk->Next())
                 {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, res);
+                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
 
                     assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
                         return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
@@ -835,46 +835,6 @@ void BasicBlock::CloneBlockState(Compiler* compiler, BasicBlock* to, const Basic
         assert(newExpr != nullptr);
         compiler->fgInsertStmtAtEnd(to, compiler->fgNewStmtFromTree(newExpr, fromStmt->GetDebugInfo()));
     }
-}
-
-//------------------------------------------------------------------------
-// CopyTarget: Copy the block kind and targets. The targets in the `from` block remain valid.
-// Use `TransferTarget` to copy the pointer to the target descriptor (e.g., for BBJ_SWITCH/BBJ_EHFINALLYRET)
-// after which the `from` block target is invalid.
-//
-// Arguments:
-//    compiler - Jit compiler instance
-//    from - Block to copy from
-//
-void BasicBlock::CopyTarget(Compiler* compiler, const BasicBlock* from)
-{
-    switch (from->GetKind())
-    {
-        case BBJ_SWITCH:
-            SetSwitch(new (compiler, CMK_BasicBlock) BBswtDesc(compiler, from->GetSwitchTargets()));
-            break;
-        case BBJ_EHFINALLYRET:
-            SetEhf(new (compiler, CMK_BasicBlock) BBehfDesc(compiler, from->GetEhfTargets()));
-            break;
-        case BBJ_COND:
-            SetCond(from->GetTrueTarget(), from->GetFalseTarget());
-            break;
-        case BBJ_ALWAYS:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
-            CopyFlags(from, BBF_NONE_QUIRK);
-            break;
-        case BBJ_CALLFINALLY:
-        case BBJ_CALLFINALLYRET:
-        case BBJ_EHCATCHRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_LEAVE:
-            SetKindAndTarget(from->GetKind(), from->GetTarget());
-            break;
-        default:
-            SetKindAndTarget(from->GetKind()); // Clear the target
-            break;
-    }
-    assert(KindIs(from->GetKind()));
 }
 
 //------------------------------------------------------------------------
@@ -1779,6 +1739,22 @@ bool BasicBlock::hasEHBoundaryOut() const
 #endif // FEATURE_EH_FUNCLETS
 
     return returnVal;
+}
+
+//------------------------------------------------------------------------
+// BBswtDesc copy ctor: copy a switch descriptor, but don't set up the jump table
+//
+// Arguments:
+//    other - existing switch descriptor to copy (except for its jump table)
+//
+BBswtDesc::BBswtDesc(const BBswtDesc* other)
+    : bbsDstTab(nullptr)
+    , bbsCount(other->bbsCount)
+    , bbsDominantCase(other->bbsDominantCase)
+    , bbsDominantFraction(other->bbsDominantFraction)
+    , bbsHasDefault(other->bbsHasDefault)
+    , bbsHasDominantCase(other->bbsHasDominantCase)
+{
 }
 
 //------------------------------------------------------------------------

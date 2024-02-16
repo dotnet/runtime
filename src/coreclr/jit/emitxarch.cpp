@@ -6565,7 +6565,7 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
  *  Add an instruction with two register operands.
  */
 
-void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
+void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
     if (IsMovInstruction(ins))
     {
@@ -6586,6 +6586,13 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idInsFmt(fmt);
     id->idReg1(reg1);
     id->idReg2(reg2);
+
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
+    {
+        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
@@ -8545,20 +8552,32 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
 //    op1Reg    -- The register of the first operand
 //    op2Reg    -- The register of the second operand
 //    op3Reg    -- The register of the second operand
+//    instOptions - The options that modify how the instruction is generated
 //
-void emitter::emitIns_SIMD_R_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg)
+void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
+                                   emitAttr    attr,
+                                   regNumber   targetReg,
+                                   regNumber   op1Reg,
+                                   regNumber   op2Reg,
+                                   regNumber   op3Reg,
+                                   insOpts     instOptions)
 {
     if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins))
     {
         assert(UseSimdEncoding());
+
+        if (instOptions != INS_OPTS_NONE)
+        {
+            // insOpts is currently available only in EVEX encoding.
+            assert(UseEvexEncoding());
+        }
 
         // Ensure we aren't overwriting op2 or op3
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
         assert((op3Reg != targetReg) || (op1Reg == targetReg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-        emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg);
+        emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg, instOptions);
     }
     else if (UseSimdEncoding())
     {
@@ -11663,6 +11682,7 @@ void emitter::emitDispIns(
                 default:
                 {
                     printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
+                    emitDispEmbRounding(id);
                     break;
                 }
             }

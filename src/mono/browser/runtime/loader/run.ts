@@ -126,6 +126,19 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
+    withDumpThreadsOnNonZeroExit(): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                dumpThreadsOnNonZeroExit: true
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
     withAssertAfterExit(): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
@@ -144,18 +157,6 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 waitForDebugger: level
-            });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
-    }
-
-    withStartupMemoryCache(value: boolean): DotnetHostBuilder {
-        try {
-            deep_merge_config(monoConfig, {
-                startupMemoryCache: value
             });
             return this;
         } catch (err) {
@@ -511,6 +512,16 @@ async function createEmscriptenWorker(): Promise<EmscriptenModuleInternal> {
     await loaderHelpers.afterConfigLoaded.promise;
 
     prepareAssetsWorker();
+
+    setTimeout(async () => {
+        try {
+            // load subset which is on JS heap rather than in WASM linear memory
+            await mono_download_assets();
+        }
+        catch (err) {
+            mono_exit(1, err);
+        }
+    }, 0);
 
     const promises = importModules();
     const es6Modules = await Promise.all(promises);

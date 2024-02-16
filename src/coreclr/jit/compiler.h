@@ -2184,6 +2184,9 @@ public:
     template<typename TFunc>
     BasicBlockVisit VisitLoopBlocksLexical(TFunc func);
 
+    template<typename TFunc>
+    BasicBlockVisit VisitRegularExitBlocks(TFunc func);
+
     BasicBlock* GetLexicallyTopMostBlock();
     BasicBlock* GetLexicallyBottomMostBlock();
 
@@ -2951,7 +2954,12 @@ public:
 
     GenTree* gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenTreeFlags iconFlags, bool isInvariant);
 
-    GenTreeIntCon* gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
+    GenTreeIntCon*   gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeq* fields = nullptr);
+
+    static var_types gtGetTypeForIconFlags(GenTreeFlags flags)
+    {
+        return flags == GTF_ICON_OBJ_HDL ? TYP_REF : TYP_I_IMPL;
+    }
 
     GenTreeFlags gtTokenToIconFlags(unsigned token);
 
@@ -3509,6 +3517,11 @@ public:
                               GenTree**    pList,
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
                               bool         ignoreRoot   = false);
+
+    GenTree* gtWrapWithSideEffects(GenTree*     tree,
+                                   GenTree*     sideEffectsSource,
+                                   GenTreeFlags sideEffectsFlags = GTF_SIDE_EFFECT,
+                                   bool         ignoreRoot       = false);
 
     bool gtSplitTree(
         BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
@@ -4971,7 +4984,11 @@ public:
     FlowGraphDominatorTree* m_domTree;
     BlockReachabilitySets* m_reachabilitySets;
 
-    bool optLoopsRequirePreHeaders; // Do we require that all loops (in m_loops) have pre-headers?
+    // Do we require loops to be in canonical form? The canonical form ensures that:
+    // 1. All loops have preheaders (single entry blocks that always enter the loop)
+    // 2. All loop exits where bbIsHandlerBeg(exit) is false have only loop predecessors.
+    //
+    bool optLoopsCanonical;
     unsigned optNumNaturalLoopsFound; // Number of natural loops found in the loop finding phase
 
     bool fgBBVarSetsInited;
@@ -5602,6 +5619,9 @@ public:
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
+    // Does value-numbering for a special intrinsic call.
+    bool fgValueNumberSpecialIntrinsic(GenTreeCall* call);
+
     // Does value-numbering for a helper representing a cast operation.
     void fgValueNumberCastHelper(GenTreeCall* call);
 
@@ -5906,7 +5926,7 @@ public:
 
     PhaseStatus fgCanonicalizeFirstBB();
 
-    void fgSetEHRegionForNewPreheader(BasicBlock* preheader);
+    void fgSetEHRegionForNewPreheaderOrExit(BasicBlock* preheader);
 
     void fgUnreachableBlock(BasicBlock* block);
 
@@ -6785,12 +6805,17 @@ public:
 
     void optFindLoops();
     bool optCanonicalizeLoops();
+
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
     BasicBlock* optFindLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* top);
     BasicBlock* optTryAdvanceLoopCompactionInsertionPoint(FlowGraphNaturalLoop* loop, BasicBlock* insertionPoint, BasicBlock* top, BasicBlock* bottom);
     bool optCreatePreheader(FlowGraphNaturalLoop* loop);
-    void optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader);
+    void optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block);
+    weight_t optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile);
+
+    bool optCanonicalizeExits(FlowGraphNaturalLoop* loop);
+    bool optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit);
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
@@ -6831,16 +6856,9 @@ protected:
     bool optExtractInitTestIncr(
         BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
-    enum class RedirectBlockOption
-    {
-        DoNotChangePredLists, // do not modify pred lists
-        UpdatePredLists,      // add/remove to pred lists
-        AddToPredLists,       // only add to pred lists
-    };
-
     void optRedirectBlock(BasicBlock*      blk,
-                          BlockToBlockMap* redirectMap,
-                          const RedirectBlockOption = RedirectBlockOption::DoNotChangePredLists);
+                          BasicBlock*      newBlk,
+                          BlockToBlockMap* redirectMap);
 
     // Marks the containsCall information to "loop" and any parent loops.
     void AddContainsCallAllContainingLoops(FlowGraphNaturalLoop* loop);
@@ -7702,9 +7720,11 @@ protected:
 
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
-    fgWalkResult optVNConstantPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
+    fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree* optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
-    GenTree* optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree* optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree* optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree* optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree* optExtractSideEffListFromConst(GenTree* tree);
 
     AssertionIndex GetAssertionCount()
@@ -7776,8 +7796,6 @@ public:
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool optAssertionIsNonNull(GenTree*         op,
                                ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
-    bool optAssertionIsNonHeap(GenTree*         op,
-                               ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
     AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP assertions, GenTree* op1, GenTree* op2);
     AssertionIndex optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1);
@@ -7814,7 +7832,12 @@ public:
     GenTree* optAssertionProp_Update(GenTree* newTree, GenTree* tree, Statement* stmt);
     GenTree* optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call);
     bool optNonNullAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
-    bool optNonHeapAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* indir);
+    bool optWriteBarrierAssertionProp_StoreInd(ASSERT_VALARG_TP assertions, GenTreeStoreInd* indir);
+
+    void optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
+                                          GenTree*         tree,
+                                          bool*            isKnownNonZero,
+                                          bool*            isKnownNonNegative);
 
     // Implied assertion functions.
     void optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& activeAssertions);
@@ -9394,6 +9417,7 @@ private:
     }
 
 #ifdef TARGET_XARCH
+public:
     bool canUseVexEncoding() const
     {
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
@@ -9410,6 +9434,7 @@ private:
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
     }
 
+private:
     //------------------------------------------------------------------------
     // DoJitStressEvexEncoding- Answer the question: Do we force EVEX encoding.
     //
@@ -9984,6 +10009,8 @@ public:
     }
 
     const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
+
+    const char* printfAlloc(const char* format, ...);
 
 #endif // DEBUG
 

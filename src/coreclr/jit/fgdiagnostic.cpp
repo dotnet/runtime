@@ -2683,6 +2683,10 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         }
 
         assert(CheckJump(blockPred, block));
+
+        // Make sure the pred edge's destination block is correct
+        //
+        assert(pred->getDestinationBlock() == block);
     }
 
     // Make sure preds are in increasing BBnum order
@@ -4719,12 +4723,20 @@ void Compiler::fgDebugCheckLoops()
     {
         return;
     }
-    if (optLoopsRequirePreHeaders)
+    if (optLoopsCanonical)
     {
         for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
         {
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+
+            loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
+                for (BasicBlock* pred : exit->PredBlocks())
+                {
+                    assert(loop->ContainsBlock(pred));
+                }
+                return BasicBlockVisit::Continue;
+            });
         }
     }
 }

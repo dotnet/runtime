@@ -165,7 +165,7 @@ namespace System.Numerics.Tensors.Tests
         /// </summary>
         protected void RunForEachSpecialValue(Action action, BoundedMemory<T> x)
         {
-            foreach (T value in GetSpecialValues())
+            Assert.All(GetSpecialValues(), value =>
             {
                 int pos = Random.Next(x.Length);
                 T orig = x[pos];
@@ -174,7 +174,7 @@ namespace System.Numerics.Tensors.Tests
                 action();
 
                 x[pos] = orig;
-            }
+            });
         }
         #endregion
 

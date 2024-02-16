@@ -51,7 +51,6 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <minipal/getexepath.h>
-#include "cominterop.h"
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
 #include "external-only.h"
@@ -101,8 +100,6 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading",
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
 static MonoCoopMutex ldstr_section;
-/* Used by remoting proxies */
-static MonoMethod *create_proxy_for_type_method;
 static MonoGHashTable *ldstr_table;
 
 static GString *
@@ -5227,10 +5224,6 @@ exit:
 	return res;
 }
 
-// FIXME these will move to header soon
-static MonoObjectHandle
-mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error);
-
 /**
  * object_new_common_tail:
  *
@@ -5362,12 +5355,17 @@ MonoObjectHandle
 mono_object_new_handle (MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	
+	if (MONO_CLASS_IS_IMPORT(klass)) {
+		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
+		return MONO_HANDLE_NEW (MonoObject, NULL);
+	}
 
 	MonoVTable* const vtable = mono_class_vtable_checked (klass, error);
 
 	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
 
-	return mono_object_new_by_vtable (vtable, error);
+	return mono_object_new_alloc_by_vtable (vtable, error);
 }
 
 /**
@@ -5428,89 +5426,14 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoObject *o;
-
 	error_init (error);
 
-	/* check for is_com_object for COM Interop */
-	if (mono_class_is_com_object (vtable->klass)) {
-		gpointer pa [1];
-		MonoMethod *im = create_proxy_for_type_method;
-
-		if (im == NULL) {
-			MonoClass *klass = mono_class_get_activation_services_class ();
-
-			if (!m_class_is_inited (klass))
-				mono_class_init_internal (klass);
-
-			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
-			return_val_if_nok (error, NULL);
-			if (!im) {
-				mono_error_set_not_supported (error, "Linked away.");
-				return NULL;
-			}
-			create_proxy_for_type_method = im;
-		}
-
-		pa [0] = mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error);
-		if (!is_ok (error))
-			return NULL;
-
-		o = mono_runtime_invoke_checked (im, NULL, pa, error);
-		if (!is_ok (error))
-			return NULL;
-
-		if (o != NULL)
-			return o;
+	if (MONO_CLASS_IS_IMPORT(vtable->klass)) {
+		mono_error_set_not_supported (error, "Built-in COM interop is not supported on Mono.");
+		return NULL;
 	}
 
 	return mono_object_new_alloc_specific_checked (vtable, error);
-}
-
-static MonoObjectHandle
-mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
-{
-	// This function handles remoting and COM.
-	// mono_object_new_alloc_by_vtable does not.
-
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, NULL);
-
-	error_init (error);
-
-	/* check for is_com_object for COM Interop */
-	if (mono_class_is_com_object (vtable->klass)) {
-		MonoMethod *im = create_proxy_for_type_method;
-
-		if (im == NULL) {
-			MonoClass *klass = mono_class_get_activation_services_class ();
-
-			if (!m_class_is_inited (klass))
-				mono_class_init_internal (klass);
-
-			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
-			return_val_if_nok (error, mono_new_null ());
-			if (!im) {
-				mono_error_set_not_supported (error, "Linked away.");
-				return MONO_HANDLE_NEW (MonoObject, NULL);
-			}
-			create_proxy_for_type_method = im;
-		}
-
-		// FIXMEcoop
-		gpointer pa[ ] = { mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error) };
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
-
-		// FIXMEcoop
-		o = MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (im, NULL, pa, error));
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
-
-		if (!MONO_HANDLE_IS_NULL (o))
-			return o;
-	}
-
-	return mono_object_new_alloc_by_vtable (vtable, error);
 }
 
 MonoObject *

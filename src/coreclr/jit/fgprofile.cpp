@@ -3916,7 +3916,10 @@ void EfficientEdgeCountReconstructor::PropagateOSREntryEdges(BasicBlock* block, 
         FlowEdge* const flowEdge = m_comp->fgGetPredForBlock(edge->m_targetBlock, block);
 
         assert(flowEdge != nullptr);
-        assert(!flowEdge->hasLikelihood());
+
+        // Naive likelihood should have been set during pred initialization in fgAddRefPred
+        //
+        assert(flowEdge->hasLikelihood());
         weight_t likelihood = 0;
 
         if (nEdges == 1)

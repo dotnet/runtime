@@ -8895,6 +8895,21 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             GenTree* srcOp1 = op1->gtGetOp1();
             consumedRegs |= genRegMask(srcOp1->GetRegNum());
         }
+        else if (op1->IsLocal())
+        {
+            GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
+            terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+        }
+        if (op2->OperIs(GT_COPY))
+        {
+            GenTree* srcOp2 = op2->gtGetOp1();
+            consumedRegs |= genRegMask(srcOp2->GetRegNum());
+        }
+        else if (op2->IsLocal())
+        {
+            GenTreeLclVarCommon* lcl = op2->AsLclVarCommon();
+            terminatorNodeLclVarDsc2 = &compiler->lvaTable[lcl->GetLclNum()];
+        }
     }
     // Next, if this blocks ends with a JCMP/JTEST/JTRUE, we have to make sure:
     // 1. Not to copy into the register that JCMP/JTEST/JTRUE uses
@@ -9022,7 +9037,6 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
                 sameToReg = REG_NA;
             }
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if ((terminatorNodeLclVarDsc != nullptr) &&
                 (terminatorNodeLclVarDsc->lvVarIndex == outResolutionSetVarIndex))
             {
@@ -9033,7 +9047,6 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             {
                 sameToReg = REG_NA;
             }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
             // If the var is live only at those blocks connected by a split edge and not live-in at some of the
             // target blocks, we will resolve it the same way as if it were in diffResolutionSet and resolution

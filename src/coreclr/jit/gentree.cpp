@@ -2076,6 +2076,75 @@ void CallArgs::Remove(CallArg* arg)
     assert(!"Did not find arg to remove in CallArgs::Remove");
 }
 
+#ifdef TARGET_XARCH
+//---------------------------------------------------------------
+// NeedsVzeroupper: Determines if the call needs a vzeroupper emitted before it is invoked
+//
+// Parameters:
+//   comp - the compiler
+//
+// Returns:
+//   true if a vzeroupper needs to be emitted; otherwise, false
+//
+bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
+{
+    bool needsVzeroupper = false;
+
+    if (IsPInvoke() && comp->canUseVexEncoding())
+    {
+        // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
+        //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean
+        //   between the VEX and the legacy SSE instructions. Often the best way to do this is to insert a
+        //   VZEROUPPER before returning from any function that uses VEX (that does not produce a VEX
+        //   register) and before any call to an unknown function.
+
+        switch (gtCallType)
+        {
+            case CT_USER_FUNC:
+            case CT_INDIRECT:
+            {
+                // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
+                // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
+
+                needsVzeroupper = true;
+                break;
+            }
+
+            case CT_HELPER:
+            {
+                // Most helpers are well known to not use any floating-point or SIMD logic internally, but
+                // a few do exist so we need to ensure they are handled. They are identified by taking or
+                // returning a floating-point or SIMD type, regardless of how it is actually passed/returned.
+
+                if (varTypeUsesFloatReg(this))
+                {
+                    needsVzeroupper = true;
+                }
+                else
+                {
+                    for (CallArg& arg : gtArgs.Args())
+                    {
+                        if (varTypeUsesFloatReg(arg.GetSignatureType()))
+                        {
+                            needsVzeroupper = true;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    return needsVzeroupper;
+}
+#endif // TARGET_XARCH
+
 //---------------------------------------------------------------
 // GetOtherRegMask: Get the reg mask of gtOtherRegs of call node
 //
@@ -2124,8 +2193,12 @@ regMaskMixed GenTreeCall::GetOtherRegMask() const
 //
 bool GenTreeCall::IsPure(Compiler* compiler) const
 {
-    return (gtCallType == CT_HELPER) &&
-           compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
+    if (IsHelperCall())
+    {
+        return compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
+    }
+    // If needed, we can annotate other special intrinsic methods as pure as well.
+    return IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle);
 }
 
 //------------------------------------------------------------------------------
@@ -2308,6 +2381,12 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     // calls that can prove them side-effect-free.
     if (gtCallType != CT_HELPER)
     {
+        // If needed, we can annotate other special intrinsic methods as side effect free as well.
+        if (IsSpecialIntrinsic(compiler, NI_System_Type_GetTypeFromHandle))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -2483,6 +2562,34 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
 }
 
 //-------------------------------------------------------------------------
+// IsRuntimeLookupHelperCall: Determine if this GT_CALL node represents a runtime lookup helper call.
+//
+// Arguments:
+//     compiler - the compiler instance so that we can call eeGetHelperNum
+//
+// Return Value:
+//     Returns true if this GT_CALL node represents a runtime lookup helper call.
+//
+bool GenTreeCall::IsRuntimeLookupHelperCall(Compiler* compiler) const
+{
+    if (!IsHelperCall())
+    {
+        return false;
+    }
+
+    switch (compiler->eeGetHelperNum(gtCallMethHnd))
+    {
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS:
+        case CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG:
+        case CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//-------------------------------------------------------------------------
 // IsSpecialIntrinsic: Determine if this GT_CALL node is a specific intrinsic.
 //
 // Arguments:
@@ -2536,6 +2643,12 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
     if (c1->gtCallType != CT_INDIRECT)
     {
         if (c1->gtCallMethHnd != c2->gtCallMethHnd)
+        {
+            return false;
+        }
+
+        if (c1->IsHelperCall() && ((c1->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL) !=
+                                   (c2->gtCallMoreFlags & GTF_CALL_M_CAST_OBJ_NONNULL)))
         {
             return false;
         }
@@ -2696,6 +2809,14 @@ AGAIN:
     if ((op1->gtFlags & (GTF_UNSIGNED)) != (op2->gtFlags & (GTF_UNSIGNED)))
     {
         return false;
+    }
+    if (op1->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV))
+    {
+        if ((op1->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) !=
+            (op2->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)))
+        {
+            return false;
+        }
     }
 
     /* Figure out what kind of nodes we're comparing */
@@ -7702,8 +7823,11 @@ GenTree* Compiler::gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags i
     {
         iconNode->gtTargetHandle = (size_t)compileTimeHandle;
     }
+    if (iconFlags == GTF_ICON_OBJ_HDL)
+    {
+        iconNode->gtTargetHandle = (size_t)value;
+    }
 #endif
-
     return handleNode;
 }
 
@@ -7716,8 +7840,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     {
         case IAT_VALUE:
             setMethodHasFrozenObjects();
-            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            tree->gtType = TYP_REF;
+            tree = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
 #endif
@@ -8074,8 +8197,6 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
                 // setMethodHasFrozenObjects here to make caller's life easier.
                 setMethodHasFrozenObjects();
                 GenTree* tree = gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                tree->gtType  = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = val);
                 return tree;
             }
         }
@@ -11979,12 +12100,12 @@ void Compiler::gtDispConst(GenTree* tree)
             }
             else
             {
-                ssize_t dspIconVal =
-                    tree->IsIconHandle() ? dspPtr(tree->AsIntCon()->gtIconVal) : tree->AsIntCon()->gtIconVal;
+                ssize_t iconVal    = tree->AsIntCon()->gtIconVal;
+                ssize_t dspIconVal = tree->IsIconHandle() ? dspPtr(iconVal) : iconVal;
 
                 if (tree->TypeGet() == TYP_REF)
                 {
-                    if (tree->AsIntCon()->gtIconVal == 0)
+                    if (iconVal == 0)
                     {
                         printf(" null");
                     }
@@ -11994,12 +12115,12 @@ void Compiler::gtDispConst(GenTree* tree)
                         printf(" 0x%llx", dspIconVal);
                     }
                 }
-                else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
+                else if ((iconVal > -1000) && (iconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
                 }
 #ifdef TARGET_64BIT
-                else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
+                else if ((iconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
                     if (dspIconVal >= 0)
                     {
@@ -12031,13 +12152,13 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" scope");
                             break;
                         case GTF_ICON_CLASS_HDL:
-                            printf(" class");
+                            printf(" class %s", eeGetClassName((CORINFO_CLASS_HANDLE)iconVal));
                             break;
                         case GTF_ICON_METHOD_HDL:
-                            printf(" method");
+                            printf(" method %s", eeGetMethodFullName((CORINFO_METHOD_HANDLE)iconVal));
                             break;
                         case GTF_ICON_FIELD_HDL:
-                            printf(" field");
+                            printf(" field %s", eeGetFieldName((CORINFO_FIELD_HANDLE)iconVal, true));
                             break;
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
@@ -16039,7 +16160,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             // For unordered operations (i.e. the GTF_RELOP_NAN_UN flag is set)
             // the result is always true - return 1.
 
-            if (_isnan(d1) || _isnan(d2))
+            if (FloatingPointUtils::isNaN(d1) || FloatingPointUtils::isNaN(d2))
             {
                 JITDUMP("Double operator(s) is NaN\n");
 
@@ -17009,6 +17130,41 @@ bool Compiler::gtSplitTree(
     *splitNodeUse = splitter.SplitNodeUse;
 
     return splitter.MadeChanges;
+}
+
+//------------------------------------------------------------------------
+// gtWrapWithSideEffects: Extracts side effects from sideEffectSource (if any)
+//    and wraps the input tree with a COMMA node with them.
+//
+// Arguments:
+//    tree              - the expression tree to wrap with side effects (if any)
+//                        it has to be either a side effect free subnode of sideEffectsSource
+//                        or any tree outside sideEffectsSource's hierarchy
+//    sideEffectsSource - the expression tree to extract side effects from
+//    sideEffectsFlags  - side effect flags to be considered
+//    ignoreRoot        - ignore side effects on the expression root node
+//
+// Return Value:
+//    The original tree wrapped with a COMMA node that contains the side effects
+//    or just the tree itself if sideEffectSource has no side effects.
+//
+GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
+                                         GenTree*     sideEffectsSource,
+                                         GenTreeFlags sideEffectsFlags,
+                                         bool         ignoreRoot)
+{
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(sideEffectsSource, &sideEffects, sideEffectsFlags, ignoreRoot);
+    if (sideEffects != nullptr)
+    {
+        // TODO: assert if tree is a subnode of sideEffectsSource and the tree has its own side effects
+        // otherwise the resulting COMMA might have some side effects to be duplicated
+        // It should be possible to be smarter here and allow such cases by extracting the side effects
+        // properly for this particular case. For now, caller is responsible for avoiding such cases.
+
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+    }
+    return tree;
 }
 
 //------------------------------------------------------------------------
@@ -18849,7 +19005,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 
 CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull)
 {
-    CORINFO_CLASS_HANDLE fieldClass   = nullptr;
+    CORINFO_CLASS_HANDLE fieldClass   = NO_CLASS_HANDLE;
     CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
 
     if (fieldCorType == CORINFO_TYPE_CLASS)
@@ -18863,7 +19019,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 #if DEBUG
             char fieldNameBuffer[128];
             char classNameBuffer[128];
-            JITDUMP("Querying runtime about current class of field %s (declared as %s)\n",
+            JITDUMP("\nQuerying runtime about current class of field %s (declared as %s)\n",
                     eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer)),
                     eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer)));
 #endif // DEBUG
@@ -26326,6 +26482,95 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 {
     genTreeOps Oper = HWOperGet();
     return Oper == GT_AND || Oper == GT_OR || Oper == GT_XOR || Oper == GT_AND_NOT;
+}
+
+//------------------------------------------------------------------------
+// OperIsEmbRoundingEnabled: Is this HWIntrinsic a node with embedded rounding feature.
+//
+// Return Value:
+//    Whether "this" is a node with embedded rounding feature.
+//
+bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+
+    if (!HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+    {
+        return false;
+    }
+
+    size_t numArgs = GetOperandCount();
+    switch (intrinsicId)
+    {
+        // these intrinsics only have the embedded rounding enabled implementation.
+        case NI_AVX512F_AddScalar:
+        case NI_AVX512F_DivideScalar:
+        case NI_AVX512F_MultiplyScalar:
+        case NI_AVX512F_SubtractScalar:
+        case NI_AVX512F_SqrtScalar:
+        {
+            return true;
+        }
+
+        case NI_AVX512F_FusedMultiplyAdd:
+        case NI_AVX512F_FusedMultiplyAddScalar:
+        case NI_AVX512F_FusedMultiplyAddNegated:
+        case NI_AVX512F_FusedMultiplyAddNegatedScalar:
+        case NI_AVX512F_FusedMultiplyAddSubtract:
+        case NI_AVX512F_FusedMultiplySubtract:
+        case NI_AVX512F_FusedMultiplySubtractAdd:
+        case NI_AVX512F_FusedMultiplySubtractNegated:
+        case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
+        case NI_AVX512F_FusedMultiplySubtractScalar:
+        {
+            return numArgs == 4;
+        }
+
+        case NI_AVX512F_Add:
+        case NI_AVX512F_Divide:
+        case NI_AVX512F_Multiply:
+        case NI_AVX512F_Subtract:
+
+        case NI_AVX512F_Scale:
+        case NI_AVX512F_ScaleScalar:
+
+        case NI_AVX512F_ConvertScalarToVector128Single:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertScalarToVector128Double:
+        case NI_AVX512F_X64_ConvertScalarToVector128Single:
+#endif // TARGET_AMD64
+        {
+            return numArgs == 3;
+        }
+
+        case NI_AVX512F_Sqrt:
+        case NI_AVX512F_ConvertToInt32:
+        case NI_AVX512F_ConvertToUInt32:
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256Single:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_ConvertToVector512Single:
+        case NI_AVX512F_ConvertToVector512UInt32:
+        case NI_AVX512F_ConvertToVector512Int32:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertToInt64:
+        case NI_AVX512F_X64_ConvertToUInt64:
+#endif // TARGET_AMD64
+        case NI_AVX512DQ_ConvertToVector256Single:
+        case NI_AVX512DQ_ConvertToVector512Double:
+        case NI_AVX512DQ_ConvertToVector512Int64:
+        case NI_AVX512DQ_ConvertToVector512UInt64:
+        {
+            return numArgs == 2;
+        }
+
+        default:
+            unreached();
+    }
+#else  // !TARGET_XARCH
+    return false;
+#endif // TARGET_XARCH
 }
 
 //------------------------------------------------------------------------------
