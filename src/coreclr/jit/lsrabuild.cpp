@@ -880,6 +880,16 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     assert(!call->IsVirtualStub() ||
            ((killMask & compiler->virtualStubParamInfo->GetRegMask()) == compiler->virtualStubParamInfo->GetRegMask()));
 #endif // !TARGET_ARM
+
+#ifdef SWIFT_SUPPORT
+    // Swift calls that throw may trash the callee-saved error register,
+    // so don't use the register post-call until it is consumed by SwiftError (if ever)
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
+    {
+        killMask |= RBM_SWIFT_ERROR;
+    }
+#endif // SWIFT_SUPPORT
+
     return killMask;
 }
 

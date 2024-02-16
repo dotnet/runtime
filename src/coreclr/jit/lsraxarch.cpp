@@ -633,6 +633,19 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+#ifdef SWIFT_SUPPORT
+        case GT_SWIFT_ERROR:
+            srcCount = 0;
+            assert(dstCount == 1);
+            
+            // After a Swift call potentially trashes the error register,
+            // the register can be used again only if there is a GT_SWIFT_ERROR node to consume it
+            // (i.e. the register's value is saved to a SwiftError)
+            addRefsForPhysRegMask(RBM_SWIFT_ERROR, currentLoc, RefTypeKill, true);
+            BuildDef(tree, RBM_SWIFT_ERROR);
+            break;
+#endif // SWIFT_SUPPORT
+
     } // end switch (tree->OperGet())
 
     // We need to be sure that we've set srcCount and dstCount appropriately.

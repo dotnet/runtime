@@ -685,13 +685,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                  sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
             {
                 CORINFO_CLASS_HANDLE argClass;
-                CorInfoType          argType = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
-                bool argIsByrefOrPtr = false;
+                CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+                bool                 argIsByrefOrPtr = false;
 
                 if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
                 {
-                    argClass = info.compCompHnd->getArgClass(sig, sigArg);
-                    argType  = info.compCompHnd->getChildType(argClass, &argClass);
+                    argClass        = info.compCompHnd->getArgClass(sig, sigArg);
+                    argType         = info.compCompHnd->getChildType(argClass, &argClass);
                     argIsByrefOrPtr = true;
                 }
 

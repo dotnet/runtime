@@ -564,8 +564,8 @@
 #endif // !UNIX_AMD64_ABI
 
   #define SWIFT_SUPPORT
-  #define SWIFT_ERROR_REG REG_R12
-  #define SWIFT_ERROR_RBM RBM_R12
+  #define REG_SWIFT_ERROR REG_R12
+  #define RBM_SWIFT_ERROR RBM_R12
   #define SWIFT_SELF_REG  REG_R13
 
 // clang-format on

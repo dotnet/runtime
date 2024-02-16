@@ -2109,7 +2109,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
 #ifdef SWIFT_SUPPORT
         case GT_SWIFT_ERROR:
-            treeNode->SetRegNum(SWIFT_ERROR_REG);
+            treeNode->SetRegNum(REG_SWIFT_ERROR);
             break;
 #endif // SWIFT_SUPPORT
 
@@ -6102,7 +6102,7 @@ void CodeGen::genCall(GenTreeCall* call)
     if ((call->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0)
     {
         assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, SWIFT_ERROR_REG);
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_SWIFT_ERROR);
     }
 #endif // SWIFT_SUPPORT
 
