@@ -21,7 +21,9 @@
     </PropertyGroup>
 
     <ItemGroup Condition="$(SupportsNativeAotComponents)">
-        <ProjectReference Include="@(NativeLibsProjectsToBuild)" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="@(NativeLibsProjectsToBuild)"
+                          ReferenceOutputAssembly="false"
+                          AdditionalProperties="%(AdditionalProperties);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)"/>
     </ItemGroup>
 
     <!-- FIXME: incremental build -->
