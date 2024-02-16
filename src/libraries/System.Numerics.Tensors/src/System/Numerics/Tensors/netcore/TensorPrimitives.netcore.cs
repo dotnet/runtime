@@ -12959,14 +12959,10 @@ namespace System.Numerics.Tensors
                 x = TAggregate.Invoke(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(2, 3, 0, 1)).As<int, T>());
                 x = TAggregate.Invoke(x, Vector128.Shuffle(x.AsInt32(), Vector128.Create(1, 0, 3, 2)).As<int, T>());
             }
-            else if (Unsafe.SizeOf<T>() == 8)
-            {
-                x = TAggregate.Invoke(x, Vector128.Shuffle(x.AsInt64(), Vector128.Create(1, 0)).As<long, T>());
-            }
             else
             {
-                Debug.Fail("Should not be reachable");
-                throw new NotSupportedException();
+                Debug.Assert(Unsafe.SizeOf<T>() == 8);
+                x = TAggregate.Invoke(x, Vector128.Shuffle(x.AsInt64(), Vector128.Create(1, 0)).As<long, T>());
             }
 
             return x.ToScalar();
@@ -13068,15 +13064,12 @@ namespace System.Numerics.Tensors
                     (uint)(count * 16));
             }
 
-            if (Unsafe.SizeOf<T>() == 8)
+            Debug.Assert(Unsafe.SizeOf<T>() == 8);
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
                     (uint)(count * 8));
             }
-
-            Debug.Fail("Shouldn't get here");
-            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -13107,15 +13100,12 @@ namespace System.Numerics.Tensors
                     (uint)(count * 16));
             }
 
-            if (Unsafe.SizeOf<T>() == 8)
+            Debug.Assert(Unsafe.SizeOf<T>() == 8);
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
                     (uint)(count * 8));
             }
-
-            Debug.Fail("Shouldn't get here");
-            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -13146,15 +13136,12 @@ namespace System.Numerics.Tensors
                     (uint)(count * 16));
             }
 
-            if (Unsafe.SizeOf<T>() == 8)
+            Debug.Assert(Unsafe.SizeOf<T>() == 8);
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(AlignmentUInt64Mask_8x9)),
                     (uint)(count * 8));
             }
-
-            Debug.Fail("Shouldn't get here - CreateAlignmentMaskVector512");
-            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -13185,15 +13172,12 @@ namespace System.Numerics.Tensors
                     (uint)(count * 16) + 12); // last 4 ints in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 8)
+            Debug.Assert(Unsafe.SizeOf<T>() == 8);
             {
                 return Vector128.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),
                     (uint)(count * 8) + 6); // last 2 longs in the row
             }
-
-            Debug.Fail("Shouldn't get here - CreateRemainderMaskVector128");
-            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -13224,15 +13208,12 @@ namespace System.Numerics.Tensors
                     (uint)(count * 16) + 8); // last 8 ints in the row
             }
 
-            if (Unsafe.SizeOf<T>() == 8)
+            Debug.Assert(Unsafe.SizeOf<T>() == 8);
             {
                 return Vector256.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),
                     (uint)(count * 8) + 4); // last 4 longs in the row
             }
-
-            Debug.Fail("Shouldn't get here - CreateRemainderMaskVector256");
-            throw new NotSupportedException();
         }
 
         /// <summary>
@@ -13263,15 +13244,12 @@ namespace System.Numerics.Tensors
                     (uint)(count * 16));
             }
 
-            if (Unsafe.SizeOf<T>() == 8)
+            Debug.Assert(Unsafe.SizeOf<T>() == 8);
             {
                 return Vector512.LoadUnsafe(
                     ref Unsafe.As<ulong, T>(ref MemoryMarshal.GetReference(RemainderUInt64Mask_8x9)),
                     (uint)(count * 8));
             }
-
-            Debug.Fail("Shouldn't get here - CreateRemainderMaskVector512");
-            throw new NotSupportedException();
         }
 
         // TODO: The uses of these ApplyScalar methods are all as part of operators when handling edge cases (NaN, Infinity, really large inputs, etc.)
@@ -13750,7 +13728,7 @@ namespace System.Numerics.Tensors
                 return resultIndex.As<T, short>().ToScalar();
             }
 
-            if (sizeof(T) == 1)
+            Debug.Assert(sizeof(T) == 1);
             {
                 // Compare 0,1,2,3,4,5,6,7 with 8,9,10,11,12,13,14,15
                 tmpResult = Vector128.Shuffle(result.AsByte(), Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7)).As<byte, T>();
@@ -13775,8 +13753,6 @@ namespace System.Numerics.Tensors
                 // Return 0
                 return resultIndex.As<T, byte>().ToScalar();
             }
-
-            throw new NotSupportedException();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -18847,13 +18823,11 @@ namespace System.Numerics.Tensors
                 {
                     return Vector128.Ceiling(x.AsSingle()).As<float, T>();
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
                     return Vector128.Ceiling(x.AsDouble()).As<double, T>();
                 }
-
-                throw new NotSupportedException();
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
@@ -18862,13 +18836,11 @@ namespace System.Numerics.Tensors
                 {
                     return Vector256.Ceiling(x.AsSingle()).As<float, T>();
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
                     return Vector256.Ceiling(x.AsDouble()).As<double, T>();
                 }
-
-                throw new NotSupportedException();
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
@@ -18877,13 +18849,11 @@ namespace System.Numerics.Tensors
                 {
                     return Vector512.Ceiling(x.AsSingle()).As<float, T>();
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
                     return Vector512.Ceiling(x.AsDouble()).As<double, T>();
                 }
-
-                throw new NotSupportedException();
             }
         }
 
@@ -18899,13 +18869,11 @@ namespace System.Numerics.Tensors
                 {
                     return Vector128.Floor(x.AsSingle()).As<float, T>();
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
                     return Vector128.Floor(x.AsDouble()).As<double, T>();
                 }
-
-                throw new NotSupportedException();
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
@@ -18914,13 +18882,11 @@ namespace System.Numerics.Tensors
                 {
                     return Vector256.Floor(x.AsSingle()).As<float, T>();
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
                     return Vector256.Floor(x.AsDouble()).As<double, T>();
                 }
-
-                throw new NotSupportedException();
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
@@ -18929,13 +18895,11 @@ namespace System.Numerics.Tensors
                 {
                     return Vector512.Floor(x.AsSingle()).As<float, T>();
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
                     return Vector512.Floor(x.AsDouble()).As<double, T>();
                 }
-
-                throw new NotSupportedException();
             }
         }
 
@@ -18956,9 +18920,10 @@ namespace System.Numerics.Tensors
                         Vector128.Floor(x.AsSingle()).As<float, T>(),
                         Vector128.Ceiling(x.AsSingle()).As<float, T>());
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
+
                     if (Sse41.IsSupported) return Sse41.RoundToZero(x.AsDouble()).As<double, T>();
                     if (AdvSimd.Arm64.IsSupported) return AdvSimd.Arm64.RoundToZero(x.AsDouble()).As<double, T>();
 
@@ -18966,8 +18931,6 @@ namespace System.Numerics.Tensors
                         Vector128.Floor(x.AsDouble()).As<double, T>(),
                         Vector128.Ceiling(x.AsDouble()).As<double, T>());
                 }
-
-                throw new NotSupportedException();
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
@@ -18980,17 +18943,16 @@ namespace System.Numerics.Tensors
                         Vector256.Floor(x.AsSingle()).As<float, T>(),
                         Vector256.Ceiling(x.AsSingle()).As<float, T>());
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
+
                     if (Avx.IsSupported) return Avx.RoundToZero(x.AsDouble()).As<double, T>();
 
                     return Vector256.ConditionalSelect(Vector256.GreaterThanOrEqual(x, Vector256<T>.Zero),
                         Vector256.Floor(x.AsDouble()).As<double, T>(),
                         Vector256.Ceiling(x.AsDouble()).As<double, T>());
                 }
-
-                throw new NotSupportedException();
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
@@ -19003,28 +18965,187 @@ namespace System.Numerics.Tensors
                         Vector512.Floor(x.AsSingle()).As<float, T>(),
                         Vector512.Ceiling(x.AsSingle()).As<float, T>());
                 }
-
-                if (typeof(T) == typeof(double))
+                else
                 {
+                    Debug.Assert(typeof(T) == typeof(double));
+
                     if (Avx512F.IsSupported) return Avx512F.RoundScale(x.AsDouble(), 0b11).As<double, T>();
 
                     return Vector512.ConditionalSelect(Vector512.GreaterThanOrEqual(x, Vector512<T>.Zero),
                         Vector512.Floor(x.AsDouble()).As<double, T>(),
                         Vector512.Ceiling(x.AsDouble()).As<double, T>());
                 }
-
-                throw new NotSupportedException();
             }
         }
 
         /// <summary>T.PopCount(x)</summary>
         internal readonly struct PopCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
         {
-            public static bool Vectorizable => false; // TODO: Vectorize
+            // TODO https://github.com/dotnet/runtime/issues/96162: Use AVX512 popcount operations when available
+
+            public static bool Vectorizable =>
+                // The implementation uses a vectorized version of the BitOperations.PopCount software fallback:
+                // https://github.com/dotnet/runtime/blob/aff061bab1b6d9ccd5731bd16fa8e89ad82ab75a/src/libraries/System.Private.CoreLib/src/System/Numerics/BitOperations.cs#L496-L508
+                // This relies on 64-bit shifts for sizeof(T) == 8, and such shifts aren't accelerated on today's hardware.
+                // Alternative approaches, such as doing two 32-bit operations and combining them were observed to not
+                // provide any meaningfuls speedup over scalar. So for now, we don't vectorize when sizeof(T) == 8.
+                sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4;
+
             public static T Invoke(T x) => T.PopCount(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<T> Invoke(Vector128<T> x)
+            {
+                if (sizeof(T) == 1)
+                {
+                    if (AdvSimd.IsSupported)
+                    {
+                        return AdvSimd.PopCount(x.AsByte()).As<byte, T>();
+                    }
+
+                    if (PackedSimd.IsSupported)
+                    {
+                        return PackedSimd.PopCount(x.AsByte()).As<byte, T>();
+                    }
+
+                    Vector128<byte> c1 = Vector128.Create((byte)0x55);
+                    Vector128<byte> c2 = Vector128.Create((byte)0x33);
+                    Vector128<byte> c3 = Vector128.Create((byte)0x0F);
+
+                    // We don't have a per element shuffle for byte on some platforms.
+                    // However, we do currently always have a 16-bit shift available and
+                    // due to how the algorithm works, we don't need to worry about
+                    // any bits that shift into the lower 8-bits from the upper 8-bits.
+                    Vector128<byte> tmp = x.AsByte();
+                    tmp -= (x.AsUInt16() >> 1).AsByte() & c1;
+                    tmp = (tmp & c2) + ((tmp.AsUInt16() >> 2).AsByte() & c2);
+                    return ((tmp + (tmp.AsUInt16() >> 4).AsByte()) & c3).As<byte, T>();
+                }
+
+                if (sizeof(T) == 2)
+                {
+                    Vector128<ushort> c1 = Vector128.Create((ushort)0x5555);
+                    Vector128<ushort> c2 = Vector128.Create((ushort)0x3333);
+                    Vector128<ushort> c3 = Vector128.Create((ushort)0x0F0F);
+                    Vector128<ushort> c4 = Vector128.Create((ushort)0x0101);
+
+                    Vector128<ushort> tmp = x.AsUInt16();
+                    tmp -= (tmp >> 1) & c1;
+                    tmp = (tmp & c2) + ((tmp >> 2) & c2);
+                    tmp = (((tmp + (tmp >> 4)) & c3) * c4) >> 8;
+                    return tmp.As<ushort, T>();
+                }
+
+                Debug.Assert(sizeof(T) == 4);
+                {
+                    Vector128<uint> c1 = Vector128.Create(0x55555555u);
+                    Vector128<uint> c2 = Vector128.Create(0x33333333u);
+                    Vector128<uint> c3 = Vector128.Create(0x0F0F0F0Fu);
+                    Vector128<uint> c4 = Vector128.Create(0x01010101u);
+
+                    Vector128<uint> tmp = x.AsUInt32();
+                    tmp -= (tmp >> 1) & c1;
+                    tmp = (tmp & c2) + ((tmp >> 2) & c2);
+                    tmp = (((tmp + (tmp >> 4)) & c3) * c4) >> 24;
+                    return tmp.As<uint, T>();
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<T> Invoke(Vector256<T> x)
+            {
+                if (sizeof(T) == 1)
+                {
+                    Vector256<byte> c1 = Vector256.Create((byte)0x55);
+                    Vector256<byte> c2 = Vector256.Create((byte)0x33);
+                    Vector256<byte> c3 = Vector256.Create((byte)0x0F);
+
+                    // We don't have a per element shuffle for byte on some platforms.
+                    // However, we do currently always have a 16-bit shift available and
+                    // due to how the algorithm works, we don't need to worry about
+                    // any bits that shift into the lower 8-bits from the upper 8-bits.
+                    Vector256<byte> tmp = x.AsByte();
+                    tmp -= (x.AsUInt16() >> 1).AsByte() & c1;
+                    tmp = (tmp & c2) + ((tmp.AsUInt16() >> 2).AsByte() & c2);
+                    return ((tmp + (tmp.AsUInt16() >> 4).AsByte()) & c3).As<byte, T>();
+                }
+
+                if (sizeof(T) == 2)
+                {
+                    Vector256<ushort> c1 = Vector256.Create((ushort)0x5555);
+                    Vector256<ushort> c2 = Vector256.Create((ushort)0x3333);
+                    Vector256<ushort> c3 = Vector256.Create((ushort)0x0F0F);
+                    Vector256<ushort> c4 = Vector256.Create((ushort)0x0101);
+
+                    Vector256<ushort> tmp = x.AsUInt16();
+                    tmp -= (tmp >> 1) & c1;
+                    tmp = (tmp & c2) + ((tmp >> 2) & c2);
+                    tmp = (((tmp + (tmp >> 4)) & c3) * c4) >> 8;
+                    return tmp.As<ushort, T>();
+                }
+
+                Debug.Assert(sizeof(T) == 4);
+                {
+                    Vector256<uint> c1 = Vector256.Create(0x55555555u);
+                    Vector256<uint> c2 = Vector256.Create(0x33333333u);
+                    Vector256<uint> c3 = Vector256.Create(0x0F0F0F0Fu);
+                    Vector256<uint> c4 = Vector256.Create(0x01010101u);
+
+                    Vector256<uint> tmp = x.AsUInt32();
+                    tmp -= (tmp >> 1) & c1;
+                    tmp = (tmp & c2) + ((tmp >> 2) & c2);
+                    tmp = (((tmp + (tmp >> 4)) & c3) * c4) >> 24;
+                    return tmp.As<uint, T>();
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<T> Invoke(Vector512<T> x)
+            {
+                if (sizeof(T) == 1)
+                {
+                    Vector512<byte> c1 = Vector512.Create((byte)0x55);
+                    Vector512<byte> c2 = Vector512.Create((byte)0x33);
+                    Vector512<byte> c3 = Vector512.Create((byte)0x0F);
+
+                    // We don't have a per element shuffle for byte on some platforms.
+                    // However, we do currently always have a 16-bit shift available and
+                    // due to how the algorithm works, we don't need to worry about
+                    // any bits that shift into the lower 8-bits from the upper 8-bits.
+                    Vector512<byte> tmp = x.AsByte();
+                    tmp -= (x.AsUInt16() >> 1).AsByte() & c1;
+                    tmp = (tmp & c2) + ((tmp.AsUInt16() >> 2).AsByte() & c2);
+                    return ((tmp + (tmp.AsUInt16() >> 4).AsByte()) & c3).As<byte, T>();
+                }
+
+                if (sizeof(T) == 2)
+                {
+                    Vector512<ushort> c1 = Vector512.Create((ushort)0x5555);
+                    Vector512<ushort> c2 = Vector512.Create((ushort)0x3333);
+                    Vector512<ushort> c3 = Vector512.Create((ushort)0x0F0F);
+                    Vector512<ushort> c4 = Vector512.Create((ushort)0x0101);
+
+                    Vector512<ushort> tmp = x.AsUInt16();
+                    tmp -= (tmp >> 1) & c1;
+                    tmp = (tmp & c2) + ((tmp >> 2) & c2);
+                    tmp = (((tmp + (tmp >> 4)) & c3) * c4) >> 8;
+                    return tmp.As<ushort, T>();
+                }
+
+                Debug.Assert(sizeof(T) == 4);
+                {
+                    Vector512<uint> c1 = Vector512.Create(0x55555555u);
+                    Vector512<uint> c2 = Vector512.Create(0x33333333u);
+                    Vector512<uint> c3 = Vector512.Create(0x0F0F0F0Fu);
+                    Vector512<uint> c4 = Vector512.Create(0x01010101u);
+
+                    Vector512<uint> tmp = x.AsUInt32();
+                    tmp -= (tmp >> 1) & c1;
+                    tmp = (tmp & c2) + ((tmp >> 2) & c2);
+                    tmp = (((tmp + (tmp >> 4)) & c3) * c4) >> 24;
+                    return tmp.As<uint, T>();
+                }
+            }
         }
 
         /// <summary>T.LeadingZeroCount(x)</summary>
