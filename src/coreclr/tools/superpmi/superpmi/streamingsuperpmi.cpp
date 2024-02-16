@@ -50,7 +50,7 @@ struct CacheEntry
 static MethodContext* getMethodContext(int index, MethodContextReader* reader)
 {
     enum { CACHE_SIZE = 100 };
-    static CacheEntry cache[CACHE_SIZE] = {0};
+    static CacheEntry cache[CACHE_SIZE] = {};
     static int count = 0;
     static int age = 0;
     int i = 0;
