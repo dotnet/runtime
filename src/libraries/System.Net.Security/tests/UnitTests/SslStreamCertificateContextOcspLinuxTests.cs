@@ -77,6 +77,7 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97836")]
     public async Task FetchOcspResponse_FirstInvalidThenValid()
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
@@ -94,6 +95,7 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97779")]
     public async Task RefreshOcspResponse_BeforeExpiration()
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>
@@ -121,6 +123,7 @@ public class SslStreamCertificateContextOcspLinuxTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/97779")]
     public async Task RefreshOcspResponse_AfterExpiration()
     {
         await SimpleTest(PkiOptions.OcspEverywhere, async (root, intermediate, endEntity, ctxFactory, responder) =>

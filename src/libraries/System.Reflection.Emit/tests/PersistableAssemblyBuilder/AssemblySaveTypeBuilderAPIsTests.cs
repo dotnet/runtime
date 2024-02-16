@@ -892,5 +892,22 @@ namespace System.Reflection.Emit.Tests
                 Assert.IsType(typeFromDisk, obj);
             }
         }
+
+        [Fact]
+        public void TestContainsGenericParametersOnMethodCtorOfConstructedGenericType()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder tb);
+            GenericTypeParameterBuilder[] typeParameters = tb.DefineGenericParameters("T");
+            ConstructorBuilder constructorBuilder = tb.DefineDefaultConstructor(MethodAttributes.Public);
+            MethodBuilder methodBuilder = tb.DefineMethod("Method", MethodAttributes.Public);
+
+            Type instantiatedTypeBuilder1 = tb.MakeGenericType(typeof(List<>).GetGenericArguments()[0]);
+            Assert.True(TypeBuilder.GetConstructor(instantiatedTypeBuilder1, constructorBuilder).ContainsGenericParameters);
+            Assert.True(TypeBuilder.GetMethod(instantiatedTypeBuilder1, methodBuilder).ContainsGenericParameters);
+
+            Type instantiatedTypeBuilder2 = tb.MakeGenericType(typeof(int));
+            Assert.False(TypeBuilder.GetConstructor(instantiatedTypeBuilder2, constructorBuilder).ContainsGenericParameters);
+            Assert.False(TypeBuilder.GetMethod(instantiatedTypeBuilder2, methodBuilder).ContainsGenericParameters);
+        }
     }
 }

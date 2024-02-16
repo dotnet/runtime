@@ -9653,22 +9653,8 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    GenTree* op1SideEffects = nullptr;
-                    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
-                    if (op1SideEffects != nullptr)
-                    {
-                        DEBUG_DESTROY_NODE(tree);
-                        // Keep side-effects of op1
-                        tree = gtNewOperNode(GT_COMMA, TYP_INT, op1SideEffects, gtNewIconNode(0));
-                        JITDUMP("false with side effects:\n")
-                        DISPTREE(tree);
-                    }
-                    else
-                    {
-                        JITDUMP("false\n");
-                        DEBUG_DESTROY_NODE(tree, op1);
-                        tree = gtNewIconNode(0);
-                    }
+                    JITDUMP("false\n");
+                    tree = gtWrapWithSideEffects(gtNewIconNode(0), op1, GTF_ALL_EFFECT);
                 }
                 INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return tree;
@@ -14531,12 +14517,11 @@ GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = N
 //
 // Notes:
 //
-//  For a castclass helper call,
-//  Importer creates the following tree:
+//  For a castclass helper call, importer creates the following tree:
 //      tmp = (op1 == null) ? op1 : ((*op1 == (cse = op2, cse)) ? op1 : helper());
 //
 //  This method splits the qmark expression created by the importer into the
-//  following blocks: (block, asg, cond1, cond2, helper, remainder)
+//  following blocks: (block, asg, cond1, cond2, helper, remainder).
 //  Notice that op1 is the result for both the conditions. So we coalesce these
 //  assignments into a single block instead of two blocks resulting a nested diamond.
 //
@@ -14547,16 +14532,23 @@ GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = N
 //  block-->asg-->cond1--+-->cond2--+-->helper--+-->remainder
 //
 //  We expect to achieve the following codegen:
-//     mov      rsi, rdx                           tmp = op1                  // asgBlock
-//     test     rsi, rsi                           goto skip if tmp == null ? // cond1Block
+//     mov      rsi, rdx                           tmp2 = op1                  // asgBlock
+//     test     rsi, rsi                           goto skip if tmp2 == null ? // cond1Block
 //     je       SKIP
-//     mov      rcx, 0x76543210                    cns = op2                  // cond2Block
-//     cmp      qword ptr [rsi], rcx               goto skip if *tmp == op2
+//     mov      rcx, 0x76543210                    cns = op2                   // cond2Block
+//     cmp      qword ptr [rsi], rcx               goto skip if *tmp2 == op2
 //     je       SKIP
-//     call     CORINFO_HELP_CHKCASTCLASS_SPECIAL  tmp = helper(cns, tmp)     // helperBlock
+//     call     CORINFO_HELP_CHKCASTCLASS_SPECIAL  tmp2 = helper(cns, tmp2)    // helperBlock
 //     mov      rsi, rax
-//  SKIP:                                                                     // remainderBlock
+//  SKIP:                                                                      // remainderBlock
+//     mov      rdi, rsi                           tmp = tmp2
 //     tmp has the result.
+//
+// Note that we can't use `tmp` during the computation of the result: we must create a new temp,
+// and only assign `tmp` to the final value. This is because `tmp` may already have been annotated
+// via lvaSetClass/lvaUpdateClass as having a known type. This is only true after the full expansion,
+// where any other type gets converted to null. If we used `tmp` during the expansion, then it would
+// appear to subsequent optimizations that cond2Block (where the type is checked) is unnecessary.
 //
 bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 {
@@ -14599,10 +14591,10 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     }
     else
     {
-        // This is a rare case that arises when we are doing minopts and encounter isinst of null
-        // gtFoldExpr was still is able to optimize away part of the tree (but not all).
+        // This is a rare case that arises when we are doing minopts and encounter isinst of null.
+        // gtFoldExpr was still able to optimize away part of the tree (but not all).
         // That means it does not match our pattern.
-
+        //
         // Rather than write code to handle this case, just fake up some nodes to make it match the common
         // case.  Synthesize a comparison that is always true, and for the result-on-true, use the
         // entire subtree we expected to be the nested question op.
@@ -14618,7 +14610,7 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     //     block ... asgBlock ... cond1Block ... cond2Block ... helperBlock ... remainderBlock
     //
     // We need to remember flags that exist on 'block' that we want to propagate to 'remainderBlock',
-    // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
+    // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
     BasicBlockFlags propagateFlags = block->GetFlagsRaw() & BBF_GC_SAFE_POINT;
@@ -14683,6 +14675,7 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     //       {
     //           [weight 0.5 * <100 - likelihood of FastType>]
     //       }
+    //   }
     //
     cond2Block->inheritWeightPercentage(cond1Block, 50);
     helperBlock->inheritWeightPercentage(cond2Block, nestedQmarkElseLikelihood);
@@ -14697,14 +14690,12 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
     fgInsertStmtAtEnd(cond2Block, jmpStmt);
 
-    unsigned dstLclNum = dst->AsLclVarCommon()->GetLclNum();
+    unsigned tmp2            = lvaGrabTemp(false DEBUGARG("CastInstOf QMark result"));
+    lvaGetDesc(tmp2)->lvType = dst->TypeGet();
 
-    // AsgBlock should get tmp = op1.
-    GenTree* trueExprStore =
-        dst->OperIs(GT_STORE_LCL_FLD)
-            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), trueExpr)
-            : gtNewStoreLclVarNode(dstLclNum, trueExpr)->AsLclVarCommon();
-    Statement* trueStmt = fgNewStmtFromTree(trueExprStore, stmt->GetDebugInfo());
+    // AsgBlock should get tmp2 = op1.
+    GenTree*   trueExprStore = gtNewStoreLclVarNode(tmp2, trueExpr)->AsLclVarCommon();
+    Statement* trueStmt      = fgNewStmtFromTree(trueExprStore, stmt->GetDebugInfo());
     fgInsertStmtAtEnd(asgBlock, trueStmt);
 
     // Since we are adding helper in the JTRUE false path, reverse the cond2 and add the helper.
@@ -14720,13 +14711,20 @@ bool Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     }
     else
     {
-        GenTree* helperExprStore =
-            dst->OperIs(GT_STORE_LCL_FLD)
-                ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), true2Expr)
-                : gtNewStoreLclVarNode(dstLclNum, true2Expr)->AsLclVarCommon();
-        Statement* helperStmt = fgNewStmtFromTree(helperExprStore, stmt->GetDebugInfo());
+        GenTree*   helperExprStore = gtNewStoreLclVarNode(tmp2, true2Expr)->AsLclVarCommon();
+        Statement* helperStmt      = fgNewStmtFromTree(helperExprStore, stmt->GetDebugInfo());
         fgInsertStmtAtEnd(helperBlock, helperStmt);
     }
+
+    // RemainderBlock should get tmp = tmp2.
+    GenTree* tmp2CopyLcl = gtNewLclvNode(tmp2, dst->TypeGet());
+    unsigned dstLclNum   = dst->AsLclVarCommon()->GetLclNum();
+    GenTree* resultCopy =
+        dst->OperIs(GT_STORE_LCL_FLD)
+            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), tmp2CopyLcl)
+            : gtNewStoreLclVarNode(dstLclNum, tmp2CopyLcl)->AsLclVarCommon();
+    Statement* resultCopyStmt = fgNewStmtFromTree(resultCopy, stmt->GetDebugInfo());
+    fgInsertStmtAtBeg(remainderBlock, resultCopyStmt);
 
     // Finally remove the nested qmark stmt.
     fgRemoveStmt(block, stmt);
@@ -15439,7 +15437,7 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                                       (nonCallAppearances <= varDsc->lvFieldCnt));
 
 #ifdef DEBUG
-                // Above is a profitability heurisic; either value of
+                // Above is a profitability heuristic; either value of
                 // undoPromotion should lead to correct code. So,
                 // under stress, make different decisions at times.
                 if (compStressCompile(STRESS_BYREF_PROMOTION, 25))
