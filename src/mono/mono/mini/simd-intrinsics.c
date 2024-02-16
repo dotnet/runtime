@@ -4146,10 +4146,14 @@ emit_arm64_intrinsics (
 			ins->inst_c1 = arg0_type;
 			return ins;
 		}
-		case SN_LoadAndInsertScalar:
-			if (!is_intrinsics_vector_type (fsig->params [0]))
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_LD1_INSERT, 0, arg0_type, fsig, args);
+		case SN_LoadAndInsertScalar: {
+			int load_op;
+			if (is_intrinsics_vector_type (fsig->params [0]))
+				load_op = OP_ARM64_LD1_INSERT;
+			else
+				load_op = OP_ARM64_LDM_INSERT;
+			return emit_simd_ins_for_sig (cfg, klass, load_op, 0, arg0_type, fsig, args);
+		}
 		case SN_InsertSelectedScalar:
 		case SN_InsertScalar:
 		case SN_Insert: {
