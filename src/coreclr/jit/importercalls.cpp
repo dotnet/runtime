@@ -1561,6 +1561,7 @@ DONE_CALL:
         // Store the error register value to where the SwiftError* points to
         GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_REF);
         errorRegNode->SetHasOrderingSideEffect();
+        errorRegNode->gtFlags |= GTF_CALL | GTF_GLOB_REF;
 
         GenTree*         argNodeCopy     = gtNewLclvNode(argNode->AsLclVar()->GetLclNum(), argNode->TypeGet());
         GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNodeCopy->TypeGet(), argNodeCopy, errorRegNode);
