@@ -200,47 +200,19 @@ namespace System.Runtime.InteropServices.JavaScript
             AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
         }
 
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamic access from JavaScript")]
-        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Dynamic access from JavaScript")]
-        public static Task<int>? CallEntrypoint(string? assemblyName, string?[]? args, bool waitForDebugger)
+        public static unsafe Task<int>? CallEntrypoint(IntPtr assemblyNamePtr, string?[]? args, bool waitForDebugger)
         {
             try
             {
-                if (string.IsNullOrEmpty(assemblyName))
-                {
-                    throw new MissingMethodException(SR.MissingManagedEntrypointHandle);
-                }
-                if (!assemblyName.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    assemblyName += ".dll";
-                }
-                Assembly mainAssembly = Assembly.LoadFrom(assemblyName);
-
-                MethodInfo? method = mainAssembly.EntryPoint;
+                void* ptr;
+                Interop.Runtime.AssemblyGetEntryPoint(assemblyNamePtr, waitForDebugger ? 1 : 0, &ptr);
+                RuntimeMethodHandle methodHandle = GetMethodHandleFromIntPtr((IntPtr)ptr);
+                // this would not work for generic types. But Main() could not be generic, so we are fine.
+                MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
                 if (method == null)
                 {
-                    throw new InvalidOperationException(string.Format(SR.CannotResolveManagedEntrypoint, "Main", assemblyName));
+                    throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
                 }
-                if (method.IsSpecialName)
-                {
-                    // we are looking for the original async method, rather than for the compiler generated wrapper like <Main>
-                    // because we need to yield to browser event loop
-                    var type = method.DeclaringType!;
-                    var name = method.Name;
-                    var asyncName = name + "$";
-                    method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                    if (method == null)
-                    {
-                        asyncName = name.Substring(1, name.Length - 2);
-                        method = type.GetMethod(asyncName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                    }
-                    if (method == null)
-                    {
-                        throw new InvalidOperationException(string.Format(SR.CannotResolveManagedEntrypoint, asyncName, assemblyName));
-                    }
-                }
-
-                Interop.Runtime.SetEntryAssembly(mainAssembly, waitForDebugger ? method.MetadataToken : 0);
 
                 object[] argsToPass = System.Array.Empty<object>();
                 Task<int>? result = null;
@@ -293,75 +265,30 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private static string GeneratedInitializerClassName = "System.Runtime.InteropServices.JavaScript.__GeneratedInitializer";
-        private static string GeneratedInitializerMethodName = "__Register_";
-
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamic access from JavaScript")]
-        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Dynamic access from JavaScript")]
-        public static Task BindAssemblyExports(string? assemblyName)
+        public static unsafe Task BindAssemblyExports(string? assemblyName)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(assemblyName))
-                {
-                    throw new MissingMethodException("Missing assembly name");
-                }
-                if (!assemblyName.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    assemblyName += ".dll";
-                }
-
-                Assembly assembly = Assembly.LoadFrom(assemblyName);
-                Type? type = assembly.GetType(GeneratedInitializerClassName);
-                if (type == null)
-                {
-                    foreach (var module in assembly.Modules)
-                    {
-                        RuntimeHelpers.RunModuleConstructor(module.ModuleHandle);
-                    }
-                }
-                else
-                {
-                    MethodInfo? methodInfo = type.GetMethod(GeneratedInitializerMethodName, BindingFlags.NonPublic | BindingFlags.Static);
-                    methodInfo?.Invoke(null, []);
-                }
-
-                return Task.CompletedTask;
-            }
-            catch (Exception ex)
-            {
-                if (ex is TargetInvocationException refEx && refEx.InnerException != null)
-                    ex = refEx.InnerException;
-                return Task.FromException(ex);
-            }
+            Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName));
+            return Task.CompletedTask;
         }
 
-        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "TODO https://github.com/dotnet/runtime/issues/98366")]
-        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "TODO https://github.com/dotnet/runtime/issues/98366")]
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
-            if (string.IsNullOrEmpty(fullyQualifiedName))
+            var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
+
+            IntPtr monoMethod;
+            Interop.Runtime.GetAssemblyExport(
+                Marshal.StringToCoTaskMemUTF8(assemblyName + ".dll"),
+                Marshal.StringToCoTaskMemUTF8(nameSpace),
+                Marshal.StringToCoTaskMemUTF8(shortClassName),
+                Marshal.StringToCoTaskMemUTF8(methodName),
+                &monoMethod);
+
+            if (monoMethod == IntPtr.Zero)
             {
-                throw new ArgumentNullException(nameof(fullyQualifiedName));
+                Environment.FailFast($"Can't find {nameSpace}{shortClassName}{methodName} in {assemblyName}.dll");
             }
 
             var signature = GetMethodSignature(signatures, null, null);
-            var (assemblyName, className, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
-
-            Assembly assembly = Assembly.LoadFrom(assemblyName + ".dll");
-            Type? type = assembly.GetType(className);
-            if (type == null)
-            {
-                throw new InvalidOperationException("Class not found " + className);
-            }
-            var wrapper_name = $"__Wrapper_{methodName}_{signatureHash}";
-            var methodInfo = type.GetMethod(wrapper_name, BindingFlags.NonPublic | BindingFlags.Static);
-            if (methodInfo == null)
-            {
-                throw new InvalidOperationException("Method not found " + wrapper_name);
-            }
-
-            var monoMethod = GetIntPtrFromMethodHandle(methodInfo.MethodHandle);
 
             JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
 
@@ -381,14 +308,13 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr GetIntPtrFromMethodHandle(RuntimeMethodHandle methodHandle)
+        public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
         {
-            var temp = new IntPtrAndHandle { methodHandle = methodHandle };
-            return temp.ptr;
+            var temp = new IntPtrAndHandle { ptr = ptr };
+            return temp.methodHandle;
         }
 
-
-        public static (string assemblyName, string className, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
+        public static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
         {
             var assembly = fqn.Substring(fqn.IndexOf('[') + 1, fqn.IndexOf(']') - 1).Trim();
             fqn = fqn.Substring(fqn.IndexOf(']') + 1).Trim();
@@ -410,7 +336,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new InvalidOperationException("No class name specified " + fqn);
             if (string.IsNullOrEmpty(methodName))
                 throw new InvalidOperationException("No method name specified " + fqn);
-            return (assembly, className, nameSpace, shortClassName, methodName);
+            return (assembly, nameSpace, shortClassName, methodName);
         }
     }
 }

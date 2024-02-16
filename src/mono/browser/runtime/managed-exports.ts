@@ -7,12 +7,13 @@ import { GCHandle, GCHandleNull, JSMarshalerArguments, MarshalerToCs, MarshalerT
 import cwraps from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_intptr, set_arg_type, set_gc_handle } from "./marshal";
-import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, marshal_exception_to_cs, marshal_string_to_cs } from "./marshal-to-cs";
+import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, marshal_exception_to_cs, marshal_intptr_to_cs, marshal_string_to_cs } from "./marshal-to-cs";
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
 import { assert_c_interop, assert_js_interop } from "./invoke-js";
 import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
 import { _zero_region } from "./memory";
+import { stringToUTF8Ptr } from "./strings";
 
 const managedExports: ManagedExports = {} as any;
 
@@ -41,7 +42,7 @@ export function init_managed_exports(): void {
     managedExports.LoadLazyAssembly = get_method("LoadLazyAssembly");
 }
 
-// the marshaled signature is: Task<int>? CallEntrypoint(string mainAssemblyName, string[] args)
+// the marshaled signature is: Task<int>? CallEntrypoint(char* mainAssemblyName, string[] args)
 export function call_entry_point(main_assembly_name: string, program_args: string[] | undefined, waitForDebugger: boolean): Promise<number> {
     loaderHelpers.assert_runtime_running();
     const sp = Module.stackSave();
@@ -51,7 +52,8 @@ export function call_entry_point(main_assembly_name: string, program_args: strin
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
         const arg3 = get_arg(args, 4);
-        marshal_string_to_cs(arg1, main_assembly_name);
+        const main_assembly_name_ptr = stringToUTF8Ptr(main_assembly_name);
+        marshal_intptr_to_cs(arg1, main_assembly_name_ptr);
         marshal_array_to_cs_impl(arg2, program_args && !program_args.length ? undefined : program_args, MarshalerType.String);
         marshal_bool_to_cs(arg3, waitForDebugger);
 
