@@ -1325,9 +1325,6 @@ PhaseStatus Compiler::optInductionVariables()
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
     m_dfsTree = fgComputeDfs();
     m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-    // m_domTree = FlowGraphDominatorTree::Build(m_dfsTree);
-
-    fgDumpFlowGraph(PHASE_OPTIMIZE_INDUCTION_VARIABLES, PhasePosition::PostPhase);
 
     ScalarEvolutionContext scevContext(this);
     struct WidenedIV
