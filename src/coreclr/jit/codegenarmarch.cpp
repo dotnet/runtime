@@ -3433,15 +3433,16 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskMixed killMask = RBM_CALLEE_TRASH;
+    AllRegsMask killMask = AllRegsMask_CALLEE_TRASH;
+
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
 
-    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
-    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
+    assert((gcInfo.gcRegGCrefSetCur & killMask.gprRegs) == 0);
+    assert((gcInfo.gcRegByrefSetCur & killMask.gprRegs) == 0);
 #endif
 
     var_types returnType = call->TypeGet();
@@ -4898,7 +4899,8 @@ void CodeGen::genPushCalleeSavedRegisters()
                      intRegState.rsCalleeRegArgMaskLiveIn);
 #endif
 
-    regMaskMixed rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskGpr rsPushGprRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskFloat rsPushFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -4909,7 +4911,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     // On ARM we push the FP (frame-pointer) here along with all other callee saved registers
     if (isFramePointerUsed())
-        rsPushRegs |= RBM_FPBASE;
+        rsPushGprRegs |= RBM_FPBASE;
 
     //
     // It may be possible to skip pushing/popping lr for leaf methods. However, such optimization would require
@@ -4930,24 +4932,26 @@ void CodeGen::genPushCalleeSavedRegisters()
     // Given the limited benefit from this optimization (<10k for CoreLib NGen image), the extra complexity
     // is not worth it.
     //
-    rsPushRegs |= RBM_LR; // We must save the return address (in the LR register)
+    rsPushGprRegs |= RBM_LR; // We must save the return address (in the LR register)
 
-    regSet.rsMaskCalleeSaved = rsPushRegs;
+    regSet.rsGprMaskCalleeSaved = rsPushGprRegs;
+    regSet.rsFloatMaskCalleeSaved = rsPushFloatRegs;
 
 #ifdef DEBUG
-    if (compiler->compCalleeRegsPushed != genCountBits(rsPushRegs))
+    unsigned pushRegsCnt = genCountBits(rsPushGprRegs) + genCountBits(rsPushFloatRegs);
+    if (compiler->compCalleeRegsPushed != pushRegsCnt)
     {
         printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
-               compiler->compCalleeRegsPushed, genCountBits(rsPushRegs));
-        dspRegMask(rsPushRegs);
+               compiler->compCalleeRegsPushed, pushRegsCnt);
+        dspRegMask(rsPushGprRegs, rsPushFloatRegs);
         printf("\n");
-        assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs));
+        assert(compiler->compCalleeRegsPushed == pushRegsCnt);
     }
 #endif // DEBUG
 
 #if defined(TARGET_ARM)
-    regMaskFloat maskPushRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskGpr   maskPushRegsInt   = rsPushRegs & ~maskPushRegsFloat;
+    regMaskFloat maskPushRegsFloat = rsPushFloatRegs;
+    regMaskGpr   maskPushRegsInt   = rsPushGprRegs;
 
     maskPushRegsInt |= genStackAllocRegisterMask(compiler->compLclFrameSize, maskPushRegsFloat);
 
@@ -5053,17 +5057,13 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
-    regMaskFloat maskSaveRegsFloat = rsPushRegs & RBM_ALLFLOAT;
-    regMaskGpr   maskSaveRegsInt   = rsPushRegs & ~maskSaveRegsFloat;
+    regMaskFloat maskSaveRegsFloat = rsPushFloatRegs;
+    regMaskGpr   maskSaveRegsInt   = rsPushGprRegs;
 
 #ifdef DEBUG
     if (verbose)
     {
-        printf("Save float regs: ");
-        dspRegMask(maskSaveRegsFloat);
-        printf("\n");
-        printf("Save int   regs: ");
-        dspRegMask(maskSaveRegsInt);
+        dspRegMask(maskSaveRegsInt, maskSaveRegsFloat);
         printf("\n");
     }
 #endif // DEBUG
@@ -5308,7 +5308,8 @@ void CodeGen::genPushCalleeSavedRegisters()
     const int calleeSaveSpOffset = offset;
 
     JITDUMP("    offset=%d, calleeSaveSpDelta=%d\n", offset, calleeSaveSpDelta);
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, offset, -calleeSaveSpDelta);
+
+    genSaveCalleeSavedRegistersHelp(AllRegsMask(maskSaveRegsInt, maskSaveRegsFloat), offset, -calleeSaveSpDelta);
 
     offset += genCountBits(maskSaveRegsInt | maskSaveRegsFloat) * REGSIZE_BYTES;
 
@@ -5546,7 +5547,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 
     if (jmpEpilog ||
-        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED) ==
+        genStackAllocRegisterMask(compiler->compLclFrameSize, regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED) ==
             RBM_NONE)
     {
         genFreeLclFrame(compiler->compLclFrameSize, &unwindStarted);
@@ -5667,7 +5668,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     if (addrInfo.accessType == IAT_PVALUE)
                     {
                         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
-                        regSet.verifyRegUsed(indCallReg);
+                        regSet.verifyGprRegUsed(indCallReg);
                     }
                     break;
 
@@ -5681,7 +5682,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     indCallReg = REG_R12;
                     addr       = NULL;
 
-                    regSet.verifyRegUsed(indCallReg);
+                    regSet.verifyGprRegUsed(indCallReg);
                     break;
                 }
 

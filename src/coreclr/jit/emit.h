@@ -3135,10 +3135,10 @@ public:
     bool emitFullGCinfo;  // full GC pointer maps?
     bool emitFullyInt;    // fully interruptible code?
 
-    regMaskMixed emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd);
+    AllRegsMask emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd);
 
     // Gets a register mask that represent the kill set for a NoGC helper call.
-    regMaskMixed emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper);
+    AllRegsMask emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper);
 
 #if EMIT_TRACK_STACK_DEPTH
     unsigned emitCntStackDepth; // 0 in prolog/epilog, One DWORD elsewhere

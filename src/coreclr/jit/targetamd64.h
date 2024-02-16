@@ -198,19 +198,19 @@
   #define REG_WRITE_BARRIER_SRC          REG_ARG_1
   #define RBM_WRITE_BARRIER_SRC          RBM_ARG_1
 
-  #define RBM_CALLEE_TRASH_NOGC        RBM_CALLEE_TRASH
+  #define AllRegsMask_CALLEE_TRASH_NOGC        AllRegsMask_CALLEE_TRASH
 
   // Registers killed by CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER         RBM_CALLEE_TRASH_NOGC
+  #define AllRegsMask_CALLEE_TRASH_WRITEBARRIER         AllRegsMask_CALLEE_TRASH_NOGC
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_CALLEE_TRASH_NOGC
+  #define AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER       AllRegsMask_CALLEE_TRASH_NOGC
 
   // Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH_NOGC)
+  #define AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF   (GprRegsMask(RBM_RSI | RBM_RDI) | AllRegsMask_CALLEE_TRASH_NOGC)
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF (RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI))
+  #define AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF (AllRegsMask_CALLEE_TRASH_NOGC & GprRegsMask(~(RBM_RDI | RBM_RSI)))
 
   // We have two register classifications
   // * callee trash: aka     volatile or caller saved
@@ -513,9 +513,9 @@
 
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\amd64\asmhelpers.asm for more details.
-  #define RBM_PROFILER_ENTER_TRASH          RBM_CALLEE_TRASH
+  #define AllRegsMask_PROFILER_ENTER_TRASH          AllRegsMask_CALLEE_TRASH
 
-  #define RBM_PROFILER_TAILCALL_TRASH       RBM_PROFILER_LEAVE_TRASH
+  #define AllRegsMask_PROFILER_TAILCALL_TRASH       AllRegsMask_PROFILER_LEAVE_TRASH
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
 #ifdef UNIX_AMD64_ABI
@@ -524,18 +524,21 @@
   // On Unix a struct of size >=9 and <=16 bytes in size is returned in two return registers.
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
-  #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+    #define AllRegsMask_STOP_FOR_GC_TRASH (AllRegsMask_CALLEE_TRASH & AllRegsMask(~(RBM_INTRET | RBM_INTRET_1), ~(RBM_FLOATRET | RBM_FLOATRET_1)))
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define AllRegsMask_PROFILER_LEAVE_TRASH  (AllRegsMask_CALLEE_TRASH & AllRegsMask(~(RBM_INTRET | RBM_INTRET_1), ~(RBM_FLOATRET | RBM_FLOATRET_1)))
 #else
   // See vm\amd64\asmhelpers.asm for more details.
-  #define RBM_STOP_FOR_GC_TRASH (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define AllRegsMask_STOP_FOR_GC_TRASH AllRegsMask_CALLEE_TRASH & AllRegsMask(~RBM_INTRET, ~RBM_FLOATRET)
   #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define AllRegsMask_PROFILER_LEAVE_TRASH  (AllRegsMask_CALLEE_TRASH & AllRegsMask(~RBM_INTRET, ~RBM_FLOATRET))
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
-  #define RBM_INIT_PINVOKE_FRAME_TRASH  RBM_CALLEE_TRASH
+  #define AllRegsMask_INIT_PINVOKE_FRAME_TRASH  AllRegsMask_CALLEE_TRASH
 
   #define RBM_VALIDATE_INDIRECT_CALL_TRASH (RBM_INT_CALLEE_TRASH & ~(RBM_R10 | RBM_RCX))
+  #define AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH GprRegsMask(RBM_VALIDATE_INDIRECT_CALL_TRASH)
   #define REG_VALIDATE_INDIRECT_CALL_ADDR REG_RCX
   #define REG_DISPATCH_INDIRECT_CALL_ADDR REG_RAX
 

@@ -36,16 +36,15 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskMixed rsRestoreRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    regMaskMixed rsRestoreGprRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskMixed rsRestoreFloatRegs = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 
     if (isFramePointerUsed())
     {
-        rsRestoreRegs |= RBM_FPBASE;
+        rsRestoreGprRegs |= RBM_FPBASE;
     }
 
-    rsRestoreRegs |= RBM_LR; // We must save/restore the return address (in the LR register)
-
-    regMaskMixed regsToRestoreMask = rsRestoreRegs;
+    rsRestoreGprRegs |= RBM_LR; // We must save/restore the return address (in the LR register)
 
     const int totalFrameSize = genTotalFrameSize();
 
@@ -71,7 +70,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 compiler->unwindSetFrameReg(REG_FPBASE, 0);
             }
 
-            regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
+            rsRestoreGprRegs &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
             break;
         }
 
@@ -91,7 +90,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
 
-            regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
+            rsRestoreGprRegs &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
             break;
         }
 
@@ -104,7 +103,7 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
             JITDUMP("    calleeSaveSpDelta=%d\n", calleeSaveSpDelta);
 
-            regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and (hopefully) post-index SP.
+            rsRestoreGprRegs &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and (hopefully) post-index SP.
 
             int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
             assert(remainingFrameSz > 0);
@@ -203,7 +202,8 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
     }
 
     JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
+    genRestoreCalleeSavedRegistersHelp(AllRegsMask(rsRestoreGprRegs, rsRestoreFloatRegs), calleeSaveSpOffset,
+                                       calleeSaveSpDelta);
 
     switch (frameType)
     {
@@ -904,12 +904,18 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDel
 //    The save set can contain LR in which case LR is saved along with the other callee-saved registers.
 //    But currently Jit doesn't use frames without frame pointer on arm64.
 //
-void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskMixed regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
+void CodeGen::genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
 {
     assert(spDelta <= 0);
     assert(-spDelta <= STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
 
-    unsigned regsToSaveCount = genCountBits(regsToSaveMask);
+    regMaskTP maskSaveRegsFloat = regsToSaveMask.floatRegs;
+    regMaskTP maskSaveRegsInt   = regsToSaveMask.gprRegs;
+
+    assert(compiler->IsGprRegMask(maskSaveRegsInt));
+    assert(compiler->IsFloatRegMask(maskSaveRegsFloat));
+
+    unsigned regsToSaveCount = genCountBits(maskSaveRegsFloat) + genCountBits(maskSaveRegsInt);
     if (regsToSaveCount == 0)
     {
         if (spDelta != 0)
@@ -927,10 +933,6 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskMixed regsToSaveMask, int l
     assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_FP | RBM_LR));
 
     // Save integer registers at higher addresses than floating-point registers.
-
-    regMaskFloat maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
-    regMaskGpr   maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
-
     if (maskSaveRegsFloat != RBM_NONE)
     {
         genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, spDelta, lowestCalleeSavedOffset);
@@ -1019,12 +1021,19 @@ void CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int sp
 // Return Value:
 //    None.
 
-void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskMixed regsToRestoreMask,
+void CodeGen::genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask,
                                                  int          lowestCalleeSavedOffset,
                                                  int          spDelta)
 {
     assert(spDelta >= 0);
-    unsigned regsToRestoreCount = genCountBits(regsToRestoreMask);
+
+    regMaskGpr maskRestoreRegsInt = regsToRestoreMask.gprRegs;
+    regMaskFloat maskRestoreRegsFloat = regsToRestoreMask.floatRegs;
+
+    assert(compiler->IsGprRegMask(maskRestoreRegsInt));
+    assert(compiler->IsFloatRegMask(maskRestoreRegsFloat));
+
+    unsigned regsToRestoreCount = genCountBits(maskRestoreRegsInt) + genCountBits(maskRestoreRegsFloat);
     if (regsToRestoreCount == 0)
     {
         if (spDelta != 0)
@@ -1047,11 +1056,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskMixed regsToRestoreMask,
 
     // Save integer registers at higher addresses than floating-point registers.
 
-    regMaskFloat maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskGpr   maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
-
     // Restore in the opposite order of saving.
-
     if (maskRestoreRegsInt != RBM_NONE)
     {
         int spIntDelta = (maskRestoreRegsFloat != RBM_NONE) ? 0 : spDelta; // should we delay the SP adjustment?
@@ -1372,8 +1377,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    regMaskFloat maskSaveRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskGpr   maskSaveRegsInt   = genFuncletInfo.fiSaveRegs & ~maskSaveRegsFloat;
+    regMaskFloat maskSaveRegsFloat = genFuncletInfo.fiSaveFloatRegs;
+    regMaskGpr   maskSaveRegsInt   = genFuncletInfo.fiSaveGprRegs;
 
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
     assert((maskSaveRegsInt & RBM_LR) != 0);
@@ -1490,7 +1495,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta +
                                   genFuncletInfo.fiSpDelta2; // We haven't done the second adjustment of SP yet (if any)
-    genSaveCalleeSavedRegistersHelp(maskSaveRegsInt | maskSaveRegsFloat, lowestCalleeSavedOffset, 0);
+
+    genSaveCalleeSavedRegistersHelp(AllRegsMask(maskSaveRegsInt, maskSaveRegsFloat), lowestCalleeSavedOffset, 0);
 
     if ((genFuncletInfo.fiFrameType == 3) || (genFuncletInfo.fiFrameType == 5))
     {
@@ -1526,7 +1532,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
             // function)
             genInstrWithConstant(INS_ldr, EA_PTRSIZE, REG_R1, REG_R1, genFuncletInfo.fiCallerSP_to_PSP_slot_delta,
                                  REG_R2, false);
-            regSet.verifyRegUsed(REG_R1);
+            regSet.verifyGprRegUsed(REG_R1);
 
             // Store the PSP value (aka CallerSP)
             genInstrWithConstant(INS_str, EA_PTRSIZE, REG_R1, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_R2,
@@ -1543,7 +1549,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
             // compute the CallerSP, given the frame pointer. x3 is scratch.
             genInstrWithConstant(INS_add, EA_PTRSIZE, REG_R3, REG_FPBASE,
                                  -genFuncletInfo.fiFunction_CallerSP_to_FP_delta, REG_R2, false);
-            regSet.verifyRegUsed(REG_R3);
+            regSet.verifyGprRegUsed(REG_R3);
 
             genInstrWithConstant(INS_str, EA_PTRSIZE, REG_R3, REG_SPBASE, genFuncletInfo.fiSP_to_PSP_slot_delta, REG_R2,
                                  false);
@@ -1576,8 +1582,8 @@ void CodeGen::genFuncletEpilog()
         unwindStarted = true;
     }
 
-    regMaskFloat maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskGpr   maskRestoreRegsInt   = genFuncletInfo.fiSaveRegs & ~maskRestoreRegsFloat;
+    regMaskFloat maskRestoreRegsFloat = genFuncletInfo.fiSaveFloatRegs;
+    regMaskGpr   maskRestoreRegsInt   = genFuncletInfo.fiSaveGprRegs;
 
     // Funclets must always save LR and FP, since when we have funclets we must have an FP frame.
     assert((maskRestoreRegsInt & RBM_LR) != 0);
@@ -1603,10 +1609,11 @@ void CodeGen::genFuncletEpilog()
     regMaskMixed regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
     if ((genFuncletInfo.fiFrameType == 1) || (genFuncletInfo.fiFrameType == 2) || (genFuncletInfo.fiFrameType == 3))
     {
-        regsToRestoreMask &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end
+        maskRestoreRegsInt &= ~(RBM_LR | RBM_FP); // We restore FP/LR at the end
     }
     int lowestCalleeSavedOffset = genFuncletInfo.fiSP_to_CalleeSave_delta + genFuncletInfo.fiSpDelta2;
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, lowestCalleeSavedOffset, 0);
+    genRestoreCalleeSavedRegistersHelp(AllRegsMask(maskRestoreRegsInt, maskRestoreRegsFloat), lowestCalleeSavedOffset,
+                                       0);
 
     if (genFuncletInfo.fiFrameType == 1)
     {
@@ -1737,11 +1744,18 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
 
-    regMaskMixed rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
-    assert((rsMaskSaveRegs & RBM_LR) != 0);
-    assert((rsMaskSaveRegs & RBM_FP) != 0);
+    regMaskGpr rsMaskSaveGprRegs = regSet.rsGprMaskCalleeSaved;
+    regMaskFloat rsMaskSaveFloatRegs = regSet.rsFloatMaskCalleeSaved;
+    regMaskPredicate rsMaskSavePredicateRegs = RBM_NONE;
+#ifdef HAS_PREDICATE_REGS
+    rsMaskSavePredicateRegs = regSet.rsPredicateMaskCalleeSaved;
+#endif
 
-    unsigned saveRegsCount       = genCountBits(rsMaskSaveRegs);
+    assert((rsMaskSaveGprRegs & RBM_LR) != 0);
+    assert((rsMaskSaveGprRegs & RBM_FP) != 0);
+
+    unsigned saveRegsCount =
+        genCountBits(rsMaskSaveGprRegs) + genCountBits(rsMaskSaveFloatRegs) + genCountBits(rsMaskSavePredicateRegs);
     unsigned saveRegsPlusPSPSize = saveRegsCount * REGSIZE_BYTES + PSPSize;
     if (compiler->info.compIsVarArgs)
     {
@@ -1860,7 +1874,9 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     /* Now save it for future use */
 
-    genFuncletInfo.fiSaveRegs                   = rsMaskSaveRegs;
+    genFuncletInfo.fiSaveGprRegs                   = rsMaskSaveGprRegs;
+    genFuncletInfo.fiSaveFloatRegs                   = rsMaskSaveFloatRegs;
+    genFuncletInfo.fiSavePredicateRegs             = rsMaskSavePredicateRegs;
     genFuncletInfo.fiSP_to_FPLR_save_delta      = SP_to_FPLR_save_delta;
     genFuncletInfo.fiSP_to_PSP_slot_delta       = SP_to_PSP_slot_delta;
     genFuncletInfo.fiSP_to_CalleeSave_delta     = SP_to_PSP_slot_delta + PSPSize;
@@ -1872,7 +1888,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("\n");
         printf("Funclet prolog / epilog info\n");
         printf("                        Save regs: ");
-        dspRegMask(genFuncletInfo.fiSaveRegs);
+        dspRegMask(
+            AllRegsMask(genFuncletInfo.fiSaveGprRegs, genFuncletInfo.fiSaveFloatRegs, genFuncletInfo.fiSavePredicateRegs));
         printf("\n");
         if (compiler->opts.IsOSR())
         {
@@ -5104,10 +5121,10 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
 
         regMaskGpr   callTargetMask = genRegMask(callTargetReg);
-        regMaskMixed callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+        AllRegsMask callKillSet    = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
         // assert that all registers in callTargetMask are in the callKillSet
-        noway_assert((callTargetMask & callKillSet) == callTargetMask);
+        noway_assert((callTargetMask & callKillSet.gprRegs) == callTargetMask);
 
         callTarget = callTargetReg;
 
@@ -5126,7 +5143,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                false                                             /* isJump */
                                );
 
-    regMaskMixed killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    AllRegsMask killMask = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
     regSet.verifyRegistersUsed(killMask);
 }
 
@@ -5426,6 +5443,7 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
+    assert(genIsValidIntReg(initReg));
 
     if (!compiler->compIsProfilerHookNeeded())
     {
@@ -5449,7 +5467,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
 
-    if ((genRegMask(initReg) & RBM_PROFILER_ENTER_TRASH) != RBM_NONE)
+    if ((genRegMask(initReg) & AllRegsMask_PROFILER_ENTER_TRASH.gprRegs) != RBM_NONE)
     {
         *pInitRegZeroed = false;
     }
@@ -5611,7 +5629,7 @@ void CodeGen::genAllocLclFrame(unsigned   frameSize,
         // until this is complete since the tickles could cause a stack overflow, and we need to be able to crawl
         // the stack afterward (which means the stack pointer needs to be known).
 
-        regMaskGpr availMask = RBM_ALLINT & (regSet.rsGetModifiedRegsMask() | ~RBM_INT_CALLEE_SAVED);
+        regMaskGpr availMask = regSet.rsGetModifiedGprRegsMask() | ~RBM_INT_CALLEE_SAVED;
         availMask &= ~maskArgRegsLiveIn;   // Remove all of the incoming argument registers as they are currently live
         availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg
 

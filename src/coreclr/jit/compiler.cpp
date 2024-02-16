@@ -3624,40 +3624,45 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
     return rejectThisPromo;
 }
 
-//------------------------------------------------------------------------
+void Compiler::dumpRegMask(regMaskOnlyOne mask) const
+{
+
+    dumpRegMask(AllRegsMask(mask, mask, mask));
+}
+    //------------------------------------------------------------------------
 // dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
 // a potentially large number of registers.
 //
 // Arguments:
 //   regs - The set of registers to display
 //
-void Compiler::dumpRegMask(regMaskMixed regs) const
+void Compiler::dumpRegMask(AllRegsMask mask) const
 {
-    if (regs == RBM_ALLINT)
+    if (mask.gprRegs == RBM_ALLINT)
     {
         printf("[allInt]");
     }
-    else if (regs == (RBM_ALLINT & ~RBM_FPBASE))
+    else if (mask.gprRegs == (RBM_ALLINT & ~RBM_FPBASE))
     {
         printf("[allIntButFP]");
     }
-    else if (regs == RBM_ALLFLOAT)
+    else if (mask.floatRegs == RBM_ALLFLOAT)
     {
         printf("[allFloat]");
     }
-    else if (regs == RBM_ALLDOUBLE)
+    else if (mask.floatRegs == RBM_ALLDOUBLE)
     {
         printf("[allDouble]");
     }
 #ifdef TARGET_XARCH
-    else if (regs == RBM_ALLMASK)
+    else if (mask.predicateRegs == RBM_ALLMASK)
     {
         printf("[allMask]");
     }
 #endif // TARGET_XARCH
     else
     {
-        dspRegMask(regs);
+        dspRegMask(mask);
     }
 }
 
@@ -5773,11 +5778,11 @@ void Compiler::generatePatchpointInfo()
     // Record callee save registers.
     // Currently only needed for x64.
     //
-    regMaskMixed rsPushRegs = codeGen->regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
-    rsPushRegs |= RBM_FPBASE;
-    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
+    regMaskGpr rsPushGprRegs = codeGen->regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    rsPushGprRegs |= RBM_FPBASE;
+    patchpointInfo->SetCalleeSaveGprRegisters(rsPushGprRegs);
     JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask((regMaskMixed)patchpointInfo->CalleeSaveRegisters()));
+    JITDUMPEXEC(dspRegMask(patchpointInfo->CalleeSaveGprRegisters(), RBM_NONE));
     JITDUMP("\n");
 #endif
 

@@ -337,8 +337,8 @@ protected:
     void genSaveCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset);
     void genRestoreCalleeSavedRegisterGroup(regMaskOnlyOne regsMask, int spDelta, int spOffset);
 
-    void genSaveCalleeSavedRegistersHelp(regMaskMixed regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
-    void genRestoreCalleeSavedRegistersHelp(regMaskMixed regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
+    void genSaveCalleeSavedRegistersHelp(AllRegsMask regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
+    void genRestoreCalleeSavedRegistersHelp(AllRegsMask regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
 
@@ -385,7 +385,8 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskMixed fiSaveRegs;                  // Set of registers saved in the funclet prolog (includes LR)
+        regMaskGpr fiSaveGprRegs;                 // Set of GPR registers saved in the funclet prolog (includes LR)
+        regMaskFloat fiSaveFloatRegs;             // Set of Float registers saved in the funclet prolog (includes LR)
         unsigned     fiFunctionCallerSPtoFPdelta; // Delta between caller SP and the frame pointer
         unsigned     fiSpDelta;                   // Stack pointer delta
         unsigned     fiPSP_slot_SP_offset;        // PSP slot offset from SP
@@ -401,7 +402,9 @@ protected:
     // same.
     struct FuncletFrameInfoDsc
     {
-        regMaskMixed fiSaveRegs;             // Set of callee-saved registers saved in the funclet prolog (includes LR)
+        regMaskGpr   fiSaveGprRegs;   // Set of callee-saved GPR registers saved in the funclet prolog (includes LR)
+        regMaskFloat fiSaveFloatRegs; // Set of callee-saved float registers saved in the funclet prolog (includes LR)
+        regMaskFloat fiSavePredicateRegs; // Set of callee-saved predicate registers saved in the funclet prolog (includes LR)
         int fiFunction_CallerSP_to_FP_delta; // Delta between caller SP and the frame pointer in the parent function
                                              // (negative)
         int fiSP_to_FPLR_save_delta;         // FP/LR register save offset from SP (positive)

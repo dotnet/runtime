@@ -51,12 +51,12 @@ RegisterType regType(T type)
     {
         return IntRegisterType;
     }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
     else if (varTypeUsesMaskReg(type))
     {
         return MaskRegisterType;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // HAS_PREDICATE_REGS
     else
     {
         assert(varTypeUsesFloatReg(type));
@@ -72,12 +72,12 @@ FORCEINLINE unsigned regTypeIndex(T type)
     {
         return 0;
     }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
     else if (varTypeUsesMaskReg(type))
     {
         return 2;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // HAS_PREDICATE_REGS
     else
     {
         assert(varTypeUsesFloatReg(type));
@@ -519,13 +519,13 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
         else
         {
             assert(emitter::isMaskReg(reg));
             registerType = MaskRegisterType;
         }
-#endif
+#endif // HAS_PREDICATE_REGS
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
@@ -1056,7 +1056,8 @@ private:
     void insertZeroInitRefPositions();
 
     // add physreg refpositions for a tree node, based on calling convention and instruction selection predictions
-    void addRefsForPhysRegMask(regMaskMixed mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
+    void addRefsForPhysRegMask(AllRegsMask mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
+    void addRefsForPhysRegMask(regMaskOnlyOne mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1094,14 +1095,14 @@ private:
     }
 
     // Helpers for getKillSetForNode().
-    regMaskMixed getKillSetForStoreInd(GenTreeStoreInd* tree);
+    AllRegsMask  getKillSetForStoreInd(GenTreeStoreInd* tree);
     regMaskGpr getKillSetForShiftRotate(GenTreeOp* tree);
     regMaskGpr getKillSetForMul(GenTreeOp* tree);
-    regMaskMixed getKillSetForCall(GenTreeCall* call);
+    AllRegsMask  getKillSetForCall(GenTreeCall* call);
     regMaskGpr getKillSetForModDiv(GenTreeOp* tree);
-    regMaskMixed getKillSetForBlockStore(GenTreeBlk* blkNode);
-    regMaskMixed getKillSetForReturn();
-    regMaskMixed getKillSetForProfilerHook();
+    AllRegsMask getKillSetForBlockStore(GenTreeBlk* blkNode);
+    AllRegsMask  getKillSetForReturn();
+    AllRegsMask  getKillSetForProfilerHook();
 #ifdef FEATURE_HW_INTRINSICS
     regMaskGpr getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
@@ -1110,11 +1111,11 @@ private:
 // This is used only for an assert, and for stress, so it is only defined under DEBUG.
 // Otherwise, the Build methods should obtain the killMask from the appropriate method above.
 #ifdef DEBUG
-    regMaskMixed getKillSetForNode(GenTree* tree);
+    AllRegsMask getKillSetForNode(GenTree* tree);
 #endif
 
     // Given some tree node add refpositions for all the registers this node kills
-    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, regMaskMixed killMask);
+    bool buildKillPositionsForNode(GenTree* tree, LsraLocation currentLoc, AllRegsMask killMask);
 
     regMaskOnlyOne allRegs(RegisterType rt);
     regMaskGpr   allByteRegs();
@@ -1756,11 +1757,11 @@ private:
     // gets reset for every refposition we are processing depending on the
     // register type. That wawy we do not have to query and fetch the appropriate
     // entry again and agin.
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
     regMaskOnlyOne m_AvailableRegs[3]; // TODO: Change this to m_AvailableGprRegs, m_AvailableFloatRegs, etc.
 #else
     regMaskOnlyOne m_AvailableRegs[2];
-#endif
+#endif // HAS_PREDICATE_REGS
 
     regNumber getRegForType(regNumber reg, var_types regType)
     {
@@ -1791,12 +1792,12 @@ private:
     {
         m_AvailableRegs[0] = availableIntRegs;
         m_AvailableRegs[1] = availableFloatRegs;
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
         m_AvailableRegs[2] = availableMaskRegs;
 #endif
         m_RegistersWithConstants[0] = RBM_NONE;
         m_RegistersWithConstants[1] = RBM_NONE;
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
         m_RegistersWithConstants[2] = RBM_NONE;
 #endif
 
@@ -1812,7 +1813,7 @@ private:
         //TODO: Fix this later.
         m_AvailableRegs[0] &= ~(regMask & ~RBM_ALLFLOAT);
         m_AvailableRegs[1] &= ~(regMask & RBM_ALLFLOAT);
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
         m_AvailableRegs[2] &= ~(regMask & RBM_ALLMASK);
 #endif
     }
@@ -1826,7 +1827,7 @@ private:
         // TODO: This will be just `regMask`
         makeRegAvailable(regMask & ~RBM_ALLFLOAT, IntRegisterType);
         makeRegAvailable(regMask & RBM_ALLFLOAT, FloatRegisterType);
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
         makeRegAvailable(regMask & RBM_ALLMASK, MaskRegisterType);
 #endif
     }
@@ -1854,7 +1855,7 @@ private:
                                              regMaskOnlyOne* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
     regMaskOnlyOne m_RegistersWithConstants[3]; // TODO: Change this to m_GprRegistersWithConstant, m_FloatRegistersWithConstant, etc.
 #else
     regMaskOnlyOne m_RegistersWithConstants[2];
@@ -2028,7 +2029,7 @@ private:
     void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
     RefPosition* BuildDef(GenTree* tree, regMaskOnlyOne dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void BuildDefs(GenTree* tree, int dstCount, regMaskMixed dstCandidates = RBM_NONE);
-    void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, regMaskMixed killMask);
+    void BuildDefsWithKills(GenTree* tree, int dstCount, regMaskOnlyOne dstCandidates, AllRegsMask killMask);
 
     int BuildReturn(GenTree* tree);
 #ifdef TARGET_XARCH

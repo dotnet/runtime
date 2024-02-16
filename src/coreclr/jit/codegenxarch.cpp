@@ -75,7 +75,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         //  mov   eax, dword ptr [compiler->gsGlobalSecurityCookieAddr]
         //  mov   dword ptr [frame.GSSecurityCookie], eax
         GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_EAX, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        regSet.verifyRegUsed(REG_EAX);
+        regSet.verifyGprRegUsed(REG_EAX);
         GetEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, REG_EAX, compiler->lvaGSSecurityCookie, 0);
         if (initReg == REG_EAX)
         {
@@ -1142,7 +1142,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     {
         var_types op1Type = op1->TypeGet();
         inst_Mov(op1Type, targetReg, op1reg, /* canSkip */ false);
-        regSet.verifyRegUsed(targetReg);
+        regSet.verifyRegUsed(targetReg, targetType);
         gcInfo.gcMarkRegPtrVal(targetReg, op1Type);
         dst = treeNode;
         src = op2;
@@ -2422,7 +2422,7 @@ void CodeGen::genAllocLclFrame(unsigned   frameSize,
         }
 
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, spOffset);
-        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+        regSet.verifyGprRegUsed(REG_STACK_PROBE_HELPER_ARG);
 
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
@@ -2440,7 +2440,7 @@ void CodeGen::genAllocLclFrame(unsigned   frameSize,
                              RBM_NONE);
 
         GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, -(int)frameSize);
-        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+        regSet.verifyGprRegUsed(REG_STACK_PROBE_HELPER_ARG);
 
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
 
@@ -6099,15 +6099,16 @@ void CodeGen::genCall(GenTreeCall* call)
     // We should not have GC pointers in killed registers live around the call.
     // GC info for arg registers were cleared when consuming arg nodes above
     // and LSRA should ensure it for other trashed registers.
-    regMaskMixed killMask = RBM_CALLEE_TRASH;
+    AllRegsMask killMask = AllRegsMask_CALLEE_TRASH;
+
     if (call->IsHelperCall())
     {
         CorInfoHelpFunc helpFunc = compiler->eeGetHelperNum(call->gtCallMethHnd);
         killMask                 = compiler->compHelperCallKillSet(helpFunc);
     }
 
-    assert((gcInfo.gcRegGCrefSetCur & killMask) == 0);
-    assert((gcInfo.gcRegByrefSetCur & killMask) == 0);
+    assert((gcInfo.gcRegGCrefSetCur & killMask.gprRegs) == 0);
+    assert((gcInfo.gcRegByrefSetCur & killMask.gprRegs) == 0);
 #endif
 
     var_types returnType = call->TypeGet();
@@ -9147,7 +9148,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     emitter::EmitCallType callType = emitter::EC_FUNC_TOKEN;
     addr                           = compiler->compGetHelperFtn((CorInfoHelpFunc)helper, &pAddr);
     regNumber    callTarget        = REG_NA;
-    regMaskMixed killMask          = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
+    AllRegsMask killMask          = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
     if (!addr)
     {
@@ -9178,7 +9179,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                 // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
                 callTargetReg             = REG_DEFAULT_HELPER_CALL_TARGET;
                 regMaskGpr callTargetMask = genRegMask(callTargetReg);
-                noway_assert((callTargetMask & killMask) == callTargetMask);
+                noway_assert((callTargetMask & killMask.gprRegs) == callTargetMask);
             }
             else
             {
@@ -9791,12 +9792,11 @@ void CodeGen::genOSRRecordTier0CalleeSavedRegistersAndFrame()
     // Emit appropriate unwind.
     //
     PatchpointInfo* const patchpointInfo             = compiler->info.compPatchpointInfo;
-    regMaskMixed const    tier0CalleeSaves           = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
-    regMaskGpr            tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskGpr            tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
     int const             tier0IntCalleeSaveUsedSize = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
 
     JITDUMP("--OSR--- tier0 has already saved ");
-    JITDUMPEXEC(dspRegMask(tier0IntCalleeSaves));
+    JITDUMPEXEC(dspRegMask(tier0IntCalleeSaves, RBM_NONE));
     JITDUMP("\n");
 
     // We must account for the Tier0 callee saves.
@@ -9859,7 +9859,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskGpr rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskGpr rsPushRegs = regSet.rsGetModifiedGprRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9871,18 +9871,17 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
     // Figure out which set of int callee saves still needs saving.
     //
     PatchpointInfo* const patchpointInfo              = compiler->info.compPatchpointInfo;
-    regMaskMixed const    tier0CalleeSaves            = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
-    regMaskGpr            tier0IntCalleeSaves         = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
+    regMaskGpr            tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
     unsigned const        tier0IntCalleeSaveUsedSize  = genCountBits(tier0IntCalleeSaves) * REGSIZE_BYTES;
     regMaskGpr const      osrIntCalleeSaves           = rsPushRegs & RBM_OSR_INT_CALLEE_SAVED;
     regMaskGpr            osrAdditionalIntCalleeSaves = osrIntCalleeSaves & ~tier0IntCalleeSaves;
 
     JITDUMP("---OSR--- int callee saves are ");
-    JITDUMPEXEC(dspRegMask(osrIntCalleeSaves));
+    JITDUMPEXEC(dspRegMask(osrIntCalleeSaves, RBM_NONE));
     JITDUMP("; tier0 already saved ");
-    JITDUMPEXEC(dspRegMask(tier0IntCalleeSaves));
+    JITDUMPEXEC(dspRegMask(tier0IntCalleeSaves, RBM_NONE));
     JITDUMP("; so only saving ");
-    JITDUMPEXEC(dspRegMask(osrAdditionalIntCalleeSaves));
+    JITDUMPEXEC(dspRegMask(osrAdditionalIntCalleeSaves, RBM_NONE));
     JITDUMP("\n");
 
     // These remaining callee saves will be stored in the Tier0 callee save area
@@ -9898,7 +9897,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
 
     // The tier0 frame is always an RBP frame, so the OSR method should never need to save RBP.
     //
-    assert((tier0CalleeSaves & RBM_FPBASE) == RBM_FPBASE);
+    assert((tier0IntCalleeSaves & RBM_FPBASE) == RBM_FPBASE);
     assert((osrAdditionalIntCalleeSaves & RBM_FPBASE) == RBM_NONE);
 
     // The OSR method must use MOVs to save additional callee saves.
@@ -9940,7 +9939,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     // x86/x64 doesn't support push of xmm/ymm regs, therefore consider only integer registers for pushing onto stack
     // here. Space for float registers to be preserved is stack allocated and saved as part of prolog sequence and not
     // here.
-    regMaskGpr rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr rsPushRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
 
 #if ETW_EBP_FRAMED
     if (!isFramePointerUsed() && regSet.rsRegsModified(RBM_FPBASE))
@@ -9960,7 +9959,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     {
         printf("Error: unexpected number of callee-saved registers to push. Expected: %d. Got: %d ",
                compiler->compCalleeRegsPushed, genCountBits(rsPushRegs));
-        dspRegMask(rsPushRegs);
+        dspRegMask(rsPushRegs, RBM_NONE);
         printf("\n");
         assert(compiler->compCalleeRegsPushed == genCountBits(rsPushRegs));
     }
@@ -9998,9 +9997,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     //
     if (doesSupersetOfNormalPops)
     {
-        regMaskGpr rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+        regMaskGpr rsPopRegs = regSet.rsGetModifiedGprRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
         regMaskGpr tier0CalleeSaves =
-            ((regMaskGpr)compiler->info.compPatchpointInfo->CalleeSaveRegisters()) & RBM_OSR_INT_CALLEE_SAVED;
+            ((regMaskGpr)compiler->info.compPatchpointInfo->CalleeSaveGprRegisters()) & RBM_OSR_INT_CALLEE_SAVED;
         regMaskGpr additionalCalleeSaves = rsPopRegs & ~tier0CalleeSaves;
 
         // Registers saved by the OSR prolog.
@@ -10018,7 +10017,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
     // Registers saved by a normal prolog
     //
-    regMaskGpr     rsPopRegs = regSet.rsGetModifiedRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr     rsPopRegs = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
     const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
@@ -10205,9 +10204,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             //
             PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
 
-            regMaskMixed const tier0CalleeSaves           = (regMaskMixed)patchpointInfo->CalleeSaveRegisters();
-            regMaskGpr const   tier0IntCalleeSaves        = tier0CalleeSaves & RBM_OSR_INT_CALLEE_SAVED;
-            regMaskGpr const   osrIntCalleeSaves          = regSet.rsGetModifiedRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskGpr const tier0IntCalleeSaves = patchpointInfo->CalleeSaveGprRegisters() & RBM_OSR_INT_CALLEE_SAVED;
+            regMaskGpr const   osrIntCalleeSaves          = regSet.rsGetModifiedGprRegsMask() & RBM_OSR_INT_CALLEE_SAVED;
             regMaskGpr const   allIntCalleeSaves          = osrIntCalleeSaves | tier0IntCalleeSaves;
             unsigned const     tier0FrameSize             = patchpointInfo->TotalFrameSize() + REGSIZE_BYTES;
             unsigned const     tier0IntCalleeSaveUsedSize = genCountBits(allIntCalleeSaves) * REGSIZE_BYTES;
@@ -10234,7 +10232,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             if ((frameSize == TARGET_POINTER_SIZE) && !compiler->compJmpOpUsed)
             {
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
-                regSet.verifyRegUsed(REG_ECX);
+                regSet.verifyGprRegUsed(REG_ECX);
             }
             else
 #endif // TARGET_X86
@@ -10322,7 +10320,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             {
                 // "pop ecx" will make ESP point to the callee-saved registers
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
-                regSet.verifyRegUsed(REG_ECX);
+                regSet.verifyGprRegUsed(REG_ECX);
             }
 #endif // TARGET_X86
             else
@@ -10461,7 +10459,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     indCallReg = REG_RAX;
                     addr       = nullptr;
                     instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addrInfo.addr);
-                    regSet.verifyRegUsed(indCallReg);
+                    regSet.verifyGprRegUsed(indCallReg);
                 }
             }
             else
@@ -10678,7 +10676,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     GetEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_ARG_0, genFuncletInfo.fiPSP_slot_InitialSP_offset);
 
-    regSet.verifyRegUsed(REG_FPBASE);
+    regSet.verifyGprRegUsed(REG_FPBASE);
 
     GetEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, genFuncletInfo.fiPSP_slot_InitialSP_offset);
 

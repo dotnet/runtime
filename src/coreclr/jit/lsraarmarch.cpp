@@ -375,7 +375,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    regMaskMixed killMask = getKillSetForCall(call);
+    AllRegsMask killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
     // No args are placed in registers anymore.
@@ -827,7 +827,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     }
 
     buildInternalRegisterUses();
-    regMaskMixed killMask = getKillSetForBlockStore(blkNode);
+    AllRegsMask killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
     return useCount;
 }

@@ -198,6 +198,10 @@ enum _regMask_enum : unsigned
 
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#define HAS_PREDICATE_REGS
+#endif
+
 /*****************************************************************************/
 
 // TODO-Cleanup: The types defined below are mildly confusing: why are there both?
@@ -253,7 +257,114 @@ typedef unsigned       regMaskTP;
 #define regMaskOnlyOne regMaskTP
 #define regMaskMixed regMaskTP
 #define singleRegMask regMaskTP
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+unsigned genCountBits(uint64_t bits);
+
+typedef struct _regMaskAll
+{
+    regMaskGpr   gprRegs;
+    regMaskFloat floatRegs;
+#ifdef HAS_PREDICATE_REGS
+    regMaskPredicate predicateRegs;
+#endif // HAS_PREDICATE_REGS
+//
+//    _regMaskAll(regMaskGpr _gprRegMask)
+//        : gprRegs(_gprRegMask)
+//        , floatRegs(RBM_NONE)
+//#ifdef HAS_PREDICATE_REGS
+//        , predicateRegs(RBM_NONE)
+//#endif
+//    {
+//    }
+//
+//    _regMaskAll(regMaskGpr _gprRegMask, regMaskFloat _floatRegMask) : gprRegs(_gprRegMask), floatRegs(_floatRegMask)
+//#ifdef HAS_PREDICATE_REGS
+//        , predicateRegs(RBM_NONE)
+//#endif
+//    {
+//
+//    }
+
+    _regMaskAll(regMaskGpr       _gprRegMask,
+                regMaskFloat     _floatRegMask,
+                regMaskPredicate _predicateRegMask = RBM_NONE)
+    {
+        gprRegs       = _gprRegMask;
+        floatRegs     = _floatRegMask;
+#ifdef HAS_PREDICATE_REGS
+        predicateRegs = _predicateRegMask;
+#endif // HAS_PREDICATE_REGS
+
+    }
+
+//    // Useful to create an entity from `mask` when the caller
+//    // doesn't know what is the type of mask but knows that it
+//    // is of "onlyone" type.
+//    _regMaskAll(regMaskOnlyOne mask)
+//    {
+//        gprRegs = mask;
+//        floatRegs = mask;
+//#ifdef HAS_PREDICATE_REGS
+//        predicateRegs = mask;
+//#endif
+//    }
+
+    _regMaskAll()
+    {
+        gprRegs   = RBM_NONE;
+        floatRegs = RBM_NONE;
+#ifdef HAS_PREDICATE_REGS
+        predicateRegs = RBM_NONE;
 #endif
+    }
+
+    bool IsEmpty()
+    {
+        return (gprRegs == RBM_NONE) && (floatRegs == RBM_NONE)
+#ifdef HAS_PREDICATE_REGS
+            && (predicateRegs == RBM_NONE)
+#endif // HAS_PREDICATE_REGS
+            ;
+    }
+
+    unsigned Count()
+    {
+        return genCountBits(gprRegs) + genCountBits(floatRegs)
+#ifdef HAS_PREDICATE_REGS
+            + genCountBits(predicateRegs)
+#endif // HAS_PREDICATE_REGS
+        ;
+    }
+
+    regMaskOnlyOne GetRegTypeMask(var_types type)
+    {
+        if (varTypeRegister[type] == VTR_INT)
+        {
+            return gprRegs;
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeRegister[type] == VTR_MASK)
+        {
+            return predicateRegs;
+        }
+#endif
+        else
+        {
+            assert(varTypeRegister[type] == VTR_FLOAT);
+            return floatRegs;
+        }
+    }
+} AllRegsMask;
+
+#define GprRegsMask(gprRegs) AllRegsMask(gprRegs, RBM_NONE)
+#define FloatRegsMask(floatRegs) AllRegsMask(RBM_NONE, floatRegs)
+
+bool operator==(const AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second);
+AllRegsMask operator~(const AllRegsMask& first);
+
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -307,6 +418,14 @@ typedef unsigned char   regNumberSmall;
 #include "targetriscv64.h"
 #else
   #error Unsupported or unset target architecture
+#endif
+
+#ifdef HAS_PREDICATE_REGS
+  #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED, RBM_MSK_CALLEE_SAVED)
+  #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH, RBM_MSK_CALLEE_TRASH)
+#else
+    #define AllRegsMask_CALLEE_SAVED AllRegsMask(RBM_INT_CALLEE_SAVED, RBM_FLT_CALLEE_SAVED)
+    #define AllRegsMask_CALLEE_TRASH AllRegsMask(RBM_INT_CALLEE_TRASH, RBM_FLT_CALLEE_TRASH)
 #endif
 
 #ifdef TARGET_XARCH
@@ -378,7 +497,8 @@ const char* getRegName(regNumber reg);
 
 #ifdef DEBUG
 const char* getRegNameFloat(regNumber reg, var_types type);
-extern void dspRegMask(regMaskMixed regMask, size_t minSiz = 0);
+extern void dspRegMask(regMaskOnlyOne mask, size_t minSiz = 0);
+extern void dspRegMask(AllRegsMask mask, size_t minSiz = 0);
 #endif
 
 #if CPU_HAS_BYTE_REGS

@@ -1663,7 +1663,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         else
         {
             GetEmitter()->emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, callTargetReg, (ssize_t)pAddr);
-            regSet.verifyRegUsed(callTargetReg);
+            regSet.verifyGprRegUsed(callTargetReg);
         }
 
         GetEmitter()->emitIns_Call(emitter::EC_INDIR_R, compiler->eeFindHelper(helper),
@@ -1685,7 +1685,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                    );
     }
 
-    regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
+    regSet.verifyRegistersUsed(AllRegsMask_CALLEE_TRASH);
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -1721,7 +1721,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     if (compiler->compProfilerMethHndIndirected)
     {
         GetEmitter()->emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, argReg, (ssize_t)compiler->compProfilerMethHnd);
-        regSet.verifyRegUsed(argReg);
+        regSet.verifyGprRegUsed(argReg);
     }
     else
     {
@@ -1820,7 +1820,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         // profiler handle. Therefore, r0 is moved to REG_PROFILER_RETURN_SCRATCH as per contract.
         GetEmitter()->emitIns_Mov(INS_mov, attr, REG_PROFILER_RET_SCRATCH, REG_R0, /* canSkip */ false);
         genTransferRegGCState(REG_PROFILER_RET_SCRATCH, REG_R0);
-        regSet.verifyRegUsed(REG_PROFILER_RET_SCRATCH);
+        regSet.verifyGprRegUsed(REG_PROFILER_RET_SCRATCH);
     }
 
     if (compiler->compProfilerMethHndIndirected)
@@ -1833,7 +1833,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
 
     gcInfo.gcMarkRegSetNpt(RBM_R0);
-    regSet.verifyRegUsed(REG_R0);
+    regSet.verifyGprRegUsed(REG_R0);
 
     genEmitHelperCall(helper,
                       0,           // argSize
@@ -1844,7 +1844,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     {
         GetEmitter()->emitIns_Mov(INS_mov, attr, REG_R0, REG_PROFILER_RET_SCRATCH, /* canSkip */ false);
         genTransferRegGCState(REG_R0, REG_PROFILER_RET_SCRATCH);
-        gcInfo.gcMarkRegSetNpt(RBM_PROFILER_RET_SCRATCH);
+        assert(compiler->IsGprRegMask(AllRegsMask_PROFILER_RET_SCRATCH.gprRegs));
+        assert(AllRegsMask_PROFILER_RET_SCRATCH.floatRegs == RBM_NONE);
+        gcInfo.gcMarkRegSetNpt(AllRegsMask_PROFILER_RET_SCRATCH.gprRegs);
     }
 }
 
@@ -1930,9 +1932,9 @@ void CodeGen::genAllocLclFrame(unsigned   frameSize,
 
         genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, frameSize,
                              INS_FLAGS_DONT_CARE, REG_STACK_PROBE_HELPER_ARG);
-        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+        regSet.verifyGprRegUsed(REG_STACK_PROBE_HELPER_ARG);
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
-        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_CALL_TARGET);
+        regSet.verifyGprRegUsed(REG_STACK_PROBE_HELPER_CALL_TARGET);
         compiler->unwindPadding();
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
 
@@ -2176,9 +2178,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
     assert(compiler->compGeneratingEpilog);
 
-    regMaskMixed maskPopRegs      = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
-    regMaskFloat maskPopRegsFloat = maskPopRegs & RBM_ALLFLOAT;
-    regMaskGpr   maskPopRegsInt   = maskPopRegs & ~maskPopRegsFloat;
+    regMaskFloat maskPopRegsFloat = regSet.rsGetModifiedFloatRegsMask();
+    regMaskGpr   maskPopRegsInt   = regSet.rsGetModifiedGprRegsMask();
 
     // First, pop float registers
 
@@ -2337,8 +2338,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    regMaskFloat maskPushRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskGpr   maskPushRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPushRegsFloat;
+    regMaskFloat maskPushRegsFloat = genFuncletInfo.fiSaveFloatRegs;
+    regMaskGpr   maskPushRegsInt   = genFuncletInfo.fiSaveGprRegs;
 
     regMaskGpr maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPushRegsFloat);
     maskPushRegsInt |= maskStackAlloc;
@@ -2391,7 +2392,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         // This is the first block of a filter
 
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, REG_R1, REG_R1, genFuncletInfo.fiPSP_slot_CallerSP_offset);
-        regSet.verifyRegUsed(REG_R1);
+        regSet.verifyGprRegUsed(REG_R1);
         GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_R1, REG_SPBASE, genFuncletInfo.fiPSP_slot_SP_offset);
         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_FPBASE, REG_R1,
                                     genFuncletInfo.fiFunctionCallerSPtoFPdelta);
@@ -2401,7 +2402,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         // This is a non-filter funclet
         GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_R3, REG_FPBASE,
                                     genFuncletInfo.fiFunctionCallerSPtoFPdelta);
-        regSet.verifyRegUsed(REG_R3);
+        regSet.verifyGprRegUsed(REG_R3);
         GetEmitter()->emitIns_R_R_I(INS_str, EA_PTRSIZE, REG_R3, REG_SPBASE, genFuncletInfo.fiPSP_slot_SP_offset);
     }
 }
@@ -2431,10 +2432,10 @@ void CodeGen::genFuncletEpilog()
     bool unwindStarted = false;
 
     /* The saved regs info saves the LR register. We need to pop the PC register to return */
-    assert(genFuncletInfo.fiSaveRegs & RBM_LR);
+    assert(genFuncletInfo.fiSaveGprRegs & RBM_LR);
 
-    regMaskFloat maskPopRegsFloat = genFuncletInfo.fiSaveRegs & RBM_ALLFLOAT;
-    regMaskGpr   maskPopRegsInt   = genFuncletInfo.fiSaveRegs & ~maskPopRegsFloat;
+    regMaskFloat maskPopRegsFloat = genFuncletInfo.fiSaveFloatRegs;
+    regMaskGpr   maskPopRegsInt   = genFuncletInfo.fiSaveGprRegs;
 
     regMaskGpr maskStackAlloc = genStackAllocRegisterMask(genFuncletInfo.fiSpDelta, maskPopRegsFloat);
     maskPopRegsInt |= maskStackAlloc;
@@ -2489,12 +2490,13 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // of adding the number of callee-saved regs to CallerSP, we add 1 for lr and 1 for r11
         // (plus the "pre spill regs"). Note that we assume r12 and r13 aren't saved
         // (also assumed in genFnProlog()).
-        assert((regSet.rsMaskCalleeSaved & (RBM_R12 | RBM_R13)) == 0);
+        assert((regSet.rsGprMaskCalleeSaved & (RBM_R12 | RBM_R13)) == 0);
         unsigned preSpillRegArgSize                = genCountBits(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES;
         genFuncletInfo.fiFunctionCallerSPtoFPdelta = preSpillRegArgSize + 2 * REGSIZE_BYTES;
 
-        regMaskMixed rsMaskSaveRegs  = regSet.rsMaskCalleeSaved;
-        unsigned     saveRegsCount   = genCountBits(rsMaskSaveRegs);
+        regMaskMixed rsGprMaskSaveRegs  = regSet.rsGprMaskCalleeSaved;
+        regMaskMixed rsFloatMaskSaveRegs  = regSet.rsFloatMaskCalleeSaved;
+        unsigned     saveRegsCount       = genCountBits(rsGprMaskSaveRegs) + genCountBits(rsFloatMaskSaveRegs);
         unsigned     saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned     saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
         if (compiler->lvaMonAcquired != BAD_VAR_NUM)
@@ -2514,7 +2516,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
         /* Now save it for future use */
 
-        genFuncletInfo.fiSaveRegs                 = rsMaskSaveRegs;
+        genFuncletInfo.fiSaveGprRegs                 = rsGprMaskSaveRegs;
+        genFuncletInfo.fiSaveFloatRegs               = rsFloatMaskSaveRegs;
         genFuncletInfo.fiSpDelta                  = spDelta;
         genFuncletInfo.fiPSP_slot_SP_offset       = PSP_slot_SP_offset;
         genFuncletInfo.fiPSP_slot_CallerSP_offset = PSP_slot_CallerSP_offset;
@@ -2526,7 +2529,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
             printf("Funclet prolog / epilog info\n");
             printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunctionCallerSPtoFPdelta);
             printf("                        Save regs: ");
-            dspRegMask(rsMaskSaveRegs);
+            dspRegMask(rsGprMaskSaveRegs, rsFloatMaskSaveRegs);
             printf("\n");
             printf("                         SP delta: %d\n", genFuncletInfo.fiSpDelta);
             printf("               PSP slot SP offset: %d\n", genFuncletInfo.fiPSP_slot_SP_offset);
@@ -2651,7 +2654,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     regNumber    rCnt = REG_NA; // Invalid
     regMaskMixed regMask;
 
-    regMaskMixed availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
+    regMaskMixed availMask = regSet.rsGetModifiedGprRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
     availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
                                                         // currently live
     availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for

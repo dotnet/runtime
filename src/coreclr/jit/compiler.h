@@ -8422,7 +8422,7 @@ public:
 
     // Gets a register mask that represent the kill set for a helper call since
     // not all JIT Helper calls follow the standard ABI on the target architecture.
-    regMaskMixed compHelperCallKillSet(CorInfoHelpFunc helper);
+    AllRegsMask compHelperCallKillSet(CorInfoHelpFunc helper);
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -8453,12 +8453,12 @@ public:
         return (regMask & RBM_ALLFLOAT) == regMask;
     }
 
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+#ifdef HAS_PREDICATE_REGS
     bool IsPredicateRegMask(regMaskTP regMask)
     {
         return (regMask & RBM_ALLMASK) == regMask;
     }
-#endif
+#endif // HAS_PREDICATE_REGS
 
     bool IsOnlyOneRegMask(regMaskTP regMask)
     {
@@ -10806,7 +10806,8 @@ public:
 
     bool compJitHaltMethod();
 
-    void dumpRegMask(regMaskMixed regs) const;
+    void dumpRegMask(regMaskOnlyOne mask) const;
+    void dumpRegMask(AllRegsMask mask) const;
 
 #endif
 

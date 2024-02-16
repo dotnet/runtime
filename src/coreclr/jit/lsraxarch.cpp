@@ -47,7 +47,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(!tree->isContained());
     int          srcCount;
     int          dstCount      = 0;
-    regMaskMixed killMask      = RBM_NONE;
     bool         isLocalDefUse = false;
 
     // Reset the build-related members of LinearScan.
@@ -138,15 +137,17 @@ int LinearScan::BuildNode(GenTree* tree)
             // This kills GC refs in callee save regs
             srcCount = 0;
             assert(dstCount == 0);
-            BuildDefsWithKills(tree, 0, RBM_NONE, RBM_NONE);
+            BuildDefsWithKills(tree, 0, RBM_NONE, AllRegsMask());
             break;
 
         case GT_PROF_HOOK:
+        {
             srcCount = 0;
             assert(dstCount == 0);
-            killMask = getKillSetForProfilerHook();
+            AllRegsMask killMask = getKillSetForProfilerHook();
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
+        }
 
         case GT_CNS_INT:
         case GT_CNS_LNG:
@@ -188,10 +189,12 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_RETURN:
+        {
             srcCount = BuildReturn(tree);
-            killMask = getKillSetForReturn();
+            AllRegsMask killMask = getKillSetForReturn();
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
+        }
 
         case GT_RETFILT:
             assert(dstCount == 0);
@@ -295,7 +298,7 @@ int LinearScan::BuildNode(GenTree* tree)
             RefPosition* internalDef = buildInternalIntRegisterDefForNode(tree);
             srcCount                 = BuildOperandUses(tree->gtGetOp1());
             buildInternalRegisterUses();
-            killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
+            AllRegsMask killMask = compiler->compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
         }
         break;
@@ -1100,7 +1103,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         if (!shiftBy->isContained())
         {
             srcCount += BuildDelayFreeUses(shiftBy, source, RBM_RCX);
-            buildKillPositionsForNode(tree, currentLoc + 1, RBM_RCX);
+            buildKillPositionsForNode(tree, currentLoc + 1, GprRegsMask(RBM_RCX));
         }
         BuildDef(tree, dstCandidates);
     }
@@ -1109,7 +1112,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         if (!shiftBy->isContained())
         {
             srcCount += BuildOperandUses(shiftBy, RBM_RCX);
-            buildKillPositionsForNode(tree, currentLoc + 1, RBM_RCX);
+            buildKillPositionsForNode(tree, currentLoc + 1, GprRegsMask(RBM_RCX));
         }
     }
     return srcCount;
@@ -1344,7 +1347,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    regMaskMixed killMask = getKillSetForCall(call);
+    AllRegsMask killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
 
     // No args are placed in registers anymore.
@@ -1636,7 +1639,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif
 
     buildInternalRegisterUses();
-    regMaskMixed killMask = getKillSetForBlockStore(blkNode);
+    AllRegsMask killMask = getKillSetForBlockStore(blkNode);
     BuildDefsWithKills(blkNode, 0, RBM_NONE, killMask);
 
     return useCount;
@@ -1929,7 +1932,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(RBM_RAX | RBM_RDX));
     buildInternalRegisterUses();
 
-    regMaskMixed killMask = getKillSetForModDiv(tree->AsOp());
+    AllRegsMask killMask(getKillSetForModDiv(tree->AsOp()), RBM_NONE);
     BuildDefsWithKills(tree, 1, dstCandidates, killMask);
     return srcCount;
 }
@@ -3042,7 +3045,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
     assert(compiler->IsGprRegMask(dstCandidates));
 
-    regMaskMixed killMask = getKillSetForMul(tree->AsOp());
+    AllRegsMask killMask(getKillSetForMul(tree->AsOp()), RBM_NONE);
     BuildDefsWithKills(tree, dstCount, dstCandidates, killMask);
     return srcCount;
 }

@@ -45,7 +45,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
 //------------------------------------------------------------------------
-// verifyRegUsed: verify that the register is marked as used.
+// verifyGprRegUsed: verify that the GPR register is marked as used.
 //
 // Arguments:
 //    reg - The register to verify.
@@ -61,12 +61,132 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //     This method is intended to be called during code generation, and
 //     should simply validate that the register (or registers) have
 //     already been added to the modified set.
+//
+void RegSet::verifyGprRegUsed(regNumber reg)
+{
+    assert(emitter::isGeneralRegister(reg));
+    rsSetGprRegsModified(genRegMask(reg));
+}
 
+//------------------------------------------------------------------------
+// verifyFloatRegUsed: verify that the Float register is marked as used.
+//
+// Arguments:
+//    reg - The register to verify.
+//
+// Return Value:
+//   None.
+//
+// Assumptions:
+//    The caller must have ensured that the register is already marked
+//    as used.
+//
+// Notes:
+//     This method is intended to be called during code generation, and
+//     should simply validate that the register (or registers) have
+//     already been added to the modified set.
+//
+void RegSet::verifyFloatRegUsed(regNumber reg)
+{
+    assert(emitter::isFloatReg(reg));
+    rsSetFloatRegsModified(genRegMask(reg));
+}
+
+#ifdef HAS_PREDICATE_REGS
+//------------------------------------------------------------------------
+// verifyPredicateRegUsed: verify that the mask register is marked as used.
+//
+// Arguments:
+//    reg - The register to verify.
+//
+// Return Value:
+//   None.
+//
+// Assumptions:
+//    The caller must have ensured that the register is already marked
+//    as used.
+//
+// Notes:
+//     This method is intended to be called during code generation, and
+//     should simply validate that the register (or registers) have
+//     already been added to the modified set.
+void RegSet::verifyPredicateRegUsed(regNumber reg)
+{
+    assert(emitter::isMaskReg(reg));
+    rsSetPredicateRegsModified(genRegMask(reg));
+}
+#endif // HAS_PREDICATE_REGS
+
+//------------------------------------------------------------------------
+// verifyRegUsed: verify that the mask register is marked as used.
+//
+// Arguments:
+//    reg - The register to verify.
+//
+// Return Value:
+//   None.
+//
+// Assumptions:
+//    The caller must have ensured that the register is already marked
+//    as used.
+//
+// Notes:
+//     This method is intended to be called during code generation, and
+//     should simply validate that the register (or registers) have
+//     already been added to the modified set.
+void RegSet::verifyRegUsed(regNumber reg, var_types type)
+{
+    if (varTypeUsesIntReg(type))
+    {
+        verifyGprRegUsed(reg);
+    }
+#ifdef HAS_PREDICATE_REGS
+    else if (varTypeUsesMaskReg(type))
+    {
+        verifyPredicateRegUsed(reg);
+    }
+#endif // HAS_PREDICATE_REGS
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        verifyFloatRegUsed(reg);
+    }
+}
+
+//------------------------------------------------------------------------
+// verifyRegUsed: verify that the mask register is marked as used.
+//
+// Arguments:
+//    reg - The register to verify.
+//
+// Return Value:
+//   None.
+//
+// Assumptions:
+//    The caller must have ensured that the register is already marked
+//    as used.
+//
+// Notes:
+//     This method is intended to be called during code generation, and
+//     should simply validate that the register (or registers) have
+//     already been added to the modified set.
 void RegSet::verifyRegUsed(regNumber reg)
 {
-    // TODO-Cleanup: we need to identify the places where the register
-    //               is not marked as used when this is called.
-    rsSetRegsModified(genRegMask(reg));
+    if (emitter::isGeneralRegister(reg))
+    {
+        verifyGprRegUsed(reg);
+    }
+#ifdef HAS_PREDICATE_REGS
+    else if (emitter::isMaskReg(reg))
+    {
+        verifyPredicateRegUsed(reg);
+    }
+#endif // HAS_PREDICATE_REGS
+    else
+    {
+        assert(emitter::isFloatReg(reg));
+        verifyFloatRegUsed(reg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -87,21 +207,36 @@ void RegSet::verifyRegUsed(regNumber reg)
 //     should simply validate that the register (or registers) have
 //     already been added to the modified set.
 
-void RegSet::verifyRegistersUsed(regMaskMixed regMask)
+void RegSet::verifyRegistersUsed(AllRegsMask regs)
 {
     if (m_rsCompiler->opts.OptimizationDisabled())
     {
         return;
     }
 
-    if (regMask == RBM_NONE)
+    // TODO-Cleanup:
+    // We need to identify the places where the register
+    // is not marked as used when this is called.
+    //
+    // See https://github.com/dotnet/runtime/issues/10411 and
+    // https://github.com/dotnet/coreclr/pull/18230 on why we call
+    // rsSetGprRegsModified() instead of assert(rsRegsModified())
+    if (regs.gprRegs != RBM_NONE)
     {
-        return;
+        rsSetGprRegsModified(regs.gprRegs);
     }
 
-    // TODO-Cleanup: we need to identify the places where the registers
-    //               are not marked as used when this is called.
-    rsSetRegsModified(regMask);
+    if (regs.floatRegs != RBM_NONE)
+    {
+        rsSetFloatRegsModified(regs.floatRegs);
+    }
+
+#ifdef HAS_PREDICATE_REGS
+    if (regs.predicateRegs != RBM_NONE)
+    {
+        rsSetPredicateRegsModified(regs.predicateRegs);
+    }
+#endif
 }
 
 void RegSet::rsClearRegsModified()
@@ -116,13 +251,39 @@ void RegSet::rsClearRegsModified()
     rsModifiedRegsMaskInitialized = true;
 #endif // DEBUG
 
-    rsModifiedRegsMask = RBM_NONE;
+    rsModifiedGprRegsMask = RBM_NONE;
+    rsModifiedFloatRegsMask = RBM_NONE;
+    rsModifiedPredicateRegsMask = RBM_NONE;
 }
 
-void RegSet::rsSetRegsModified(regMaskMixed mask DEBUGARG(bool suppressDump))
+void RegSet::rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump))
 {
-    assert(mask != RBM_NONE);
+    assert(m_rsCompiler->IsGprRegMask(mask));
+    rsSetRegsModified(rsModifiedGprRegsMask, mask DEBUGARG(suppressDump) DEBUGARG(RBM_INT_CALLEE_SAVED));
+}
+
+void RegSet::rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump))
+{
+    assert(m_rsCompiler->IsFloatRegMask(mask));
+    rsSetRegsModified(rsModifiedFloatRegsMask, mask DEBUGARG(suppressDump) DEBUGARG(RBM_FLT_CALLEE_SAVED));
+}
+
+#ifdef HAS_PREDICATE_REGS
+void RegSet::rsSetPredicateRegsModified(regMaskPredicate mask DEBUGARG(bool suppressDump))
+{
+    assert(m_rsCompiler->IsPredicateRegMask(mask));
+    rsSetRegsModified(rsModifiedPredicateRegsMask, mask DEBUGARG(suppressDump) DEBUGARG(RBM_MSK_CALLEE_SAVED));
+}
+#endif // HAS_PREDICATE_REGS
+
+void RegSet::rsSetRegsModified(regMaskOnlyOne& trackingMask, regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump) DEBUGARG(regMaskOnlyOne calleeSaveMask))
+{
+    assert(modifiedMask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
+
+#ifdef DEBUG
+
+    regMaskOnlyOne newMask = (trackingMask | modifiedMask);
 
     // We can't update the modified registers set after final frame layout (that is, during code
     // generation and after). Ignore prolog and epilog generation: they call register tracking to
@@ -131,60 +292,58 @@ void RegSet::rsSetRegsModified(regMaskMixed mask DEBUGARG(bool suppressDump))
     // Frame layout is only affected by callee-saved registers, so only ensure that callee-saved
     // registers aren't modified after final frame layout.
     assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
-           m_rsCompiler->compGeneratingEpilog ||
-           (((rsModifiedRegsMask | mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
-
-#ifdef DEBUG
+           m_rsCompiler->compGeneratingEpilog || ((newMask & calleeSaveMask) == (trackingMask & calleeSaveMask)));
     if (m_rsCompiler->verbose && !suppressDump)
     {
-        if (rsModifiedRegsMask != (rsModifiedRegsMask | mask))
+        if (trackingMask != newMask)
         {
             printf("Marking regs modified: ");
-            dspRegMask(mask);
+            dspRegMask(modifiedMask);
             printf(" (");
-            dspRegMask(rsModifiedRegsMask);
+            dspRegMask(trackingMask);
             printf(" => ");
-            dspRegMask(rsModifiedRegsMask | mask);
+            dspRegMask(newMask);
             printf(")\n");
         }
     }
 #endif // DEBUG
 
-    rsModifiedRegsMask |= mask;
+    trackingMask |= modifiedMask;
 }
 
 void RegSet::rsRemoveRegsModified(regMaskGpr mask)
 {
     assert(mask != RBM_NONE);
     assert(rsModifiedRegsMaskInitialized);
+    assert(m_rsCompiler->IsGprRegMask(mask));
 
     // See comment in rsSetRegsModified().
     assert((m_rsCompiler->lvaDoneFrameLayout < Compiler::FINAL_FRAME_LAYOUT) || m_rsCompiler->compGeneratingProlog ||
            m_rsCompiler->compGeneratingEpilog ||
-           (((rsModifiedRegsMask & ~mask) & RBM_CALLEE_SAVED) == (rsModifiedRegsMask & RBM_CALLEE_SAVED)));
+           (((rsModifiedGprRegsMask & ~mask) & RBM_CALLEE_SAVED) == (rsModifiedGprRegsMask & RBM_CALLEE_SAVED)));
 
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
     {
         printf("Removing modified regs: ");
-        dspRegMask(mask);
-        if (rsModifiedRegsMask == (rsModifiedRegsMask & ~mask))
+        dspRegMask(mask, RBM_NONE);
+        if (rsModifiedGprRegsMask == (rsModifiedGprRegsMask & ~mask))
         {
             printf(" (unchanged)");
         }
         else
         {
             printf(" (");
-            dspRegMask(rsModifiedRegsMask);
+            dspRegMask(rsModifiedGprRegsMask, RBM_NONE);
             printf(" => ");
-            dspRegMask(rsModifiedRegsMask & ~mask);
+            dspRegMask(rsModifiedGprRegsMask & ~mask, RBM_NONE);
             printf(")");
         }
         printf("\n");
     }
 #endif // DEBUG
 
-    rsModifiedRegsMask &= ~mask;
+    rsModifiedGprRegsMask &= ~mask;
 }
 
 void RegSet::SetMaskVars(regMaskMixed newMaskVars)
@@ -247,9 +406,16 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
 
     rsMaskResvd = RBM_NONE;
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH)
+    rsGprMaskCalleeSaved = RBM_NONE;
+    rsFloatMaskCalleeSaved = RBM_NONE;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     rsMaskCalleeSaved = RBM_NONE;
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#ifdef HAS_PREDICATE_REGS
+    rsPredicateMaskCalleeSaved = RBM_NONE;
+#endif // HAS_PREDICATE_REGS
 
 #ifdef TARGET_ARM
     rsMaskPreSpillRegArg = RBM_NONE;

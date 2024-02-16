@@ -10,21 +10,25 @@
 public:
 inline static bool isGeneralRegister(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return (reg <= REG_INT_LAST);
 }
 
 inline static bool isFloatReg(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
 }
 
 inline static bool isDoubleReg(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return isFloatReg(reg);
 }
 
 inline static bool isMaskReg(regNumber reg)
 {
+    // TODO: This assert will no longer be true
     return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
 }
 

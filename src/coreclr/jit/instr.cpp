@@ -1684,12 +1684,12 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH) && defined(HAS_PREDICATE_REGS)
     if (varTypeUsesMaskReg(srcType))
     {
         return INS_kmovq_msk;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // TARGET_XARCH && HAS_PREDICATE_REGS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1834,12 +1834,12 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH) && defined(HAS_PREDICATE_REGS)
     if (varTypeUsesMaskReg(srcType))
     {
         return INS_kmovq_msk;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // TARGET_XARCH && HAS_PREDICATE_REGS
 
     assert(varTypeUsesFloatReg(srcType));
 
@@ -1918,12 +1918,12 @@ instruction CodeGen::ins_Copy(var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH) && defined(HAS_PREDICATE_REGS)
     if (varTypeUsesMaskReg(dstType))
     {
         return INS_kmovq_msk;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // TARGET_XARCH && HAS_PREDICATE_REGS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -1995,13 +1995,13 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             return ins_Copy(dstType);
         }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH) && defined(HAS_PREDICATE_REGS)
         if (genIsValidMaskReg(srcReg))
         {
             // mask to int
             return INS_kmovq_gpr;
         }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // TARGET_XARCH && HAS_PREDICATE_REGS
 
         // float to int
         assert(genIsValidFloatReg(srcReg));
@@ -2027,7 +2027,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #endif
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2036,11 +2036,13 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             return ins_Copy(dstType);
         }
 
+#ifdef TARGET_XARCH
         // mask to int
         assert(genIsValidIntOrFakeReg(srcReg));
         return INS_kmovq_gpr;
+#endif // TARGET_XARCH
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // HAS_PREDICATE_REGS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2142,12 +2144,12 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         return ins;
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(TARGET_XARCH) && defined(HAS_PREDICATE_REGS)
     if (varTypeUsesMaskReg(dstType))
     {
         return INS_kmovq_msk;
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // TARGET_XARCH && HAS_PREDICATE_REGS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2229,13 +2231,13 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
             return ins_Store(dstType, aligned);
         }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
         if (genIsValidMaskReg(srcReg))
         {
             // mask to int, treat as mask so it works on 32-bit
             return ins_Store(TYP_MASK, aligned);
         }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // HAS_PREDICATE_REGS
 
         // float to int, treat as float to float
         assert(genIsValidFloatReg(srcReg));
@@ -2259,7 +2261,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         return ins_Store(dstType, aligned);
     }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#ifdef HAS_PREDICATE_REGS
     if (varTypeUsesMaskReg(dstType))
     {
         if (genIsValidMaskReg(srcReg))
@@ -2272,7 +2274,7 @@ instruction CodeGenInterface::ins_StoreFromSrc(regNumber srcReg, var_types dstTy
         assert(genIsValidIntOrFakeReg(srcReg));
         return ins_Store(dstType, aligned);
     }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // HAS_PREDICATE_REGS
 
     assert(varTypeUsesFloatReg(dstType));
 
@@ -2583,7 +2585,7 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #error "Unknown TARGET"
 #endif
 
-    regSet.verifyRegUsed(reg);
+    regSet.verifyGprRegUsed(reg);
 }
 
 /*****************************************************************************/

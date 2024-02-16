@@ -68,34 +68,79 @@ private:
 
 private:
     bool         rsNeededSpillReg;   // true if this method needed to spill any registers
-    regMaskMixed rsModifiedRegsMask; // mask of the registers modified by the current function.
+    regMaskGpr rsModifiedGprRegsMask; // mask of the registers modified by the current function.
+    regMaskFloat rsModifiedFloatRegsMask; // mask of the registers modified by the current function.
+    regMaskPredicate rsModifiedPredicateRegsMask; // mask of the registers modified by the current function.
+    FORCEINLINE void             rsSetRegsModified(regMaskOnlyOne& trackingMask, regMaskOnlyOne modifiedMask DEBUGARG(bool suppressDump = false)
+                                           DEBUGARG(regMaskOnlyOne calleeSaveMask = RBM_NONE));
 
 #ifdef DEBUG
     bool rsModifiedRegsMaskInitialized; // Has rsModifiedRegsMask been initialized? Guards against illegal use.
 #endif                                  // DEBUG
 
 public:
-    regMaskMixed rsGetModifiedRegsMask() const
+
+    regMaskGpr rsGetModifiedRegsMask(var_types type) const
+    {
+        if (varTypeUsesIntReg(type))
+        {
+            return rsGetModifiedGprRegsMask();
+        }
+#ifdef HAS_PREDICATE_REGS
+        else if (varTypeUsesMaskReg(type))
+        {
+            return rsGetModifiedPredicateRegsMask();
+        }
+#endif // HAS_PREDICATE_REGS
+        else
+        {
+            assert(varTypeUsesFloatReg(type));
+            return rsGetModifiedFloatRegsMask();
+        }
+    }
+
+    regMaskGpr rsGetModifiedGprRegsMask() const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return rsModifiedRegsMask;
+        return rsModifiedGprRegsMask;
+    }
+
+    regMaskFloat rsGetModifiedFloatRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return rsModifiedFloatRegsMask;
+    }
+
+    regMaskPredicate rsGetModifiedPredicateRegsMask() const
+    {
+        assert(rsModifiedRegsMaskInitialized);
+        return rsModifiedPredicateRegsMask;
     }
 
     void rsClearRegsModified();
-
-    void rsSetRegsModified(regMaskMixed mask DEBUGARG(bool suppressDump = false));
+    void rsSetGprRegsModified(regMaskGpr mask DEBUGARG(bool suppressDump = false));
+    void rsSetFloatRegsModified(regMaskFloat mask DEBUGARG(bool suppressDump = false));
+#ifdef HAS_PREDICATE_REGS
+    void rsSetPredicateRegsModified(regMaskPredicate mask DEBUGARG(bool suppressDump = false));
+#endif // HAS_PREDICATE_REGS
 
     void rsRemoveRegsModified(regMaskGpr mask);
 
     bool rsRegsModified(regMaskGpr mask) const
     {
         assert(rsModifiedRegsMaskInitialized);
-        return (rsModifiedRegsMask & mask) != 0;
+        return (rsModifiedGprRegsMask & mask) != 0;
     }
 
     void verifyRegUsed(regNumber reg);
+    void verifyRegUsed(regNumber reg, var_types type);
+    void verifyGprRegUsed(regNumber reg);
+    void verifyFloatRegUsed(regNumber reg);
+#ifdef HAS_PREDICATE_REGS
+    void verifyPredicateRegUsed(regNumber reg);
+#endif // HAS_PREDICATE_REGS
 
-    void verifyRegistersUsed(regMaskMixed regMask);
+    void verifyRegistersUsed(AllRegsMask mask);
 
 public:
     regMaskMixed GetMaskVars() const // 'get' property function for rsMaskVars property
@@ -124,9 +169,16 @@ public:
 private:
     regMaskMixed _rsMaskVars; // backing store for rsMaskVars property
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARMARCH)
+    regMaskGpr rsGprMaskCalleeSaved;
+    regMaskFloat rsFloatMaskCalleeSaved;
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     regMaskMixed rsMaskCalleeSaved; // mask of the registers pushed/popped in the prolog/epilog
-#endif                              // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif  // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_LOONGARCH64
+
+#ifdef HAS_PREDICATE_REGS
+    regMaskPredicate rsPredicateMaskCalleeSaved;
+#endif
 
 public:                     // TODO-Cleanup: Should be private, but Compiler uses it
     regMaskGpr rsMaskResvd; // mask of the registers that are reserved for special purposes (typically empty)

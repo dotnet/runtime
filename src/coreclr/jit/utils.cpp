@@ -430,22 +430,34 @@ const char* dspRegRange(regMaskMixed regMask, size_t& minSiz, const char* sep, r
     return sep;
 }
 
+void dspRegMask(regMaskOnlyOne mask, size_t minSiz)
+{
+    dspRegMask(AllRegsMask(mask, mask
+#ifdef HAS_PREDICATE_REGS
+        , mask
+#endif
+    ), minSiz);
+}
+
 /*****************************************************************************
  *
  *  Displays a register set.
  *  TODO-ARM64-Cleanup: don't allow ip0, ip1 as part of a range.
  */
-void dspRegMask(regMaskMixed regMask, size_t minSiz)
+void dspRegMask(AllRegsMask mask, size_t minSiz)
 {
+    //TODO: Need to fix all the callers where we don't know if the input is gpr/float but is of type `regMaskOnlyOne`.
+    //      For now, I am just making `floatMask` as optional and default to RBM_NONE so we don't have to deal with
+    //      lot of build errors.
     const char* sep = "";
 
     printf("[");
 
-    sep = dspRegRange(regMask, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
-    sep = dspRegRange(regMask, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
+    sep = dspRegRange(mask.gprRegs, minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
+    sep = dspRegRange(mask.floatRegs, minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
 
 #ifdef TARGET_XARCH
-    sep = dspRegRange(regMask, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
+    sep = dspRegRange(mask.predicateRegs, minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
 #endif // TARGET_XARCH
 
     printf("]");

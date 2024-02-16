@@ -3867,12 +3867,12 @@ void emitter::emitDispGCRegDelta(const char* title, regMaskGpr prevRegs, regMask
         if (removedRegs != RBM_NONE)
         {
             printf(" -");
-            dspRegMask(removedRegs);
+            dspRegMask(removedRegs, RBM_NONE);
         }
         if (addedRegs != RBM_NONE)
         {
             printf(" +");
-            dspRegMask(addedRegs);
+            dspRegMask(addedRegs, RBM_NONE);
         }
         printf("\n");
     }
@@ -10374,7 +10374,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 // Return value:
 //   the saved set of registers.
 //
-regMaskMixed emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
+AllRegsMask emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 {
     // Is it a helper with a special saved set?
     bool isNoGCHelper = emitNoGChelper(methHnd);
@@ -10383,7 +10383,7 @@ regMaskMixed emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd
         CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(methHnd);
 
         // Get the set of registers that this call kills and remove it from the saved set.
-        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc);
+        regMaskGpr savedSet = RBM_ALLINT & ~emitGetGCRegsKilledByNoGCCall(helpFunc).gprRegs;
 
 #ifdef DEBUG
         if (emitComp->verbose)
@@ -10394,12 +10394,12 @@ regMaskMixed emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd
             printf("\n");
         }
 #endif
-        return savedSet;
+        return GprRegsMask(savedSet);
     }
     else
     {
         // This is the saved set of registers after a normal call.
-        return RBM_CALLEE_SAVED;
+        return AllRegsMask_CALLEE_SAVED; // TODO: We should have this as a constant.
     }
 }
 
@@ -10412,7 +10412,7 @@ regMaskMixed emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd
 // address registers as killed for liveness purposes, since their values change. However, they still are
 // valid byref pointers after the call, so the dst/src address registers are NOT reported as killed here.
 //
-// Note: This list may not be complete and defaults to the default RBM_CALLEE_TRASH_NOGC registers.
+// Note: This list may not be complete and defaults to the default AllRegsMask_CALLEE_TRASH_NOGC registers.
 //
 // Arguments:
 //   helper - The helper being inquired about
@@ -10420,52 +10420,52 @@ regMaskMixed emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd
 // Return Value:
 //   Mask of GC register kills
 //
-regMaskMixed emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
+AllRegsMask emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 {
     assert(emitNoGChelper(helper));
-    regMaskMixed result;
+    AllRegsMask result;
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
+            result = AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER;
             break;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+            result = AllRegsMask_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
         case CORINFO_HELP_PROF_FCN_ENTER:
-            result = RBM_PROFILER_ENTER_TRASH;
+            result = AllRegsMask_PROFILER_ENTER_TRASH;
             break;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
 #if defined(TARGET_ARM)
             // profiler scratch remains gc live
-            result = RBM_PROFILER_LEAVE_TRASH & ~RBM_PROFILER_RET_SCRATCH;
+            result = AllRegsMask_PROFILER_LEAVE_TRASH & ~AllRegsMask_PROFILER_RET_SCRATCH;
 #else
-            result = RBM_PROFILER_LEAVE_TRASH;
+            result = AllRegsMask_PROFILER_LEAVE_TRASH;
 #endif
             break;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            result = RBM_PROFILER_TAILCALL_TRASH;
+            result = AllRegsMask_PROFILER_TAILCALL_TRASH;
             break;
 #endif // !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
 #if defined(TARGET_X86)
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            result = RBM_INIT_PINVOKE_FRAME_TRASH;
+            result = AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
             break;
 #endif // defined(TARGET_X86)
 
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            result = RBM_VALIDATE_INDIRECT_CALL_TRASH;
+            result = AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
             break;
 
         default:
-            result = RBM_CALLEE_TRASH_NOGC;
+            result = AllRegsMask_CALLEE_TRASH_NOGC;
             break;
     }
 

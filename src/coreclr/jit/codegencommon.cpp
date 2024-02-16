@@ -623,25 +623,25 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 // Return Value:
 //   Mask of register kills -- registers whose values are no longer guaranteed to be the same.
 //
-regMaskMixed Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
+AllRegsMask Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 {
     switch (helper)
     {
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
-            return RBM_CALLEE_TRASH_WRITEBARRIER;
+            return AllRegsMask_CALLEE_TRASH_WRITEBARRIER;
 
         case CORINFO_HELP_ASSIGN_BYREF:
-            return RBM_CALLEE_TRASH_WRITEBARRIER_BYREF;
+            return AllRegsMask_CALLEE_TRASH_WRITEBARRIER_BYREF;
 
         case CORINFO_HELP_PROF_FCN_ENTER:
-            return RBM_PROFILER_ENTER_TRASH;
+            return AllRegsMask_PROFILER_ENTER_TRASH;
 
         case CORINFO_HELP_PROF_FCN_LEAVE:
-            return RBM_PROFILER_LEAVE_TRASH;
+            return AllRegsMask_PROFILER_LEAVE_TRASH;
 
         case CORINFO_HELP_PROF_FCN_TAILCALL:
-            return RBM_PROFILER_TAILCALL_TRASH;
+            return AllRegsMask_PROFILER_TAILCALL_TRASH;
 
 #ifdef TARGET_X86
         case CORINFO_HELP_ASSIGN_REF_EAX:
@@ -657,20 +657,20 @@ regMaskMixed Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
         case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
         case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
         case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
-            return RBM_EDX;
+            return GprRegsMask(RBM_EDX);
 #endif
 
         case CORINFO_HELP_STOP_FOR_GC:
-            return RBM_STOP_FOR_GC_TRASH;
+            return AllRegsMask_STOP_FOR_GC_TRASH;
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
-            return RBM_INIT_PINVOKE_FRAME_TRASH;
+            return AllRegsMask_INIT_PINVOKE_FRAME_TRASH;
 
         case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-            return RBM_VALIDATE_INDIRECT_CALL_TRASH;
+            return AllRegsMask_VALIDATE_INDIRECT_CALL_TRASH;
 
         default:
-            return RBM_CALLEE_TRASH;
+            return AllRegsMask_CALLEE_TRASH;
     }
 }
 
@@ -3811,7 +3811,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                     GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, srcRegNum, /* canSkip */ false);
 
-                    regSet.verifyRegUsed(destRegNum);
+                    regSet.verifyRegUsed(destRegNum, destMemType);
 
                     /* mark 'src' as processed */
                     noway_assert(srcReg < argMax);
@@ -3862,7 +3862,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
                 GetEmitter()->emitIns_Mov(insCopy, size, destRegNum, xtraReg, /* canSkip */ false);
 
-                regSet.verifyRegUsed(destRegNum);
+                regSet.verifyRegUsed(destRegNum, destMemType);
                 /* mark the beginning register as processed */
 
                 regArgTab[srcReg].processed = true;
@@ -4312,7 +4312,7 @@ void CodeGen::genEnregisterIncomingStackArgs()
         GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, 0);
 #endif // !TARGET_LOONGARCH64
 
-        regSet.verifyRegUsed(regNum);
+        regSet.verifyRegUsed(regNum, regType);
     }
 }
 
@@ -4540,11 +4540,11 @@ void CodeGen::genCheckUseBlockInit()
         //
         int forceSpillRegCount = genCountBits(maskCalleeRegArgMask & ~regSet.rsMaskPreSpillRegs(false)) - 1;
         if (forceSpillRegCount > 0)
-            regSet.rsSetRegsModified(RBM_R4);
+            regSet.rsSetGprRegsModified(RBM_R4);
         if (forceSpillRegCount > 1)
-            regSet.rsSetRegsModified(RBM_R5);
+            regSet.rsSetGprRegsModified(RBM_R5);
         if (forceSpillRegCount > 2)
-            regSet.rsSetRegsModified(RBM_R6);
+            regSet.rsSetGprRegsModified(RBM_R6);
 #endif // TARGET_ARM
     }
 }
@@ -5326,7 +5326,7 @@ void CodeGen::genFinalizeFrame()
         // registers (ebx, esi, edi). So, we need to make sure all the callee-saved registers
         // actually get saved.
 
-        regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED);
+        regSet.rsSetGprRegsModified(RBM_INT_CALLEE_SAVED);
     }
 #endif // TARGET_X86
 
@@ -5334,14 +5334,14 @@ void CodeGen::genFinalizeFrame()
     // Make sure that callee-saved registers used by call to a stack probing helper generated are pushed on stack.
     if (compiler->compLclFrameSize >= compiler->eeGetPageSize())
     {
-        regSet.rsSetRegsModified(RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
+        regSet.rsSetGprRegsModified(RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
                                  RBM_STACK_PROBE_HELPER_TRASH);
     }
 
     // If there are any reserved registers, add them to the modified set.
     if (regSet.rsMaskResvd != RBM_NONE)
     {
-        regSet.rsSetRegsModified(regSet.rsMaskResvd);
+        regSet.rsSetGprRegsModified(regSet.rsMaskResvd);
     }
 #endif // TARGET_ARM
 
@@ -5349,7 +5349,11 @@ void CodeGen::genFinalizeFrame()
     if (verbose)
     {
         printf("Modified regs: ");
-        dspRegMask(regSet.rsGetModifiedRegsMask());
+        dspRegMask(AllRegsMask(regSet.rsGetModifiedGprRegsMask(), regSet.rsGetModifiedFloatRegsMask()
+#ifdef HAS_PREDICATE_REGS
+                   ,regSet.rsGetModifiedPredicateRegsMask()
+#endif
+        ));
         printf("\n");
     }
 #endif // DEBUG
@@ -5360,15 +5364,19 @@ void CodeGen::genFinalizeFrame()
         // We always save FP.
         noway_assert(isFramePointerUsed());
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        regMaskMixed okRegs = (RBM_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED);
         if (RBM_ENC_CALLEE_SAVED != 0)
         {
-            regSet.rsSetRegsModified(RBM_ENC_CALLEE_SAVED);
+            regSet.rsSetGprRegsModified(RBM_ENC_CALLEE_SAVED);
         }
-        noway_assert((regSet.rsGetModifiedRegsMask() & ~okRegs) == 0);
+        noway_assert(
+            (regSet.rsGetModifiedGprRegsMask() & ~(RBM_INT_CALLEE_TRASH | RBM_FPBASE | RBM_ENC_CALLEE_SAVED)) == 0);
+        noway_assert((regSet.rsGetModifiedFloatRegsMask() & ~RBM_FLT_CALLEE_TRASH) == 0);
+#ifdef TARGET_AMD64
+        noway_assert((regSet.rsGetModifiedPredicateRegsMask() & ~RBM_MSK_CALLEE_TRASH) == 0);
+#endif // TARGET_AMD64
 #else  // !TARGET_AMD64 && !TARGET_ARM64
         // On x86 we save all callee saved regs so the saved reg area size is consistent
-        regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
+        regSet.rsSetGprRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
 #endif // !TARGET_AMD64 && !TARGET_ARM64
     }
 
@@ -5376,14 +5384,14 @@ void CodeGen::genFinalizeFrame()
     if (compiler->compMethodRequiresPInvokeFrame())
     {
         noway_assert(isFramePointerUsed()); // Setup of Pinvoke frame currently requires an EBP style frame
-        regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
+        regSet.rsSetGprRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
 
 #ifdef UNIX_AMD64_ABI
     // On Unix x64 we also save R14 and R15 for ELT profiler hook generation.
     if (compiler->compIsProfilerHookNeeded())
     {
-        regSet.rsSetRegsModified(RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1);
+        regSet.rsSetGprRegsModified(RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1);
     }
 #endif
 
@@ -5397,14 +5405,19 @@ void CodeGen::genFinalizeFrame()
     noway_assert(!regSet.rsRegsModified(RBM_FPBASE));
 #endif
 
-    regMaskMixed maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+    //regMaskMixed maskCalleeRegsPushed = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
+#ifdef TARGET_ARM
+    // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
+#endif
+    regMaskFloat maskPushRegsInt   = regSet.rsGetModifiedGprRegsMask() & RBM_INT_CALLEE_SAVED;
+    regMaskGpr   maskPushRegsFloat = regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED;
 
 #ifdef TARGET_ARMARCH
     if (isFramePointerUsed())
     {
         // For a FP based frame we have to push/pop the FP register
         //
-        maskCalleeRegsPushed |= RBM_FPBASE;
+        maskPushRegsInt |= RBM_FPBASE;
 
         // This assert check that we are not using REG_FP
         // as both the frame pointer and as a codegen register
@@ -5414,15 +5427,11 @@ void CodeGen::genFinalizeFrame()
 
     // we always push LR.  See genPushCalleeSavedRegisters
     //
-    maskCalleeRegsPushed |= RBM_LR;
+    maskPushRegsInt |= RBM_LR;
 
 #if defined(TARGET_ARM)
-    // TODO-ARM64-Bug?: enable some variant of this for FP on ARM64?
-    regMaskFloat maskPushRegsFloat = maskCalleeRegsPushed & RBM_ALLFLOAT;
-    regMaskGpr   maskPushRegsInt   = maskCalleeRegsPushed & ~maskPushRegsFloat;
-
     if ((maskPushRegsFloat != RBM_NONE) ||
-        (compiler->opts.MinOpts() && (regSet.rsMaskResvd & maskCalleeRegsPushed & RBM_OPT_RSVD)))
+        (compiler->opts.MinOpts() && (regSet.rsMaskResvd & maskPushRegsInt & RBM_OPT_RSVD)))
     {
         // Here we try to keep stack double-aligned before the vpush
         if ((genCountBits(regSet.rsMaskPreSpillRegs(true) | maskPushRegsInt) % 2) != 0)
@@ -5435,10 +5444,9 @@ void CodeGen::genFinalizeFrame()
             if (extraPushedReg < REG_R11)
             {
                 maskPushRegsInt |= genRegMask(extraPushedReg);
-                regSet.rsSetRegsModified(genRegMask(extraPushedReg));
+                regSet.rsSetGprRegsModified(genRegMask(extraPushedReg));
             }
         }
-        maskCalleeRegsPushed = maskPushRegsInt | maskPushRegsFloat;
     }
 
     // We currently only expect to push/pop consecutive FP registers
@@ -5457,8 +5465,8 @@ void CodeGen::genFinalizeFrame()
         {
             regMaskFloat maskExtraRegs = contiguousMask - maskPushRegsFloat;
             maskPushRegsFloat |= maskExtraRegs;
-            regSet.rsSetRegsModified(maskExtraRegs);
-            maskCalleeRegsPushed |= maskExtraRegs;
+            regSet.rsSetFloatRegsModified(maskExtraRegs);
+            maskPushRegsFloat |= maskExtraRegs;
         }
     }
 #endif // TARGET_ARM
@@ -5468,8 +5476,8 @@ void CodeGen::genFinalizeFrame()
     // Compute the count of callee saved float regs saved on stack.
     // On Amd64 we push only integer regs. Callee saved float (xmm6-xmm31)
     // regs are stack allocated and preserved in their stack locations.
-    compiler->compCalleeFPRegsSavedMask = maskCalleeRegsPushed & RBM_FLT_CALLEE_SAVED;
-    maskCalleeRegsPushed &= ~RBM_FLT_CALLEE_SAVED;
+    compiler->compCalleeFPRegsSavedMask = maskPushRegsFloat & RBM_FLT_CALLEE_SAVED;
+    maskPushRegsFloat &= ~RBM_FLT_CALLEE_SAVED;
 #endif // defined(TARGET_XARCH)
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -5477,7 +5485,7 @@ void CodeGen::genFinalizeFrame()
     {
         // For a FP based frame we have to push/pop the FP register
         //
-        maskCalleeRegsPushed |= RBM_FPBASE;
+        maskPushRegsInt |= RBM_FPBASE;
 
         // This assert check that we are not using REG_FP
         // as both the frame pointer and as a codegen register
@@ -5486,16 +5494,16 @@ void CodeGen::genFinalizeFrame()
     }
 
     // we always push RA.  See genPushCalleeSavedRegisters
-    maskCalleeRegsPushed |= RBM_RA;
+    maskPushRegsInt |= RBM_RA;
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
-    compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
+    compiler->compCalleeRegsPushed = genCountBits(maskPushRegsInt) + genCountBits(maskPushRegsFloat);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Callee-saved registers pushed: %d ", compiler->compCalleeRegsPushed);
-        dspRegMask(maskCalleeRegsPushed);
+        dspRegMask(maskPushRegsInt, maskPushRegsFloat); //TODO: Should this also have maskPushRegsPredicate
         printf("\n");
     }
 #endif // DEBUG
@@ -5835,7 +5843,7 @@ void CodeGen::genFnProlog()
     // If initReg is ever set to zero, this variable is set to true and zero initializing initReg
     // will be skipped.
     bool           initRegZeroed = false;
-    regMaskOnlyOne excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
+    regMaskGpr excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
     regMaskGpr     tempMask;
 
     // We should not use the special PINVOKE registers as the initReg
@@ -5889,7 +5897,7 @@ void CodeGen::genFnProlog()
     // If they aren't available we use one of the caller-saved integer registers.
     else
     {
-        tempMask = regSet.rsGetModifiedRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
+        tempMask = regSet.rsGetModifiedGprRegsMask() & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
         if (tempMask != RBM_NONE)
         {
             // We pick the lowest register number
@@ -6077,7 +6085,7 @@ void CodeGen::genFnProlog()
 
 #ifdef TARGET_ARM
     maskStackAlloc = genStackAllocRegisterMask(compiler->compLclFrameSize + extraFrameSize,
-                                               regSet.rsGetModifiedRegsMask() & RBM_FLT_CALLEE_SAVED);
+                                               regSet.rsGetModifiedFloatRegsMask() & RBM_FLT_CALLEE_SAVED);
 #endif // TARGET_ARM
 
     if (maskStackAlloc == RBM_NONE)
@@ -6102,7 +6110,7 @@ void CodeGen::genFnProlog()
     if (compiler->compLocallocUsed)
     {
         GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, REG_SAVED_LOCALLOC_SP, REG_SPBASE, /* canSkip */ false);
-        regSet.verifyRegUsed(REG_SAVED_LOCALLOC_SP);
+        regSet.verifyGprRegUsed(REG_SAVED_LOCALLOC_SP);
         compiler->unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
     }
 #endif // TARGET_ARMARCH
@@ -6413,7 +6421,7 @@ void CodeGen::genFnProlog()
 
         // MOV EAX, <VARARGS HANDLE>
         GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_EAX, compiler->info.compArgsCount - 1, 0);
-        regSet.verifyRegUsed(REG_EAX);
+        regSet.verifyGprRegUsed(REG_EAX);
 
         // MOV EAX, [EAX]
         GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_EAX, REG_EAX, 0);

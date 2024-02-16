@@ -3451,8 +3451,27 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
 // Assign the given physical register interval to the given interval
 void LinearScan::assignPhysReg(RegRecord* regRec, Interval* interval)
 {
-    singleRegMask assignedRegMask = genRegMask(regRec->regNum);
-    compiler->codeGen->regSet.rsSetRegsModified(assignedRegMask DEBUGARG(true));
+    regNumber reg = regRec->regNum;
+    singleRegMask assignedRegMask = genRegMask(reg);
+
+    // TODO: genIsValid* is heavy operation because it does 2 comparisons, but unfortunately
+    // we cannot use `varTypeRegister[interval->registerType] == VTR_INT` because sometimes
+    // we do `vmovd xmm1, rcx` where we assign gpr for interval of type TYP_SIMD8
+    if (genIsValidIntReg(reg))
+    {
+        compiler->codeGen->regSet.rsSetGprRegsModified(assignedRegMask DEBUGARG(true));
+    }
+#ifdef HAS_PREDICATE_REGS
+    else if (genIsValidMaskReg(reg))
+    {
+        compiler->codeGen->regSet.rsSetPredicateRegsModified(assignedRegMask DEBUGARG(true));
+    }
+#endif
+    else
+    {
+        assert(genIsValidFloatReg(reg));
+        compiler->codeGen->regSet.rsSetFloatRegsModified(assignedRegMask DEBUGARG(true));
+    }
 
     interval->assignedReg = regRec;
     checkAndAssignInterval(regRec, interval);
@@ -7968,7 +7987,7 @@ void           LinearScan::resolveRegisters()
                         {
                             // If the localVar is in a register, it must be in a register that is not trashed by
                             // the current node (otherwise it would have already been spilled).
-                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
+                            assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode).GetRegTypeMask(interval->registerType)) == RBM_NONE);
                             // If we have allocated a register to spill it to, we will use that; otherwise, we will
                             // spill it to the stack.  We can use as a temp register any non-arg caller-save register.
                             currentRefPosition->referent->recentRefPosition = currentRefPosition;
@@ -9804,7 +9823,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                 }
                 else
                 {
-                    compiler->codeGen->regSet.rsSetRegsModified(genRegMask(tempReg) DEBUGARG(true));
+                    if (emitter::isFloatReg(tempReg))
+                    {
+                        compiler->codeGen->regSet.rsSetFloatRegsModified(genRegMask(tempReg) DEBUGARG(true));
+                    }
+                    else
+                    {
+                        assert(emitter::isGeneralRegister(tempReg));
+                        compiler->codeGen->regSet.rsSetGprRegsModified(genRegMask(tempReg) DEBUGARG(true));
+                    }
 #ifdef TARGET_ARM
                     if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
                     {
@@ -13324,12 +13351,12 @@ singleRegMask LinearScan::RegisterSelection::select(Interval*    currentInterval
 
     if (preferCalleeSave)
     {
-        regMaskOnlyOne calleeSaveCandidates = linearScan->calleeSaveRegs(currentInterval->registerType);
+        regMaskOnlyOne calleeSaveCandidates = linearScan->calleeSaveRegs(regType);
         if (currentInterval->isWriteThru)
         {
             // We'll only prefer a callee-save register if it's already been used.
             regMaskOnlyOne unusedCalleeSaves =
-                calleeSaveCandidates & ~(linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask());
+                calleeSaveCandidates & ~linearScan->compiler->codeGen->regSet.rsGetModifiedRegsMask(regType);
             callerCalleePrefs = calleeSaveCandidates & ~unusedCalleeSaves;
             preferences &= ~unusedCalleeSaves;
         }
@@ -13801,4 +13828,47 @@ singleRegMask LinearScan::RegisterSelection::selectMinimal(
 
     assert(found && isSingleRegister(candidates));
     return candidates;
+}
+
+
+bool operator==(const AllRegsMask& first, const AllRegsMask& second)
+{
+    return first.gprRegs == second.gprRegs && first.floatRegs == second.floatRegs
+#ifdef HAS_PREDICATE_REGS
+           && first.predicateRegs == second.predicateRegs
+#endif
+        ;
+}
+
+AllRegsMask operator&(const AllRegsMask& first, const AllRegsMask& second)
+{
+    AllRegsMask result(first.gprRegs & second.gprRegs, first.floatRegs & second.floatRegs
+#ifdef HAS_PREDICATE_REGS
+                       ,
+                       first.predicateRegs & second.predicateRegs
+#endif
+    );
+    return result;
+}
+
+AllRegsMask operator|(const AllRegsMask& first, const AllRegsMask& second)
+{
+    AllRegsMask result(first.gprRegs | second.gprRegs, first.floatRegs | second.floatRegs
+#ifdef HAS_PREDICATE_REGS
+                       ,
+                       first.predicateRegs | second.predicateRegs
+#endif
+    );
+    return result;
+}
+
+AllRegsMask operator~(const AllRegsMask& first)
+{
+    AllRegsMask result(~first.gprRegs, ~first.floatRegs
+#ifdef HAS_PREDICATE_REGS
+                       ,
+                       ~first.predicateRegs
+#endif
+    );
+    return result;
 }

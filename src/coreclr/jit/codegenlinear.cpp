@@ -60,7 +60,7 @@ void CodeGen::genInitializeRegisterState()
         regNumber reg = varDsc->GetRegNum();
         if (genIsValidIntReg(reg))
         {
-            regSet.verifyRegUsed(reg);
+            regSet.verifyGprRegUsed(reg);
         }
     }
 }
