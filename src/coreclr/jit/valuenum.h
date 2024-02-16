@@ -690,6 +690,8 @@ public:
     // Skip all folding checks.
     ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
 
+    ValueNum VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN);
+
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);

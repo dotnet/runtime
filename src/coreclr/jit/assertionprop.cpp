@@ -2676,15 +2676,12 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //
 GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call)
 {
-    bool isCastClass = false;
     switch (call->GetHelperNum())
     {
         case CORINFO_HELP_CHKCASTARRAY:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTINTERFACE:
         case CORINFO_HELP_CHKCASTCLASS:
-            isCastClass = true;
-            FALLTHROUGH;
         case CORINFO_HELP_ISINSTANCEOFARRAY:
         case CORINFO_HELP_ISINSTANCEOFCLASS:
         case CORINFO_HELP_ISINSTANCEOFANY:
@@ -2701,53 +2698,26 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 return nullptr;
             }
 
-            bool isExact;
-            bool isNonNull;
-
-            // Try to obtain obj's real type via gtGetClassHandle and check if we can fold the cast
-            CORINFO_CLASS_HANDLE objCls = gtGetClassHandle(castObjArg, &isExact, &isNonNull, true);
-            if ((objCls != NO_CLASS_HANDLE) && castClsArg->IsIconHandle(GTF_ICON_CLASS_HDL))
+            // If object has the same VN as the cast, then the cast is effectively a no-op.
+            //
+            if (((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0) && (castObjArg->gtVNPair == call->gtVNPair))
             {
-                CORINFO_CLASS_HANDLE castToCls  = gtGetHelperArgClassHandle(castClsArg);
-                TypeCompareState     castResult = info.compCompHnd->compareTypesForCast(objCls, castToCls);
-                if (castResult == TypeCompareState::Must)
-                {
-                    GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
-                    fgSetTreeSeq(result);
-                    return result;
-                }
-
-                // if obj is guaranteed to fail this isinst (in this case we require it to be exact)
-                // then we can fold it to a just null + side effects.
-                if (!isCastClass && isExact && (castResult == TypeCompareState::MustNot))
-                {
-                    GenTree* result = gtWrapWithSideEffects(gtNewIconNode(0, TYP_REF), call, GTF_ALL_EFFECT, true);
-                    fgSetTreeSeq(result);
-                    return result;
-                }
-
-                return nullptr;
+                return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
             }
 
-            //
-            // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
-            // where CAST is either ISINST or CASTCLASS. Most cases like this are expected to be handled
-            // by gtGetClassHandle above, except the casts involving runtime lookups.
-            //
-            ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
-            ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
-
-            VNFuncApp funcApp;
-            if (vnStore->GetVNFunc(castObjArgVN, &funcApp) && (funcApp.m_func == VNF_IsInstanceOf))
+            // Let's see if gtGetClassHandle may help us to fold the cast (since VNForCast did not).
+            if (castClsArg->IsIconHandle(GTF_ICON_CLASS_HDL))
             {
-                ValueNum innerCastClsVN = funcApp.m_args[0];
-                if (innerCastClsVN == castClsArgVN)
+                bool isExact;
+                bool isNonNull;
+                CORINFO_CLASS_HANDLE castFrom = gtGetClassHandle(castObjArg, &isExact, &isNonNull, true);
+                if (castFrom != NO_CLASS_HANDLE)
                 {
-                    // The outer cast is redundant, remove it and preserve its side effects
-                    // We do ignoreRoot here because the actual cast node never throws any exceptions.
-                    GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
-                    fgSetTreeSeq(result);
-                    return result;
+                    CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
+                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    {
+                        return gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    }
                 }
             }
         }
