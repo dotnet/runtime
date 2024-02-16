@@ -4379,25 +4379,25 @@ emit_arm64_intrinsics (
 		case SN_StoreVector64x2AndZip:
 		case SN_StoreVector64x3AndZip:
 		case SN_StoreVector64x4AndZip: {
-			int opcode = 0;
+			int iid = 0;
 			switch (id) {
-			case SN_StoreVector128x2: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
-			case SN_StoreVector128x3: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X3_V128; break;
-			case SN_StoreVector128x4: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X4_V128; break;
-			case SN_StoreVector64x2: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
-			case SN_StoreVector64x3: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
-			case SN_StoreVector64x4: opcode = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
-			case SN_StoreVector128x2AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
-			case SN_StoreVector128x3AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
-			case SN_StoreVector128x4AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
-			case SN_StoreVector64x2AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
-			case SN_StoreVector64x3AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
-			case SN_StoreVector64x4AndZip: opcode = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
+			case SN_StoreVector128x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
+			case SN_StoreVector128x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V128; break;
+			case SN_StoreVector128x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V128; break;
+			case SN_StoreVector64x2: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
+			case SN_StoreVector64x3: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
+			case SN_StoreVector64x4: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
+			case SN_StoreVector128x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
+			case SN_StoreVector128x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
+			case SN_StoreVector128x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
+			case SN_StoreVector64x2AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
+			case SN_StoreVector64x3AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
+			case SN_StoreVector64x4AndZip: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
 			default: g_assert_not_reached ();
 			}
 
 			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
-			return emit_simd_ins_for_sig (cfg, klass_tuple_var, OP_ARM64_STM, opcode, arg0_type, fsig, args);
+			return emit_simd_ins_for_sig (cfg, klass_tuple_var, OP_ARM64_STM, iid, arg0_type, fsig, args);
 		}
 		default:
 			g_assert_not_reached ();
