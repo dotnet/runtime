@@ -6,28 +6,28 @@ using Microsoft.AspNetCore.SignalR;
 namespace BlazorHosted.Server.Hubs;
 public class ChatHub : Hub
 {
-    private readonly ILogger<ChatHub> _logger;
-
-    public ChatHub(ILogger<ChatHub> logger)
+    public async Task SendMessage(string message)
     {
-        _logger = logger;
+        TestOutputWriteLine($"Server receives message={message}");
+        await Clients.All.SendAsync("ReceiveMessage", message).ConfigureAwait(false);
     }
 
-    public async Task SendMessage(string transport, string message)
+    public async Task ConfirmClientReceivedMessageAndExitWithSuccess(string message)
     {
-        _logger.LogInformation($"[{transport}] Server receives message={message}");
-        await Clients.All.SendAsync("ReceiveMessage", transport, message).ConfigureAwait(false);
+        TestOutputWriteLine($"Server receives confirmation with message = {message}");
+        await Exit(0);
     }
 
-    public void ConfirmClientReceivedMessageAndExit(string transport, string message)
+    public async Task Exit(int code)
     {
-        _logger.LogInformation($"[{transport}] {message}");
-        Exit(0);
-    }
-
-    public void Exit(int code)
-    {
-        _logger.LogInformation($"Received exit code {code} from client. Exiting.");
+        int delay = 3;
+        TestOutputWriteLine($"Received exit code {code} from client. Exiting with {delay} sec delay to see if there are not errors/logs.");
+        await Task.Delay(delay * 1000);
         Environment.Exit(code);
+    }
+
+    public static void TestOutputWriteLine(string message)
+    {
+        Console.WriteLine("TestOutput -> " + message);
     }
 }

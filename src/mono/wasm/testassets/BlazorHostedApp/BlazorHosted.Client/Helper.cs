@@ -19,12 +19,12 @@ public static class Helper
         {
             throw new Exception($"Parameter '{key}' should be unique in the query string");
         }
-        return values[0]; 
+        return values[0];
     }
 
     public static HttpTransportType StringToTransportType(string transport)
     {
-        switch (transport.ToLower())
+        switch (transport.ToLowerInvariant())
         {
             case "longpolling":
                 return HttpTransportType.LongPolling;
@@ -35,8 +35,8 @@ public static class Helper
         }
     }
 
-    public static void TestOutputWriteLine(string message)	
-    {	
-        Console.WriteLine("TestOutput -> " + message);	
+    public static void TestOutputWriteLine(string message)
+    {
+        Console.WriteLine("TestOutput -> " + message);
     }
 }

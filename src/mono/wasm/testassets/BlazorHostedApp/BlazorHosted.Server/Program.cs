@@ -8,16 +8,6 @@ using BlazorHosted.Server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
- // Add command-line arguments to configuration to pass wbt LogRootPath that is availabe in Azure
-var configuration = new ConfigurationBuilder()
-    .AddCommandLine(args)
-    .Build();
-
-var logRootPath = configuration["logRootPath"] ?? "logs";
-
-// Add file logging
-builder.Logging.AddFile(logRootPath + "/myapp-{Date}.txt");
-
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();

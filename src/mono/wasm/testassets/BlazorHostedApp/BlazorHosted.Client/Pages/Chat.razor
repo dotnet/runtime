@@ -23,7 +23,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        GetQueryParameters();        
+        GetQueryParameters();
         await Connect();
         if (_hubConnection == null)
         {
@@ -43,13 +43,14 @@
         }
     }
 
-    private async Task SignalRPassMessages() => 
+    private async Task SignalRPassMessages() =>
         await Task.Run(async () =>
-            await _hubConnection.SendAsync(
-                "SendMessage",
-                transport,
-                $"{message} CurrentManagedThreadId={Environment.CurrentManagedThreadId}")
-            );
+            {
+                Helper.TestOutputWriteLine($"Client: CurrentManagedThreadId={Environment.CurrentManagedThreadId} sends message={message}");
+                await _hubConnection.SendAsync(
+                    "SendMessage",
+                    $"{message} CurrentManagedThreadId={Environment.CurrentManagedThreadId}");
+            });
 
     private void GetQueryParameters()
     {
@@ -64,8 +65,8 @@
             throw new Exception("Query string with parameters  'test', 'message' and 'transport' are required");
         }
         scenario = Helper.GetValue(parameters, "test");
-        message = Helper.GetValue(parameters, "message");
         transport = Helper.GetValue(parameters, "transport");
+        message = $"[{transport}] {Helper.GetValue(parameters, "message")}" ;
     }
 
     private async Task Connect()
@@ -85,7 +86,7 @@
             string changedMessage = $"Client confirms receiving message={message}";
             Helper.TestOutputWriteLine($"[{transport}] {changedMessage}");
             // on this message server calls "Environment.Exit(0)"
-            await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExit", transport, changedMessage);
+            await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExitWithSuccess", transport, changedMessage);
             Console.WriteLine("WASM EXIT 0");
         });
 
