@@ -259,7 +259,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_legacyCorruptedStateExceptionsPolicy, W("le
 CONFIG_DWORD_INFO(INTERNAL_SuppressLostExceptionTypeAssert, W("SuppressLostExceptionTypeAssert"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseEntryPointFilter, W("UseEntryPointFilter"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_Corhost_Swallow_Uncaught_Exceptions, W("Corhost_Swallow_Uncaught_Exceptions"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableNewExceptionHandling, W("EnableNewExceptionHandling"), 0, "Enable new exception handling.");
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableNewExceptionHandling, W("EnableNewExceptionHandling"), 1, "Enable new exception handling.");
 
 
 ///
