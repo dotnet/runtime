@@ -365,15 +365,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
 
-                using var timer = new Timer(_ =>
+                await ForceBlockingWaitAsync(async () =>
                 {
-                    Assert.NotEqual(1, Environment.CurrentManagedThreadId);
-                    Assert.True(Thread.CurrentThread.IsThreadPoolThread);
-                    tcs.SetResult();
-                    hit = true;
-                }, null, 100, Timeout.Infinite);
 
-                await tcs.Task;
+                    using var timer = new Timer(_ =>
+                    {
+                        Assert.NotEqual(1, Environment.CurrentManagedThreadId);
+                        Assert.True(Thread.CurrentThread.IsThreadPoolThread);
+                        tcs.SetResult();
+                        hit = true;
+                    }, null, 100, Timeout.Infinite);
+
+                    await tcs.Task;
+                });
             }, cts.Token);
 
             Assert.True(hit);
@@ -409,6 +413,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }, cts.Token);
         }
 
+        static async Task ForceBlockingWaitAsync(Func<Task> action)
+        {
+            var flag = Thread.ThrowOnBlockingWaitOnJSInteropThread;
+            try
+            {
+                Thread.ThrowOnBlockingWaitOnJSInteropThread = false;
+
+                await action();
+            }
+            finally
+            {
+                Thread.ThrowOnBlockingWaitOnJSInteropThread = flag;
+            }
+        }
+
+
         [Theory, MemberData(nameof(GetTargetThreads))]
         public async Task ManagedDelay_ContinueWith(Executor executor)
         {
@@ -416,10 +436,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
-                await Task.Delay(10, cts.Token).ContinueWith(_ =>
+                await ForceBlockingWaitAsync(async () =>
                 {
-                    hit = true;
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                    await Task.Delay(10, cts.Token).ContinueWith(_ =>
+                    {
+                        hit = true;
+                    }, TaskContinuationOptions.ExecuteSynchronously);
+                });
             }, cts.Token);
             Assert.True(hit);
         }
@@ -430,7 +453,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             using var cts = CreateTestCaseTimeoutSource();
             await executor.Execute(async () =>
             {
-                await Task.Delay(10, cts.Token).ConfigureAwait(true);
+                await ForceBlockingWaitAsync(async () =>
+                {
+                    await Task.Delay(10, cts.Token).ConfigureAwait(true);
+                });
 
                 executor.AssertAwaitCapturedContext();
             }, cts.Token);
