@@ -160,9 +160,3 @@ function(add_imported_nativeaot_library_clr targetName symbolPrefix)
   #  strip_symbols("${ARGV0}-shared" symbolFile)
   #endif()
 endfunction()
-
-# TODO: copy the shared lib to the correct output folder
-#if("${LIBNAOTHELLO_MODE}" STREQUAL "shared")
-#  add_custom_command(TARGET helloLib POST_BUILD
-#    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_FILE:naothello-shared>" "$<TARGET_FILE_DIR:helloLib>")
-#endif()
