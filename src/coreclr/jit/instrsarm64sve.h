@@ -265,7 +265,7 @@ INST6(ld1sb,             "ld1sb",                 0,                       IF_SV
     // LD1SB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 000gggnnnnnttttt     C400 0000   
     // LD1SB   {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 000gggnnnnnttttt     8400 0000   
     // LD1SB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 100gggnnnnnttttt     C440 8000   
-    // LD1SB   {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 100gggnnnnnttttt     8420 8000   
+    // LD1SB   {<Zt>.S }, <Pg>/Z, [<Zn>.S{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 100gggnnnnnttttt     8420 8000   
     // LD1SB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IJ_3A_D         101001011000iiii 101gggnnnnnttttt     A580 A000   
     // LD1SB   {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Xm>]                                        SVE_IK_4A_F         10100101100mmmmm 010gggnnnnnttttt     A580 4000   
 
@@ -275,7 +275,7 @@ INST6(ld1b,              "ld1b",                  0,                       IF_SV
     // LD1B    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 010gggnnnnnttttt     C400 4000   
     // LD1B    {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 010gggnnnnnttttt     8400 4000   
     // LD1B    {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 110gggnnnnnttttt     C440 C000   
-    // LD1B    {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 110gggnnnnnttttt     8420 C000   
+    // LD1B    {<Zt>.S }, <Pg>/Z, [<Zn>.S{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 110gggnnnnnttttt     8420 C000   
     // LD1B    {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, #<imm>, MUL VL}]                            SVE_IJ_3A_E         101001000000iiii 101gggnnnnnttttt     A400 A000   
     // LD1B    {<Zt>.B }, <Pg>/Z, [<Xn|SP>, <Xm>]                                        SVE_IK_4A_H         10100100000mmmmm 010gggnnnnnttttt     A400 4000   
 
@@ -395,7 +395,7 @@ INST5(ldff1sb,           "ldff1sb",               0,                       IF_SV
     // LDFF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 001gggnnnnnttttt     C400 2000   
     // LDFF1SB {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 001gggnnnnnttttt     8400 2000   
     // LDFF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 101gggnnnnnttttt     C440 A000   
-    // LDFF1SB {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 101gggnnnnnttttt     8420 A000   
+    // LDFF1SB {<Zt>.S }, <Pg>/Z, [<Zn>.S{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 101gggnnnnnttttt     8420 A000   
     // LDFF1SB {<Zt>.D }, <Pg>/Z, [<Xn|SP>{, <Xm>}]                                      SVE_IG_4A_D         10100101100mmmmm 011gggnnnnnttttt     A580 6000   
 
 
@@ -404,7 +404,7 @@ INST5(ldff1b,            "ldff1b",                0,                       IF_SV
     // LDFF1B  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D, <mod>]                               SVE_HW_4A           110001000h0mmmmm 011gggnnnnnttttt     C400 6000   
     // LDFF1B  {<Zt>.S }, <Pg>/Z, [<Xn|SP>, <Zm>.S, <mod>]                               SVE_HW_4A_A         100001000h0mmmmm 011gggnnnnnttttt     8400 6000   
     // LDFF1B  {<Zt>.D }, <Pg>/Z, [<Xn|SP>, <Zm>.D]                                      SVE_HW_4B           11000100010mmmmm 111gggnnnnnttttt     C440 E000   
-    // LDFF1B  {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 111gggnnnnnttttt     8420 E000   
+    // LDFF1B  {<Zt>.S }, <Pg>/Z, [<Zn>.S{, #<imm>}]                                     SVE_HX_3A_B         10000100001iiiii 111gggnnnnnttttt     8420 E000   
     // LDFF1B  {<Zt>.B }, <Pg>/Z, [<Xn|SP>{, <Xm>}]                                      SVE_IG_4A_E         10100100000mmmmm 011gggnnnnnttttt     A400 6000   
 
 
