@@ -625,4 +625,6 @@ void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
     Indexes = newIndexes;
     IndexCount = newIndexCount;
     curIndexPos = 0;
+    curMCIndex = 0;
+    curTOCIndex = 0;
 }

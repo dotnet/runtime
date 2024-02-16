@@ -41,6 +41,94 @@ static bool AddJitOption(LightWeightMap<DWORD,DWORD>* map, char* newOption)
     return true;
 }
 
+struct CacheEntry
+{
+    MethodContext* mc;
+    int age;
+};
+
+static MethodContext* getMethodContext(int index, MethodContextReader* reader)
+{
+    enum { CACHE_SIZE = 100 };
+    static CacheEntry cache[CACHE_SIZE] = {0};
+    static int count = 0;
+    static int age = 0;
+    int i = 0;
+
+    // Search the cache
+    //
+    for (; i < count; i++)
+    {
+        if (cache[i].mc->index == index)
+        {
+            break;
+        }
+    }
+
+    if (i == count)
+    {
+        // Method not found in cache
+        //
+        LogDebug("[streaming] loading MC %i from file", index);
+        if (i == CACHE_SIZE)
+        {
+            // Cache is full, evict oldest entry
+            //
+            int oldestAge = age;
+            int oldestEntry = -1;
+            for (int j = 0; j < CACHE_SIZE; j++)
+            {
+                if (cache[j].age < oldestAge)
+                {
+                    oldestEntry = j;
+                    oldestAge = cache[j].age;
+                }
+            }
+
+            LogDebug("[streaming] evicting MC %i from cache", cache[oldestEntry].mc->index);
+            delete cache[oldestEntry].mc;
+            cache[oldestEntry].mc = nullptr;
+            i = oldestEntry;
+        }
+        else
+        {
+            count++;
+        }
+
+        reader->Reset(&index, 1);
+        MethodContextBuffer mcb = reader->GetNextMethodContext();
+
+        if (mcb.Error())
+        {
+            return nullptr;
+        }
+
+        MethodContext* mc = nullptr;
+        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, &mc))
+        {
+            return nullptr;
+        }
+
+        cache[i].mc = mc;
+    }
+    else
+    {
+        LogDebug("[streaming] found MC %i in cache", index);
+    }
+
+    // Move to front...
+    //
+    if (i != 0)
+    {
+        CacheEntry temp = cache[0];
+        cache[0] = cache[i];
+        cache[i] = temp;
+    }
+
+    cache[0].age = age++;
+    return cache[0].mc;
+}
+
 int doStreamingSuperPMI(CommandLine::Options& o)
 {
     HRESULT     hr = E_FAIL;
@@ -161,25 +249,22 @@ int doStreamingSuperPMI(CommandLine::Options& o)
         }
 
         LogDebug("[streaming] Launching...");
+        MethodContext* const mc = getMethodContext(index, reader);
 
-        // launch this instance...
-        //
-        reader->Reset(&index, 1);
-        MethodContextBuffer mcb = reader->GetNextMethodContext();
-
-        if (mcb.Error())
+        if (mc == nullptr)
         {
             return (int)SpmiResult::GeneralFailure;
         }
 
-        MethodContext* mc = nullptr;
-        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, &mc))
+        if (mc->index != index)
         {
+            LogDebug("MC cache lookup failure, wanted index %d, got index %d\n", index, mc->index);
             return (int)SpmiResult::GeneralFailure;
         }
 
         if (jit == nullptr)
         {    
+            LogDebug("[streaming] loading jit %s", o.nameOfJit);
             SimpleTimer stInitJit;
             jit = JitInstance::InitJit(o.nameOfJit, o.breakOnAssert, &stInitJit, mc, forceJitOptions, o.jitOptions);
             
@@ -195,13 +280,11 @@ int doStreamingSuperPMI(CommandLine::Options& o)
             jit->resetConfig(mc);
         }
 
+        LogDebug("[streaming] invoking jit");
+        fflush(stdout);
+
         bool collectThroughput = false;
         ReplayResults res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput);
-
-        // Protocol with clients is for them to read stdout. Let them know we're done.
-        //
-        printf("[streaming] Done. Status=%d\n", res.Result);
-        fflush(stdout);
 
         if (res.Result == ReplayResult::Success)
         {
@@ -212,13 +295,22 @@ int doStreamingSuperPMI(CommandLine::Options& o)
         }
         else if (res.Result == ReplayResult::Error)
         {
+            LogDebug("[streaming] jit compilation failed");
+
             LogError("Method %d of size %d failed to load and compile correctly%s (%s).",
                 reader->GetMethodContextIndex(), mc->methodSize,
                 (o.nameOfJit2 == nullptr) ? "" : " by JIT1", o.nameOfJit);
         }
 
+        // Protocol with clients is for them to read stdout. Let them know we're done.
+        //
+        printf("[streaming] Done. Status=%d\n", res.Result);
+        fflush(stdout);
+
+        // Cleanup
+        //
         delete forceJitOptions;
-        delete mc;
+        mc->Reset();
     }
 
     return (int)SpmiResult::Success;
