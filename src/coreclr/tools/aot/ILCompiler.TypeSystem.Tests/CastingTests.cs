@@ -95,18 +95,36 @@ namespace TypeSystemTests
         public void TestArrayInterfaceCasting()
         {
             TypeDesc intType = _context.GetWellKnownType(WellKnownType.Int32);
+            TypeDesc byteType = _context.GetWellKnownType(WellKnownType.Byte);
+            TypeDesc objectType = _context.GetWellKnownType(WellKnownType.Object);
+            TypeDesc stringType = _context.GetWellKnownType(WellKnownType.String);
+            TypeDesc intBasedEnumType = _testModule.GetType("Casting", "IntBasedEnum");
             MetadataType iListType = _context.SystemModule.GetType("System.Collections", "IList");
             MetadataType iListOfTType = _context.SystemModule.GetType("System.Collections.Generic", "IList`1");
 
             InstantiatedType iListOfIntType = iListOfTType.MakeInstantiatedType(intType);
+            InstantiatedType iListOfObjectType = iListOfTType.MakeInstantiatedType(objectType);
+            InstantiatedType iListOfStringType = iListOfTType.MakeInstantiatedType(stringType);
             TypeDesc intSzArrayType = intType.MakeArrayType();
+            TypeDesc byteSzArrayType = byteType.MakeArrayType();
+            TypeDesc objectSzArrayType = objectType.MakeArrayType();
+            TypeDesc stringSzArrayType = stringType.MakeArrayType();
             TypeDesc intArrayType = intType.MakeArrayType(1);
+            TypeDesc intBasedEnumSzArrayType = intBasedEnumType.MakeArrayType();
 
             Assert.True(intSzArrayType.CanCastTo(iListOfIntType));
             Assert.True(intSzArrayType.CanCastTo(iListType));
 
             Assert.False(intArrayType.CanCastTo(iListOfIntType));
             Assert.True(intArrayType.CanCastTo(iListType));
+
+            Assert.True(intBasedEnumSzArrayType.CanCastTo(iListOfIntType));
+            Assert.False(byteSzArrayType.CanCastTo(iListOfIntType));
+
+            Assert.True(stringSzArrayType.CanCastTo(iListOfObjectType));
+            Assert.True(stringSzArrayType.CanCastTo(iListOfStringType));
+            Assert.True(objectSzArrayType.CanCastTo(iListOfObjectType));
+            Assert.False(objectSzArrayType.CanCastTo(iListOfStringType));
         }
 
         [Fact]

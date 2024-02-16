@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Collections.Immutable;
 using System.Reflection.PortableExecutable;
@@ -174,16 +175,23 @@ public class WebcilConverter
                                 SectionStart: firstWCSection);
     }
 
-    private static void WriteHeader(Stream s, WebcilHeader header)
+    private static void WriteHeader(Stream s, WebcilHeader webcilHeader)
     {
-        WriteStructure(s, header);
+        if (!BitConverter.IsLittleEndian)
+        {
+            webcilHeader.version_major = BinaryPrimitives.ReverseEndianness(webcilHeader.version_major);
+            webcilHeader.version_minor = BinaryPrimitives.ReverseEndianness(webcilHeader.version_minor);
+            webcilHeader.coff_sections = BinaryPrimitives.ReverseEndianness(webcilHeader.coff_sections);
+            webcilHeader.pe_cli_header_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_rva);
+            webcilHeader.pe_cli_header_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_cli_header_size);
+            webcilHeader.pe_debug_rva = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_rva);
+            webcilHeader.pe_debug_size = BinaryPrimitives.ReverseEndianness(webcilHeader.pe_debug_size);
+        }
+        WriteStructure(s, webcilHeader);
     }
 
     private static void WriteSectionHeaders(Stream s, ImmutableArray<WebcilSectionHeader> sectionsHeaders)
     {
-        // FIXME: fixup endianness
-        if (!BitConverter.IsLittleEndian)
-            throw new NotImplementedException();
         foreach (var sectionHeader in sectionsHeaders)
         {
             WriteSectionHeader(s, sectionHeader);
@@ -192,6 +200,16 @@ public class WebcilConverter
 
     private static void WriteSectionHeader(Stream s, WebcilSectionHeader sectionHeader)
     {
+        if (!BitConverter.IsLittleEndian)
+        {
+            sectionHeader = new WebcilSectionHeader
+            (
+                virtualSize: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualSize),
+                virtualAddress: BinaryPrimitives.ReverseEndianness(sectionHeader.VirtualAddress),
+                sizeOfRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.SizeOfRawData),
+                pointerToRawData: BinaryPrimitives.ReverseEndianness(sectionHeader.PointerToRawData)
+            );
+        }
         WriteStructure(s, sectionHeader);
     }
 
@@ -199,9 +217,6 @@ public class WebcilConverter
     private static void WriteStructure<T>(Stream s, T structure)
         where T : unmanaged
     {
-        // FIXME: fixup endianness
-        if (!BitConverter.IsLittleEndian)
-            throw new NotImplementedException();
         unsafe
         {
             byte* p = (byte*)&structure;
@@ -212,9 +227,6 @@ public class WebcilConverter
     private static void WriteStructure<T>(Stream s, T structure)
         where T : unmanaged
     {
-        // FIXME: fixup endianness
-        if (!BitConverter.IsLittleEndian)
-            throw new NotImplementedException();
         int size = Marshal.SizeOf<T>();
         byte[] buffer = new byte[size];
         IntPtr ptr = IntPtr.Zero;

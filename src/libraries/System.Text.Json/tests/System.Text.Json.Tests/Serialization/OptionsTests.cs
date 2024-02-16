@@ -73,6 +73,7 @@ namespace System.Text.Json.Serialization.Tests
 
             // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
+            Assert.Throws<InvalidOperationException>(() => options.AllowOutOfOrderMetadataProperties = options.AllowOutOfOrderMetadataProperties);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
             Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
             Assert.Throws<InvalidOperationException>(() => options.Encoder = JavaScriptEncoder.Default);
@@ -328,6 +329,90 @@ namespace System.Text.Json.Serialization.Tests
             options.WriteIndented = true;
             json = JsonSerializer.Serialize(obj, options);
             Assert.Contains(Environment.NewLine, json);
+        }
+
+        [Theory]
+        [InlineData('\f')]
+        [InlineData('\n')]
+        [InlineData('\r')]
+        [InlineData('\0')]
+        [InlineData('a')]
+        public static void IndentCharacters_WithInvalidChartacters_ThrowsArgumentOutOfRangeException(char character)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentCharacter = character);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(128)]
+        [InlineData(int.MinValue)]
+        [InlineData(int.MaxValue)]
+        public static void IndentSize_WithInvalidSize_ThrowsArgumentOutOfRangeException(int size)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.IndentSize = size);
+        }
+
+        [Fact]
+        public static void IndentCharacter()
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            // Verify default value.
+            var defaultIndent = "  ";
+            string json = JsonSerializer.Serialize(obj);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Verify default value on options.
+            var options = new JsonSerializerOptions();
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(defaultIndent, json);
+
+            // Enable default indentation.
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(defaultIndent, json);
+
+            // Set custom indentCharacter without enabling indentation
+            var tab = '\t';
+            Assert.DoesNotContain(tab, json);
+            options = new JsonSerializerOptions();
+            options.IndentCharacter = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+
+            // Set custom indentCharacter with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.IndentCharacter = tab;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(tab, json);
+        }
+
+        [Fact]
+        public static void IndentSize()
+        {
+            var obj = new BasicCompany();
+            obj.Initialize();
+
+            var tab = '\t';
+            // Set custom indentSize without enabling indentation
+            var options = new JsonSerializerOptions();
+            options.IndentCharacter = tab;
+            options.IndentSize = 1;
+            var json = JsonSerializer.Serialize(obj, options);
+            Assert.DoesNotContain(tab, json);
+
+            // Set custom indentSize with indentation enabled
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            options.IndentCharacter = tab;
+            options.IndentSize = 4;
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(new string(tab, 4), json);
         }
 
         [Fact]
@@ -713,7 +798,7 @@ namespace System.Text.Json.Serialization.Tests
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
                 }
             };
-            
+
             RemoteExecutor.Invoke(static () =>
             {
                 var unsupportedValue = new MyClass { Value = "value" };
@@ -797,7 +882,7 @@ namespace System.Text.Json.Serialization.Tests
             }
             else
             {
-                Assert.True(false, "Must be JsonElement");
+                Assert.Fail("Must be JsonElement");
             }
 
             using (var stream = new MemoryStream())
@@ -1034,6 +1119,47 @@ namespace System.Text.Json.Serialization.Tests
             optionsSingleton.MakeReadOnly(populateMissingResolver: false);
             optionsSingleton.MakeReadOnly(populateMissingResolver: true);
             Assert.Same(resolver, optionsSingleton.TypeInfoResolver);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_MatchesConstructorWithJsonSerializerDefaults()
+        {
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver
+            };
+
+            JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Web;
+
+            Assert.Equal(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.True(options.PropertyNameCaseInsensitive);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
+
+            JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_SerializesWithExpectedSettings()
+        {
+            string json = JsonSerializer.Serialize(new { PropertyName = 42 }, JsonSerializerOptions.Web);
+            Assert.Equal("""{"propertyName":42}""", json);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_ReturnsSameInstance()
+        {
+            Assert.Same(JsonSerializerOptions.Web, JsonSerializerOptions.Web);
+        }
+
+        [Fact]
+        public static void JsonSerializerOptions_Web_IsReadOnly()
+        {
+            var optionsSingleton = JsonSerializerOptions.Web;
+            Assert.True(optionsSingleton.IsReadOnly);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNameCaseInsensitive = true);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+            Assert.Throws<InvalidOperationException>(() => optionsSingleton.NumberHandling = JsonNumberHandling.AllowReadingFromString);
+            Assert.Throws<InvalidOperationException>(() => new JsonContext(optionsSingleton));
         }
 
         [Theory]
@@ -1288,6 +1414,10 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     property.SetValue(options, 32);
                 }
+                else if (propertyType == typeof(string))
+                {
+                    property.SetValue(options, "\t");
+                }
                 else if (propertyType == typeof(IList<JsonConverter>))
                 {
                     options.Converters.Add(new JsonStringEnumConverter());
@@ -1300,7 +1430,7 @@ namespace System.Text.Json.Serialization.Tests
                 else if (propertyType == typeof(JsonNamingPolicy))
                 {
                     options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                    options.DictionaryKeyPolicy = new SimpleSnakeCasePolicy();
+                    options.DictionaryKeyPolicy = JsonNamingPolicy.SnakeCaseLower;
                 }
                 else if (propertyType == typeof(ReferenceHandler))
                 {

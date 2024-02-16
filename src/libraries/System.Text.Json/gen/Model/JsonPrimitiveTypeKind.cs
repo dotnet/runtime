@@ -5,6 +5,10 @@ namespace System.Text.Json.SourceGeneration
 {
     public enum JsonPrimitiveTypeKind
     {
-        String, Boolean, ByteArray, Char, Number
+        String,
+        Boolean,
+        ByteArray,
+        Char,
+        Number
     }
 }

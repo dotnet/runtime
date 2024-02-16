@@ -1,27 +1,40 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\Emit\MethodBuilderInstantiation.cs" Link="System\Reflection\Emit\MethodBuilderInstantiation.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\Emit\SymbolType.cs" Link="System\Reflection\Emit\SymbolType.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Reflection\Emit\TypeNameBuilder.cs" Link="System\Reflection\Emit\TypeNameBuilder.cs" />
+    <Compile Include="System\Reflection\Emit\ArrayMethod.cs" />
+    <Compile Include="System\Reflection\Emit\ConstructorBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeWrapper.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\EnumBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\EventBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\FieldBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\GenericTypeParameterBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\ILGeneratorImpl.cs" />
+    <Compile Include="System\Reflection\Emit\LocalBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\MethodBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ModuleBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ParameterBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\PropertyBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\PseudoCustomAttributesData.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\Emit\TypeBuilderImpl.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
+
 </Project>

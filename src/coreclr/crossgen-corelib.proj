@@ -5,9 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2.csproj" Condition="'$(UseCrossArchCrossgen2)' != 'true'" OutputItemType="Crossgen2" />
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_crossarch.csproj" Condition="'$(UseCrossArchCrossgen2)' == 'true'" OutputItemType="Crossgen2" />
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2" />
+    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
   </ItemGroup>
 
@@ -23,7 +22,7 @@
 
   <PropertyGroup>
     <BuildDll>true</BuildDll>
-    <BuildDll Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris'">false</BuildDll>
+    <BuildDll Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</BuildDll>
     <BuildDll Condition="'$(TargetArchitecture)' == 'riscv64'">false</BuildDll>
 
     <BuildPdb>false</BuildPdb>

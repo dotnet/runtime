@@ -15,7 +15,7 @@
 }
 .namespace App
 {
-  .class auto ansi Foo extends [mscorlib]System.Object
+  .class public auto ansi Foo extends [mscorlib]System.Object
   {
     .field private class System.String text
     .method family newslot virtual instance vararg class App.Foo VargFunc() il managed

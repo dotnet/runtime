@@ -9,49 +9,59 @@
     <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(DevBuild)' == 'true'">
+    <TargetFramework></TargetFramework>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_8)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" Link="System.Private.CoreLib\System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" Link="Common\System\Runtime\CompilerServices\CompilerFeatureRequiredAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\RequiredMemberAttribute.cs" Link="Common\System\Runtime\CompilerServices\RequiredMemberAttribute.cs" />
     <Compile Include="$(CommonPath)\Roslyn\DiagnosticDescriptorHelper.cs" Link="Common\Roslyn\DiagnosticDescriptorHelper.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\CSharpSyntaxUtilities.cs" Link="Common\SourceGenerators\CSharpSyntaxUtilities.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\DiagnosticInfo.cs" Link="Common\SourceGenerators\DiagnosticInfo.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\ImmutableEquatableArray.cs" Link="Common\SourceGenerators\ImmutableEquatableArray.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="$(CommonPath)\SourceGenerators\TypeModelHelper.cs" Link="Common\SourceGenerators\TypeModelHelper.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\TypeRef.cs" Link="Common\SourceGenerators\TypeRef.cs" />
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />
     <Compile Include="ConfigurationBindingGenerator.Suppressor.cs" />
-    <Compile Include="Helpers\Emitter\ConfigurationBinder.cs" />
-    <Compile Include="Helpers\Emitter\CoreBindingHelpers.cs" />
-    <Compile Include="Helpers\Emitter\ExceptionMessages.cs" />
-    <Compile Include="Helpers\Emitter\Helpers.cs" />
-    <Compile Include="Helpers\Emitter\OptionsBuilderConfigurationExtensions.cs" />
-    <Compile Include="Helpers\Emitter\OptionsConfigurationServiceCollectionExtensions.cs" />
-    <Compile Include="Helpers\InterceptorLocationInfo.cs" />
-    <Compile Include="Helpers\MethodsToGen.cs" />
-    <Compile Include="Helpers\Parser\BinderInvocation.cs" />
-    <Compile Include="Helpers\Parser\ConfigurationBinder.cs" />
-    <Compile Include="Helpers\Parser\Diagnostics.cs" />
-    <Compile Include="Helpers\Parser\OptionsBuilderConfigurationExtensions.cs" />
-    <Compile Include="Helpers\Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
-    <Compile Include="Model\CollectionSpec.cs" />
-    <Compile Include="Model\ConfigurationSectionSpec.cs" />
-    <Compile Include="Model\InitializationStrategy.cs" />
-    <Compile Include="Model\KnownTypeSymbols.cs" />
-    <Compile Include="Model\MemberSpec.cs" />
-    <Compile Include="Model\NullableSpec.cs" />
-    <Compile Include="Model\ObjectSpec.cs" />
-    <Compile Include="Model\ParameterSpec.cs" />
-    <Compile Include="Model\ParsableFromStringSpec.cs" />
-    <Compile Include="Model\PropertySpec.cs" />
-    <Compile Include="Model\SourceGenerationSpec.cs" />
-    <Compile Include="Model\TypeSpec.cs" />
+    <Compile Include="Emitter\ConfigurationBinder.cs" />
+    <Compile Include="Emitter\CoreBindingHelpers.cs" />
+    <Compile Include="Emitter\ExceptionMessages.cs" />
+    <Compile Include="Emitter\Helpers.cs" />
+    <Compile Include="Emitter\OptionsBuilderConfigurationExtensions.cs" />
+    <Compile Include="Emitter\OptionsConfigurationServiceCollectionExtensions.cs" />
+    <Compile Include="Parser\BinderInvocation.cs" />
+    <Compile Include="Parser\ConfigurationBinder.cs" />
+    <Compile Include="Parser\Extensions.cs" />
+    <Compile Include="Parser\DiagnosticDescriptors.cs" />
+    <Compile Include="Parser\KnownTypeSymbols.cs" />
+    <Compile Include="Parser\OptionsBuilderConfigurationExtensions.cs" />
+    <Compile Include="Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
+    <Compile Include="Specs\BindingHelperInfo.cs" />
+    <Compile Include="Specs\InterceptorInfo.cs" />
+    <Compile Include="Specs\MethodsToGen.cs" />
+    <Compile Include="Specs\Members\MemberSpec.cs" />
+    <Compile Include="Specs\Members\ParameterSpec.cs" />
+    <Compile Include="Specs\Members\PropertySpec.cs" />
+    <Compile Include="Specs\SourceGenerationSpec.cs" />
+    <Compile Include="Specs\TypeIndex.cs" />
+    <Compile Include="Specs\Types\CollectionSpec.cs" />
+    <Compile Include="Specs\Types\ObjectSpec.cs" />
+    <Compile Include="Specs\Types\SimpleTypeSpec.cs" />
+    <Compile Include="Specs\Types\TypeSpec.cs" />
   </ItemGroup>
 </Project>

@@ -5,7 +5,8 @@ using System;
 using System.Runtime.InteropServices;
 using Xunit;
 
-class ExactSpellingTest
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public class ExactSpellingTest
 {
     class Ansi
     {
@@ -125,7 +126,8 @@ class ExactSpellingTest
         Assert.Throws<EntryPointNotFoundException>(() => Ansi.MarshalPointer_Int_InOut2(ref int8));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

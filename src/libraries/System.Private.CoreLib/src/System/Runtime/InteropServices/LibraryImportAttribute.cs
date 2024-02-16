@@ -17,6 +17,10 @@ namespace System.Runtime.InteropServices
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
+#pragma warning disable CS0436 // Type conflicts with imported type
+                               // Some assemblies that target downlevel have InternalsVisibleTo to their test assembiles.
+                               // As this is only used in this repo and isn't a problem in shipping code,
+                               // just disable the duplicate type warning.
     internal
 #endif
     sealed class LibraryImportAttribute : Attribute

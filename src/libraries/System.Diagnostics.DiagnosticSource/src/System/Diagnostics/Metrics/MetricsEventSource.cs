@@ -115,7 +115,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
         }
 
-        [Event(4, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(4, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -135,7 +135,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue);
         }
 
-        [Event(6, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -249,7 +249,7 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
-        [Event(16, Keywords = Keywords.TimeSeriesValues, Version=1)]
+        [Event(16, Keywords = Keywords.TimeSeriesValues, Version = 1)]
 #if !NET8_0_OR_GREATER
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
@@ -298,7 +298,7 @@ namespace System.Diagnostics.Metrics
                 Parent = parent;
             }
 
-            public MetricsEventSource Parent { get; private set;}
+            public MetricsEventSource Parent { get; private set; }
 
             public bool IsSharedSession(string commandSessionId)
             {

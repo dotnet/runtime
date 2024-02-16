@@ -1,0 +1,23 @@
+parameters:
+  continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
+  helixQueues: ''                 # required -- Helix queues
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  dependOnEvaluatePaths: false
+
+steps:
+  - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+    parameters:
+      displayName: 'Send job to Helix'
+      helixBuild: $(Build.BuildNumber)
+      helixSource: $(_HelixSource)
+      helixType: 'build/tests/'
+      helixQueues: ${{ parameters.helixQueues }}
+      creator: dotnet-bot
+      helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/paltests.proj'
+      BuildConfig: ${{ parameters.buildConfig }}
+      osGroup: ${{ parameters.osGroup }}
+      archType: ${{ parameters.archType }}
+      shouldContinueOnError: ${{ parameters.continueOnError }}

@@ -1,0 +1,249 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
+
+    <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" TargetDir="test-dir" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Base\BaseGetSetAttributes.cs" />
+    <Compile Include="Base\BaseGetSetTimes.cs" />
+    <Compile Include="Base\BaseGetSetUnixFileMode.cs" />
+    <Compile Include="Base\FileGetSetAttributes.cs" />
+    <Compile Include="Base\InfoGetSetAttributes.cs" />
+    <Compile Include="Base\InfoGetSetTimes.cs" />
+    <Compile Include="Base\AllGetSetAttributes.cs" />
+    <Compile Include="Base\StaticGetSetTimes.cs" />
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.cs" />
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.FileSystem.cs" />
+    <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.FileSystemInfo.cs" />
+    <Compile Include="Directory\CreateTempSubdirectory.cs" />
+    <Compile Include="Directory\EnumerableTests.cs" />
+    <Compile Include="Directory\SymbolicLinks.cs" />
+    <Compile Include="DirectoryInfo\SymbolicLinks.cs" />
+    <Compile Include="DirectoryInfo\GetSetUnixFileMode.cs" />
+    <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
+    <Compile Include="FileInfo\GetSetUnixFileMode.cs" />
+    <Compile Include="FileInfo\IsReadOnly.cs" />
+    <Compile Include="FileInfo\Replace.cs" />
+    <Compile Include="FileInfo\SymbolicLinks.cs" />
+    <Compile Include="FileStream\ctor_options.cs" />
+    <Compile Include="FileStream\Handle.cs" />
+    <Compile Include="Directory\GetLogicalDrives.cs" />
+    <Compile Include="FileStream\LockUnlock.cs" />
+    <Compile Include="FileSystemTest.cs" />
+    <Compile Include="File\AppendAllBytesAsync.cs" />
+    <Compile Include="File\EncryptDecrypt.cs" />
+    <Compile Include="File\AppendAllBytes.cs" />
+    <Compile Include="File\GetSetAttributes_String.cs" />
+    <Compile Include="File\GetSetAttributes_SafeFileHandle.cs" />
+    <Compile Include="File\GetSetTimes.cs" />
+    <Compile Include="File\GetSetTimes_SafeFileHandle.cs" />
+    <Compile Include="File\GetSetTimes_SafeFileHandle_Pathless.cs" />
+    <Compile Include="File\GetSetUnixFileMode.cs" />
+    <Compile Include="File\GetSetUnixFileMode_SafeFileHandle.cs" />
+    <Compile Include="File\Replace.cs" />
+    <Compile Include="File\AppendAsync.cs" />
+    <Compile Include="File\ReadWriteAllLinesAsync.cs" />
+    <Compile Include="File\ReadWriteAllBytesAsync.cs" />
+    <Compile Include="File\ReadWriteAllTextAsync.cs" />
+    <Compile Include="FileStream\DisposeAsync.cs" />
+    <Compile Include="FileStream\ReadWriteSpan.cs" />
+    <Compile Include="Enumeration\ConstructionTests.cs" />
+    <Compile Include="Enumeration\GetTimesTests.cs" />
+    <Compile Include="Enumeration\RecursionDepthTests.cs" />
+    <Compile Include="Enumeration\SpecialDirectoryTests.cs" />
+    <Compile Include="Enumeration\SkipAttributeTests.cs" />
+    <Compile Include="Enumeration\FileSystemNameTests.cs" />
+    <Compile Include="Enumeration\MatchCasingTests.cs" />
+    <Compile Include="Enumeration\TrimmedPaths.cs" />
+    <Compile Include="Enumeration\ErrorHandlingTests.cs" />
+    <Compile Include="Enumeration\IncludePredicateTests.cs" />
+    <Compile Include="Enumeration\PatternTransformTests.cs" />
+    <Compile Include="Enumeration\RootTests.cs" />
+    <Compile Include="Enumeration\AttributeTests.cs" />
+    <Compile Include="Enumeration\MatchTypesTests.cs" />
+    <Compile Include="Enumeration\ExampleTests.cs" />
+    <Compile Include="Enumeration\RemovedDirectoryTests.cs" />
+    <Compile Include="Enumeration\SymbolicLinksTests.cs" />
+    <Compile Include="LargeFileTests.cs" />
+    <Compile Include="PathInternalTests.cs" />
+    <Compile Include="Path\Exists_Directory.cs" />
+    <Compile Include="Path\Exists_File.cs" />
+    <Compile Include="RandomAccess\Base.cs" />
+    <Compile Include="RandomAccess\FlushToDisk.cs" />
+    <Compile Include="RandomAccess\GetLength.cs" />
+    <Compile Include="RandomAccess\Read.cs" />
+    <Compile Include="RandomAccess\ReadAsync.cs" />
+    <Compile Include="RandomAccess\ReadScatter.cs" />
+    <Compile Include="RandomAccess\ReadScatterAsync.cs" />
+    <Compile Include="RandomAccess\Write.cs" />
+    <Compile Include="RandomAccess\WriteAsync.cs" />
+    <Compile Include="RandomAccess\WriteGather.cs" />
+    <Compile Include="RandomAccess\WriteGatherAsync.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
+    <Compile Include="FileSystemTest.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="FileStream\ctor_options.Unix.cs" />
+    <Compile Include="Directory\CreateDirectory_UnixFileMode.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="Directory\Delete.Windows.cs" />
+    <Compile Include="Directory\CreateDirectory_UnixFileMode.Windows.cs" />
+    <Compile Include="File\EncryptDecrypt.Windows.cs" />
+    <Compile Include="FileSystemTest.Windows.cs" />
+    <Compile Include="FileStream\ctor_options.Windows.cs" />
+    <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />
+    <Compile Include="Junctions.Windows.cs" />
+    <Compile Include="RandomAccess\Mixed.Windows.cs" />
+    <Compile Include="RandomAccess\NoBuffering.Windows.cs" />
+    <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
+    <Compile Include="VirtualDriveSymbolicLinks.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
+	<Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" Link="Common\Interop\Windows\Interop.BY_HANDLE_FILE_INFORMATION.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFinalPathNameByHandle.cs" Link="Common\Interop\Windows\Interop.GetFinalPathNameByHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="Common\Interop\Windows\Interop.MemOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs" Link="Common\Interop\Windows\Interop.VirtualAlloc_Ptr.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.cs" Link="Common\System\IO\PathInternal.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\VirtualDriveHelper.Windows.cs" Link="Common\System\IO\VirtualDriveHelper.Windows.cs" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\System.ServiceProcess.ServiceController.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.AccessControl\src\System.IO.FileSystem.AccessControl.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
+    <Compile Include="FileSystemTest.Browser.cs" />
+    <Compile Include="FileStream\ctor_options.Browser.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Rewritten -->
+    <Compile Include="DirectoryInfo\GetSetAttributes.cs" />
+    <Compile Include="DirectoryInfo\Create.cs" />
+    <Compile Include="DirectoryInfo\CreateSubdirectory.cs" />
+    <Compile Include="DirectoryInfo\Delete.cs" />
+    <Compile Include="DirectoryInfo\Exists.cs" />
+    <Compile Include="DirectoryInfo\Root.cs" />
+    <Compile Include="Directory\EnumerableAPIs.cs" />
+    <Compile Include="Directory\GetFileSystemEntries_str_str_so.cs" />
+    <Compile Include="Directory\GetParent.cs" />
+    <Compile Include="FileInfo\GetSetAttributes.cs" />
+    <Compile Include="FileInfo\Length.cs" />
+    <Compile Include="FileInfo\Open.cs" />
+    <Compile Include="FileStream\DevicesPipesAndSockets.cs" />
+    <Compile Include="FileStream\FlushAsync.cs" />
+    <Compile Include="FileStream\FileStreamConformanceTests.cs" />
+    <Compile Include="FileStream\SafeFileHandle.cs" />
+    <Compile Include="FileStream\IsAsync.cs" />
+    <Compile Include="FileStream\Name.cs" />
+    <Compile Include="FileStream\CopyToAsync.cs" />
+    <Compile Include="FileStream\DeleteOnClose.cs" />
+    <Compile Include="FileStream\FileStreamOptions.cs" />
+    <Compile Include="FileStream\Flush.cs" />
+    <Compile Include="FileStream\Dispose.cs" />
+    <Compile Include="FileStream\WriteAsync.cs" />
+    <Compile Include="FileStream\ToString.cs" />
+    <Compile Include="FileStream\ReadAsync.cs" />
+    <Compile Include="FileStream\Read.cs" />
+    <Compile Include="FileStream\SetLength.cs" />
+    <Compile Include="FileStream\Position.cs" />
+    <Compile Include="FileStream\Seek.cs" />
+    <Compile Include="FileStream\ctor_sfh_fa_buffer_async.cs" />
+    <Compile Include="FileStream\ctor_sfh_fa_buffer.cs" />
+    <Compile Include="FileStream\ctor_sfh_fa.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.write.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.read.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.delete.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer_fo.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer_async.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs_buffer.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa_fs.cs" />
+    <Compile Include="FileStream\ctor_str_fm_fa.cs" />
+    <Compile Include="FileStream\ctor_str_fm.cs" />
+    <Compile Include="File\Append.cs" />
+    <Compile Include="File\Create.cs" />
+    <Compile Include="File\Delete.cs" />
+    <Compile Include="File\GetSetAttributes.cs" />
+    <Compile Include="File\Move.cs" />
+    <Compile Include="File\ReadWriteAllText.cs" />
+    <Compile Include="File\ReadWriteAllLines.cs" />
+    <Compile Include="File\SymbolicLinks.cs" />
+    <Compile Include="TestData.cs" />
+    <Compile Include="UnseekableFileStream.cs" />
+    <Compile Include="FSAssert.cs" />
+    <!-- Ported -->
+    <Compile Include="PortedCommon\CommonUtilities.cs" />
+    <Compile Include="PortedCommon\DllImports.cs" />
+    <Compile Include="PortedCommon\IOInputs.cs" />
+    <Compile Include="PortedCommon\IOServices.cs" />
+    <Compile Include="PortedCommon\PathInfo.cs" />
+    <Compile Include="DirectoryInfo\EnumerableAPIs.cs" />
+    <Compile Include="DirectoryInfo\GetDirectories.cs" />
+    <Compile Include="DirectoryInfo\GetFiles.cs" />
+    <Compile Include="DirectoryInfo\GetFileSystemInfos.cs" />
+    <Compile Include="DirectoryInfo\Refresh.cs" />
+    <Compile Include="DirectoryInfo\ToString.cs" />
+    <Compile Include="DirectoryInfo\Name.cs" />
+    <Compile Include="DirectoryInfo\Parent.cs" />
+    <Compile Include="DirectoryInfo\GetSetTimes.cs" />
+    <Compile Include="DirectoryInfo\MoveTo.cs" />
+    <Compile Include="Directory\GetFileSystemEntries_str.cs" />
+    <Compile Include="Directory\GetFileSystemEntries_str_str.cs" />
+    <Compile Include="Directory\GetSetTimes.cs" />
+    <Compile Include="Directory\Move.cs" />
+    <Compile Include="Directory\ReparsePoints_MountVolume.cs" />
+    <Compile Include="Directory\SetCurrentDirectory.cs" />
+    <Compile Include="Directory\CreateDirectory.cs" />
+    <Compile Include="Directory\Delete_MountVolume.cs" />
+    <Compile Include="Directory\Delete.cs" />
+    <Compile Include="Directory\Exists.cs" />
+    <Compile Include="Directory\GetDirectories.cs" />
+    <Compile Include="Directory\GetDirectoryRoot.cs" />
+    <Compile Include="Directory\GetFiles.cs" />
+    <Compile Include="File\ReadWriteAllBytes.cs" />
+    <Compile Include="File\ChangeExtension.cs" />
+    <Compile Include="File\Copy.cs" />
+    <Compile Include="File\Exists.cs" />
+    <Compile Include="File\GetSetTimes_String.cs" />
+    <Compile Include="File\Open.cs" />
+    <Compile Include="File\OpenHandle.cs" />
+    <Compile Include="FileInfo\Create.cs" />
+    <Compile Include="FileInfo\CreateText.cs" />
+    <Compile Include="FileInfo\Delete.cs" />
+    <Compile Include="FileInfo\Exists.cs" />
+    <Compile Include="FileInfo\Extension.cs" />
+    <Compile Include="FileInfo\Directory.cs" />
+    <Compile Include="FileInfo\Name.cs" />
+    <Compile Include="FileInfo\GetSetTimes.cs" />
+    <Compile Include="FileInfo\MoveTo.cs" />
+    <Compile Include="FileInfo\Refresh.cs" />
+    <Compile Include="FileInfo\ToString.cs" />
+    <Compile Include="FileInfo\AppendText.cs" />
+    <Compile Include="FileInfo\CopyTo.cs" />
+    <!-- Helpers -->
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
+    <Content Include="DirectoryInfo\test-dir\dummy.txt" Link="test-dir\dummy.txt" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs" Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs" Link="Common\System\IO\ReparsePointUtilities.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonTestPath)TestUtilities\System\WindowsTestFileShare.cs" Link="Common\TestUtilities\System\WindowsTestFileShare.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+</Project>

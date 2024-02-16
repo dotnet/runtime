@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+.assembly extern mscorlib { }
 .assembly runtime68278 { }
+.assembly extern xunit.core {}
 
 .class interface abstract IHasCctor
 {
@@ -15,16 +17,23 @@
     }
 }
 
-.class interface abstract IUnrelated
+.class public interface abstract IUnrelated
 {
     .field public static int8 s_fiftyEight
 }
 
-.method static int32 main()
+.class public auto ansi abstract sealed beforefieldinit runtime68278
+    extends [mscorlib]System.Object
 {
-    .entrypoint
-    ldsfld int8 IHasCctor::s_fortyTwo
-    ldsfld int8 IUnrelated::s_fiftyEight
-    add
-    ret
+    .method public static int32 main()
+    {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
+        .entrypoint
+        ldsfld int8 IHasCctor::s_fortyTwo
+        ldsfld int8 IUnrelated::s_fiftyEight
+        add
+        ret
+    }
 }

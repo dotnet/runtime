@@ -105,53 +105,89 @@ g_file_error_from_errno (gint err_no)
 	}
 }
 
-#ifdef G_OS_WIN32
-#define TMP_FILE_FORMAT "%.*s%s.tmp"
-#else
-#define TMP_FILE_FORMAT "%.*s.%s~"
+#ifdef HOST_WIN32
+static gboolean
+is_ascii_string (const gchar *str)
+{
+	while (*str) {
+		if (!g_isascii (*str))
+			return FALSE;
+	}
+	return TRUE;
+}
 #endif
 
-gboolean
-g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **err)
+FILE*
+g_fopen (const gchar *path, const gchar *mode)
 {
-	const char *name;
-	char *path;
 	FILE *fp;
 
-	if (!(name = strrchr (filename, G_DIR_SEPARATOR)))
-		name = filename;
-	else
-		name++;
+	if (!path)
+		return NULL;
 
-	path = g_strdup_printf (TMP_FILE_FORMAT, (int)(name - filename), filename, name);
-	if (!(fp = fopen (path, "wb"))) {
-		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
-		g_free (path);
-		return FALSE;
+#ifdef HOST_WIN32
+	if (is_ascii_string (path) && is_ascii_string (mode)) {
+		fp = fopen (path, mode);
+	} else {
+		gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
+		gunichar2 *wMode = g_utf8_to_utf16 (mode, -1, 0, 0, 0);
+
+		if (!wPath || !wMode)
+			return NULL;
+
+		fp = _wfopen ((wchar_t *) wPath, (wchar_t *) wMode);
+		g_free (wPath);
+		g_free (wMode);
 	}
+#else
+	fp = fopen (path, mode);
+#endif
 
-	if (length < 0)
-		length = strlen (contents);
+	return fp;
+}
 
-	if (fwrite (contents, 1, length, fp) < GSSIZE_TO_SIZE(length)) {
-		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (ferror (fp)), "%s", g_strerror (ferror (fp)));
-		g_unlink (path);
-		g_free (path);
-		fclose (fp);
+int
+g_rename (const gchar *src_path, const gchar *dst_path)
+{
+#ifdef HOST_WIN32
+	if (is_ascii_string (src_path) && is_ascii_string (dst_path)) {
+		return rename (src_path, dst_path);
+	} else {
+		gunichar2 *wSrcPath = g_utf8_to_utf16 (src_path, -1, 0, 0, 0);
+		gunichar2 *wDstPath = g_utf8_to_utf16 (dst_path, -1, 0, 0, 0);
 
-		return FALSE;
+		if (!wSrcPath || !wDstPath)
+			return -1;
+
+		int ret = _wrename ((wchar_t *) wSrcPath, (wchar_t *) wDstPath);
+		g_free (wSrcPath);
+		g_free (wDstPath);
+
+		return ret;
 	}
+#else
+	return rename (src_path, dst_path);
+#endif
+}
 
-	fclose (fp);
+int
+g_unlink (const gchar *path)
+{
+#ifdef HOST_WIN32
+	if (is_ascii_string (path)) {
+		return unlink (path);
+	} else {
+		gunichar2 *wPath = g_utf8_to_utf16 (path, -1, 0, 0, 0);
 
-	if (g_rename (path, filename) != 0) {
-		g_set_error (err, G_FILE_ERROR, g_file_error_from_errno (errno), "%s", g_strerror (errno));
-		g_unlink (path);
-		g_free (path);
-		return FALSE;
+		if (!wPath)
+			return -1;
+
+		int ret = _wunlink ((wchar_t *) wPath);
+		g_free (wPath);
+
+		return ret;
 	}
-
-	g_free (path);
-
-	return TRUE;
+#else
+	return unlink (path);
+#endif
 }

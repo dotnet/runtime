@@ -548,6 +548,9 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_VCALL:
 	case OP_VCALL_REG:
 	case OP_VCALL_MEMBASE:
+	case OP_XCALL:
+	case OP_XCALL_REG:
+	case OP_XCALL_MEMBASE:
 	case OP_VCALL2:
 	case OP_VCALL2_REG:
 	case OP_VCALL2_MEMBASE:
@@ -1092,6 +1095,9 @@ assign_reg (MonoCompile *cfg, MonoRegState *rs, int reg, int hreg, int bank)
 #if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
 		/* this seems to trigger a gcc compilation bug sometime (hreg is 0) */
 		/* On arm64, rgctx_reg is a global hreg, and it is used to pass an argument */
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+		if (!(mono_method_signature_has_ext_callconv (cfg->method->signature, MONO_EXT_CALLCONV_SWIFTCALL) && (hreg == AMD64_R12 || hreg == AMD64_R13)))
+#endif
 		g_assert (! is_global_ireg (hreg));
 #endif
 
@@ -2165,8 +2171,9 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 MONO_RESTORE_WARNING
 
+/* Returns -1 if opcode is not a conditional */
 CompRelation
-mono_opcode_to_cond (int opcode)
+mono_opcode_to_cond_unchecked (int opcode)
 {
 	switch (opcode) {
 	case OP_CEQ:
@@ -2286,10 +2293,21 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_LGT_UN:
 		return CMP_GT_UN;
 	default:
+		return (CompRelation)-1;
+	}
+}
+
+CompRelation
+mono_opcode_to_cond (int opcode)
+{
+	CompRelation rel = mono_opcode_to_cond_unchecked (opcode);
+
+	if (rel == (CompRelation)-1) {
 		printf ("%s\n", mono_inst_name (opcode));
 		g_assert_not_reached ();
 		return (CompRelation)0;
 	}
+	return rel;
 }
 
 CompRelation

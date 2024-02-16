@@ -580,7 +580,7 @@ namespace System.Formats.Tar.Tests
             }
             else
             {
-                Assert.True(false, "Unchecked entry type.");
+                Assert.Fail("Unchecked entry type.");
             }
 
             AssertFileModeEquals(destination, TestPermission1);

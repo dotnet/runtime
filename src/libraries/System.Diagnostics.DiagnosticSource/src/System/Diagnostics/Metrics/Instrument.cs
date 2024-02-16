@@ -64,6 +64,12 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         protected void Publish()
         {
+            // All instruments call Publish when they are created. We don't want to publish the instrument if the Meter is not supported.
+            if (!Meter.IsSupported)
+            {
+                return;
+            }
+
             List<MeterListener>? allListeners = null;
             lock (Instrument.SyncObject)
             {
@@ -105,7 +111,7 @@ namespace System.Diagnostics.Metrics
         public string? Unit { get; }
 
         /// <summary>
-        /// Returns the tags associated with the Meter.
+        /// Returns the tags associated with the instrument.
         /// </summary>
         public IEnumerable<KeyValuePair<string, object?>>? Tags { get; }
 

@@ -44,7 +44,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Missing StartDocument should be fixed
@@ -85,7 +85,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Missing EndDocument should be fixed
@@ -127,7 +127,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Multiple root elements should error
@@ -152,7 +152,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Start-EndDocument without any element should error
@@ -175,7 +175,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Top level text should error - PROLOG
@@ -198,7 +198,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Top level text should error - EPILOG
@@ -223,7 +223,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
 
@@ -247,7 +247,7 @@ namespace System.Xml.XmlWriterApiTests
                     return;
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Top level atomic value should error - EPILOG
@@ -272,7 +272,7 @@ namespace System.Xml.XmlWriterApiTests
                     return;
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

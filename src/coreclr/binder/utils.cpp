@@ -54,18 +54,14 @@ namespace BINDER_SPACE
 
         const BYTE *pByteKey = publicKeyBLOB;
         DWORD dwKeyLen = publicKeyBLOB.GetSize();
-        BYTE *pByteToken = NULL;
-        DWORD dwTokenLen = 0;
+        StrongNameToken token;
 
         IF_FAIL_GO(StrongNameTokenFromPublicKey(
             const_cast<BYTE*>(pByteKey),
             dwKeyLen,
-            &pByteToken,
-            &dwTokenLen));
+            &token));
 
-        _ASSERTE(pByteToken != NULL);
-        publicKeyTokenBLOB.Set(pByteToken, dwTokenLen);
-        StrongNameFreeBuffer(pByteToken);
+        publicKeyTokenBLOB.Set(token.m_token, StrongNameToken::SIZEOF_TOKEN);
 
     Exit:
         return hr;

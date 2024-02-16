@@ -26,22 +26,23 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     }
 
     private State _state;
+    private bool _hasWaiter;
     private ManualResetValueTaskSourceCore<bool> _valueTaskSource;
     private CancellationTokenRegistration _cancellationRegistration;
+    private CancellationToken _cancelledToken;
     private Action<object?>? _cancellationAction;
     private GCHandle _keepAlive;
+    private FinalTaskSource _finalTaskSource;
 
-    private readonly TaskCompletionSource _finalTaskSource;
-
-    public ResettableValueTaskSource(bool runContinuationsAsynchronously = true)
+    public ResettableValueTaskSource()
     {
         _state = State.None;
-        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+        _hasWaiter = false;
+        _valueTaskSource = new ManualResetValueTaskSourceCore<bool>() { RunContinuationsAsynchronously = true };
         _cancellationRegistration = default;
+        _cancelledToken = default;
         _keepAlive = default;
-
-        // TODO: defer instantiation only after Task is retrieved
-        _finalTaskSource = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
+        _finalTaskSource = new FinalTaskSource();
     }
 
     /// <summary>
@@ -55,18 +56,6 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     /// was called with <c>final</c> set to <c>true</c> and the result was propagated.
     /// </summary>
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
-
-    // TODO: Revisit this with https://github.com/dotnet/runtime/issues/79818 and https://github.com/dotnet/runtime/issues/79911
-    public bool KeepAliveReleased
-    {
-        get
-        {
-            lock (this)
-            {
-                return !_keepAlive.IsAllocated;
-            }
-        }
-    }
 
     /// <summary>
     /// Tries to get a value task representing this task source. If this task source is <see cref="State.None"/>, it'll also transition it into <see cref="State.Awaiting"/> state.
@@ -91,11 +80,11 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     _cancellationRegistration = cancellationToken.UnsafeRegister(static (obj, cancellationToken) =>
                     {
                         (ResettableValueTaskSource thisRef, object? target) = ((ResettableValueTaskSource, object?))obj!;
-                        // This will transition the state to Ready.
-                        if (thisRef.TrySetException(new OperationCanceledException(cancellationToken)))
+                        lock (thisRef)
                         {
-                            thisRef._cancellationAction?.Invoke(target);
+                            thisRef._cancelledToken = cancellationToken;
                         }
+                        thisRef._cancellationAction?.Invoke(target);
                     }, (this, keepAlive));
                 }
             }
@@ -115,11 +104,11 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
                 _state = State.Awaiting;
             }
-            // None, Completed, Final: return the current task.
-            if (state == State.None ||
-                state == State.Ready ||
-                state == State.Completed)
+            // None, Ready, Completed: return the current task.
+            if (state is State.None or State.Ready or State.Completed)
             {
+                // Remember that the value task with the current version is being given out.
+                _hasWaiter = true;
                 valueTask = new ValueTask(this, _valueTaskSource.Version);
                 return true;
             }
@@ -130,83 +119,98 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
         }
     }
 
-    public Task GetFinalTask() => _finalTaskSource.Task;
+    /// <summary>
+    /// Gets a <see cref="Task"/> that will transition to a completed state with the last transition of this source, i.e. into <see cref="State.Completed"/>.
+    /// </summary>
+    /// <returns>The <see cref="Task"/> that will transition to a completed state with the last transition of this source.</returns>
+    public Task GetFinalTask(object? keepAlive)
+    {
+        lock (this)
+        {
+            return _finalTaskSource.GetTask(keepAlive);
+        }
+    }
 
     private bool TryComplete(Exception? exception, bool final)
     {
+        // Dispose the cancellation registration before completing the task, so that it cannot run after the awaiting method returned.
+        // Dispose must be done outside of lock since it will wait on pending cancellation callbacks that can hold the lock from another thread.
         CancellationTokenRegistration cancellationRegistration = default;
-        try
+        lock (this)
         {
-            lock (this)
+            cancellationRegistration = _cancellationRegistration;
+            _cancellationRegistration = default;
+        }
+        cancellationRegistration.Dispose();
+
+        lock (this)
+        {
+            try
             {
-                try
+                State state = _state;
+
+                // Completed: nothing to do.
+                if (state == State.Completed)
                 {
-                    State state = _state;
+                    return false;
+                }
 
-                    // Completed: nothing to do.
-                    if (state == State.Completed)
-                    {
-                        return false;
-                    }
+                // The task was non-finally completed without having anyone awaiting on it.
+                // In such case, discard the temporary result and replace it with this final completion.
+                if (state == State.Ready && !_hasWaiter && final)
+                {
+                    _valueTaskSource.Reset();
+                    state = State.None;
+                }
 
-                    // If the _valueTaskSource has already been set, we don't want to lose the result by overwriting it.
-                    // So keep it as is and store the result in _finalTaskSource.
-                    if (state == State.None ||
-                        state == State.Awaiting)
-                    {
-                        _state = final ? State.Completed : State.Ready;
-                    }
+                // If the _valueTaskSource has already been set, we don't want to lose the result by overwriting it.
+                // So keep it as is and store the result in _finalTaskSource.
+                if (state is State.None or State.Awaiting)
+                {
+                    _state = final ? State.Completed : State.Ready;
+                }
 
-                    // Swap the cancellation registration so the one that's been registered gets eventually Disposed.
-                    // Ideally, we would dispose it here, but if the callbacks kicks in, it tries to take the lock held by this thread leading to deadlock.
-                    cancellationRegistration = _cancellationRegistration;
-                    _cancellationRegistration = default;
-
-                    // Unblock the current task source and in case of a final also the final task source.
-                    if (exception is not null)
+                // Unblock the current task source and in case of a final also the final task source.
+                if (exception is not null)
+                {
+                    // Set up the exception stack trace for the caller.
+                    exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
+                    if (state is State.None or State.Awaiting)
                     {
-                        // Set up the exception stack trace for the caller.
-                        exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
-                        if (state == State.None ||
-                            state == State.Awaiting)
-                        {
-                            _valueTaskSource.SetException(exception);
-                        }
-                        if (final)
-                        {
-                            return _finalTaskSource.TrySetException(exception);
-                        }
-                        return state != State.Ready;
-                    }
-                    else
-                    {
-                        if (state == State.None ||
-                            state == State.Awaiting)
-                        {
-                            _valueTaskSource.SetResult(final);
-                        }
-                        if (final)
-                        {
-                            return _finalTaskSource.TrySetResult();
-                        }
-                        return state != State.Ready;
+                        _valueTaskSource.SetException(exception);
                     }
                 }
-                finally
+                else
                 {
-                    // Un-root the the kept alive object in all cases.
-                    if (_keepAlive.IsAllocated)
+                    if (state is State.None or State.Awaiting)
                     {
-                        _keepAlive.Free();
+                        _valueTaskSource.SetResult(final);
                     }
+                }
+                if (final)
+                {
+                    if (_finalTaskSource.TryComplete(exception))
+                    {
+                        // Signal the final task only if we don't have another result in the value task source.
+                        // In that case, the final task will be signalled after the value task result is retrieved.
+                        if (state != State.Ready)
+                        {
+                            _finalTaskSource.TrySignal(out _);
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+                return state != State.Ready;
+            }
+            finally
+            {
+                // Un-root the the kept alive object in all cases.
+                if (_keepAlive.IsAllocated)
+                {
+                    _keepAlive.Free();
                 }
             }
-        }
-        finally
-        {
-            // Dispose the cancellation if registered.
-            // Must be done outside of lock since Dispose will wait on pending cancellation callbacks which require taking the lock.
-            cancellationRegistration.Dispose();
         }
     }
 
@@ -241,11 +245,10 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
 
     void IValueTaskSource.GetResult(short token)
     {
-        bool successful = false;
         try
         {
+            _cancelledToken.ThrowIfCancellationRequested();
             _valueTaskSource.GetResult(token);
-            successful = true;
         }
         finally
         {
@@ -253,34 +256,109 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             {
                 State state = _state;
 
+                _hasWaiter = false;
+                _cancelledToken = default;
+
                 if (state == State.Ready)
                 {
                     _valueTaskSource.Reset();
                     _state = State.None;
 
                     // Propagate the _finalTaskSource result into _valueTaskSource if completed.
-                    if (_finalTaskSource.Task.IsCompleted)
+                    if (_finalTaskSource.TrySignal(out Exception? exception))
                     {
                         _state = State.Completed;
-                        if (_finalTaskSource.Task.IsCompletedSuccessfully)
+
+                        if (exception is not null)
                         {
-                            _valueTaskSource.SetResult(true);
+                            _valueTaskSource.SetException(exception);
                         }
                         else
                         {
-                            // We know it's always going to be a single exception since we're the ones setting it.
-                            _valueTaskSource.SetException(_finalTaskSource.Task.Exception?.InnerException!);
+                            _valueTaskSource.SetResult(true);
                         }
-
-                        // In case the _valueTaskSource was successful, we want the potential error from _finalTaskSource to surface immediately.
-                        // In other words, if _valueTaskSource was set with success while final exception arrived, this will throw that exception right away.
-                        if (successful)
-                        {
-                            _valueTaskSource.GetResult(_valueTaskSource.Version);
-                        }
+                    }
+                    else
+                    {
+                        _state = State.None;
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// It remembers the result from <see cref="TryComplete"/> and propagates it to <see cref="_finalTaskSource"/> only after <see cref="TrySignal"/> is called.
+    /// Effectively allowing to separate setting of the result from task completion, which is necessary when the resettable portion of the value task source needs to consumed first.
+    /// </summary>
+    private struct FinalTaskSource
+    {
+        private TaskCompletionSource? _finalTaskSource;
+        private bool _isCompleted;
+        private bool _isSignaled;
+        private Exception? _exception;
+
+        public FinalTaskSource()
+        {
+            _finalTaskSource = null;
+            _isCompleted = false;
+            _isSignaled = false;
+            _exception = null;
+        }
+
+        public Task GetTask(object? keepAlive)
+        {
+            if (_finalTaskSource is null)
+            {
+                _finalTaskSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                if (!_isCompleted)
+                {
+                    GCHandle handle = GCHandle.Alloc(keepAlive);
+                    _finalTaskSource.Task.ContinueWith(static (_, state) =>
+                    {
+                        ((GCHandle)state!).Free();
+                    }, handle, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                }
+                if (_isSignaled)
+                {
+                    TrySignal(out _);
+                }
+            }
+            return _finalTaskSource.Task;
+        }
+
+        public bool TryComplete(Exception? exception = null)
+        {
+            if (_isCompleted)
+            {
+                return false;
+            }
+
+            _exception = exception;
+            _isCompleted = true;
+            return true;
+        }
+
+        public bool TrySignal(out Exception? exception)
+        {
+            if (!_isCompleted)
+            {
+                exception = default;
+                return false;
+            }
+
+            if (_exception is not null)
+            {
+                _finalTaskSource?.SetException(_exception);
+            }
+            else
+            {
+                _finalTaskSource?.SetResult();
+            }
+
+            exception = _exception;
+            _isSignaled = true;
+            return true;
         }
     }
 }

@@ -391,6 +391,25 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
+        [Fact]
+        public void SignData_NullSignature_Fails()
+        {
+            using (DSA dsa = DSAFactory.Create())
+            {
+                dsa.ImportParameters(DSATestData.GetDSA1024Params());
+
+                bool result = dsa.TrySignData(
+                    "hello"u8,
+                    (Span<byte>)null,
+                    HashAlgorithmName.SHA1,
+                    DSASignatureFormat.IeeeP1363FixedFieldConcatenation,
+                    out int bytesWritten);
+
+                Assert.False(result);
+                Assert.Equal(0, bytesWritten);
+            }
+        }
+
         private void SignAndVerify(byte[] data, string hashAlgorithmName, DSAParameters dsaParameters, int expectedSignatureLength)
         {
             using (DSA dsa = DSAFactory.Create())

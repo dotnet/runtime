@@ -6,6 +6,6 @@
       Define this here because the SDK resets it
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
-    <NETCoreAppMaximumVersion>8.0</NETCoreAppMaximumVersion>
+    <NETCoreAppMaximumVersion>9.0</NETCoreAppMaximumVersion>
   </PropertyGroup>
 </Project>

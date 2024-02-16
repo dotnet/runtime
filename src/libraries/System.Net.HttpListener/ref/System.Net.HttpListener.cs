@@ -103,7 +103,7 @@ namespace System.Net
         public System.Net.TransportContext TransportContext { get { throw null; } }
         public System.Uri? Url { get { throw null; } }
         public System.Uri? UrlReferrer { get { throw null; } }
-        public string UserAgent { get { throw null; } }
+        public string? UserAgent { get { throw null; } }
         public string UserHostAddress { get { throw null; } }
         public string UserHostName { get { throw null; } }
         public string[]? UserLanguages { get { throw null; } }

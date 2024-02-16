@@ -325,6 +325,7 @@ BEGIN
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
     IDS_CLASSLOAD_BYREFARRAY                "Could not create array type '%1' from assembly '%2' because the element type is ByRef."
     IDS_CLASSLOAD_BYREFLIKEARRAY            "Could not create array type '%1' from assembly '%2' because the element type is ByRef-like."
+    IDS_CLASSLOAD_VOIDARRAY                 "Could not create array type '%1' from assembly '%2' because the element type is System.Void."
     IDS_CLASSLOAD_FIELDTOOLARGE             "Size of field of type '%1' from assembly '%2' is too large."
     IDS_CLASSLOAD_CANTEXTEND                "Type '%1' from assembly '%2' cannot extend from any other type."
     IDS_CLASSLOAD_STATICVIRTUAL             "Method '%3' in type '%1' from assembly '%2' cannot be a static and a virtual."
@@ -392,7 +393,6 @@ BEGIN
 
     IDS_INVALID_PINVOKE_CALLCONV            "Unsupported unmanaged calling convention."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
-    IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
 
     IDS_EE_INVALIDLCIDPARAM                 "The value of the LCID conversion attribute must not exceed the number of parameters."
 
@@ -525,7 +525,6 @@ BEGIN
     IDS_CLASSLOAD_TOO_MANY_METHODS          "Type '%1' from assembly '%2' contains more methods than the current implementation allows."
     IDS_CLASSLOAD_MI_CANNOT_OVERRIDE        "Cannot override runtime implemented method '%3' on type '%1' from assembly '%2'."
 
-    IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR   "Collectible type '%1' has unsupported FixedAddressValueTypeAttribute applied to a field."
     IDS_EE_JIT_COMPILER_ERROR               "The JIT compiler encountered invalid IL code or an internal limitation."
     IDS_EE_OBJECT_TO_VARIANT_NOT_SUPPORTED  "Invalid managed/unmanaged type combination (Marshaling to and from COM VARIANTs isn't supported)."
     IDS_EE_OBJECT_TO_ITF_NOT_SUPPORTED      "Invalid managed/unmanaged type combination (Marshaling to and from COM interface pointers isn't supported)."
@@ -586,7 +585,7 @@ BEGIN
         BFA_METHOD_WITH_NONZERO_RVA             "Method with non-zero RVA in an Import."
         BFA_ABSTRACT_METHOD_WITH_RVA            "Abstract method with non-zero RVA."
         BFA_RUNTIME_METHOD_WITH_RVA             "Runtime-implemented method with non-zero RVA."
-        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method with non_NULL RVA."
+        BFA_INTERNAL_METHOD_WITH_RVA            "Internal call method '%1.%3' with non-zero RVA."
         BFA_AB_METHOD_IN_AB_CLASS               "Abstract method in non-abstract class."
         BFA_NONVIRT_AB_METHOD                   "Non-virtual abstract method."
         BFA_NONAB_NONCCTOR_METHOD_ON_INT        "Non-abstract, non-.cctor method in an interface."

@@ -21,6 +21,7 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			Parameter = parameter;
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
+			StaticType = parameter.ParameterType;
 			_overrideIsThis = overrideIsThis;
 		}
 

@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
-using System.Net;
 using System.Collections;
-using System.Security.Principal;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -44,9 +43,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private const int LOGON32_LOGON_NEW_CREDENTIALS = 9;
         private const int LOGON32_PROVIDER_WINNT50 = 3;
 
-        private const uint STANDARD_RIGHTS_REQUIRED = 0x000F0000;
-        private const uint SYNCHRONIZE = 0x00100000;
-        private const uint THREAD_ALL_ACCESS = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3FF;
         internal const AuthenticationTypes DefaultAuthType = AuthenticationTypes.Secure | AuthenticationTypes.Signing | AuthenticationTypes.Sealing;
 
         /*
@@ -874,7 +870,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string? stringGuid = null;
 
                 // encode the byte arry into binary string representation
-                int hr = UnsafeNativeMethods.ADsEncodeBinaryData(byteGuid, byteGuid.Length, ref ptr);
+                int hr = Interop.Activeds.ADsEncodeBinaryData(byteGuid, byteGuid.Length, ref ptr);
 
                 if (hr == 0)
                 {
@@ -885,7 +881,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     finally
                     {
                         if (ptr != (IntPtr)0)
-                            UnsafeNativeMethods.FreeADsMem(ptr);
+                            Interop.Activeds.FreeADsMem(ptr);
                     }
                 }
                 else
@@ -989,14 +985,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static void ImpersonateAnonymous()
         {
-            IntPtr hThread = UnsafeNativeMethods.OpenThread(THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
+            IntPtr hThread = Interop.Kernel32.OpenThread(Interop.Kernel32.THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
             if (hThread == (IntPtr)0)
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
 
             try
             {
-                int result = UnsafeNativeMethods.ImpersonateAnonymousToken(hThread);
-                if (result == 0)
+                bool success = Interop.Advapi32.ImpersonateAnonymousToken(hThread);
+                if (!success)
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
             finally
@@ -1846,7 +1842,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static int Compare(string? s1, string? s2, uint compareFlags)
         {
             // This code block was specifically written for handling string comparison
-            // involving null strings. The unmanged API "NativeMethods.CompareString"
+            // involving null strings. The unmanaged API "Interop.Kernel32.CompareString"
             // does not handle null strings elegantly.
             //
             // This method handles comparison of the specified strings
@@ -1857,34 +1853,17 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             int result = 0;
-            IntPtr lpString1 = IntPtr.Zero;
-            IntPtr lpString2 = IntPtr.Zero;
             int cchCount1 = 0;
             int cchCount2 = 0;
 
-            try
-            {
-                lpString1 = Marshal.StringToHGlobalUni(s1);
-                cchCount1 = s1.Length;
-                lpString2 = Marshal.StringToHGlobalUni(s2);
-                cchCount2 = s2.Length;
+            cchCount1 = s1.Length;
+            cchCount2 = s2.Length;
 
-                result = NativeMethods.CompareString(LCID, compareFlags, lpString1, cchCount1, lpString2, cchCount2);
-                if (result == 0)
-                {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
-                }
-            }
-            finally
+            result = Interop.Kernel32.CompareString(LCID, compareFlags, s1, cchCount1, s2, cchCount2);
+
+            if (result == 0)
             {
-                if (lpString1 != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(lpString1);
-                }
-                if (lpString2 != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(lpString2);
-                }
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             return (result - 2); // to give the semantics of <0, ==0, >0
@@ -2234,9 +2213,9 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 if (null == computerName)
-                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(IntPtr.Zero, DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
+                    err = Interop.Netapi32.DsRoleGetPrimaryDomainInformation(null, Interop.Netapi32.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
                 else
-                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(computerName, DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
+                    err = Interop.Netapi32.DsRoleGetPrimaryDomainInformation(computerName, Interop.Netapi32.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
 
                 if (err != 0)
                 {
@@ -2255,7 +2234,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 if (dsRoleInfoPtr != IntPtr.Zero)
-                    UnsafeNativeMethods.DsRoleFreeMemory(dsRoleInfoPtr);
+                    Interop.Netapi32.DsRoleFreeMemory(dsRoleInfoPtr);
             }
         }
 

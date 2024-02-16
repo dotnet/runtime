@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // model revision #2
 // To compile: ilasm exec16.il
 
@@ -13,8 +14,12 @@
 
   // entry point location: GlobalManaged
 
+.class public auto ansi exec16 {
   .method public static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (class [mscorlib]System.Exception V_0,
              int32 V_1)
@@ -46,3 +51,4 @@
     end: ldloc.1
     ret
   }
+}

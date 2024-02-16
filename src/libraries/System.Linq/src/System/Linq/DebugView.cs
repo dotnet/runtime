@@ -76,11 +76,7 @@ namespace System.Linq
         {
             get
             {
-                var tempList = new List<object?>();
-                foreach (object? item in _enumerable)
-                {
-                    tempList.Add(item);
-                }
+                List<object?> tempList = [.. _enumerable];
 
                 if (tempList.Count == 0)
                 {
@@ -114,10 +110,10 @@ namespace System.Linq
 
     internal sealed class SystemLinq_LookupDebugView<TKey, TElement>
     {
-        private readonly Lookup<TKey, TElement> _lookup;
+        private readonly ILookup<TKey, TElement> _lookup;
         private IGrouping<TKey, TElement>[]? _cachedGroupings;
 
-        public SystemLinq_LookupDebugView(Lookup<TKey, TElement> lookup)
+        public SystemLinq_LookupDebugView(ILookup<TKey, TElement> lookup)
         {
             _lookup = lookup;
         }

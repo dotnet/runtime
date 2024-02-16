@@ -14,7 +14,7 @@ namespace System.Net.NameResolution.Tests
 {
     public class MetricsTest
     {
-        private const string DnsLookupDuration = "dns.lookups.duration";
+        private const string DnsLookupDuration = "dns.lookup.duration";
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ResolveValidHostName_MetricsRecorded()
@@ -57,17 +57,26 @@ namespace System.Net.NameResolution.Tests
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostEntry(Dns.BeginGetHostEntry(InvalidHostName, null, null)));
             Assert.ThrowsAny<SocketException>(() => Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(InvalidHostName, null, null)));
 
-            double[] measurements = GetMeasurementsForHostname(recorder, InvalidHostName);
+            double[] measurements = GetMeasurementsForHostname(recorder, InvalidHostName, "host_not_found");
 
             Assert.Equal(6, measurements.Length);
             Assert.All(measurements, m => Assert.True(m > double.Epsilon));
         }
 
-        private static double[] GetMeasurementsForHostname(InstrumentRecorder<double> recorder, string hostname)
+        private static double[] GetMeasurementsForHostname(InstrumentRecorder<double> recorder, string hostname, string? expectedErrorType = null)
         {
             return recorder
                 .GetMeasurements()
-                .Where(m => m.Tags.ToArray().Any(t => t.Key == "dns.question.name" && t.Value is string hostnameTag && hostnameTag == hostname))
+                .Where(m =>
+                {
+                    KeyValuePair<string, object?>[] tags = m.Tags.ToArray();
+                    if (!tags.Any(t => t.Key == "dns.question.name" && t.Value is string hostnameTag && hostnameTag == hostname))
+                    {
+                        return false;
+                    }
+                    string? actualErrorType = tags.FirstOrDefault(t => t.Key == "error.type").Value as string;
+                    return expectedErrorType == actualErrorType;
+                })
                 .Select(m => m.Value)
                 .ToArray();
         }

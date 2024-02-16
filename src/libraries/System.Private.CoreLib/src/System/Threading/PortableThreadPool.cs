@@ -13,12 +13,13 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class PortableThreadPool
     {
-        private const int ThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
         private const int SmallStackSizeBytes = 256 * 1024;
 
         private const short MaxPossibleThreadCount = short.MaxValue;
 
-#if TARGET_64BIT
+#if TARGET_BROWSER
+        private const short DefaultMaxWorkerThreadCount = 10;
+#elif TARGET_64BIT
         private const short DefaultMaxWorkerThreadCount = MaxPossibleThreadCount;
 #elif TARGET_32BIT
         private const short DefaultMaxWorkerThreadCount = 1023;
@@ -39,6 +40,23 @@ namespace System.Threading
             AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
         private static readonly short ForcedMaxWorkerThreads =
             AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
+
+        private static readonly int ThreadPoolThreadTimeoutMs = DetermineThreadPoolThreadTimeoutMs();
+
+        private static int DetermineThreadPoolThreadTimeoutMs()
+        {
+            const int DefaultThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
+
+            // The amount of time in milliseconds a thread pool thread waits without having done any work before timing out and
+            // exiting. Set to -1 to disable the timeout. Applies to worker threads and wait threads. Also see the
+            // ThreadsToKeepAlive config value for relevant information.
+            int timeoutMs =
+                AppContextConfigHelper.GetInt32Config(
+                    "System.Threading.ThreadPool.ThreadTimeoutMs",
+                    "DOTNET_ThreadPool_ThreadTimeoutMs",
+                    DefaultThreadPoolThreadTimeoutMs);
+            return timeoutMs >= -1 ? timeoutMs : DefaultThreadPoolThreadTimeoutMs;
+        }
 
         [ThreadStatic]
         private static object? t_completionCountObject;

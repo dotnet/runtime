@@ -16,7 +16,6 @@ namespace IntelHardwareIntrinsicTest.SSE2.X64
         const int Pass = 100;
         const int Fail = 0;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54176", TestRuntimes.Mono)]
         [Fact]
         public static unsafe void StoreNonTemporal()
         {

@@ -21,13 +21,13 @@ namespace System
         }
 
         public FieldAccessException(string? message)
-            : base(message)
+            : base(message ?? SR.Arg_FieldAccessException)
         {
             HResult = HResults.COR_E_FIELDACCESS;
         }
 
         public FieldAccessException(string? message, Exception? inner)
-            : base(message, inner)
+            : base(message ?? SR.Arg_FieldAccessException, inner)
         {
             HResult = HResults.COR_E_FIELDACCESS;
         }

@@ -23,6 +23,7 @@ enum CrstType
     CrstYieldProcessorNormalized,
     CrstEventPipe,
     CrstEventPipeConfig,
+    CrstGcEvent,
 };
 
 enum CrstFlags

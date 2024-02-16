@@ -44,110 +44,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    public abstract partial class TypeBuilder
-    {
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
-        public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
-        {
-            if (!IsValidGetMethodType(type))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-
-            if (type is TypeBuilder && type.ContainsGenericParameters)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
-            if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
-
-            if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
-
-            ConstructorInfo res = type.GetConstructor(constructor);
-            if (res == null)
-                throw new ArgumentException(SR.Format(SR.MissingConstructor_Name, type));
-
-            return res;
-        }
-
-        private static bool IsValidGetMethodType(Type type)
-        {
-            if (type == null)
-                return false;
-
-            if (type is TypeBuilder || type is TypeBuilderInstantiation)
-                return true;
-            /*GetMethod() must work with TypeBuilders after CreateType() was called.*/
-            if (type.Module is ModuleBuilder)
-                return true;
-            if (type.IsGenericParameter)
-                return false;
-
-            Type[] inst = type.GetGenericArguments();
-            if (inst == null)
-                return false;
-            for (int i = 0; i < inst.Length; ++i)
-            {
-                if (IsValidGetMethodType(inst[i]))
-                    return true;
-            }
-            return false;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
-        public static MethodInfo GetMethod(Type type, MethodInfo method)
-        {
-            if (!IsValidGetMethodType(type))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-
-            if (type is TypeBuilder && type.ContainsGenericParameters)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
-            if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
-                throw new ArgumentException(SR.Argument_NeedGenericMethodDefinition, nameof(method));
-
-            if (!method.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_MethodNeedGenericDeclaringType, nameof(method));
-
-            if (method.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_InvalidMethodDeclaringType, nameof(type));
-
-            MethodInfo res = type.GetMethod(method);
-            if (res == null)
-                throw new ArgumentException(SR.Format(SR.MissingMethod_Name, type, method.Name));
-
-            return res;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
-            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
-        public static FieldInfo GetField(Type type, FieldInfo field)
-        {
-            if (!IsValidGetMethodType(type))
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
-
-            if (type is TypeBuilder && type.ContainsGenericParameters)
-                type = type.MakeGenericType(type.GetGenericArguments());
-
-            if (!field.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
-
-            if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
-
-            if (field is FieldOnTypeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
-
-            FieldInfo res = type.GetField(field);
-            if (res == null)
-                throw new System.Exception(SR.Format(SR.MissingField, field.Name));
-            else
-                return res;
-        }
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     internal sealed partial class RuntimeTypeBuilder : TypeBuilder
     {
@@ -214,7 +110,7 @@ namespace System.Reflection.Emit
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
-        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
+        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             this.is_hidden_global_type = false;
             int sep_index;

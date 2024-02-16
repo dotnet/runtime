@@ -151,7 +151,7 @@ namespace Microsoft.Quic
         NONE = 0x0000,
         UNIDIRECTIONAL = 0x0001,
         ZERO_RTT = 0x0002,
-        DELAY_FC_UPDATES = 0x0004,
+        DELAY_ID_FC_UPDATES = 0x0004,
     }
 
     [System.Flags]
@@ -211,6 +211,7 @@ namespace Microsoft.Quic
     {
         NONE = 0x0000,
         QTIP = 0x0001,
+        RIO = 0x0002,
     }
 
     internal unsafe partial struct QUIC_EXECUTION_CONFIG
@@ -764,17 +765,31 @@ namespace Microsoft.Quic
             }
         }
 
-        [NativeTypeName("uint32_t : 26")]
-        internal uint RESERVED
+        [NativeTypeName("uint32_t : 1")]
+        internal uint EncryptionOffloaded
         {
             get
             {
-                return (_bitfield >> 6) & 0x3FFFFFFu;
+                return (_bitfield >> 6) & 0x1u;
             }
 
             set
             {
-                _bitfield = (_bitfield & ~(0x3FFFFFFu << 6)) | ((value & 0x3FFFFFFu) << 6);
+                _bitfield = (_bitfield & ~(0x1u << 6)) | ((value & 0x1u) << 6);
+            }
+        }
+
+        [NativeTypeName("uint32_t : 25")]
+        internal uint RESERVED
+        {
+            get
+            {
+                return (_bitfield >> 7) & 0x1FFFFFFu;
+            }
+
+            set
+            {
+                _bitfield = (_bitfield & ~(0x1FFFFFFu << 7)) | ((value & 0x1FFFFFFu) << 7);
             }
         }
 
@@ -1231,6 +1246,15 @@ namespace Microsoft.Quic
         [NativeTypeName("QUIC_SETTINGS::(anonymous union)")]
         internal _Anonymous2_e__Union Anonymous2;
 
+        [NativeTypeName("uint32_t")]
+        internal uint StreamRecvWindowBidiLocalDefault;
+
+        [NativeTypeName("uint32_t")]
+        internal uint StreamRecvWindowBidiRemoteDefault;
+
+        [NativeTypeName("uint32_t")]
+        internal uint StreamRecvWindowUnidiDefault;
+
         internal ref ulong IsSetFlags
         {
             get
@@ -1265,6 +1289,45 @@ namespace Microsoft.Quic
             set
             {
                 Anonymous2.Anonymous.HyStartEnabled = value;
+            }
+        }
+
+        internal ulong EncryptionOffloadAllowed
+        {
+            get
+            {
+                return Anonymous2.Anonymous.EncryptionOffloadAllowed;
+            }
+
+            set
+            {
+                Anonymous2.Anonymous.EncryptionOffloadAllowed = value;
+            }
+        }
+
+        internal ulong ReliableResetEnabled
+        {
+            get
+            {
+                return Anonymous2.Anonymous.ReliableResetEnabled;
+            }
+
+            set
+            {
+                Anonymous2.Anonymous.ReliableResetEnabled = value;
+            }
+        }
+
+        internal ulong OneWayDelayEnabled
+        {
+            get
+            {
+                return Anonymous2.Anonymous.OneWayDelayEnabled;
+            }
+
+            set
+            {
+                Anonymous2.Anonymous.OneWayDelayEnabled = value;
             }
         }
 
@@ -1786,17 +1849,101 @@ namespace Microsoft.Quic
                     }
                 }
 
-                [NativeTypeName("uint64_t : 29")]
-                internal ulong RESERVED
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong StreamRecvWindowBidiLocalDefault
                 {
                     get
                     {
-                        return (_bitfield >> 35) & 0x1FFFFFFFUL;
+                        return (_bitfield >> 35) & 0x1UL;
                     }
 
                     set
                     {
-                        _bitfield = (_bitfield & ~(0x1FFFFFFFUL << 35)) | ((value & 0x1FFFFFFFUL) << 35);
+                        _bitfield = (_bitfield & ~(0x1UL << 35)) | ((value & 0x1UL) << 35);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong StreamRecvWindowBidiRemoteDefault
+                {
+                    get
+                    {
+                        return (_bitfield >> 36) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 36)) | ((value & 0x1UL) << 36);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong StreamRecvWindowUnidiDefault
+                {
+                    get
+                    {
+                        return (_bitfield >> 37) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 37)) | ((value & 0x1UL) << 37);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong EncryptionOffloadAllowed
+                {
+                    get
+                    {
+                        return (_bitfield >> 38) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 38)) | ((value & 0x1UL) << 38);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong ReliableResetEnabled
+                {
+                    get
+                    {
+                        return (_bitfield >> 39) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 39)) | ((value & 0x1UL) << 39);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong OneWayDelayEnabled
+                {
+                    get
+                    {
+                        return (_bitfield >> 40) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 40)) | ((value & 0x1UL) << 40);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 23")]
+                internal ulong RESERVED
+                {
+                    get
+                    {
+                        return (_bitfield >> 41) & 0x7FFFFFUL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x7FFFFFUL << 41)) | ((value & 0x7FFFFFUL) << 41);
                     }
                 }
             }
@@ -1831,17 +1978,59 @@ namespace Microsoft.Quic
                     }
                 }
 
-                [NativeTypeName("uint64_t : 63")]
-                internal ulong ReservedFlags
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong EncryptionOffloadAllowed
                 {
                     get
                     {
-                        return (_bitfield >> 1) & 0x7FFFFFFFUL;
+                        return (_bitfield >> 1) & 0x1UL;
                     }
 
                     set
                     {
-                        _bitfield = (_bitfield & ~(0x7FFFFFFFUL << 1)) | ((value & 0x7FFFFFFFUL) << 1);
+                        _bitfield = (_bitfield & ~(0x1UL << 1)) | ((value & 0x1UL) << 1);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong ReliableResetEnabled
+                {
+                    get
+                    {
+                        return (_bitfield >> 2) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 2)) | ((value & 0x1UL) << 2);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong OneWayDelayEnabled
+                {
+                    get
+                    {
+                        return (_bitfield >> 3) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 3)) | ((value & 0x1UL) << 3);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 60")]
+                internal ulong ReservedFlags
+                {
+                    get
+                    {
+                        return (_bitfield >> 4) & 0xFFFFFFFUL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0xFFFFFFFUL << 4)) | ((value & 0xFFFFFFFUL) << 4);
                     }
                 }
             }
@@ -2123,6 +2312,8 @@ namespace Microsoft.Quic
         RESUMED = 13,
         RESUMPTION_TICKET_RECEIVED = 14,
         PEER_CERTIFICATE_RECEIVED = 15,
+        RELIABLE_RESET_NEGOTIATED = 16,
+        ONE_WAY_DELAY_NEGOTIATED = 17,
     }
 
     internal partial struct QUIC_CONNECTION_EVENT
@@ -2260,6 +2451,22 @@ namespace Microsoft.Quic
             }
         }
 
+        internal ref _Anonymous_e__Union._RELIABLE_RESET_NEGOTIATED_e__Struct RELIABLE_RESET_NEGOTIATED
+        {
+            get
+            {
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.RELIABLE_RESET_NEGOTIATED, 1));
+            }
+        }
+
+        internal ref _Anonymous_e__Union._ONE_WAY_DELAY_NEGOTIATED_e__Struct ONE_WAY_DELAY_NEGOTIATED
+        {
+            get
+            {
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.ONE_WAY_DELAY_NEGOTIATED, 1));
+            }
+        }
+
         [StructLayout(LayoutKind.Explicit)]
         internal partial struct _Anonymous_e__Union
         {
@@ -2326,6 +2533,14 @@ namespace Microsoft.Quic
             [FieldOffset(0)]
             [NativeTypeName("struct (anonymous struct)")]
             internal _PEER_CERTIFICATE_RECEIVED_e__Struct PEER_CERTIFICATE_RECEIVED;
+
+            [FieldOffset(0)]
+            [NativeTypeName("struct (anonymous struct)")]
+            internal _RELIABLE_RESET_NEGOTIATED_e__Struct RELIABLE_RESET_NEGOTIATED;
+
+            [FieldOffset(0)]
+            [NativeTypeName("struct (anonymous struct)")]
+            internal _ONE_WAY_DELAY_NEGOTIATED_e__Struct ONE_WAY_DELAY_NEGOTIATED;
 
             internal unsafe partial struct _CONNECTED_e__Struct
             {
@@ -2440,6 +2655,9 @@ namespace Microsoft.Quic
             {
                 [NativeTypeName("uint16_t")]
                 internal ushort IdealProcessor;
+
+                [NativeTypeName("uint16_t")]
+                internal ushort PartitionIndex;
             }
 
             internal partial struct _DATAGRAM_STATE_CHANGED_e__Struct
@@ -2497,6 +2715,21 @@ namespace Microsoft.Quic
 
                 [NativeTypeName("QUIC_CERTIFICATE_CHAIN *")]
                 internal void* Chain;
+            }
+
+            internal partial struct _RELIABLE_RESET_NEGOTIATED_e__Struct
+            {
+                [NativeTypeName("BOOLEAN")]
+                internal byte IsNegotiated;
+            }
+
+            internal partial struct _ONE_WAY_DELAY_NEGOTIATED_e__Struct
+            {
+                [NativeTypeName("BOOLEAN")]
+                internal byte SendNegotiated;
+
+                [NativeTypeName("BOOLEAN")]
+                internal byte ReceiveNegotiated;
             }
         }
     }
@@ -2895,6 +3128,9 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_MAX_RESUMPTION_APP_DATA_LENGTH 1000")]
         internal const uint QUIC_MAX_RESUMPTION_APP_DATA_LENGTH = 1000;
 
+        [NativeTypeName("#define QUIC_STATELESS_RESET_KEY_LENGTH 32")]
+        internal const uint QUIC_STATELESS_RESET_KEY_LENGTH = 32;
+
         [NativeTypeName("#define QUIC_EXECUTION_CONFIG_MIN_SIZE (uint32_t)FIELD_OFFSET(QUIC_EXECUTION_CONFIG, ProcessorList)")]
         internal static readonly uint QUIC_EXECUTION_CONFIG_MIN_SIZE = unchecked((uint)((int)(Marshal.OffsetOf<QUIC_EXECUTION_CONFIG>("ProcessorList"))));
 
@@ -2960,6 +3196,9 @@ namespace Microsoft.Quic
 
         [NativeTypeName("#define QUIC_PARAM_GLOBAL_TLS_PROVIDER 0x0100000A")]
         internal const uint QUIC_PARAM_GLOBAL_TLS_PROVIDER = 0x0100000A;
+
+        [NativeTypeName("#define QUIC_PARAM_GLOBAL_STATELESS_RESET_KEY 0x0100000B")]
+        internal const uint QUIC_PARAM_GLOBAL_STATELESS_RESET_KEY = 0x0100000B;
 
         [NativeTypeName("#define QUIC_PARAM_CONFIGURATION_SETTINGS 0x03000000")]
         internal const uint QUIC_PARAM_CONFIGURATION_SETTINGS = 0x03000000;
@@ -3054,6 +3293,9 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_PARAM_CONN_STATISTICS_V2_PLAT 0x05000017")]
         internal const uint QUIC_PARAM_CONN_STATISTICS_V2_PLAT = 0x05000017;
 
+        [NativeTypeName("#define QUIC_PARAM_CONN_ORIG_DEST_CID 0x05000018")]
+        internal const uint QUIC_PARAM_CONN_ORIG_DEST_CID = 0x05000018;
+
         [NativeTypeName("#define QUIC_PARAM_TLS_HANDSHAKE_INFO 0x06000000")]
         internal const uint QUIC_PARAM_TLS_HANDSHAKE_INFO = 0x06000000;
 
@@ -3083,6 +3325,9 @@ namespace Microsoft.Quic
 
         [NativeTypeName("#define QUIC_PARAM_STREAM_STATISTICS 0X08000004")]
         internal const uint QUIC_PARAM_STREAM_STATISTICS = 0X08000004;
+
+        [NativeTypeName("#define QUIC_PARAM_STREAM_RELIABLE_OFFSET 0x08000005")]
+        internal const uint QUIC_PARAM_STREAM_RELIABLE_OFFSET = 0x08000005;
 
         [NativeTypeName("#define QUIC_API_VERSION_2 2")]
         internal const uint QUIC_API_VERSION_2 = 2;

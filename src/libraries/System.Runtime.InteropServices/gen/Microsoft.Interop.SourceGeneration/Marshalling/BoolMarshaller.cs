@@ -26,8 +26,6 @@ namespace Microsoft.Interop
             _compareToTrue = compareToTrue;
         }
 
-        public bool IsSupported(TargetFramework target, Version version) => true;
-
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             Debug.Assert(info.ManagedType is SpecialTypeInfo(_, _, SpecialType.System_Boolean));
@@ -107,7 +105,7 @@ namespace Microsoft.Interop
     /// Marshals a boolean value as 1 byte.
     /// </summary>
     /// <remarks>
-    /// This boolean type is the natural size of a boolean in the CLR (<see href="https://www.ecma-international.org/publications/standards/Ecma-335.htm">ECMA-335 (III.1.1.2)</see>).
+    /// This boolean type is the natural size of a boolean in the CLR (<see href="https://www.ecma-international.org/publications-and-standards/standards/ecma-335/">ECMA-335 (III.1.1.2)</see>).
     ///
     /// This is typically compatible with <see href="https://en.cppreference.com/w/c/types/boolean">C99</see>
     /// and <see href="https://en.cppreference.com/w/cpp/language/types">C++</see>, but those is implementation defined.

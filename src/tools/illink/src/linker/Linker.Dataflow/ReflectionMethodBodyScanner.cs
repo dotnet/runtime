@@ -274,6 +274,8 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Assembly_GetFiles:
 			case IntrinsicId.AssemblyName_get_CodeBase:
 			case IntrinsicId.AssemblyName_get_EscapedCodeBase:
+			case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
+			case IntrinsicId.Delegate_get_Method:
 				// These intrinsics are not interesting for trimmer (they are interesting for AOT and that's why they are recognized)
 				break;
 
@@ -283,7 +285,7 @@ namespace Mono.Linker.Dataflow
 			// GetType()
 			//
 			case IntrinsicId.Object_GetType: {
-					foreach (var valueNode in instanceValue) {
+					foreach (var valueNode in instanceValue.AsEnumerable ()) {
 						// Note that valueNode can be statically typed in IL as some generic argument type.
 						// For example:
 						//   void Method<T>(T instance) { instance.GetType().... }
@@ -299,7 +301,7 @@ namespace Mono.Linker.Dataflow
 						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
 						// currently it won't do.
 
-						TypeDefinition? staticType = (valueNode as IValueWithStaticType)?.StaticType;
+						TypeDefinition? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
 						if (staticType is null) {
 							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
 							AddReturnValue (context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition));
@@ -359,7 +361,7 @@ namespace Mono.Linker.Dataflow
 
 			// Validate that the return value has the correct annotations as per the method return value annotations
 			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0) {
-				foreach (var uniqueValue in methodReturnValue) {
+				foreach (var uniqueValue in methodReturnValue.AsEnumerable ()) {
 					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
 						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
 							throw new InvalidOperationException ($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");

@@ -15,8 +15,9 @@ resources:
         ROOTFS_DIR: /crossrootfs/armv6
 
     - container: linux_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-biarch-amd64-arm64
       env:
+        ROOTFS_HOST_DIR: /crossrootfs/x64
         ROOTFS_DIR: /crossrootfs/arm64
 
     - container: linux_musl_x64
@@ -85,7 +86,7 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
     - container: browser_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-webassembly-20230913040940-1edc1c6
       env:
         ROOTFS_DIR: /crossrootfs/x64
 
@@ -95,7 +96,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/x64
 
     - container: freebsd_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-freebsd-13
       env:
         ROOTFS_DIR: /crossrootfs/x64
 

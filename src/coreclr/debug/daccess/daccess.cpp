@@ -4389,20 +4389,8 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
 
             if(DACNotify::ParseJITNotification(exInfo, methodDescPtr, nativeCodeLocation))
             {
-                // Try and find the right appdomain
                 MethodDesc* methodDesc = PTR_MethodDesc(methodDescPtr);
-                BaseDomain* baseDomain = methodDesc->GetDomain();
-                AppDomain* appDomain = NULL;
-
-                if (baseDomain->IsAppDomain())
-                {
-                    appDomain = PTR_AppDomain(PTR_HOST_TO_TADDR(baseDomain));
-                }
-                else
-                {
-                    // Find a likely domain, because it's the shared domain.
-                    appDomain = AppDomain::GetCurrentDomain();
-                }
+                AppDomain* appDomain = AppDomain::GetCurrentDomain();
 
                 pubMethodInst =
                     new (nothrow) ClrDataMethodInstance(this,
@@ -4453,20 +4441,8 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
             TADDR methodDescPtr;
             if (DACNotify::ParseExceptionCatcherEnterNotification(exInfo, methodDescPtr, catcherNativeOffset))
             {
-                // Try and find the right appdomain
                 MethodDesc* methodDesc = PTR_MethodDesc(methodDescPtr);
-                BaseDomain* baseDomain = methodDesc->GetDomain();
-                AppDomain* appDomain = NULL;
-
-                if (baseDomain->IsAppDomain())
-                {
-                    appDomain = PTR_AppDomain(PTR_HOST_TO_TADDR(baseDomain));
-                }
-                else
-                {
-                    // Find a likely domain, because it's the shared domain.
-                    appDomain = AppDomain::GetCurrentDomain();
-                }
+                AppDomain* appDomain = AppDomain::GetCurrentDomain();
 
                 pubMethodInst =
                     new (nothrow) ClrDataMethodInstance(this,
@@ -7979,9 +7955,14 @@ void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObjec
         CORDB_ADDRESS fixed_obj = 0;
         HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_obj, NULL);
 
-        // If we failed...oh well, SOS won't mind.  We'll just report the interior pointer as is.
-        if (SUCCEEDED(hr))
-            obj = TO_TADDR(fixed_obj);
+        // Interior pointers need not lie on the manage heap at all.  When this happens, ListNearObjects
+        // will return E_FAIL.  In this case, we need to be sure to not include this stack slot in our
+        // enumeration because ICorDebug expects every location enumerated by this API to point to a
+        // valid object.
+        if (FAILED(hr))
+            return;
+
+        obj = TO_TADDR(fixed_obj);
     }
 
     // Report the object and where it was found.

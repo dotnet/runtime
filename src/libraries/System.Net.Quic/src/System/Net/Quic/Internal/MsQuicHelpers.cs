@@ -58,30 +58,35 @@ internal static class MsQuicHelpers
         where T : unmanaged
     {
         T value;
-        uint length = (uint)sizeof(T);
-
+        GetMsQuicParameter(handle, parameter, (uint)sizeof(T), (byte*)&value);
+        return value;
+    }
+    internal static unsafe void GetMsQuicParameter(MsQuicSafeHandle handle, uint parameter, uint length, byte* value)
+    {
         int status = MsQuicApi.Api.GetParam(
             handle,
             parameter,
             &length,
-            (byte*)&value);
+            value);
 
         if (StatusFailed(status))
         {
             ThrowHelper.ThrowMsQuicException(status, $"GetParam({handle}, {parameter}) failed");
         }
-
-        return value;
     }
 
     internal static unsafe void SetMsQuicParameter<T>(MsQuicSafeHandle handle, uint parameter, T value)
         where T : unmanaged
     {
+        SetMsQuicParameter(handle, parameter, (uint)sizeof(T), (byte*)&value);
+    }
+    internal static unsafe void SetMsQuicParameter(MsQuicSafeHandle handle, uint parameter, uint length, byte* value)
+    {
         int status = MsQuicApi.Api.SetParam(
             handle,
             parameter,
-            (uint)sizeof(T),
-            (byte*)&value);
+            length,
+            value);
 
         if (StatusFailed(status))
         {

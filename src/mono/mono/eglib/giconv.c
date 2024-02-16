@@ -121,117 +121,12 @@ write_uint16_endian (unsigned char *outptr, uint16_t c, unsigned endian)
 	outptr[1] = c & 0xff;
 }
 
-static FORCE_INLINE (int)
-decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar)
-{
-	unsigned char *inptr = (unsigned char *) inbuf;
-	gunichar u;
-	size_t n;
-
-	u = *inptr;
-
-	if (u < 0x80) {
-		/* simple ascii case */
-		*outchar = u;
-		return 1;
-	} else if (u < 0xc2) {
-		mono_set_errno (EILSEQ);
-		return -1;
-	} else if (u < 0xe0) {
-		u &= 0x1f;
-		n = 2;
-	} else if (u < 0xf0) {
-		u &= 0x0f;
-		n = 3;
-	} else if (u < 0xf8) {
-		u &= 0x07;
-		n = 4;
-	} else if (u < 0xfc) {
-		u &= 0x03;
-		n = 5;
-	} else if (u < 0xfe) {
-		u &= 0x01;
-		n = 6;
-	} else {
-		mono_set_errno (EILSEQ);
-		return -1;
-	}
-
-	if (n > inleft) {
-		mono_set_errno (EINVAL);
-		return -1;
-	}
-
-#if UNROLL_DECODE_UTF8
-	switch (n) {
-	case 6: u = (u << 6) | (*++inptr ^ 0x80);
-	case 5: u = (u << 6) | (*++inptr ^ 0x80);
-	case 4: u = (u << 6) | (*++inptr ^ 0x80);
-	case 3: u = (u << 6) | (*++inptr ^ 0x80);
-	case 2: u = (u << 6) | (*++inptr ^ 0x80);
-	}
-#else
-	for (size_t i = 1; i < n; i++)
-		u = (u << 6) | (*++inptr ^ 0x80);
-#endif
-
-	*outchar = u;
-
-	return GSIZE_TO_INT(n);
-}
-
 static gpointer error_quark = (gpointer)"ConvertError";
 
 gpointer
 g_convert_error_quark (void)
 {
 	return error_quark;
-}
-
-/**
- * An explanation of the conversion can be found at:
- * http://home.tiscali.nl/t876506/utf8tbl.html
- *
- **/
-gint
-g_unichar_to_utf8 (gunichar c, gchar *outbuf)
-{
-	int base, n, i;
-
-	if (c < 0x80) {
-		base = 0;
-		n = 1;
-	} else if (c < 0x800) {
-		base = 192;
-		n = 2;
-	} else if (c < 0x10000) {
-		base = 224;
-		n = 3;
-	} else if (c < 0x200000) {
-		base = 240;
-		n = 4;
-	} else if (c < 0x4000000) {
-		base = 248;
-		n = 5;
-	} else if (c < 0x80000000) {
-		base = 252;
-		n = 6;
-	} else {
-		return -1;
-	}
-
-	if (outbuf != NULL) {
-		for (i = n - 1; i > 0; i--) {
-			/* mask off 6 bits worth and add 128 */
-			outbuf[i] = (c & 0x3f) | 0x80;
-			c >>= 6;
-		}
-
-		/* first character has a different base */
-		outbuf[0] = GUNICHAR_TO_CHAR (c | base);
-	}
-
-	return n;
 }
 
 static FORCE_INLINE (int)
@@ -288,33 +183,6 @@ g_unichar_to_utf16le (gunichar c, gunichar2 *outbuf)
 	return g_unichar_to_utf16_endian (c, outbuf, G_LITTLE_ENDIAN);
 }
 
-gunichar *
-g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
-{
-	gunichar *outbuf, *outptr;
-	char *inptr;
-	glong n, i;
-
-	g_return_val_if_fail (str != NULL, NULL);
-
-	n = g_utf8_strlen (str, len);
-
-	if (items_written)
-		*items_written = n;
-
-	outptr = outbuf = g_malloc ((n + 1) * sizeof (gunichar));
-	inptr = (char *) str;
-
-	for (i = 0; i < n; i++) {
-		*outptr++ = g_utf8_get_char (inptr);
-		inptr = g_utf8_next_char (inptr);
-	}
-
-	*outptr = 0;
-
-	return outbuf;
-}
-
 static FORCE_INLINE (void)
 map_error(GError **err)
 {
@@ -325,7 +193,7 @@ map_error(GError **err)
 	}
 }
 
-static gunichar2 *
+static FORCE_INLINE (gunichar2 *)
 g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err, int flags, bool treatAsLE)
 {
 	errno = 0;
@@ -348,7 +216,7 @@ g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *ite
 	if (ret <= 0)
 		return NULL;
 
-	lpDestStr = malloc((ret + 1) * sizeof(gunichar2));
+	lpDestStr = g_malloc ((ret + 1) * sizeof(gunichar2));
 	ret = (glong)minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
 	lpDestStr[ret] = '\0';
 
@@ -359,7 +227,7 @@ g_utf8_to_utf16_impl (const gchar *str, glong len, glong *items_read, glong *ite
 	return lpDestStr;
 }
 
-static gunichar2 *
+static FORCE_INLINE (gunichar2 *)
 g_utf8_to_utf16le_custom_alloc_impl (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, bool treatAsLE)
 {
 	guint flags = 0;
@@ -408,7 +276,7 @@ g_utf8_to_utf16le (const gchar *str, glong len, glong *items_read, glong *items_
 }
 
 gunichar2 *
-eg_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
+g_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
 	return g_utf8_to_utf16_impl (str, len, items_read, items_written, err, 0, false);
 }
@@ -425,79 +293,7 @@ g_utf8_to_utf16le_custom_alloc (const gchar *str, glong len, glong *items_read, 
 	return g_utf8_to_utf16le_custom_alloc_impl (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err, true);
 }
 
-gunichar *
-g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
-{
-	gunichar *outbuf, *outptr;
-	size_t outlen = 0;
-	size_t inleft;
-	char *inptr;
-	gunichar c;
-	int n;
-
-	g_return_val_if_fail (str != NULL, NULL);
-
-	if (len < 0)
-		len = (glong)strlen (str);
-
-	inptr = (char *) str;
-	inleft = len;
-
-	while (inleft > 0) {
-		if ((n = decode_utf8 (inptr, inleft, &c)) < 0) {
-			if (errno == EILSEQ) {
-				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encountered in the input.");
-			} else if (items_read) {
-				/* partial input is ok if we can let our caller know... */
-				break;
-			} else {
-				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_PARTIAL_INPUT,
-					     "Partial byte sequence encountered in the input.");
-			}
-
-			if (items_read)
-				*items_read = GPTRDIFF_TO_LONG (inptr - str);
-
-			if (items_written)
-				*items_written = 0;
-
-			return NULL;
-		} else if (c == 0)
-			break;
-
-		outlen += 4;
-		inleft -= n;
-		inptr += n;
-	}
-
-	if (items_written)
-		*items_written = (glong)(outlen / 4);
-
-	if (items_read)
-		*items_read = GPTRDIFF_TO_LONG (inptr - str);
-
-	outptr = outbuf = g_malloc (outlen + 4);
-	inptr = (char *) str;
-	inleft = len;
-
-	while (inleft > 0) {
-		if ((n = decode_utf8 (inptr, inleft, &c)) < 0)
-			break;
-		else if (c == 0)
-			break;
-
-		*outptr++ = c;
-		inleft -= n;
-		inptr += n;
-	}
-
-	*outptr = 0;
-
-	return outbuf;
-}
-
-static gchar *
+static FORCE_INLINE (gchar *)
 g_utf16_to_utf8_impl (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err, bool treatAsLE)
 {
 	guint flags = 0;
@@ -659,68 +455,6 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	}
 
 	*outptr = 0;
-
-	return outbuf;
-}
-
-gchar *
-g_ucs4_to_utf8 (const gunichar *str, glong len, glong *items_read, glong *items_written, GError **err)
-{
-	char *outbuf, *outptr;
-	size_t outlen = 0;
-	glong i;
-	int n;
-
-	g_return_val_if_fail (str != NULL, NULL);
-
-	if (len < 0) {
-		for (i = 0; str[i] != 0; i++) {
-			if ((n = g_unichar_to_utf8 (str[i], NULL)) < 0) {
-				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encountered in the input.");
-
-				if (items_written)
-					*items_written = 0;
-
-				if (items_read)
-					*items_read = i;
-
-				return NULL;
-			}
-
-			outlen += n;
-		}
-	} else {
-		for (i = 0; i < len && str[i] != 0; i++) {
-			if ((n = g_unichar_to_utf8 (str[i], NULL)) < 0) {
-				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
-					     "Illegal byte sequence encountered in the input.");
-
-				if (items_written)
-					*items_written = 0;
-
-				if (items_read)
-					*items_read = i;
-
-				return NULL;
-			}
-
-			outlen += n;
-		}
-	}
-
-	len = i;
-
-	outptr = outbuf = g_malloc (outlen + 1);
-	for (i = 0; i < len; i++)
-		outptr += g_unichar_to_utf8 (str[i], outptr);
-	*outptr = 0;
-
-	if (items_written)
-		*items_written = (glong)outlen;
-
-	if (items_read)
-		*items_read = i;
 
 	return outbuf;
 }

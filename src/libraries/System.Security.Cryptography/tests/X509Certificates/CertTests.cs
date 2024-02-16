@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Dsa.Tests;
+using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
@@ -23,6 +25,155 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public CertTests(ITestOutputHelper output)
         {
             _log = output;
+        }
+
+        [Fact]
+        public static void PublicPrivateKey_IndependentLifetimes_ECDsa()
+        {
+            X509Certificate2 loaded;
+
+            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                {
+                    loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                }
+            }
+
+            using (ECDsa verifyKey = loaded.GetECDsaPublicKey())
+            {
+                byte[] signature;
+                byte[] data = RandomNumberGenerator.GetBytes(32);
+
+                using (ECDsa signingKey = loaded.GetECDsaPrivateKey())
+                {
+                    loaded.Dispose();
+                    signature = signingKey.SignHash(data);
+                }
+
+                Assert.True(verifyKey.VerifyHash(data, signature), nameof(verifyKey.VerifyHash));
+            }
+        }
+
+        [Fact]
+        public static void PublicPrivateKey_IndependentLifetimes_ECDiffieHellman()
+        {
+            X509Certificate2 loaded;
+
+            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest issuerRequest = new CertificateRequest(
+                    new X500DistinguishedName("CN=root"),
+                    ca,
+                    HashAlgorithmName.SHA256);
+
+                issuerRequest.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                CertificateRequest request = new CertificateRequest(
+                    new X500DistinguishedName("CN=potato"),
+                    new PublicKey(ecdh),
+                    HashAlgorithmName.SHA256);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(false, false, 0, true));
+                request.CertificateExtensions.Add(
+                    new X509KeyUsageExtension(X509KeyUsageFlags.KeyAgreement, true));
+
+                DateTimeOffset notBefore = DateTimeOffset.UtcNow;
+                DateTimeOffset notAfter = notBefore.AddDays(30);
+                byte[] serial = [1, 2, 3, 4, 5, 6, 7, 8];
+
+                using (X509Certificate2 issuer = issuerRequest.CreateSelfSigned(notBefore, notAfter))
+                using (X509Certificate2 cert = request.Create(issuer, notBefore, notAfter, serial))
+                using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(ecdh))
+                {
+                    loaded = new X509Certificate2(certWithKey.Export(X509ContentType.Pkcs12, "carrots"), "carrots");;
+                }
+            }
+
+            using (ECDiffieHellman partyB = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
+            using (ECDiffieHellman partyAPrivateKey = loaded.GetECDiffieHellmanPrivateKey())
+            using (ECDiffieHellman partyAPublicKey = loaded.GetECDiffieHellmanPublicKey())
+            {
+                loaded.Dispose();
+                byte[] derivedB = partyB.DeriveKeyFromHash(partyAPublicKey.PublicKey, HashAlgorithmName.SHA256, null, null);
+                byte[] derivedA = partyAPrivateKey.DeriveKeyFromHash(partyB.PublicKey, HashAlgorithmName.SHA256, null, null);
+                Assert.Equal(derivedB, derivedA);
+            }
+        }
+
+        [Fact]
+        public static void PublicPrivateKey_IndependentLifetimes_RSA()
+        {
+            X509Certificate2 loaded;
+
+            using (RSA ca = RSA.Create(2048))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                {
+                    loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                }
+            }
+
+            using (RSA verifyKey = loaded.GetRSAPublicKey())
+            {
+                byte[] signature;
+                byte[] data = RandomNumberGenerator.GetBytes(32);
+
+                using (RSA signingKey = loaded.GetRSAPrivateKey())
+                {
+                    loaded.Dispose();
+                    signature = signingKey.SignHash(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                }
+
+                Assert.True(verifyKey.VerifyHash(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1), nameof(verifyKey.VerifyHash));
+            }
+        }
+
+        [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        public static void PublicPrivateKey_IndependentLifetimes_DSA()
+        {
+            X509Certificate2 loaded;
+
+            using (DSA ca = DSA.Create())
+            {
+                ca.ImportParameters(DSATestData.GetDSA1024Params());
+                DSAX509SignatureGenerator gen = new DSAX509SignatureGenerator(ca);
+                X500DistinguishedName dn = new X500DistinguishedName("CN=potatos");
+
+                CertificateRequest req = new CertificateRequest(
+                    dn,
+                    gen.PublicKey,
+                    HashAlgorithmName.SHA1);
+
+                using (X509Certificate2 cert = req.Create(dn, gen, DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3), new byte[] { 1, 2, 3 }))
+                using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(ca))
+                {
+
+                    loaded = new X509Certificate2(certWithKey.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                }
+            }
+
+            using (DSA verifyKey = loaded.GetDSAPublicKey())
+            {
+                byte[] signature;
+                byte[] data = RandomNumberGenerator.GetBytes(20);
+
+                using (DSA signingKey = loaded.GetDSAPrivateKey())
+                {
+                    loaded.Dispose();
+                    signature = signingKey.CreateSignature(data);
+                }
+
+                Assert.True(verifyKey.VerifySignature(data, signature), nameof(verifyKey.VerifySignature));
+            }
         }
 
         [Fact]
@@ -441,6 +592,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void EmptyPkcs7ThrowsException()
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestData.EmptyPkcs7));
+        }
+
+        [Fact]
         public static void ExportPublicKeyAsPkcs12()
         {
             using (X509Certificate2 publicOnly = new X509Certificate2(TestData.MsCertificate))
@@ -601,11 +758,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalP256))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_EcdsaKey()
         {
-            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP384))
+            using (CngPlatformProviderKey platformKey = new CngPlatformProviderKey(CngAlgorithm.ECDsaP256))
             using (ECDsaCng ecdsa = new ECDsaCng(platformKey.Key))
             {
                 CertificateRequest req = new CertificateRequest("CN=potato", ecdsa, HashAlgorithmName.SHA256);
@@ -622,7 +779,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctional))]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.PlatformCryptoProviderFunctionalRsa))]
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void CreateCertificate_MicrosoftPlatformCryptoProvider_RsaKey()
         {

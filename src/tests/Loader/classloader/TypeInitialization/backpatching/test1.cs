@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This test case reproduces a race condition involving type initialization (aka, .cctor, aka static constructor).
 //
@@ -53,7 +54,8 @@ public class CMain{
         X_getX = MyClass.getX(); 
         Console.WriteLine("X_getX: {0}: thread {1}",X_getX,Thread.CurrentThread.Name); 
     } 
-    public static int Main(){
+    [Fact]
+    public static int TestEntryPoint(){
         Thread t1 = new Thread(RunSomeMethod);
         t1.Name = "T1";
         Thread t2 = new Thread(RunGetX);

@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.ComponentModel;
-using System.Runtime.InteropServices;
-using System.Collections;
-using System.Text;
-using System.Diagnostics;
-using System.Security.Authentication;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {

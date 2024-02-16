@@ -441,7 +441,8 @@ namespace System.Net.Http.Functional.Tests
             ("Cookie",          Encoding.UTF8,      "; ", new[] { "Cookies", "\uD83C\uDF6A", "everywhere" }),
             ("Set-Cookie",      Encoding.UTF8,      ", ", new[] { "\uD83C\uDDF8\uD83C\uDDEE" }),
             ("header-5",        Encoding.UTF8,      ", ", new[] { "\uD83D\uDE48\uD83D\uDE49\uD83D\uDE4A", "foo", "\uD83D\uDE03", "bar" }),
-            ("bar",             Encoding.UTF8,      ", ", new[] { "foo" })
+            ("bar",             Encoding.UTF8,      ", ", new[] { "foo" }),
+            ("Location",        Encoding.Latin1,    ", ", new[] { "\u00D0\u00A4" })
         };
 
         [Fact]
@@ -538,7 +539,7 @@ namespace System.Net.Http.Functional.Tests
                     foreach ((string name, Encoding valueEncoding, string separator, string[] values) in s_nonAsciiHeaders)
                     {
                         Assert.Contains(name, seenHeaderNames);
-                        IEnumerable<string> receivedValues = Assert.Single(response.Headers, h => h.Key.Equals(name, StringComparison.OrdinalIgnoreCase)).Value;
+                        IEnumerable<string> receivedValues = Assert.Single(response.Headers.NonValidated, h => h.Key.Equals(name, StringComparison.OrdinalIgnoreCase)).Value;
                         string value = Assert.Single(receivedValues);
 
                         string expected = valueEncoding.GetString(valueEncoding.GetBytes(string.Join(separator, values)));

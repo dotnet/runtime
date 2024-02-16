@@ -14,7 +14,7 @@ using Xunit.Abstractions;
 namespace System.Net.Quic.Tests
 {
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicListenerTests : QuicTestBase
     {
         public QuicListenerTests(ITestOutputHelper output) : base(output) { }
@@ -124,21 +124,23 @@ namespace System.Net.Quic.Tests
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
 
-            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync());
-            Assert.True(exception.InnerException is ObjectDisposedException);
-            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask());
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout));
+            Assert.IsType<ObjectDisposedException>(exception.InnerException);
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask().WaitAsync(PassingTestTimeout));
 
             // Throwing ODE in callback should keep Listener running
             connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await using QuicConnection clientConnection = await connectTask;
+            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync().AsTask().WaitAsync(PassingTestTimeout);
+            await using QuicConnection clientConnection = await connectTask.AsTask().WaitAsync(PassingTestTimeout);
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
         [OuterLoop("Exercises several seconds long timeout.")]
-        public async Task AcceptConnectionAsync_SlowOptionsCallback_TimesOut(bool useCancellationToken)
+        public async Task AcceptConnectionAsync_SlowOptionsCallback_TimesOut(bool useCancellationToken, bool clientShorterTimeout)
         {
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             // Stall the options callback to force the timeout.
@@ -156,13 +158,60 @@ namespace System.Net.Quic.Tests
             };
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
-            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
-            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.HandshakeTimeout = clientShorterTimeout ? TimeSpan.FromSeconds(2) : TimeSpan.FromSeconds(20);
 
-            // Connect attempt should be stopped with "UserCanceled".
-            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+
+            if (clientShorterTimeout)
+            {
+                // Client gave up earlier than server and aborts the handshake, server should get UserCanceled
+                // TLS alert
+                var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
+                Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+
+                var exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await connectTask);
+                Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, clientOptions.HandshakeTimeout), exception.Message);
+            }
+            else
+            {
+                // handshake timed out on server side, expect ConnectionTimeout
+                Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
+                Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
+
+                // Server aborts the handshake while client is still waiting, so UserCanceled alert is expected
+                var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
+                Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+            }
+        }
+
+        [Fact]
+        [OuterLoop("Exercises several seconds long timeout.")]
+        public async Task AcceptConnectionAsync_ClientCancels_FiresOptionCallbackCancellationToken()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = async (connection, hello, cancellationToken) =>
+            {
+                // default timeout for callback is 10s, wait for 5s for cancellation from client
+                // terminating the connection mid-handshake
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(TimeSpan.FromSeconds(5), cancellationToken));
+                Assert.True(cancellationToken.IsCancellationRequested);
+                Assert.Equal(cancellationToken, oce.CancellationToken);
+                ExceptionDispatchInfo.Throw(oce);
+                return null; // unreached;
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.HandshakeTimeout = TimeSpan.FromSeconds(0.1);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(clientOptions);
+
+            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
             Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+
+            var exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await connectTask);
+            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, clientOptions.HandshakeTimeout), exception.Message);
         }
 
         [Fact]
@@ -196,10 +245,8 @@ namespace System.Net.Quic.Tests
             await listener.DisposeAsync();
             serverDisposed.SetResult();
 
-            var accept1Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask1);
-            var accept2Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask2);
-
-            Assert.Equal(accept1Exception, accept2Exception);
+            var accept1Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask1);
+            var accept2Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask2);
 
             // Connect attempt should be stopped with "UserCanceled".
             var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
@@ -354,7 +401,7 @@ namespace System.Net.Quic.Tests
 
             // Try to create a listener on the same port.
             SocketException ex = await Assert.ThrowsAsync<SocketException>(() => CreateQuicListener((IPEndPoint)s.LocalEndPoint).AsTask());
-            Assert.Equal(SocketError.AddressAlreadyInUse, ((SocketException)ex).SocketErrorCode );
+            Assert.Equal(SocketError.AddressAlreadyInUse, ((SocketException)ex).SocketErrorCode);
         }
 
         [Fact]

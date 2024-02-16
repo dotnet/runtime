@@ -1,7 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
+<Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <DebugType>Full</DebugType>
   </PropertyGroup>

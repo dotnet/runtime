@@ -28,8 +28,6 @@ namespace Microsoft.Interop
     /// </remarks>
     internal sealed class PInvokeStubCodeGenerator
     {
-        public bool SupportsTargetFramework { get; }
-
         public bool StubIsBasicForwarder { get; }
 
         /// <summary>
@@ -48,53 +46,38 @@ namespace Microsoft.Interop
         private readonly ManagedToNativeStubCodeContext _context;
 
         public PInvokeStubCodeGenerator(
-            TargetFramework targetFramework,
-            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             GeneratorDiagnosticsBag diagnosticsBag,
-            IMarshallingGeneratorFactory generatorFactory)
+            IMarshallingGeneratorResolver generatorResolver,
+            CodeEmitOptions codeEmitOptions)
         {
             _setLastError = setLastError;
 
-            // Support for SetLastError logic requires .NET 6+. Initialize the
-            // supports target framework value with this value.
-            if (_setLastError)
-            {
-                SupportsTargetFramework = targetFramework == TargetFramework.Net
-                    && targetFrameworkVersion.Major >= 6;
-            }
-            else
-            {
-                SupportsTargetFramework = true;
-            }
-
-            _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
-            _marshallers = BoundGenerators.Create(argTypes, generatorFactory, _context, new Forwarder(), out var bindingDiagnostics);
+            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier);
+            _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new Forwarder(), out var bindingDiagnostics);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingDiagnostics);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
+
+            _context = _context with { CodeEmitOptions = codeEmitOptions };
 
             bool noMarshallingNeeded = true;
 
             foreach (BoundGenerator generator in _marshallers.SignatureMarshallers)
             {
-                // Check if marshalling info and generator support the current target framework.
-                SupportsTargetFramework &= generator.TypeInfo.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
-                    && generator.Generator.IsSupported(targetFramework, targetFrameworkVersion);
-
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo.IsByRef: false }
                         or { Generator: Forwarder };
             }
 
             StubIsBasicForwarder = !setLastError
-                && _marshallers.ManagedNativeSameReturn // If the managed return has native return position, then it's the return for both.
+                && _marshallers.ManagedNativeSameReturn
                 && noMarshallingNeeded;
         }
 

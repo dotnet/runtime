@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Buffers
 {
@@ -14,16 +15,25 @@ namespace System.Buffers
     /// </summary>
     internal abstract class StringSearchValuesBase : SearchValues<string>
     {
-        private readonly HashSet<string> _uniqueValues;
+        private readonly HashSet<string>? _uniqueValues;
 
-        public StringSearchValuesBase(HashSet<string> uniqueValues) =>
+        /// <summary>
+        /// This exists to allow <see cref="SingleStringSearchValuesThreeChars{TValueLength, TCaseSensitivity}"/> to avoid the HashSet allocation.
+        /// </summary>
+        protected bool HasUniqueValues => _uniqueValues is not null;
+
+        public StringSearchValuesBase(HashSet<string>? uniqueValues) =>
             _uniqueValues = uniqueValues;
 
-        internal sealed override bool ContainsCore(string value) =>
-            _uniqueValues.Contains(value);
-
-        internal sealed override string[] GetValues()
+        internal override bool ContainsCore(string value)
         {
+            Debug.Assert(_uniqueValues is not null, "ContainsCore should be overridden if uniqueValues weren't provided.");
+            return _uniqueValues.Contains(value);
+        }
+
+        internal override string[] GetValues()
+        {
+            Debug.Assert(_uniqueValues is not null, "GetValues should be overridden if uniqueValues weren't provided.");
             string[] values = new string[_uniqueValues.Count];
             _uniqueValues.CopyTo(values);
             return values;
@@ -46,7 +56,7 @@ namespace System.Buffers
         {
             for (int i = 0; i < span.Length; i++)
             {
-                if (TNegator.NegateIfNeeded(_uniqueValues.Contains(span[i])))
+                if (TNegator.NegateIfNeeded(ContainsCore(span[i])))
                 {
                     return i;
                 }
@@ -60,7 +70,7 @@ namespace System.Buffers
         {
             for (int i = span.Length - 1; i >= 0; i--)
             {
-                if (TNegator.NegateIfNeeded(_uniqueValues.Contains(span[i])))
+                if (TNegator.NegateIfNeeded(ContainsCore(span[i])))
                 {
                     return i;
                 }

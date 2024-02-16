@@ -3,6 +3,7 @@ Wasm.Build.NativeRebuild.Tests.NoopNativeRebuildTest
 Wasm.Build.NativeRebuild.Tests.OptimizationFlagChangeTests
 Wasm.Build.NativeRebuild.Tests.ReferenceNewAssemblyRebuildTest
 Wasm.Build.NativeRebuild.Tests.SimpleSourceChangeRebuildTest
+Wasm.Build.Templates.Tests.InterpPgoTests
 Wasm.Build.Templates.Tests.NativeBuildTests
 Wasm.Build.Tests.Blazor.AppsettingsTests
 Wasm.Build.Tests.Blazor.BuildPublishTests
@@ -43,3 +44,4 @@ Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.WorkloadTests
 Wasm.Build.Tests.TestAppScenarios.DownloadResourceProgressTests
 Wasm.Build.Tests.MT.Blazor.SimpleMultiThreadedTests
+Wasm.Build.Tests.TestAppScenarios.DebugLevelTests

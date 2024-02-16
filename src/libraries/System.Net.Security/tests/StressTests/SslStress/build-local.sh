@@ -8,8 +8,9 @@
 # In SslStress it's a thin utility to generate a runscript for running the app with the live-built testhost.
 # The main reason to use an equivalent solution in SslStress is consistency with HttpStress.
 
-version=8.0
+version=9.0
 repo_root=$(git rev-parse --show-toplevel)
+daily_dotnet_root=./.dotnet-daily
 
 stress_configuration="Release"
 if [ "$1" != "" ]; then

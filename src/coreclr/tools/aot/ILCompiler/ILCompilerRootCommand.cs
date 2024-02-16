@@ -38,7 +38,11 @@ namespace ILCompiler
         public CliOption<bool> SplitExeInitialization { get; } =
             new("--splitinit") { Description = "Split initialization of an executable between the library entrypoint and a main entrypoint" };
         public CliOption<string> ExportsFile { get; } =
-            new("--exportsfile") { Description = "File to write exported method definitions" };
+            new("--exportsfile") { Description = "File to write exported symbol and method definitions" };
+        public CliOption<bool> ExportUnmanagedEntryPoints { get; } =
+            new("--export-unmanaged-entrypoints") { Description = "Controls whether the named UnmanagedCallersOnly methods are exported" };
+        public CliOption<string[]> ExportDynamicSymbols { get; } =
+            new("--export-dynamic-symbol") { Description = "Add dynamic export symbol to exports file" };
         public CliOption<string> DgmlLogFileName { get; } =
             new("--dgmllog") { Description = "Save result of dependency analysis as DGML" };
         public CliOption<bool> GenerateFullDgmlLog { get; } =
@@ -125,6 +129,12 @@ namespace ILCompiler
             new("--singlewarnassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Generate single AOT/trimming warning for given assembly" };
         public CliOption<string[]> SingleWarnDisabledAssemblies { get; } =
             new("--nosinglewarnassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Expand AOT/trimming warnings for given assembly" };
+        public CliOption<bool> TreatWarningsAsErrors { get; } =
+            new("--warnaserror") { Description = "Treat warnings as errors" };
+        public CliOption<string[]> WarningsAsErrorsEnable { get; } =
+            new("--warnaserr") { Description = "Enable treating specific warnings as errors" };
+        public CliOption<string[]> WarningsAsErrorsDisable { get; } =
+            new("--nowarnaserr") { Description = "Disable treating specific warnings as errors" };
         public CliOption<string[]> DirectPInvokes { get; } =
             new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "PInvoke to call directly" };
         public CliOption<string[]> DirectPInvokeLists { get; } =
@@ -176,6 +186,8 @@ namespace ILCompiler
             Options.Add(NativeLib);
             Options.Add(SplitExeInitialization);
             Options.Add(ExportsFile);
+            Options.Add(ExportDynamicSymbols);
+            Options.Add(ExportUnmanagedEntryPoints);
             Options.Add(DgmlLogFileName);
             Options.Add(GenerateFullDgmlLog);
             Options.Add(ScanDgmlLogFileName);
@@ -219,6 +231,9 @@ namespace ILCompiler
             Options.Add(NoAotWarn);
             Options.Add(SingleWarnEnabledAssemblies);
             Options.Add(SingleWarnDisabledAssemblies);
+            Options.Add(TreatWarningsAsErrors);
+            Options.Add(WarningsAsErrorsEnable);
+            Options.Add(WarningsAsErrorsDisable);
             Options.Add(DirectPInvokes);
             Options.Add(DirectPInvokeLists);
             Options.Add(MaxGenericCycleDepth);
@@ -298,9 +313,9 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Action<HelpContext>> GetExtendedHelp(HelpContext _)
+        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
         {
-            foreach (Action<HelpContext> sectionDelegate in HelpBuilder.Default.GetLayout())
+            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
                 yield return sectionDelegate;
 
             yield return _ =>
@@ -313,7 +328,7 @@ namespace ILCompiler
                 Console.WriteLine("Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are " +
                     "considered to be input files. If no input files begin with '--' then this option is not necessary.\n");
 
-                string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
+                string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64", "riscv64" };
                 string[] ValidOS = new string[] { "windows", "linux", "freebsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator" };
 
                 Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
@@ -354,6 +369,7 @@ namespace ILCompiler
                 Console.WriteLine();
                 Console.WriteLine("The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:");
                 Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
+                return true;
             };
         }
 

@@ -12,6 +12,8 @@ namespace System.Text.Json.Serialization
     /// <typeparam name="T"></typeparam>
     internal abstract class JsonResumableConverter<T> : JsonConverter<T>
     {
+        public override bool HandleNull => false;
+
         public sealed override T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (options is null)
@@ -51,7 +53,5 @@ namespace System.Text.Json.Serialization
                 throw;
             }
         }
-
-        public sealed override bool HandleNull => false;
     }
 }

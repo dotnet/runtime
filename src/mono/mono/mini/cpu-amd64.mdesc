@@ -98,6 +98,9 @@ long_div: dest:a src1:a src2:i len:16 clob:d
 long_div_un: dest:a src1:a src2:i len:16 clob:d
 long_rem: dest:d src1:a src2:i len:16 clob:a
 long_rem_un: dest:d src1:a src2:i len:16 clob:a
+long_divrem: dest:a src1:a src2:d src3:i len:16 clob:x
+long_divrem_un: dest:a src1:a src2:d src3:i len:16 clob:x
+long_divrem2: dest:d len:3
 long_and: dest:i src1:i src2:i len:3 clob:1
 long_or: dest:i src1:i src2:i len:3 clob:1
 long_xor: dest:i src1:i src2:i len:3 clob:1
@@ -337,6 +340,10 @@ amd64_lea_membase: dest:i src1:i len:11
 x86_xchg: src1:i src2:i clob:x len:2
 x86_fpop: src1:f len:3
 x86_seteq_membase: src1:b len:9
+x86_bsf32: dest:i src1:i len:4
+x86_bsf64: dest:l src1:l len:4
+x86_bsr32: dest:i src1:i len:4
+x86_bsr64: dest:l src1:l len:4
 
 x86_add_reg_membase: dest:i src1:i src2:b clob:1 len:13
 x86_sub_reg_membase: dest:i src1:i src2:b clob:1 len:13
@@ -411,6 +418,9 @@ int_div: dest:a src1:a src2:i clob:d len:32
 int_div_un: dest:a src1:a src2:i clob:d len:32
 int_rem: dest:d src1:a src2:i clob:a len:32
 int_rem_un: dest:d src1:a src2:i clob:a len:32
+int_divrem: dest:a src1:a src2:d src3:i clob:x len:15
+int_divrem_un: dest:a src1:a src2:d src3:i clob:x len:15
+int_divrem2: dest:d len:3
 int_and: dest:i src1:i src2:i clob:1 len:4
 int_or: dest:i src1:i src2:i clob:1 len:4
 int_xor: dest:i src1:i src2:i clob:1 len:4
@@ -825,6 +835,7 @@ expand_i4: dest:x src1:i len:11
 expand_i8: dest:x src1:i len:11
 expand_r4: dest:x src1:f len:16
 expand_r8: dest:x src1:f len:13
+xop: len:16
 xop_x_x_x: dest:x src1:x src2:x len:16 clob:1
 xop_x_x: dest:x src1:x len:16 clob:1
 sse_movmsk: dest:i src1:x len:5
@@ -832,6 +843,7 @@ ssse3_shuffle: dest:x src1:x src2:x len:6 clob:1
 sse41_dpps_imm: dest:x src1:x src2:x len:7 clob:1
 sse41_dppd_imm: dest:x src1:x src2:x len:7 clob:1
 vector_andnot: dest:x src1:x src2:x len:7 clob:1
+vector_integer_abs: dest:x src1:x len:6
 
 roundp: dest:x src1:x len:10
 
@@ -844,6 +856,7 @@ gc_param_slot_liveness_def: len:0
 
 generic_class_init: src1:A len:32 clob:c
 get_last_error: dest:i len:32
+init_mrgctx: src1:A src2:i len:64 clob:c
 
 fill_prof_call_ctx: src1:i len:128
 

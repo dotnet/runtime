@@ -756,7 +756,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     reader.Skip();
-                    Assert.True(false, "Expected JsonException was not thrown for incomplete JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for incomplete JSON payload when skipping.");
                 }
                 catch (JsonException) { }
             }
@@ -770,7 +770,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     reader.TrySkip();
-                    Assert.True(false, "Expected JsonException was not thrown for incomplete JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for incomplete JSON payload when skipping.");
                 }
                 catch (JsonException) { }
             }
@@ -802,7 +802,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     reader.Read();
-                    Assert.True(false, "Expected JsonException was not thrown for incomplete JSON payload when reading.");
+                    Assert.Fail("Expected JsonException was not thrown for incomplete JSON payload when reading.");
                 }
                 catch (JsonException) { }
 
@@ -816,7 +816,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     reader.TrySkip();
-                    Assert.True(false, "Expected JsonException was not thrown for incomplete JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for incomplete JSON payload when skipping.");
                 }
                 catch (JsonException) { }
 
@@ -1012,7 +1012,7 @@ namespace System.Text.Json.Tests
             {
                 Assert.False(json.IsFinalBlock);
                 json.Skip();
-                Assert.True(false, "Expected InvalidOperationException was not thrown when calling Skip with isFinalBlock = false, even if whole payload is available.");
+                Assert.Fail("Expected InvalidOperationException was not thrown when calling Skip with isFinalBlock = false, even if whole payload is available.");
             }
             catch (InvalidOperationException) { }
 
@@ -1026,7 +1026,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.False(json.IsFinalBlock);
                     json.Skip();
-                    Assert.True(false, "Expected InvalidOperationException was not thrown when calling Skip with isFinalBlock = false");
+                    Assert.Fail("Expected InvalidOperationException was not thrown when calling Skip with isFinalBlock = false");
                 }
                 catch (InvalidOperationException) { }
 
@@ -1117,7 +1117,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.True(json.IsFinalBlock);
                     json.Skip();
-                    Assert.True(false, "Expected JsonException was not thrown for invalid JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for invalid JSON payload when skipping.");
                 }
                 catch (JsonException) { }
             }
@@ -1130,7 +1130,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.True(json.IsFinalBlock);
                     json.TrySkip();
-                    Assert.True(false, "Expected JsonException was not thrown for invalid JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for invalid JSON payload when skipping.");
                 }
                 catch (JsonException) { }
             }
@@ -1143,7 +1143,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.False(json.IsFinalBlock);
                     json.TrySkip();
-                    Assert.True(false, "Expected JsonException was not thrown for invalid JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for invalid JSON payload when skipping.");
                 }
                 catch (JsonException) { }
             }
@@ -1171,7 +1171,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.True(json.IsFinalBlock);
                     json.Skip();
-                    Assert.True(false, "Expected JsonException was not thrown for incomplete/invalid JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for incomplete/invalid JSON payload when skipping.");
                 }
                 catch (JsonException) { }
             }
@@ -1188,7 +1188,7 @@ namespace System.Text.Json.Tests
                 {
                     Assert.True(json.IsFinalBlock);
                     json.TrySkip();
-                    Assert.True(false, "Expected JsonException was not thrown for incomplete/invalid JSON payload when skipping.");
+                    Assert.Fail("Expected JsonException was not thrown for incomplete/invalid JSON payload when skipping.");
                 }
                 catch (JsonException) { }
             }
@@ -1857,7 +1857,7 @@ namespace System.Text.Json.Tests
                     if (maxDepth < json.CurrentDepth)
                         maxDepth = json.CurrentDepth;
                 }
-                Assert.True(false, $"Expected JsonException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
+                Assert.Fail($"Expected JsonException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
             }
             catch (JsonException)
             { }
@@ -1876,7 +1876,7 @@ namespace System.Text.Json.Tests
                     if (maxDepth < json.CurrentDepth)
                         maxDepth = json.CurrentDepth;
                 }
-                Assert.True(false, $"Expected JsonException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
+                Assert.Fail($"Expected JsonException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
             }
             catch (JsonException)
             { }
@@ -2004,7 +2004,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown.");
+                    Assert.Fail("Expected JsonException was not thrown.");
                 }
                 catch (JsonException) { }
             }
@@ -2035,7 +2035,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown.");
+                    Assert.Fail("Expected JsonException was not thrown.");
                 }
                 catch (JsonException ex)
                 {
@@ -2088,7 +2088,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown.");
+                    Assert.Fail("Expected JsonException was not thrown.");
                 }
                 catch (JsonException ex)
                 {
@@ -2105,7 +2105,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown.");
+                    Assert.Fail("Expected JsonException was not thrown.");
                 }
                 catch (JsonException ex)
                 {
@@ -2131,7 +2131,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown.");
+                    Assert.Fail("Expected JsonException was not thrown.");
                 }
                 catch (JsonException ex)
                 {
@@ -2156,7 +2156,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                    Assert.Fail("Expected JsonException was not thrown with single-segment data.");
                 }
                 catch (JsonException ex)
                 {
@@ -2174,7 +2174,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                    Assert.Fail("Expected JsonException was not thrown with single-segment data.");
                 }
                 catch (JsonException ex)
                 {
@@ -2200,7 +2200,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                    Assert.Fail("Expected JsonException was not thrown with single-segment data.");
                 }
                 catch (JsonException ex)
                 {
@@ -2227,7 +2227,7 @@ namespace System.Text.Json.Tests
                         while (jsonSlice.Read())
                             ;
 
-                        Assert.True(false, "Expected JsonException was not thrown with multi-segment data.");
+                        Assert.Fail("Expected JsonException was not thrown with multi-segment data.");
                     }
                     catch (JsonException ex)
                     {
@@ -2473,7 +2473,7 @@ namespace System.Text.Json.Tests
                 switch (tokenType)
                 {
                     case JsonTokenType.Comment:
-                        Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                        Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                         break;
                 }
                 Assert.NotEqual(tokenType, prevTokenType);
@@ -2529,7 +2529,7 @@ namespace System.Text.Json.Tests
                 switch (tokenType)
                 {
                     case JsonTokenType.Comment:
-                        Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                        Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                         break;
                 }
             }
@@ -2546,7 +2546,7 @@ namespace System.Text.Json.Tests
                     switch (tokenType)
                     {
                         case JsonTokenType.Comment:
-                            Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                            Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                             break;
                     }
                 }
@@ -2560,7 +2560,7 @@ namespace System.Text.Json.Tests
                     switch (tokenType)
                     {
                         case JsonTokenType.Comment:
-                            Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                            Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                             break;
                     }
                 }
@@ -2616,11 +2616,11 @@ namespace System.Text.Json.Tests
                     switch (tokenType)
                     {
                         case JsonTokenType.Comment:
-                            Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                            Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                             break;
                     }
                 }
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -2676,11 +2676,11 @@ namespace System.Text.Json.Tests
                     switch (tokenType)
                     {
                         case JsonTokenType.Comment:
-                            Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                            Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                             break;
                     }
                 }
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -2699,7 +2699,7 @@ namespace System.Text.Json.Tests
                         switch (tokenType)
                         {
                             case JsonTokenType.Comment:
-                                Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                                Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                                 break;
                         }
                     }
@@ -2711,12 +2711,12 @@ namespace System.Text.Json.Tests
                         switch (tokenType)
                         {
                             case JsonTokenType.Comment:
-                                Assert.True(false, "TokenType should never be 'Comment' when we are skipping them.");
+                                Assert.Fail("TokenType should never be 'Comment' when we are skipping them.");
                                 break;
                         }
                     }
 
-                    Assert.True(false, "Expected JsonException was not thrown with multi-segment data.");
+                    Assert.Fail("Expected JsonException was not thrown with multi-segment data.");
                 }
                 catch (JsonException ex)
                 {
@@ -2793,7 +2793,7 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -2808,7 +2808,7 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -2879,7 +2879,7 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -2935,7 +2935,7 @@ namespace System.Text.Json.Tests
                 try
                 {
                     json.Read();
-                    Assert.True(false, $"Expected JsonException was not thrown. CommentHandling = {commentHandling}");
+                    Assert.Fail($"Expected JsonException was not thrown. CommentHandling = {commentHandling}");
                 }
                 catch (JsonException) { }
             }
@@ -2980,7 +2980,7 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -2999,7 +2999,7 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -3025,7 +3025,7 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -3215,11 +3215,11 @@ namespace System.Text.Json.Tests
                         }
                         else
                         {
-                            Assert.True(false);
+                            Assert.Fail();
                         }
                         break;
                     default:
-                        Assert.True(false);
+                        Assert.Fail();
                         break;
                 }
             }

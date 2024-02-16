@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
 
@@ -18,11 +18,11 @@ namespace Internal.Runtime.TypeLoader
         // This allows us to avoid recreating the type resolution context again and again, but still allows it to go away once the types are no longer being built
         private static GCHandle s_cachedContext = GCHandle.Alloc(null, GCHandleType.Weak);
 
-        private static Lock s_lock = new Lock();
+        private static Lock s_lock = new Lock(useTrivialWaits: true);
 
         public static TypeSystemContext Create()
         {
-            using (LockHolder.Hold(s_lock))
+            using (s_lock.EnterScope())
             {
                 TypeSystemContext context = (TypeSystemContext)s_cachedContext.Target;
                 if (context != null)

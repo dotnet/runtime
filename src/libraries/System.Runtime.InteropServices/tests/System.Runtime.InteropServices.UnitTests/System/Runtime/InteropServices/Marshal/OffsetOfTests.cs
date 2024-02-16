@@ -172,7 +172,7 @@ namespace System.Runtime.InteropServices.Tests
             }
             else
             {
-                Assert.True(false, string.Format("Unexpected value '{0}' for IntPtr.Size", IntPtr.Size));
+                Assert.Fail(string.Format("Unexpected value '{0}' for IntPtr.Size", IntPtr.Size));
             }
         }
 

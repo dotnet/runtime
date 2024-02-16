@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- This test needs process isolation because it tests native library loading -->
+    <!-- from explicitly specified paths. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Finalize in different assembly from Dispose, tries to load the assembly with Dispose after the ALC unload started -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
@@ -14,7 +17,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <CMakeProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
   </ItemGroup>
   <PropertyGroup>

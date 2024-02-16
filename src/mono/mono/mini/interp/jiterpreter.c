@@ -60,10 +60,6 @@ void jiterp_preserve_module (void);
 static gint32 jiterpreter_abort_counts[MINT_LASTOP + 1] = { 0 };
 static int64_t jiterp_trace_bailout_counts[256] = { 0 };
 
-// This function pointer is used by interp.c to invoke jit_call_cb for exception handling purposes
-// See jiterpreter-jit-call.ts mono_jiterp_do_jit_call_indirect
-WasmDoJitCall jiterpreter_do_jit_call = mono_jiterp_do_jit_call_indirect;
-
 // We disable this diagnostic because EMSCRIPTEN_KEEPALIVE makes it a false alarm, the keepalive
 //  functions are being used externally. Having a bunch of prototypes is pointless since these
 //  functions are not consumed by C anywhere else
@@ -777,7 +773,7 @@ build_address_taken_bitset (TransformData *td, InterpBasicBlock *bb, guint32 bit
 	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
 		if (ins->opcode == MINT_LDLOCA_S) {
 			InterpMethod *imethod = td->rtm;
-			InterpLocal *loc = &td->locals[ins->sregs[0]];
+			InterpVar *loc = &td->vars [ins->sregs[0]];
 
 			// Allocate on demand so if a method contains no ldlocas we don't allocate the bitset
 			if (!imethod->address_taken_bits)
@@ -1019,20 +1015,6 @@ EMSCRIPTEN_KEEPALIVE char *
 mono_jiterp_get_options_as_json ()
 {
 	return mono_options_get_as_json ();
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_update_jit_call_dispatcher (WasmDoJitCall dispatcher)
-{
-	// If we received a 0 dispatcher that means the TS side failed to compile
-	//  any kind of dispatcher - this likely indicates that content security policy
-	//  blocked the use of Module.addFunction
-	if (!dispatcher)
-		dispatcher = (WasmDoJitCall)mono_llvm_cpp_catch_exception;
-	else if (((int)(void*)dispatcher)==-1)
-		dispatcher = mono_jiterp_do_jit_call_indirect;
-
-	jiterpreter_do_jit_call = dispatcher;
 }
 
 EMSCRIPTEN_KEEPALIVE int

@@ -24,6 +24,14 @@
 DWORD g_dwHandles = 0;
 #endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
+#ifndef DACCESS_COMPILE
+int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj)
+{
+    int generation = g_theGCHeap->WhichGeneration(obj);
+    return generation == INT_MAX ? max_generation : generation;
+}
+#endif //DACCESS_COMPILE
+
 /****************************************************************************
  *
  * FORWARD DECLARATIONS
@@ -407,12 +415,12 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
     // sanity check handle we are being asked to free
     _ASSERTE(handle);
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_WEAK_NATIVE_COM_HANDLES
     // If we're being asked to destroy a native COM weak handle, that will cause a leak
     // of the IWeakReference* that it holds in its extra data. Instead of using this
     // API use DestroyNativeComWeakHandle instead.
     _ASSERTE(HandleFetchType(handle) != HNDTYPE_WEAK_NATIVE_COM);
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_WEAK_NATIVE_COM_HANDLES
 
     // fetch the type and then free normally
     HndDestroyHandle(hTable, HandleFetchType(handle), handle);
@@ -577,7 +585,7 @@ void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
     if (*pClumpAge != 0) // Perf optimization: if clumpAge is 0, nothing more to do
     {
         // find out generation
-        int generation = g_theGCHeap->WhichGeneration(value);
+        int generation = GetConvertedGeneration(value);
         uint32_t uType = HandleFetchType(handle);
 
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
@@ -905,9 +913,6 @@ void HndNotifyGcCycleComplete(HHANDLETABLE hTable, uint32_t condemned, uint32_t 
     UNREFERENCED_PARAMETER(maxgen);
 #endif
 }
-
-extern int getNumberOfSlots();
-
 
 /*
  * HndCountHandles

@@ -3,8 +3,9 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using Xunit;
 
-class Program
+public class Program
 {
     public class ClassA
     {
@@ -28,7 +29,8 @@ class Program
         }
         return result;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Type typeTestClass = typeof(ClassA);
         ClassA TestClass = (ClassA)Activator.CreateInstance(typeTestClass);

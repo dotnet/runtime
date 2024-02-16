@@ -162,7 +162,7 @@ namespace System.Xml.XmlSchemaTests
                     if (a.QualifiedName.Name == attName)
                         return;
                 }
-                Assert.True(false);
+                Assert.Fail();
             }
             return;
         }
@@ -190,7 +190,7 @@ namespace System.Xml.XmlSchemaTests
                 if (a.QualifiedName.Name == attName)
                     return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v22 - Bug 338038 - Component should be additive into the Xml namespace", Priority = 1)]
@@ -216,7 +216,7 @@ namespace System.Xml.XmlSchemaTests
                 if (a.QualifiedName.Name == attName)
                     return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v23 - Bug 338038 - Conflicting components in custome xml namespace System.Xml.XmlSchemaTests be caught", Priority = 1)]
@@ -239,7 +239,7 @@ namespace System.Xml.XmlSchemaTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v24 - Bug 338038 - Change type of xml:lang to decimal in custome xml namespace System.Xml.XmlSchemaTests", Priority = 1)]
@@ -267,7 +267,7 @@ namespace System.Xml.XmlSchemaTests
                 }
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v25 - Bug 338038 - Conflicting definitions for xml attributes in two schemas", Priority = 1)]
@@ -292,7 +292,7 @@ namespace System.Xml.XmlSchemaTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v26 - Bug 338038 - Change type of xml:lang to decimal and xml:base to short in two steps", Priority = 1)]
@@ -906,7 +906,7 @@ namespace System.Xml.XmlSchemaTests
                     }
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "v120a.XmlDocument.Load non-validating reader.Expect IOE.")]
@@ -929,7 +929,7 @@ namespace System.Xml.XmlSchemaTests
                     return;
                 }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "444196: XmlReader.MoveToNextAttribute returns incorrect results")]
@@ -989,7 +989,7 @@ namespace System.Xml.XmlSchemaTests
                 if (xmlReader.MoveToNextAttribute())
                     return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //[Variation(Desc = "Dev10_40561 Redefine Chameleon: Unexpected qualified name on local particle")]
@@ -1014,7 +1014,7 @@ namespace System.Xml.XmlSchemaTests
                 {
                     while (reader.Read()) ;
                     _output.WriteLine("XmlSchemaValidationException was not thrown");
-                    Assert.True(false);
+                    Assert.Fail();
                 }
                 catch (XmlSchemaValidationException e) { _output.WriteLine(e.Message); }
             }
@@ -1023,10 +1023,12 @@ namespace System.Xml.XmlSchemaTests
             return;
         }
 
-        // Test failure on ILC: Test depends on Xml Serialization and requires reflection on a LOT of types under System.Xml.Schema namespace.
-        // Rd.xml with "<Namespace Name="System.Xml.Schema" Dynamic="Required Public" />" lets this test pass but we should probably be
-        // fixing up XmlSerializer's own rd.xml rather than the test here.
+#if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
+        // Conditioned the same as XmlSerializer tests. This uses XmlSerializer to serialize the schema.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+#else
         [Fact]
+#endif
         public void GetBuiltinSimpleTypeWorksAsEcpected()
         {
             Initialize();

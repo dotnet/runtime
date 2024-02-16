@@ -35,6 +35,14 @@ namespace System.Text.Json.Serialization.Metadata
         // All of the serializable parameters on a POCO constructor keyed on parameter name.
         // Only parameters which bind to properties are cached.
         internal JsonPropertyDictionary<JsonParameterInfo>? ParameterCache { get; private set; }
+        internal bool UsesParameterizedConstructor
+        {
+            get
+            {
+                Debug.Assert(IsConfigured);
+                return ParameterCache != null;
+            }
+        }
 
         // All of the serializable properties on a POCO (except the optional extension property) keyed on property name.
         internal JsonPropertyDictionary<JsonPropertyInfo>? PropertyCache { get; private set; }

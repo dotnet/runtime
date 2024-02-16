@@ -27,6 +27,17 @@ Command line apps are not very interesting for Android. The more interesting sce
 
 For an example of a Native AOT shared library invoked through JNI from Java see https://github.com/josephmoresena/NativeAOT-AndroidHelloJniLib.
 
+## Known issues
+
+If you hit `error : version script assignment of 'V1.0' to symbol '_init' failed: symbol not defined` - this is a known issue https://github.com/dotnet/runtime/issues/92272, you can add following lines to your csproj to work around:
+
+```xml
+<ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-bionic'">
+  <LinkerArg Include="-Wl,--defsym,_init=__libc_init" />
+  <LinkerArg Include="-Wl,--defsym,_fini=__libc_fini" />
+</ItemGroup>
+```
+
 ## Libssl dependency
 
 Crypto in .NET is implemented on top of OS-provided crypto libraries (we do not build or service crypto algorithm implementations). Since Android doesn't come with the standard openssl library inbox, your app will need to provide it. The runtime code can handle various versions of the openssl library. The library has to be placed next to the app.

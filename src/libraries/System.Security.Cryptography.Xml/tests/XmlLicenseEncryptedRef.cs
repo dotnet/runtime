@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Xml.Tests
                         }
                         else
                         {
-                            Assert.True(false, "Invalid License - MalformedKeyInfoClause");
+                            Assert.Fail("Invalid License - MalformedKeyInfoClause");
                         }
                     }
 
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 }
                 else if (clause is KeyInfoName)
                 {
-                    Assert.True(false, "This test should not have KeyInfoName clauses");
+                    Assert.Fail("This test should not have KeyInfoName clauses");
                 }
                 else
                 {

@@ -168,7 +168,7 @@ namespace ILCompiler.DependencyAnalysis
             for (int interfaceIndex = 0; interfaceIndex < declTypeRuntimeInterfaces.Length; interfaceIndex++)
             {
                 var interfaceType = declTypeRuntimeInterfaces[interfaceIndex];
-                var interfaceDefinitionType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
+                var definitionInterfaceType = declTypeDefinitionRuntimeInterfaces[interfaceIndex];
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
@@ -181,7 +181,7 @@ namespace ILCompiler.DependencyAnalysis
                         continue;
 
                     if(!interfaceType.IsTypeDefinition)
-                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)interfaceDefinitionType);
+                        declMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(declMethod.GetTypicalMethodDefinition(), (InstantiatedType)definitionInterfaceType);
 
                     var implMethod = declMethod.Signature.IsStatic ?
                         declTypeDefinition.ResolveInterfaceMethodToStaticVirtualMethodOnType(declMethod) :

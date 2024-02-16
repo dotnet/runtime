@@ -12,16 +12,6 @@ namespace System
 {
     public abstract partial class Type : MemberInfo, IReflect
     {
-        public bool IsInterface
-        {
-            get
-            {
-                if (this is RuntimeType rt)
-                    return RuntimeTypeHandle.IsInterface(rt);
-                return (GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface;
-            }
-        }
-
         [RequiresUnreferencedCode("The type might be removed")]
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
@@ -71,7 +61,7 @@ namespace System
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
                 ((assemblyResolver != null) && (typeResolver != null)) ? null : Assembly.GetExecutingAssembly(ref stackMark),
-                throwOnError : throwOnError);
+                throwOnError: throwOnError);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]

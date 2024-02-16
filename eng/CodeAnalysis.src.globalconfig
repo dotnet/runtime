@@ -475,7 +475,7 @@ dotnet_diagnostic.CA1860.severity = warning
 dotnet_diagnostic.CA1861.severity = warning
 
 # CA1862: Prefer using 'StringComparer'/'StringComparison' to perform case-insensitive string comparisons
-dotnet_diagnostic.CA1862.severity = info
+dotnet_diagnostic.CA1862.severity = suggestion
 
 # CA1863: Use 'CompositeFormat'
 dotnet_diagnostic.CA1863.severity = suggestion
@@ -485,6 +485,12 @@ dotnet_diagnostic.CA1864.severity = warning
 
 # CA1868: Unnecessary call to 'Contains' for sets
 dotnet_diagnostic.CA1868.severity = warning
+
+# CA1869: Cache and reuse 'JsonSerializerOptions' instances
+dotnet_diagnostic.CA1869.severity = warning
+
+# CA1870: Use a cached 'SearchValues' instance
+dotnet_diagnostic.CA1870.severity = warning
 
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
@@ -955,6 +961,147 @@ dotnet_diagnostic.IL3001.severity = warning
 # IL3002: Using member with RequiresAssemblyFilesAttribute can break functionality when embedded in a single-file app
 dotnet_diagnostic.IL3002.severity = warning
 
+# RS1001: Missing diagnostic analyzer attribute
+dotnet_diagnostic.RS1001.severity = warning
+
+# RS1002: Missing kind argument when registering an analyzer action
+dotnet_diagnostic.RS1002.severity = warning
+
+# RS1003: Unsupported SymbolKind argument when registering a symbol analyzer action
+dotnet_diagnostic.RS1003.severity = warning
+
+# RS1004: Recommend adding language support to diagnostic analyzer
+dotnet_diagnostic.RS1004.severity = warning
+
+# RS1005: ReportDiagnostic invoked with an unsupported DiagnosticDescriptor
+dotnet_diagnostic.RS1005.severity = warning
+
+# RS1006: Invalid type argument for DiagnosticAnalyzer's Register method
+dotnet_diagnostic.RS1006.severity = warning
+
+# RS1007: Provide localizable arguments to diagnostic descriptor constructor
+dotnet_diagnostic.RS1007.severity = none
+
+# RS1008: Avoid storing per-compilation data into the fields of a diagnostic analyzer
+dotnet_diagnostic.RS1008.severity = warning
+
+# RS1009: Only internal implementations of this interface are allowed
+dotnet_diagnostic.RS1009.severity = error
+
+# RS1010: Create code actions should have a unique EquivalenceKey for FixAll occurrences support
+dotnet_diagnostic.RS1010.severity = warning
+
+# RS1011: Use code actions that have a unique EquivalenceKey for FixAll occurrences support
+dotnet_diagnostic.RS1011.severity = warning
+
+# RS1012: Start action has no registered actions
+dotnet_diagnostic.RS1012.severity = warning
+
+# RS1013: Start action has no registered non-end actions
+dotnet_diagnostic.RS1013.severity = warning
+
+# RS1014: Do not ignore values returned by methods on immutable objects
+dotnet_diagnostic.RS1014.severity = warning
+
+# RS1015: Provide non-null 'helpLinkUri' value to diagnostic descriptor constructor
+dotnet_diagnostic.RS1015.severity = none
+
+# RS1016: Code fix providers should provide FixAll support
+dotnet_diagnostic.RS1016.severity = suggestion
+
+# RS1017: DiagnosticId for analyzers must be a non-null constant
+dotnet_diagnostic.RS1017.severity = warning
+
+# RS1018: DiagnosticId for analyzers must be in specified format
+dotnet_diagnostic.RS1018.severity = warning
+
+# RS1019: DiagnosticId must be unique across analyzers
+dotnet_diagnostic.RS1019.severity = warning
+
+# RS1020: Category for analyzers must be from the specified values
+dotnet_diagnostic.RS1020.severity = none
+
+# RS1021: Invalid entry in analyzer category and diagnostic ID range specification file
+dotnet_diagnostic.RS1021.severity = warning
+
+# RS1022: Do not use types from Workspaces assembly in an analyzer
+dotnet_diagnostic.RS1022.severity = warning
+
+# RS1023: Upgrade MSBuildWorkspace
+dotnet_diagnostic.RS1023.severity = warning
+
+# RS1024: Symbols should be compared for equality
+dotnet_diagnostic.RS1024.severity = warning
+
+# RS1025: Configure generated code analysis
+dotnet_diagnostic.RS1025.severity = warning
+
+# RS1026: Enable concurrent execution
+dotnet_diagnostic.RS1026.severity = warning
+
+# RS1027: Types marked with DiagnosticAnalyzerAttribute(s) should inherit from DiagnosticAnalyzer
+dotnet_diagnostic.RS1027.severity = warning
+
+# RS1028: Provide non-null 'customTags' value to diagnostic descriptor constructor
+dotnet_diagnostic.RS1028.severity = none
+
+# RS1029: Do not use reserved diagnostic IDs
+dotnet_diagnostic.RS1029.severity = warning
+
+# RS1030: Do not invoke Compilation.GetSemanticModel() method within a diagnostic analyzer
+dotnet_diagnostic.RS1030.severity = warning
+
+# RS1031: Define diagnostic title correctly
+dotnet_diagnostic.RS1031.severity = warning
+
+# RS1032: Define diagnostic message correctly
+dotnet_diagnostic.RS1032.severity = warning
+
+# RS1033: Define diagnostic description correctly
+dotnet_diagnostic.RS1033.severity = warning
+
+# RS1034: Prefer 'IsKind' for checking syntax kinds
+dotnet_diagnostic.RS1034.severity = warning
+
+# RS1035: Do not use APIs banned for analyzers
+dotnet_diagnostic.RS1035.severity = error
+
+# RS1036: Specify analyzer banned API enforcement setting
+dotnet_diagnostic.RS1036.severity = warning
+
+# RS1037: Add "CompilationEnd" custom tag to compilation end diagnostic descriptor
+dotnet_diagnostic.RS1037.severity = warning
+
+# RS1038: Compiler extensions should be implemented in assemblies with compiler-provided references
+dotnet_diagnostic.RS1038.severity = suggestion
+
+# RS2000: Add analyzer diagnostic IDs to analyzer release
+dotnet_diagnostic.RS2000.severity = warning
+
+# RS2001: Ensure up-to-date entry for analyzer diagnostic IDs are added to analyzer release
+dotnet_diagnostic.RS2001.severity = warning
+
+# RS2002: Do not add removed analyzer diagnostic IDs to unshipped analyzer release
+dotnet_diagnostic.RS2002.severity = warning
+
+# RS2003: Shipped diagnostic IDs that are no longer reported should have an entry in the 'Removed Rules' table in unshipped file
+dotnet_diagnostic.RS2003.severity = warning
+
+# RS2004: Diagnostic IDs marked as removed in analyzer release file should not be reported by analyzers
+dotnet_diagnostic.RS2004.severity = warning
+
+# RS2005: Remove duplicate entries for diagnostic ID in the same analyzer release
+dotnet_diagnostic.RS2005.severity = warning
+
+# RS2006: Remove duplicate entries for diagnostic ID between analyzer releases
+dotnet_diagnostic.RS2006.severity = warning
+
+# RS2007: Invalid entry in analyzer release file
+dotnet_diagnostic.RS2007.severity = warning
+
+# RS2008: Enable analyzer release tracking
+dotnet_diagnostic.RS2008.severity = warning
+
 # SA0001: XML comments
 dotnet_diagnostic.SA0001.severity = none
 
@@ -1122,7 +1269,7 @@ dotnet_diagnostic.SA1134.severity = none
 dotnet_diagnostic.SA1135.severity = none
 
 # SA1136: Enum values should be on separate lines
-dotnet_diagnostic.SA1136.severity = none
+dotnet_diagnostic.SA1136.severity = warning
 
 # SA1137: Elements should have the same indentation
 dotnet_diagnostic.SA1137.severity = none

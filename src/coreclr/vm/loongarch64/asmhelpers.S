@@ -1078,29 +1078,27 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     //   Values of $a0-$a7, $fa0-$fa7, $fp are preserved.
     //   Values of other volatile registers are not preserved.
 
-    //                           $fp,$ra
+    //                          $fp,$ra
     PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Allocate space and save Fp, Pc.
-    // Please validate, SAVE_ARGUMENT_REGISTERS doesn't save $t0
-    SAVE_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters // Save $t0 and argument registers ($a0-$a7).
-    st.d     $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId // Clear functionId.
+
+    SAVE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
     SAVE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
-    addi.d     $t3, $fp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
-    st.d     $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp
-    st.d     $t2, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__functionId
+    addi.d  $t3, $sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA // Compute probeSp - initial value of Sp on entry to the helper.
+    st.d    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__probeSp
+    st.d    $t2, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp
 
-    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg // Clear hiddenArg.
-    addi.d  $t3, $zero, \flags
+    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg
+    addi.w  $t3, $zero, \flags
     st.w    $t3, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags
-    st.d    $zero, $sp, PROFILE_PLATFORM_SPECIFIC_DATA__unused
 
-    ori     $a1, $t1, 0
-    ori     $a2, $sp, 0
+    ori     $a0, $t1, 0
+    ori     $a1, $sp, 0
     bl      C_FUNC(\helper)
 
-    // Please validate, RESTORE_ARGUMENT_REGISTERS doesn't restore $t0
-    RESTORE_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters       // Restore $t0 and argument registers.
+    RESTORE_ARGUMENT_REGISTERS       $sp, PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters
     RESTORE_FLOAT_ARGUMENT_REGISTERS $sp, PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters
-    //                              $fp, $ra
+    //                             $fp, $ra
     EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA
     EPILOG_RETURN
 

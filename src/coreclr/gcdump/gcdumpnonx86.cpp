@@ -73,7 +73,42 @@ PCSTR GetRegName (UINT32 regnum)
     assert(!"unimplemented on LOONGARCH yet");
     return "???";
 #elif defined(TARGET_RISCV64)
-    assert(!"unimplemented on RISCV64 yet");
+    switch (regnum)
+    {
+    case 0: return "r0";
+    case 1: return "ra";
+    case 2: return "sp";
+    case 3: return "gp";
+    case 4: return "tp";
+    case 5: return "t0";
+    case 6: return "t1";
+    case 7: return "t2";
+    case 8: return "fp";
+    case 9: return "s1";
+    case 10: return "a0";
+    case 11: return "a1";
+    case 12: return "a2";
+    case 13: return "a3";
+    case 14: return "a4";
+    case 15: return "a5";
+    case 16: return "a6";
+    case 17: return "a7";
+    case 18: return "s2";
+    case 19: return "s3";
+    case 20: return "s4";
+    case 21: return "s5";
+    case 22: return "s6";
+    case 23: return "s7";
+    case 24: return "s8";
+    case 25: return "s9";
+    case 26: return "s10";
+    case 27: return "s11";
+    case 28: return "t3";
+    case 29: return "t4";
+    case 30: return "t5";
+    case 31: return "t6";
+    }
+
     return "???";
 #endif
 }
@@ -290,7 +325,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
                                                   | DECODE_GC_LIFETIMES
                                                   | DECODE_PROLOG_LENGTH
                                                   | DECODE_RETURN_KIND
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
                                                   | DECODE_HAS_TAILCALLS
 #endif
                                                  ),
@@ -423,7 +458,7 @@ size_t      GCDump::DumpGCTable(PTR_CBYTE      gcInfoBlock,
 
 #ifdef TARGET_AMD64
     gcPrintf("Wants Report Only Leaf: %u\n", hdrdecoder.WantsReportOnlyLeaf());
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
     gcPrintf("Has tailcalls: %u\n", hdrdecoder.HasTailCalls());
 #endif // TARGET_AMD64
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA

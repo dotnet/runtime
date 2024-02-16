@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.PatternContexts
             {
                 context.Declare((segment, last) =>
                 {
-                    Assert.False(true, "No segment should be declared.");
+                    Assert.Fail("No segment should be declared.");
                 });
             });
         }
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.PatternContexts
 
             context.Declare((segment, last) =>
             {
-                Assert.False(true, "No segment should be declared.");
+                Assert.Fail("No segment should be declared.");
             });
         }
 

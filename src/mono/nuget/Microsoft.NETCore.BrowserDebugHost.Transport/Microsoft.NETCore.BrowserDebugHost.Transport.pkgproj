@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(MonoProjectRoot)wasm\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
+    <ProjectReference Include="$(MonoProjectRoot)browser\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -64,7 +64,7 @@ namespace System.Xml.XmlSchemaTests
                 CError.Compare(sc.IsCompiled, false, "AddIsCompiled");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ namespace System.Xml.XmlSchemaTests
                 CError.Compare(sc.Count, 1, "AE");
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -225,7 +225,7 @@ namespace System.Xml.XmlSchemaTests
                 _output.WriteLine(e.ToString());
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ namespace System.Xml.XmlSchemaTests
                 _output.WriteLine(e.ToString());
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         //-----------------------------------------------------------------------------------

@@ -4,8 +4,8 @@
 // NOTE: This is a generated file - do not manually edit!
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable 108     // base type 'uint' is not CLS-compliant

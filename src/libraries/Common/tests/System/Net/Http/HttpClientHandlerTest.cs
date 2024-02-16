@@ -1391,8 +1391,20 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await connection.ReadRequestDataAsync();
                     tcs2.SetResult(true);
-                    await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
-                    await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    try
+                    {
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Transfer-Encoding", "chunked") }, isFinal: false);
+                        await connection.SendResponseBodyAsync("1\r\nh\r\n", false);
+                    }
+                    catch (IOException ex)
+                    {
+                        // when testing in the browser, we are using the WebSocket for the loopback
+                        // it could get disconnected after the cancellation above, earlier than the server-side gets chance to write the response
+                        if (!(ex.InnerException is InvalidOperationException ivd) || !ivd.Message.Contains("The WebSocket is not connected"))
+                        {
+                            throw;
+                        }
+                    }
                     await tcs.Task;
                 });
             });
@@ -2044,7 +2056,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     else
                     {
-                        Assert.True(false, "Invalid HTTP request version");
+                        Assert.Fail("Invalid HTTP request version");
                     }
                 }
             });

@@ -20,23 +20,29 @@ namespace System.Linq
         {
             public TResult[] ToArray()
             {
-                LargeArrayBuilder<TResult> builder = new();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    builder.Add(_selector(item));
+                    builder.Add(selector(item));
                 }
 
-                return builder.ToArray();
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             public List<TResult> ToList()
             {
                 var list = new List<TResult>();
 
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    list.Add(_selector(item));
+                    list.Add(selector(item));
                 }
 
                 return list;
@@ -117,12 +123,12 @@ namespace System.Linq
                 return _source.Length;
             }
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
                 if (count >= _source.Length)
                 {
-                    return EmptyPartition<TResult>.Instance;
+                    return null;
                 }
 
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
@@ -132,13 +138,13 @@ namespace System.Linq
             {
                 Debug.Assert(count > 0);
                 return count >= _source.Length ?
-                    (IPartition<TResult>)this :
+                    this :
                     new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
             }
 
             public TResult? TryGetElementAt(int index, out bool found)
             {
-                if (unchecked((uint)index < (uint)_source.Length))
+                if ((uint)index < (uint)_source.Length)
                 {
                     found = true;
                     return _selector(_source[index]);
@@ -241,13 +247,13 @@ namespace System.Linq
                 return _end - _start;
             }
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
 
                 if (count >= (_end - _start))
                 {
-                    return EmptyPartition<TResult>.Instance;
+                    return null;
                 }
 
                 return new SelectRangeIterator<TResult>(_start + count, _end, _selector);
@@ -299,7 +305,7 @@ namespace System.Linq
                 ReadOnlySpan<TSource> source = CollectionsMarshal.AsSpan(_source);
                 if (source.Length == 0)
                 {
-                    return Array.Empty<TResult>();
+                    return [];
                 }
 
                 var results = new TResult[source.Length];
@@ -358,7 +364,7 @@ namespace System.Linq
 
             public TResult? TryGetElementAt(int index, out bool found)
             {
-                if (unchecked((uint)index < (uint)_source.Count))
+                if ((uint)index < (uint)_source.Count)
                 {
                     found = true;
                     return _selector(_source[index]);
@@ -401,7 +407,7 @@ namespace System.Linq
                 int count = _source.Count;
                 if (count == 0)
                 {
-                    return Array.Empty<TResult>();
+                    return [];
                 }
 
                 var results = new TResult[count];
@@ -461,7 +467,7 @@ namespace System.Linq
 
             public TResult? TryGetElementAt(int index, out bool found)
             {
-                if (unchecked((uint)index < (uint)_source.Count))
+                if ((uint)index < (uint)_source.Count)
                 {
                     found = true;
                     return _selector(_source[index]);
@@ -556,16 +562,18 @@ namespace System.Linq
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new SelectIPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector));
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectIPartitionIterator<TSource, TResult>(_source.Skip(count), _selector);
+                IPartition<TSource>? source = _source.Skip(count);
+                return source is null ? null : new SelectIPartitionIterator<TSource, TResult>(source, _selector);
             }
 
-            public IPartition<TResult> Take(int count)
+            public IPartition<TResult>? Take(int count)
             {
                 Debug.Assert(count > 0);
-                return new SelectIPartitionIterator<TSource, TResult>(_source.Take(count), _selector);
+                IPartition<TSource>? source = _source.Take(count);
+                return source is null ? null : new SelectIPartitionIterator<TSource, TResult>(source, _selector);
             }
 
             public TResult? TryGetElementAt(int index, out bool found)
@@ -596,13 +604,19 @@ namespace System.Linq
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
-                LargeArrayBuilder<TResult> builder = new();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
+                Func<TSource, TResult> selector = _selector;
                 foreach (TSource input in _source)
                 {
-                    builder.Add(_selector(input));
+                    builder.Add(selector(input));
                 }
-                return builder.ToArray();
+
+                TResult[] result = builder.ToArray();
+                builder.Dispose();
+
+                return result;
             }
 
             private TResult[] PreallocatingToArray(int count)
@@ -611,13 +625,7 @@ namespace System.Linq
                 Debug.Assert(count == _source.GetCount(onlyIfCheap: true));
 
                 TResult[] array = new TResult[count];
-                int index = 0;
-                foreach (TSource input in _source)
-                {
-                    array[index] = _selector(input);
-                    ++index;
-                }
-
+                Fill(_source, array, _selector);
                 return array;
             }
 
@@ -627,7 +635,7 @@ namespace System.Linq
                 return count switch
                 {
                     -1 => LazyToArray(),
-                    0 => Array.Empty<TResult>(),
+                    0 => [],
                     _ => PreallocatingToArray(count),
                 };
             }
@@ -640,20 +648,33 @@ namespace System.Linq
                 {
                     case -1:
                         list = new List<TResult>();
+                        foreach (TSource input in _source)
+                        {
+                            list.Add(_selector(input));
+                        }
                         break;
                     case 0:
-                        return new List<TResult>();
+                        list = new List<TResult>();
+                        break;
                     default:
                         list = new List<TResult>(count);
+                        Fill(_source, SetCountAndGetSpan(list, count), _selector);
                         break;
-                }
-
-                foreach (TSource input in _source)
-                {
-                    list.Add(_selector(input));
                 }
 
                 return list;
+            }
+
+            private static void Fill(IPartition<TSource> source, Span<TResult> results, Func<TSource, TResult> func)
+            {
+                int index = 0;
+                foreach (TSource item in source)
+                {
+                    results[index] = func(item);
+                    ++index;
+                }
+
+                Debug.Assert(index == results.Length, "All list elements were not initialized.");
             }
 
             public int GetCount(bool onlyIfCheap)
@@ -712,7 +733,7 @@ namespace System.Linq
                 // Having a separate field for the index would be more readable. However, we save it
                 // into _state with a bias to minimize field size of the iterator.
                 int index = _state - 1;
-                if (unchecked((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive))
+                if ((uint)index <= (uint)(_maxIndexInclusive - _minIndexInclusive) && index < _source.Count - _minIndexInclusive)
                 {
                     _current = _selector(_source[_minIndexInclusive + index]);
                     ++_state;
@@ -726,11 +747,11 @@ namespace System.Linq
             public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
                 new SelectListPartitionIterator<TSource, TResult2>(_source, CombineSelectors(_selector, selector), _minIndexInclusive, _maxIndexInclusive);
 
-            public IPartition<TResult> Skip(int count)
+            public IPartition<TResult>? Skip(int count)
             {
                 Debug.Assert(count > 0);
                 int minIndex = _minIndexInclusive + count;
-                return (uint)minIndex > (uint)_maxIndexInclusive ? EmptyPartition<TResult>.Instance : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndexInclusive);
+                return (uint)minIndex > (uint)_maxIndexInclusive ? null : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, minIndex, _maxIndexInclusive);
             }
 
             public IPartition<TResult> Take(int count)
@@ -796,7 +817,7 @@ namespace System.Linq
                 int count = Count;
                 if (count == 0)
                 {
-                    return Array.Empty<TResult>();
+                    return [];
                 }
 
                 TResult[] array = new TResult[count];

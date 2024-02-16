@@ -19,15 +19,9 @@ namespace System.Reflection.Emit
 
         internal List<CustomAttributeWrapper>? _customAttributes;
 
-        internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes = null)
         {
-            ArgumentNullException.ThrowIfNull(name);
-
-            name = (AssemblyName)name.Clone();
-
-            ArgumentException.ThrowIfNullOrEmpty(name.Name, "AssemblyName.Name");
-
-            _assemblyName = name;
+            _assemblyName = (AssemblyName)name.Clone();
             _coreAssembly = coreAssembly;
             _metadataBuilder = new MetadataBuilder();
 
@@ -40,20 +34,19 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal static AssemblyBuilderImpl DefinePersistedAssembly(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-                => new AssemblyBuilderImpl(name, coreAssembly, assemblyAttributes);
-
-        private void WritePEImage(Stream peStream, BlobBuilder ilBuilder)
+        private void WritePEImage(Stream peStream, BlobBuilder ilBuilder, BlobBuilder fieldData)
         {
-            // Create executable with the managed metadata from the specified MetadataBuilder.
             var peHeaderBuilder = new PEHeaderBuilder(
-                imageCharacteristics: Characteristics.Dll // Start off with a simple DLL
-                );
+                // For now only support DLL, DLL files are considered executable files
+                // for almost all purposes, although they cannot be directly run.
+                imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
 
             var peBuilder = new ManagedPEBuilder(
-                peHeaderBuilder,
-                new MetadataRootBuilder(_metadataBuilder),
-                ilBuilder);
+                header: peHeaderBuilder,
+                metadataRootBuilder: new MetadataRootBuilder(_metadataBuilder),
+                ilStream: ilBuilder,
+                mappedFieldData: fieldData,
+                strongNameSignatureSize: 0);
 
             // Write executable into the specified stream.
             var peBlob = new BlobBuilder();
@@ -61,7 +54,7 @@ namespace System.Reflection.Emit
             peBlob.WriteContentTo(peStream);
         }
 
-        internal void Save(Stream stream)
+        protected override void SaveCore(Stream stream)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
@@ -86,26 +79,19 @@ namespace System.Reflection.Emit
                hashAlgorithm: (AssemblyHashAlgorithm)_assemblyName.HashAlgorithm
 #pragma warning restore SYSLIB0037
                );
-
             _module.WriteCustomAttributes(_customAttributes, assemblyHandle);
-            // Add module's metadata
-            _module.AppendMetadata();
 
             var ilBuilder = new BlobBuilder();
-            WritePEImage(stream, ilBuilder);
+            var fieldDataBuilder = new BlobBuilder();
+            MethodBodyStreamEncoder methodBodyEncoder = new MethodBodyStreamEncoder(ilBuilder);
+            _module.AppendMetadata(methodBodyEncoder, fieldDataBuilder);
+
+            WritePEImage(stream, ilBuilder, fieldDataBuilder);
             _previouslySaved = true;
         }
 
         private static AssemblyFlags AddContentType(AssemblyFlags flags, AssemblyContentType contentType)
             => (AssemblyFlags)((int)contentType << 9) | flags;
-
-        internal void Save(string assemblyFileName)
-        {
-            ArgumentNullException.ThrowIfNull(assemblyFileName);
-
-            using var peStream = new FileStream(assemblyFileName, FileMode.Create, FileAccess.Write);
-            Save(peStream);
-        }
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
@@ -114,7 +100,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder);
+            _module = new ModuleBuilderImpl(name, _coreAssembly, _metadataBuilder, this);
             return _module;
         }
 
@@ -133,5 +119,11 @@ namespace System.Reflection.Emit
             _customAttributes ??= new List<CustomAttributeWrapper>();
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
+
+        public override string? FullName => _assemblyName.FullName;
+
+        public override Module ManifestModule => _module ?? throw new InvalidOperationException(SR.InvalidOperation_AModuleRequired);
+
+        public override AssemblyName GetName(bool copiedName) => (AssemblyName)_assemblyName.Clone();
     }
 }

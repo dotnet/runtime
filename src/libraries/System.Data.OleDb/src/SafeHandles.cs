@@ -675,7 +675,9 @@ namespace System.Data.OleDb
             finally
             {
                 Guid IID_IChapteredRowset = typeof(System.Data.Common.UnsafeNativeMethods.IChapteredRowset).GUID;
+#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_IChapteredRowset, out var pChapteredRowset);
+#pragma warning restore CS9191
                 if (pChapteredRowset != IntPtr.Zero)
                 {
                     var chapteredRowset = (System.Data.Common.UnsafeNativeMethods.IChapteredRowset)Marshal.GetObjectForIUnknown(pChapteredRowset);
@@ -696,7 +698,9 @@ namespace System.Data.OleDb
             finally
             {
                 Guid IID_ITransactionLocal = typeof(ITransactionLocal).GUID;
+#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);
+#pragma warning restore CS9191
                 if (pTransaction != IntPtr.Zero)
                 {
                     ITransactionLocal transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);
@@ -717,7 +721,9 @@ namespace System.Data.OleDb
             finally
             {
                 Guid IID_ITransactionLocal = typeof(ITransactionLocal).GUID;
+#pragma warning disable CS9191 // The 'ref' modifier for argument 1 corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
                 hr = (OleDbHResult)Marshal.QueryInterface(ptr, ref IID_ITransactionLocal, out var pTransaction);
+#pragma warning restore CS9191
                 if (pTransaction != IntPtr.Zero)
                 {
                     ITransactionLocal transactionLocal = (ITransactionLocal)Marshal.GetObjectForIUnknown(pTransaction);

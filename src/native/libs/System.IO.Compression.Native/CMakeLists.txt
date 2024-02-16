@@ -147,7 +147,7 @@ else ()
             STATIC
             ${NATIVECOMPRESSION_SOURCES}
         )
-        target_compile_options(System.IO.Compression.Native.Aot.GuardCF PRIVATE /GL-)
+        set_target_properties(System.IO.Compression.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
     endif()
 
     if (GEN_SHARED_LIB)

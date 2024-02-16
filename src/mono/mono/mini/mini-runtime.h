@@ -659,6 +659,9 @@ mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_
 gboolean
 mono_is_addr_implicit_null_check (void *addr);
 
+gboolean
+mono_jit_call_can_be_supported_by_interp (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only);
+
 /*
  * Signal handling
  */

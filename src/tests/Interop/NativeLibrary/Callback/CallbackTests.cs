@@ -14,7 +14,8 @@ public class CallbackTests
     private static readonly int seed = 123;
     private static readonly Random rand = new Random(seed);
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

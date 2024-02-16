@@ -2,17 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-
+using System.Reflection;
+using System.Reflection.Runtime.BindingFlagSupport;
+using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.CustomAttributes;
-using System.Reflection.Runtime.BindingFlagSupport;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
@@ -75,7 +74,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return _contextTypeInfo;
+                return _contextTypeInfo.ToType();
             }
         }
 
@@ -86,7 +85,7 @@ namespace System.Reflection.Runtime.FieldInfos
                 Type fieldType = _lazyFieldType;
                 if (fieldType == null)
                 {
-                    _lazyFieldType = fieldType = this.FieldRuntimeType;
+                    _lazyFieldType = fieldType = this.FieldRuntimeType.ToType();
                 }
 
                 return fieldType;
@@ -126,7 +125,7 @@ namespace System.Reflection.Runtime.FieldInfos
         {
             get
             {
-                return _reflectedType;
+                return _reflectedType.ToType();
             }
         }
 
@@ -214,7 +213,7 @@ namespace System.Reflection.Runtime.FieldInfos
                     {
                         _lazyFieldAccessor = fieldAccessor = TryGetFieldAccessor();
                         if (fieldAccessor == null)
-                            throw ReflectionCoreExecution.ExecutionDomain.CreateNonInvokabilityException(this);
+                            throw ReflectionCoreExecution.ExecutionEnvironment.CreateNonInvokabilityException(this);
                     }
                 }
                 return fieldAccessor;

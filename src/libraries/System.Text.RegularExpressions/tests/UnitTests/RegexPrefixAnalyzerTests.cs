@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions.Tests
             string actualSet = RegexPrefixAnalyzer.FindFirstCharClass(tree.Root);
             if (expectedSet != actualSet)
             {
-                throw new TrueException($"Expected {FormatSet(expectedSet)}, got {FormatSet(actualSet)}", true);
+                throw TrueException.ForNonTrueValue($"Expected {FormatSet(expectedSet)}, got {FormatSet(actualSet)}", true);
             }
         }
 
@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions.Tests
             var sb = new StringBuilder();
             foreach (char c in set)
             {
-                if (c > 32 && c < 127)
+                if (c is > (char)32 and < (char)127)
                 {
                     sb.Append(c);
                 }

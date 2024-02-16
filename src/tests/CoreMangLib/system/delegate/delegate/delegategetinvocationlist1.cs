@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using Xunit;
 //test case for delegate GetInvocationList method.
 namespace DelegateTest
 {
@@ -12,7 +13,8 @@ namespace DelegateTest
 
         booldelegate starkWork;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             DelegateGetInvocationList delegateGetInvocationList = new DelegateGetInvocationList();
 

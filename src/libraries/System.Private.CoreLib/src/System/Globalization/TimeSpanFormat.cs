@@ -99,7 +99,12 @@ namespace System.Globalization
             return new string(destination.Slice(0, charsWritten));
         }
 
-        internal enum StandardFormat { C, G, g }
+        internal enum StandardFormat
+        {
+            C,
+            G,
+            g
+        }
 
         internal static unsafe bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, ReadOnlySpan<TChar> decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IUtfChar<TChar>
         {

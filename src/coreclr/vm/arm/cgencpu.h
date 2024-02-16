@@ -1023,7 +1023,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 // Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
 struct ThisPtrRetBufPrecode {
 
-    static const int Type = 0x46;
+    static const int Type = 0x01;
 
     // mov r12, r0
     // mov r0, r1

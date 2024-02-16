@@ -14,7 +14,6 @@ parameters:
   dependsOn: []
   pool: ''
   platform: ''
-  pgoType: ''
   condition: true
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
@@ -27,11 +26,12 @@ parameters:
   helixQueues: ''
   enablePublishTestResults: false
   testResultsFormat: ''
-  extraStepsTemplate: ''
-  extraStepsParameters: {}
+  postBuildSteps: []
   extraVariablesTemplates: []
   isManualCodeQLBuild: false
   preBuildSteps: []
+  enableRichCodeNavigation: false
+  richCodeNavigationLanguage: 'csharp'
 
 jobs:
 - template: /eng/common/templates/job/job.yml
@@ -48,6 +48,9 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
+
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
+    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
 
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubGroup, '_musl') }}:
@@ -68,6 +71,7 @@ jobs:
     variables:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - group: DotNet-HelixApi-Access
+          - group: AzureDevOps-Artifact-Feeds-Pats
 
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
@@ -101,21 +105,6 @@ jobs:
         ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: ''
 
-      - name: _monoAotBuildshCommand
-        value: ''
-
-      - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
-        - name: _monoAotBuildshCommand
-          value: 'mono_aot'
-
-      - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
-        - name: _monoAotBuildshCommand
-          value: 'mono_fullaot'
-
-      - ${{ if eq(parameters.archType, 'arm64') }}:
-        - name: _monoAotCrossCompileArg
-          value: 'cross'
-
       # Set no native sanitizers by default
       - name: _nativeSanitizersArg
         value: ''
@@ -133,7 +122,6 @@ jobs:
             targetRid: ${{ parameters.targetRid }}
             nameSuffix: ${{ parameters.nameSuffix }}
             platform: ${{ parameters.platform }}
-            pgoType: ${{ parameters.pgoType }}
             shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
             ${{ if ne(variableTemplate.forwardedParameters, '') }}:
               ${{ each parameter in variableTemplate.forwardedParameters }}:
@@ -145,39 +133,35 @@ jobs:
         - ${{ variable }}
     steps:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - powershell: |
-          schtasks /change /tn "\Microsoft\VisualStudio\VSIX Auto Update" /disable
-
-          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path -Path "$vswhere" -PathType Leaf))
-          {
-              Write-Error "Couldn't locate vswhere at $vswhere"
-              exit 1
-          }
-
-          $vsdir = &"$vswhere" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          $vsregedit = "$vsdir\Common7\IDE\VsRegEdit.exe"
-
-          if (-not (Test-Path -Path "$vsregedit" ))
-          {
-              Write-Error "VSWhere returned path: $vsdir, but regedit $vsregedit doesn't exist."
-              exit 1
-          }
-
-          Write-Output "VSWhere returned path: $vsdir, using regedit $vsregedit"
-          Write-Output "Disabling updates through VS Registry:"
-
-          &"$vsdir\Common7\IDE\VsRegEdit.exe" set local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword 0
-          &"$vsdir\Common7\IDE\VsRegEdit.exe" read local HKCU ExtensionManager AutomaticallyCheckForUpdates2Override dword
-        displayName: Disable VSIX updates
-        condition: always()
+      - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
 
     - checkout: self
       clean: true
-      fetchDepth: $(checkoutFetchDepth)
+      # If running in source build mode, a git stash will be used for the inner clone. Avoid setting a fetch depth,
+      # as a stash of a shallow cloned repo is not currently supported.
+      ${{ if ne(parameters.isSourceBuild, true) }}:
+        fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
+        - task: Bash@3
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
+            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
+      - ${{ else }}:
+        - task: PowerShell@2
+          displayName: Setup Private Feeds Credentials
+          inputs:
+            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
+            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
+          env:
+            Token: $(dn-bot-dnceng-artifact-feeds-rw)
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
@@ -214,7 +198,28 @@ jobs:
 
     - ${{ if ne(parameters.preBuildSteps,'') }}:
       - ${{ each preBuildStep in parameters.preBuildSteps }}:
-        - ${{ preBuildStep }}
+        - ${{ if ne(preBuildStep.template, '') }}:
+          - template: ${{ preBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              pgoType: ${{ parameters.pgoType }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(preBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in preBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(preBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ preBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ preBuildStep }}
 
     # Build
     - ${{ if eq(parameters.isSourceBuild, false) }}:
@@ -222,10 +227,11 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci $(_archParameter) $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
-        displayName: Build product
-        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-          continueOnError: ${{ parameters.shouldContinueOnError }}
+      - template: /eng/pipelines/common/templates/global-build-step.yml
+        parameters:
+          buildArgs: ${{ parameters.buildArgs }}
+          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
       - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
         - task: CodeQL3000Finalize@0
@@ -240,22 +246,29 @@ jobs:
         condition: always()
 
       # If intended to send extra steps after regular build add them here.
-    - ${{ if ne(parameters.extraStepsTemplate, '') }}:
-      - template: ${{ parameters.extraStepsTemplate }}
-        parameters:
-          osGroup: ${{ parameters.osGroup }}
-          osSubgroup: ${{ parameters.osSubgroup }}
-          archType: ${{ parameters.archType }}
-          buildConfig: ${{ parameters.buildConfig }}
-          runtimeFlavor: ${{ parameters.runtimeFlavor }}
-          runtimeVariant: ${{ parameters.runtimeVariant }}
-          helixQueues: ${{ parameters.helixQueues }}
-          targetRid: ${{ parameters.targetRid }}
-          nameSuffix: ${{ parameters.nameSuffix }}
-          platform: ${{ parameters.platform }}
-          pgoType: ${{ parameters.pgoType }}
-          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-          ${{ insert }}: ${{ parameters.extraStepsParameters }}
+    - ${{ if ne(parameters.postBuildSteps,'') }}:
+      - ${{ each postBuildStep in parameters.postBuildSteps }}:
+        - ${{ if ne(postBuildStep.template, '') }}:
+          - template: ${{ postBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(postBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in postBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(postBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ postBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ postBuildStep }}
 
       - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
         - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log

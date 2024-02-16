@@ -20,8 +20,20 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
-    NYI_RISCV64("mapRegNumToDwarfReg-----unimplemented on RISCV64 yet----");
-    return 0;
+    short dwarfReg = DWARF_REG_ILLEGAL;
+
+    // On RISC-V registers from R0 to F31
+    // can be mapped directly to dwarf structure
+    if (reg >= REG_R0 && reg <= REG_F31)
+    {
+        dwarfReg = static_cast<short>(reg);
+    }
+    else
+    {
+        NYI("CFI codes"); // e.g. V-extension
+    }
+
+    return dwarfReg;
 }
 #endif // FEATURE_CFI_SUPPORT
 
@@ -166,8 +178,8 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     {
         // save_reg: 11010000 | 000xxxxx | zzzzzzzz: save reg r(1 + #X) at [sp + #Z * 8], offset <= 2047
 
-        assert(reg == REG_RA ||
-               (REG_FP <= reg && reg <= REG_S11)); // first legal register: RA, last legal register: S11
+        assert(reg == REG_RA || (REG_FP <= reg && reg <= REG_S11)); // first legal register: RA, last legal register:
+                                                                    // S11
 
         BYTE x = (BYTE)(reg - REG_RA);
         assert(0 <= x && x <= 0x1B);
@@ -212,8 +224,29 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
 {
-    NYI_RISCV64("GetUnwindSizeFromUnwindHeader-----unimplemented on RISCV64 yet----");
-    return 0;
+    static const BYTE s_UnwindSize[256] = {
+        // array of unwind sizes, in bytes
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 00-0F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 10-1F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 20-2F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 30-3F
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 40-4F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 50-5F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 60-6F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 70-7F
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 80-8F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 90-9F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A0-AF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // B0-BF
+        2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 3, 2, 2, 2, // C0-CF
+        3, 2, 2, 2, 2, 2, 3, 2, 3, 2, 3, 2, 3, 3, 2, 1, // D0-DF
+        4, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // E0-EF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  // F0-FF
+    };
+
+    unsigned size = s_UnwindSize[b1];
+    assert(1 <= size && size <= 4);
+    return size;
 }
 
 #endif // DEBUG
@@ -864,13 +897,11 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
 
 void UnwindPrologCodes::SetFinalSize(int headerBytes, int epilogBytes)
 {
-#if 0 // TODO COMMENTED OUT BECAUSE s_UnwindSize is not set
 #ifdef DEBUG
     // We're done adding codes. Check that we didn't accidentally create a bigger prolog.
     unsigned codeSize = GetCodeSizeFromUnwindCodes(true);
     assert(codeSize <= MAX_PROLOG_SIZE_BYTES);
 #endif // DEBUG
-#endif
 
     int prologBytes = Size();
 
@@ -929,9 +960,9 @@ void UnwindPrologCodes::AppendEpilog(UnwindEpilogInfo* pEpi)
 
     int epiSize = pEpi->Size();
     memcpy_s(&upcMem[upcEpilogSlot], upcMemSize - upcEpilogSlot - 3, pEpi->GetCodes(),
-             epiSize); // -3 to avoid writing to the alignment padding
-    assert(pEpi->GetStartIndex() ==
-           upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy it.
+             epiSize);                                            // -3 to avoid writing to the alignment padding
+    assert(pEpi->GetStartIndex() == upcEpilogSlot - upcCodeSlot); // Make sure we copied it where we expected to copy
+                                                                  // it.
 
     upcEpilogSlot += epiSize;
     assert(upcEpilogSlot <= upcMemSize - 3);
@@ -1053,7 +1084,41 @@ void UnwindPrologCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindPrologCodes::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    printf("%*sUnwindPrologCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  &upcMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&upcMemLocal[0]));
+    printf("%*s  upcMem: 0x%08p\n", indent, "", dspPtr(upcMem));
+    printf("%*s  upcMemSize: %d\n", indent, "", upcMemSize);
+    printf("%*s  upcCodeSlot: %d\n", indent, "", upcCodeSlot);
+    printf("%*s  upcHeaderSlot: %d\n", indent, "", upcHeaderSlot);
+    printf("%*s  upcEpilogSlot: %d\n", indent, "", upcEpilogSlot);
+    printf("%*s  upcUnwindBlockSlot: %d\n", indent, "", upcUnwindBlockSlot);
+
+    if (upcMemSize > 0)
+    {
+        printf("%*s  codes:", indent, "");
+        for (int i = 0; i < upcMemSize; i++)
+        {
+            printf(" %02x", upcMem[i]);
+            if (i == upcCodeSlot)
+            {
+                printf(" <-C");
+            }
+            else if (i == upcHeaderSlot)
+            {
+                printf(" <-H");
+            }
+            else if (i == upcEpilogSlot)
+            {
+                printf(" <-E");
+            }
+            else if (i == upcUnwindBlockSlot)
+            {
+                printf(" <-U");
+            }
+        }
+        printf("\n");
+    }
 }
 #endif // DEBUG
 
@@ -1092,7 +1157,27 @@ void UnwindEpilogCodes::EnsureSize(int requiredSize)
 #ifdef DEBUG
 void UnwindEpilogCodes::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    printf("%*sUnwindEpilogCodes @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  &uecMemLocal[0]: 0x%08p\n", indent, "", dspPtr(&uecMemLocal[0]));
+    printf("%*s  uecMem: 0x%08p\n", indent, "", dspPtr(uecMem));
+    printf("%*s  uecMemSize: %d\n", indent, "", uecMemSize);
+    printf("%*s  uecCodeSlot: %d\n", indent, "", uecCodeSlot);
+    printf("%*s  uecFinalized: %s\n", indent, "", dspBool(uecFinalized));
+
+    if (uecMemSize > 0)
+    {
+        printf("%*s  codes:", indent, "");
+        for (int i = 0; i < uecMemSize; i++)
+        {
+            printf(" %02x", uecMem[i]);
+            if (i == uecCodeSlot)
+            {
+                printf(" <-C"); // Indicate the current pointer
+            }
+        }
+        printf("\n");
+    }
 }
 #endif // DEBUG
 
@@ -1149,7 +1234,15 @@ void UnwindEpilogInfo::FinalizeOffset()
 #ifdef DEBUG
 void UnwindEpilogInfo::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    printf("%*sUnwindEpilogInfo @0x%08p, size:%d:\n", indent, "", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  epiNext: 0x%08p\n", indent, "", dspPtr(epiNext));
+    printf("%*s  epiEmitLocation: 0x%08p\n", indent, "", dspPtr(epiEmitLocation));
+    printf("%*s  epiStartOffset: 0x%x\n", indent, "", epiStartOffset);
+    printf("%*s  epiMatches: %s\n", indent, "", dspBool(epiMatches));
+    printf("%*s  epiStartIndex: %d\n", indent, "", epiStartIndex);
+
+    epiCodes.Dump(indent + 2);
 }
 #endif // DEBUG
 
@@ -1500,8 +1593,8 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
 
     // Start writing the header
 
-    noway_assert(headerFunctionLength <=
-                 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits, we have an internal error
+    noway_assert(headerFunctionLength <= 0x3FFFFU); // We create fragments to prevent this from firing, so if it hits,
+                                                    // we have an internal error
 
     if ((headerEpilogCount > UW_MAX_EPILOG_COUNT) || (headerCodeWords > UW_MAX_CODE_WORDS_COUNT))
     {
@@ -1686,7 +1779,39 @@ void UnwindFragmentInfo::Allocate(
 #ifdef DEBUG
 void UnwindFragmentInfo::Dump(int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    unsigned          count;
+    UnwindEpilogInfo* pEpi;
+
+    count = 0;
+    for (pEpi = ufiEpilogList; pEpi != nullptr; pEpi = pEpi->epiNext)
+    {
+        ++count;
+    }
+
+    printf("%*sUnwindFragmentInfo #%d, @0x%08p, size:%d:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  ufiNext: 0x%08p\n", indent, "", dspPtr(ufiNext));
+    printf("%*s  ufiEmitLoc: 0x%08p\n", indent, "", dspPtr(ufiEmitLoc));
+    printf("%*s  ufiHasPhantomProlog: %s\n", indent, "", dspBool(ufiHasPhantomProlog));
+    printf("%*s  %d epilog%s\n", indent, "", count, (count != 1) ? "s" : "");
+    printf("%*s  ufiEpilogList: 0x%08p\n", indent, "", dspPtr(ufiEpilogList));
+    printf("%*s  ufiEpilogLast: 0x%08p\n", indent, "", dspPtr(ufiEpilogLast));
+    printf("%*s  ufiCurCodes: 0x%08p\n", indent, "", dspPtr(ufiCurCodes));
+    printf("%*s  ufiSize: %u\n", indent, "", ufiSize);
+    printf("%*s  ufiSetEBit: %s\n", indent, "", dspBool(ufiSetEBit));
+    printf("%*s  ufiNeedExtendedCodeWordsEpilogCount: %s\n", indent, "", dspBool(ufiNeedExtendedCodeWordsEpilogCount));
+    printf("%*s  ufiCodeWords: %u\n", indent, "", ufiCodeWords);
+    printf("%*s  ufiEpilogScopes: %u\n", indent, "", ufiEpilogScopes);
+    printf("%*s  ufiStartOffset: 0x%x\n", indent, "", ufiStartOffset);
+    printf("%*s  ufiInProlog: %s\n", indent, "", dspBool(ufiInProlog));
+    printf("%*s  ufiInitialized: 0x%08x\n", indent, "", ufiInitialized);
+
+    ufiPrologCodes.Dump(indent + 2);
+
+    for (pEpi = ufiEpilogList; pEpi != nullptr; pEpi = pEpi->epiNext)
+    {
+        pEpi->Dump(indent + 2);
+    }
 }
 #endif // DEBUG
 
@@ -1729,7 +1854,18 @@ void UnwindInfo::InitUnwindInfo(Compiler* comp, emitLocation* startLoc, emitLoca
 
 void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 {
-    NYI_RISCV64("HotColdSplitCodes-----unimplemented on RISCV64 yet----");
+    // Ensure that there is exactly a single fragment in both the hot and the cold sections
+    assert(&uwiFragmentFirst == uwiFragmentLast);
+    assert(&puwi->uwiFragmentFirst == puwi->uwiFragmentLast);
+    assert(uwiFragmentLast->ufiNext == nullptr);
+    assert(puwi->uwiFragmentLast->ufiNext == nullptr);
+
+    // The real prolog is in the hot section, so this, cold, section has a phantom prolog
+    uwiFragmentLast->ufiHasPhantomProlog = true;
+    uwiFragmentLast->CopyPrologCodes(puwi->uwiFragmentLast);
+
+    // Now split the epilog codes
+    uwiFragmentLast->SplitEpilogCodes(uwiFragmentLast->ufiEmitLoc, puwi->uwiFragmentLast);
 }
 
 // Split the function or funclet into fragments that are no larger than 512K,
@@ -1942,7 +2078,26 @@ void UnwindInfo::AddFragment(emitLocation* emitLoc)
 
 void UnwindInfo::Dump(bool isHotCode, int indent)
 {
-    NYI_RISCV64("Dump-----unimplemented on RISCV64 yet----");
+    unsigned            count;
+    UnwindFragmentInfo* pFrag;
+
+    count = 0;
+    for (pFrag = &uwiFragmentFirst; pFrag != nullptr; pFrag = pFrag->ufiNext)
+    {
+        ++count;
+    }
+
+    printf("%*sUnwindInfo %s@0x%08p, size:%d:\n", indent, "", isHotCode ? "" : "COLD ", dspPtr(this), sizeof(*this));
+    printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
+    printf("%*s  %d fragment%s\n", indent, "", count, (count != 1) ? "s" : "");
+    printf("%*s  uwiFragmentLast: 0x%08p\n", indent, "", dspPtr(uwiFragmentLast));
+    printf("%*s  uwiEndLoc: 0x%08p\n", indent, "", dspPtr(uwiEndLoc));
+    printf("%*s  uwiInitialized: 0x%08x\n", indent, "", uwiInitialized);
+
+    for (pFrag = &uwiFragmentFirst; pFrag != nullptr; pFrag = pFrag->ufiNext)
+    {
+        pFrag->Dump(indent + 2);
+    }
 }
 
 #endif // DEBUG

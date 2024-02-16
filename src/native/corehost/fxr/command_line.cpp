@@ -158,7 +158,7 @@ namespace
 
             app_candidate = argv[*new_argoff];
 
-            bool is_app_managed = ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false);
+            bool is_app_managed = utils::ends_with(app_candidate, _X(".dll"), false) || utils::ends_with(app_candidate, _X(".exe"), false);
             if (!is_app_managed)
             {
                 trace::verbose(_X("Application '%s' is not a managed executable."), app_candidate.c_str());
@@ -280,17 +280,18 @@ int command_line::parse_args_for_sdk_command(
     return parse_args(host_info, 1, argc, argv, false, host_mode_t::muxer, new_argoff, app_candidate, opts);
 }
 
-void command_line::print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path)
+void command_line::print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path, bool skip_sdk_info_output)
 {
     pal::string_t commit = _STRINGIFY(REPO_COMMIT_HASH);
     trace::println(_X("\n")
         _X("Host:\n")
         _X("  Version:      ") _STRINGIFY(HOST_VERSION) _X("\n")
         _X("  Architecture: ") _STRINGIFY(CURRENT_ARCH_NAME) _X("\n")
-        _X("  Commit:       %s\n")
-        _X("  RID:          %s"),
-        commit.substr(0, 10).c_str(),
-        get_runtime_id().c_str());
+        _X("  Commit:       %s"),
+        commit.substr(0, 10).c_str());
+
+    if (!skip_sdk_info_output)
+        trace::println(_X("  RID:          %s"), get_runtime_id().c_str());
 
     trace::println(_X("\n")
         _X(".NET SDKs installed:"));

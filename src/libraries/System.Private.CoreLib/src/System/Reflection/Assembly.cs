@@ -1,16 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
-using System.Globalization;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration.Assemblies;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Runtime.Serialization;
 using System.Security;
-using System.Runtime.Loader;
-using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -105,11 +105,11 @@ namespace System.Reflection
         public virtual AssemblyName GetName() => GetName(copiedName: false);
         public virtual AssemblyName GetName(bool copiedName) { throw NotImplemented.ByDesign; }
 
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name) => GetType(name, throwOnError: false, ignoreCase: false);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name, bool throwOnError) => GetType(name, throwOnError: throwOnError, ignoreCase: false);
-        [RequiresUnreferencedCode("Types might be removed")]
+        [RequiresUnreferencedCode("Types might be removed by trimming. If the type name is a string literal, consider using Type.GetType instead.")]
         public virtual Type? GetType(string name, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
 
         public virtual bool IsDefined(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
@@ -332,12 +332,22 @@ namespace System.Reflection
 #endif // CORECLR
             try
             {
+                // Avoid a first-chance exception by checking for file presence first.
+                // we cannot check for file presence on BROWSER. The files could be embedded and not physically present.
+#if !TARGET_BROWSER && !TARGET_WASI
+                if (!File.Exists(requestedAssemblyPath))
+                {
+                    return null;
+                }
+#endif // !TARGET_BROWSER && !TARGET_WASI
+
                 // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
                 return LoadFrom(requestedAssemblyPath);
             }
             catch (FileNotFoundException)
             {
                 // Catch FileNotFoundException when attempting to resolve assemblies via this handler to account for missing assemblies.
+                // This is necessary even with the above exists check since a file might be removed between the check and the load.
                 return null;
             }
         }

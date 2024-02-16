@@ -32,7 +32,7 @@ namespace System.Xml.Tests
             // the default, or alternatively separate all such tests into a separate test project
             // where that project contains only those tests that require the switch set.
 
-            Type t = typeof(XmlConvert).Assembly.GetType("System.Xml.LocalAppContextSwitches");
+            Type t = Type.GetType("System.Xml.LocalAppContextSwitches, System.Private.Xml");
             Assert.NotNull(t);
 
             FieldInfo fi = t.GetField("s_allowDefaultResolver", BindingFlags.NonPublic | BindingFlags.Static);

@@ -119,6 +119,7 @@ namespace System.Xml
         public override System.Xml.XmlDocument OwnerDocument { get { throw null; } }
         public virtual System.Xml.XmlElement? OwnerElement { get { throw null; } }
         public override System.Xml.XmlNode? ParentNode { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string Prefix { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public virtual bool Specified { get { throw null; } }
@@ -411,6 +412,7 @@ namespace System.Xml
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public override System.Xml.XmlDocument OwnerDocument { get { throw null; } }
         public override System.Xml.XmlNode? ParentNode { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string Prefix { get { throw null; } set { } }
         public override System.Xml.Schema.IXmlSchemaInfo SchemaInfo { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
@@ -561,6 +563,7 @@ namespace System.Xml
         public virtual string OuterXml { get { throw null; } }
         public virtual System.Xml.XmlDocument? OwnerDocument { get { throw null; } }
         public virtual System.Xml.XmlNode? ParentNode { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public virtual string Prefix { get { throw null; } set { } }
         public virtual System.Xml.XmlNode? PreviousSibling { get { throw null; } }
         public virtual System.Xml.XmlNode? PreviousText { get { throw null; } }

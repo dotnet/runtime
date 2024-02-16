@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Principal;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Collections;
 
 namespace System.DirectoryServices.AccountManagement
 {

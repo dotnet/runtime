@@ -3,6 +3,7 @@
 
 using System;
 using System.Globalization;
+using Xunit;
 //test case for delegate Equals method.
 namespace DelegateTest
 {
@@ -12,7 +13,8 @@ namespace DelegateTest
 
         object starkWork;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             DelegateEquals DelegateEquals = new DelegateEquals();
 

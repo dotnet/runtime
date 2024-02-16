@@ -1,7 +1,8 @@
-if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
   # On OSX and *BSD, we use the libunwind that's part of the OS
+  # On Haiku, we used a special port of libunwind
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD)
+endif(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_HAIKU)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -32,8 +33,6 @@ if(CORECLR_SET_RPATH)
     # Enable @rpath support for shared libraries.
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
-
-cmake_policy(SET CMP0042 NEW)
 
 # Include directories
 
@@ -99,6 +98,10 @@ if(CLR_CMAKE_TARGET_LINUX_MUSL)
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
 endif(CLR_CMAKE_TARGET_LINUX_MUSL)
 
+if(CLR_CMAKE_TARGET_HAIKU)
+  add_definitions(-D_GNU_SOURCE)
+endif(CLR_CMAKE_TARGET_HAIKU)
+
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
 
@@ -126,14 +129,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
 endif()
 
 set(SOURCES
-  cruntime/file.cpp
-  cruntime/filecrt.cpp
   cruntime/malloc.cpp
-  cruntime/math.cpp
   cruntime/misc.cpp
-  cruntime/printfcpp.cpp
-  cruntime/string.cpp
-  cruntime/stringtls.cpp
   cruntime/thread.cpp
   cruntime/wchar.cpp
   debug/debug.cpp
@@ -181,10 +178,8 @@ set(SOURCES
   safecrt/sscanf_s.cpp
   safecrt/strcat_s.cpp
   safecrt/strcpy_s.cpp
-  safecrt/strlen_s.cpp
   safecrt/strncat_s.cpp
   safecrt/strncpy_s.cpp
-  safecrt/strtok_s.cpp
   safecrt/vsprintf.cpp
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
@@ -192,7 +187,6 @@ set(SOURCES
   safecrt/wcslwr_s.cpp
   safecrt/wcsncat_s.cpp
   safecrt/wcsncpy_s.cpp
-  safecrt/wcstok_s.cpp
   safecrt/wmakepath_s.cpp
   safecrt/xtoa_s.cpp
   safecrt/xtow_s.cpp
@@ -232,6 +226,13 @@ if(CLR_CMAKE_TARGET_OSX)
     ${LIBUNWIND_DAC_OBJECTS}
   )
 
+  target_include_directories(coreclrpal_dac PUBLIC
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
+    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
+    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
+  )
+
   target_compile_definitions(coreclrpal_dac PUBLIC -DUNW_REMOTE_ONLY)
 else()
   if(NOT FEATURE_CROSSBITNESS)
@@ -241,15 +242,6 @@ else()
   endif(NOT FEATURE_CROSSBITNESS)
 endif(CLR_CMAKE_TARGET_OSX)
 
-if(NOT FEATURE_CROSSBITNESS)
-  target_include_directories(coreclrpal_dac PUBLIC
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
-    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
-    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
-  )
-endif(NOT FEATURE_CROSSBITNESS)
-
 # There is only one function exported in 'tracepointprovider.cpp' namely 'PAL_InitializeTracing',
 # which is guarded with '#if defined(__linux__)'. On macOS, Xcode issues the following warning:
 #
@@ -257,12 +249,7 @@ endif(NOT FEATURE_CROSSBITNESS)
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
 if(CLR_CMAKE_TARGET_LINUX)
-  add_library(tracepointprovider_obj
-    OBJECT
-    misc/tracepointprovider.cpp
-  )
-  add_library(tracepointprovider INTERFACE)
-  target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
+  add_library(tracepointprovider OBJECT misc/tracepointprovider.cpp)
 endif(CLR_CMAKE_TARGET_LINUX)
 
 if(CLR_CMAKE_TARGET_OSX)
@@ -287,6 +274,14 @@ if(CLR_CMAKE_TARGET_FREEBSD)
     ${UNWIND_LIBS}
   )
 endif(CLR_CMAKE_TARGET_FREEBSD)
+
+if(CLR_CMAKE_TARGET_HAIKU)
+  target_link_libraries(coreclrpal
+    PUBLIC
+    bsd
+    ${UNWIND_LIBS}
+  )
+endif(CLR_CMAKE_TARGET_HAIKU)
 
 if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt

@@ -132,6 +132,7 @@ HRESULT CordbClass::GetStaticFieldValue(mdFieldDef fieldDef,
     IMetaDataImport * pImport = NULL;
     EX_TRY
     {
+        RSLockHolder lockHolder(GetProcess()->GetProcessLock());
         pImport = GetModule()->GetMetaDataImporter(); // throws
 
         // Validate the token.
@@ -1191,4 +1192,3 @@ HRESULT CordbClass::SearchFieldInfo(
     // Well, the field doesn't even belong to this class...
     ThrowHR(E_INVALIDARG);
 }
-

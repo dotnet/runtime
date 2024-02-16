@@ -57,7 +57,7 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> or <paramref name="predicate" /> is <see langword="null" />.</exception>
         public static TSource LastOrDefault<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, TSource defaultValue)
         {
-            var last = source.TryGetLast(predicate, out bool found);
+            TSource? last = source.TryGetLast(predicate, out bool found);
             return found ? last! : defaultValue;
         }
 

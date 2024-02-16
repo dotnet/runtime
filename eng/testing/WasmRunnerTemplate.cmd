@@ -10,6 +10,8 @@ if [%3] NEQ [] (
     set SCENARIO=%3
 )
 
+set PATH=%PREPEND_PATH%;%PATH%
+
 if [%HELIX_WORKITEM_UPLOAD_ROOT%] == [] (
     set "XHARNESS_OUT=%EXECUTION_DIR%xharness-output"
 ) else (

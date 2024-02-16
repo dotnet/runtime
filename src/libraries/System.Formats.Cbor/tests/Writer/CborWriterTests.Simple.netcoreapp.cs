@@ -18,7 +18,7 @@ namespace System.Formats.Cbor.Tests
         [InlineData(0.00006103515625, "f90400")]
         [InlineData(-4.0, "f9c400")]
         [InlineData(float.PositiveInfinity, "f97c00")]
-        [InlineData(float.NaN, "f9fe00")]
+        [InlineData(float.NaN, "f97e00")]
         [InlineData(float.NegativeInfinity, "f9fc00")]
         public static void WriteHalf_SingleValue_HappyPath(float input, string hexExpectedEncoding)
         {

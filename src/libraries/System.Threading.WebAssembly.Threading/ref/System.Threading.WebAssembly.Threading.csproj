@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <FeatureWasmManagedThreads>true</FeatureWasmManagedThreads>
+    <AssemblyName>System.Threading</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- tell references.targets to bump the assembly version -->
+    <IsExperimentalRefAssembly>true</IsExperimentalRefAssembly>
+    <!-- Disable all binplacing since this assembly will clash with the real ref assembly -->
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

@@ -38,27 +38,115 @@ namespace System.Linq
 
             public override TSource[] ToArray()
             {
-                SparseArrayBuilder<TSource> builder = new();
+                ICollection<TSource>? firstCollection = _first as ICollection<TSource>;
+                ICollection<TSource>? secondCollection = _second as ICollection<TSource>;
 
-                bool reservedFirst = builder.ReserveOrAdd(_first);
-                bool reservedSecond = builder.ReserveOrAdd(_second);
-
-                TSource[] array = builder.ToArray();
-
-                if (reservedFirst)
+                if (firstCollection is not null && secondCollection is not null)
                 {
-                    Marker marker = builder.Markers.First();
-                    Debug.Assert(marker.Index == 0);
-                    EnumerableHelpers.Copy(_first, array, 0, marker.Count);
+                    // Both sources are ICollection<T>, so we know their sizes and can just copy them.
+                    int firstCount = firstCollection.Count;
+                    TSource[] result = new TSource[checked(firstCount + secondCollection.Count)];
+
+                    firstCollection.CopyTo(result, 0);
+                    secondCollection.CopyTo(result, firstCount);
+
+                    return result;
+                }
+                else
+                {
+                    // We don't know the sizes of at least one if not both sources, so we need a builder.
+                    // If we don't know the sizes of both, we'll just append each into the builder and
+                    // use the builder to create the overall array. If we know the size of one, we'll
+                    // only buffer the other.
+                    SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                    SegmentedArrayBuilder<TSource> builder = new(scratch);
+                    TSource[] result;
+
+                    if (firstCollection is not null)
+                    {
+                        int firstCount = firstCollection.Count;
+                        builder.AddNonICollectionRange(_second);
+                        result = new TSource[checked(firstCount + builder.Count)];
+                        firstCollection.CopyTo(result, 0);
+                        builder.ToSpan(result.AsSpan(firstCount));
+                    }
+                    else if (secondCollection is not null)
+                    {
+                        int secondCount = secondCollection.Count;
+                        builder.AddNonICollectionRange(_first);
+                        result = new TSource[checked(builder.Count + secondCount)];
+                        builder.ToSpan(result);
+                        secondCollection.CopyTo(result, result.Length - secondCount);
+                    }
+                    else
+                    {
+                        builder.AddNonICollectionRange(_first);
+                        builder.AddNonICollectionRange(_second);
+                        result = builder.ToArray();
+                    }
+
+                    builder.Dispose();
+                    return result;
+                }
+            }
+
+            public override TSource? TryGetElementAt(int index, out bool found)
+            {
+                if (index >= 0)
+                {
+                    foreach (IEnumerable<TSource> source in (ReadOnlySpan<IEnumerable<TSource>>)[_first, _second])
+                    {
+                        if (TryGetNonEnumeratedCount(source, out int count))
+                        {
+                            if (index < count)
+                            {
+                                found = true;
+                                return source.ElementAt(index);
+                            }
+
+                            index -= count;
+                        }
+                        else
+                        {
+                            using IEnumerator<TSource> e = source.GetEnumerator();
+                            while (e.MoveNext())
+                            {
+                                if (index == 0)
+                                {
+                                    found = true;
+                                    return e.Current;
+                                }
+
+                                index--;
+                            }
+                        }
+                    }
                 }
 
-                if (reservedSecond)
+                found = false;
+                return default;
+            }
+
+            public override TSource? TryGetFirst(out bool found)
+            {
+                TSource? result = _first.TryGetFirst(out found);
+                if (!found)
                 {
-                    Marker marker = builder.Markers.Last();
-                    EnumerableHelpers.Copy(_second, array, marker.Index, marker.Count);
+                    result = _second.TryGetFirst(out found);
                 }
 
-                return array;
+                return result;
+            }
+
+            public override TSource? TryGetLast(out bool found)
+            {
+                TSource? result = _second.TryGetLast(out found);
+                if (!found)
+                {
+                    result = _first.TryGetLast(out found);
+                }
+
+                return result;
             }
         }
 
@@ -100,10 +188,12 @@ namespace System.Linq
 
             private TSource[] LazyToArray()
             {
+                // All of the sources being ICollection<T> is handled by PreallocatingToArray, so if we're here,
+                // at least one source isn't an ICollection<T>.
                 Debug.Assert(!_hasOnlyCollections);
 
-                SparseArrayBuilder<TSource> builder = new();
-                ArrayBuilder<int> deferredCopies = default;
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
 
                 for (int i = 0; ; i++)
                 {
@@ -111,30 +201,19 @@ namespace System.Linq
                     // quadratic behavior, because we need to add the sources in order.
                     // On the bright side, the bottleneck will usually be iterating, buffering, and copying
                     // each of the enumerables, so this shouldn't be a noticeable perf hit for most scenarios.
-
                     IEnumerable<TSource>? source = GetEnumerable(i);
                     if (source == null)
                     {
                         break;
                     }
 
-                    if (builder.ReserveOrAdd(source))
-                    {
-                        deferredCopies.Add(i);
-                    }
+                    builder.AddRange(source);
                 }
 
-                TSource[] array = builder.ToArray();
+                TSource[] result = builder.ToArray();
+                builder.Dispose();
 
-                ArrayBuilder<Marker> markers = builder.Markers;
-                for (int i = 0; i < markers.Count; i++)
-                {
-                    Marker marker = markers[i];
-                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i])!;
-                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
-                }
-
-                return array;
+                return result;
             }
 
             private TSource[] PreallocatingToArray()
@@ -150,7 +229,7 @@ namespace System.Linq
 
                 if (count == 0)
                 {
-                    return Array.Empty<TSource>();
+                    return [];
                 }
 
                 var array = new TSource[count];
@@ -190,9 +269,80 @@ namespace System.Linq
 
                 return array;
             }
+
+            public override TSource? TryGetElementAt(int index, out bool found)
+            {
+                if (index >= 0)
+                {
+                    IEnumerable<TSource>? source;
+                    for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
+                    {
+                        if (TryGetNonEnumeratedCount(source, out int count))
+                        {
+                            if (index < count)
+                            {
+                                found = true;
+                                return source.ElementAt(index);
+                            }
+
+                            index -= count;
+                        }
+                        else
+                        {
+                            using IEnumerator<TSource> e = source.GetEnumerator();
+                            while (e.MoveNext())
+                            {
+                                if (index == 0)
+                                {
+                                    found = true;
+                                    return e.Current;
+                                }
+
+                                index--;
+                            }
+                        }
+                    }
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TSource? TryGetFirst(out bool found)
+            {
+                IEnumerable<TSource>? source;
+                for (int i = 0; (source = GetEnumerable(i)) is not null; i++)
+                {
+                    TSource? result = source.TryGetFirst(out found);
+                    if (found)
+                    {
+                        return result;
+                    }
+                }
+
+                found = false;
+                return default;
+            }
+
+            public override TSource? TryGetLast(out bool found)
+            {
+                ConcatNIterator<TSource>? node = this;
+                do
+                {
+                    TSource? result = node._head.TryGetLast(out found);
+                    if (found)
+                    {
+                        return result;
+                    }
+                }
+                while ((node = node!.PreviousN) is not null);
+
+                found = false;
+                return default;
+            }
         }
 
-        private abstract partial class ConcatIterator<TSource> : IIListProvider<TSource>
+        private abstract partial class ConcatIterator<TSource> : IPartition<TSource>
         {
             public abstract int GetCount(bool onlyIfCheap);
 
@@ -216,6 +366,17 @@ namespace System.Linq
 
                 return list;
             }
+
+            public abstract TSource? TryGetElementAt(int index, out bool found);
+
+            public abstract TSource? TryGetFirst(out bool found);
+
+            public abstract TSource? TryGetLast(out bool found);
+
+            public IPartition<TSource>? Skip(int count) => new EnumerablePartition<TSource>(this, count, -1);
+
+            public IPartition<TSource>? Take(int count) => new EnumerablePartition<TSource>(this, 0, count - 1);
+
         }
     }
 }

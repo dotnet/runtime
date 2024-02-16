@@ -10,6 +10,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/checked-build.h>
 
 #include <glib.h>
@@ -22,6 +23,7 @@
 #include <emscripten/stack.h>
 #ifndef DISABLE_THREADS
 #include <emscripten/threading.h>
+#include <mono/metadata/threads-types.h>
 #endif
 
 
@@ -94,6 +96,10 @@ mono_threads_suspend_init_signals (void)
 void
 mono_threads_suspend_init (void)
 {
+#ifndef DISABLE_THREADS
+	// wasm threading require full cooperative suspend
+	g_assert (mono_threads_is_cooperative_suspension_enabled ());
+#endif
 }
 
 void
@@ -158,15 +164,20 @@ mono_native_thread_os_id_get (void)
 MONO_API gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
+#ifdef __EMSCRIPTEN_PTHREADS__
+	return pthread_create (tid, NULL, (void *(*)(void *)) func, arg) == 0;
+#else
 	g_error ("WASM doesn't support threading");
+#endif
 }
-
-static const char *thread_name;
 
 void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 {
-	thread_name = g_strdup (name);
+#ifndef DISABLE_THREADS
+	// note there is also emscripten_set_thread_name, but it only changes the name for emscripten profiler
+	mono_wasm_pthread_set_name (name);
+#endif
 }
 
 gboolean
@@ -352,20 +363,15 @@ extern void schedule_background_exec (void);
 // when this is called from JSSynchronizationContext, the cb would be System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.BackgroundJobHandler
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
 // when this is called from gc, it would be mono_runtime_do_background_work
+#ifdef DISABLE_THREADS
 void
 mono_main_thread_schedule_background_job (background_job_cb cb)
 {
 	g_assert (cb);
-#ifndef DISABLE_THREADS
-	if (!mono_threads_wasm_is_browser_thread ()) {
-		THREADS_DEBUG ("mono_main_thread_schedule_background_job1: thread %p queued job %p to main thread\n", (gpointer)pthread_self(), (gpointer) cb);
-		mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_current_thread_schedule_background_job, cb);
-		return;
-	}
-#endif /*DISABLE_THREADS*/
 	THREADS_DEBUG ("mono_main_thread_schedule_background_job2: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
 	mono_current_thread_schedule_background_job (cb);
 }
+#endif /*DISABLE_THREADS*/
 
 #ifndef DISABLE_THREADS
 MonoNativeTlsKey jobs_key;
@@ -456,7 +462,7 @@ mono_threads_platform_is_main_thread (void)
 }
 
 gboolean
-mono_threads_wasm_is_browser_thread (void)
+mono_threads_wasm_is_ui_thread (void)
 {
 #ifdef DISABLE_THREADS
 	return TRUE;
@@ -466,7 +472,7 @@ mono_threads_wasm_is_browser_thread (void)
 }
 
 MonoNativeThreadId
-mono_threads_wasm_browser_thread_tid (void)
+mono_threads_wasm_ui_thread_tid (void)
 {
 #ifdef DISABLE_THREADS
 	return (MonoNativeThreadId)1;
@@ -476,58 +482,78 @@ mono_threads_wasm_browser_thread_tid (void)
 }
 
 #ifndef DISABLE_THREADS
-extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id);
-extern void mono_wasm_pthread_on_pthread_detached (MonoNativeThreadId pthread_id);
+extern void mono_wasm_pthread_on_pthread_attached (MonoNativeThreadId pthread_id, const char* thread_name, gboolean background_thread, gboolean threadpool_thread, gboolean external_eventloop, gboolean debugger_thread);
+extern void mono_wasm_pthread_on_pthread_unregistered (MonoNativeThreadId pthread_id);
+extern void mono_wasm_pthread_on_pthread_registered (MonoNativeThreadId pthread_id);
 #endif
 
 void
-mono_threads_wasm_on_thread_attached (void)
+mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gboolean background_thread, gboolean threadpool_thread, gboolean external_eventloop, gboolean debugger_thread)
 {
 #ifdef DISABLE_THREADS
 	return;
 #else
-	if (mono_threads_wasm_is_browser_thread ()) {
+	if (mono_threads_wasm_is_ui_thread ()) {
+		// FIXME: we should not be attaching UI thread with deputy design
+		// but right now we do, because mono_wasm_load_runtime is running in UI thread
+		// g_assert(!mono_threads_wasm_is_ui_thread ());
 		return;
 	}
-	// Notify JS that the pthread attachd to Mono
-	pthread_t id = pthread_self ();
+
+	// Notify JS that the pthread attached to Mono
 	MONO_ENTER_GC_SAFE;
-	mono_wasm_pthread_on_pthread_attached (id);
+	mono_wasm_pthread_on_pthread_attached (tid, thread_name, background_thread, threadpool_thread, external_eventloop, debugger_thread);
 	MONO_EXIT_GC_SAFE;
 #endif
 }
 
 void
-mono_threads_wasm_on_thread_detached (void)
+mono_threads_wasm_on_thread_unregistered (void)
 {
 #ifdef DISABLE_THREADS
 	return;
 #else
-	if (mono_threads_wasm_is_browser_thread ()) {
+	if (mono_threads_wasm_is_ui_thread ()) {
 		return;
 	}
-	// Notify JS that the pthread attachd to Mono
+	// Notify JS that the pthread detached from Mono
 	pthread_t id = pthread_self ();
 
-	mono_wasm_pthread_on_pthread_detached (id);
+	mono_wasm_pthread_on_pthread_unregistered (id);
+#endif
+}
+
+void
+mono_threads_wasm_on_thread_registered (void)
+{
+#ifdef DISABLE_THREADS
+	return;
+#else
+	if (mono_threads_wasm_is_ui_thread ()) {
+		return;
+	}
+	// Notify JS that the pthread registered to Mono
+	pthread_t id = pthread_self ();
+
+	mono_wasm_pthread_on_pthread_registered (id);
 #endif
 }
 
 #ifndef DISABLE_THREADS
 void
-mono_threads_wasm_async_run_in_main_thread (void (*func) (void))
+mono_threads_wasm_async_run_in_ui_thread (void (*func) (void))
 {
 	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_V, func);
 }
 
 void
-mono_threads_wasm_async_run_in_main_thread_vi (void (*func) (gpointer), gpointer user_data)
+mono_threads_wasm_async_run_in_ui_thread_vi (void (*func) (gpointer), gpointer user_data)
 {
 	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VI, func, user_data);
 }
 
 void
-mono_threads_wasm_async_run_in_main_thread_vii (void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+mono_threads_wasm_async_run_in_ui_thread_vii (void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
 {
 	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VII, func, user_data1, user_data2);
 }
@@ -542,6 +568,32 @@ void
 mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (*func) (gpointer), gpointer user_data)
 {
 	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VI, func, NULL, user_data);
+}
+
+void
+mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VII, func, NULL, user_data1, user_data2);
+}
+
+static void mono_threads_wasm_sync_run_in_target_thread_vii_cb (MonoCoopSem *done, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	func (user_data1, user_data2);
+	mono_coop_sem_post (done);
+}
+
+void
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	MonoCoopSem sem;
+	mono_coop_sem_init (&sem, 0);
+	emscripten_dispatch_to_thread_async (target_thread, EM_FUNC_SIG_VIIII, mono_threads_wasm_sync_run_in_target_thread_vii_cb, NULL, &sem, func, user_data1, user_data2);
+
+	MONO_ENTER_GC_UNSAFE;
+	mono_coop_sem_wait (&sem, MONO_SEM_FLAGS_NONE);
+	MONO_EXIT_GC_UNSAFE;
+
+	mono_coop_sem_destroy (&sem);
 }
 
 #endif /* DISABLE_THREADS */

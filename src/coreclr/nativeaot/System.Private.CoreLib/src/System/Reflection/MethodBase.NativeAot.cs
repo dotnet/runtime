@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+
 using Internal.Reflection.Augments;
 
 namespace System.Reflection
@@ -16,7 +17,7 @@ namespace System.Reflection
         public static MethodBase GetCurrentMethod() { throw NotImplemented.ByDesign; } //Implemented by toolchain.
 
         // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
-        public virtual ParameterInfo[] GetParametersNoCopy() => GetParameters();
+        public virtual ReadOnlySpan<ParameterInfo> GetParametersAsSpan() => GetParameters();
 
         //
         // MethodBase MetadataDefinitionMethod { get; }
@@ -34,6 +35,6 @@ namespace System.Reflection
         //  (for example, the methods returned on Array types.)
         //
         // This is not an api but needs to be declared public so that System.Private.Reflection.Core can access (and override it)
-        public virtual MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }
+        internal virtual MethodBase MetadataDefinitionMethod { get { throw NotImplemented.ByDesign; } }
     }
 }

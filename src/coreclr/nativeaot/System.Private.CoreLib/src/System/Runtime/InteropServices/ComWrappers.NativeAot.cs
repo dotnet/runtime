@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading;
 
+using Internal.Runtime;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -42,7 +44,7 @@ namespace System.Runtime.InteropServices
         private static readonly List<GCHandle> s_referenceTrackerNativeObjectWrapperCache = new List<GCHandle>();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
-        private readonly Lock _lock = new Lock();
+        private readonly Lock _lock = new Lock(useTrivialWaits: true);
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
 
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out long wrapperId)
@@ -56,7 +58,7 @@ namespace System.Runtime.InteropServices
             }
 
             wrapperId = wrapper._comWrappers.id;
-            return Marshal.QueryInterface(wrapper._externalComObject, in iid, out unknown) == HResults.S_OK;
+            return Marshal.QueryInterface(wrapper._externalComObject, iid, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
@@ -68,7 +70,7 @@ namespace System.Runtime.InteropServices
                 return false;
             }
 
-            return Marshal.QueryInterface(wrapper._externalComObject, in IID_IUnknown, out unknown) == HResults.S_OK;
+            return Marshal.QueryInterface(wrapper._externalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -417,14 +419,14 @@ namespace System.Runtime.InteropServices
             static ManagedObjectWrapperHolder()
             {
                 delegate* unmanaged<IntPtr, bool> callback = &IsRootedCallback;
-                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, typeof(ManagedObjectWrapperHolder).GetEEType()))
+                if (!RuntimeImports.RhRegisterRefCountedHandleCallback((nint)callback, MethodTable.Of<ManagedObjectWrapperHolder>()))
                 {
                     throw new OutOfMemoryException();
                 }
             }
 
             [UnmanagedCallersOnly]
-            static bool IsRootedCallback(IntPtr pObj)
+            private static bool IsRootedCallback(IntPtr pObj)
             {
                 // We are paused in the GC, so this is safe.
 #pragma warning disable CS8500 // Takes a pointer to a managed type
@@ -512,7 +514,7 @@ namespace System.Runtime.InteropServices
             public static NativeObjectWrapper Create(IntPtr externalComObject, IntPtr inner, ComWrappers comWrappers, object comProxy, CreateObjectFlags flags)
             {
                 if (flags.HasFlag(CreateObjectFlags.TrackerObject) &&
-                    Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
+                    Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr trackerObject) == HResults.S_OK)
                 {
                     return new ReferenceTrackerNativeObjectWrapper(externalComObject, inner, comWrappers, comProxy, flags, trackerObject);
                 }
@@ -854,7 +856,7 @@ namespace System.Runtime.InteropServices
             {
                 // It is possible the user has defined their own IUnknown impl so
                 // we fallback to the tagged interface approach to be sure.
-                if (0 != Marshal.QueryInterface(comObject, in IID_TaggedImpl, out nint implMaybe))
+                if (0 != Marshal.QueryInterface(comObject, IID_TaggedImpl, out nint implMaybe))
                 {
                     return null;
                 }
@@ -888,7 +890,7 @@ namespace System.Runtime.InteropServices
             bool refTrackerInnerScenario = flags.HasFlag(CreateObjectFlags.TrackerObject)
                 && flags.HasFlag(CreateObjectFlags.Aggregation);
             if (refTrackerInnerScenario &&
-                Marshal.QueryInterface(externalComObject, in IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
+                Marshal.QueryInterface(externalComObject, IID_IReferenceTracker, out IntPtr referenceTrackerPtr) == HResults.S_OK)
             {
                 // We are checking the supplied external value
                 // for IReferenceTracker since in .NET 5 API usage scenarios
@@ -900,11 +902,11 @@ namespace System.Runtime.InteropServices
                 // be the true identity.
                 using ComHolder referenceTracker = new ComHolder(referenceTrackerPtr);
                 checkForIdentity = referenceTrackerPtr;
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, in IID_IUnknown, out identity));
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(checkForIdentity, IID_IUnknown, out identity));
             }
             else
             {
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, in IID_IUnknown, out identity));
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(externalComObject, IID_IUnknown, out identity));
             }
 
             // Set the inner if scenario dictates an update.
@@ -948,37 +950,10 @@ namespace System.Runtime.InteropServices
                 out IntPtr inner);
 
             using ComHolder releaseIdentity = new ComHolder(identity);
-            if (flags.HasFlag(CreateObjectFlags.Unwrap))
-            {
-                ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
-                if (comInterfaceDispatch != null)
-                {
-                    // If we found a managed object wrapper in this ComWrappers instance
-                    // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
-                    // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
-                    //
-                    // A managed object can have multiple managed object wrappers, with a max of one per context.
-                    // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
-                    // managed object wrappers for A created with C1 and C2 respectively.
-                    // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
-                    // we will create a new wrapper. In this scenario, we'll only unwrap B2.
-                    object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                    if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
-                    {
-                        // The unwrapped object has a CCW in this context. Compare with identity
-                        // so we can see if it's the CCW for the unwrapped object in this context.
-                        if (unwrappedWrapperInThisContext.ComIp == identity)
-                        {
-                            retValue = unwrapped;
-                            return true;
-                        }
-                    }
-                }
-            }
 
             if (!flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     if (_rcwCache.TryGetValue(identity, out GCHandle handle))
                     {
@@ -1018,6 +993,33 @@ namespace System.Runtime.InteropServices
                         return true;
                     }
                 }
+                if (flags.HasFlag(CreateObjectFlags.Unwrap))
+                {
+                    ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(identity);
+                    if (comInterfaceDispatch != null)
+                    {
+                        // If we found a managed object wrapper in this ComWrappers instance
+                        // and it's has the same identity pointer as the one we're creating a NativeObjectWrapper for,
+                        // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+                        //
+                        // A managed object can have multiple managed object wrappers, with a max of one per context.
+                        // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+                        // managed object wrappers for A created with C1 and C2 respectively.
+                        // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+                        // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+                        object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+                        if (_ccwTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                        {
+                            // The unwrapped object has a CCW in this context. Compare with identity
+                            // so we can see if it's the CCW for the unwrapped object in this context.
+                            if (unwrappedWrapperInThisContext.ComIp == identity)
+                            {
+                                retValue = unwrapped;
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
 
             retValue = CreateObject(identity, flags);
@@ -1047,7 +1049,7 @@ namespace System.Runtime.InteropServices
                 return true;
             }
 
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 object? cachedWrapper = null;
                 if (_rcwCache.TryGetValue(identity, out var existingHandle))
@@ -1092,7 +1094,7 @@ namespace System.Runtime.InteropServices
 
         private void RemoveRCWFromCache(IntPtr comPointer, GCHandle expectedValue)
         {
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 // TryGetOrCreateObjectForComInstanceInternal may have put a new entry into the cache
                 // in the time between the GC cleared the contents of the GC handle but before the
@@ -1463,7 +1465,7 @@ namespace System.Runtime.InteropServices
                 return HResults.E_INVALIDARG;
             }
 
-            if (Marshal.QueryInterface(punk, in IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
+            if (Marshal.QueryInterface(punk, IID_IUnknown, out IntPtr ppv) != HResults.S_OK)
             {
                 return HResults.COR_E_INVALIDCAST;
             }
@@ -1472,7 +1474,7 @@ namespace System.Runtime.InteropServices
             {
                 using ComHolder identity = new ComHolder(ppv);
                 using ComHolder trackerTarget = new ComHolder(GetOrCreateTrackerTarget(identity.Ptr));
-                return Marshal.QueryInterface(trackerTarget.Ptr, in IID_IReferenceTrackerTarget, out *ppNewReference);
+                return Marshal.QueryInterface(trackerTarget.Ptr, IID_IReferenceTrackerTarget, out *ppNewReference);
             }
             catch (Exception e)
             {
@@ -1594,7 +1596,7 @@ namespace System.Runtime.InteropServices
                 targetPtr != IntPtr.Zero)
             {
                 using ComHolder target = new ComHolder(targetPtr);
-                if (Marshal.QueryInterface(target.Ptr, in IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
+                if (Marshal.QueryInterface(target.Ptr, IID_IUnknown, out IntPtr targetIdentityPtr) == HResults.S_OK)
                 {
                     using ComHolder targetIdentity = new ComHolder(targetIdentityPtr);
                     return GetOrCreateObjectFromWrapper(wrapperId, targetIdentity.Ptr);

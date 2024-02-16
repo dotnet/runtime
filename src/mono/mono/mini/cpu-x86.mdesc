@@ -111,6 +111,9 @@ int_div: dest:a src1:a src2:i len:15 clob:d
 int_div_un: dest:a src1:a src2:i len:15 clob:d
 int_rem: dest:d src1:a src2:i len:15 clob:a
 int_rem_un: dest:d src1:a src2:i len:15 clob:a
+int_divrem: dest:a src1:a src2:d src3:i clob:x len:15
+int_divrem_un: dest:a src1:a src2:d src3:i clob:x len:15
+int_divrem2: dest:d len:3
 int_and: dest:i src1:i src2:i clob:1 len:2
 int_or: dest:i src1:i src2:i clob:1 len:2
 int_xor: dest:i src1:i src2:i clob:1 len:2
@@ -303,6 +306,10 @@ x86_fp_load_i8: dest:f src1:b len:7
 x86_fp_load_i4: dest:f src1:b len:7
 x86_seteq_membase: src1:b len:7
 x86_setne_membase: src1:b len:7
+x86_bsf32: dest:i src1:i len:4
+x86_bsf64: dest:l src1:l len:4
+x86_bsr32: dest:i src1:i len:4
+x86_bsr64: dest:l src1:l len:4
 
 x86_add_reg_membase: dest:i src1:i src2:b clob:1 len:11
 x86_sub_reg_membase: dest:i src1:i src2:b clob:1 len:11

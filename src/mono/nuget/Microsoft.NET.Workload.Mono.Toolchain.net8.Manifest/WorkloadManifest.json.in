@@ -1,0 +1,468 @@
+{
+  "version": "${WorkloadVersion}",
+  "depends-on": {
+    "Microsoft.NET.Workload.Emscripten.net8": "${EmscriptenVersion}"
+  },
+  "workloads": {
+    "wasm-tools-net8": {
+      "description": ".NET WebAssembly build tools for net8.0",
+      "packs": [
+        "Microsoft.NET.Runtime.WebAssembly.Sdk.net8",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.browser-wasm"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net8", "microsoft-net-sdk-emscripten-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
+    },
+    "wasm-experimental-net8": {
+      "description": ".NET WebAssembly experimental tooling for net8.0",
+      "packs": [
+        "Microsoft.NET.Runtime.WebAssembly.Templates.net8",
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.net8.browser-wasm"
+      ],
+      "extends": [ "wasm-tools-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
+    },
+    "wasi-experimental-net8": {
+      "description": ".NET WASI experimental",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.net8.wasi-wasm",
+      ],
+      "extends": [ "wasi-experimental", "microsoft-net-runtime-mono-tooling-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
+    },
+    "microsoft-net-runtime-android-net8": {
+      "abstract": true,
+      "description": "Android Mono Runtime",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.net8.android-arm",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.android-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.android-x64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.android-x86"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
+    },
+    "microsoft-net-runtime-android-aot-net8": {
+      "abstract": true,
+      "description": "Android Mono AOT Workload",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-x86",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-x64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-arm",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-arm64"
+      ],
+      "extends": [ "microsoft-net-runtime-android-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
+    },
+    "microsoft-net-runtime-ios-net8": {
+      "abstract": true,
+      "description": "iOS Mono Runtime and AOT Workload",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.ios-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x64"
+      ],
+      "extends": [ "runtimes-ios-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
+    },
+    "runtimes-ios-net8": {
+      "abstract": true,
+      "description": "iOS Mono Runtime Packs",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.net8.ios-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-x64"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
+    },
+    "microsoft-net-runtime-maccatalyst-net8": {
+      "abstract": true,
+      "description": "MacCatalyst Mono Runtime and AOT Workload",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.maccatalyst-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.maccatalyst-x64"
+      ],
+      "extends": [ "runtimes-maccatalyst-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
+    },
+    "runtimes-maccatalyst-net8": {
+      "abstract": true,
+      "description": "MacCatalyst Mono Runtime Packs",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.net8.maccatalyst-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.maccatalyst-x64"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
+    },
+    "microsoft-net-runtime-macos-net8": {
+      "abstract": true,
+      "description": "MacOS CoreCLR and Mono Runtime Workload",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.net8.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.osx-x64",
+        "Microsoft.NETCore.App.Runtime.osx-arm64",
+        "Microsoft.NETCore.App.Runtime.osx-x64"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
+      "platforms": [ "osx-arm64", "osx-x64" ]
+    },
+    "microsoft-net-runtime-tvos-net8": {
+      "abstract": true,
+      "description": "tvOS Mono Runtime and AOT Workload",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.tvos-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.tvossimulator-arm64",
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.tvossimulator-x64"
+      ],
+      "extends": [ "runtimes-tvos-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
+    },
+    "runtimes-tvos-net8": {
+      "abstract": true,
+      "description": "tvOS Mono Runtime Packs",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.Mono.net8.tvos-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.tvossimulator-arm64",
+        "Microsoft.NETCore.App.Runtime.Mono.net8.tvossimulator-x64"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling-net8" ],
+      "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
+    },
+    "runtimes-windows-net8": {
+      "abstract": true,
+      "description": "Windows Runtime Packs for net8.0",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.net8.win-x64",
+        "Microsoft.NETCore.App.Runtime.net8.win-x86",
+        "Microsoft.NETCore.App.Runtime.net8.win-arm",
+        "Microsoft.NETCore.App.Runtime.net8.win-arm64"
+      ]
+    },
+    "microsoft-net-runtime-mono-tooling-net8": {
+      "abstract": true,
+      "description": "Shared native build tooling for Mono runtime",
+      "packs": [
+        "Microsoft.NET.Runtime.MonoAOTCompiler.Task.net8",
+        "Microsoft.NET.Runtime.MonoTargets.Sdk.net8"
+      ]
+    }
+  },
+  "packs": {
+    "Microsoft.NET.Runtime.MonoAOTCompiler.Task.net8": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NET.Runtime.MonoAOTCompiler.Task"
+      }
+    },
+    "Microsoft.NET.Runtime.MonoTargets.Sdk.net8": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NET.Runtime.MonoTargets.Sdk"
+      }
+    },
+    "Microsoft.NET.Runtime.WebAssembly.Sdk.net8": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NET.Runtime.WebAssembly.Sdk"
+      }
+    },
+    "Microsoft.NET.Runtime.WebAssembly.Templates.net8": {
+      "kind": "template",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NET.Runtime.WebAssembly.Templates"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.android-arm": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.android-arm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.android-arm64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.android-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.android-x64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.android-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.android-x86": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.android-x86"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-x86": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-x86",
+        "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-x86",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-x86",
+        "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-x86",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x86",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-x86"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-x64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-x64",
+        "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-x64",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-x64",
+        "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-x64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-x64",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-arm": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-arm",
+        "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-arm",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-arm",
+        "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-arm",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-arm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.android-arm64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-arm64",
+        "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.android-arm64",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.android-arm64",
+        "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.android-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.android-arm64",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.android-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.maccatalyst-arm64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.maccatalyst-x64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.maccatalyst-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.osx-arm64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.osx-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.osx-x64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.osx-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.net8.osx-arm64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.osx-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.net8.osx-x64": {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.osx-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.ios-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.ios-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.iossimulator-x64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+          "any": "Microsoft.NETCore.App.Runtime.Mono.iossimulator-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.tvos-arm64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.tvos-arm64",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvos-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.tvos-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.tvos-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.tvossimulator-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.tvossimulator-x64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.tvossimulator-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.maccatalyst-arm64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.maccatalyst-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.maccatalyst-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.maccatalyst-x64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.maccatalyst-x64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.maccatalyst-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.tvossimulator-arm64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.tvossimulator-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvossimulator-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.tvossimulator-x64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.tvossimulator-x64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.tvossimulator-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.ios-arm64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.ios-arm64",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.ios-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-arm64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.iossimulator-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-arm64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.iossimulator-x64": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.iossimulator-x64",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.iossimulator-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.AOT.Cross.net8.browser-wasm": {
+      "kind": "Sdk",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm",
+        "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm",
+        "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.browser-wasm",
+        "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.browser-wasm",
+        "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm",
+        "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.multithread.net8.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.net8.wasi-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.net8.win-x64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.win-x64"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.net8.win-x86" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.win-x86"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.net8.win-arm" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.win-arm"
+      }
+    },
+    "Microsoft.NETCore.App.Runtime.net8.win-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersionNet8}",
+      "alias-to": {
+        "any": "Microsoft.NETCore.App.Runtime.win-arm64"
+      }
+    }
+  }
+}

@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Tests
                 // We will get an exception here if we try to access a dynamic property since 'object' is deserialized
                 // as a JsonElement and not an ExpandoObject.
                 int c = d.MyInt;
-                Assert.True(false, "Should have thrown Exception!");
+                Assert.Fail("Should have thrown Exception!");
             }
             catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException) { }
 

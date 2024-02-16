@@ -137,7 +137,6 @@ set( JIT_SOURCES
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
-  jittelemetry.cpp
   lclmorph.cpp
   lclvars.cpp
   likelyclass.cpp
@@ -152,6 +151,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizebools.cpp
+  switchrecognition.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
@@ -230,6 +230,7 @@ set( JIT_I386_SOURCES
 set( JIT_ARM64_SOURCES
   codegenarmarch.cpp
   codegenarm64.cpp
+  codegenarm64test.cpp
   emitarm64.cpp
   lowerarmarch.cpp
   lsraarmarch.cpp
@@ -335,7 +336,6 @@ set( JIT_HEADERS
   jithashtable.h
   jitpch.h
   jitstd.h
-  jittelemetry.h
   lir.h
   loopcloning.h
   loopcloningopts.h
@@ -347,6 +347,7 @@ set( JIT_HEADERS
   namedintrinsiclist.h
   objectalloc.h
   opcode.h
+  optcse.h
   phase.h
   promotion.h
   rangecheck.h
@@ -399,8 +400,11 @@ set( JIT_I386_HEADERS ${JIT_AMD64_HEADERS} )
 set( JIT_ARM64_HEADERS
     emitarm64.h
     emitfmtsarm64.h
+    emitfmtsarm64sve.h
     hwintrinsiclistarm64.h
+    hwintrinsiclistarm64sve.h
     instrsarm64.h
+    instrsarm64sve.h
     registerarm64.h
     simdashwintrinsiclistarm64.h
 )

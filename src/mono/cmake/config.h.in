@@ -3,18 +3,6 @@
 
 #ifdef _MSC_VER
 
-// FIXME This is all questionable but the logs are flooded and nothing else is fixing them.
-#pragma warning(disable:4090) // W1: const problem
-#pragma warning(disable:4100) // W4: unreferenced formal parameter
-#pragma warning(disable:4152) // W4: nonstandard extension, function/data pointer conversion in expression
-#pragma warning(disable:4201) // W4: nonstandard extension used: nameless struct/union
-#pragma warning(disable:4210) // W4: nonstandard extension used: function given file scope
-#pragma warning(disable:4245) // W4: signed/unsigned mismatch
-#pragma warning(disable:4389) // W4: signed/unsigned mismatch
-#pragma warning(disable:4505) // W4: unreferenced function with internal linkage has been removed
-#pragma warning(disable:4702) // W4: unreachable code
-#pragma warning(disable:4706) // W4: assignment within conditional expression
-
 #include <SDKDDKVer.h>
 
 #if _WIN32_WINNT < 0x0601
@@ -30,13 +18,13 @@
 
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 	#define HAVE_CLASSIC_WINAPI_SUPPORT 1
-	#define HAVE_UWP_WINAPI_SUPPORT 0
+	#define HAVE_APP_WINAPI_SUPPORT 0
 #elif WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
 	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
-	#define HAVE_UWP_WINAPI_SUPPORT 1
+	#define HAVE_APP_WINAPI_SUPPORT 1
 #else
 	#define HAVE_CLASSIC_WINAPI_SUPPORT 0
-	#define HAVE_UWP_WINAPI_SUPPORT 0
+	#define HAVE_APP_WINAPI_SUPPORT 0
 #ifndef HAVE_EXTERN_DEFINED_WINAPI_SUPPORT
 	#error Unsupported WINAPI family
 #endif
@@ -105,12 +93,6 @@
 /* Target Platform is Linux (musl libc)*/
 #cmakedefine TARGET_LINUX_MUSL 1
 
-/* Use classic Windows API support */
-#cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
-
-/* Don't use UWP Windows API support */
-#cmakedefine HAVE_UWP_WINAPI_SUPPORT 1
-
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H 1
 
@@ -135,20 +117,11 @@
 /* Define to 1 if you have the <syslog.h> header file. */
 #cmakedefine HAVE_SYSLOG_H 1
 
-/* Define to 1 if you have the <sys/filio.h> header file. */
-#cmakedefine HAVE_SYS_FILIO_H 1
-
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #cmakedefine HAVE_SYS_SOCKIO_H 1
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #cmakedefine HAVE_NETDB_H 1
-
-/* Define to 1 if you have the <utime.h> header file. */
-#cmakedefine HAVE_UTIME_H 1
-
-/* Define to 1 if you have the <sys/utime.h> header file. */
-#cmakedefine HAVE_SYS_UTIME_H 1
 
 /* Define to 1 if you have the <semaphore.h> header file. */
 #cmakedefine HAVE_SEMAPHORE_H 1
@@ -210,9 +183,6 @@
 /* Define to 1 if you have the <unwind.h> header file. */
 #cmakedefine HAVE_UNWIND_H 1
 
-/* Define to 1 if you have the <sys/user.h> header file. */
-#cmakedefine HAVE_SYS_USER_H 1
-
 /* Use static ICU */
 #cmakedefine STATIC_ICU 1
 
@@ -265,9 +235,6 @@
 /* Disable support debug logging */
 #cmakedefine DISABLE_LOGGING 1
 
-/* Disable COM support */
-#cmakedefine DISABLE_COM 1
-
 /* Disable advanced SSA JIT optimizations */
 #cmakedefine DISABLE_SSA 1
 
@@ -308,9 +275,6 @@
 /* Disable sockets */
 #cmakedefine DISABLE_SOCKETS 1
 
-/* Disables use of DllMaps in MonoVM */
-#cmakedefine DISABLE_DLLMAP 1
-
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
 
@@ -322,9 +286,6 @@
 
 /* Define to 1 if you have the `sigaction' function. */
 #cmakedefine HAVE_SIGACTION 1
-
-/* Define to 1 if you have the `kill' function. */
-#cmakedefine HAVE_KILL 1
 
 /* CLOCK_MONOTONIC */
 #cmakedefine HAVE_CLOCK_MONOTONIC 1
@@ -365,9 +326,6 @@
 /* Define to 1 if you have the `madvise' function. */
 #cmakedefine HAVE_MADVISE 1
 
-/* Define to 1 if you have the `getrusage' function. */
-#cmakedefine HAVE_GETRUSAGE 1
-
 /* Define to 1 if you have the `dladdr' function. */
 #cmakedefine HAVE_DLADDR 1
 
@@ -380,38 +338,17 @@
 /* Define to 1 if you have the `prctl' function. */
 #cmakedefine HAVE_PRCTL 1
 
-/* Define to 1 if you have the `nl_langinfo' function. */
-#cmakedefine HAVE_NL_LANGINFO 1
-
 /* sched_getaffinity */
 #cmakedefine HAVE_SCHED_GETAFFINITY 1
 
 /* sched_setaffinity */
 #cmakedefine HAVE_SCHED_SETAFFINITY 1
 
-/* Define to 1 if you have the `chmod' function. */
-#cmakedefine HAVE_CHMOD 1
-
 /* Define to 1 if you have the `lstat' function. */
 #cmakedefine HAVE_LSTAT 1
 
-/* Define to 1 if you have the `getdtablesize' function. */
-#cmakedefine HAVE_GETDTABLESIZE 1
-
 /* Define to 1 if you have the `ftruncate' function. */
 #cmakedefine HAVE_FTRUNCATE 1
-
-/* Define to 1 if you have the `msync' function. */
-#cmakedefine HAVE_MSYNC 1
-
-/* Define to 1 if you have the `getpeername' function. */
-#cmakedefine HAVE_GETPEERNAME 1
-
-/* Define to 1 if you have the `utime' function. */
-#cmakedefine HAVE_UTIME 1
-
-/* Define to 1 if you have the `utimes' function. */
-#cmakedefine HAVE_UTIMES 1
 
 /* Define to 1 if you have the `openlog' function. */
 #cmakedefine HAVE_OPENLOG 1
@@ -442,24 +379,6 @@
 
 /* Have gethostbyname */
 #cmakedefine HAVE_GETHOSTBYNAME 1
-
-/* Have getprotobyname */
-#cmakedefine HAVE_GETPROTOBYNAME 1
-
-/* Have getprotobyname_r */
-#cmakedefine HAVE_GETPROTOBYNAME_R 1
-
-/* Have getnameinfo */
-#cmakedefine HAVE_GETNAMEINFO 1
-
-/* Have inet_ntop */
-#cmakedefine HAVE_INET_NTOP 1
-
-/* Have inet_pton */
-#cmakedefine HAVE_INET_PTON 1
-
-/* Define to 1 if you have the `inet_aton' function. */
-#cmakedefine HAVE_INET_ATON 1
 
 /* Define to 1 if you have the <pthread.h> header file. */
 #cmakedefine HAVE_PTHREAD_H 1
@@ -523,23 +442,11 @@
 /* sockaddr_in6 has sin6_len */
 #cmakedefine HAVE_SOCKADDR_IN6_SIN_LEN 1
 
-/* Have getifaddrs */
-#cmakedefine HAVE_GETIFADDRS 1
-
-/* Have access */
-#cmakedefine HAVE_ACCESS 1
-
 /* Have getpid */
 #cmakedefine HAVE_GETPID 1
 
 /* Have mktemp */
 #cmakedefine HAVE_MKTEMP 1
-
-/* Define to 1 if you have the <sys/statvfs.h> header file. */
-#cmakedefine HAVE_SYS_STATVFS_H 1
-
-/* Define to 1 if you have the <sys/statfs.h> header file. */
-#cmakedefine HAVE_SYS_STATFS_H 1
 
 /* Define to 1 if you have the <sys/mman.h> header file. */
 #cmakedefine HAVE_SYS_MMAN_H 1
@@ -547,30 +454,18 @@
 /* Define to 1 if you have the <sys/mount.h> header file. */
 #cmakedefine HAVE_SYS_MOUNT_H 1
 
-/* Define to 1 if you have the `getfsstat' function. */
-#cmakedefine HAVE_GETFSSTAT 1
-
 /* Define to 1 if you have the `mremap' function. */
 #cmakedefine HAVE_MREMAP 1
 
-/* Define to 1 if you have the `posix_fadvise' function. */
-#cmakedefine HAVE_POSIX_FADVISE 1
-
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
-
-/* struct statfs */
-#cmakedefine HAVE_STATFS 1
-
-/* Define to 1 if you have the `statvfs' function. */
-#cmakedefine HAVE_STATVFS 1
 
 /* Define to 1 if you have the `setpgid' function. */
 #cmakedefine HAVE_SETPGID 1
 
 /* Define to 1 if you have the `system' function. */
 #ifdef _MSC_VER
-#if HAVE_WINAPI_FAMILY_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_CLASSIC_WINAPI_SUPPORT
 #cmakedefine HAVE_SYSTEM 1
 #endif
 #else
@@ -579,15 +474,6 @@
 
 /* Define to 1 if you have the `fork' function. */
 #cmakedefine HAVE_FORK 1
-
-/* Define to 1 if you have the `execv' function. */
-#cmakedefine HAVE_EXECV 1
-
-/* Define to 1 if you have the `execve' function. */
-#cmakedefine HAVE_EXECVE 1
-
-/* Define to 1 if you have the `waitpid' function. */
-#cmakedefine HAVE_WAITPID 1
 
 /* Define to 1 if you have the `localtime_r' function. */
 #cmakedefine HAVE_LOCALTIME_R 1
@@ -608,18 +494,6 @@
 
 /* Define to 1 if the system has the type `struct sockaddr_in6'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR_IN6 1
-
-/* Define to 1 if the system has the type `struct stat'. */
-#cmakedefine HAVE_STRUCT_STAT 1
-
-/* Define to 1 if the system has the type `struct timeval'. */
-#cmakedefine HAVE_STRUCT_TIMEVAL 1
-
-/* Define to 1 if `st_atim' is a member of `struct stat'. */
-#cmakedefine HAVE_STRUCT_STAT_ST_ATIM 1
-
-/* Define to 1 if `st_atimespec' is a member of `struct stat'. */
-#cmakedefine HAVE_STRUCT_STAT_ST_ATIMESPEC 1
 
 /* Define to 1 if `super_class' is a member of `struct objc_super'. */
 #cmakedefine HAVE_OBJC_SUPER_SUPER_CLASS 1
@@ -807,14 +681,8 @@
 /* Defaults to concurrent GC */
 #cmakedefine HAVE_CONC_GC_AS_DEFAULT 1
 
-/* Define to 1 if you have the `stpcpy' function. */
-#cmakedefine HAVE_STPCPY 1
-
 /* Define to 1 if you have the `strtok_r' function. */
 #cmakedefine HAVE_STRTOK_R 1
-
-/* Define to 1 if you have the `rewinddir' function. */
-#cmakedefine HAVE_REWINDDIR 1
 
 /* Define to 1 if you have the `vasprintf' function. */
 #cmakedefine HAVE_VASPRINTF 1

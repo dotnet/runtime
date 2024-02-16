@@ -1019,6 +1019,19 @@ int32_t SystemNative_MUnmap(void* address, uint64_t length)
     return munmap(address, (size_t)length);
 }
 
+int32_t SystemNative_MProtect(void* address, uint64_t length, int32_t protection)
+{
+    if (length > SIZE_MAX)
+    {
+        errno =  ERANGE;
+        return -1;
+    }
+
+    protection = ConvertMMapProtection(protection);
+
+    return mprotect(address, (size_t)length, protection);
+}
+
 int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
 {
     if (length > SIZE_MAX)

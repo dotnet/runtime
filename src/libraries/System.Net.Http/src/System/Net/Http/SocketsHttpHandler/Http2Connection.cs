@@ -19,7 +19,7 @@ namespace System.Net.Http
     internal sealed partial class Http2Connection : HttpConnectionBase
     {
         // Equivalent to the bytes returned from HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewNameToAllocatedArray(":protocol")
-        private static ReadOnlySpan<byte> ProtocolLiteralHeaderBytes => new byte[] { 0x0, 0x9, 0x3a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c };
+        private static ReadOnlySpan<byte> ProtocolLiteralHeaderBytes => [0x0, 0x9, 0x3a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x6f, 0x6c];
 
         private static readonly TaskCompletionSourceWithCancellation<bool> s_settingsReceivedSingleton = CreateSuccessfullyCompletedTcs();
 
@@ -260,10 +260,12 @@ namespace System.Net.Http
 
             if (!_shutdown)
             {
+                // InvalidateHttp2Connection may call back into Shutdown,
+                // so we set the flag early to prevent executing FinalTeardown twice.
+                _shutdown = true;
+
                 _pool.InvalidateHttp2Connection(this);
                 SignalAvailableStreamsWaiter(false);
-
-                _shutdown = true;
 
                 if (_streamsInUse == 0)
                 {
@@ -359,7 +361,7 @@ namespace System.Net.Http
 
             if (_availableStreamsWaiter is not null)
             {
-                Debug.Assert(!_shutdown);
+                Debug.Assert(_shutdown != result);
                 _availableStreamsWaiter.SetResult(result);
                 _availableStreamsWaiter = null;
             }
@@ -635,7 +637,7 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnHeadersStart();
-                _rttEstimator.OnDataOrHeadersReceived(this);
+                _rttEstimator.OnDataOrHeadersReceived(this, sendWindowUpdateBeforePing: true);
                 headersHandler = http2Stream;
             }
             else
@@ -764,21 +766,16 @@ namespace System.Net.Http
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), hasPad: frameHeader.PaddedFlag, hasPriority: false);
 
-            if (http2Stream != null)
-            {
-                bool endStream = frameHeader.EndStreamFlag;
-
-                http2Stream.OnResponseData(frameData, endStream);
-
-                if (!endStream && frameData.Length > 0)
-                {
-                    _rttEstimator.OnDataOrHeadersReceived(this);
-                }
-            }
+            bool endStream = frameHeader.EndStreamFlag;
+            http2Stream?.OnResponseData(frameData, endStream);
 
             if (frameData.Length > 0)
             {
-                ExtendWindow(frameData.Length);
+                bool windowUpdateSent = ExtendWindow(frameData.Length);
+                if (http2Stream is not null && !endStream)
+                {
+                    _rttEstimator.OnDataOrHeadersReceived(this, sendWindowUpdateBeforePing: !windowUpdateSent);
+                }
             }
 
             _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -1770,28 +1767,34 @@ namespace System.Net.Http
             });
         }
 
-        private void ExtendWindow(int amount)
+        private bool ExtendWindow(int amount)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(amount)}={amount}");
             Debug.Assert(amount > 0);
+            Debug.Assert(_pendingWindowUpdate < ConnectionWindowThreshold);
 
-            int windowUpdateSize;
-            lock (SyncObject)
+            _pendingWindowUpdate += amount;
+            if (_pendingWindowUpdate < ConnectionWindowThreshold)
             {
-                Debug.Assert(_pendingWindowUpdate < ConnectionWindowThreshold);
-
-                _pendingWindowUpdate += amount;
-                if (_pendingWindowUpdate < ConnectionWindowThreshold)
-                {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)} {_pendingWindowUpdate} < {ConnectionWindowThreshold}.");
-                    return;
-                }
-
-                windowUpdateSize = _pendingWindowUpdate;
-                _pendingWindowUpdate = 0;
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)} {_pendingWindowUpdate} < {ConnectionWindowThreshold}.");
+                return false;
             }
 
+            int windowUpdateSize = _pendingWindowUpdate;
+            _pendingWindowUpdate = 0;
+
             LogExceptions(SendWindowUpdateAsync(0, windowUpdateSize));
+            return true;
+        }
+
+        private bool ForceSendConnectionWindowUpdate()
+        {
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(_pendingWindowUpdate)}={_pendingWindowUpdate}");
+            if (_pendingWindowUpdate == 0) return false;
+
+            LogExceptions(SendWindowUpdateAsync(0, _pendingWindowUpdate));
+            _pendingWindowUpdate = 0;
+            return true;
         }
 
         public override long GetIdleTicks(long nowTicks)
@@ -1850,7 +1853,8 @@ namespace System.Net.Http
             _stream.Dispose();
 
             _connectionWindow.Dispose();
-            _writeChannel.Writer.Complete();
+            bool completed = _writeChannel.Writer.TryComplete();
+            Debug.Assert(completed, "FinalTeardown was called twice");
 
             // We're not disposing the _incomingBuffer and _outgoingBuffer here as they may still be in use by
             // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are

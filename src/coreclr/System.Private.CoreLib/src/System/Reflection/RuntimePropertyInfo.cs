@@ -261,23 +261,10 @@ namespace System.Reflection
             return m_setterMethod;
         }
 
-        public override ParameterInfo[] GetIndexParameters()
-        {
-            ParameterInfo[] indexParams = GetIndexParametersNoCopy();
+        public override ParameterInfo[] GetIndexParameters() =>
+            GetIndexParametersSpan().ToArray();
 
-            int numParams = indexParams.Length;
-
-            if (numParams == 0)
-                return indexParams;
-
-            ParameterInfo[] ret = new ParameterInfo[numParams];
-
-            Array.Copy(indexParams, ret, numParams);
-
-            return ret;
-        }
-
-        internal ParameterInfo[] GetIndexParametersNoCopy()
+        internal ReadOnlySpan<ParameterInfo> GetIndexParametersSpan()
         {
             // @History - Logic ported from RTM
 
@@ -285,14 +272,14 @@ namespace System.Reflection
             if (m_parameters == null)
             {
                 int numParams = 0;
-                ParameterInfo[]? methParams = null;
+                ReadOnlySpan<ParameterInfo> methParams = default;
 
                 // First try to get the Get method.
                 RuntimeMethodInfo? m = GetGetMethod(true);
                 if (m != null)
                 {
                     // There is a Get method so use it.
-                    methParams = m.GetParametersNoCopy();
+                    methParams = m.GetParametersAsSpan();
                     numParams = methParams.Length;
                 }
                 else
@@ -302,7 +289,7 @@ namespace System.Reflection
 
                     if (m != null)
                     {
-                        methParams = m.GetParametersNoCopy();
+                        methParams = m.GetParametersAsSpan();
                         numParams = methParams.Length - 1;
                     }
                 }

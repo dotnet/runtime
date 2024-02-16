@@ -212,7 +212,7 @@ namespace System.Text.Json.Tests
             try
             {
                 jsonReader.Read();
-                Assert.True(false, "Expected JsonException was not thrown for incomplete/invalid JSON payload reading.");
+                Assert.Fail("Expected JsonException was not thrown for incomplete/invalid JSON payload reading.");
             }
             catch (JsonException ex)
             {
@@ -278,7 +278,7 @@ namespace System.Text.Json.Tests
             try
             {
                 jsonReader.Read();
-                Assert.True(false, "Expected JsonException was not thrown for incomplete/invalid JSON payload reading.");
+                Assert.Fail("Expected JsonException was not thrown for incomplete/invalid JSON payload reading.");
             }
             catch (JsonException ex)
             {
@@ -382,7 +382,7 @@ namespace System.Text.Json.Tests
             try
             {
                 jsonReader.Read();
-                Assert.True(false, "Expected JsonException was not thrown for incomplete/invalid JSON payload reading.");
+                Assert.Fail("Expected JsonException was not thrown for incomplete/invalid JSON payload reading.");
             }
             catch (JsonException ex)
             {
@@ -775,7 +775,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException for multi-segment data was not thrown.");
+                    Assert.Fail("Expected JsonException for multi-segment data was not thrown.");
                 }
                 catch (JsonException ex)
                 {
@@ -803,7 +803,7 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonException for multi-segment data was not thrown.");
+                    Assert.Fail("Expected JsonException for multi-segment data was not thrown.");
                 }
                 catch (JsonException ex)
                 {
@@ -823,7 +823,7 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
+                Assert.Fail("Expected JsonException was not thrown with single-segment data.");
             }
             catch (JsonException ex)
             {
@@ -1012,7 +1012,7 @@ namespace System.Text.Json.Tests
                         break;
                     }
                 }
-                Assert.True(false, "Expected JsonException due to invalid JSON.");
+                Assert.Fail("Expected JsonException due to invalid JSON.");
             }
             catch (JsonException)
             { }
@@ -1428,7 +1428,7 @@ namespace System.Text.Json.Tests
                     try
                     {
                         json.Read();
-                        Assert.True(false, $"Expected JsonException was not thrown. CommentHandling = {jsonCommentHandling}");
+                        Assert.Fail($"Expected JsonException was not thrown. CommentHandling = {jsonCommentHandling}");
                     }
                     catch (JsonException) { }
                 }
@@ -1459,7 +1459,7 @@ namespace System.Text.Json.Tests
                         Assert.True(json.Read()); // "foo"
                         Assert.True(json.Read()); // "bar"
                         json.Read(); // bad comment
-                        Assert.True(false, $"Expected JsonException was not thrown. CommentHandling = {jsonCommentHandling}");
+                        Assert.Fail($"Expected JsonException was not thrown. CommentHandling = {jsonCommentHandling}");
                     }
                     catch (JsonException) { }
                 }
@@ -2084,7 +2084,7 @@ namespace System.Text.Json.Tests
                 {
                     while (reader.Read())
                         ;
-                    Assert.True(false, "Expected JsonException was not thrown when reading JSON with trailing commas.");
+                    Assert.Fail("Expected JsonException was not thrown when reading JSON with trailing commas.");
                 }
                 catch (JsonException ex)
                 {

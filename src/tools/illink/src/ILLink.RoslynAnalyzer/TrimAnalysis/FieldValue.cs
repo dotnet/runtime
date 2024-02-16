@@ -11,7 +11,11 @@ namespace ILLink.Shared.TrimAnalysis
 {
 	internal partial record FieldValue
 	{
-		public FieldValue (IFieldSymbol fieldSymbol) => FieldSymbol = fieldSymbol;
+		public FieldValue (IFieldSymbol fieldSymbol)
+		{
+			FieldSymbol = fieldSymbol;
+			StaticType = new (fieldSymbol.Type);
+		}
 
 		public readonly IFieldSymbol FieldSymbol;
 

@@ -3,13 +3,13 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Xml;
-using System.Xml.Serialization;
-using System.Diagnostics.CodeAnalysis;
-using System.Xml.Schema;
-using System.ServiceModel.Channels;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.ServiceModel.Channels;
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
 
 namespace System.ServiceModel.Syndication
 {

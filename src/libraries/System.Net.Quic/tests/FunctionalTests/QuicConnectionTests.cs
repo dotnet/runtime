@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -15,7 +14,7 @@ namespace System.Net.Quic.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
         const int ExpectedErrorCode = 1234;
@@ -88,7 +87,6 @@ namespace System.Net.Quic.Tests
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
 
                     // Subsequent attempts should fail
-                    // TODO: Which exception is correct?
                     await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
                 });
@@ -117,13 +115,53 @@ namespace System.Net.Quic.Tests
                     sync.Release();
 
                     // Pending ops should fail
-                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => acceptTask);
-                    await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, () => connectTask);
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask);
+                    await Assert.ThrowsAsync<ObjectDisposedException>(async () => await connectTask);
 
                     // Subsequent attempts should fail
-                    // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await serverConnection.AcceptInboundStreamAsync());
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await OpenAndUseStreamAsync(serverConnection));
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseCanceled()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+                    await Assert.ThrowsAsync<OperationCanceledException>(async () => await clientConnection.CloseAsync(ExpectedErrorCode, cts.Token));
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
+                });
+        }
+
+        [Fact]
+        public async Task DisposeAfterCloseTaskStored()
+        {
+            using var sync = new SemaphoreSlim(0);
+
+            await RunClientServer(
+                async clientConnection =>
+                {
+                    var cts = new CancellationTokenSource();
+                    var task = clientConnection.CloseAsync(0).AsTask();
+                    await clientConnection.DisposeAsync();
+                    sync.Release();
+                },
+                async serverConnection =>
+                {
+                    await sync.WaitAsync();
+                    await serverConnection.DisposeAsync();
                 });
         }
 
@@ -310,6 +348,21 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientConnection.AcceptInboundStreamAsync());
                 },
                 _ => Task.CompletedTask);
+        }
+
+        [Fact]
+        public async Task AcceptStreamAsync_ConnectionDisposed_Throws()
+        {
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+
+            // One task issues before the disposal.
+            ValueTask<QuicStream> acceptTask1 = serverConnection.AcceptInboundStreamAsync();
+            await serverConnection.DisposeAsync();
+            // Another task issued after the disposal.
+            ValueTask<QuicStream> acceptTask2 = serverConnection.AcceptInboundStreamAsync();
+
+            var accept1Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask1);
+            var accept2Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask2);
         }
 
         [Theory]

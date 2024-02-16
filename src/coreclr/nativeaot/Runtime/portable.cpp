@@ -12,7 +12,6 @@
 #include "rhassert.h"
 
 #include "slist.h"
-#include "gcrhinterface.h"
 #include "shash.h"
 #include "varint.h"
 #include "holder.h"
@@ -62,7 +61,7 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (MethodTable* pEEType))
 
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
-    size_t size = pEEType->get_BaseSize();
+    size_t size = pEEType->GetBaseSize();
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
     ASSERT(alloc_ptr <= acontext->alloc_limit);
@@ -107,7 +106,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (MethodTable * pArrayEEType, int numEl
     }
 #endif // !HOST_64BIT
 
-    size_t size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
+    size_t size = (size_t)pArrayEEType->GetBaseSize() + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
     size = ALIGN_UP(size, sizeof(uintptr_t));
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
@@ -150,7 +149,7 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastAlign8, (MethodTable* pEEType))
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
 
-    size_t size = pEEType->get_BaseSize();
+    size_t size = pEEType->GetBaseSize();
     size = (size + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
@@ -184,7 +183,7 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (MethodTable* pEEType))
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
 
-    size_t size = pEEType->get_BaseSize();
+    size_t size = pEEType->GetBaseSize();
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
     int requiresPadding = (((uint32_t)alloc_ptr) & 7) != 4;
@@ -230,7 +229,7 @@ COOP_PINVOKE_HELPER(Array*, RhpNewArrayAlign8, (MethodTable* pArrayEEType, int n
         return (Array*)AllocateObject(pArrayEEType, GC_ALLOC_ALIGN8, numElements);
     }
 
-    uint32_t baseSize = pArrayEEType->get_BaseSize();
+    uint32_t baseSize = pArrayEEType->GetBaseSize();
     size_t size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->RawGetComponentSize());
     size = ALIGN_UP(size, sizeof(uintptr_t));
 
@@ -366,6 +365,18 @@ COOP_PINVOKE_HELPER(Object *, RhpCheckedXchg, (Object ** location, Object * valu
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
+}
+
+COOP_PINVOKE_HELPER(uint8_t, RhpLockCmpXchg8, (uint8_t * location, uint8_t value, uint8_t comparand))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
+}
+
+COOP_PINVOKE_HELPER(int16_t, RhpLockCmpXchg16, (int16_t * location, int16_t value, int16_t comparand))
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return 0;
 }
 
 COOP_PINVOKE_HELPER(int32_t, RhpLockCmpXchg32, (int32_t * location, int32_t value, int32_t comparand))

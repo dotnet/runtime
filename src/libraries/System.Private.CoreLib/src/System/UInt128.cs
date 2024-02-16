@@ -802,12 +802,17 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
         public static UInt128 LeadingZeroCount(UInt128 value)
+            => (uint)LeadingZeroCountAsInt32(value);
+
+        /// <summary>Computes the number of leading zero bits in this value.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int LeadingZeroCountAsInt32(UInt128 value)
         {
             if (value._upper == 0)
             {
-                return 64 + ulong.LeadingZeroCount(value._lower);
+                return 64 + BitOperations.LeadingZeroCount(value._lower);
             }
-            return ulong.LeadingZeroCount(value._upper);
+            return BitOperations.LeadingZeroCount(value._upper);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
@@ -950,8 +955,7 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<UInt128>.GetShortestBitLength()
         {
-            UInt128 value = this;
-            return (Size * 8) - BitOperations.LeadingZeroCount(value);
+            return (Size * 8) - LeadingZeroCountAsInt32(this);
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
@@ -1087,10 +1091,18 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         public static UInt128 operator /(UInt128 left, UInt128 right)
         {
-            if ((right._upper == 0) && (left._upper == 0))
+            if (right._upper == 0)
             {
-                // left and right are both uint64
-                return left._lower / right._lower;
+                if (right._lower == 0)
+                {
+                    ThrowHelper.ThrowDivideByZeroException();
+                }
+
+                if (left._upper == 0)
+                {
+                    // left and right are both uint64
+                    return left._lower / right._lower;
+                }
             }
 
             if (right >= left)
@@ -1158,7 +1170,7 @@ namespace System
                 Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 2), (uint)(quotient._upper >> 00));
                 Unsafe.WriteUnaligned(ref *(byte*)(pLeft + 3), (uint)(quotient._upper >> 32));
 
-                Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(quotient) / 32));
+                Span<uint> left = new Span<uint>(pLeft, (Size / sizeof(uint)) - (LeadingZeroCountAsInt32(quotient) / 32));
 
                 // Repeat the same operation with the divisor
 
@@ -1170,7 +1182,7 @@ namespace System
                 Unsafe.WriteUnaligned(ref *(byte*)(pRight + 2), (uint)(divisor._upper >> 00));
                 Unsafe.WriteUnaligned(ref *(byte*)(pRight + 3), (uint)(divisor._upper >> 32));
 
-                Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (BitOperations.LeadingZeroCount(divisor) / 32));
+                Span<uint> right = new Span<uint>(pRight, (Size / sizeof(uint)) - (LeadingZeroCountAsInt32(divisor) / 32));
 
                 Span<uint> rawBits = stackalloc uint[Size / sizeof(uint)];
                 rawBits.Clear();

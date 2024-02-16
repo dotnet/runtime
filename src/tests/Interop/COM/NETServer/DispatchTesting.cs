@@ -57,6 +57,7 @@ public class DispatchTesting : Server.Contract.IDispatchTesting
         case IDispatchTesting_Exception.Disp:
             throw new Exception();
         case IDispatchTesting_Exception.HResult:
+        case IDispatchTesting_Exception.Int:
             throw new System.ComponentModel.Win32Exception(errorCode);
         }
     }

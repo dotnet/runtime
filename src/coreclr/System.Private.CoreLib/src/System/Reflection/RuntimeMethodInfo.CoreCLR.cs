@@ -240,7 +240,7 @@ namespace System.Reflection
         #endregion
 
         #region MethodBase Overrides
-        internal override ParameterInfo[] GetParametersNoCopy() =>
+        internal override ReadOnlySpan<ParameterInfo> GetParametersAsSpan() =>
             FetchNonReturnParameters();
 
         public override ParameterInfo[] GetParameters()

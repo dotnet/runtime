@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>HelloWorld</AssemblyName>
+    <TargetFramework>net6.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <SelfContained>true</SelfContained>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
+
+    <!-- Set the RID when building on a platform where we support self-contained + apphost -->
+    <_SupportedPlatform Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsWindows)' == 'true'">true</_SupportedPlatform>
+    <_SupportedArchitecture Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm' or'$(TargetArchitecture)' == 'arm64'">true</_SupportedArchitecture>
+    <RuntimeIdentifier Condition="'$(_SupportedPlatform)' == 'true' and '$(_SupportedArchitecture)' == 'true'">$(OutputRID)</RuntimeIdentifier>
+  </PropertyGroup>
+</Project>

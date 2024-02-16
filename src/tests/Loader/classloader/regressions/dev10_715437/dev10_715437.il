@@ -51,7 +51,7 @@ function call DerivedDerived::Method() since the method is not defined on this t
 
 
 
-.class private auto ansi beforefieldinit Framework
+.class public auto ansi beforefieldinit Framework
 {
 	.method private hidebysig static int32  CheckResult(string expected, string actual) cil managed {
 	  .maxstack  8

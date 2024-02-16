@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class CoreClr
         {
             public static string FileName = GetSharedLibraryFileNameForCurrentPlatform("coreclr");
-            public static string FilePath = Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, FileName);
+            public static string FilePath = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, FileName);
 
             public static string MockName = GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr");
             public static string MockPath = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, MockName);
@@ -88,7 +88,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public static (IEnumerable<string> Assemblies, IEnumerable<string> NativeLibraries) GetRuntimeFiles()
         {
-            var runtimePackDir = new DotNetCli(RepoDirectoriesProvider.Default.BuiltDotnet).GreatestVersionSharedFxPath;
+            var runtimePackDir = TestContext.BuiltDotNet.GreatestVersionSharedFxPath;
             var assemblies = Directory.GetFiles(runtimePackDir, "*.dll").Where(f => IsAssembly(f));
 
             (string prefix, string suffix) = Binaries.GetSharedLibraryPrefixSuffix();

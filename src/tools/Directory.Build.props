@@ -1,0 +1,9 @@
+<Project>
+
+  <Import Project="..\..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <SlnGenSolutionFolder>tools\</SlnGenSolutionFolder>
+  </PropertyGroup>
+
+</Project>

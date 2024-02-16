@@ -4,6 +4,7 @@
 using System;
 using System.Globalization;
 using System.Collections;
+using Xunit;
 //create for delegate combine(delegate a,delegate b) testing
 namespace DelegateTest
 {
@@ -25,7 +26,8 @@ namespace DelegateTest
         }
         booldelegate starkWork;
         booldelegate working;
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             DelegateCombineImpl delegateCombineImpl = new DelegateCombineImpl();
 

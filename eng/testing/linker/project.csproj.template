@@ -12,7 +12,10 @@
   <!-- This must be done after the usual nuget props imports, to override the implicitly referenced
        Microsoft.NET.ILLink.Tasks.props from the SDK. -->
   <Import Project="$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/build/Microsoft.NET.ILLink.Tasks.props" />
+
   <PropertyGroup>
+    <!-- Don't use SDK's trimming functionality. -->
+    <_RequiresILLinkPack>false</_RequiresILLinkPack>
     <ILLinkTasksAssembly>$(ToolsILLinkDir)$(NetCoreAppToolCurrent)/ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
@@ -30,6 +33,9 @@
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>
     <MonoProjectRoot>{MonoProjectRoot}</MonoProjectRoot>
+    <BrowserProjectRoot>{BrowserProjectRoot}</BrowserProjectRoot>
+    <WasmProjectRoot>{WasmProjectRoot}</WasmProjectRoot>
+    <WasiProjectRoot>{WasiProjectRoot}</WasiProjectRoot>
     <MonoAOTCompilerTasksAssemblyPath>{MonoAOTCompilerTasksAssemblyPath}</MonoAOTCompilerTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>{WasmAppBuilderTasksAssemblyPath}</WasmAppBuilderTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>{MonoTargetsTasksAssemblyPath}</MonoTargetsTasksAssemblyPath>
@@ -91,5 +97,9 @@
   </Target>
 
   <Import Project="{NativeSanitizersTargets}" />
+
+  <ItemGroup>
+    <Content Include="@(SanitizerRuntimeToCopy->'{SanitizerRuntimeFolder}/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
 </Project>

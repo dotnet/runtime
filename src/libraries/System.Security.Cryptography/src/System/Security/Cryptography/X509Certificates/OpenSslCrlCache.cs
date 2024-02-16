@@ -297,7 +297,7 @@ namespace System.Security.Cryptography.X509Certificates
             return $"{persistentHash:x8}.{urlHash:x8}.crl";
         }
 
-        private static string GetCachedCrlPath(string localFileName, bool mkDir=false)
+        private static string GetCachedCrlPath(string localFileName, bool mkDir = false)
         {
             if (mkDir)
             {

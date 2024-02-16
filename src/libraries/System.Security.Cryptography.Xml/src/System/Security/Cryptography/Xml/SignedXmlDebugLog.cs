@@ -197,7 +197,11 @@ namespace System.Security.Cryptography.Xml
             if (bytes == null)
                 return NullString;
 
+#if NET9_0_OR_GREATER
+            return Convert.ToHexStringLower(bytes);
+#else
             return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
+#endif
         }
 
         /// <summary>

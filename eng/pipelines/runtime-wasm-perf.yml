@@ -4,6 +4,20 @@
 
 trigger: none
 
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/runtime-wasm-perf.yml
+    - eng/pipelines/coreclr/perf*.yml
+    - eng/pipelines/coreclr/templates/perf-job.yml
+    - eng/pipelines/coreclr/templates/run-perf*
+    - eng/pipelines/coreclr/templates/run-scenarios-job.yml
+    - eng/testing/performance/*
+    - eng/testing/ChromeVersions.props
+
 variables:
   - template: /eng/pipelines/common/variables.yml
 
@@ -25,7 +39,7 @@ extends:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          #perfForkToUse:
+          #perfForkToUse: # dummy change
             #url: https://github.com/radical/performance
             #branch: fix-build
           #downloadSpecificBuild:

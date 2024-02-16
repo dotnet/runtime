@@ -7,6 +7,7 @@
   - MicrosoftNetCoreAppRefPackDir
   - optional: MicrosoftNetCoreAppRuntimePackDir
   - optional: AppHostSourcePath & SingleFileHostSourcePath
+  - optional: Crossgen2Dir
 -->
 
 <Project>
@@ -19,64 +20,73 @@
                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                             '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
-    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalAppHostPack>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseLocalTargetingRuntimePack)' == 'true'">
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <!-- TODO: Enable when a 8.0.100 SDK is consumed
     <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
-    <EnableAppHostPackDownload>false</EnableAppHostPackDownload>
-    -->
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalAppHostPack>
+    <EnableAppHostPackDownload Condition="'$(UseLocalAppHostPack)' == 'true'">false</EnableAppHostPackDownload>
+
+    <UseLocalILCompilerPack Condition="'$(UseLocalILCompilerPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalILCompilerPack>
+    <UseLocalCrossgen2Pack Condition="'$(UseLocalCrossgen2Pack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalCrossgen2Pack>
+  </PropertyGroup>
+
   <!-- Add Known* items if the SDK doesn't support the TargetFramework yet. -->
-  <ItemGroup Condition="'$(UseLocalTargetingRuntimePack)' == 'true'">
+  <ItemGroup>
     <KnownFrameworkReference Include="$(LocalFrameworkOverrideName)"
                              DefaultRuntimeFrameworkVersion="$(ProductVersion)"
                              LatestRuntimeFrameworkVersion="$(ProductVersion)"
                              RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                              RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.**RID**"
-                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86"
+                             RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;freebsd-x64;freebsd-arm64;linux-ppc64le"
                              TargetFramework="$(NetCoreAppCurrent)"
                              TargetingPackName="$(LocalFrameworkOverrideName).Ref"
                              TargetingPackVersion="$(ProductVersion)"
-                             Condition="'@(KnownFrameworkReference)' == '' or !@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
+                             Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and '@(KnownFrameworkReference->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
     <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
                       TargetFramework="$(NetCoreAppCurrent)"
                       RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
                       LatestRuntimeFrameworkVersion="$(ProductVersion)"
                       RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.Mono.**RID**"
-                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;maccatalyst-x64;maccatalyst-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;wasi-wasm;ios-arm64;iossimulator-arm64;iossimulator-x64;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;android-arm64;android-arm;android-x64;android-x86"
+                      RuntimePackRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;browser-wasm;ios-arm64;ios-arm;iossimulator-arm64;iossimulator-x64;iossimulator-x86;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-x64;maccatalyst-arm64;android-arm64;android-arm;android-x64;android-x86"
                       RuntimePackLabels="Mono"
-                      Condition="'@(KnownRuntimePack)' == '' or !@(KnownRuntimePack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"/>
-    <KnownCrossgen2Pack Include="$(LocalFrameworkOverrideName).Crossgen2"
-                        TargetFramework="$(NetCoreAppCurrent)"
-                        Crossgen2PackNamePattern="$(LocalFrameworkOverrideName).Crossgen2.**RID**"
-                        Crossgen2PackVersion="$(ProductVersion)"
-                        Crossgen2RuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86"
-                        Condition="'@(KnownCrossgen2Pack)' == '' or !@(KnownCrossgen2Pack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
+                      Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and ('@(KnownRuntimePack)' == '' or @(KnownRuntimePack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('RuntimePackLabels', 'Mono')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)')) == '')" />
+    <!-- always add wasi-wasm as it is never added by the sdk -->
+    <KnownRuntimePack Update="@(KnownRuntimePack->WithMetadataValue('Identity', '$(LocalFrameworkOverrideName)')->WithMetadataValue('RuntimePackLabels', 'Mono')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))"
+                      RuntimePackRuntimeIdentifiers="%(RuntimePackRuntimeIdentifiers);wasi-wasm"
+                      Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
+    <KnownRuntimePack Include="$(LocalFrameworkOverrideName)"
+                      TargetFramework="$(NetCoreAppCurrent)"
+                      RuntimeFrameworkName="$(LocalFrameworkOverrideName)"
+                      LatestRuntimeFrameworkVersion="$(ProductVersion)"
+                      RuntimePackNamePatterns="$(LocalFrameworkOverrideName).Runtime.NativeAOT.**RID**"
+                      RuntimePackRuntimeIdentifiers="ios-arm64;iossimulator-arm64;iossimulator-x64;tvos-arm64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64;linux-bionic-arm64;linux-bionic-x64;osx-arm64;osx-x64"
+                      RuntimePackLabels="NativeAOT"
+                      Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and ('@(KnownRuntimePack)' == '' or @(KnownRuntimePack->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('RuntimePackLabels', 'NativeAOT')->WithMetadataValue('TargetFramework', '$(NetCoreAppCurrent)')) == '')" />
     <KnownILCompilerPack Include="Microsoft.DotNet.ILCompiler"
                          ILCompilerPackNamePattern="runtime.**RID**.Microsoft.DotNet.ILCompiler"
                          TargetFramework="$(NetCoreAppCurrent)"
                          ILCompilerPackVersion="$(ProductVersion)"
                          ILCompilerRuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86"
-                         Condition="'@(KnownILCompilerPack)' == '' or !@(KnownILCompilerPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(UseLocalAppHostPack)' == 'true'">
+                         Condition="'$(UseLocalILCompilerPack)' == 'true' and '@(KnownILCompilerPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
+    <KnownCrossgen2Pack Include="$(LocalFrameworkOverrideName).Crossgen2"
+                        TargetFramework="$(NetCoreAppCurrent)"
+                        Crossgen2PackNamePattern="$(LocalFrameworkOverrideName).Crossgen2.**RID**"
+                        Crossgen2PackVersion="$(ProductVersion)"
+                        Crossgen2RuntimeIdentifiers="linux-musl-x64;linux-x64;win-x64;linux-arm;linux-arm64;linux-musl-arm;linux-musl-arm64;osx-arm64;osx-x64;win-arm64;win-x86"
+                        Condition="'$(UseLocalCrossgen2Pack)' == 'true' and '@(KnownCrossgen2Pack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
     <KnownAppHostPack Include="$(LocalFrameworkOverrideName)"
                       ExcludedRuntimeIdentifiers="android"
                       AppHostPackNamePattern="$(LocalFrameworkOverrideName).Host.**RID**"
                       AppHostPackVersion="$(ProductVersion)"
-                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86"
+                      AppHostRuntimeIdentifiers="linux-arm;linux-arm64;linux-musl-arm64;linux-musl-x64;linux-x64;osx-x64;rhel.6-x64;tizen.4.0.0-armel;tizen.5.0.0-armel;win-arm64;win-x64;win-x86;linux-musl-arm;osx-arm64;linux-s390x;linux-bionic-arm;linux-bionic-arm64;linux-bionic-x64;linux-bionic-x86;linux-ppc64le;linux-riscv64"
                       TargetFramework="$(NetCoreAppCurrent)"
-                      Condition="'@(KnownAppHostPack)' == '' or !@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))" />
-  </ItemGroup>
-
-  <!-- Add known packs from the downlevel TFM until we are building with an SDK that supports the new TFM all-up. -->
-  <ItemGroup Condition="'$(NetCoreAppToolCurrent)' != '$(NetCoreAppCurrent)'">
-    <KnownILLinkPack Include="@(KnownILLinkPack->WithMetadataValue('Identity', 'Microsoft.NET.ILLink.Tasks')->WithMetadataValue('TargetFramework', '$(NetCoreAppToolCurrent)'))">
-      <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    </KnownILLinkPack>
+                      Condition="'$(UseLocalAppHostPack)' == 'true' and '@(KnownAppHostPack->AnyHaveMetadataValue('TargetFramework', '$(NetCoreAppCurrent)'))' != 'true'" />
   </ItemGroup>
 
   <!-- Simple name references will be resolved from the targeting pack folders and should never be copied to the output. -->
@@ -100,36 +110,15 @@
   </Target>
 
   <!--
-    SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item.
-    TODO: Remove this target when an 8.0.100 SDK is consumed that respects EnableRuntimePackDownload.
+    SDK tries to download the ILCompiler runtime packs.
+    TODO: Remove this target when a 9.0.100 SDK is consumed that respects EnableRuntimePackDownload for the ILCompiler.
    -->
   <Target Name="RemoveRuntimePackFromDownloadItem"
-          Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
+          Condition="'$(UseLocalILCompilerPack)' == 'true'"
           AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Runtime'))" />
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Runtime'))" />
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
-      <!-- Always remove the PackageReference items as some of the packages are only via PackageReference -->
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="$([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
-    </ItemGroup>
-  </Target>
-
-  <!--
-    TODO: Remove this target when an 8.0.100 SDK is consumed that respects EnableAppHostPackDownload.
-   -->
-  <Target Name="RemoveAppHostPackFromDownloadItem"
-          Condition="'$(UseLocalAppHostPack)' == 'true'"
-          AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Host'))" />
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Host'))" />
+      <!-- Always remove the PackageReference items as some of the packages are consumed via PackageReference only. -->
+      <PackageReference Remove="@(PackageReference->WithMetadataValue('Identity', 'Microsoft.DotNet.ILCompiler')->WithMetadataValue('IsImplicitlyDefined', 'true'))" />
     </ItemGroup>
   </Target>
 
@@ -156,6 +145,16 @@
     </ItemGroup>
   </Target>
 
+  <!-- Use local Crossgen2 pack for NetCoreAppCurrent. -->
+  <Target Name="UpdateLocalCrossgen2Pack"
+          Condition="'$(UseLocalCrossgen2Pack)' == 'true' and '$(Crossgen2Dir)' != ''"
+          AfterTargets="ResolveFrameworkReferences">
+    <ItemGroup>
+      <ResolvedCrossgen2Pack PackageDirectory="$(Crossgen2Dir)"
+                             NuGetPackageVersion="$(ProductVersion)" />
+    </ItemGroup>
+  </Target>
+  
   <!-- Use local app host pack for NetCoreAppCurrent. -->
   <Target Name="UpdateLocalAppHostPack"
           Condition="'$(UseLocalAppHostPack)' == 'true'"
@@ -179,6 +178,18 @@
     <ItemGroup>
       <RuntimeFramework Version="$(ProductVersion)"
                         Condition="'%(RuntimeFramework.FrameworkName)' == '$(LocalFrameworkOverrideName)'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Update the resolved crossgen2 tool to use the app with the same .NET host as the build instead of the built apphost. -->
+  <Target Name="UpdateLocalCrossgen2Tool"
+          Condition="'$(UseLocalCrossgen2Pack)' == 'true'"
+          AfterTargets="ResolveReadyToRunCompilers">
+    <ItemGroup>
+      <OriginalCrossgen2Tool Include="@(Crossgen2Tool)" Crossgen2Dll="$([System.IO.Path]::ChangeExtension('%(Identity)', '.dll'))" />
+      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
+      <Crossgen2Tool Include="@(OriginalCrossgen2Tool->'%(Crossgen2Dll)')"
+                     DotNetHostPath="$(DotNetTool)" />
     </ItemGroup>
   </Target>
 </Project>

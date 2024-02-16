@@ -166,7 +166,7 @@ namespace System.Net.Security.Tests
             yield return new object[] { new NetworkCredential("rightusername", "rightpassword") };
             yield return new object[] { new NetworkCredential("rightusername", "rightpassword", "rightdomain") };
             yield return new object[] { new NetworkCredential("rightusername@rightdomain.com", "rightpassword") };
-        } 
+        }
 
         [ConditionalTheory(nameof(IsNtlmAvailable))]
         [MemberData(nameof(TestCredentials))]
@@ -246,6 +246,43 @@ namespace System.Net.Security.Tests
             Assert.Equal(NegotiateAuthenticationStatusCode.Completed, statusCode);
             Assert.Equal(s_Hello.Length, output.WrittenCount);
             Assert.Equal(s_Hello, output.WrittenSpan.ToArray());
+        }
+
+        [ConditionalFact(nameof(IsNtlmAvailable))]
+        public void NtlmIntegrityCheckTest()
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.EncryptAndSign
+                });
+
+            DoNtlmExchange(fakeNtlmServer, ntAuth);
+
+            Assert.True(fakeNtlmServer.IsAuthenticated);
+
+            ArrayBufferWriter<byte> output = new ArrayBufferWriter<byte>();
+            for (int i = 0; i < 3; i++)
+            {
+                // Test ComputeIntegrityCheck on client side and decoding it on server side
+                ntAuth.ComputeIntegrityCheck(s_Hello, output);
+                Assert.Equal(16, output.WrittenCount);
+                // Verify the signature computation
+                fakeNtlmServer.VerifyMIC(s_Hello, output.WrittenSpan);
+                // Prepare buffer for reuse
+                output.Clear();
+            }
+
+            Span<byte> signature = stackalloc byte[16];
+            for (int i = 0; i < 3; i++)
+            {
+                fakeNtlmServer.GetMIC(s_Hello, signature);
+                Assert.True(ntAuth.VerifyIntegrityCheck(s_Hello, signature));
+            }
         }
 
         private void DoNtlmExchange(FakeNtlmServer fakeNtlmServer, NegotiateAuthentication ntAuth)

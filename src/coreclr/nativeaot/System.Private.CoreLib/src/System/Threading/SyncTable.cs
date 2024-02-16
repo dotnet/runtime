@@ -65,7 +65,7 @@ namespace System.Threading
         /// <summary>
         /// Protects all mutable operations on s_entries, s_freeEntryList, s_unusedEntryIndex. Also protects growing the table.
         /// </summary>
-        internal static readonly Lock s_lock = new Lock();
+        internal static readonly Lock s_lock = new Lock(useTrivialWaits: true);
 
         /// <summary>
         /// The dynamically growing array of sync entries.
@@ -106,7 +106,7 @@ namespace System.Threading
 
             try
             {
-                using (LockHolder.Hold(s_lock))
+                using (s_lock.EnterScope())
                 {
                     // After acquiring the lock check whether another thread already assigned the sync entry
                     if (ObjectHeader.GetSyncEntryIndex(*pHeader, out int syncIndex))
@@ -172,7 +172,7 @@ namespace System.Threading
         /// </summary>
         private static void Grow()
         {
-            Debug.Assert(s_lock.IsAcquired);
+            Debug.Assert(s_lock.IsHeldByCurrentThread);
 
             int oldSize = s_entries.Length;
             int newSize = CalculateNewSize(oldSize);
@@ -242,7 +242,7 @@ namespace System.Threading
             // Acquire the lock to ensure we are updating the latest version of s_entries.  This
             // lock may be avoided if we store the hash code and Monitor synchronization data in
             // the same object accessed by a reference.
-            using (LockHolder.Hold(s_lock))
+            using (s_lock.EnterScope())
             {
                 int currentHash = s_entries[syncIndex].HashCode;
                 if (currentHash != 0)
@@ -260,7 +260,7 @@ namespace System.Threading
         /// </summary>
         public static void MoveHashCodeToNewEntry(int syncIndex, int hashCode)
         {
-            Debug.Assert(s_lock.IsAcquired);
+            Debug.Assert(s_lock.IsHeldByCurrentThread);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
             s_entries[syncIndex].HashCode = hashCode;
         }
@@ -269,9 +269,9 @@ namespace System.Threading
         /// Initializes the Lock assuming the caller holds s_lock.  Use for not yet
         /// published entries only.
         /// </summary>
-        public static void MoveThinLockToNewEntry(int syncIndex, int threadId, int recursionLevel)
+        public static void MoveThinLockToNewEntry(int syncIndex, int threadId, uint recursionLevel)
         {
-            Debug.Assert(s_lock.IsAcquired);
+            Debug.Assert(s_lock.IsHeldByCurrentThread);
             Debug.Assert((0 < syncIndex) && (syncIndex < s_unusedEntryIndex));
 
             s_entries[syncIndex].Lock.InitializeLocked(threadId, recursionLevel);
@@ -305,7 +305,7 @@ namespace System.Threading
                 Lock? lockToDispose = default;
                 DependentHandle dependentHandleToDispose = default;
 
-                using (LockHolder.Hold(s_lock))
+                using (s_lock.EnterScope())
                 {
                     ref Entry entry = ref s_entries[_index];
 

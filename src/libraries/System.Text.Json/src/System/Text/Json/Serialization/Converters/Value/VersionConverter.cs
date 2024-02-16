@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
 #if NETCOREAPP
             if (!JsonHelpers.IsInRangeInclusive(reader.ValueLength, MinimumVersionLength, MaximumEscapedVersionLength))
             {
-                ThrowHelper.ThrowFormatException(DataType.TimeSpan);
+                ThrowHelper.ThrowFormatException(DataType.Version);
             }
 
             Span<char> charBuffer = stackalloc char[MaximumEscapedVersionLength];

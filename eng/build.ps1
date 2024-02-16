@@ -12,7 +12,7 @@ Param(
   [string]$testscope,
   [switch]$testnobuild,
   [ValidateSet("x86","x64","arm","arm64","wasm")][string[]][Alias('a')]$arch = @([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant()),
-  [Parameter(Position=0)][string][Alias('s')]$subset,
+  [string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
@@ -30,7 +30,7 @@ function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -arch (-a)                     Target platform: x86, x64, arm, arm64, or wasm."
   Write-Host "                                 Pass a comma-separated list to build for multiple architectures."
-  Write-Host "                                 [Default: Your machine's architecture.]"
+  Write-Host ("                                 [Default: {0} (Depends on your console's architecture.)]" -f [System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())
   Write-Host "  -binaryLog (-bl)               Output binary log."
   Write-Host "  -configuration (-c)            Build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR subset. It is the same as Debug, except code is"
@@ -130,6 +130,13 @@ if ($help) {
   exit 0
 }
 
+# check the first argument if subset is not explicitly passed in
+if (-not $PSBoundParameters.ContainsKey("subset") -and $properties.Length -gt 0 -and $properties[0] -match '^[a-zA-Z\.\+]+$') {
+  $subset = $properties[0]
+  $PSBoundParameters.Add("subset", $subset)
+  $properties = $properties | Select-Object -Skip 1
+}
+
 if ($subset -eq 'help') {
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary"
   exit 0
@@ -138,6 +145,26 @@ if ($subset -eq 'help') {
 # Lower-case the passed in OS string.
 if ($os) {
   $os = $os.ToLowerInvariant()
+}
+
+if ($os -eq "browser") {
+  # override default arch for Browser, we only support wasm
+  $arch = "wasm"
+
+  if ($msbuild -eq $True) {
+    Write-Error "Using the -msbuild option isn't supported when building for Browser on Windows, we need need ninja for Emscripten."
+    exit 1
+  }
+}
+
+if ($os -eq "wasi") {
+  # override default arch for wasi, we only support wasm
+  $arch = "wasm"
+
+  if ($msbuild -eq $True) {
+    Write-Error "Using the -msbuild option isn't supported when building for WASI on Windows, we need ninja for WASI-SDK."
+    exit 1
+  }
 }
 
 if ($vs) {
@@ -228,10 +255,26 @@ if ($vs) {
   # Disable .NET runtime signature validation errors which errors for local builds
   $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
+  # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
   if ($runtimeConfiguration)
   {
-    # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
+  }
+
+  # Respect the RuntimeFlavor variable for building inside VS with a different CoreLib and runtime
+  if ($runtimeFlavor)
+  {
+    $env:RUNTIMEFLAVOR=$runtimeFlavor
+  }
+
+  # Respect the TargetOS variable for building non AnyOS libraries
+  if ($os) {
+    $env:TARGETOS=$os
+  }
+
+  # Respect the TargetArchitecture variable for building non AnyCPU libraries
+  if ($arch) {
+    $env:TARGETARCHITECTURE=$arch
   }
 
   # Launch Visual Studio with the locally defined environment variables
@@ -287,26 +330,6 @@ if ($env:TreatWarningsAsErrors -eq 'false') {
 $env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 $failedBuilds = @()
-
-if ($os -eq "browser") {
-  # override default arch for Browser, we only support wasm
-  $arch = "wasm"
-
-  if ($msbuild -eq $True) {
-    Write-Error "Using the -msbuild option isn't supported when building for Browser on Windows, we need need ninja for Emscripten."
-    exit 1
-  }
-}
-
-if ($os -eq "wasi") {
-  # override default arch for wasi, we only support wasm
-  $arch = "wasm"
-
-  if ($msbuild -eq $True) {
-    Write-Error "Using the -msbuild option isn't supported when building for WASI on Windows, we need ninja for WASI-SDK."
-    exit 1
-  }
-}
 
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";

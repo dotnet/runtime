@@ -15,6 +15,7 @@ endif (MSVC)
 
 if(CLR_CMAKE_HOST_UNIX)
   add_compile_options(-fno-exceptions)    # Native AOT runtime doesn't use C++ exception handling
+  add_compile_options(-fno-asynchronous-unwind-tables)
   add_compile_options(-nostdlib)
 
   if(CLR_CMAKE_TARGET_APPLE)
@@ -27,12 +28,6 @@ if(CLR_CMAKE_HOST_UNIX)
     add_compile_options(-mcx16)
   endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
 endif (CLR_CMAKE_HOST_UNIX)
-
-if(CLR_CMAKE_TARGET_LINUX_MUSL)
-    # Fix up the main thread stack size for MUSL to more reasonable size.
-    # TODO: https://github.com/dotnet/runtimelab/issues/791
-    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
-endif()
 
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)

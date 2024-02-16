@@ -2,9 +2,6 @@
   <PropertyGroup>
     <RootNamespace>System.Xml.Tests</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    
-    <!--Remove once this is fixed, https://github.com/dotnet/runtime/issues/71506 -->
-    <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +14,7 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup>

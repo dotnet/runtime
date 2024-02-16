@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.IO;
-using System.Xml;
 using System.Collections;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization; // For SR
 using System.Security;
 using System.Text;
-using System.Globalization;
+using System.Xml;
 
 
 namespace System.Xml
@@ -31,8 +31,8 @@ namespace System.Xml
         private OnXmlDictionaryReaderClose? _onClose;
         private bool _buffered;
         private int _maxBytesPerRead;
-        private static ReadOnlySpan<byte> CharTypeMap => new byte[256]
-            {
+        private static ReadOnlySpan<byte> CharTypeMap => // 256
+            [
                 /*  0 (.) */
                          CharType.None,
                 /*  1 (.) */
@@ -545,7 +545,7 @@ namespace System.Xml
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
                 /* FF (?) */
                          CharType.None|CharType.Comment|CharType.FirstName|CharType.Name|CharType.Text|CharType.AttributeText,
-            };
+            ];
 
         public XmlUTF8TextReader()
         {

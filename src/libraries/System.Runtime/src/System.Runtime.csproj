@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <PropertyGroup>
     <!-- the System.Runtime project is special, we need to be able to hide the System.Private.Uri types for the generated ref .cs so we can include it in the System.Private.CoreLib ref .cs -->
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
@@ -10,15 +13,19 @@
     <SymbolForGenAPIConditionalTypeLists>!BUILDING_CORELIB_REFERENCE</SymbolForGenAPIConditionalTypeLists>
     <GenAPIExcludeApiList>$(CoreLibRefDir)System.Private.CoreLib.ExtraApis.txt</GenAPIExcludeApiList>
   </PropertyGroup>
+
   <ItemGroup>
     <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->
     <GenFacadesOmitType Include="System.Void" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System.Runtime.Typeforwards.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(UriProject)" />
   </ItemGroup>
+
 </Project>

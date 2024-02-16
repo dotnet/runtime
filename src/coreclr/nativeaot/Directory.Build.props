@@ -25,13 +25,16 @@
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
-    <NoWarn>$(NoWarn),0419,0649,CA2249,CA1830</NoWarn>
+     <!-- Override InformationalVersion during servicing as it's returned via public api. --> 
+    <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion> 
+    <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion> 
+    <NoWarn>$(NoWarn),0419,0649</NoWarn>
 
     <!-- Disable nullability-related warnings -->
     <NoWarn>$(NoWarn);CS8602;CS8603;CS8604;CS8618;CS8625;CS8632;CS8765</NoWarn>
 
-    <!-- we should just fix -->
-    <NoWarn>$(NoWarn);CA1810;CA1823;CA1825;CA1852;CA2208;SA1129;SA1205;SA1400;SA1517;IDE0065</NoWarn>
+    <!-- Disable sealing classes, NativeAOT does that automatically -->
+    <NoWarn>$(NoWarn);CA1852</NoWarn>
 
     <!-- Arrays as attribute arguments is not CLS-compliant -->
     <NoWarn>$(NoWarn);CS3016</NoWarn>

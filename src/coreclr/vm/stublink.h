@@ -229,6 +229,10 @@ class StubLinker
         void DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cCalleeSavedRegs, UINT cbStackFrame);
         UINT GetSavedRegArgsOffset();
         UINT GetStackFrameSize();
+#elif defined(TARGET_RISCV64)
+        void DescribeProlog(UINT cIntRegArgs, UINT cVecRegArgs, UINT cbStackFrame);
+        UINT GetSavedRegArgsOffset();
+        UINT GetStackFrameSize();
 #endif
 
         //===========================================================================
@@ -303,6 +307,14 @@ protected:
         UINT            m_cCalleeSavedRegs;     // Count of callee saved registers (x19 - x28)
         UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
 #endif // TARGET_ARM64
+
+#ifdef TARGET_RISCV64
+protected:
+        BOOL            m_fProlog;              // True if DescribeProlog has been called
+        UINT            m_cIntRegArgs;          // Count of int register arguments (x10 - x17)
+        UINT            m_cFpRegArgs;           // Count of FP register arguments (f10 - f17)
+        UINT            m_cbStackSpace;         // Additional stack space for return buffer and stack alignment
+#endif // TARGET_RISCV64
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
 

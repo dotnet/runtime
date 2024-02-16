@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 #pragma warning disable 649 // 'blah' is never assigned to
 #pragma warning disable 169 // 'blah' is never used
@@ -26,7 +27,7 @@ class Dataflow
         TestDynamicDependencyWithGenerics.Run();
         TestObjectGetTypeDataflow.Run();
         TestMarshalIntrinsics.Run();
-        TestCompilerGeneratedCode.Run();
+        Regression97758.Run();
 
         return 100;
     }
@@ -633,54 +634,31 @@ class Dataflow
         }
     }
 
-    class TestCompilerGeneratedCode
+    class Regression97758
     {
-        private static void ReflectionInLambda()
+        class Foo<T>
         {
-            var func = () => {
-                Type helpersType = Type.GetType(nameof(Helpers));
-                Assert.NotNull(helpersType);
-            };
-
-            func();
-        }
-
-        private static void ReflectionInLocalFunction()
-        {
-            func();
-
-            void func()
+            public static void Trigger()
             {
-                Type helpersType = Type.GetType(nameof(Helpers));
-                Assert.NotNull(helpersType);
-            };
+                typeof(Bar).GetConstructor([]).Invoke([]);
+
+                if (typeof(T).IsValueType && (object)default(T) == null)
+                {
+                    if (!RuntimeFeature.IsDynamicCodeCompiled)
+                        return;
+
+                    Unreachable();
+                }
+
+                static void Unreachable() { }
+            }
         }
 
-        private static async void ReflectionInAsync()
-        {
-            await System.Threading.Tasks.Task.Delay(100);
-            Type helpersType = Type.GetType(nameof(Helpers));
-            Assert.NotNull(helpersType);
-        }
-
-        private static async void ReflectionInLambdaAsync()
-        {
-            await System.Threading.Tasks.Task.Delay(100);
-
-            var func = () => {
-                Type helpersType = Type.GetType(nameof(Helpers));
-                Assert.NotNull(helpersType);
-            };
-
-            func();
-        }
+        class Bar { }
 
         public static void Run()
         {
-            ReflectionInLambda();
-            ReflectionInLocalFunction();
-            ReflectionInAsync();
-            ReflectionInLambdaAsync();
+            Foo<int>.Trigger();
         }
     }
 }

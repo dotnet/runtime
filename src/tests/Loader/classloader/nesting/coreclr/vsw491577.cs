@@ -8,15 +8,14 @@
 
 
 using System;
+using Xunit;
 
 public class Test_vsw491577
 {
-   public static int Main()
+   [Fact]
+   public static void TestEntryPoint()
    {
       MyClass0.MyClass1.MyClass2.MyClass3.MyClass4.MyClass5.MyClass6.MyClass7.MyClass8.MyClass9.MyClass10.MyClass11.MyClass12.MyClass13.MyClass14.MyClass15.MyClass16.MyClass17.MyClass18.MyClass19.MyClass20.MyClass21.MyClass22.MyClass23.MyClass24.MyClass25.MyClass26.MyClass27.MyClass28.MyClass29.MyClass30.MyClass31.MyClass32.MyClass33.MyClass34.MyClass35.MyClass36.MyClass37.MyClass38.MyClass39.MyClass40.MyClass41.MyClass42.MyClass43.MyClass44.MyClass45.MyClass46.MyClass47.MyClass48.MyClass49.MyClass50.MyClass51.MyClass52.MyClass53.MyClass54.MyClass55.MyClass56.MyClass57.MyClass58.MyClass59.MyClass60.MyClass61.MyClass62.MyClass63.MyClass64.MyClass65.MyClass66.MyClass67.MyClass68.MyClass69.MyClass70.MyClass71.MyClass72 obj = new MyClass0.MyClass1.MyClass2.MyClass3.MyClass4.MyClass5.MyClass6.MyClass7.MyClass8.MyClass9.MyClass10.MyClass11.MyClass12.MyClass13.MyClass14.MyClass15.MyClass16.MyClass17.MyClass18.MyClass19.MyClass20.MyClass21.MyClass22.MyClass23.MyClass24.MyClass25.MyClass26.MyClass27.MyClass28.MyClass29.MyClass30.MyClass31.MyClass32.MyClass33.MyClass34.MyClass35.MyClass36.MyClass37.MyClass38.MyClass39.MyClass40.MyClass41.MyClass42.MyClass43.MyClass44.MyClass45.MyClass46.MyClass47.MyClass48.MyClass49.MyClass50.MyClass51.MyClass52.MyClass53.MyClass54.MyClass55.MyClass56.MyClass57.MyClass58.MyClass59.MyClass60.MyClass61.MyClass62.MyClass63.MyClass64.MyClass65.MyClass66.MyClass67.MyClass68.MyClass69.MyClass70.MyClass71.MyClass72();
-
-      Console.WriteLine("PASS");
-      return 100;
    }
 }
 

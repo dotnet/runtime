@@ -31,13 +31,13 @@
 // Note: I think that IsAlwaysNormalized should probably return true for form C for Chinese 20936 based CPs.
 //
 
-using System.Globalization;
-using System.Diagnostics;
-using System.Text;
-using System.Runtime.InteropServices;
 using System;
-using System.Security;
+using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
 
 namespace System.Text
 {
@@ -60,8 +60,8 @@ namespace System.Text
         {
         }
 
-        private static ReadOnlySpan<int> TableBaseCodePages => new int[]
-        {
+        private static ReadOnlySpan<int> TableBaseCodePages =>
+        [
             932,    // 50220  ISO-2022-JP, No halfwidth Katakana, convert to full width
             932,    // 50221  ISO-2022-JP, Use escape sequence for half width Katakana
             932,    // 50222  ISO-2022-JP, Use shift-in/shift-out for half width Katakana
@@ -75,7 +75,7 @@ namespace System.Text
             0, //20000,    // 50229  ISO-2022-CN, ModeCNS11643_1
             0, //20000,    // 50229  ISO-2022-CN, ModeCNS11643_2
             0         //                     ModeASCII
-        };
+        ];
 
         internal enum ISO2022Modes
         {
@@ -1852,8 +1852,8 @@ namespace System.Text
             }
         }
 
-        private static ReadOnlySpan<ushort> HalfToFullWidthKanaTable => new ushort[]
-        {
+        private static ReadOnlySpan<ushort> HalfToFullWidthKanaTable =>
+        [
             0xa1a3, // 0x8ea1 : Halfwidth Ideographic Period
             0xa1d6, // 0x8ea2 : Halfwidth Opening Corner Bracket
             0xa1d7, // 0x8ea3 : Halfwidth Closing Corner Bracket
@@ -1917,6 +1917,6 @@ namespace System.Text
             0xa5f3, // 0x8edd : Halfwidth Katakana N
             0xa1ab, // 0x8ede : Halfwidth Katakana Voiced Sound Mark
             0xa1ac  // 0x8edf : Halfwidth Katakana Semi-Voiced Sound Mark
-        };
+        ];
     }
 }

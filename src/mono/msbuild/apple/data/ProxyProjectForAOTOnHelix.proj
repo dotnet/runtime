@@ -1,23 +1,44 @@
 <Project DefaultTargets="BundleTestAppleApp" Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\apple_build\</TestRootDir>
-    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\apple_build\</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_WORKITEM_ROOT), 'apple_build'))</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'apple_build'))</TestRootDir>
 
-    <OriginalPublishDir>$([System.IO.Path]::GetFullPath('$(TestRootDir)..\publish\'))</OriginalPublishDir>
-    <ExtraFilesPath>$(OriginalPublishDir)..\extraFiles\</ExtraFilesPath>
+    <OriginalPublishDir>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'publish'))</OriginalPublishDir>
+    <ExtraFilesPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'extraFiles'))</ExtraFilesPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'obj'))</BaseIntermediateOutputPath>
+
     <AppleBuildDependsOn>_PrepareForAppleBuildAppOnHelix;$(AppleBuildDependsOn);_AfterAppleBuildOnHelix</AppleBuildDependsOn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
-    <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
-    <NativeLib>static</NativeLib>
-    <CustomNativeMain>true</CustomNativeMain>
-    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+    <_UseNativeAOTLibraryModeBundling Condition="'$(NativeLib)' == 'Shared'">true</_UseNativeAOTLibraryModeBundling>
+
     <_IsApplePlatform>true</_IsApplePlatform>
     <TargetsAppleMobile>true</TargetsAppleMobile>
     <_targetOS>$(TargetOS)</_targetOS>
+  
+    <!-- Forced by ILLink targets -->
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' != 'true'">
+    <!-- TODO: we probably want to recreate everything in the intermediate directory instead (see library mode bellow) -->
+    <IntermediateOutputPath>$(OriginalPublishDir)</IntermediateOutputPath>
+    <NativeLib>static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+  </PropertyGroup>
+  <!-- In library mode we depend on NativeAOT publish integration targets -->
+  <PropertyGroup Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'">
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
+    <OutputPath>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'bin'))</OutputPath>
+    <PublishDir>$(OriginalPublishDir)</PublishDir>
+    <_IlcLibraryBuildDependsOn>LinkNative;CopyNativeBinary</_IlcLibraryBuildDependsOn>
+    <!-- we should not strip symbols from the generated library as xcode build will attempt to strip already stripped symbols -->
+    <StripSymbols>false</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
@@ -52,10 +73,22 @@
       <AppleNativeFilesToBundle Include="$(OriginalPublishDir)\**\*.*" Exclude="$(OriginalPublishDir)\*.dll" />
     </ItemGroup>
 
+    <!-- For NativeAOT library mode we need to manually create the 'obj' dir and copy all assemblies in there to properly build the library -->
+    <MakeDir Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'"
+      Directories="$(IntermediateOutputPath)" />
+    <Copy Condition="'$(_UseNativeAOTLibraryModeBundling)' == 'true'"
+      SourceFiles="@(AppleAssembliesToBundle)"
+      DestinationFolder="$(IntermediateOutputPath)" />
+
     <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseRuntimeComponents)' == 'true'">
+      <RuntimeComponents Include="diagnostics_tracing" />
+      <RuntimeComponents Include="marshal-ilgen" />
+    </ItemGroup>
+
   </Target>
 
   <Target Name="_PublishRuntimePack"

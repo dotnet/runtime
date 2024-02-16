@@ -25,9 +25,11 @@ unsafe partial class GenericsNative
     public static extern void GetIComInterfaceCs([MarshalAs(UnmanagedType.Interface)] ref IComInterface<char> pValues, int count);
 }
 
-unsafe partial class GenericsTest
+public unsafe partial class GenericsTest
 {
-    private static void TestIComInterfaceC()
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/177", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void TestIComInterfaceC()
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetIComInterfaceC());
 

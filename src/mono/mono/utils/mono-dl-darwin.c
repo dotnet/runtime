@@ -14,7 +14,6 @@
 #if defined (TARGET_MACH)
 
 #include "mono/utils/mono-dl.h"
-#include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
 
 #include <stdlib.h>

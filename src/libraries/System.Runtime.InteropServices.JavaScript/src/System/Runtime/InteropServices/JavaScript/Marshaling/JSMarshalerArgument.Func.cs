@@ -9,9 +9,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             private JSObject JSObject;
 
-            public ActionJS(IntPtr jsHandle)
+            public ActionJS(JSObject holder)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
             }
 
             public void InvokeJS()
@@ -19,17 +19,20 @@ namespace System.Runtime.InteropServices.JavaScript
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
 
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
 
         }
@@ -39,28 +42,33 @@ namespace System.Runtime.InteropServices.JavaScript
             private ArgumentToJSCallback<T> Arg1Marshaler;
             private JSObject JSObject;
 
-            public ActionJS(IntPtr jsHandle, ArgumentToJSCallback<T> arg1Marshaler)
+            public ActionJS(JSObject holder, ArgumentToJSCallback<T> arg1Marshaler)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
                 Arg1Marshaler = arg1Marshaler;
             }
 
             public void InvokeJS(T arg1)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
 
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                args_arg1.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
                 Arg1Marshaler(ref args_arg1, arg1);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -70,18 +78,15 @@ namespace System.Runtime.InteropServices.JavaScript
             private ArgumentToJSCallback<T2> Arg2Marshaler;
             private JSObject JSObject;
 
-            public ActionJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler)
+            public ActionJS(JSObject holder, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
             }
 
             public void InvokeJS(T1 arg1, T2 arg2)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -89,12 +94,21 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
 
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                args_arg1.InitializeWithContext(JSObject.ProxyContext);
+                args_arg2.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -105,9 +119,9 @@ namespace System.Runtime.InteropServices.JavaScript
             private ArgumentToJSCallback<T3> Arg3Marshaler;
             private JSObject JSObject;
 
-            public ActionJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler)
+            public ActionJS(JSObject holder, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
                 Arg3Marshaler = arg3Marshaler;
@@ -115,9 +129,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public void InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -126,13 +137,23 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
                 ref JSMarshalerArgument args_arg3 = ref arguments[4];
 
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                args_arg1.InitializeWithContext(JSObject.ProxyContext);
+                args_arg2.InitializeWithContext(JSObject.ProxyContext);
+                args_arg3.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
             }
         }
 
@@ -149,7 +170,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            value = new ActionJS(slot.JSHandle).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new ActionJS(holder).InvokeJS;
         }
 
         /// <summary>
@@ -167,7 +190,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            value = new ActionJS<T>(slot.JSHandle, arg1Marshaler).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new ActionJS<T>(holder, arg1Marshaler).InvokeJS;
         }
 
         /// <summary>
@@ -187,7 +212,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            value = new ActionJS<T1, T2>(slot.JSHandle, arg1Marshaler, arg2Marshaler).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new ActionJS<T1, T2>(holder, arg1Marshaler, arg2Marshaler).InvokeJS;
         }
 
         /// <summary>
@@ -209,7 +236,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            value = new ActionJS<T1, T2, T3>(slot.JSHandle, arg1Marshaler, arg2Marshaler, arg3Marshaler).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new ActionJS<T1, T2, T3>(holder, arg1Marshaler, arg2Marshaler, arg3Marshaler).InvokeJS;
         }
 
         private sealed class FuncJS<TResult>
@@ -217,17 +246,14 @@ namespace System.Runtime.InteropServices.JavaScript
             private JSObject JSObject;
             private ArgumentToManagedCallback<TResult> ResMarshaler;
 
-            public FuncJS(IntPtr jsHandle, ArgumentToManagedCallback<TResult> resMarshaler)
+            public FuncJS(JSObject holder, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
                 ResMarshaler = resMarshaler;
             }
 
             public TResult InvokeJS()
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
@@ -235,12 +261,19 @@ namespace System.Runtime.InteropServices.JavaScript
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
+
                 return res;
             }
 
@@ -252,29 +285,33 @@ namespace System.Runtime.InteropServices.JavaScript
             private ArgumentToManagedCallback<TResult> ResMarshaler;
             private JSObject JSObject;
 
-            public FuncJS(IntPtr jsHandle, ArgumentToJSCallback<T> arg1Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
+            public FuncJS(JSObject holder, ArgumentToJSCallback<T> arg1Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
                 Arg1Marshaler = arg1Marshaler;
                 ResMarshaler = resMarshaler;
             }
 
             public TResult InvokeJS(T arg1)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
                 ref JSMarshalerArgument args_return = ref arguments[1];
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
 
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                args_arg1.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
                 Arg1Marshaler(ref args_arg1, arg1);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -288,9 +325,9 @@ namespace System.Runtime.InteropServices.JavaScript
             private ArgumentToManagedCallback<TResult> ResMarshaler;
             private JSObject JSObject;
 
-            public FuncJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
+            public FuncJS(JSObject holder, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
                 ResMarshaler = resMarshaler;
@@ -298,9 +335,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T1 arg1, T2 arg2)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -308,12 +342,20 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg1 = ref arguments[2];
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
 
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                args_arg1.InitializeWithContext(JSObject.ProxyContext);
+                args_arg2.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
 
                 ResMarshaler(ref args_return, out TResult res);
                 return res;
@@ -328,9 +370,9 @@ namespace System.Runtime.InteropServices.JavaScript
             private ArgumentToManagedCallback<TResult> ResMarshaler;
             private JSObject JSObject;
 
-            public FuncJS(IntPtr jsHandle, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
+            public FuncJS(JSObject holder, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
             {
-                JSObject = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
+                JSObject = holder;
                 Arg1Marshaler = arg1Marshaler;
                 Arg2Marshaler = arg2Marshaler;
                 Arg3Marshaler = arg3Marshaler;
@@ -339,9 +381,6 @@ namespace System.Runtime.InteropServices.JavaScript
 
             public TResult InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
-#if FEATURE_WASM_THREADS
-                JSObject.AssertThreadAffinity(JSObject);
-#endif
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
                 ref JSMarshalerArgument args_exception = ref arguments[0];
@@ -350,15 +389,24 @@ namespace System.Runtime.InteropServices.JavaScript
                 ref JSMarshalerArgument args_arg2 = ref arguments[3];
                 ref JSMarshalerArgument args_arg3 = ref arguments[4];
 
+#if FEATURE_WASM_MANAGED_THREADS
+                args_exception.InitializeWithContext(JSObject.ProxyContext);
+                args_return.InitializeWithContext(JSObject.ProxyContext);
+                args_arg1.InitializeWithContext(JSObject.ProxyContext);
+                args_arg2.InitializeWithContext(JSObject.ProxyContext);
+                args_arg3.InitializeWithContext(JSObject.ProxyContext);
+                JSProxyContext.JSImportNoCapture();
+#else
                 args_exception.Initialize();
                 args_return.Initialize();
+#endif
                 Arg1Marshaler(ref args_arg1, arg1);
                 Arg2Marshaler(ref args_arg2, arg2);
                 Arg3Marshaler(ref args_arg3, arg3);
 
-                JSFunctionBinding.InvokeJSImpl(JSObject, arguments);
-
+                JSFunctionBinding.InvokeJSFunction(JSObject, arguments);
                 ResMarshaler(ref args_return, out TResult res);
+
                 return res;
             }
         }
@@ -378,7 +426,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            value = new FuncJS<TResult>(slot.JSHandle, resMarshaler).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new FuncJS<TResult>(holder, resMarshaler).InvokeJS;
         }
 
         /// <summary>
@@ -398,7 +448,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            value = new FuncJS<T, TResult>(slot.JSHandle, arg1Marshaler, resMarshaler).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new FuncJS<T, TResult>(holder, arg1Marshaler, resMarshaler).InvokeJS;
 
         }
 
@@ -421,7 +473,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 return;
             }
 
-            value = new FuncJS<T1, T2, TResult>(slot.JSHandle, arg1Marshaler, arg2Marshaler, resMarshaler).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new FuncJS<T1, T2, TResult>(holder, arg1Marshaler, arg2Marshaler, resMarshaler).InvokeJS;
         }
 
         /// <summary>
@@ -444,8 +498,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 value = null;
                 return;
             }
-
-            value = new FuncJS<T1, T2, T3, TResult>(slot.JSHandle, arg1Marshaler, arg2Marshaler, arg3Marshaler, resMarshaler).InvokeJS;
+            var ctx = ToManagedContext;
+            var holder = ctx.CreateCSOwnedProxy(slot.JSHandle);
+            value = new FuncJS<T1, T2, T3, TResult>(holder, arg1Marshaler, arg2Marshaler, arg3Marshaler, resMarshaler).InvokeJS;
         }
 
         /// <summary>
@@ -463,7 +518,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -484,7 +540,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -509,7 +566,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -538,7 +596,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Action;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -559,7 +618,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -584,7 +644,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -613,7 +674,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
 
         /// <summary>
@@ -646,7 +708,8 @@ namespace System.Runtime.InteropServices.JavaScript
                 // eventual exception is handled by C# caller
             };
             slot.Type = MarshalerType.Function;
-            slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cb);
+            var ctx = ToJSContext;
+            slot.GCHandle = ctx.GetJSOwnedObjectGCHandle(cb);
         }
     }
 }

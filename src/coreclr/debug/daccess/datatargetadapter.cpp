@@ -131,6 +131,10 @@ DataTargetAdapter::GetPlatform(
         _ASSERTE_MSG(false, "Not supported platform.");
         return E_NOTIMPL;
 
+    case IMAGE_FILE_MACHINE_RISCV64:
+        ulExpectedPointerSize = 8;
+        platform = CORDB_PLATFORM_POSIX_RISCV64;
+    break;
 #else   // TARGET_UNIX
     case IMAGE_FILE_MACHINE_I386:
         ulExpectedPointerSize = 4;

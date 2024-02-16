@@ -391,9 +391,7 @@ CustomMarshalerHelper *SetupCustomMarshalerHelper(LPCUTF8 strMarshalerTypeName, 
 {
     CONTRACT (CustomMarshalerHelper*)
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -1146,18 +1144,26 @@ namespace
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
     #ifdef TARGET_64BIT
             case ELEMENT_TYPE_U:
-            case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_FNPTR:
             case ELEMENT_TYPE_I:
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_8;
     #else
             case ELEMENT_TYPE_U:
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_U4;
-            case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_FNPTR:
             case ELEMENT_TYPE_I:
                 return MarshalInfo::MARSHAL_TYPE_GENERIC_4;
     #endif
+            case ELEMENT_TYPE_PTR:
+            {
+                BYTE ptrByte;
+                sig.SkipCustomModifiers();
+                sig.GetByte(&ptrByte);
+                _ASSERTE(ptrByte == ELEMENT_TYPE_PTR);
+                TypeHandle sigTH = sig.GetTypeHandleThrowing(pModule, pTypeContext);
+                *pMTOut = sigTH.GetMethodTable();
+                return MarshalInfo::MARSHAL_TYPE_POINTER;
+            }
             case ELEMENT_TYPE_R4:
                 return MarshalInfo::MARSHAL_TYPE_FLOAT;
             case ELEMENT_TYPE_R8:
@@ -1695,17 +1701,23 @@ MarshalInfo::MarshalInfo(Module* pModule,
             break;
 
         case ELEMENT_TYPE_PTR:
+        {
             if (nativeType != NATIVE_TYPE_DEFAULT)
             {
                 m_resID = IDS_EE_BADMARSHAL_PTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef TARGET_64BIT
-            m_type = MARSHAL_TYPE_GENERIC_8;
-#else
-            m_type = MARSHAL_TYPE_GENERIC_4;
-#endif
+
+            SigPointer sigtmp = sig;
+            BYTE ptrByte;
+            sigtmp.SkipCustomModifiers();
+            sigtmp.GetByte(&ptrByte);
+            _ASSERTE(ptrByte == ELEMENT_TYPE_PTR);
+            TypeHandle sigTH = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext);
+            m_args.m_pMT = sigTH.GetMethodTable();
+            m_type = MARSHAL_TYPE_POINTER;
             break;
+        }
 
         case ELEMENT_TYPE_FNPTR:
             if (!(nativeType == NATIVE_TYPE_FUNC || nativeType == NATIVE_TYPE_DEFAULT))
@@ -4057,20 +4069,17 @@ bool IsUnsupportedTypedrefReturn(MetaSig& msig)
 
 
 #include "stubhelpers.h"
-FCIMPL3(void*, StubHelpers::CreateCustomMarshalerHelper,
-            MethodDesc* pMD,
-            mdToken paramToken,
-            TypeHandle hndManagedType)
+
+extern "C" void* QCALLTYPE StubHelpers_CreateCustomMarshalerHelper(MethodDesc* pMD, mdToken paramToken, TypeHandle hndManagedType)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
     CustomMarshalerHelper* pCMHelper = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
+    BEGIN_QCALL;
 
     Module* pModule = pMD->GetModule();
     Assembly* pAssembly = pModule->GetAssembly();
-
 
 #ifdef FEATURE_COMINTEROP
     if (!hndManagedType.IsTypeDesc() &&
@@ -4108,9 +4117,8 @@ FCIMPL3(void*, StubHelpers::CreateCustomMarshalerHelper,
                                                 hndManagedType);
     }
 
-    HELPER_METHOD_FRAME_END();
+    END_QCALL;
 
     return (void*)pCMHelper;
 }
-FCIMPLEND
 

@@ -1,5 +1,5 @@
 # escape=`
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-nanoserver-1809
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0-nanoserver-ltsc2022
 FROM $SDK_BASE_IMAGE
 
 # Use powershell as the default shell
@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . .
 WORKDIR /app/System.Net.Security/tests/StressTests/SslStress
 
-ARG VERSION=8.0
+ARG VERSION=9.0
 ARG CONFIGURATION=Release
 
 RUN dotnet build -c $env:CONFIGURATION `

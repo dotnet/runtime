@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 // This test makes sure that CompareExchange<T> works
 // where T is string
@@ -11,7 +12,8 @@ public class InterlockedCompareExchange1
     private const int c_MIN_STRING_LEN = 64;
     private const int c_MAX_STRING_LEN = 1024;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         InterlockedCompareExchange1 test = new InterlockedCompareExchange1();
 

@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Description>Abstractions for modifying .NET host binaries</Description>
     <IsShipping>false</IsShipping>
-    <IsPackable>true</IsPackable>
+    <IsPackable Condition="'$(PgoInstrument)' == ''">true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
@@ -15,13 +15,11 @@
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
     <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
-    <PackageId Condition="'$(PgoInstrument)' == 'true'">Microsoft.Net.HostModel.PGO</PackageId>
     <DefineConstants>$(DefineConstants);HOST_MODEL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- we need to keep the version of System.Reflection.Metadata in sync with dotnet/msbuild and dotnet/sdk -->
-    <PackageReference Include="System.Reflection.Metadata" Version="6.0.0" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataToolsetVersion)" />
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 

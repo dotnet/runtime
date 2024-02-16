@@ -6,7 +6,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+
 namespace XUnitWrapperLibrary;
+
+using Interlocked = System.Threading.Interlocked;
 
 public class TestFilter
 {
@@ -28,6 +31,7 @@ public class TestFilter
             Filter = filter;
             Substring = substring;
         }
+
         public TermKind Kind { get; }
         public string Filter { get; }
         public bool Substring { get; }
@@ -65,7 +69,9 @@ public class TestFilter
             _right = right;
         }
 
-        public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) && _right.IsMatch(fullyQualifiedName, displayName, traits);
+        public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) =>
+            _left.IsMatch(fullyQualifiedName, displayName, traits)
+            && _right.IsMatch(fullyQualifiedName, displayName, traits);
 
         public override string ToString()
         {
@@ -84,7 +90,9 @@ public class TestFilter
             _right = right;
         }
 
-        public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) || _right.IsMatch(fullyQualifiedName, displayName, traits);
+        public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) =>
+            _left.IsMatch(fullyQualifiedName, displayName, traits)
+            || _right.IsMatch(fullyQualifiedName, displayName, traits);
 
         public override string ToString()
         {
@@ -101,7 +109,8 @@ public class TestFilter
             _inner = inner;
         }
 
-        public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => !_inner.IsMatch(fullyQualifiedName, displayName, traits);
+        public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits)
+            => !_inner.IsMatch(fullyQualifiedName, displayName, traits);
 
         public override string ToString()
         {
@@ -116,17 +125,21 @@ public class TestFilter
     // all tests to the new model, it's easier to keep bug exclusions in the existing
     // issues.targets file as a split model would be very confusing for developers
     // and test monitors.
-    private readonly HashSet<string>? _testExclusionList;
+
+    // Explanation on the Test Exclusion Table is detailed in method LoadTestExclusionTable()
+    // later on in this file.
+    private readonly Dictionary<string, string>? _testExclusionTable;
+
     private readonly int _stripe;
     private readonly int _stripeCount = 1;
     private int _shouldRunQuery = -1;
 
-    public TestFilter(string? filterString, HashSet<string>? testExclusionList) :
-        this(filterString == null ? Array.Empty<string>() : new string[]{filterString}, testExclusionList)
+    public TestFilter(string? filterString, Dictionary<string, string>? testExclusionTable) :
+        this(filterString == null ? Array.Empty<string>() : new string[]{filterString}, testExclusionTable)
     {
     }
 
-    public TestFilter(string[] filterArgs, HashSet<string>? testExclusionList)
+    public TestFilter(string[] filterArgs, Dictionary<string, string>? testExclusionTable)
     {
         string? filterString = null;
 
@@ -149,7 +162,8 @@ public class TestFilter
             var stripes = stripeEnvironment.Split('.');
             if (stripes.Length == 3)
             {
-                Console.WriteLine($"Test striping enabled via TEST_HARNESS_STRIPE_TO_EXECUTE environment variable set to '{stripeEnvironment}'");
+                Console.WriteLine($"Test striping enabled via TEST_HARNESS_STRIPE_TO_EXECUTE environment"
+                                  + $" variable set to '{stripeEnvironment}'");
                 _stripe = int.Parse(stripes[1]);
                 _stripeCount = int.Parse(stripes[2]);
             }
@@ -159,23 +173,28 @@ public class TestFilter
         {
             if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
             {
-                throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterArgs));
+                throw new ArgumentException("Complex test filter expressions are not supported today."
+                                          + " The only filters currently supported are the simple forms"
+                                          + " supported in 'dotnet test --filter' (substrings of the"
+                                          + " test's fully qualified name). If further filtering options"
+                                          + " are desired, file an issue on dotnet/runtime for support.",
+                                            nameof(filterArgs));
             }
             _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
         }
-        _testExclusionList = testExclusionList;
+        _testExclusionTable = testExclusionTable;
     }
 
-    public TestFilter(ISearchClause? filter, HashSet<string>? testExclusionList)
+    public TestFilter(ISearchClause? filter, Dictionary<string, string>? testExclusionTable)
     {
         _filter = filter;
-        _testExclusionList = testExclusionList;
+        _testExclusionTable = testExclusionTable;
     }
 
     public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null)
     {
         bool shouldRun;
-        if (_testExclusionList is not null && _testExclusionList.Contains(displayName.Replace("\\", "/")))
+        if (_testExclusionTable is not null && _testExclusionTable.ContainsKey(displayName.Replace("\\", "/")))
         {
             shouldRun = false;
         }
@@ -191,30 +210,86 @@ public class TestFilter
         if (shouldRun)
         {
             // Test stripe, if true, then report success
-            return ((System.Threading.Interlocked.Increment(ref _shouldRunQuery)) % _stripeCount) == _stripe;
+            return ((Interlocked.Increment(ref _shouldRunQuery)) % _stripeCount) == _stripe;
         }
         return false;
     }
 
-    public static HashSet<string> LoadTestExclusionList()
+    public string GetTestExclusionReason(string testDisplayName)
     {
-        HashSet<string> output = new ();
+        if (_testExclusionTable is null)
+            return string.Empty;
+
+        string trueDisplayName = testDisplayName.Replace("\\", "/");
+
+        return _testExclusionTable.ContainsKey(trueDisplayName)
+               ? _testExclusionTable[trueDisplayName]
+               : string.Empty;
+    }
+
+    // GH dotnet/runtime issue #91562: Some tests are purposefully not run for a number
+    // of reasons. They are specified in src/tests/issues.targets, along with a brief
+    // explanation on why they are skipped inside an '<Issue>' tag.
+    //
+    // When building any test or test subtree, if any of the tests built matches an entry
+    // in issues.targets, then the exclusions list file ($CORE_ROOT/TestExclusions.txt is
+    // the default) is updated by adding a new a comma-separated entry:
+    //
+    // 1) Test's Path (What is added to <ExcludeList> in issues.targets)
+    // 2) Reason for Skipping (What is written in the <Issue> tag)
+    //
+    // When a test runner is executed (e.g. Methodical_d1.sh), it uses a compiler-generated
+    // source file to actually run the tests (e.g. FullRunner.g.cs - This is detailed in
+    // XUnitWrapperGenerator.cs). This generated source file is the one in charge of
+    // reading the test exclusions list file, and stores the comma-separated values into a
+    // table represented by the dictionary called _testExclusionTable in this file.
+
+    public static Dictionary<string, string> LoadTestExclusionTable()
+    {
+        Dictionary<string, string> output = new Dictionary<string, string>();
 
         // Try reading the exclusion list as a base64-encoded semicolon-delimited string as a commmand-line arg.
         string[] arguments = Environment.GetCommandLineArgs();
         string? testExclusionListArg = arguments.FirstOrDefault(arg => arg.StartsWith("--exclusion-list="));
-        if (testExclusionListArg is not null)
+
+        if (!string.IsNullOrEmpty(testExclusionListArg))
         {
             string testExclusionListPathFromCommandLine = testExclusionListArg.Substring("--exclusion-list=".Length);
-            output.UnionWith(File.ReadAllLines(testExclusionListPathFromCommandLine));
+            ReadExclusionListToTable(testExclusionListPathFromCommandLine, output);
         }
 
         // Try reading the exclusion list as a line-delimited file.
         string? testExclusionListPath = Environment.GetEnvironmentVariable("TestExclusionListPath");
+
         if (!string.IsNullOrEmpty(testExclusionListPath))
         {
-            output.UnionWith(File.ReadAllLines(testExclusionListPath));
+            ReadExclusionListToTable(testExclusionListPath, output);
         }
         return output;
+    }
+
+    private static void ReadExclusionListToTable(string exclusionListPath,
+                                                 Dictionary<string, string> table)
+    {
+        IEnumerable<string[]> excludedTestsWithReasons = File.ReadAllLines(exclusionListPath)
+                                                             .Select(t => t.Split(','));
+
+        foreach (string[] testInfo in excludedTestsWithReasons)
+        {
+            // Each line read from the exclusion list file follows the following format:
+            //
+            // Test Path, Reason For Skipping
+            //
+            // This translates to the two-element arrays we are adding to the test
+            // exclusions table here.
+
+            string testPath = testInfo[0];
+            string skipReason = testInfo.Length > 1 ? testInfo[1] : string.Empty;
+
+            if (!table.ContainsKey(testPath))
+            {
+                table.Add(testPath, skipReason);
+            }
+        }
     }
 }

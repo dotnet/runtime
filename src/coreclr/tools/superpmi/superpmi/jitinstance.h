@@ -9,6 +9,21 @@
 #include "methodcontext.h"
 #include "cycletimer.h"
 
+enum class ReplayResult
+{
+    Success,
+    Error,
+    Miss,
+};
+
+struct ReplayResults
+{
+    ReplayResult Result = ReplayResult::Success;
+    bool IsMinOpts = false;
+    uint32_t NumCodeBytes = 0;
+    uint64_t NumExecutedInstructions = 0;
+};
+
 class JitInstance
 {
 private:
@@ -34,12 +49,6 @@ public:
     bool forceClearAltJitFlag;
     bool forceSetAltJitFlag;
 
-    enum Result
-    {
-        RESULT_ERROR,
-        RESULT_SUCCESS,
-        RESULT_MISSING
-    };
     CycleTimer       lt;
     MethodContext*   mc;
     ULONGLONG        times[2];
@@ -60,7 +69,7 @@ public:
 
     bool resetConfig(MethodContext* firstContext);
 
-    Result CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, struct MetricsSummary* metrics, bool* isMinOpts);
+    ReplayResults CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput);
 
     const WCHAR* getForceOption(const WCHAR* key);
     const WCHAR* getOption(const WCHAR* key);

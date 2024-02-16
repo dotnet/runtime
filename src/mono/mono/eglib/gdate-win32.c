@@ -32,18 +32,6 @@
 #include <winsock2.h>
 
 void
-g_get_current_time (GTimeVal *result)
-{
-	long int l;
-
-	g_return_if_fail (result != NULL);
-	l = GetTickCount();
-
-	result->tv_sec = l / 1000;
-	result->tv_usec = (l % 1000) * 1000;
-}
-
-void
 g_usleep (gulong microseconds)
 {
 	Sleep (microseconds/1000);

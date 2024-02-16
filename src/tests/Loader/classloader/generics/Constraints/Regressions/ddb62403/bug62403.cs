@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 
-class TestClass
+public class TestClass
 {
     public static void N<U,V>() where U : V { }
 
@@ -13,7 +14,8 @@ class TestClass
         N<U,U>();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 	try {
 		M<object,object>();

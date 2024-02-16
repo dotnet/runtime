@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -11,9 +12,10 @@ namespace System.Formats.Cbor
     /// <summary>A writer for Concise Binary Object Representation (CBOR) encoded data.</summary>
     public partial class CborWriter
     {
+        private const int DefaultCapacitySentinel = -1;
         private static readonly ArrayPool<byte> s_bufferPool = ArrayPool<byte>.Create();
 
-        private byte[] _buffer = null!;
+        private byte[] _buffer;
         private int _offset;
 
         private Stack<StackFrame>? _nestedDataItems;
@@ -60,7 +62,28 @@ namespace System.Formats.Cbor
         /// <param name="convertIndefiniteLengthEncodings"><see langword="true" /> to enable automatically converting indefinite-length encodings into definite-length equivalents and allow use of indefinite-length write APIs in conformance modes that otherwise do not permit it; otherwise, <see langword="false" />.</param>
         /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to allow multiple root-level values to be written by the writer; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="conformanceMode" /> is not a defined <see cref="CborConformanceMode" />.</exception>
-        public CborWriter(CborConformanceMode conformanceMode = CborConformanceMode.Strict, bool convertIndefiniteLengthEncodings = false, bool allowMultipleRootLevelValues = false)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public CborWriter(CborConformanceMode conformanceMode, bool convertIndefiniteLengthEncodings, bool allowMultipleRootLevelValues)
+            : this(conformanceMode, convertIndefiniteLengthEncodings, allowMultipleRootLevelValues, DefaultCapacitySentinel)
+        {
+        }
+
+        /// <summary>Initializes a new instance of <see cref="CborWriter" /> class using the specified configuration.</summary>
+        /// <param name="conformanceMode">One of the enumeration values that specifies the guidance on the conformance checks performed on the encoded data.
+        /// Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.</param>
+        /// <param name="convertIndefiniteLengthEncodings"><see langword="true" /> to enable automatically converting indefinite-length encodings into definite-length equivalents and allow use of indefinite-length write APIs in conformance modes that otherwise do not permit it; otherwise, <see langword="false" />.</param>
+        /// <param name="allowMultipleRootLevelValues"><see langword="true" /> to allow multiple root-level values to be written by the writer; otherwise, <see langword="false" />.</param>
+        /// <param name="initialCapacity">The initial capacity of the underlying buffer. The value -1 can be used to use the default capacity.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <para><paramref name="conformanceMode" /> is not a defined <see cref="CborConformanceMode" />.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="initialCapacity"/> is not zero, positive, or the default value indicator -1.</para>
+        /// </exception>
+        public CborWriter(
+            CborConformanceMode conformanceMode = CborConformanceMode.Strict,
+            bool convertIndefiniteLengthEncodings = false,
+            bool allowMultipleRootLevelValues = false,
+            int initialCapacity = DefaultCapacitySentinel)
         {
             CborConformanceModeHelpers.Validate(conformanceMode);
 
@@ -68,6 +91,13 @@ namespace System.Formats.Cbor
             ConvertIndefiniteLengthEncodings = convertIndefiniteLengthEncodings;
             AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
             _definiteLength = allowMultipleRootLevelValues ? null : (int?)1;
+
+            _buffer = initialCapacity switch
+            {
+                DefaultCapacitySentinel or 0 => Array.Empty<byte>(),
+                < -1 => throw new ArgumentOutOfRangeException(nameof(initialCapacity)),
+                _ => new byte[initialCapacity],
+            };
         }
 
         /// <summary>Resets the writer to have no data, without releasing resources.</summary>
@@ -205,11 +235,23 @@ namespace System.Formats.Cbor
                 throw new OverflowException();
             }
 
-            if (_buffer is null || _buffer.Length - _offset < pendingCount)
+            int currentCapacity = _buffer.Length;
+            int requiredCapacity = _offset + pendingCount;
+            if (currentCapacity < requiredCapacity)
             {
-                const int BlockSize = 1024;
-                int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
-                Array.Resize(ref _buffer, BlockSize * blocks);
+                int newCapacity = currentCapacity == 0 ? 1024 : currentCapacity * 2;
+                const uint MaxArrayLength = 0x7FFFFFC7; // Array.MaxLength
+#if NETCOREAPP
+                Debug.Assert(MaxArrayLength == Array.MaxLength);
+#endif
+                if ((uint)newCapacity > MaxArrayLength || newCapacity < requiredCapacity)
+                {
+                    newCapacity = requiredCapacity;
+                }
+
+                byte[] newBuffer = new byte[newCapacity];
+                new ReadOnlySpan<byte>(_buffer, 0, _offset).CopyTo(newBuffer);
+                _buffer = newBuffer;
             }
         }
 

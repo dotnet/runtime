@@ -108,9 +108,10 @@ public abstract class IcuTestsBase : TestMainJsTestBase
         bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
         buildArgs = buildArgs with { ProjectName = projectName };
-        string extraProperties = onlyPredefinedCultures ?
-            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><PredefinedCulturesOnly>true</PredefinedCulturesOnly>" :
-            $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName>";
+        // by default, we remove resource strings from an app. ICU tests are checking exception messages contents -> resource string keys are not enough
+        string extraProperties = $"<WasmIcuDataFileName>{shardName}</WasmIcuDataFileName><UseSystemResourceKeys>false</UseSystemResourceKeys>";
+        if (onlyPredefinedCultures)
+            extraProperties = $"{extraProperties}<PredefinedCulturesOnly>true</PredefinedCulturesOnly>";
         buildArgs = ExpandBuildArgs(buildArgs, extraProperties: extraProperties);
 
         string programText = GetProgramText(testedLocales, onlyPredefinedCultures);

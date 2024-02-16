@@ -54,9 +54,9 @@ namespace Microsoft.Extensions.DependencyModel
                   serviceable,
                   path,
                   hashPath,
-                  runtimeStoreManifestName : null)
-         {
-         }
+                  runtimeStoreManifestName: null)
+        {
+        }
 
 
         /// <summary>

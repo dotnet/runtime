@@ -54,7 +54,7 @@ namespace Internal.TypeSystem.Interop
 
         public static MetadataType GetVariant(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Variant");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices.Marshalling", "ComVariant");
         }
 
         public static bool IsSafeHandle(TypeSystemContext context, TypeDesc type)

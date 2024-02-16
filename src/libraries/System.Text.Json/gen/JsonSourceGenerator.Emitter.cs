@@ -3,12 +3,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using SourceGenerators;
 
@@ -707,7 +705,7 @@ namespace System.Text.Json.SourceGeneration
                             ParameterType = typeof({{spec.ParameterType.FullyQualifiedName}}),
                             Position = {{spec.ParameterIndex}},
                             HasDefaultValue = {{FormatBool(spec.HasDefaultValue)}},
-                            DefaultValue = {{FormatDefaultConstructorParameter(spec.DefaultValue, spec.ParameterType)}}
+                            DefaultValue = {{CSharpSyntaxUtilities.FormatLiteral(spec.DefaultValue, spec.ParameterType)}}
                         };
 
                         """);
@@ -798,7 +796,7 @@ namespace System.Text.Json.SourceGeneration
                     if (defaultCheckType != DefaultCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
-                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
                         writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
                         propValueExpr = localVariableName;
                     }
@@ -1009,7 +1007,9 @@ namespace System.Text.Json.SourceGeneration
                     /// <summary>
                     /// Defines the source generated JSON serialization contract metadata for a given type.
                     /// </summary>
+                    #nullable disable annotations // Marking the property type as nullable-oblivious.
                     public {{typeInfoFQN}} {{typeInfoPropertyName}}
+                    #nullable enable annotations
                     {
                         get => _{{typeInfoPropertyName}} ??= ({{typeInfoFQN}}){{OptionsInstanceVariableName}}.GetTypeInfo(typeof({{typeFQN}}));
                     }
@@ -1105,6 +1105,9 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine('{');
                 writer.Indentation++;
 
+                if (optionsSpec.AllowOutOfOrderMetadataProperties is bool allowOutOfOrderMetadataProperties)
+                    writer.WriteLine($"AllowOutOfOrderMetadataProperties = {FormatBool(allowOutOfOrderMetadataProperties)},");
+
                 if (optionsSpec.AllowTrailingCommas is bool allowTrailingCommas)
                     writer.WriteLine($"AllowTrailingCommas = {FormatBool(allowTrailingCommas)},");
 
@@ -1167,6 +1170,12 @@ namespace System.Text.Json.SourceGeneration
 
                 if (optionsSpec.WriteIndented is bool writeIndented)
                     writer.WriteLine($"WriteIndented = {FormatBool(writeIndented)},");
+
+                if (optionsSpec.IndentCharacter is char indentCharacter)
+                    writer.WriteLine($"IndentCharacter = {FormatIndentChar(indentCharacter)},");
+
+                if (optionsSpec.IndentSize is int indentSize)
+                    writer.WriteLine($"IndentSize = {indentSize},");
 
                 writer.Indentation--;
                 writer.WriteLine("};");
@@ -1344,6 +1353,7 @@ namespace System.Text.Json.SourceGeneration
 
             private static string FormatBool(bool value) => value ? "true" : "false";
             private static string FormatStringLiteral(string? value) => value is null ? "null" : $"\"{value}\"";
+            private static string FormatIndentChar(char value) => value is '\t' ? "'\\t'" : $"'{value}'";
 
             /// <summary>
             /// Method used to generate JsonTypeInfo given options instance
@@ -1351,56 +1361,6 @@ namespace System.Text.Json.SourceGeneration
             private static string CreateTypeInfoMethodName(TypeGenerationSpec typeSpec)
                 => $"Create_{typeSpec.TypeInfoPropertyName}";
 
-            private static string FormatDefaultConstructorParameter(object? value, TypeRef type)
-            {
-                if (value == null)
-                {
-                    return $"default({type.FullyQualifiedName})";
-                }
-
-                if (type.TypeKind is TypeKind.Enum)
-                {
-                    // Return the numeric value.
-                    return FormatNumber();
-                }
-
-                switch (value)
-                {
-                    case string @string:
-                        return SymbolDisplay.FormatLiteral(@string, quote: true); ;
-                    case char @char:
-                        return SymbolDisplay.FormatLiteral(@char, quote: true);
-                    case double.NegativeInfinity:
-                        return "double.NegativeInfinity";
-                    case double.PositiveInfinity:
-                        return "double.PositiveInfinity";
-                    case double.NaN:
-                        return "double.NaN";
-                    case double @double:
-                        return $"({type.FullyQualifiedName})({@double.ToString(JsonConstants.DoubleFormatString, CultureInfo.InvariantCulture)})";
-                    case float.NegativeInfinity:
-                        return "float.NegativeInfinity";
-                    case float.PositiveInfinity:
-                        return "float.PositiveInfinity";
-                    case float.NaN:
-                        return "float.NaN";
-                    case float @float:
-                        return $"({type.FullyQualifiedName})({@float.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture)})";
-                    case decimal.MaxValue:
-                        return "decimal.MaxValue";
-                    case decimal.MinValue:
-                        return "decimal.MinValue";
-                    case decimal @decimal:
-                        return @decimal.ToString(CultureInfo.InvariantCulture);
-                    case bool @bool:
-                        return FormatBool(@bool);
-                    default:
-                        // Assume this is a number.
-                        return FormatNumber();
-                }
-
-                string FormatNumber() => $"({type.FullyQualifiedName})({Convert.ToString(value, CultureInfo.InvariantCulture)})";
-            }
 
             private static string FormatDefaultConstructorExpr(TypeGenerationSpec typeSpec)
             {

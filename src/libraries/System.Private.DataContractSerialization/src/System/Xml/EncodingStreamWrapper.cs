@@ -20,7 +20,13 @@ namespace System.Xml
     //                      during construction.
     internal sealed class EncodingStreamWrapper : Stream
     {
-        private enum SupportedEncoding { UTF8, UTF16LE, UTF16BE, None }
+        private enum SupportedEncoding
+        {
+            UTF8,
+            UTF16LE,
+            UTF16BE,
+            None
+        }
         private const int BufferLength = 128;
 
         // UTF-8 is fastpath, so that's how these are stored

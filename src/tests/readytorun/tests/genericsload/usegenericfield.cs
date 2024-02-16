@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class Foo<T>
 {
@@ -14,9 +15,10 @@ class Foo<T>
     }
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

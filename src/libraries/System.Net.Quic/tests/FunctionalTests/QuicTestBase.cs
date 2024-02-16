@@ -29,6 +29,7 @@ namespace System.Net.Quic.Tests
         private static readonly byte[] s_pong = "PONG"u8.ToArray();
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
+        public static bool IsNotArm32CoreClrStressTest => !(CoreClrConfigurationDetection.IsStressTest && PlatformDetection.IsArmProcess);
 
         private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
         public static bool IsIPv6Available => _isIPv6Available.Value;

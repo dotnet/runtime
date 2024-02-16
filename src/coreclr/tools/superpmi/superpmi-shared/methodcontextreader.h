@@ -136,6 +136,9 @@ public:
     MethodContextBuffer GetNextMethodContext();
     // No C++ exceptions, so the constructor has to always succeed...
     bool   isValid();
+
+    double Progress();
+    double TotalWork();
     double PercentComplete();
 
     // Returns the index of the last MethodContext read by GetNextMethodContext

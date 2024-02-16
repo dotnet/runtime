@@ -29,13 +29,13 @@ namespace System
         }
 
         public DuplicateWaitObjectException(string? parameterName, string? message)
-            : base(message, parameterName)
+            : base(message ?? SR.Arg_DuplicateWaitObjectException, parameterName)
         {
             HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(string? message, Exception? innerException)
-            : base(message, innerException)
+            : base(message ?? SR.Arg_DuplicateWaitObjectException, innerException)
         {
             HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }

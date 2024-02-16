@@ -138,6 +138,47 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
     CorElementType type = th.GetVerifierCorElementType();
 
     switch (type) {
+#ifdef TARGET_RISCV64
+    // RISC-V call convention requires signed ints sign-extended (unsigned -- zero-extended) to register width
+    case ELEMENT_TYPE_BOOLEAN:
+    case ELEMENT_TYPE_U1:
+        _ASSERTE(argRef != NULL);
+        *(UINT64 *)pArgDst = *(UINT8 *)argRef;
+        break;
+
+    case ELEMENT_TYPE_I1:
+        _ASSERTE(argRef != NULL);
+        *(INT64 *)pArgDst = *(INT8 *)argRef;
+        break;
+
+    case ELEMENT_TYPE_U2:
+    case ELEMENT_TYPE_CHAR:
+        _ASSERTE(argRef != NULL);
+        *(UINT64 *)pArgDst = *(UINT16 *)argRef;
+        break;
+
+    case ELEMENT_TYPE_I2:
+        _ASSERTE(argRef != NULL);
+        *(INT64 *)pArgDst = *(INT16 *)argRef;
+        break;
+
+    case ELEMENT_TYPE_R4:
+        _ASSERTE(argRef != NULL);
+        // NaN-box the register value or single-float instructions will treat it as NaN
+        *(UINT64 *)pArgDst = 0xffffffff00000000L | *(UINT32 *)argRef;
+        break;
+
+    case ELEMENT_TYPE_I4:
+        _ASSERTE(argRef != NULL);
+        *(INT64 *)pArgDst = *(INT32 *)argRef;
+        break;
+
+    case ELEMENT_TYPE_U4:
+        _ASSERTE(argRef != NULL);
+        *(UINT64 *)pArgDst = *(UINT32 *)argRef;
+        break;
+
+#else // !TARGET_RISCV64
     case ELEMENT_TYPE_BOOLEAN:
     case ELEMENT_TYPE_U1:
     case ELEMENT_TYPE_I1:
@@ -166,6 +207,7 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
         *(INT32 *)pArgDst = *(INT32 *)argRef;
         break;
     }
+#endif // TARGET_RISCV64
 
     case ELEMENT_TYPE_I8:
     case ELEMENT_TYPE_U8:
@@ -699,14 +741,14 @@ void InvokeUtil::ValidateObjectTarget(FieldDesc *pField, TypeHandle enclosingTyp
 
 // SetValidField
 // Given an target object, a value object and a field this method will set the field
-//  on the target object.  The field must be validate before calling this.
+//  on the target object.  The field must be validated before calling this.
 void InvokeUtil::SetValidField(CorElementType fldType,
                                TypeHandle fldTH,
                                FieldDesc *pField,
                                OBJECTREF *target,
                                OBJECTREF *valueObj,
                                TypeHandle declaringType,
-                               CLR_BOOL *pDomainInitialized) {
+                               CLR_BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -744,19 +786,18 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
-    if (*pDomainInitialized == FALSE)
+    if (*pIsClassInitialized == FALSE)
     {
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
-
-            *pDomainInitialized = TRUE;
+            *pIsClassInitialized = pDeclMT->IsClassInited();            
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
 #ifdef _DEBUG
-    else if (*pDomainInitialized == TRUE && !declaringType.IsNull())
+    else if (*pIsClassInitialized == TRUE && !declaringType.IsNull())
        CONSISTENCY_CHECK(declaringType.GetMethodTable()->CheckActivated());
 #endif
 
@@ -931,9 +972,7 @@ void InvokeUtil::SetValidField(CorElementType fldType,
 
 // GetFieldValue
 // This method will return an ARG_SLOT containing the value of the field.
-// GetFieldValue
-// This method will return an ARG_SLOT containing the value of the field.
-OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pDomainInitialized) {
+OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, CLR_BOOL *pIsClassInitialized) {
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
@@ -957,7 +996,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
     {
         pDeclMT = declaringType.GetMethodTable();
 
-        // We don't allow getting the field just so we don't have more specical
+        // We don't allow getting the field just so we don't have more special
         // cases than we need to.  Then we need at least the throw check to ensure
         // we don't allow data corruption.
         if (Nullable::IsNullableType(pDeclMT))
@@ -971,22 +1010,20 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         pDeclMT = pField->GetModule()->GetGlobalMethodTable();
     }
 
-    if (*pDomainInitialized == FALSE)
+    if (*pIsClassInitialized == FALSE)
     {
         EX_TRY
         {
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();
-
-            *pDomainInitialized = TRUE;
+            *pIsClassInitialized = pDeclMT->IsClassInited();
         }
         EX_CATCH_THROWABLE(&Throwable);
     }
 #ifdef _DEBUG
-    else if (*pDomainInitialized == TRUE && !declaringType.IsNull())
+    else if (*pIsClassInitialized == TRUE && !declaringType.IsNull())
        CONSISTENCY_CHECK(declaringType.GetMethodTable()->CheckActivated());
 #endif
-
 
     if(Throwable != NULL)
     {
@@ -1042,7 +1079,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
 
     case ELEMENT_TYPE_VALUETYPE:
     {
-        // Value classes require createing a boxed version of the field and then
+        // Value classes require creating a boxed version of the field and then
         //  copying from the source...
         // Allocate an object to return...
         _ASSERTE(!fieldType.IsTypeDesc());

@@ -11,20 +11,6 @@
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>T:System.BinaryData:[T:System.Text.Json.Serialization.JsonConverterAttribute]</Target>
-    <Left>lib/net6.0/System.Memory.Data.dll</Left>
-    <Right>lib/net6.0/System.Memory.Data.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.BinaryData:[T:System.Text.Json.Serialization.JsonConverterAttribute]</Target>
-    <Left>lib/net7.0/System.Memory.Data.dll</Left>
-    <Right>lib/net7.0/System.Memory.Data.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0015</DiagnosticId>
-    <Target>T:System.BinaryData:[T:System.Text.Json.Serialization.JsonConverterAttribute]</Target>
     <Left>lib/netstandard2.0/System.Memory.Data.dll</Left>
     <Right>lib/netstandard2.0/System.Memory.Data.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>

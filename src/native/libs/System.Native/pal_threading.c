@@ -233,8 +233,8 @@ int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(voi
     error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     assert(error == 0);
 
-#ifdef ENSURE_PRIMARY_STACK_SIZE
-    // TODO: https://github.com/dotnet/runtimelab/issues/791
+#ifdef HOST_APPLE
+    // Match Windows stack size
     if (stackSize == 0)
     {
         stackSize = 1536 * 1024;
@@ -284,4 +284,52 @@ __attribute__((noreturn))
 void SystemNative_Abort(void)
 {
     abort();
+}
+
+// Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
+uint64_t SystemNative_GetUInt64OSThreadId(void)
+{
+#ifdef __APPLE__
+    uint64_t threadId;
+    int result = pthread_threadid_np(pthread_self(), &threadId);
+    assert(result == 0);
+    return threadId;
+#else
+    assert(false);
+    return 0;
+#endif
+}
+
+#if defined(__linux__)
+#include <sys/syscall.h>
+#include <unistd.h>
+#elif defined(__FreeBSD__)
+#include <pthread_np.h>
+#elif defined(__NetBSD__)
+#include <lwp.h>
+#endif
+
+// Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
+// Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
+uint32_t SystemNative_TryGetUInt32OSThreadId(void)
+{
+    const uint32_t InvalidId = (uint32_t)-1;
+
+#if defined(__linux__)
+    assert(sizeof(pid_t) == sizeof(uint32_t));
+    uint32_t threadId = (uint32_t)syscall(SYS_gettid);
+    assert(threadId != InvalidId);
+    return threadId;
+#elif defined(__FreeBSD__)
+    uint32_t threadId = (uint32_t)pthread_getthreadid_np();
+    assert(threadId != InvalidId);
+    return threadId;
+#elif defined(__NetBSD__)
+    assert(sizeof(lwpid_t) == sizeof(uint32_t));
+    uint32_t threadId = (uint32_t)_lwp_self();
+    assert(threadId != InvalidId);
+    return threadId;
+#else
+    return InvalidId;
+#endif
 }

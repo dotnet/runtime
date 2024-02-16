@@ -12,7 +12,7 @@ namespace System.Threading
             _id = id;
         }
 
-        private static long TickCount64
+        public static long TickCount64
         {
             get
             {

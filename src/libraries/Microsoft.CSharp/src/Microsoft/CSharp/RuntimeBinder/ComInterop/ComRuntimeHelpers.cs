@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
@@ -230,11 +231,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         #region public members
 
         public static unsafe IntPtr ConvertInt32ByrefToPtr(ref int value) { return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value); }
-        public static unsafe IntPtr ConvertVariantByrefToPtr(ref Variant value) { return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value); }
+        public static unsafe IntPtr ConvertVariantByrefToPtr(ref ComVariant value) { return (IntPtr)System.Runtime.CompilerServices.Unsafe.AsPointer(ref value); }
 
-        internal static Variant GetVariantForObject(object obj)
+        internal static ComVariant GetVariantForObject(object obj)
         {
-            Variant variant = default;
+            ComVariant variant = default;
             if (obj == null)
             {
                 return variant;
@@ -243,7 +244,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return variant;
         }
 
-        internal static void InitVariantForObject(object obj, ref Variant variant)
+        internal static void InitVariantForObject(object obj, ref ComVariant variant)
         {
             Debug.Assert(obj != null);
 
@@ -252,7 +253,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             // Therefore we are going to test for IDispatch before defaulting to GetNativeVariantForObject.
             if (obj is IDispatch)
             {
-                variant.AsDispatch = obj;
+                variant = ComVariant.CreateRaw(VarEnum.VT_DISPATCH, obj is not null ? Marshal.GetIDispatchForObject(obj) : 0);
                 return;
             }
 
@@ -260,7 +261,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         // This method is intended for use through reflection and should not be used directly
-        public static object GetObjectForVariant(Variant variant)
+        public static object GetObjectForVariant(ComVariant variant)
         {
             IntPtr ptr = UnsafeMethods.ConvertVariantByrefToPtr(ref variant);
             return Marshal.GetObjectForNativeVariant(ptr);
@@ -287,18 +288,18 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             int memberDispId,
             ComTypes.INVOKEKIND flags,
             ref ComTypes.DISPPARAMS dispParams,
-            out Variant result,
+            out ComVariant result,
             out ExcepInfo excepInfo,
             out uint argErr)
         {
             Guid IID_NULL = default;
 
             fixed (ComTypes.DISPPARAMS* pDispParams = &dispParams)
-            fixed (Variant* pResult = &result)
+            fixed (ComVariant* pResult = &result)
             fixed (ExcepInfo* pExcepInfo = &excepInfo)
             fixed (uint* pArgErr = &argErr)
             {
-                var pfnIDispatchInvoke = (delegate* unmanaged<IntPtr, int, Guid*, int, ushort, ComTypes.DISPPARAMS*, Variant*, ExcepInfo*, uint*, int>)
+                var pfnIDispatchInvoke = (delegate* unmanaged<IntPtr, int, Guid*, int, ushort, ComTypes.DISPPARAMS*, ComVariant*, ExcepInfo*, uint*, int>)
                     (*(*(void***)dispatchPointer + 6 /* IDispatch.Invoke slot */));
 
                 int hresult = pfnIDispatchInvoke(dispatchPointer,

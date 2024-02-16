@@ -60,7 +60,7 @@ namespace System.Xml.XmlWriterApiTests
                     w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 default:
-                    Assert.True(false, "unknown writer");
+                    Assert.Fail("unknown writer");
                     break;
             }
 
@@ -157,7 +157,7 @@ namespace System.Xml.XmlWriterApiTests
             }
             catch (XmlException)
             {
-                Assert.True(false);
+                Assert.Fail();
             }
             finally
             {

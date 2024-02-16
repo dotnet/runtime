@@ -3352,9 +3352,9 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     // Scan the month names (note that some calendars has 13 months) and find
                     // the matching month name which has the max string length.
-                    // We need to do this because some cultures (e.g. "cs-CZ") which have
-                    // abbreviated month names with the same prefix.
-                    int monthsInYear = (dtfi.GetMonthName(13).Length == 0 ? 12 : 13);
+                    // We need to do this because some cultures which have abbreviated
+                    // month names with the same prefix (e.g. "vi-VN" culture has those conflicts "Thg1", "Thg10", "Thg11")
+                    int monthsInYear = (dtfi.GetAbbreviatedMonthName(13).Length == 0 ? 12 : 13);
                     for (int i = 1; i <= monthsInYear; i++)
                     {
                         string searchStr = dtfi.GetAbbreviatedMonthName(i);

@@ -1,16 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, JitOptimizationSensitive, GC.WaitForPendingFinalizers -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
+
+  <!-- Test coverage for EventPipe CFG library, eventpipe-enabled.GuardCF.lib -->
+  <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsWindows)' == 'true'">
+    <ControlFlowGuard>guard</ControlFlowGuard>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
-    <ProjectReference Include="../common/common.csproj" />
+    <ProjectReference Include="../common/eventpipe_common.csproj" />
     <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
 </Project>

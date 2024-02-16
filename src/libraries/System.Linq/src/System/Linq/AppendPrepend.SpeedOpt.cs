@@ -22,22 +22,45 @@ namespace System.Linq
             private TSource[] LazyToArray()
             {
                 Debug.Assert(GetCount(onlyIfCheap: true) == -1);
+                TSource[] result;
 
-                LargeArrayBuilder<TSource> builder = new();
-
-                if (!_appending)
+                if (_source is ICollection<TSource> c)
                 {
-                    builder.SlowAdd(_item);
+                    // Allocate an array of the exact size needed. We have a collection
+                    // with an additional item either before it or after it; copy them
+                    // all to the new array appropriately.
+                    result = new TSource[c.Count + 1];
+                    if (_appending)
+                    {
+                        c.CopyTo(result, 0);
+                        result[^1] = _item;
+                    }
+                    else
+                    {
+                        c.CopyTo(result, 1);
+                        result[0] = _item;
+                    }
+                }
+                else
+                {
+                    SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                    SegmentedArrayBuilder<TSource> builder = new(scratch);
+                    if (_appending)
+                    {
+                        builder.AddNonICollectionRange(_source);
+                        builder.Add(_item);
+                    }
+                    else
+                    {
+                        builder.Add(_item);
+                        builder.AddNonICollectionRange(_source);
+                    }
+
+                    result = builder.ToArray();
+                    builder.Dispose();
                 }
 
-                builder.AddRange(_source);
-
-                if (_appending)
-                {
-                    builder.SlowAdd(_item);
-                }
-
-                return builder.ToArray();
+                return result;
             }
 
             public override TSource[] ToArray()
@@ -60,11 +83,21 @@ namespace System.Linq
                     index = 1;
                 }
 
-                EnumerableHelpers.Copy(_source, array, index, count - 1);
+                if (_source is ICollection<TSource> collection)
+                {
+                    collection.CopyTo(array, index);
+                }
+                else
+                {
+                    foreach (TSource item in _source)
+                    {
+                        array[index++] = item;
+                    }
+                }
 
                 if (_appending)
                 {
-                    array[array.Length - 1] = _item;
+                    array[^1] = _item;
                 }
 
                 return array;
@@ -73,6 +106,13 @@ namespace System.Linq
             public override List<TSource> ToList()
             {
                 int count = GetCount(onlyIfCheap: true);
+
+                if (count == 1)
+                {
+                    // If GetCount returns 1, then _source is empty and only _item should be returned
+                    return new List<TSource>(1) { _item };
+                }
+
                 List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
                 if (!_appending)
                 {
@@ -106,35 +146,35 @@ namespace System.Linq
             {
                 Debug.Assert(GetCount(onlyIfCheap: true) == -1);
 
-                SparseArrayBuilder<TSource> builder = new();
-
-                if (_prepended != null)
+                if (_source is ICollection<TSource> c)
                 {
-                    builder.Reserve(_prependCount);
+                    var result = new TSource[checked(_prependCount + c.Count + _appendCount)];
+
+                    _prepended?.Fill(result);
+                    c.CopyTo(result, _prependCount);
+                    _appended?.FillReversed(result);
+
+                    return result;
                 }
-
-                builder.AddRange(_source);
-
-                if (_appended != null)
+                else
                 {
-                    builder.Reserve(_appendCount);
+                    // Create the new builder with the prepended content and source content. Then
+                    // build the resulting array with enough space to also hold any appended content,
+                    // and write the appended content directly into the resulting array.
+                    SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                    SegmentedArrayBuilder<TSource> builder = new(scratch);
+                    for (SingleLinkedNode<TSource>? node = _prepended; node is not null; node = node.Linked)
+                    {
+                        builder.Add(node.Item);
+                    }
+                    builder.AddNonICollectionRange(_source);
+
+                    TSource[] result = builder.ToArray(_appendCount);
+                    builder.Dispose();
+
+                    _appended?.FillReversed(result);
+                    return result;
                 }
-
-                TSource[] array = builder.ToArray();
-
-                int index = 0;
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
-                {
-                    array[index++] = node.Item;
-                }
-
-                index = array.Length - 1;
-                for (SingleLinkedNode<TSource>? node = _appended; node != null; node = node.Linked)
-                {
-                    array[index--] = node.Item;
-                }
-
-                return array;
             }
 
             public override TSource[] ToArray()
@@ -181,17 +221,11 @@ namespace System.Linq
                 int count = GetCount(onlyIfCheap: true);
                 List<TSource> list = count == -1 ? new List<TSource>() : new List<TSource>(count);
 
-                for (SingleLinkedNode<TSource>? node = _prepended; node != null; node = node.Linked)
-                {
-                    list.Add(node.Item);
-                }
+                _prepended?.Fill(SetCountAndGetSpan(list, _prependCount));
 
                 list.AddRange(_source);
 
-                if (_appended != null)
-                {
-                    list.AddRange(_appended.ToArray(_appendCount));
-                }
+                _appended?.FillReversed(SetCountAndGetSpan(list, list.Count + _appendCount));
 
                 return list;
             }

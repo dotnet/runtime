@@ -1,16 +1,35 @@
 <Project>
+  <PropertyGroup>
+    <_TargetsBaseName Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">BrowserWasmApp</_TargetsBaseName>
+    <_TargetsBaseName Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">WasiApp</_TargetsBaseName>
+    <_TargetsBaseName Condition="'$(_TargetsBaseName)' == ''">Unknown RID=$(RuntimeIdentifier)</_TargetsBaseName>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(HELIX_CORRELATION_PAYLOAD)' != ''">
     <WasmBuildSupportDir Condition="'$(WasmBuildSupportDir)' == ''">$(HELIX_CORRELATION_PAYLOAD)\build\</WasmBuildSupportDir>
     <_WasmTargetsDir>$(WasmBuildSupportDir)\wasm\</_WasmTargetsDir>
+    <_WasmSharedDir>$(WasmBuildSupportDir)\wasm-shared\</_WasmSharedDir>
     <EMSDK_PATH>$(WasmBuildSupportDir)\emsdk\</EMSDK_PATH>
+    <WASI_SDK_PATH>$(WasmBuildSupportDir)\wasi-sdk\</WASI_SDK_PATH>
   </PropertyGroup>
 
-  <PropertyGroup >
-    <_WasmTargetsDir Condition="'$(_WasmTargetsDir)' == '' and '$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmTargetsDir>
+  <PropertyGroup Condition="'$(RuntimeSrcDir)' != ''">
+    <_WasmTargetsDir Condition="'$(_WasmTargetsDir)' == '' and '$(RuntimeSrcDir)' != '' and '$(RuntimeIdentifier)' == 'browser-wasm'">$(RuntimeSrcDir)\src\mono\browser\build\</_WasmTargetsDir>
+    <_WasmTargetsDir Condition="'$(_WasmTargetsDir)' == '' and '$(RuntimeSrcDir)' != '' and '$(RuntimeIdentifier)' == 'wasi-wasm'">$(RuntimeSrcDir)\src\mono\wasi\build\</_WasmTargetsDir>
+    <_WasmSharedDir Condition="'$(_WasmSharedDir)' == '' and '$(RuntimeSrcDir)' != ''">$(RuntimeSrcDir)\src\mono\wasm\build\</_WasmSharedDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <_WasmTargetsDir Condition="'$(_WasmTargetsDir)' != ''">$([MSBuild]::EnsureTrailingSlash($(_WasmTargetsDir)))</_WasmTargetsDir>
+    <_WasmSharedDir Condition="'$(_WasmSharedDir)' != ''">$([MSBuild]::EnsureTrailingSlash($(_WasmSharedDir)))</_WasmSharedDir>
+
+    <WasmCommonTargetsPath>$(_WasmSharedDir)</WasmCommonTargetsPath>
+
+    <_WasmLocalBuildPropsPath Condition="'$(WasmCommonTargetsPath)' != ''">$([MSBuild]::NormalizePath($(WasmCommonTargetsPath), 'WasmApp.LocalBuild.props'))</_WasmLocalBuildPropsPath>
+    <_WasmLocalBuildTargetsPath Condition="'$(WasmCommonTargetsPath)' != ''">$([MSBuild]::NormalizePath($(WasmCommonTargetsPath), 'WasmApp.LocalBuild.targets'))</_WasmLocalBuildTargetsPath>
   </PropertyGroup>
 
-  <Import Project="$(_WasmTargetsDir)WasmApp.LocalBuild.props" Condition="Exists('$(_WasmTargetsDir)WasmApp.LocalBuild.props')" />
+  <Import Project="$(_WasmLocalBuildPropsPath)" Condition="Exists($(_WasmLocalBuildPropsPath))" />
   <PropertyGroup>
     <WasmBuildAppDependsOn>PrepareForWasmBuild;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>

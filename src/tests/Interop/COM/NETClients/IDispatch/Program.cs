@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace NetClient
 {
     using System;
@@ -13,7 +14,7 @@ namespace NetClient
     using Server.Contract;
     using Server.Contract.Servers;
 
-    class Program
+    public class Program
     {
         static void Validate_Numeric_In_ReturnByRef()
         {
@@ -120,7 +121,7 @@ namespace NetClient
             {
                 Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.Disp)} {errorCode}...");
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.Disp, errorCode);
-                Assert.True(false, "DISP exception not thrown properly");
+                Assert.Fail("DISP exception not thrown properly");
             }
             catch (COMException e)
             {
@@ -132,12 +133,27 @@ namespace NetClient
             {
                 Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} with {nameof(IDispatchTesting_Exception.HResult)} {errorCode}...");
                 dispatchTesting.TriggerException(IDispatchTesting_Exception.HResult, errorCode);
-                Assert.True(false, "HRESULT exception not thrown properly");
+                Assert.Fail("HRESULT exception not thrown properly");
             }
             catch (COMException e)
             {
                 Assert.Equal(GetErrorCodeFromHResult(e.HResult), errorCode);
                 // Failing HRESULT exceptions contain CLR generated messages
+            }
+
+            // Calling methods through IDispatch::Invoke() (i.e., late-bound) doesn't
+            // propagate the HRESULT when marked with PreserveSig. It is always 0.
+            {
+                Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} (PreserveSig) with {nameof(IDispatchTesting_Exception.Int)} {errorCode}...");
+                var dispatchTesting2 = (IDispatchTestingPreserveSig1)dispatchTesting;
+                Assert.Equal(0, dispatchTesting2.TriggerException(IDispatchTesting_Exception.Int, errorCode));
+            }
+
+            {
+                // Validate the HRESULT as a value type construct works for IDispatch.
+                Console.WriteLine($"Calling {nameof(DispatchTesting.TriggerException)} (PreserveSig, ValueType) with {nameof(IDispatchTesting_Exception.Int)} {errorCode}...");
+                var dispatchTesting3 = (IDispatchTestingPreserveSig2)dispatchTesting;
+                Assert.Equal(0, dispatchTesting3.TriggerException(IDispatchTesting_Exception.Int, errorCode).Value);
             }
         }
 
@@ -199,7 +215,8 @@ namespace NetClient
             }
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

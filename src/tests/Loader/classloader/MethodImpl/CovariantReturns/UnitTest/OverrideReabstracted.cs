@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 
 namespace ReproMAUI6811;
 
 public static class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Leaf l = new Leaf();
 

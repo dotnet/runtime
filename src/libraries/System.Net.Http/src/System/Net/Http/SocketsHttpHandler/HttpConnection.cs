@@ -473,15 +473,17 @@ namespace System.Net.Http
             {
                 _writeBuffer.EnsureAvailableSpace(s.Length);
                 Span<byte> buffer = _writeBuffer.AvailableSpan;
-                for (int i = 0; i < s.Length; i++)
+
+                OperationStatus status = Ascii.FromUtf16(s, buffer, out int bytesWritten);
+
+                if (status == OperationStatus.InvalidData)
                 {
-                    char c = s[i];
-                    if (!char.IsAscii(c))
-                    {
-                        ThrowForInvalidCharEncoding();
-                    }
-                    buffer[i] = (byte)c;
+                    ThrowForInvalidCharEncoding();
                 }
+
+                Debug.Assert(status == OperationStatus.Done);
+                Debug.Assert(bytesWritten == s.Length);
+
                 _writeBuffer.Commit(s.Length);
             }
             else

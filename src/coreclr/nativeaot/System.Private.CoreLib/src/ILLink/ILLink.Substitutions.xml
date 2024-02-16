@@ -20,4 +20,9 @@
   <type fullname="System.Reflection.Runtime.General.TypeUnifier" feature="System.Reflection.IsTypeConstructionEagerlyValidated" featurevalue="false">
     <method signature="System.Boolean get_IsTypeConstructionEagerlyValidated()" body="stub" />
   </type>
+
+  <type fullname="System.RuntimeType" feature="System.Reflection" featurevalue="false">
+    <method signature="System.Boolean get_IsReflectionDisabled()" body="stub" value="true" />
+  </type>
+
 </linker>

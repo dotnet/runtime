@@ -41,7 +41,7 @@ namespace System.Linq.Tests
             TestEmptyEmpty<EmptyEnumerableTest>();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [Fact]
         public void IListImplementationIsValid()
         {
             IList<int> list = Assert.IsAssignableFrom<IList<int>>(Enumerable.Empty<int>());
@@ -52,7 +52,7 @@ namespace System.Linq.Tests
             Assert.Throws<NotSupportedException>(() => list.Clear());
             Assert.Throws<NotSupportedException>(() => list.Remove(42));
             Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
-            Assert.Throws<NotSupportedException>(() => list[0] = 42);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[0] = 42);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => list[0]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => roList[0]);
 
@@ -64,8 +64,8 @@ namespace System.Linq.Tests
             Assert.Equal(-1, list.IndexOf(42));
 
             list.CopyTo(Array.Empty<int>(), 0);
-            list.CopyTo(Array.Empty<int>(), 1);
-            int[] array = new int[1] { 42 };
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => list.CopyTo(Array.Empty<int>(), 1));
+            int[] array = [42];
             list.CopyTo(array, 0);
             Assert.Equal(42, array[0]);
         }

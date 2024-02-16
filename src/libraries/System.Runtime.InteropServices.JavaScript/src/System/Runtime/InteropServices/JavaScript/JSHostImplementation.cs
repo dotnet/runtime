@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -16,89 +15,22 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         private const string TaskGetResultName = "get_Result";
         private static MethodInfo? s_taskGetResultMethodInfo;
-        // we use this to maintain identity of JSHandle for a JSObject proxy
-#if FEATURE_WASM_THREADS
-        [ThreadStatic]
-#endif
-        private static Dictionary<int, WeakReference<JSObject>>? s_csOwnedObjects;
 
-        public static Dictionary<int, WeakReference<JSObject>> ThreadCsOwnedObjects
+        public static bool GetTaskResultDynamic(Task task, out object? value)
         {
-            get
+            var type = task.GetType();
+            if (type == typeof(Task))
             {
-                s_csOwnedObjects ??= new();
-                return s_csOwnedObjects;
+                value = null;
+                return false;
             }
-        }
-
-        // we use this to maintain identity of GCHandle for a managed object
-#if FEATURE_WASM_THREADS
-        [ThreadStatic]
-#endif
-        private static Dictionary<object, IntPtr>? s_jsOwnedObjects;
-
-        public static Dictionary<object, IntPtr> ThreadJsOwnedObjects
-        {
-            get
-            {
-                s_jsOwnedObjects ??= new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
-                return s_jsOwnedObjects;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReleaseCSOwnedObject(nint jsHandle)
-        {
-            if (jsHandle != IntPtr.Zero)
-            {
-#if FEATURE_WASM_THREADS
-                JSSynchronizationContext.AssertWebWorkerContext();
-#endif
-                ThreadCsOwnedObjects.Remove((int)jsHandle);
-                Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
-            }
-        }
-
-        public static object? GetTaskResultDynamic(Task task)
-        {
-            MethodInfo method = GetTaskResultMethodInfo(task.GetType());
+            MethodInfo method = GetTaskResultMethodInfo(type);
             if (method != null)
             {
-                return method.Invoke(task, null);
+                value = method.Invoke(task, null);
+                return true;
             }
             throw new InvalidOperationException();
-        }
-
-        // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
-        // The managed side maintains a strong reference to the object, while the JS side
-        //  maintains a weak reference and notifies the managed side if the JS wrapper object
-        //  has been reclaimed by the JS GC. At that point, the managed side will release its
-        //  strong references, allowing the managed object to be collected.
-        // This ensures that things like delegates and promises will never 'go away' while JS
-        //  is expecting to be able to invoke or await them.
-        public static IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
-        {
-            if (obj == null)
-            {
-                return IntPtr.Zero;
-            }
-
-            IntPtr gcHandle;
-            if (ThreadJsOwnedObjects.TryGetValue(obj, out gcHandle))
-            {
-                return gcHandle;
-            }
-
-            IntPtr result = (IntPtr)GCHandle.Alloc(obj, handleType);
-            ThreadJsOwnedObjects[obj] = result;
-            return result;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
-        {
-            var temp = new IntPtrAndHandle { ptr = ptr };
-            return temp.methodHandle;
         }
 
         /// <summary>
@@ -147,32 +79,53 @@ namespace System.Runtime.InteropServices.JavaScript
         public static async Task<JSObject> ImportAsync(string moduleName, string moduleUrl, CancellationToken cancellationToken)
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
-            var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
+            var wrappedTask = CancellationHelper(modulePromise, cancellationToken);
             return await wrappedTask.ConfigureAwait(
                 ConfigureAwaitOptions.ContinueOnCapturedContext |
                 ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
-        public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static async Task<JSObject> CancellationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
             {
                 return jsTask.Result;
             }
-            using (var receiveRegistration = cancellationToken.Register(() =>
+            using (var receiveRegistration = cancellationToken.Register(static s =>
             {
-                CancelablePromise.CancelPromise(jsTask);
-            }))
+                CancelablePromise.CancelPromise((Task<JSObject>)s!);
+            }, jsTask))
             {
                 return await jsTask.ConfigureAwait(true);
             }
         }
 
         // res type is first argument
-        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types)
+        public static unsafe JSFunctionBinding GetMethodSignature(ReadOnlySpan<JSMarshalerType> types, string? functionName, string? moduleName)
         {
             int argsCount = types.Length - 1;
             int size = JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + ((argsCount + 2) * sizeof(JSFunctionBinding.JSBindingType));
+
+            int functionNameBytes = 0;
+            int functionNameOffset = 0;
+            if (functionName != null)
+            {
+                functionNameOffset = size;
+                size += 4;
+                functionNameBytes = functionName.Length * 2;
+                size += functionNameBytes;
+            }
+            int moduleNameBytes = 0;
+            int moduleNameOffset = 0;
+            if (moduleName != null)
+            {
+                moduleNameOffset = size;
+                size += 4;
+                moduleNameBytes = moduleName.Length * 2;
+                size += moduleNameBytes;
+            }
+
             // this is never unallocated
             IntPtr buffer = Marshal.AllocHGlobal(size);
 
@@ -182,13 +135,44 @@ namespace System.Runtime.InteropServices.JavaScript
                 Sigs = (JSFunctionBinding.JSBindingType*)(buffer + JSFunctionBinding.JSBindingHeader.JSMarshalerSignatureHeaderSize + (2 * sizeof(JSFunctionBinding.JSBindingType))),
             };
 
-            signature.Version = 1;
+            signature.Version = 2;
             signature.ArgumentCount = argsCount;
             signature.Exception = JSMarshalerType.Exception._signatureType;
             signature.Result = types[0]._signatureType;
+#if FEATURE_WASM_MANAGED_THREADS
+            signature.ImportHandle = (int)Interlocked.Increment(ref JSFunctionBinding.nextImportHandle);
+#else
+            signature.ImportHandle = (int)JSFunctionBinding.nextImportHandle++;
+#endif
+
+#if DEBUG
+            signature.FunctionName = functionName;
+#endif
             for (int i = 0; i < argsCount; i++)
             {
-                signature.Sigs[i] = types[i + 1]._signatureType;
+                var type = signature.Sigs[i] = types[i + 1]._signatureType;
+            }
+            signature.IsAsync = types[0]._signatureType.Type == MarshalerType.Task;
+
+            signature.Header[0].ImportHandle = signature.ImportHandle;
+            signature.Header[0].FunctionNameLength = functionNameBytes;
+            signature.Header[0].FunctionNameOffset = functionNameOffset;
+            signature.Header[0].ModuleNameLength = moduleNameBytes;
+            signature.Header[0].ModuleNameOffset = moduleNameOffset;
+            if (functionNameBytes != 0)
+            {
+                fixed (void* fn = functionName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + functionNameOffset, fn, (uint)functionNameBytes);
+                }
+            }
+            if (moduleNameBytes != 0)
+            {
+                fixed (void* mn = moduleName)
+                {
+                    Unsafe.CopyBlock((byte*)buffer + moduleNameOffset, mn, (uint)moduleNameBytes);
+                }
+
             }
 
             return signature;
@@ -201,24 +185,7 @@ namespace System.Runtime.InteropServices.JavaScript
             signature.Sigs = null;
         }
 
-        public static JSObject CreateCSOwnedProxy(nint jsHandle)
-        {
-#if FEATURE_WASM_THREADS
-            JSSynchronizationContext.AssertWebWorkerContext();
-#endif
-            JSObject? res;
-
-            if (!ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                !reference.TryGetTarget(out res) ||
-                res.IsDisposed)
-            {
-                res = new JSObject(jsHandle);
-                ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-            }
-            return res;
-        }
-
-        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
         public static void LoadLazyAssembly(byte[] dllBytes, byte[]? pdbBytes)
         {
             if (pdbBytes == null)
@@ -227,134 +194,151 @@ namespace System.Runtime.InteropServices.JavaScript
                 AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
         }
 
-        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
         public static void LoadSatelliteAssembly(byte[] dllBytes)
         {
             AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
         }
 
-#if FEATURE_WASM_THREADS
-        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext, bool isMainThread)
+        public static unsafe Task<int>? CallEntrypoint(IntPtr assemblyNamePtr, string?[]? args, bool waitForDebugger)
         {
-            Interop.Runtime.InstallWebWorkerInterop(installJSSynchronizationContext);
-            if (installJSSynchronizationContext)
+            try
             {
-                var currentThreadId = GetNativeThreadId();
-                var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
-                if (ctx == null)
+                void* ptr;
+                Interop.Runtime.AssemblyGetEntryPoint(assemblyNamePtr, waitForDebugger ? 1 : 0, &ptr);
+                RuntimeMethodHandle methodHandle = GetMethodHandleFromIntPtr((IntPtr)ptr);
+                // this would not work for generic types. But Main() could not be generic, so we are fine.
+                MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
+                if (method == null)
                 {
-                    ctx = new JSSynchronizationContext(Thread.CurrentThread, currentThreadId);
-                    ctx.previousSynchronizationContext = SynchronizationContext.Current;
-                    JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
-                    SynchronizationContext.SetSynchronizationContext(ctx);
-                    if (isMainThread)
+                    throw new InvalidOperationException(SR.CannotResolveManagedEntrypointHandle);
+                }
+
+                object[] argsToPass = System.Array.Empty<object>();
+                Task<int>? result = null;
+                var parameterInfos = method.GetParameters();
+                if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(string[]))
+                {
+                    argsToPass = new object[] { args ?? System.Array.Empty<string>() };
+                }
+                if (method.ReturnType == typeof(void))
+                {
+                    method.Invoke(null, argsToPass);
+                }
+                else if (method.ReturnType == typeof(int))
+                {
+                    int intResult = (int)method.Invoke(null, argsToPass)!;
+                    result = Task.FromResult(intResult);
+                }
+                else if (method.ReturnType == typeof(Task))
+                {
+                    Task methodResult = (Task)method.Invoke(null, argsToPass)!;
+                    TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+                    result = tcs.Task;
+                    methodResult.ContinueWith((t) =>
                     {
-                        JSSynchronizationContext.MainJSSynchronizationContext = ctx;
-                    }
+                        if (t.IsFaulted)
+                        {
+                            tcs.SetException(t.Exception!);
+                        }
+                        else
+                        {
+                            tcs.SetResult(0);
+                        }
+                    }, TaskScheduler.Default);
                 }
-                else if (ctx.TargetThreadId != currentThreadId)
+                else if (method.ReturnType == typeof(Task<int>))
                 {
-                    Environment.FailFast($"JSSynchronizationContext.Install failed has wrong native thread id {ctx.TargetThreadId} != {currentThreadId}");
+                    result = (Task<int>)method.Invoke(null, argsToPass)!;
                 }
-                ctx.AwaitNewData();
+                else
+                {
+                    throw new InvalidOperationException(SR.Format(SR.ReturnTypeNotSupportedForMain, method.ReturnType.FullName));
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                if (ex is TargetInvocationException refEx && refEx.InnerException != null)
+                    ex = refEx.InnerException;
+                return Task.FromException<int>(ex);
             }
         }
 
-        public static void UninstallWebWorkerInterop()
+        public static unsafe Task BindAssemblyExports(string? assemblyName)
         {
-            var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
-            var uninstallJSSynchronizationContext = ctx != null;
-            if (uninstallJSSynchronizationContext)
-            {
-                try
-                {
-                    foreach (var jsObjectWeak in ThreadCsOwnedObjects.Values)
-                    {
-                        if (jsObjectWeak.TryGetTarget(out var jso))
-                        {
-                            jso.Dispose();
-                        }
-                    }
-                    SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
-                    JSSynchronizationContext.CurrentJSSynchronizationContext = null;
-                    ctx.isDisposed = true;
-                }
-                catch(Exception ex)
-                {
-                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
-                }
-            }
-            else
-            {
-                if (ThreadCsOwnedObjects.Count > 0)
-                {
-                    Environment.FailFast($"There should be no JSObjects proxies on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
-                }
-                if (ThreadJsOwnedObjects.Count > 0)
-                {
-                    Environment.FailFast($"There should be no JS proxies of managed objects on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
-                }
-            }
-
-            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
-
-            if (uninstallJSSynchronizationContext)
-            {
-                try
-                {
-                    foreach (var gch in ThreadJsOwnedObjects.Values)
-                    {
-                        GCHandle gcHandle = (GCHandle)gch;
-
-                        // if this is pending promise we reject it
-                        if (gcHandle.Target is TaskCallback holder)
-                        {
-                            unsafe
-                            {
-                                holder.Callback!.Invoke(null);
-                            }
-                        }
-                        gcHandle.Free();
-                    }
-                }
-                catch(Exception ex)
-                {
-                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
-                }
-            }
-
-            ThreadCsOwnedObjects.Clear();
-            ThreadJsOwnedObjects.Clear();
+            Interop.Runtime.BindAssemblyExports(Marshal.StringToCoTaskMemUTF8(assemblyName));
+            return Task.CompletedTask;
         }
 
-        private static FieldInfo? thread_id_Field;
-        private static FieldInfo? external_eventloop_Field;
+        public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
+        {
+            var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
+            var wrapper_name = $"__Wrapper_{methodName}_{signatureHash}";
+            var dllName = assemblyName + ".dll";
 
-        // FIXME: after https://github.com/dotnet/runtime/issues/86040 replace with
-        // [UnsafeAccessor(UnsafeAccessorKind.Field, Name="external_eventloop")]
-        // static extern ref bool ThreadExternalEventloop(Thread @this);
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Threading.Thread", "System.Private.CoreLib")]
+            IntPtr monoMethod;
+            Interop.Runtime.GetAssemblyExport(
+                Marshal.StringToCoTaskMemUTF8(dllName),
+                Marshal.StringToCoTaskMemUTF8(nameSpace),
+                Marshal.StringToCoTaskMemUTF8(shortClassName),
+                Marshal.StringToCoTaskMemUTF8(wrapper_name),
+                &monoMethod);
+
+            if (monoMethod == IntPtr.Zero)
+            {
+                Environment.FailFast($"Can't find {nameSpace}{shortClassName}{methodName} in {assemblyName}.dll");
+            }
+
+            var signature = GetMethodSignature(signatures, null, null);
+
+            JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
+
+            FreeMethodSignatureBuffer(signature);
+
+            return signature;
+        }
+
+#if FEATURE_WASM_MANAGED_THREADS
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "external_eventloop")]
+        private static extern ref bool GetThreadExternalEventloop(Thread @this);
+
         public static void SetHasExternalEventLoop(Thread thread)
         {
-            if (external_eventloop_Field == null)
-            {
-                external_eventloop_Field = typeof(Thread).GetField("external_eventloop", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            }
-            external_eventloop_Field.SetValue(thread, true);
+            GetThreadExternalEventloop(thread) = true;
         }
-
-        // FIXME: after https://github.com/dotnet/runtime/issues/86040
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Threading.Thread", "System.Private.CoreLib")]
-        public static IntPtr GetNativeThreadId()
-        {
-            if (thread_id_Field == null)
-            {
-                thread_id_Field = typeof(Thread).GetField("thread_id", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            }
-            return (int)(long)thread_id_Field.GetValue(Thread.CurrentThread)!;
-        }
-
 #endif
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
+        {
+            var temp = new IntPtrAndHandle { ptr = ptr };
+            return temp.methodHandle;
+        }
+
+        public static (string assemblyName, string nameSpace, string shortClassName, string methodName) ParseFQN(string fqn)
+        {
+            var assembly = fqn.Substring(fqn.IndexOf('[') + 1, fqn.IndexOf(']') - 1).Trim();
+            fqn = fqn.Substring(fqn.IndexOf(']') + 1).Trim();
+            var methodName = fqn.Substring(fqn.IndexOf(':') + 1);
+            var className = fqn.Substring(0, fqn.IndexOf(':')).Trim();
+
+            var nameSpace = "";
+            var shortClassName = className;
+            var idx = fqn.LastIndexOf(".");
+            if (idx != -1)
+            {
+                nameSpace = fqn.Substring(0, idx);
+                shortClassName = className.Substring(idx + 1);
+            }
+
+            if (string.IsNullOrEmpty(assembly))
+                throw new InvalidOperationException("No assembly name specified " + fqn);
+            if (string.IsNullOrEmpty(className))
+                throw new InvalidOperationException("No class name specified " + fqn);
+            if (string.IsNullOrEmpty(methodName))
+                throw new InvalidOperationException("No method name specified " + fqn);
+            return (assembly, nameSpace, shortClassName, methodName);
+        }
     }
 }

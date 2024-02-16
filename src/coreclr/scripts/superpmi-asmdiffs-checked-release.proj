@@ -29,7 +29,7 @@
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
     <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_asmdiffs_checked_release.py --diff_with_release -base_jit_directory $(ProductDirectory)\base -diff_jit_directory $(ProductDirectory)\diff -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
-    <WorkItemTimeout>1:00</WorkItemTimeout>
+    <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 
   <PropertyGroup>

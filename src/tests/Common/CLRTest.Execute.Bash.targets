@@ -381,8 +381,6 @@ else
     LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
 
-$(BashIlrtTestLaunchCmds)
-
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
@@ -411,8 +409,6 @@ then
 else
     LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
-
-$(BashIlrtTestLaunchCmds)
 
 if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock

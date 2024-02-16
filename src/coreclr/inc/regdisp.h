@@ -211,7 +211,7 @@ typedef struct _Loongarch64VolatileContextPointer
 #endif
 
 #if defined(TARGET_RISCV64)
-typedef struct _Riscv64VolatileContextPointer
+typedef struct _RiscV64VolatileContextPointer
 {
     PDWORD64 R0;
     PDWORD64 A0;
@@ -229,7 +229,7 @@ typedef struct _Riscv64VolatileContextPointer
     PDWORD64 T4;
     PDWORD64 T5;
     PDWORD64 T6;
-} Riscv64VolatileContextPointer;
+} RiscV64VolatileContextPointer;
 #endif
 
 struct REGDISPLAY : public REGDISPLAY_BASE {
@@ -242,7 +242,7 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 #endif
 
 #ifdef TARGET_RISCV64
-    Riscv64VolatileContextPointer    volatileCurrContextPointers;
+    RiscV64VolatileContextPointer    volatileCurrContextPointers;
 #endif
 
     REGDISPLAY()
@@ -277,7 +277,7 @@ inline TADDR GetRegdisplayStackMark(REGDISPLAY *display)
     _ASSERTE(GetRegdisplaySP(display) == GetSP(display->pCurrentContext));
     return GetRegdisplaySP(display);
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
     _ASSERTE(display->IsCallerContextValid);
     return GetSP(display->pCallerContext);

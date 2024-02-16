@@ -7,10 +7,12 @@ using System.IO;
 using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
 using System.Globalization;
+using Xunit;
 
-class RuntimeHelperTest 
+public class RuntimeHelperTest 
 {
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         AssemblyLoadContext resolver0 = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         Assembly asm0 = resolver0.LoadFromAssemblyName(new AssemblyName("moduleCctor"));
@@ -29,9 +31,5 @@ class RuntimeHelperTest
         check.Invoke(null, final);    
         RuntimeHelpers.RunModuleConstructor(mod.ModuleHandle);
         check.Invoke(null, final);    
-
-            
-        return 100;
-
     }
 }

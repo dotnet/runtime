@@ -1,14 +1,14 @@
 # Pull Request Guide
 
 ## Contributing Rules
-All contributions to dotnet/runtime repo are made via pull requests (PRs) rather than through direct commits. The pull requests are reviewed and merged by the repository maintainers after a review and approval from at least one area maintainer.
+All contributions to dotnet/runtime repo are made via [pull requests (PRs) from forks of the repo](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) rather than through direct commits or PRs from branches in the dotnet/runtime repo. The pull requests are reviewed and merged by the repository maintainers after a review and approval from at least one area maintainer.
 
 To merge pull requests, you must have write permissions in the repository. If you are a member of the .NET team or have an official partnership you can request access [here](https://repos.opensource.microsoft.com/dotnet/teams/dotnet-corefx/join/).
 
 ## Quick Code Review Rules
 
 * Do not mix unrelated changes in one pull request. For example, a code style change should never be mixed with a bug fix.
-* All changes should follow the existing code style. You can read more about different code styles at [docs/coding-guidelines](coding-guidelines/).
+* All changes should follow the existing code style. You can read more about different code styles at [docs/coding-guidelines](../../coding-guidelines/).
 * Use Draft pull requests for changes you are still working on but want early CI loop feedback. When you think your changes are ready for review, [change the status](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/changing-the-stage-of-a-pull-request) of your pull request.
 * Avoid rebasing your changes. If you are asked to make changes during the review process do them as a new commit.
 * To resolve merge conflicts, use "merge" instead of "rebase".

@@ -3,6 +3,7 @@
 
 
 using System;
+
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 
@@ -62,7 +63,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        private TypeDesc _owningType;
+        private DefType _owningType;
         public override TypeDesc OwningType
         {
             get

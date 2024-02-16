@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Web\IHtmlString.cs" />
     <Compile Include="System\Web\HttpUtility.cs" />
@@ -13,9 +16,11 @@
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
+
 </Project>

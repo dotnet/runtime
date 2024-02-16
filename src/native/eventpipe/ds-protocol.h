@@ -112,6 +112,12 @@ ds_ipc_message_try_parse_value (
 	uint32_t value_len);
 
 bool
+ds_ipc_message_try_parse_bool (
+	uint8_t **buffer,
+	uint32_t *buffer_len,
+	bool *value);
+
+bool
 ds_ipc_message_try_parse_uint64_t (
 	uint8_t **buffer,
 	uint32_t *buffer_len,

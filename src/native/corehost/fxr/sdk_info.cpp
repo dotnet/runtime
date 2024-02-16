@@ -63,7 +63,7 @@ void sdk_info::enumerate_sdk_paths(
         // Check for the existence of dotnet.dll
         pal::string_t sdk_version_dir = sdk_dir;
         append_path(&sdk_version_dir, version_str.c_str());
-        if (!library_exists_in_dir(sdk_version_dir, SDK_DOTNET_DLL, nullptr))
+        if (!file_exists_in_dir(sdk_version_dir, SDK_DOTNET_DLL, nullptr))
         {
             trace::verbose(_X("Ignoring version [%s] without ") SDK_DOTNET_DLL, version_str.c_str());
             continue;

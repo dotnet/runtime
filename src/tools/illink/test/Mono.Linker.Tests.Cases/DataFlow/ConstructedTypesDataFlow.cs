@@ -28,6 +28,38 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				type.RequiresPublicMethods ();
 			}
 
+			static (Type type, object instance) GetInput (int unused) => (typeof (string), null);
+
+			// https://github.com/dotnet/linker/issues/3158
+			[ExpectedWarning ("IL2077", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void DeconstructVariableFlowCapture (bool b = true)
+			{
+				// This creates a control-flow graph where the tuple elements assigned to
+				// are flow capture references. This is only the case when the variable types
+				// are declared before the deconstruction assignment, and the assignment creates
+				// a branch in the control-flow graph.
+				Type type;
+				object instance;
+				(type, instance) = GetInput (b ? 0 : 1);
+				type.RequiresPublicMethods ();
+			}
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static Type annotatedfield;
+
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			static ref Type AnnotatedProperty => ref annotatedfield;
+
+			// https://github.com/dotnet/linker/issues/3158
+			[ExpectedWarning ("IL2062", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2078", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			static void DeconstructVariablePropertyReference ((Type type, object instance) input)
+			{
+				object instance;
+				(AnnotatedProperty, instance) = input;
+				AnnotatedProperty.RequiresPublicMethods ();
+			}
+
 			record TypeAndInstance (
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				[property: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -97,6 +129,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				DeconstructVariableNoAnnotation ((typeof (string), null));
+				DeconstructVariableFlowCapture ();
+				DeconstructVariablePropertyReference ((typeof (string), null));
 				DeconstructRecordWithAnnotation (new (typeof (string), null));
 				DeconstructClassWithAnnotation (new (typeof (string), null));
 				DeconstructRecordManualWithAnnotation (new (typeof (string), null));

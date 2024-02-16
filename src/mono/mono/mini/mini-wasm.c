@@ -35,7 +35,7 @@ typedef enum {
 
 typedef struct {
 	ArgStorage storage : 8;
-	MonoType *type;
+	MonoType *type, *etype;
 } ArgInfo;
 
 struct CallInfo {
@@ -49,7 +49,7 @@ struct CallInfo {
 // WASM ABI: https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
 
 static ArgStorage
-get_storage (MonoType *type, gboolean is_return)
+get_storage (MonoType *type, MonoType **etype, gboolean is_return)
 {
 	switch (type->type) {
 	case MONO_TYPE_I1:
@@ -84,7 +84,7 @@ get_storage (MonoType *type, gboolean is_return)
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
-		if (mini_wasm_is_scalar_vtype (type))
+		if (mini_wasm_is_scalar_vtype (type, etype))
 			return ArgVtypeAsScalar;
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
@@ -117,7 +117,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	/* return value */
 	cinfo->ret.type = mini_get_underlying_type (sig->ret);
-	cinfo->ret.storage = get_storage (cinfo->ret.type, TRUE);
+	cinfo->ret.storage = get_storage (cinfo->ret.type, &cinfo->ret.etype, TRUE);
 
 	if (sig->hasthis)
 		cinfo->args [0].storage = ArgOnStack;
@@ -128,7 +128,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	int i;
 	for (i = 0; i < sig->param_count; ++i) {
 		cinfo->args [i + sig->hasthis].type = mini_get_underlying_type (sig->params [i]);
-		cinfo->args [i + sig->hasthis].storage = get_storage (cinfo->args [i + sig->hasthis].type, FALSE);
+		cinfo->args [i + sig->hasthis].storage = get_storage (cinfo->args [i + sig->hasthis].type, &cinfo->args [i + sig->hasthis].etype, FALSE);
 	}
 
 	return cinfo;
@@ -348,6 +348,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 	if (cinfo->ret.storage == ArgVtypeAsScalar) {
 		linfo->ret.storage = LLVMArgWasmVtypeAsScalar;
+		linfo->ret.etype = cinfo->ret.etype;
 		linfo->ret.esize = mono_class_value_size (mono_class_from_mono_type_internal (cinfo->ret.type), NULL);
 	} else if (mini_type_is_vtype (sig->ret)) {
 		/* Vtype returned using a hidden argument */
@@ -374,6 +375,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case ArgVtypeAsScalar:
 			linfo->args [i].storage = LLVMArgWasmVtypeAsScalar;
 			linfo->args [i].type = ainfo->type;
+			linfo->args [i].etype = ainfo->etype;
 			linfo->args [i].esize = mono_class_value_size (mono_class_from_mono_type_internal (ainfo->type), NULL);
 			break;
 		case ArgValuetypeAddrInIReg:
@@ -557,9 +559,6 @@ mono_init_native_crash_info (void)
 
 #endif
 
-// this points to System.Threading.TimerQueue.TimerHandler C# method
-static void *timer_handler;
-
 #ifdef HOST_BROWSER
 
 void
@@ -583,6 +582,9 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	return FALSE;
 }
 
+// this points to System.Threading.TimerQueue.TimerHandler C# method
+static void *timer_handler;
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_execute_timer (void)
 {
@@ -595,9 +597,7 @@ mono_wasm_execute_timer (void)
 	cb ();
 }
 
-
-#endif
-
+#ifdef DISABLE_THREADS
 void
 mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 {
@@ -605,23 +605,17 @@ mono_wasm_main_thread_schedule_timer (void *timerHandler, int shortestDueTimeMs)
 
 	g_assert (timerHandler);
 	timer_handler = timerHandler;
-#ifdef HOST_BROWSER
-#ifndef DISABLE_THREADS
-    if (!mono_threads_wasm_is_browser_thread ()) {
-        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_schedule_timer, GINT_TO_POINTER(shortestDueTimeMs));
-        return;
-    }
-#endif
     mono_wasm_schedule_timer (shortestDueTimeMs);
-#endif
 }
+#endif
+#endif
 
 void
 mono_arch_register_icall (void)
 {
 #ifdef HOST_BROWSER
-	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
 #ifdef DISABLE_THREADS
+	mono_add_internal_call_internal ("System.Threading.TimerQueue::MainThreadScheduleTimer", mono_wasm_main_thread_schedule_timer);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::MainThreadScheduleBackgroundJob", mono_main_thread_schedule_background_job);
 #else
 	mono_add_internal_call_internal ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::TargetThreadScheduleBackgroundJob", mono_target_thread_schedule_background_job);
@@ -673,12 +667,6 @@ sigsuspend(const sigset_t *sigmask)
 {
 	g_error ("sigsuspend");
 	return 0;
-}
-
-int
-getdtablesize (void)
-{
-	return 256; //random constant that is the fd limit
 }
 
 int
@@ -753,11 +741,14 @@ mono_wasm_get_debug_level (void)
 
 /* Return whenever TYPE represents a vtype with only one scalar member */
 gboolean
-mini_wasm_is_scalar_vtype (MonoType *type)
+mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 {
 	MonoClass *klass;
 	MonoClassField *field;
 	gpointer iter;
+
+	if (etype)
+		*etype = NULL;
 
 	if (!MONO_TYPE_ISSTRUCT (type))
 		return FALSE;
@@ -765,7 +756,7 @@ mini_wasm_is_scalar_vtype (MonoType *type)
 	mono_class_init_internal (klass);
 
 	int size = mono_class_value_size (klass, NULL);
-	if (size == 0 || size >= 8)
+	if (size == 0 || size > 8)
 		return FALSE;
 
 	iter = NULL;
@@ -779,11 +770,19 @@ mini_wasm_is_scalar_vtype (MonoType *type)
 			return FALSE;
 		MonoType *t = mini_get_underlying_type (field->type);
 		if (MONO_TYPE_ISSTRUCT (t)) {
-			if (!mini_wasm_is_scalar_vtype (t))
+			if (!mini_wasm_is_scalar_vtype (t, etype))
 				return FALSE;
 		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
 			return FALSE;
+		} else {
+			if (etype)
+				*etype = t;
 		}
+	}
+
+	if (etype) {
+		if (!(*etype))
+			*etype = mono_get_int32_type ();
 	}
 
 	return TRUE;

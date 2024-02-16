@@ -8,14 +8,18 @@
   <ItemGroup>
     <EnabledGenerators Include="LibraryImportGenerator" Condition="'$(EnableLibraryImportGenerator)' == 'true'" />
     <!-- If the current project is not System.Private.CoreLib, we enable the LibraryImportGenerator source generator
-         when the project is a C# source project that:
+         when the project is a C# source or test project that:
          - doesn't target the a TFM that includes LibraryImportGenerator or
          - doesn't reference the live targeting pack (i.e. when inbox) and
            - references System.Private.CoreLib, or
            - references System.Runtime.InteropServices -->
     <EnabledGenerators Include="LibraryImportGenerator"
                        Condition="'$(EnableLibraryImportGenerator)' == '' and
-                                  '$(IsSourceProject)' == 'true' and
+                                  (
+                                    '$(IsSourceProject)' == 'true' or
+                                    '$(IsTestProject)' == 'true' or
+                                    '$(IsTestSupportProject)' == 'true'
+                                  ) and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
                                     !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0')) or

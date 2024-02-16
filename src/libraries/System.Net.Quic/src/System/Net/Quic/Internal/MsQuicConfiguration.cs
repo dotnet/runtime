@@ -3,11 +3,11 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Security.Authentication;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Quic;
-using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
 
@@ -31,7 +31,13 @@ internal static class MsQuicConfiguration
 
         // Find the first certificate with private key, either from selection callback or from a provided collection.
         X509Certificate? certificate = null;
-        if (authenticationOptions.LocalCertificateSelectionCallback != null)
+        ReadOnlyCollection<X509Certificate2>? intermediates = null;
+        if (authenticationOptions.ClientCertificateContext is not null)
+        {
+            certificate = authenticationOptions.ClientCertificateContext.TargetCertificate;
+            intermediates = authenticationOptions.ClientCertificateContext.IntermediateCertificates;
+        }
+        else if (authenticationOptions.LocalCertificateSelectionCallback != null)
         {
             X509Certificate selectedCertificate = authenticationOptions.LocalCertificateSelectionCallback(
                 options,
@@ -70,7 +76,7 @@ internal static class MsQuicConfiguration
             }
         }
 
-        return Create(options, flags, certificate, null, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
+        return Create(options, flags, certificate, intermediates, authenticationOptions.ApplicationProtocols, authenticationOptions.CipherSuitesPolicy, authenticationOptions.EncryptionPolicy);
     }
 
     public static MsQuicSafeHandle Create(QuicServerConnectionOptions options, string? targetHost)
@@ -87,13 +93,22 @@ internal static class MsQuicConfiguration
 
         X509Certificate? certificate = null;
         ReadOnlyCollection<X509Certificate2>? intermediates = default;
-        if (authenticationOptions.ServerCertificateContext is not null)
+
+        // the order of checking here matches the order of checking in SslStream
+        if (authenticationOptions.ServerCertificateSelectionCallback is not null)
+        {
+            certificate = authenticationOptions.ServerCertificateSelectionCallback.Invoke(authenticationOptions, targetHost);
+        }
+        else if (authenticationOptions.ServerCertificateContext is not null)
         {
             certificate = authenticationOptions.ServerCertificateContext.TargetCertificate;
             intermediates = authenticationOptions.ServerCertificateContext.IntermediateCertificates;
         }
+        else if (authenticationOptions.ServerCertificate is not null)
+        {
+            certificate = authenticationOptions.ServerCertificate;
+        }
 
-        certificate ??= authenticationOptions.ServerCertificate ?? authenticationOptions.ServerCertificateSelectionCallback?.Invoke(authenticationOptions, targetHost);
         if (certificate is null)
         {
             throw new ArgumentException(SR.Format(SR.net_quic_not_null_ceritifcate, nameof(SslServerAuthenticationOptions.ServerCertificate), nameof(SslServerAuthenticationOptions.ServerCertificateContext), nameof(SslServerAuthenticationOptions.ServerCertificateSelectionCallback)), nameof(options));
@@ -118,14 +133,47 @@ internal static class MsQuicConfiguration
 #pragma warning restore SYSLIB0040
 
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+
         settings.IsSet.PeerUnidiStreamCount = 1;
         settings.PeerUnidiStreamCount = (ushort)options.MaxInboundUnidirectionalStreams;
+
         settings.IsSet.PeerBidiStreamCount = 1;
         settings.PeerBidiStreamCount = (ushort)options.MaxInboundBidirectionalStreams;
+
         if (options.IdleTimeout != TimeSpan.Zero)
         {
             settings.IsSet.IdleTimeoutMs = 1;
-            settings.IdleTimeoutMs = options.IdleTimeout != Timeout.InfiniteTimeSpan ? (ulong)options.IdleTimeout.TotalMilliseconds : 0;
+            settings.IdleTimeoutMs = options.IdleTimeout != Timeout.InfiniteTimeSpan
+                ? (ulong)options.IdleTimeout.TotalMilliseconds
+                : 0; // 0 disables the timeout
+        }
+
+        if (options.KeepAliveInterval != TimeSpan.Zero)
+        {
+            settings.IsSet.KeepAliveIntervalMs = 1;
+            settings.KeepAliveIntervalMs = options.KeepAliveInterval != Timeout.InfiniteTimeSpan
+                ? (uint)options.KeepAliveInterval.TotalMilliseconds
+                : 0; // 0 disables the keepalive
+        }
+
+        settings.IsSet.ConnFlowControlWindow = 1;
+        settings.ConnFlowControlWindow = (uint)(options._initialRecieveWindowSizes?.Connection ?? QuicDefaults.DefaultConnectionMaxData);
+
+        settings.IsSet.StreamRecvWindowBidiLocalDefault = 1;
+        settings.StreamRecvWindowBidiLocalDefault = (uint)(options._initialRecieveWindowSizes?.LocallyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+
+        settings.IsSet.StreamRecvWindowBidiRemoteDefault = 1;
+        settings.StreamRecvWindowBidiRemoteDefault = (uint)(options._initialRecieveWindowSizes?.RemotelyInitiatedBidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+
+        settings.IsSet.StreamRecvWindowUnidiDefault = 1;
+        settings.StreamRecvWindowUnidiDefault = (uint)(options._initialRecieveWindowSizes?.UnidirectionalStream ?? QuicDefaults.DefaultStreamMaxData);
+
+        if (options.HandshakeTimeout != TimeSpan.Zero)
+        {
+            settings.IsSet.HandshakeIdleTimeoutMs = 1;
+            settings.HandshakeIdleTimeoutMs = options.HandshakeTimeout != Timeout.InfiniteTimeSpan
+                    ? (ulong)options.HandshakeTimeout.TotalMilliseconds
+                    : 0; // 0 disables the timeout
         }
 
         QUIC_HANDLE* handle;
@@ -205,6 +253,15 @@ internal static class MsQuicConfiguration
                ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0 ? MsQuicApi.Tls13ServerMayBeDisabled : MsQuicApi.Tls13ClientMayBeDisabled))
             {
                 ThrowHelper.ThrowIfMsQuicError(status, SR.net_quic_tls_version_notsupported);
+            }
+
+            if (status == MsQuic.QUIC_STATUS_CERT_NO_CERT && certificate != null && certificate.HasPrivateKey())
+            {
+                using Microsoft.Win32.SafeHandles.SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
+                if (safeCertContextHandle.HasEphemeralPrivateKey)
+                {
+                    throw new AuthenticationException(SR.net_auth_ephemeral);
+                }
             }
 #endif
 

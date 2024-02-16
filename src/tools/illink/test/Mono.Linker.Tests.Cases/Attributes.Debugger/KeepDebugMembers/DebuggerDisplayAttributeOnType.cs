@@ -13,6 +13,8 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 		{
 			var foo = new Foo ();
 			var bar = new Bar ();
+			var fooBaz = new FooBaz ();
+			var fooBar = new FooBar ();
 		}
 
 		[Kept]
@@ -37,6 +39,28 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers
 			{
 				return 1;
 			}
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
+		[DebuggerDisplay ("_", Name="{Property}")]
+		class FooBaz
+		{
+			[Kept]
+			[KeptBackingField]
+			public int Property { [Kept] get; [Kept] set; }
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptAttributeAttribute (typeof (DebuggerDisplayAttribute))]
+		[DebuggerDisplay ("_", Type="{Property}")]
+		class FooBar
+		{
+			[Kept]
+			[KeptBackingField]
+			public int Property { [Kept] get; [Kept] set; }
 		}
 	}
 }

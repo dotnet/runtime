@@ -46,7 +46,7 @@ public:
 private:
     BasicBlock* m_b1; // The first basic block with the BBJ_COND conditional jump type
     BasicBlock* m_b2; // The next basic block of m_b1. Either BBJ_COND or BBJ_RETURN type
-    BasicBlock* m_b3; // m_b1->bbJumpDest. Null if m_b2 is not a return block.
+    BasicBlock* m_b3; // m_b1->bbTarget. Null if m_b2 is not a return block.
 
     Compiler* m_comp; // The pointer to the Compiler instance
 
@@ -66,6 +66,7 @@ private:
 public:
     bool optOptimizeBoolsCondBlock();
     bool optOptimizeCompareChainCondBlock();
+    bool optOptimizeRangeTests();
     bool optOptimizeBoolsReturnBlock(BasicBlock* b3);
 #ifdef DEBUG
     void optOptimizeBoolsGcStress();
@@ -80,7 +81,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-//  optOptimizeBoolsCondBlock:  Optimize boolean when bbJumpKind of both m_b1 and m_b2 are BBJ_COND
+//  optOptimizeBoolsCondBlock:  Optimize boolean when bbKind of both m_b1 and m_b2 are BBJ_COND
 //
 //  Returns:
 //      true if boolean optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
@@ -88,7 +89,7 @@ private:
 //  Notes:
 //      m_b1 and m_b2 are set on entry.
 //
-//      Case 1: if b1.bbJumpDest == b2.bbJumpDest, it transforms
+//      Case 1: if b1.bbTarget == b2.bbTarget, it transforms
 //          B1 : brtrue(t1, Bx)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -106,7 +107,7 @@ private:
 //              B3: GT_RETURN (BBJ_RETURN)
 //              B4: GT_RETURN (BBJ_RETURN)
 //
-//      Case 2: if B1.bbJumpDest == B2->bbNext, it transforms
+//      Case 2: if B2->FalseTargetIs(B1.bbTarget), it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : brtrue(t2, Bx)
 //          B3 :
@@ -122,9 +123,9 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     m_t3 = nullptr;
 
-    // Check if m_b1 and m_b2 have the same bbJumpDest
+    // Check if m_b1 and m_b2 have the same bbTarget
 
-    if (m_b1->bbJumpDest == m_b2->bbJumpDest)
+    if (m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, BX)
@@ -136,7 +137,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
         m_sameTarget = true;
     }
-    else if (m_b1->bbJumpDest == m_b2->bbNext)
+    else if (m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
     {
         // Given the following sequence of blocks :
         //        B1: brtrue(t1, B3)
@@ -184,7 +185,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
 
     genTreeOps foldOp;
     genTreeOps cmpOp;
-    var_types  foldType = m_c1->TypeGet();
+    var_types  foldType = genActualType(m_c1);
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -404,8 +405,433 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
     return false;
 }
 
+//------------------------------------------------------------------------------
+// GetIntersection: Given two ranges, return true if they intersect and form a closed range.
+//    Examples:
+//      >10 and <=20 -> [11,20]
+//      >10 and >100 -> false
+//      <10 and >10  -> false
+//
+// Arguments:
+//    type        - The type of the compare nodes.
+//    cmp1        - The first compare node.
+//    cmp2        - The second compare node.
+//    cns1        - The constant value of the first compare node (always RHS).
+//    cns2        - The constant value of the second compare node (always RHS).
+//    pRangeStart - [OUT] The start of the intersection range (inclusive).
+//    pRangeEnd   - [OUT] The end of the intersection range (inclusive).
+//
+// Returns:
+//    true if the ranges intersect and form a closed range.
+//
+static bool GetIntersection(var_types  type,
+                            genTreeOps cmp1,
+                            genTreeOps cmp2,
+                            ssize_t    cns1,
+                            ssize_t    cns2,
+                            ssize_t*   pRangeStart,
+                            ssize_t*   pRangeEnd)
+{
+    if ((cns1 < 0) || (cns2 < 0))
+    {
+        // We don't yet support negative ranges.
+        return false;
+    }
+
+    // Convert to a canonical form with GT_GE or GT_LE (inclusive).
+    auto normalize = [](genTreeOps* cmp, ssize_t* cns) {
+        if (*cmp == GT_GT)
+        {
+            // "X > cns" -> "X >= cns + 1"
+            *cns = *cns + 1;
+            *cmp = GT_GE;
+        }
+        if (*cmp == GT_LT)
+        {
+            // "X < cns" -> "X <= cns - 1"
+            *cns = *cns - 1;
+            *cmp = GT_LE;
+        }
+        // whether these overflow or not is checked below.
+    };
+    normalize(&cmp1, &cns1);
+    normalize(&cmp2, &cns2);
+
+    if (cmp1 == cmp2)
+    {
+        // Ranges have the same direction (we don't yet support that yet).
+        return false;
+    }
+
+    if (cmp1 == GT_GE)
+    {
+        *pRangeStart = cns1;
+        *pRangeEnd   = cns2;
+    }
+    else
+    {
+        assert(cmp1 == GT_LE);
+        *pRangeStart = cns2;
+        *pRangeEnd   = cns1;
+    }
+
+    if ((*pRangeStart >= *pRangeEnd) || (*pRangeStart < 0) || (*pRangeEnd < 0) || !FitsIn(type, *pRangeStart) ||
+        !FitsIn(type, *pRangeEnd))
+    {
+        // TODO: If ranges don't intersect we might be able to fold the condition to true/false.
+        // Also, check again if any of the ranges are negative (in case of overflow after normalization)
+        // and fits into the given type.
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// IsConstantRangeTest: Does the given compare node represent a constant range test? E.g.
+//    "X relop CNS" or "CNS relop X" where relop is [<, <=, >, >=]
+//
+// Arguments:
+//    tree - compare node
+//    varNode - [OUT] this will be set to the variable part of the constant range test
+//    cnsNode - [OUT] this will be set to the constant part of the constant range test
+//    cmp     - [OUT] this will be set to a normalized compare operator so that the constant
+//                    is always on the right hand side of the compare.
+//
+// Returns:
+//    true if the compare node represents a constant range test.
+//
+bool IsConstantRangeTest(GenTreeOp* tree, GenTree** varNode, GenTreeIntCon** cnsNode, genTreeOps* cmp)
+{
+    if (tree->OperIs(GT_LE, GT_LT, GT_GE, GT_GT) && !tree->IsUnsigned())
+    {
+        GenTree* op1 = tree->gtGetOp1();
+        GenTree* op2 = tree->gtGetOp2();
+        if (varTypeIsIntegral(op1) && varTypeIsIntegral(op2) && op1->TypeIs(op2->TypeGet()))
+        {
+            if (op2->IsCnsIntOrI())
+            {
+                // X relop CNS
+                *varNode = op1;
+                *cnsNode = op2->AsIntCon();
+                *cmp     = tree->OperGet();
+                return true;
+            }
+            if (op1->IsCnsIntOrI())
+            {
+                // CNS relop X
+                *varNode = op2;
+                *cnsNode = op1->AsIntCon();
+
+                // Normalize to "X relop CNS"
+                *cmp = GenTree::SwapRelop(tree->OperGet());
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// FoldRangeTests: Given two compare nodes (cmp1 && cmp2) where cmp1 is X >= 0
+//    and cmp2 is X < NN (NeverNegative), try to fold the range test into a single
+//    X u< NN (unsigned) compare node.
+//
+// Arguments:
+//    compiler       - compiler instance
+//    cmp1           - first compare node
+//    cmp1IsReversed - true if cmp1 is in fact reversed
+//    cmp2           - second compare node
+//    cmp2IsReversed - true if cmp2 is in fact reversed
+//
+// Returns:
+//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+//
+bool FoldNeverNegativeRangeTest(
+    Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    GenTree*       var1Node;
+    GenTreeIntCon* cns1Node;
+    genTreeOps     cmp1Op;
+
+    // First cmp has to be "X >= 0" (or "0 <= X")
+    // TODO: handle "X < NN && X >= 0" (where the 2nd comparison is the lower bound)
+    // It seems to be a rare case, so we don't handle it for now.
+    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op))
+    {
+        return false;
+    }
+
+    // Now, reverse the comparison if necessary depending on cmp1IsReversed and cmp2IsReversed
+    // so we'll get a canonical form of "X >= 0 && X </<= NN"
+    cmp1Op            = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
+    genTreeOps cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2->OperGet()) : cmp2->OperGet();
+
+    if ((cmp1Op != GT_GE) || (!cns1Node->IsIntegralConst(0)))
+    {
+        // Lower bound check has to be "X >= 0".
+        // We already re-ordered the comparison so that the constant is always on the right side.
+        return false;
+    }
+
+    // Upper bound check has to be "X relop NN" or "NN relop X" (NN = NeverNegative)
+    // We allow var1Node to be a GT_COMMA node, so we need to call gtEffectiveVal() to get the actual variable
+    // since it's guaranteed to be evaluated first.
+    GenTree* upperBound;
+    if (cmp2->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+        GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp1()))
+    {
+        // "X relop NN"
+        upperBound = cmp2->gtGetOp2();
+    }
+    else if (cmp2->gtGetOp2()->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+             GenTree::Compare(var1Node->gtEffectiveVal(), cmp2->gtGetOp2()))
+    {
+        // "NN relop X"
+        upperBound = cmp2->gtGetOp1();
+        // Normalize to "X relop NN"
+        cmp2Op = GenTree::SwapRelop(cmp2Op);
+    }
+    else
+    {
+        return false;
+    }
+
+    // Check that our upper bound is known to be never negative (e.g. GT_ARR_LENGTH or Span.Length, etc.)
+    if (!upperBound->IsNeverNegative(comp) || !upperBound->TypeIs(var1Node->TypeGet()))
+    {
+        return false;
+    }
+
+    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        return false;
+    }
+
+    if ((cmp2Op != GT_LT) && (cmp2Op != GT_LE))
+    {
+        // Upper bound check has to be "X < NN" or "X <= NN" (normalized form).
+        return false;
+    }
+
+    cmp1->gtOp1 = var1Node;
+    cmp1->gtOp2 = upperBound;
+    cmp1->SetOper(cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op);
+    cmp1->SetUnsigned();
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// FoldRangeTests: Given two compare nodes (cmp1 && cmp2) that represent a range check,
+//    fold them into a single compare node if possible, e.g.:
+//      1) "X >= 10 && X <= 100" -> "(X - 10) u<= 90"
+//      2) "X >= 0 && X <= 100"  -> "X u<= 100"
+//    where 'u' stands for unsigned comparison. cmp1 is used as the target node for folding.
+//    It's also guaranteed to be first in the execution order (so can allow some side effects).
+//
+// Arguments:
+//    compiler       - compiler instance
+//    cmp1           - first compare node
+//    cmp1IsReversed - true if cmp1 is in fact reversed
+//    cmp2           - second compare node
+//    cmp2IsReversed - true if cmp2 is in fact reversed
+//
+// Returns:
+//    true if cmp1 now represents the folded range check and cmp2 can be removed.
+//
+bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTreeOp* cmp2, bool cmp2IsReversed)
+{
+    GenTree*       var1Node;
+    GenTree*       var2Node;
+    GenTreeIntCon* cns1Node;
+    GenTreeIntCon* cns2Node;
+    genTreeOps     cmp1Op;
+    genTreeOps     cmp2Op;
+
+    // Make sure both conditions are constant range checks, e.g. "X > CNS"
+    if (!IsConstantRangeTest(cmp1, &var1Node, &cns1Node, &cmp1Op) ||
+        !IsConstantRangeTest(cmp2, &var2Node, &cns2Node, &cmp2Op))
+    {
+        // Give FoldNeverNegativeRangeTest a try if both conditions are not constant range checks.
+        return FoldNeverNegativeRangeTest(comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed);
+    }
+
+    // Reverse the comparisons if necessary so we'll get a canonical form "cond1 == true && cond2 == true" -> InRange.
+    cmp1Op = cmp1IsReversed ? GenTree::ReverseRelop(cmp1Op) : cmp1Op;
+    cmp2Op = cmp2IsReversed ? GenTree::ReverseRelop(cmp2Op) : cmp2Op;
+
+    // Make sure variables are the same:
+    if (!var2Node->OperIs(GT_LCL_VAR) || !GenTree::Compare(var1Node->gtEffectiveVal(), var2Node))
+    {
+        // Variables don't match in two conditions
+        // We use gtEffectiveVal() for the first block's variable to ignore COMMAs, e.g.
+        //
+        // m_b1:
+        //   *  JTRUE     void
+        //   \--*  LT        int
+        //      +--*  COMMA     int
+        //      |  +--*  STORE_LCL_VAR int    V03 cse0
+        //      |  |  \--*  CAST      int <- ushort <- int
+        //      |  |     \--*  LCL_VAR   int    V01 arg1
+        //      |  \--*  LCL_VAR   int    V03 cse0
+        //      \--*  CNS_INT   int    97
+        //
+        // m_b2:
+        //   *  JTRUE     void
+        //   \--*  GT        int
+        //      +--*  LCL_VAR   int    V03 cse0
+        //      \--*  CNS_INT   int    122
+        //
+        // For the m_b2 we require the variable to be just a local with no side-effects (hence, no statements)
+        return false;
+    }
+
+    ssize_t rangeStart;
+    ssize_t rangeEnd;
+    if (!GetIntersection(var1Node->TypeGet(), cmp1Op, cmp2Op, cns1Node->IconValue(), cns2Node->IconValue(), &rangeStart,
+                         &rangeEnd))
+    {
+        // The range we test via two conditions is not a closed range
+        // TODO: We should support overlapped ranges here, e.g. "X > 10 && x > 100" -> "X > 100"
+        return false;
+    }
+    assert(rangeStart < rangeEnd);
+
+    if (rangeStart == 0)
+    {
+        // We don't need to subtract anything, it's already 0-based
+        cmp1->gtOp1 = var1Node;
+    }
+    else
+    {
+        // We need to subtract the rangeStartIncl from the variable to make the range start from 0
+        cmp1->gtOp1 = comp->gtNewOperNode(GT_SUB, var1Node->TypeGet(), var1Node,
+                                          comp->gtNewIconNode(rangeStart, var1Node->TypeGet()));
+    }
+    cmp1->gtOp2->BashToConst(rangeEnd - rangeStart, var1Node->TypeGet());
+    cmp1->SetOper(cmp2IsReversed ? GT_GT : GT_LE);
+    cmp1->SetUnsigned();
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// optOptimizeRangeTests : Optimize two conditional blocks representing a constant range test.
+//    E.g. "X >= 10 && X <= 100" is optimized to "(X - 10) <= 90".
+//
+// Return Value:
+//    True if m_b1 and m_b2 are merged.
+//
+bool OptBoolsDsc::optOptimizeRangeTests()
+{
+    // At this point we have two consecutive conditional blocks (BBJ_COND): m_b1 and m_b2
+    assert((m_b1 != nullptr) && (m_b2 != nullptr) && (m_b3 == nullptr));
+    assert(m_b1->KindIs(BBJ_COND) && m_b2->KindIs(BBJ_COND) && m_b1->FalseTargetIs(m_b2));
+
+    if (m_b2->isRunRarely())
+    {
+        // We don't want to make the first comparison to be slightly slower
+        // if the 2nd one is rarely executed.
+        return false;
+    }
+
+    if (!BasicBlock::sameEHRegion(m_b1, m_b2) || m_b2->HasFlag(BBF_DONT_REMOVE))
+    {
+        // Conditions aren't in the same EH region or m_b2 can't be removed
+        return false;
+    }
+
+    if (m_b1->TrueTargetIs(m_b1) || m_b1->TrueTargetIs(m_b2) || m_b2->TrueTargetIs(m_b2) || m_b2->TrueTargetIs(m_b1))
+    {
+        // Ignoring weird cases like a condition jumping to itself or when JumpDest == Next
+        return false;
+    }
+
+    // We're interested in just two shapes for e.g. "X > 10 && X < 100" range test:
+    //
+    BasicBlock* notInRangeBb = m_b1->GetTrueTarget();
+    BasicBlock* inRangeBb;
+    if (m_b2->TrueTargetIs(notInRangeBb))
+    {
+        // Shape 1: both conditions jump to NotInRange
+        //
+        // if (X <= 10)
+        //     goto NotInRange;
+        //
+        // if (X >= 100)
+        //     goto NotInRange
+        //
+        // InRange:
+        // ...
+        inRangeBb = m_b2->GetFalseTarget();
+    }
+    else if (m_b2->FalseTargetIs(notInRangeBb))
+    {
+        // Shape 2: 2nd block jumps to InRange
+        //
+        // if (X <= 10)
+        //     goto NotInRange;
+        //
+        // if (X > 100)
+        //     goto InRange
+        //
+        // NotInRange:
+        // ...
+        inRangeBb = m_b2->GetTrueTarget();
+    }
+    else
+    {
+        // Unknown shape
+        return false;
+    }
+
+    if (!m_b2->hasSingleStmt() || (m_b2->GetUniquePred(m_comp) != m_b1))
+    {
+        // The 2nd block has to be single-statement to avoid side-effects between the two conditions.
+        // Also, make sure m_b2 has no other predecessors.
+        return false;
+    }
+
+    // m_b1 and m_b2 are both BBJ_COND blocks with GT_JTRUE(cmp) root nodes
+    GenTreeOp* cmp1 = m_b1->lastStmt()->GetRootNode()->gtGetOp1()->AsOp();
+    GenTreeOp* cmp2 = m_b2->lastStmt()->GetRootNode()->gtGetOp1()->AsOp();
+
+    // cmp1 is always reversed (see shape1 and shape2 above)
+    const bool cmp1IsReversed = true;
+
+    // cmp2 can be either reversed or not
+    const bool cmp2IsReversed = m_b2->TrueTargetIs(notInRangeBb);
+
+    if (!FoldRangeTests(m_comp, cmp1, cmp1IsReversed, cmp2, cmp2IsReversed))
+    {
+        return false;
+    }
+
+    // Re-direct firstBlock to jump to inRangeBb
+    m_comp->fgAddRefPred(inRangeBb, m_b1);
+    if (!cmp2IsReversed)
+    {
+        m_b1->SetTrueTarget(inRangeBb);
+        m_b1->SetFalseTarget(notInRangeBb);
+    }
+    else
+    {
+        m_b1->SetFalseTarget(inRangeBb);
+    }
+
+    // Remove the 2nd condition block as we no longer need it
+    m_comp->fgRemoveRefPred(m_b2, m_b1);
+    m_comp->fgRemoveBlock(m_b2, true);
+
+    Statement* stmt = m_b1->lastStmt();
+    m_comp->gtSetStmtInfo(stmt);
+    m_comp->fgSetStmtSeq(stmt);
+    m_comp->gtUpdateStmtSideEffects(stmt);
+    return true;
+}
+
 //-----------------------------------------------------------------------------
-//  optOptimizeCompareChainCondBlock:  Create a chain when when both m_b1 and m_b2 are BBJ_COND.
+//  optOptimizeCompareChainCondBlock:  Create a chain when both m_b1 and m_b2 are BBJ_COND.
 //
 //  Returns:
 //      true if chain optimization is done and m_b1 and m_b2 are folded into m_b1, else false.
@@ -480,13 +906,13 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_t3 = nullptr;
 
     bool foundEndOfOrConditions = false;
-    if ((m_b1->bbNext == m_b2) && (m_b1->bbJumpDest == m_b2->bbNext))
+    if (m_b1->FalseTargetIs(m_b2) && m_b2->FalseTargetIs(m_b1->GetTrueTarget()))
     {
         // Found the end of two (or more) conditions being ORed together.
         // The final condition has been inverted.
         foundEndOfOrConditions = true;
     }
-    else if ((m_b1->bbNext == m_b2) && (m_b1->bbJumpDest == m_b2->bbJumpDest))
+    else if (m_b1->FalseTargetIs(m_b2) && m_b1->TrueTargetIs(m_b2->GetTrueTarget()))
     {
         // Found two conditions connected together.
     }
@@ -586,14 +1012,15 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_comp->fgSetStmtSeq(s2);
 
     // Update the flow.
-    m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
-    m_b1->bbJumpKind = BBJ_NONE;
+    m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
+    m_b1->SetKindAndTarget(BBJ_ALWAYS, m_b1->GetFalseTarget());
+    m_b1->SetFlags(BBF_NONE_QUIRK);
 
     // Fixup flags.
-    m_b2->bbFlags |= (m_b1->bbFlags & BBF_COPY_PROPAGATE);
+    m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    if (m_b1->NextIs(m_b2) && m_comp->fgCanCompactBlocks(m_b1, m_b2))
     {
         m_comp->fgCompactBlocks(m_b1, m_b2);
     }
@@ -766,7 +1193,7 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 
 //-----------------------------------------------------------------------------
 // optOptimizeBoolsUpdateTrees: Fold the trees based on fold type and comparison type,
-//                              update the edges, unlink removed blocks and update loop table
+//                              update the edges, and unlink removed blocks
 //
 void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 {
@@ -839,22 +1266,22 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         // Update edges if m_b1: BBJ_COND and m_b2: BBJ_COND
 
-        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->bbJumpDest, m_b1);
+        FlowEdge* edge1 = m_comp->fgGetPredForBlock(m_b1->GetTrueTarget(), m_b1);
         FlowEdge* edge2;
 
         if (m_sameTarget)
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->bbJumpDest, m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->GetTrueTarget(), m_b2);
         }
         else
         {
-            edge2 = m_comp->fgGetPredForBlock(m_b2->bbNext, m_b2);
+            edge2 = m_comp->fgGetPredForBlock(m_b2->GetFalseTarget(), m_b2);
 
-            m_comp->fgRemoveRefPred(m_b1->bbJumpDest, m_b1);
+            m_comp->fgRemoveRefPred(m_b1->GetTrueTarget(), m_b1);
 
-            m_b1->bbJumpDest = m_b2->bbJumpDest;
+            m_b1->SetTrueTarget(m_b2->GetTrueTarget());
 
-            m_comp->fgAddRefPred(m_b2->bbJumpDest, m_b1);
+            m_comp->fgAddRefPred(m_b2->GetTrueTarget(), m_b1);
         }
 
         assert(edge1 != nullptr);
@@ -864,11 +1291,11 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         weight_t edgeSumMax = edge1->edgeWeightMax() + edge2->edgeWeightMax();
         if ((edgeSumMax >= edge1->edgeWeightMax()) && (edgeSumMax >= edge2->edgeWeightMax()))
         {
-            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->bbJumpDest);
+            edge1->setEdgeWeights(edgeSumMin, edgeSumMax, m_b1->GetTrueTarget());
         }
         else
         {
-            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->bbJumpDest);
+            edge1->setEdgeWeights(BB_ZERO_WEIGHT, BB_MAX_WEIGHT, m_b1->GetTrueTarget());
         }
     }
 
@@ -876,55 +1303,46 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 
     if (optReturnBlock)
     {
-        m_b1->bbJumpDest = nullptr;
-        m_b1->bbJumpKind = BBJ_RETURN;
-#ifdef DEBUG
-        m_b1->bbJumpSwt = m_b2->bbJumpSwt;
-#endif
-        assert(m_b2->bbJumpKind == BBJ_RETURN);
-        assert(m_b1->bbNext == m_b2);
+        assert(m_b1->KindIs(BBJ_COND));
+        assert(m_b2->KindIs(BBJ_RETURN));
+        assert(m_b1->FalseTargetIs(m_b2));
         assert(m_b3 != nullptr);
+        m_b1->SetKindAndTarget(BBJ_RETURN);
     }
     else
     {
-        assert(m_b1->bbJumpKind == BBJ_COND);
-        assert(m_b2->bbJumpKind == BBJ_COND);
-        assert(m_b1->bbJumpDest == m_b2->bbJumpDest);
-        assert(m_b1->bbNext == m_b2);
-        assert(m_b2->bbNext != nullptr);
+        assert(m_b1->KindIs(BBJ_COND));
+        assert(m_b2->KindIs(BBJ_COND));
+        assert(m_b1->TrueTargetIs(m_b2->GetTrueTarget()));
+        assert(m_b1->FalseTargetIs(m_b2));
+        assert(!m_b2->IsLast());
     }
 
     if (!optReturnBlock)
     {
         // Update bbRefs and bbPreds
         //
-        // Replace pred 'm_b2' for 'm_b2->bbNext' with 'm_b1'
-        // Remove  pred 'm_b2' for 'm_b2->bbJumpDest'
-        m_comp->fgReplacePred(m_b2->bbNext, m_b2, m_b1);
-        m_comp->fgRemoveRefPred(m_b2->bbJumpDest, m_b2);
+        // Replace pred 'm_b2' for 'm_b2->bbFalseTarget' with 'm_b1'
+        // Remove  pred 'm_b2' for 'm_b2->bbTrueTarget'
+        m_comp->fgReplacePred(m_b2->GetFalseTarget(), m_b2, m_b1);
+        m_comp->fgRemoveRefPred(m_b2->GetTrueTarget(), m_b2);
+        m_b1->SetFalseTarget(m_b2->GetFalseTarget());
     }
 
     // Get rid of the second block
 
-    m_comp->fgUnlinkBlock(m_b2);
-    m_b2->bbFlags |= BBF_REMOVED;
+    m_comp->fgUnlinkBlockForRemoval(m_b2);
+    m_b2->SetFlags(BBF_REMOVED);
     // If m_b2 was the last block of a try or handler, update the EH table.
     m_comp->ehUpdateForDeletedBlock(m_b2);
 
     if (optReturnBlock)
     {
         // Get rid of the third block
-        m_comp->fgUnlinkBlock(m_b3);
-        m_b3->bbFlags |= BBF_REMOVED;
+        m_comp->fgUnlinkBlockForRemoval(m_b3);
+        m_b3->SetFlags(BBF_REMOVED);
         // If m_b3 was the last block of a try or handler, update the EH table.
         m_comp->ehUpdateForDeletedBlock(m_b3);
-    }
-
-    // Update loop table
-    m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b2);
-    if (optReturnBlock)
-    {
-        m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
     }
 
     // Update IL range of first block
@@ -943,7 +1361,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
 //  Notes:
 //      m_b1, m_b2 and m_b3 of OptBoolsDsc are set on entry.
 //
-//      if B1.bbJumpDest == b3, it transforms
+//      if B1.bbTarget == b3, it transforms
 //          B1 : brtrue(t1, B3)
 //          B2 : ret(t2)
 //          B3 : ret(0)
@@ -995,7 +1413,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     // Get the fold operator (m_foldOp, e.g., GT_OR/GT_AND) and
     // the comparison operator (m_cmpOp, e.g., GT_EQ/GT_NE/GT_GE/GT_LT)
 
-    var_types foldType = m_c1->TypeGet();
+    var_types foldType = genActualType(m_c1->TypeGet());
     if (varTypeIsGC(foldType))
     {
         foldType = TYP_I_IMPL;
@@ -1180,7 +1598,7 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
         return;
     }
 
-    assert(m_b1->bbJumpKind == BBJ_COND);
+    assert(m_b1->KindIs(BBJ_COND));
     Statement* const stmt = m_b1->lastStmt();
     GenTree* const   cond = stmt->GetRootNode();
 
@@ -1463,27 +1881,27 @@ PhaseStatus Compiler::optOptimizeBools()
         numPasses++;
         change = false;
 
-        for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->bbNext)
+        for (BasicBlock* b1 = fgFirstBB; b1 != nullptr; b1 = retry ? b1 : b1->Next())
         {
             retry = false;
 
             // We're only interested in conditional jumps here
 
-            if (b1->bbJumpKind != BBJ_COND)
+            if (!b1->KindIs(BBJ_COND))
             {
                 continue;
             }
 
             // If there is no next block, we're done
 
-            BasicBlock* b2 = b1->bbNext;
+            BasicBlock* b2 = b1->GetFalseTarget();
             if (b2 == nullptr)
             {
                 break;
             }
 
             // The next block must not be marked as BBF_DONT_REMOVE
-            if (b2->bbFlags & BBF_DONT_REMOVE)
+            if (b2->HasFlag(BBF_DONT_REMOVE))
             {
                 continue;
             }
@@ -1492,9 +1910,9 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // The next block needs to be a condition or return block.
 
-            if (b2->bbJumpKind == BBJ_COND)
+            if (b2->KindIs(BBJ_COND))
             {
-                if ((b1->bbJumpDest != b2->bbJumpDest) && (b1->bbJumpDest != b2->bbNext))
+                if (!b1->TrueTargetIs(b2->GetTrueTarget()) && !b2->FalseTargetIs(b1->GetTrueTarget()))
                 {
                     continue;
                 }
@@ -1504,6 +1922,12 @@ PhaseStatus Compiler::optOptimizeBools()
                 if (optBoolsDsc.optOptimizeBoolsCondBlock())
                 {
                     change = true;
+                    numCond++;
+                }
+                else if (optBoolsDsc.optOptimizeRangeTests())
+                {
+                    change = true;
+                    retry  = true;
                     numCond++;
                 }
 #ifdef TARGET_ARM64
@@ -1517,21 +1941,21 @@ PhaseStatus Compiler::optOptimizeBools()
                 }
 #endif
             }
-            else if (b2->bbJumpKind == BBJ_RETURN)
+            else if (b2->KindIs(BBJ_RETURN))
             {
                 // Set b3 to b1 jump destination
-                BasicBlock* b3 = b1->bbJumpDest;
+                BasicBlock* b3 = b1->GetTrueTarget();
 
                 // b3 must not be marked as BBF_DONT_REMOVE
 
-                if (b3->bbFlags & BBF_DONT_REMOVE)
+                if (b3->HasFlag(BBF_DONT_REMOVE))
                 {
                     continue;
                 }
 
                 // b3 must be RETURN type
 
-                if (b3->bbJumpKind != BBJ_RETURN)
+                if (!b3->KindIs(BBJ_RETURN))
                 {
                     continue;
                 }

@@ -521,17 +521,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM
-
-        case GT_CLS_VAR_ADDR:
-            emit->emitIns_R_C(INS_lea, EA_PTRSIZE, targetReg, treeNode->AsClsVar()->gtClsVarHnd, 0);
-            genProduceReg(treeNode);
-            break;
-
         case GT_LONG:
             assert(treeNode->isUsedFromReg());
             genConsumeRegs(treeNode);
             break;
-
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
@@ -812,7 +805,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             regNumber srcReg = genConsumeReg(source);
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
 
-            assert(compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+            assert(compAppleArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
 
 #ifdef TARGET_ARM64
             if (treeNode->GetStackByteSize() == 12)
@@ -832,7 +825,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
 
         var_types slotType = genActualType(source);
-        if (compMacOsArm64Abi())
+        if (compAppleArm64Abi())
         {
             // Small typed args do not get their own full stack slots, so make
             // sure we do not overwrite adjacent arguments.
@@ -1689,13 +1682,15 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     // The index is never contained, even if it is a constant.
     assert(index->isUsedFromReg());
 
-    const regNumber tmpReg = node->GetSingleTempReg();
+    const regNumber tmpReg = node->ExtractTempReg();
+
+    regNumber indexReg = index->GetRegNum();
 
     // Generate the bounds check if necessary.
     if (node->IsBoundsChecked())
     {
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, base->GetRegNum(), node->gtLenOffset);
-        GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), index->GetRegNum(), tmpReg);
+        GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), indexReg, tmpReg);
         genJumpToThrowHlpBlk(EJ_hs, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
 
@@ -1706,17 +1701,47 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         DWORD scale;
         BitScanForward(&scale, node->gtElemSize);
 
-        // dest = base + index * scale
-        genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), index->GetRegNum(), scale);
+#ifdef TARGET_ARM64
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+            if (scale <= 4)
+            {
+                // target = base + index<<scale
+                GetEmitter()->emitIns_R_R_R_I(INS_add, emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(),
+                                              indexReg, scale, INS_OPTS_UXTW);
+            }
+            else
+            {
+                GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, /* canSkip */ false);
+                indexReg      = tmpReg;
+                emitter* emit = GetEmitter();
+                genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+            }
+        }
+        else
+#endif // TARGET_ARM64
+        {
+            // dest = base + index * scale
+            genScaledAdd(emitActualTypeSize(node), node->GetRegNum(), base->GetRegNum(), indexReg, scale);
+        }
     }
     else // we have to load the element size and use a MADD (multiply-add) instruction
     {
+#ifdef TARGET_ARM64
+        if (!index->TypeIs(TYP_I_IMPL))
+        {
+            const regNumber tmpReg2 = node->ExtractTempReg();
+            GetEmitter()->emitIns_Mov(INS_mov, EA_4BYTE, tmpReg2, indexReg, /* canSkip */ false);
+            indexReg = tmpReg2;
+        }
+#endif // TARGET_ARM64
+
         // tmpReg = element size
         instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, (ssize_t)node->gtElemSize);
 
         // dest = index * tmpReg + base
-        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), index->GetRegNum(),
-                                      tmpReg, base->GetRegNum());
+        GetEmitter()->emitIns_R_R_R_R(INS_MULADD, emitActualTypeSize(node), node->GetRegNum(), indexReg, tmpReg,
+                                      base->GetRegNum());
     }
 
     // dest = dest + elemOffs
@@ -1726,6 +1751,134 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
 
     genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genGetVolatileLdStIns: Determine the most efficient instruction to perform a
+//    volatile load or store and whether an explicit barrier is required or not.
+//
+// Arguments:
+//    currentIns   - the current instruction to perform load/store
+//    targetReg    - the target register
+//    indir        - the indirection node representing the volatile load/store
+//    needsBarrier - OUT parameter. Set to true if an explicit memory barrier is required.
+//
+// Return Value:
+//    instruction to perform the volatile load/store with.
+//
+instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
+                                           regNumber     targetReg,
+                                           GenTreeIndir* indir,
+                                           bool*         needsBarrier)
+{
+    assert(indir->IsVolatile());
+
+    if (!genIsValidIntReg(targetReg))
+    {
+        // We don't have special instructions to perform volatile loads/stores for non-integer registers.
+        *needsBarrier = true;
+        return currentIns;
+    }
+
+    assert(!varTypeIsFloating(indir));
+    assert(!varTypeIsSIMD(indir));
+
+#ifdef TARGET_ARM64
+    *needsBarrier = false;
+
+    if (indir->IsUnaligned() && (currentIns != INS_ldrb) && (currentIns != INS_strb))
+    {
+        // We have to use a normal load/store + explicit memory barrier
+        // to avoid unaligned access exceptions.
+        *needsBarrier = true;
+        return currentIns;
+    }
+
+    const bool addrIsInReg = indir->Addr()->isUsedFromReg();
+
+    // With RCPC2 (arm64 v8.4+) we can work with simple addressing modes like [reg + simm9]
+    const bool shouldUseRcpc2 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && !addrIsInReg &&
+                                indir->Addr()->OperIs(GT_LEA) && !indir->HasIndex() && (indir->Scale() == 1) &&
+                                emitter::emitIns_valid_imm_for_unscaled_ldst_offset(indir->Offset());
+
+    if (shouldUseRcpc2)
+    {
+        assert(!addrIsInReg);
+        switch (currentIns)
+        {
+            // Loads
+
+            case INS_ldrb:
+                return INS_ldapurb;
+
+            case INS_ldrh:
+                return INS_ldapurh;
+
+            case INS_ldr:
+                return INS_ldapur;
+
+            // Stores
+
+            case INS_strb:
+                return INS_stlurb;
+
+            case INS_strh:
+                return INS_stlurh;
+
+            case INS_str:
+                return INS_stlur;
+
+            default:
+                *needsBarrier = true;
+                return currentIns;
+        }
+    }
+
+    // Only RCPC2 (arm64 v8.4+) allows us to deal with contained addresses.
+    // In other cases we'll have to emit a normal load/store + explicit memory barrier.
+    // It means that lower should generally avoid generating contained addresses for volatile loads/stores
+    // so we can use cheaper instructions.
+    if (!addrIsInReg)
+    {
+        *needsBarrier = true;
+        return currentIns;
+    }
+
+    // RCPC1 (arm64 v8.3+) offers a bit more relaxed memory ordering than ldar. Which is sufficient for
+    // .NET memory model's requirements, see https://github.com/dotnet/runtime/issues/67374
+    const bool hasRcpc1 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
+    switch (currentIns)
+    {
+        // Loads
+
+        case INS_ldrb:
+            return hasRcpc1 ? INS_ldaprb : INS_ldarb;
+
+        case INS_ldrh:
+            return hasRcpc1 ? INS_ldaprh : INS_ldarh;
+
+        case INS_ldr:
+            return hasRcpc1 ? INS_ldapr : INS_ldar;
+
+        // Stores
+
+        case INS_strb:
+            return INS_stlrb;
+
+        case INS_strh:
+            return INS_stlrh;
+
+        case INS_str:
+            return INS_stlr;
+
+        default:
+            *needsBarrier = true;
+            return currentIns;
+    }
+#else  // TARGET_ARM64
+    *needsBarrier = true;
+    return currentIns;
+#endif // !TARGET_ARM64
 }
 
 //------------------------------------------------------------------------
@@ -1755,58 +1908,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     bool emitBarrier = false;
 
-    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+    if (tree->IsVolatile())
     {
-#ifdef TARGET_ARM64
-        bool addrIsInReg   = tree->Addr()->isUsedFromReg();
-        bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
-
-        // On arm64-v8.3+ we can use ldap* instructions with acquire/release semantics to avoid
-        // full memory barriers if mixed with STLR
-        bool hasRcpc = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc);
-
-        // On arm64-v8.4+ we can use ldapur* instructions with acquire/release semantics to
-        // avoid full memory barriers if address is contained and unscaled
-        bool hasRcpc2 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
-
-        bool handledWithLdapur = false;
-        if (hasRcpc2 && !addrIsInReg && tree->Addr()->OperIs(GT_LEA) && !tree->HasIndex() && (tree->Scale() == 1) &&
-            emitter::emitIns_valid_imm_for_unscaled_ldst_offset(tree->Offset()))
-        {
-            if (ins == INS_ldrb)
-            {
-                ins               = INS_ldapurb;
-                handledWithLdapur = true;
-            }
-            else if ((ins == INS_ldrh) && addrIsAligned)
-            {
-                ins               = INS_ldapurh;
-                handledWithLdapur = true;
-            }
-            else if ((ins == INS_ldr) && addrIsAligned && genIsValidIntReg(targetReg))
-            {
-                ins               = INS_ldapur;
-                handledWithLdapur = true;
-            }
-        }
-
-        if ((ins == INS_ldrb) && addrIsInReg)
-        {
-            ins = hasRcpc ? INS_ldaprb : INS_ldarb;
-        }
-        else if ((ins == INS_ldrh) && addrIsInReg && addrIsAligned)
-        {
-            ins = hasRcpc ? INS_ldaprh : INS_ldarh;
-        }
-        else if ((ins == INS_ldr) && addrIsInReg && addrIsAligned && genIsValidIntReg(targetReg))
-        {
-            ins = hasRcpc ? INS_ldapr : INS_ldar;
-        }
-        else if (!handledWithLdapur)
-#endif // TARGET_ARM64
-        {
-            emitBarrier = true;
-        }
+        ins = genGetVolatileLdStIns(ins, targetReg, tree, &emitBarrier);
     }
 
     GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
@@ -3140,6 +3244,72 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForInitBlkLoop - Generate code for an InitBlk using an inlined for-loop.
+//    It's needed for cases when size is too big to unroll and we're not allowed
+//    to use memset call due to atomicity requirements.
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_BLK node
+//
+void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
+{
+    GenTree* const dstNode = initBlkNode->Addr();
+    genConsumeReg(dstNode);
+    const regNumber dstReg = dstNode->GetRegNum();
+
+#ifndef TARGET_ARM64
+    GenTree* const zeroNode = initBlkNode->Data();
+    genConsumeReg(zeroNode);
+    const regNumber zeroReg = zeroNode->GetRegNum();
+#else
+    const regNumber zeroReg = REG_ZR;
+#endif
+
+    if (initBlkNode->IsVolatile())
+    {
+        // issue a full memory barrier before a volatile initBlock Operation
+        instGen_MemoryBarrier();
+    }
+
+    //  str     xzr, [dstReg]
+    //  mov     offsetReg, <block size>
+    //.LOOP:
+    //  str     xzr, [dstReg, offsetReg]
+    //  subs    offsetReg, offsetReg, #8
+    //  bne     .LOOP
+
+    const unsigned size = initBlkNode->GetLayout()->GetSize();
+    assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+    // The loop is reversed - it makes it smaller.
+    // Although, we zero the first pointer before the loop (the loop doesn't zero it)
+    // it works as a nullcheck, otherwise the first iteration would try to access
+    // "null + potentially large offset" and hit AV.
+    GetEmitter()->emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
+    if (size > TARGET_POINTER_SIZE)
+    {
+        // Extend liveness of dstReg in case if it gets killed by the store.
+        gcInfo.gcMarkRegPtrVal(dstReg, dstNode->TypeGet());
+
+        const regNumber offsetReg = initBlkNode->GetSingleTempReg();
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, size - TARGET_POINTER_SIZE);
+
+        BasicBlock* loop = genCreateTempLabel();
+        genDefineTempLabel(loop);
+
+        GetEmitter()->emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
+#ifdef TARGET_ARM64
+        GetEmitter()->emitIns_R_R_I(INS_subs, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
+#else
+        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE, INS_FLAGS_SET);
+#endif
+        inst_JMP(EJ_ne, loop);
+
+        gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+    }
+}
+
+//------------------------------------------------------------------------
 // genCall: Produce code for a GT_CALL node
 //
 void CodeGen::genCall(GenTreeCall* call)
@@ -3227,13 +3397,13 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef FEATURE_READYTORUN
         else if (call->IsR2ROrVirtualStubRelativeIndir())
         {
-            assert(((call->IsR2RRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
-                   ((call->IsVirtualStubRelativeIndir()) && (call->gtEntryPoint.accessType == IAT_VALUE)));
+            assert((call->IsR2RRelativeIndir() && (call->gtEntryPoint.accessType == IAT_PVALUE)) ||
+                   (call->IsVirtualStubRelativeIndir() && (call->gtEntryPoint.accessType == IAT_VALUE)));
             assert(call->gtControlExpr == nullptr);
 
             regNumber tmpReg = call->GetSingleTempReg();
             // Register where we save call address in should not be overridden by epilog.
-            assert((tmpReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == tmpReg);
+            assert((genRegMask(tmpReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(tmpReg));
 
             regNumber callAddrReg =
                 call->IsVirtualStubRelativeIndir() ? compiler->virtualStubParamInfo->GetReg() : REG_R2R_INDIRECT_PARAM;
@@ -3453,6 +3623,44 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //
         assert(genIsValidIntReg(target->GetRegNum()));
 
+#ifdef TARGET_ARM64
+        bool isTlsHandleTarget =
+            compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && target->IsTlsIconHandle();
+
+        if (isTlsHandleTarget)
+        {
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
+            emitter*       emitter  = GetEmitter();
+            emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
+            GenTreeIntCon* iconNode = target->AsIntCon();
+            methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
+
+            // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
+            // it as part of the call. Generating individual instructions is tricky to get it
+            // correct in the format the way linker needs. Also, we might end up spilling or
+            // reloading a register, which can break the pattern.
+            //
+            //      mrs  x1, tpidr_el0
+            //      adrp x0, :tlsdesc:tlsRoot   ; R_AARCH64_TLSDESC_ADR_PAGE21
+            //      ldr  x2, [x0]               ; R_AARCH64_TLSDESC_LD64_LO12
+            //      add  x0, x0, #0             ; R_AARCH64_TLSDESC_ADD_LO12
+            //      blr  x2                     ; R_AARCH64_TLSDESC_CALL
+            //      add  x0, x1, x0
+            // We guaranteed in LSRA that r0, r1 and r2 are assigned to this node.
+
+            // mrs
+            emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
+
+            // adrp
+            // ldr
+            // add
+            emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
+                                          (ssize_t)methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                              DEBUGARG(iconNode->gtFlags));
+        }
+#endif
+
         // clang-format off
         genEmitCall(emitter::EC_INDIR_R,
                     methHnd,
@@ -3463,6 +3671,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
+
+#ifdef TARGET_ARM64
+        if (isTlsHandleTarget)
+        {
+            // add x0, x1, x0
+            GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
+        }
+#endif
         // clang-format on
     }
     else
@@ -3493,7 +3709,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             else
             {
                 // Register where we save call address in should not be overridden by epilog.
-                assert((targetAddrReg & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == targetAddrReg);
+                assert((genRegMask(targetAddrReg) & (RBM_INT_CALLEE_TRASH & ~RBM_LR)) == genRegMask(targetAddrReg));
             }
 
             // We have now generated code loading the target address from the indirection cell into `targetAddrReg`.
@@ -4409,6 +4625,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
             genCodeForCpObj(blkOp->AsBlk());
             break;
 
+        case GenTreeBlk::BlkOpKindLoop:
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             assert(!blkOp->gtBlkOpGcUnsafe);
             if (isCopyBlk)
@@ -4531,7 +4752,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
     //             instructions to generate the addressing mode so we need to modify lowering to
     //             produce LEAs that are a 1:1 relationship to the ARM64 architecture.
-    if (lea->Base() && lea->Index())
+    if (lea->HasBase() && lea->HasIndex())
     {
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
@@ -4608,7 +4829,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             genScaledAdd(size, lea->GetRegNum(), memBase->GetRegNum(), index->GetRegNum(), scale);
         }
     }
-    else if (lea->Base())
+    else if (lea->HasBase())
     {
         GenTree* memBase = lea->Base();
 
@@ -4636,7 +4857,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             emit->emitIns_R_R_R(INS_add, size, lea->GetRegNum(), memBase->GetRegNum(), tmpReg);
         }
     }
-    else if (lea->Index())
+    else if (lea->HasIndex())
     {
         // If we encounter a GT_LEA node without a base it means it came out
         // when attempting to optimize an arbitrary arithmetic expression during lower.
@@ -5324,7 +5545,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 #endif // DEBUG
 
-    bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
+    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
     GenTree* lastNode = block->lastNode();
 
@@ -5436,7 +5657,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         SetHasTailCalls(true);
 
-        noway_assert(block->bbJumpKind == BBJ_RETURN);
+        noway_assert(block->KindIs(BBJ_RETURN));
         noway_assert(block->GetFirstLIRNode() != nullptr);
 
         /* figure out what jump we have */

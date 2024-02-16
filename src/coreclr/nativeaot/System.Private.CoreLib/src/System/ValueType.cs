@@ -49,7 +49,7 @@ namespace System
 
         public override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj == null || obj.GetEETypePtr() != this.GetEETypePtr())
+            if (obj == null || obj.GetMethodTable() != this.GetMethodTable())
                 return false;
 
             int numFields = __GetFieldHelper(GetNumFields, out _);
@@ -60,10 +60,10 @@ namespace System
             if (numFields == UseFastHelper)
             {
                 // Sanity check - if there are GC references, we should not be comparing bytes
-                Debug.Assert(!this.GetEETypePtr().ContainsGCPointers);
+                Debug.Assert(!this.GetMethodTable()->ContainsGCPointers);
 
                 // Compare the memory
-                int valueTypeSize = (int)this.GetEETypePtr().ValueTypeSize;
+                int valueTypeSize = (int)this.GetMethodTable()->ValueTypeSize;
                 return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, valueTypeSize);
             }
             else
@@ -93,9 +93,9 @@ namespace System
             return true;
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
-            int hashCode = this.GetEETypePtr().GetHashCode();
+            int hashCode = (int)this.GetMethodTable()->HashCode;
 
             hashCode ^= GetHashCodeImpl();
 
@@ -138,7 +138,7 @@ namespace System
                 int fieldOffset = __GetFieldHelper(i, out MethodTable* fieldType);
                 ref byte fieldData = ref Unsafe.Add(ref data, fieldOffset);
 
-                Debug.Assert(!fieldType->IsPointerType && !fieldType->IsFunctionPointerType);
+                Debug.Assert(!fieldType->IsPointer && !fieldType->IsFunctionPointer);
 
                 if (fieldType->ElementType == EETypeElementType.Single)
                 {

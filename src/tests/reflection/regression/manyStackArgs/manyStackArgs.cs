@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class TestSmallStackArgsClass
 {
@@ -38,7 +39,8 @@ public class TestMethodInfo
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Type testClass = Type.GetType("TestSmallStackArgsClass");
         ConstructorInfo testConstructor = testClass.GetConstructor(Type.EmptyTypes);

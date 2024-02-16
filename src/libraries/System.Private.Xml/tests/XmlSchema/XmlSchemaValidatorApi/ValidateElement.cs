@@ -52,7 +52,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -93,7 +93,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -265,7 +265,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -325,7 +325,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 _exVerifier.IsExceptionOk(e, "Sch_XsiTypeNotFound", new string[] { "type1" });
                 return;
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -608,7 +608,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 }
                 catch (XmlSchemaValidationException e) { _output.WriteLine(e.Message); return; }
             }
-            Assert.True(false);
+            Assert.Fail();
         }
     }
 }

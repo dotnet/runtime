@@ -7,12 +7,12 @@
 // keep the main files less cluttered.
 //
 
-using System.IO;
-using System.Text;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Reflection.Runtime.General;
+using System.Text;
 
 using Internal.LowLevelLinq;
 
@@ -152,39 +152,21 @@ namespace System.Reflection.Runtime.TypeInfos
 {
     internal abstract partial class RuntimeTypeInfo
     {
-        public sealed override Type[] GetGenericArguments()
-        {
-            if (IsConstructedGenericType)
-                return GenericTypeArguments;
-            if (IsGenericTypeDefinition)
-                return GenericTypeParameters;
-            return Array.Empty<Type>();
-        }
-
-        public sealed override bool IsGenericType => IsConstructedGenericType || IsGenericTypeDefinition;
-
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public sealed override Type[] GetInterfaces() => ImplementedInterfaces.ToArray();
-
-        // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
-        public sealed override bool IsSecurityCritical => true;
-        public sealed override bool IsSecuritySafeCritical => false;
-        public sealed override bool IsSecurityTransparent => false;
-
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2073:UnrecognizedReflectionPattern",
-            Justification = "The returned interface is one of the interfaces implemented by this type and does have DynamicallyAccessedMemberTypes.Interfaces")]
-        public sealed override Type? GetInterface(string name, bool ignoreCase)
+            Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2121:UnrecognizedReflectionPattern",
+            Justification = "Analysis does not track annotations for RuntimeTypeInfo")]
+        public Type? GetInterface(string name, bool ignoreCase)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname" /* Yep, CoreCLR names this different than the ref assembly */);
 
-            string simpleName;
-            string ns;
-            SplitTypeName(name, out simpleName, out ns);
+            SplitTypeName(name, out string simpleName, out string ns);
 
             Type? match = null;
-            foreach (Type ifc in ImplementedInterfaces)
+            foreach (Type ifc in GetInterfaces())
             {
                 string ifcSimpleName = ifc.Name;
                 bool simpleNameMatches = ignoreCase
@@ -203,25 +185,25 @@ namespace System.Reflection.Runtime.TypeInfos
                 match = ifc;
             }
             return match;
-        }
 
-        private static void SplitTypeName(string fullname, out string name, out string ns)
-        {
-            Debug.Assert(fullname != null);
+            static void SplitTypeName(string fullname, out string name, out string ns)
+            {
+                Debug.Assert(fullname != null);
 
-            // Get namespace
-            int nsDelimiter = fullname.LastIndexOf('.');
-            if (nsDelimiter != -1)
-            {
-                ns = fullname.Substring(0, nsDelimiter);
-                int nameLength = fullname.Length - ns.Length - 1;
-                name = fullname.Substring(nsDelimiter + 1, nameLength);
-                Debug.Assert(fullname.Equals(ns + "." + name));
-            }
-            else
-            {
-                ns = null;
-                name = fullname;
+                // Get namespace
+                int nsDelimiter = fullname.LastIndexOf('.');
+                if (nsDelimiter != -1)
+                {
+                    ns = fullname.Substring(0, nsDelimiter);
+                    int nameLength = fullname.Length - ns.Length - 1;
+                    name = fullname.Substring(nsDelimiter + 1, nameLength);
+                    Debug.Assert(fullname.Equals(ns + "." + name));
+                }
+                else
+                {
+                    ns = null;
+                    name = fullname;
+                }
             }
         }
     }

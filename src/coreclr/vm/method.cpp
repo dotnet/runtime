@@ -205,21 +205,6 @@ CHECK MethodDesc::CheckActivated()
     CHECK_OK;
 }
 
-//*******************************************************************************
-BaseDomain *MethodDesc::GetDomain()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return AppDomain::GetCurrentDomain();
-}
-
 #ifndef DACCESS_COMPILE
 
 //*******************************************************************************
@@ -2994,7 +2979,7 @@ bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsIn
 #ifndef FEATURE_CODE_VERSIONING
     #error Tiered compilation requires code versioning
 #endif
-    return 
+    return
         // Policy
         g_pConfig->TieredCompilation() &&
 
@@ -3082,9 +3067,7 @@ bool MethodDesc::IsJitOptimizationDisabledForAllMethodsInChunk()
 
     return
         g_pConfig->JitMinOpts() ||
-#ifdef _DEBUG
         g_pConfig->GenDebuggableCode() ||
-#endif
         CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits());
 }
 
@@ -3311,13 +3294,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         }
 #endif
 
-        PTR_PCODE pSlot = GetAddrOfNativeCodeSlot();
-        NativeCodeSlot expected;
-
-        expected = *pSlot;
-
-        return InterlockedCompareExchangeT(reinterpret_cast<TADDR*>(pSlot),
-            (TADDR&)addr, (TADDR&)expected) == (TADDR&)expected;
+        return InterlockedCompareExchangeT(GetAddrOfNativeCodeSlot(), addr, pExpected) == pExpected;
     }
 
     _ASSERTE(pExpected == NULL);

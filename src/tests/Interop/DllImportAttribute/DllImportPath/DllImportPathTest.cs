@@ -5,8 +5,10 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class Test
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+public class Test
 {
     private const string RelativeSubdirectoryName = "RelativeNative";
     private const string PathEnvSubdirectoryName = "Subdirectory";
@@ -168,7 +170,8 @@ class Test
         GetZero_Exe();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

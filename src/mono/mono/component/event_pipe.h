@@ -242,6 +242,16 @@ typedef bool
 	uint16_t clr_instance_id,
 	double duration_ns);
 
+typedef bool
+(*event_pipe_component_write_event_wait_handle_wait_start_func)(
+	uint8_t wait_source,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+typedef bool
+(*event_pipe_component_write_event_wait_handle_wait_stop_func)(
+	uint16_t clr_instance_id);
+
 /*
  * MonoComponentEventPipe function table.
  */
@@ -281,6 +291,8 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_write_event_contention_lock_created_func write_event_contention_lock_created;
 	event_pipe_component_write_event_contention_start_func write_event_contention_start;
 	event_pipe_component_write_event_contention_stop_func write_event_contention_stop;
+	event_pipe_component_write_event_wait_handle_wait_start_func write_event_wait_handle_wait_start;
+	event_pipe_component_write_event_wait_handle_wait_stop_func write_event_wait_handle_wait_stop;
 	event_pipe_component_signal_session signal_session;
 	event_pipe_component_wait_for_session_signal wait_for_session_signal;
 } MonoComponentEventPipe;

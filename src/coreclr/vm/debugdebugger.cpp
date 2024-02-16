@@ -785,10 +785,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        SString assemblyPath = pPEAssembly->GetIdentityPath();
+                        const SString& assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
-                            OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
+                            OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath.GetUnicode());
                             pStackFrameHelper->rgAssemblyPath->SetAt(iNumValidFrames, obj);
                         }
                     }
@@ -1245,7 +1245,7 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
         bRes = g_pDebugInterface->GetILOffsetFromNative(
             pFunc,
             (LPCBYTE)this->ip,
-            fAdjustOffset ? this->dwOffset - 1 : this->dwOffset,
+            fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
             &this->dwILOffset);
     }
 

@@ -9,7 +9,7 @@ using InvalidCSharp;
 
 using Xunit;
 
-class GenericTypeSubstitution
+public class GenericTypeSubstitution
 {
     [Fact]
     [SkipOnMono("Mono does not support ByRefLike generics yet")]

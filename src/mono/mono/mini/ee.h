@@ -65,7 +65,6 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, entry_llvmonly, (gpointer res, gpointer *args, gpointer imethod)) \
 	MONO_EE_CALLBACK (gpointer, get_interp_method, (MonoMethod *method)) \
 	MONO_EE_CALLBACK (MonoJitInfo*, compile_interp_method, (MonoMethod *method, MonoError *error)) \
-	MONO_EE_CALLBACK (gboolean, jit_call_can_be_supported, (MonoMethod *method, MonoMethodSignature *sig, gboolean is_llvm_only)) \
 
 typedef struct _MonoEECallbacks {
 

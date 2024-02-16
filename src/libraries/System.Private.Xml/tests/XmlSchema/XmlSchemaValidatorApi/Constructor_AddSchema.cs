@@ -33,7 +33,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             }
 
             _output.WriteLine("ArgumentNullException was not thrown!");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -81,7 +81,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
             }
 
             _output.WriteLine("ArgumentNullException was not thrown!");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Theory]
@@ -197,7 +197,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -227,7 +227,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]
@@ -294,7 +294,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                 return;
             }
 
-            Assert.True(false);
+            Assert.Fail();
         }
 
         [Fact]

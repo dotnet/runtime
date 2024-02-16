@@ -61,13 +61,8 @@ set(metadata_common_sources
     class-private-definition.h
     class-accessors.c
     class-setup-vtable.c
-    cominterop.c
-    cominterop.h
     components.h
     components.c
-    coree.c
-    coree.h
-    coree-internals.h
     debug-helpers.c
     debug-mono-symfile.c
     debug-mono-ppdb.h

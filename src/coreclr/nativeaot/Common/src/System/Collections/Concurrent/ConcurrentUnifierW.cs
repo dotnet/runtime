@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 
 namespace System.Collections.Concurrent
 {
@@ -75,7 +75,7 @@ namespace System.Collections.Concurrent
     {
         protected ConcurrentUnifierW()
         {
-            _lock = new Lock();
+            _lock = new Lock(useTrivialWaits: true);
             _container = new Container(this);
         }
 
@@ -89,7 +89,7 @@ namespace System.Collections.Concurrent
         public V GetOrAdd(K key)
         {
             Debug.Assert(key != null);
-            Debug.Assert(!_lock.IsAcquired, "GetOrAdd called while lock already acquired. A possible cause of this is an Equals or GetHashCode method that causes reentrancy in the table.");
+            Debug.Assert(!_lock.IsHeldByCurrentThread, "GetOrAdd called while lock already acquired. A possible cause of this is an Equals or GetHashCode method that causes reentrancy in the table.");
 
             int hashCode = key.GetHashCode();
             V? value;
@@ -99,7 +99,7 @@ namespace System.Collections.Concurrent
                 V? checkedValue;
                 bool checkedFound;
                 // In debug builds, always exercise a locked TryGet (this is a good way to detect deadlock/reentrancy through Equals/GetHashCode()).
-                using (LockHolder.Hold(_lock))
+                using (_lock.EnterScope())
                 {
                     _container.VerifyUnifierConsistency();
                     int h = key.GetHashCode();
@@ -137,7 +137,7 @@ namespace System.Collections.Concurrent
                 return null;
             }
 
-            using (LockHolder.Hold(_lock))
+            using (_lock.EnterScope())
             {
                 V? heyIWasHereFirst;
                 if (_container.TryGetValue(key, hashCode, out heyIWasHereFirst))
@@ -201,7 +201,7 @@ namespace System.Collections.Concurrent
 
             public void Add(K key, int hashCode, V value)
             {
-                Debug.Assert(_owner._lock.IsAcquired);
+                Debug.Assert(_owner._lock.IsHeldByCurrentThread);
 
                 int bucket = ComputeBucket(hashCode, _buckets.Length);
 
@@ -251,14 +251,14 @@ namespace System.Collections.Concurrent
             {
                 get
                 {
-                    Debug.Assert(_owner._lock.IsAcquired);
+                    Debug.Assert(_owner._lock.IsHeldByCurrentThread);
                     return _nextFreeEntry != _entries.Length;
                 }
             }
 
             public void Resize()
             {
-                Debug.Assert(_owner._lock.IsAcquired);
+                Debug.Assert(_owner._lock.IsHeldByCurrentThread);
 
                 // Before we actually grow the size of the table, figure out how much we can recover just by dropping entries with
                 // expired weak references.
@@ -341,7 +341,7 @@ namespace System.Collections.Concurrent
                 if (_nextFreeEntry >= 5000 || (0 != (_nextFreeEntry % 100)))
                     return;
 
-                Debug.Assert(_owner._lock.IsAcquired);
+                Debug.Assert(_owner._lock.IsHeldByCurrentThread);
                 Debug.Assert(_nextFreeEntry >= 0 && _nextFreeEntry <= _entries.Length);
                 int numEntriesEncountered = 0;
                 for (int bucket = 0; bucket < _buckets.Length; bucket++)

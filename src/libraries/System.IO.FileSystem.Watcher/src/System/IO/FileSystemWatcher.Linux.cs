@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO
 {
@@ -475,7 +475,7 @@ namespace System.IO
             /// <param name="removeInotify">true to remove the inotify watch; otherwise, false.  The default is true.</param>
             private void RemoveWatchedDirectory(WatchedDirectory directoryEntry, bool removeInotify = true)
             {
-                Debug.Assert (_includeSubdirectories);
+                Debug.Assert(_includeSubdirectories);
                 lock (SyncObj)
                 {
                     // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
@@ -484,7 +484,7 @@ namespace System.IO
                         directoryEntry.Parent.Children!.Remove(directoryEntry);
                     }
 
-                    RemoveWatchedDirectoryUnlocked (directoryEntry, removeInotify);
+                    RemoveWatchedDirectoryUnlocked(directoryEntry, removeInotify);
                 }
             }
 
@@ -498,7 +498,7 @@ namespace System.IO
                 {
                     foreach (WatchedDirectory child in directoryEntry.Children)
                     {
-                        RemoveWatchedDirectoryUnlocked (child, removeInotify);
+                        RemoveWatchedDirectoryUnlocked(child, removeInotify);
                     }
                     directoryEntry.Children = null;
                 }

@@ -283,8 +283,11 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    // It might seem reasonable to disallow array of void, but the CLR doesn't prevent that too hard.
-                    // E.g. "newarr void" will fail, but "newarr void[]" or "ldtoken void[]" will succeed.
+                    if (parameterType.IsVoid)
+                    {
+                        // Arrays of System.Void are not allowed
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                    }
                 }
             }
             else if (type.IsFunctionPointer)

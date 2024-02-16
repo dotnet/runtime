@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Internal.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -30,7 +31,7 @@ internal static partial class Interop
         {
             fixed (char* pHashAlgorithmName = hashAlgorithmName)
             fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
-            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+            fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
             {
                 BCRYPT_PKCS1_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;
@@ -56,7 +57,7 @@ internal static partial class Interop
         {
             fixed (char* pHashAlgorithmName = hashAlgorithmName)
             fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
-            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+            fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
             {
                 BCRYPT_PSS_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;

@@ -27,16 +27,13 @@ static void LogFromCoreDisToolsHelper(LogLevel level, const char* msg, va_list a
     Logger::LogVprintf(__func__, __FILE__, __LINE__, level, argList, msg);
 }
 
-#define LOGGER(L)                                                                                                      \
-    \
-static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                            \
-    \
-{                                                                                                               \
-        va_list argList;                                                                                               \
-        va_start(argList, msg);                                                                                        \
-        LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                         \
-        va_end(argList);                                                                                               \
-    \
+#define LOGGER(L)                                                                                                  \
+static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                        \
+{                                                                                                                  \
+    va_list argList;                                                                                               \
+    va_start(argList, msg);                                                                                        \
+    LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                         \
+    va_end(argList);                                                                                               \
 }
 
 LOGGER(VERBOSE)
@@ -49,7 +46,8 @@ const PrintControl CorPrinter = {CorDisToolsLogERROR, CorDisToolsLogWARNING, Cor
 #endif // USE_COREDISTOOLS
 
 #ifdef USE_COREDISTOOLS
-NewDiffer_t*          g_PtrNewDiffer          = nullptr;
+NewDiffer_t*          g_PtrNewDiffer          = nullptr; // For temporary backwards-compatibility with older coredistools
+NewDiffer2_t*         g_PtrNewDiffer2         = nullptr;
 FinishDiff_t*         g_PtrFinishDiff         = nullptr;
 NearDiffCodeBlocks_t* g_PtrNearDiffCodeBlocks = nullptr;
 DumpDiffBlocks_t*     g_PtrDumpDiffBlocks     = nullptr;
@@ -104,6 +102,12 @@ bool NearDiffer::InitAsmDiff()
             LogError("GetProcAddress 'NewDiffer' failed (0x%08x)", ::GetLastError());
             return false;
         }
+        g_PtrNewDiffer2 = (NewDiffer2_t*)::GetProcAddress(hCoreDisToolsLib, "NewDiffer2");
+        if (g_PtrNewDiffer2 == nullptr)
+        {
+            // Just a warning; fall back to NewDiffer
+            LogWarning("GetProcAddress 'NewDiffer2' failed (0x%08x)", ::GetLastError());
+        }
         g_PtrFinishDiff = (FinishDiff_t*)::GetProcAddress(hCoreDisToolsLib, "FinishDiff");
         if (g_PtrFinishDiff == nullptr)
         {
@@ -124,6 +128,7 @@ bool NearDiffer::InitAsmDiff()
         }
 
         TargetArch coreDisTargetArchitecture = Target_Host;
+        OffsetMunger munger = nullptr; // Only arm32 uses this feature currently
 
         if (TargetArchitecture != nullptr)
         {
@@ -138,6 +143,7 @@ bool NearDiffer::InitAsmDiff()
             else if ((0 == _stricmp(TargetArchitecture, "arm")) || (0 == _stricmp(TargetArchitecture, "arm32")))
             {
                 coreDisTargetArchitecture = Target_Thumb;
+                munger = NearDiffer::CoreDisMungeOffsetsCallback;
             }
             else if (0 == _stricmp(TargetArchitecture, "arm64"))
             {
@@ -148,7 +154,17 @@ bool NearDiffer::InitAsmDiff()
                 LogError("Illegal target architecture '%s'", TargetArchitecture);
             }
         }
-        corAsmDiff = (*g_PtrNewDiffer)(coreDisTargetArchitecture, &CorPrinter, NearDiffer::CoreDisCompareOffsetsCallback);
+
+        if (g_PtrNewDiffer2 == nullptr)
+        {
+            corAsmDiff = (*g_PtrNewDiffer)(coreDisTargetArchitecture, &CorPrinter,
+                NearDiffer::CoreDisCompareOffsetsCallback);
+        }
+        else
+        {
+            corAsmDiff = (*g_PtrNewDiffer2)(coreDisTargetArchitecture, &CorPrinter,
+                NearDiffer::CoreDisCompareOffsetsCallback, munger);
+        }
     }
 #endif // USE_COREDISTOOLS
 
@@ -161,6 +177,13 @@ bool __cdecl NearDiffer::CoreDisCompareOffsetsCallback(
     const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
 {
     return compareOffsets(payload, blockOffset, instrLen, offset1, offset2);
+}
+
+// static
+bool __cdecl NearDiffer::CoreDisMungeOffsetsCallback(
+    const void* payload, size_t blockOffset, size_t instrLen, uint64_t* offset1, uint64_t* offset2, uint32_t* skip1, uint32_t* skip2)
+{
+    return mungeOffsets(payload, blockOffset, instrLen, offset1, offset2, skip1, skip2);
 }
 #endif // USE_COREDISTOOLS
 
@@ -318,6 +341,188 @@ struct DiffData
     size_t         otherCodeBlockSize2;
 };
 
+bool NearDiffer::mungeOffsets(
+    const void* payload, size_t blockOffset, size_t instrLen, uint64_t* offset1, uint64_t* offset2, uint32_t* skip1, uint32_t* skip2)
+{
+    const SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
+    const DiffData*                data       = (const DiffData*)payload;
+
+    // On Thumb-2, we often have movw/movt pairs to generate a 32-bit address. Treat these pairs as
+    // a single instruction.
+    //
+    if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM)
+    {
+        bool pair1 = false, pair2 = false;
+        unsigned reg1_w = 0, reg1_t;
+        unsigned reg2_w = 0, reg2_t;
+        unsigned con1_w, con1_t;
+        unsigned con2_w, con2_t;
+
+        UINT32* iaddr1    = (UINT32*)(data->block1 + blockOffset);
+        UINT32* iaddr2    = (UINT32*)(data->block2 + blockOffset);
+        UINT32* iaddr1end = (UINT32*)(data->block1 + data->blocksize1);
+        UINT32* iaddr2end = (UINT32*)(data->block2 + data->blocksize2);
+
+        uint64_t addr1 = 0;
+        uint64_t addr2 = 0;
+
+        // Look for a movw/movt address pattern in code stream 1.
+
+        if ((iaddr1 < iaddr1end) &&
+            GetArm32MovwConstant(iaddr1, &reg1_w, &con1_w))
+        {
+            if ((iaddr1 + 1 < iaddr1end) &&
+                GetArm32MovtConstant(iaddr1 + 1, &reg1_t, &con1_t) &&
+                (reg1_w == reg1_t))
+            {
+                addr1 = con1_w + (con1_t << 16);
+                pair1 = true;
+            }
+        }
+
+        // Look for a movw/movt address pattern in code stream 2.
+
+        if ((iaddr2 < iaddr2end) &&
+            GetArm32MovwConstant(iaddr2, &reg2_w, &con2_w))
+        {
+            if ((iaddr2 + 1 < iaddr2end) &&
+                GetArm32MovtConstant(iaddr2 + 1, &reg2_t, &con2_t) &&
+                (reg2_w == reg2_t))
+            {
+                addr2 = con2_w + (con2_t << 16);
+                pair2 = true;
+            }
+        }
+
+        if (pair1 && pair2 && (reg1_w == reg2_w))
+        {
+            // Use the constructed constant instead.
+            *offset1 = addr1;
+            *offset2 = addr2;
+            *skip1 = *skip2 = 1; // skip the `movt` instruction
+            return true;
+        }
+    }
+
+#if 0
+    // We might want to do something similar for mov/movk/movk/movk sequences on Arm64. The following code was
+    // previously used, but currently is not active.
+    //
+    // One difference is we might see a different number of movk on arm64 depending on the the data. Our "hack"
+    // of zeroing out the constant so they compare equal doesn't work well. In this case, we really do want
+    // a callback to the disassembler to skip the instructions.
+    //
+    // Another solution is to have the coredistools disassembler have this logic, but that seems like the wrong
+    // place for that logic, and it's hard to update coredistools.
+    // 
+    // The instruction sequence is something like this:
+    //     mov     x0, #63408
+    //     movk    x0, #23602, lsl #16
+    //     movk    x0, #606, lsl #32
+    //
+    // Since the mov/movk sequence is specific to the replay address constant, we don't assume the baseline
+    // and diff have the same number of instructions (e.g., it's possible to skip a `movk` if it is zero).
+    //
+    if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
+    {
+        int numMovk_1 = 0, numMovk_2 = 0;
+
+        unsigned reg1_1 = 0, reg2_1, reg3_1, reg4_1;
+        unsigned reg1_2 = 0, reg2_2, reg3_2, reg4_2;
+        unsigned con1_1, con2_1, con3_1, con4_1;
+        unsigned con1_2, con2_2, con3_2, con4_2;
+        unsigned shift2_1, shift3_1, shift4_1;
+        unsigned shift2_2, shift3_2, shift4_2;
+
+        UINT32* iaddr1    = (UINT32*)(data->block1 + blockOffset);
+        UINT32* iaddr2    = (UINT32*)(data->block2 + blockOffset);
+        UINT32* iaddr1end = (UINT32*)(data->block1 + data->blocksize1);
+        UINT32* iaddr2end = (UINT32*)(data->block2 + data->blocksize2);
+
+        uint64_t addr1 = 0;
+        uint64_t addr2 = 0;
+
+        // Look for a mov/movk address pattern in code stream 1.
+
+        if ((iaddr1 < iaddr1end) &&
+            GetArm64MovConstant(iaddr1, &reg1_1, &con1_1))
+        {
+            // We assume the address requires at least 1 'movk' instruction.
+            if ((iaddr1 + 1 < iaddr1end) &&
+                GetArm64MovkConstant(iaddr1 + 1, &reg2_1, &con2_1, &shift2_1) &&
+                (reg1_1 == reg2_1))
+            {
+                ++numMovk_1;
+                addr1 = (uint64_t)con1_1 + ((uint64_t)con2_1 << shift2_1);
+
+                if ((iaddr1 + 2 < iaddr1end) &&
+                    GetArm64MovkConstant(iaddr1 + 2, &reg3_1, &con3_1, &shift3_1) &&
+                    (reg1_1 == reg3_1))
+                {
+                    ++numMovk_1;
+                    addr1 += (uint64_t)con3_1 << shift3_1;
+
+                    if ((iaddr1 + 3 < iaddr1end) &&
+                        GetArm64MovkConstant(iaddr1 + 3, &reg4_1, &con4_1, &shift4_1) &&
+                        (reg1_1 == reg4_1))
+                    {
+                        ++numMovk_1;
+                        addr1 += (uint64_t)con4_1 << shift4_1;
+                    }
+                }
+            }
+        }
+
+        // Look for a mov/movk address pattern in code stream 2.
+
+        if ((iaddr2 < iaddr2end) &&
+            GetArm64MovConstant(iaddr2, &reg1_2, &con1_2))
+        {
+            // We assume the address requires at least 1 'movk' instruction.
+            if ((iaddr2 + 1 < iaddr2end) &&
+                GetArm64MovkConstant(iaddr2 + 1, &reg2_2, &con2_2, &shift2_2) &&
+                (reg1_2 == reg2_2))
+            {
+                ++numMovk_2;
+                addr2 = (uint64_t)con1_2 + ((uint64_t)con2_2 << shift2_2);
+
+                if ((iaddr2 + 2 < iaddr2end) &&
+                    GetArm64MovkConstant(iaddr2 + 2, &reg3_2, &con3_2, &shift3_2) &&
+                    (reg1_2 == reg3_2))
+                {
+                    ++numMovk_2;
+                    addr2 += (uint64_t)con3_2 << shift3_2;
+
+                    if ((iaddr2 + 3 < iaddr2end) &&
+                        GetArm64MovkConstant(iaddr2 + 3, &reg4_2, &con4_2, &shift4_2) &&
+                        (reg1_2 == reg4_2))
+                    {
+                        ++numMovk_2;
+                        addr2 += (uint64_t)con4_2 << shift4_2;
+                    }
+                }
+            }
+        }
+
+        // Note: when replaying on a 32-bit platform, we must have
+        // numMovk_1 == numMovk_2 == 1
+
+        if ((addr1 != 0) && (addr2 != 0) && (reg1_1 == reg1_2))
+        {
+            offset1 = addr1;
+            offset2 = addr2;
+
+            *skip1 = numMovk_1;
+            *skip2 = numMovk_2;
+
+            return true;
+        }
+    }
+#endif // 0 
+
+    return false;
+}
+
 //
 // NearDiff Offset Comparator.
 // Determine whether two syntactically different constants are
@@ -332,7 +537,6 @@ bool NearDiffer::compareOffsets(
         return true;
     }
 
-    const SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
     const DiffData* data         = (const DiffData*)payload;
     size_t          ip1          = data->originalBlock1 + blockOffset;
     size_t          ip2          = data->originalBlock2 + blockOffset;
@@ -353,22 +557,20 @@ bool NearDiffer::compareOffsets(
         (roOffset1a < data->datablockSize1)) // Confirm its an offset that fits inside our RoRegion
         return true;
 
-    // This case is written to catch IP-relative offsets to the RO data-section
-    // For example:
-    //
+    // Case for IP-relative offset to the RO data-section
     size_t roOffset1b = ipRelOffset1 - data->originalDataBlock1;
     size_t roOffset2b = ipRelOffset2 - data->originalDataBlock2;
     if ((roOffset1b == roOffset2b) &&
         (roOffset1b < data->datablockSize1)) // Confirm its an offset that fits inside our RoRegion
         return true;
 
-    // Case where we push an address to our own code section.
+    // Case where we have an address to our own code section.
     size_t gOffset1a = (size_t)offset1 - data->originalBlock1;
     size_t gOffset2a = (size_t)offset2 - data->originalBlock2;
     if ((gOffset1a == gOffset2a) && (gOffset1a < data->blocksize1)) // Confirm its in our code region
         return true;
 
-    // Case where we push an address in the other codeblock.
+    // Case where we have an address in the other codeblock.
     size_t gOffset1b = (size_t)offset1 - data->otherCodeBlock1;
     size_t gOffset2b = (size_t)offset2 - data->otherCodeBlock2;
     if ((gOffset1b == gOffset2b) && (gOffset1b < data->otherCodeBlockSize1)) // Confirm it's in the other code region
@@ -408,168 +610,6 @@ bool NearDiffer::compareOffsets(
         // This logging is too noisy, so disable it.
         // LogVerbose("Found VSD callsite, did softer compare than ideal");
         return true;
-    }
-
-    // Case might be a field address that we handed out to handle inlined values being loaded into
-    // a register as an immediate value (and where the address is encoded as an indirect immediate load)
-    size_t realTargetAddr = (size_t)data->cr2->searchAddressMap((void*)gOffset2);
-    if (realTargetAddr == gOffset1)
-        return true;
-
-    // Case might be a field address that we handed out to handle inlined values being loaded into
-    // a register as an immediate value (and where the address is encoded and loaded by immediate into a register)
-    realTargetAddr = (size_t)data->cr2->searchAddressMap((void*)offset2);
-    if (realTargetAddr == offset1)
-        return true;
-    if (realTargetAddr == 0x424242) // this offset matches what we got back from a getTailCallCopyArgsThunk
-        return true;
-
-    realTargetAddr = (size_t)data->cr2->searchAddressMap((void*)(gOffset2));
-    if (realTargetAddr != (size_t)-1) // we know this was passed out as a bbloc
-        return true;
-
-    // A new clause that tries to handle the case where neither cr1 or cr2 is the
-    // recorded CR (diff case with two jits, neither of which is the one used for
-    // collection)
-    //
-    size_t mapped1 = (size_t)data->cr1->searchAddressMap((void*)offset1);
-    size_t mapped2 = (size_t)data->cr2->searchAddressMap((void*)offset2);
-
-    if ((mapped1 == mapped2) && (mapped1 != (size_t)-1))
-        return true;
-
-    // There are some cases on arm64 where we generate multiple instruction register construction of addresses
-    // but we don't have a relocation for them (so they aren't handled by `applyRelocs`). One case is
-    // allocPgoInstrumentationBySchema(), which returns an address the JIT writes into the code stream
-    // (used to store dynamic PGO probe data).
-    //
-    // The instruction sequence is something like this:
-    //     mov     x0, #63408
-    //     movk    x0, #23602, lsl #16
-    //     movk    x0, #606, lsl #32
-    //
-    // Here, we try to match this sequence and look it up in the address map.
-    //
-    // Since the mov/movk sequence is specific to the replay address constant, we don't assume the baseline
-    // and diff have the same number of instructions (e.g., it's possible to skip a `movk` if it is zero).
-    //
-    // Some version of this logic might apply to ARM as well.
-    //
-    if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
-    {
-        bool movk2_1 = false, movk3_1 = false;
-        bool movk2_2 = false, movk3_2 = false;
-
-        unsigned reg1_1 = 0, reg2_1, reg3_1, reg4_1;
-        unsigned reg1_2 = 0, reg2_2, reg3_2, reg4_2;
-        unsigned con1_1, con2_1, con3_1, con4_1;
-        unsigned con1_2, con2_2, con3_2, con4_2;
-        unsigned shift2_1, shift3_1, shift4_1;
-        unsigned shift2_2, shift3_2, shift4_2;
-
-        UINT32* iaddr1    = (UINT32*)(data->block1 + blockOffset);
-        UINT32* iaddr2    = (UINT32*)(data->block2 + blockOffset);
-        UINT32* iaddr1end = (UINT32*)(data->block1 + data->blocksize1);
-        UINT32* iaddr2end = (UINT32*)(data->block2 + data->blocksize2);
-
-        DWORDLONG addr1 = 0;
-        DWORDLONG addr2 = 0;
-
-        // Look for a mov/movk address pattern in code stream 1.
-
-        if ((iaddr1 < iaddr1end) &&
-            GetArm64MovConstant(iaddr1, &reg1_1, &con1_1))
-        {
-            // We assume the address requires at least 1 'movk' instruction.
-            if ((iaddr1 + 1 < iaddr1end) &&
-                GetArm64MovkConstant(iaddr1 + 1, &reg2_1, &con2_1, &shift2_1) &&
-                (reg1_1 == reg2_1))
-            {
-                addr1 = (DWORDLONG)con1_1 + ((DWORDLONG)con2_1 << shift2_1);
-
-                if ((iaddr1 + 2 < iaddr1end) &&
-                    GetArm64MovkConstant(iaddr1 + 2, &reg3_1, &con3_1, &shift3_1) &&
-                    (reg1_1 == reg3_1))
-                {
-                    movk2_1 = true;
-                    addr1 += (DWORDLONG)con3_1 << shift3_1;
-
-                    if ((iaddr1 + 3 < iaddr1end) &&
-                        GetArm64MovkConstant(iaddr1 + 3, &reg4_1, &con4_1, &shift4_1) &&
-                        (reg1_1 == reg4_1))
-                    {
-                        movk3_1 = true;
-                        addr1 += (DWORDLONG)con4_1 << shift4_1;
-                    }
-                }
-            }
-        }
-
-        // Look for a mov/movk address pattern in code stream 2.
-
-        if ((iaddr2 < iaddr2end) &&
-            GetArm64MovConstant(iaddr2, &reg1_2, &con1_2))
-        {
-            // We assume the address requires at least 1 'movk' instruction.
-            if ((iaddr2 + 1 < iaddr2end) &&
-                GetArm64MovkConstant(iaddr2 + 1, &reg2_2, &con2_2, &shift2_2) &&
-                (reg1_2 == reg2_2))
-            {
-                addr2 = (DWORDLONG)con1_2 + ((DWORDLONG)con2_2 << shift2_2);
-
-                if ((iaddr2 + 2 < iaddr2end) &&
-                    GetArm64MovkConstant(iaddr2 + 2, &reg3_2, &con3_2, &shift3_2) &&
-                    (reg1_2 == reg3_2))
-                {
-                    movk2_2 = true;
-                    addr2 += (DWORDLONG)con3_2 << shift3_2;
-
-                    if ((iaddr2 + 3 < iaddr2end) &&
-                        GetArm64MovkConstant(iaddr2 + 3, &reg4_2, &con4_2, &shift4_2) &&
-                        (reg1_2 == reg4_2))
-                    {
-                        movk3_2 = true;
-                        addr2 += (DWORDLONG)con4_2 << shift4_2;
-                    }
-                }
-            }
-        }
-
-        // Check the constants. We don't need to check 'addr1 == addr2' because if that were
-        // true we wouldn't have gotten here.
-        //
-        // Note: when replaying on a 32-bit platform, we must have
-        // movk2_1 == movk2_2 == movk3_1 == movk3_2 == false
-
-        if ((addr1 != 0) && (addr2 != 0) && (reg1_1 == reg1_2))
-        {
-            DWORDLONG mapped1 = (DWORDLONG)data->cr1->searchAddressMap((void*)addr1);
-            DWORDLONG mapped2 = (DWORDLONG)data->cr2->searchAddressMap((void*)addr2);
-            if ((mapped1 == mapped2) && (mapped1 != (DWORDLONG)-1))
-            {
-                // Now, zero out the constants in the `movk` instructions so when the disassembler
-                // gets to them, they compare equal.
-                PutArm64MovkConstant(iaddr1 + 1, 0);
-                PutArm64MovkConstant(iaddr2 + 1, 0);
-                if (movk2_1)
-                {
-                    PutArm64MovkConstant(iaddr1 + 2, 0);
-                }
-                if (movk2_2)
-                {
-                    PutArm64MovkConstant(iaddr2 + 2, 0);
-                }
-                if (movk3_1)
-                {
-                    PutArm64MovkConstant(iaddr1 + 3, 0);
-                }
-                if (movk3_2)
-                {
-                    PutArm64MovkConstant(iaddr2 + 3, 0);
-                }
-                return true;
-            }
-        }
     }
 
     return false;
@@ -1247,28 +1287,29 @@ bool NearDiffer::compare(MethodContext* mc, CompileResult* cr1, CompileResult* c
     // is a sum of their sizes. The following is to adjust their sizes and the roDataBlock_{1,2} pointers.
     if (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64)
     {
-        BYTE*        nativeEntry_1;
-        ULONG        nativeSizeOfCode_1;
-        CorJitResult jitResult_1;
+        if (hotCodeSize_1 > 0)
+        {
+            BYTE* nativeEntry_1;
+            ULONG        nativeSizeOfCode_1;
+            CorJitResult jitResult_1;
+            cr1->repCompileMethod(&nativeEntry_1, &nativeSizeOfCode_1, &jitResult_1);
+            roDataSize_1 = hotCodeSize_1 - nativeSizeOfCode_1;
+            roDataBlock_1 = hotCodeBlock_1 + nativeSizeOfCode_1;
+            orig_roDataBlock_1 = (void*)((size_t)orig_hotCodeBlock_1 + nativeSizeOfCode_1);
+            hotCodeSize_1 = nativeSizeOfCode_1;
+        }
 
-        BYTE*        nativeEntry_2;
-        ULONG        nativeSizeOfCode_2;
-        CorJitResult jitResult_2;
-
-        cr1->repCompileMethod(&nativeEntry_1, &nativeSizeOfCode_1, &jitResult_1);
-        cr2->repCompileMethod(&nativeEntry_2, &nativeSizeOfCode_2, &jitResult_2);
-
-        roDataSize_1 = hotCodeSize_1 - nativeSizeOfCode_1;
-        roDataSize_2 = hotCodeSize_2 - nativeSizeOfCode_2;
-
-        roDataBlock_1 = hotCodeBlock_1 + nativeSizeOfCode_1;
-        roDataBlock_2 = hotCodeBlock_2 + nativeSizeOfCode_2;
-
-        orig_roDataBlock_1 = (void*)((size_t)orig_hotCodeBlock_1 + nativeSizeOfCode_1);
-        orig_roDataBlock_2 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
-
-        hotCodeSize_1 = nativeSizeOfCode_1;
-        hotCodeSize_2 = nativeSizeOfCode_2;
+        if (hotCodeSize_2 > 0)
+        {
+            BYTE* nativeEntry_2;
+            ULONG        nativeSizeOfCode_2;
+            CorJitResult jitResult_2;
+            cr2->repCompileMethod(&nativeEntry_2, &nativeSizeOfCode_2, &jitResult_2);
+            roDataSize_2 = hotCodeSize_2 - nativeSizeOfCode_2;
+            roDataBlock_2 = hotCodeBlock_2 + nativeSizeOfCode_2;
+            orig_roDataBlock_2 = (void*)((size_t)orig_hotCodeBlock_2 + nativeSizeOfCode_2);
+            hotCodeSize_2 = nativeSizeOfCode_2;
+        }
     }
 
     LogDebug("HCS1 %d CCS1 %d RDS1 %d xcpnt1 %d flag1 %08X, HCB %p CCB %p RDB %p ohcb %p occb %p odb %p", hotCodeSize_1,

@@ -36,6 +36,7 @@ function print_usage {
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
     echo '  --link=<ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --printLastResultsOnly           : Print the results of the last run'
+    echo '  --logsDir=<path>                 : Specify the logs directory (default: artifacts/log)'
     echo '  --runincontext                   : Run each tests in an unloadable AssemblyLoadContext'
     echo '  --tieringtest                    : Run each test to encourage tier1 rejitting'
     echo '  --runnativeaottests              : Run NativeAOT compiled tests'
@@ -49,7 +50,7 @@ readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or m
 
 scriptPath="$(cd "$(dirname "$BASH_SOURCE[0]")"; pwd -P)"
 repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
-source "$repoRootDir/eng/native/init-os-and-arch.sh"
+source "$repoRootDir/eng/common/native/init-os-and-arch.sh"
 
 # Argument variables
 buildArch="$arch"
@@ -57,6 +58,7 @@ buildOS=
 buildConfiguration="Debug"
 testRootDir=
 coreRootDir=
+logsDir=
 testEnv=
 gcsimulator=
 longgc=
@@ -140,6 +142,9 @@ do
         --coreRootDir=*)
             coreRootDir=${i#*=}
             ;;
+        --logsDir=*)
+            logsDir=${i#*=}
+            ;;
         --enableEventLogging)
             export DOTNET_EnableEventLog=1
             ;;
@@ -215,6 +220,11 @@ fi
 if [[ -n "$coreRootDir" ]]; then
     runtestPyArguments+=("-core_root" "$coreRootDir")
     echo "CORE_ROOT                     : ${coreRootDir}"
+fi
+
+if [[ -n "$logsDir" ]]; then
+    runtestPyArguments+=("-logs_dir" "$logsDir")
+    echo "Logs directory                : ${logsDir}"
 fi
 
 if [[ -n "${testEnv}" ]]; then

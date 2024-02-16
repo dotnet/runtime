@@ -17,7 +17,6 @@ parameters:
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
   runCrossGen2: ''
-  runPALTestsDir: ''
   compositeBuildMode: false
   helixProjectArguments: ''
   runInUnloadableContext: ''
@@ -60,7 +59,6 @@ steps:
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
-      _PALTestsDir: ${{ parameters.runPALTestsDir }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       RuntimeFlavor: ${{ parameters.runtimeFlavor }}

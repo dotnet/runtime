@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported, IlasmRoundTripIncompatible, NativeAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="('$(TargetArchitecture)' != 'x64' AND '$(TargetArchitecture)' != 'x86') OR ('$(RuntimeFlavor)' != 'coreclr')">true</CLRTestTargetUnsupported>
   </PropertyGroup>

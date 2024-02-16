@@ -154,38 +154,60 @@ namespace Microsoft.Extensions.Options.ConfigurationExtensions.Tests
         [Fact]
         public static void BindConfiguration_UpdatesOptionOnConfigurationUpdate()
         {
-            const string configSectionName = "Test";
-            string messageConfigKey = ConfigurationPath.Combine(configSectionName, nameof(FakeOptions.Message));
-            const string messageValue1 = "This is a test";
-            const string messageValue2 = "This is the message after update";
+            const string configSectionNameDefaultName = "Test1";
+            const string configSectionNameCustomName = "Test2";
+
+            string messageConfigKeyDefaultName = ConfigurationPath.Combine(configSectionNameDefaultName, nameof(FakeOptions.Message));
+            string messageConfigKeyCustomName = ConfigurationPath.Combine(configSectionNameCustomName, nameof(FakeOptions.Message));
+
+            const string messageValueDefaultName1 = "This is a test (default options name)";
+            const string messageValueDefaultName2 = "This is the message after update (default options name)";
+            const string messageValueCustomName1 = "This is a test (custom options name)";
+            const string messageValueCustomName2 = "This is the message after update (custom options name)";
+
+            const string customOptionsName = "custom";
 
             FakeConfigurationSource configSource = new()
             {
                 InitialData = new Dictionary<string, string?>
                 {
-                    [messageConfigKey] = messageValue1
+                    [messageConfigKeyDefaultName] = messageValueDefaultName1,
+                    [messageConfigKeyCustomName] = messageValueCustomName1
                 }
             };
 
             var services = new ServiceCollection();
             services.AddSingleton<IConfiguration>(new ConfigurationBuilder()
-                    .Add(configSource)
-                    .Build());
+                .Add(configSource)
+                .Build());
             _ = services.AddOptions<FakeOptions>()
-                .BindConfiguration(configSectionName);
+                .BindConfiguration(configSectionNameDefaultName);
+            _ = services.AddOptions<FakeOptions>(customOptionsName)
+                .BindConfiguration(configSectionNameCustomName);
+
             using ServiceProvider serviceProvider = services.BuildServiceProvider();
             var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<FakeOptions>>();
-            bool updateHasRun = false;
+            var updatedOptionsNames = new HashSet<string?>();
             optionsMonitor.OnChange((opts, name) =>
             {
-                updateHasRun = true;
+                updatedOptionsNames.Add(name);
             });
-            FakeOptions optionsValue1 = optionsMonitor.CurrentValue;
-            Assert.Equal(messageValue1, optionsValue1.Message);
-            configSource.Provider.Set(messageConfigKey, messageValue2);
-            FakeOptions optionsValue2 = optionsMonitor.CurrentValue;
-            Assert.True(updateHasRun);
-            Assert.Equal(messageValue2, optionsValue2.Message);
+
+            FakeOptions optionsValueDefaultName1 = optionsMonitor.CurrentValue;
+            Assert.Equal(messageValueDefaultName1, optionsValueDefaultName1.Message);
+            FakeOptions optionsValueCustomName1 = optionsMonitor.Get(customOptionsName);
+            Assert.Equal(messageValueCustomName1, optionsValueCustomName1.Message);
+
+            configSource.Provider.Set(messageConfigKeyDefaultName, messageValueDefaultName2);
+            configSource.Provider.Set(messageConfigKeyCustomName, messageValueCustomName2);
+
+            FakeOptions optionsValueDefaultName2 = optionsMonitor.CurrentValue;
+            Assert.Equal(messageValueDefaultName2, optionsValueDefaultName2.Message);
+            FakeOptions optionsValueCustomName2 = optionsMonitor.Get(customOptionsName);
+            Assert.Equal(messageValueCustomName2, optionsValueCustomName2.Message);
+
+            Assert.Contains(Options.DefaultName, updatedOptionsNames);
+            Assert.Contains(customOptionsName, updatedOptionsNames);
         }
     }
 }

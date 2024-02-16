@@ -31,6 +31,8 @@ elseif(HOST_SOLARIS)
   set(OS_LIBS socket pthread m ${CMAKE_DL_LIBS})
 elseif(HOST_FREEBSD)
   set(OS_LIBS pthread m)
+elseif(HOST_HAIKU)
+  set(OS_LIBS network)
 endif()
 
 #
@@ -55,17 +57,31 @@ if(HAVE_SYS_ICU)
   endif()
 
   set(icu_shim_sources_base
+      pal_idna.c
+      pal_common.c
+      entrypoints.c
+      ${pal_icushim_sources_base})
+
+if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
       pal_calendarData.c
       pal_casing.c
       pal_collation.c
-      pal_idna.c
       pal_locale.c
       pal_localeNumberData.c
       pal_localeStringData.c
       pal_normalization.c
       pal_timeZoneInfo.c
-      entrypoints.c
-      ${pal_icushim_sources_base})
+    )
+endif()
+
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(icu_shim_sources_base
+      ${icu_shim_sources_base}
+      pal_placeholders.c
+    )
+endif()
 
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
 
@@ -92,6 +108,9 @@ if(HAVE_SYS_ICU)
   endif()
   if(ICU_LIBDIR)
     set(ICU_LDFLAGS "-L${ICU_LIBDIR}")
+  endif()
+  if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(ICU_LDFLAGS "-licucore")
   endif()
 
   add_library(icu_shim_objects OBJECT "${icu_shim_sources}")
@@ -280,7 +299,7 @@ set(posix_sources
 
 if(HOST_DARWIN)
 set(os_sources "${darwin_sources};${posix_sources}")
-elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD)
+elseif(HOST_LINUX OR HOST_SOLARIS OR HOST_FREEBSD OR HOST_HAIKU)
 set(os_sources "${posix_sources}")
 elseif(HOST_WIN32)
 set(os_sources "${windows_sources}")
@@ -295,9 +314,11 @@ set(interp_sources
     interp/mintops.h
     interp/mintops.c
     interp/transform.c
+    interp/transform-opt.c
     interp/tiering.h
     interp/tiering.c
-    interp/jiterpreter.c)
+    interp/jiterpreter.c
+    interp/interp-pgo.c)
 set(interp_simd_sources
     interp/interp-simd.c)
 set(interp_stub_sources
@@ -400,10 +421,10 @@ if(NOT DISABLE_SHARED_LIBS)
     add_library(monosgen-shared SHARED $<TARGET_OBJECTS:monosgen-objects>)
   endif()
   target_compile_definitions(monosgen-shared PRIVATE -DMONO_DLL_EXPORT)
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(monosgen-shared PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   set_target_properties(monosgen-shared PROPERTIES OUTPUT_NAME ${MONO_SHARED_LIB_NAME})
   if(MONO_SET_RPATH_ORIGIN)
     set_target_properties(monosgen-shared PROPERTIES INSTALL_RPATH "$ORIGIN")
@@ -422,7 +443,11 @@ if(NOT DISABLE_SHARED_LIBS)
     # to avoid a conflict we rename the import library with the .import.lib suffix
     set_target_properties(monosgen-shared PROPERTIES IMPORT_SUFFIX ".import.lib")
   endif()
-  target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  if(CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${Z_LIBS})
+  else()
+    target_link_libraries(monosgen-shared PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  endif()
   if(ICU_LDFLAGS)
     set_property(TARGET monosgen-shared APPEND_STRING PROPERTY LINK_FLAGS " ${ICU_LDFLAGS}")
   endif()
@@ -503,10 +528,14 @@ if(HOST_BROWSER)
   # This is the only source file which contains a c++ throw or catch
   add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-js PRIVATE monoapi eglib_api)
+  set_target_properties(mono-wasm-eh-js PROPERTIES COMPILE_FLAGS "-fexceptions")
+  set_target_properties(mono-wasm-eh-js PROPERTIES LINK_FLAGS "-fexceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
   install(TARGETS mono-wasm-eh-js LIBRARY)
+
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
+  set_target_properties(mono-wasm-eh-wasm PROPERTIES LINK_FLAGS "-fwasm-exceptions -s EXPORT_EXCEPTION_HANDLING_HELPERS=1")
   install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
@@ -602,10 +631,10 @@ if(NOT DISABLE_EXECUTABLES)
     target_link_libraries(mono-sgen PRIVATE icu_shim_objects)
   endif()
   target_link_libraries(mono-sgen PRIVATE ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
-  # Alpine Linux implements ucontext in a different library
-  if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  # musl-libc implements ucontext in a different library on s390x
+  if(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)
-  endif(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
+  endif(CLR_CMAKE_TARGET_LINUX_MUSL AND TARGET_S390X)
   if(NOT DISABLE_COMPONENTS AND STATIC_COMPONENTS AND NOT DISABLE_LINK_STATIC_COMPONENTS)
     # if components are built statically, link them into runtime.
     target_sources(mono-sgen PRIVATE "${mono-components-objects}")

@@ -104,6 +104,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/93754", TestPlatforms.Browser)]
         public void MeterDisposeTest()
         {
             ServiceCollection services = new ServiceCollection();

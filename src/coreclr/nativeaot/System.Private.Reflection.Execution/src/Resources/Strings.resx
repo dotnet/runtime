@@ -207,15 +207,6 @@
   <data name="DelegateGetMethodInfo_ObjectArrayDelegate" xml:space="preserve">
     <value>Cannot retrieve a MethodInfo for this delegate because the delegate target is an interpreted LINQ expression.</value>
   </data>
-  <data name="Argument_InterfaceMap" xml:space="preserve">
-    <value>'this' type cannot be an interface itself.</value>
-  </data>
-  <data name="Arg_MustBeInterface" xml:space="preserve">
-    <value>Type passed must be an interface.</value>
-  </data>
-  <data name="Arg_NotFoundIFace" xml:space="preserve">
-    <value>Interface not found.</value>
-  </data>
   <data name="Arg_InterfaceMapMustNotBeAbstract" xml:space="preserve">
     <value>Could not retrieve the mapping of the interface '{0}' on type '{1}' because the type implements the interface abstractly.</value>
   </data>

@@ -14,12 +14,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal System.Security.Cryptography.Pkcs.Asn1.PkiStatusInfo Status;
         internal ReadOnlyMemory<byte>? TimeStampToken;
 
-        internal void Encode(AsnWriter writer)
+        internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
 
-        internal void Encode(AsnWriter writer, Asn1Tag tag)
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
 

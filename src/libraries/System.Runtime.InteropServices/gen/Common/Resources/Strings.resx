@@ -144,9 +144,6 @@
   <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
     <value>Marshalling string or char without explicit marshalling information is not supported. Specify '{0}.StringMarshalling', '{0}.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</value>
   </data>
-  <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
-    <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
-  </data>
   <data name="CyclicalCountInfo" xml:space="preserve">
     <value>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</value>
   </data>
@@ -909,5 +906,8 @@
   </data>
   <data name="LibraryImportUsageDoesNotFollowBestPracticesMessageWithDetails" xml:space="preserve">
     <value>The usage of 'LibraryImportAttribute' does not follow recommendations. {0}</value>
+  </data>
+  <data name="InVariantShouldBeRef" xml:space="preserve">
+    <value>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</value>
   </data>
 </root>

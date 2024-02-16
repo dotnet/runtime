@@ -236,7 +236,7 @@ namespace MonoTests.System.Runtime.Caching
             mc.Trim(0);
         }
 
-        [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [Fact]
         public void ConstructorValues()
         {
             var config = new NameValueCollection();
@@ -1510,6 +1510,7 @@ namespace MonoTests.System.Runtime.Caching
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheShrink()
         {
             const int HEAP_RESIZE_THRESHOLD = 8192 + 2;
@@ -1519,7 +1520,7 @@ namespace MonoTests.System.Runtime.Caching
             var config = new NameValueCollection();
             config["cacheMemoryLimitMegabytes"] = 0.ToString();
             config["physicalMemoryLimitPercentage"] = 100.ToString();
-            config["pollingInterval"] = new TimeSpan(0, 0, 1).ToString();
+            config["pollingInterval"] = new TimeSpan(0, 0, 1 * PlatformDetection.SlowRuntimeTimeoutModifier).ToString();
 
             using (var mc = new MemoryCache("TestCacheShrink", config))
             {
@@ -1528,7 +1529,7 @@ namespace MonoTests.System.Runtime.Caching
                 // add some short duration entries
                 for (int i = 0; i < HEAP_RESIZE_SHORT_ENTRIES; i++)
                 {
-                    var expireAt = DateTimeOffset.Now.AddSeconds(3);
+                    var expireAt = DateTimeOffset.Now.AddSeconds(3 * PlatformDetection.SlowRuntimeTimeoutModifier);
                     mc.Add("short-" + i, i.ToString(), expireAt);
                 }
 
@@ -1537,14 +1538,14 @@ namespace MonoTests.System.Runtime.Caching
                 // add some long duration entries
                 for (int i = 0; i < HEAP_RESIZE_LONG_ENTRIES; i++)
                 {
-                    var expireAt = DateTimeOffset.Now.AddSeconds(42);
+                    var expireAt = DateTimeOffset.Now.AddSeconds(42 * PlatformDetection.SlowRuntimeTimeoutModifier);
                     mc.Add("long-" + i, i.ToString(), expireAt);
                 }
 
                 Assert.Equal(HEAP_RESIZE_LONG_ENTRIES + HEAP_RESIZE_SHORT_ENTRIES, mc.GetCount());
 
                 // wait past the short duration items expiration time
-                await Task.Delay(4000);
+                await Task.Delay(4000 * PlatformDetection.SlowRuntimeTimeoutModifier);
 
                 /// the following will also shrink the size of the cache
                 for (int i = 0; i < HEAP_RESIZE_SHORT_ENTRIES; i++)
@@ -1556,7 +1557,7 @@ namespace MonoTests.System.Runtime.Caching
                 // add some new items into the cache, this will grow the cache again
                 for (int i = 0; i < HEAP_RESIZE_LONG_ENTRIES; i++)
                 {
-                    mc.Add("final-" + i, i.ToString(), DateTimeOffset.Now.AddSeconds(4));
+                    mc.Add("final-" + i, i.ToString(), DateTimeOffset.Now.AddSeconds(4 * PlatformDetection.SlowRuntimeTimeoutModifier));
                 }
 
                 Assert.Equal(HEAP_RESIZE_LONG_ENTRIES + HEAP_RESIZE_LONG_ENTRIES, mc.GetCount());
@@ -1569,12 +1570,13 @@ namespace MonoTests.System.Runtime.Caching
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
 
         [ConditionalFact(nameof(SupportsPhysicalMemoryMonitor))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "https://github.com/dotnet/runtime/issues/93106")]
         public async Task TestCacheExpiryOrdering()
         {
             var config = new NameValueCollection();
             config["cacheMemoryLimitMegabytes"] = 0.ToString();
             config["physicalMemoryLimitPercentage"] = 100.ToString();
-            config["pollingInterval"] = new TimeSpan(0, 0, 1).ToString();
+            config["pollingInterval"] = new TimeSpan(0, 0, 1 * PlatformDetection.SlowRuntimeTimeoutModifier).ToString();
 
             using (var mc = new MemoryCache("TestCacheExpiryOrdering", config))
             {
@@ -1584,7 +1586,7 @@ namespace MonoTests.System.Runtime.Caching
                 for (int i = 0; i < 100; i++)
                 {
                     var cip = new CacheItemPolicy();
-                    cip.SlidingExpiration = new TimeSpan(0, 0, 4);
+                    cip.SlidingExpiration = new TimeSpan(0, 0, 4 * PlatformDetection.SlowRuntimeTimeoutModifier);
                     mc.Add("long-" + i, i, cip);
                 }
 
@@ -1594,13 +1596,13 @@ namespace MonoTests.System.Runtime.Caching
                 for (int i = 0; i < 100; i++)
                 {
                     var cip = new CacheItemPolicy();
-                    cip.SlidingExpiration = new TimeSpan(0, 0, 1);
+                    cip.SlidingExpiration = new TimeSpan(0, 0, 1 * PlatformDetection.SlowRuntimeTimeoutModifier);
                     mc.Add("short-" + i, i, cip);
                 }
 
                 Assert.Equal(200, mc.GetCount());
 
-                await Task.Delay(2000);
+                await Task.Delay(2000 * PlatformDetection.SlowRuntimeTimeoutModifier);
 
                 for (int i = 0; i < 100; i++)
                 {

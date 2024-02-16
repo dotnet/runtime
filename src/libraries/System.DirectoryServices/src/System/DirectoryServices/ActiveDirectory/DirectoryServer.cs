@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-
+using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -354,7 +353,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // this is the case of meta data
                     if (type == (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_METADATA_2_FOR_OBJ)
                     {
-                        if (result == ExceptionHelper.ERROR_DS_DRA_BAD_DN || result == ExceptionHelper.ERROR_DS_NAME_UNPARSEABLE)
+                        if (result == Interop.Errors.ERROR_DS_DRA_BAD_DN || result == Interop.Errors.ERROR_DS_NAME_UNPARSEABLE)
                             throw new ArgumentException(ExceptionHelper.GetErrorMessage(result, false), "objectPath");
 
                         DirectoryEntry verifyEntry = DirectoryEntryManager.GetDirectoryEntry(this.context, partition);
@@ -738,10 +737,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
                         string? serverDownName = null;
                         // this is the error returned when the server that we want to sync from is down
-                        if (result == ExceptionHelper.RPC_S_SERVER_UNAVAILABLE)
+                        if (result == Interop.Errors.RPC_S_SERVER_UNAVAILABLE)
                             serverDownName = sourceServer;
                         // this is the error returned when the server that we want to get synced is down
-                        else if (result == ExceptionHelper.RPC_S_CALL_FAILED)
+                        else if (result == Interop.Errors.RPC_S_CALL_FAILED)
                             serverDownName = Name;
 
                         throw ExceptionHelper.GetExceptionFromErrorCode(result, serverDownName);

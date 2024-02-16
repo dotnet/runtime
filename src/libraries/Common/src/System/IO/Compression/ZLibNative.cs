@@ -187,7 +187,13 @@ namespace System.IO.Compression
         /// </summary>
         public sealed class ZLibStreamHandle : SafeHandle
         {
-            public enum State { NotInitialized, InitializedForDeflate, InitializedForInflate, Disposed }
+            public enum State
+            {
+                NotInitialized,
+                InitializedForDeflate,
+                InitializedForInflate,
+                Disposed
+            }
 
             private ZStream _zStream;
 

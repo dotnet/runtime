@@ -188,7 +188,7 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents = null,
+        IEnumerable<string> runtimeComponents,
         string? nativeMainSource = null,
         bool useNativeAOTRuntime = false,
         bool isLibraryMode = false)
@@ -252,13 +252,25 @@ internal sealed class Xcode
         bool enableRuntimeLogging,
         bool enableAppSandbox,
         string? diagnosticPorts,
-        string? runtimeComponents = null,
+        IEnumerable<string> runtimeComponents,
         string? nativeMainSource = null,
         bool useNativeAOTRuntime = false,
         bool isLibraryMode = false)
     {
         // bundle everything as resources excluding native files
         var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt*" };
+
+        // TODO: All of these exclusions shouldn't be needed once we carefully construct the publish folder on Helix
+        if (useNativeAOTRuntime)
+        {
+            predefinedExcludes.Add(".dll");
+            predefinedExcludes.Add(".pdb");
+            predefinedExcludes.Add(".json");
+            predefinedExcludes.Add(".txt");
+            predefinedExcludes.Add(".bin");
+            predefinedExcludes.Add(".dSYM");
+        }
+
         predefinedExcludes = predefinedExcludes.Concat(excludes).ToList();
         if (!preferDylibs)
         {
@@ -271,14 +283,14 @@ internal sealed class Xcode
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
             .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
-            !(hybridGlobalization ? Path.GetFileName(f) == "icudt_hybrid.dat" : Path.GetFileName(f) == "icudt.dat"))))
+            !(!hybridGlobalization && Path.GetFileName(f) == "icudt.dat"))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
         {
             // use built-in main.m (with default UI) if it's not set
             nativeMainSource = Path.Combine(binDir, "main.m");
-            File.WriteAllText(nativeMainSource, Utils.GetEmbeddedResource(useConsoleUiTemplate ? "main-console.m" : "main-simple.m"));
+            File.WriteAllText(nativeMainSource, Utils.GetEmbeddedResource((useConsoleUiTemplate || isLibraryMode) ? "main-console.m" : "main-simple.m"));
         }
         else
         {
@@ -330,41 +342,48 @@ internal sealed class Xcode
 
         if (isLibraryMode)
         {
-            string dylibName = $"lib{projectName}.dylib";
-            cmakeLists = cmakeLists.Replace("%DYLIB_PATH%", $"{Path.Combine(binDir, dylibName)}");
+            string libraryPath;
+            // TODO: unify MonoAOT and NativeAOT library paths
+            // Current differences:
+            // - NativeAOT produces {ProjectName}.dylib, while MonoAOT produces lib{ProjectName}.dylib
+            // - NativeAOT places the library in the 'workspace' location ie 'publish' folder, while MonoAOT places it in 'binDir' ie 'AppBundle'
+            if (useNativeAOTRuntime)
+            {
+                libraryPath = Path.Combine(workspace, $"{projectName}.dylib");
+            }
+            else
+            {
+                libraryPath = Path.Combine(binDir, $"lib{projectName}.dylib");
+            }
+
+            if (!File.Exists(libraryPath))
+            {
+                throw new Exception($"Library not found at: {libraryPath} when building in the library mode.");
+            }
+
+            cmakeLists = cmakeLists.Replace("%DYLIB_PATH%", libraryPath);
+
+            // pass the shared library to the linker for dynamic linking
+            if (useNativeAOTRuntime)
+                toLink += $"    {libraryPath}{Environment.NewLine}";
         }
         else
         {
             string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
             string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
-            bool staticLinkAllComponents = false;
-            string[] staticLinkedComponents = Array.Empty<string>();
-
-            if (!string.IsNullOrEmpty(runtimeComponents) && runtimeComponents.Equals("*", StringComparison.OrdinalIgnoreCase))
-                staticLinkAllComponents = true;
-            else if (!string.IsNullOrEmpty(runtimeComponents))
-                staticLinkedComponents = runtimeComponents.Split(";");
 
             // by default, component stubs will be linked and depending on how mono runtime has been build,
             // stubs can disable or dynamic load components.
             foreach (string staticComponentStubLib in staticComponentStubLibs)
             {
                 string componentLibToLink = staticComponentStubLib;
-                if (staticLinkAllComponents)
+                foreach (string runtimeComponent in runtimeComponents)
                 {
-                    // static link component.
-                    componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                }
-                else
-                {
-                    foreach (string staticLinkedComponent in staticLinkedComponents)
+                    if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (componentLibToLink.Contains(staticLinkedComponent, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // static link component.
-                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                            break;
-                        }
+                        // static link component.
+                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                        break;
                     }
                 }
 
@@ -424,7 +443,8 @@ internal sealed class Xcode
         }
 
         string appLinkLibraries = $"    {frameworks}{Environment.NewLine}";
-        string extraLinkerArgsConcat = $"\"{string.Join('\n', extraLinkerArgs)}\"";
+        string extraLinkerArgsConcatEscapeQuotes = string.Join('\n', extraLinkerArgs).Replace("\"", "\\\"");
+        string extraLinkerArgsConcat = $"\"{extraLinkerArgsConcatEscapeQuotes}\"";
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%APP_LINK_LIBRARIES%", appLinkLibraries);
@@ -469,6 +489,11 @@ internal sealed class Xcode
             defines.AppendLine("add_definitions(-DUSE_NATIVE_AOT=1)");
         }
 
+        if (isLibraryMode)
+        {
+            defines.AppendLine("add_definitions(-DUSE_LIBRARY_MODE=1)");
+        }
+
         cmakeLists = cmakeLists.Replace("%Defines%", defines.ToString());
 
         string plist = Utils.GetEmbeddedResource("Info.plist.template")
@@ -492,7 +517,12 @@ internal sealed class Xcode
             File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlementsTemplate.Replace("%Entitlements%", ent.ToString()));
         }
 
-        if (!useNativeAOTRuntime)
+        if (isLibraryMode)
+        {
+            File.WriteAllText(Path.Combine(binDir, "runtime-librarymode.h"), Utils.GetEmbeddedResource("runtime-librarymode.h"));
+            File.WriteAllText(Path.Combine(binDir, "runtime-librarymode.m"), Utils.GetEmbeddedResource("runtime-librarymode.m"));
+        }
+        else if (!useNativeAOTRuntime)
         {
             File.WriteAllText(Path.Combine(binDir, "runtime.h"),
                 Utils.GetEmbeddedResource("runtime.h"));
@@ -511,9 +541,8 @@ internal sealed class Xcode
 
             pinvokeOverrides.AppendLine($"        \"System.Globalization.Native\",");
 
-            string runtimeTemplateName = (isLibraryMode) ? "runtime-librarymode.m" : "runtime.m";
             File.WriteAllText(Path.Combine(binDir, "runtime.m"),
-                Utils.GetEmbeddedResource(runtimeTemplateName)
+                Utils.GetEmbeddedResource("runtime.m")
                     .Replace("//%PInvokeOverrideLibraries%", pinvokeOverrides.ToString())
                     .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
                     .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));

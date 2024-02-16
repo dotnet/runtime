@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 
 interface IType<T0>
@@ -42,39 +43,25 @@ struct VType3<T0> : IType<VType3<int>>
 {
 }
 
-class Program
+public class Program
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
-        try
-        {
-		RType2<int> rtype2      = new RType2<int>();              		// type loads
-		RType3<DateTime> rtype3 = new RType3<DateTime>();    	// type loads
-		RType1<string> rtype1   = new RType1<string>();        		// TypeLoadException
+        RType2<int> rtype2      = new RType2<int>();                // type loads
+        RType3<DateTime> rtype3 = new RType3<DateTime>();           // type loads
+        RType1<string> rtype1   = new RType1<string>();             // TypeLoadException
 
-		VType3<string> vtype3   = new VType3<string>();        		// type loads
-		VType1<string> vtype1   = new VType1<string>();        		// TypeLoadException
-		
-		VType2<string> vtype2   = new VType2<string>();        		// TypeLoadException
+        VType3<string> vtype3   = new VType3<string>();             // type loads
+        VType1<string> vtype1   = new VType1<string>();             // TypeLoadException
+        
+        VType2<string> vtype2   = new VType2<string>();             // TypeLoadException
 
-
-		// we need this to get rid of compiler warning 
-		// warning CS0219: The variable 'vtype3' is assigned but its value is never used
-		vtype3.ToString();
-		vtype1.ToString();
-		vtype2.ToString();
-
-		Console.WriteLine("PASS");
-		return 100;
-            
-        }
-        catch (Exception x)
-        {
-        	
-            	Console.WriteLine("FAIL: Caught unexpected exception: " + x);
-		return 101;
-        }
-
+        // we need this to get rid of compiler warning 
+        // warning CS0219: The variable 'vtype3' is assigned but its value is never used
+        vtype3.ToString();
+        vtype1.ToString();
+        vtype2.ToString();
     }
 }
 

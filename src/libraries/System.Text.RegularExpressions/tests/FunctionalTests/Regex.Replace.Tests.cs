@@ -264,7 +264,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(RegexOptions.RightToLeft)]
         public void Replace_MatchEvaluatorReturnsNullOrEmpty(RegexOptions options)
         {
-            string result = Regex.Replace("abcde", @"[abcd]", (Match match) => {
+            string result = Regex.Replace("abcde", @"[abcd]", (Match match) =>
+            {
                 return match.Value switch
                 {
                     "a" => "x",
@@ -333,13 +334,13 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startat", () => new Regex("pattern").Replace("input", new MatchEvaluator(MatchEvaluator1), 0, 6));
         }
 
-        public static string MatchEvaluator1(Match match) => match.Value.ToLower() == "big" ? "Huge": "Tiny";
+        public static string MatchEvaluator1(Match match) => match.Value.ToLower() == "big" ? "Huge" : "Tiny";
 
         public static string MatchEvaluator2(Match match) => "SUCCESS";
 
         public static string MatchEvaluator3(Match match)
         {
-            if (match.Value == "a" || match.Value == "b" || match.Value == "c")
+            if (match.Value is "a" or "b" or "c")
                 return match.Value.ToUpperInvariant();
             return string.Empty;
         }

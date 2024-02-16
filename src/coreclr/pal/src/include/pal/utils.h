@@ -212,3 +212,5 @@ class StringHolder
 
    };
 #endif /* _PAL_UTILS_H_ */
+
+const char *GetFriendlyErrorCodeString(int errorCode);

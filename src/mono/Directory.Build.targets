@@ -3,4 +3,6 @@
 
   <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->
   <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'" Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)liveILLink.targets" />
+
 </Project>

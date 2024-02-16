@@ -64,12 +64,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
-            case GT_CMPXCHG:
-            case GT_LOCKADD:
-            case GT_XADD:
-                NYI_RISCV64("GT_CMPXCHG,GT_LOCKADD,GT_XADD");
-                break;
-
             case GT_ADD:
             case GT_EQ:
             case GT_NE:
@@ -279,6 +273,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             src->AsIntCon()->SetIconValue(fill);
 
             ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
+        }
+        else if (blkNode->IsZeroingGcPointersOnHeap())
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
+            // We're going to use REG_R0 for zero
+            src->SetContained();
         }
         else
         {
@@ -619,13 +619,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
-        MakeSrcContained(indirNode, addr);
-    }
-    else if (addr->OperIs(GT_CLS_VAR_ADDR))
-    {
-        // These nodes go into an addr mode:
-        // - GT_CLS_VAR_ADDR turns into a constant.
-        // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(indirNode, addr);
     }
 }

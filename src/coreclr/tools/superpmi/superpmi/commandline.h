@@ -13,78 +13,41 @@ public:
     class Options
     {
     public:
-        Options()
-            : nameOfJit(nullptr)
-            , nameOfJit2(nullptr)
-            , nameOfInputMethodContextFile(nullptr)
-            , verbosity(nullptr)
-            , writeLogFile(nullptr)
-            , reproName(nullptr)
-            , breakOnError(false)
-            , breakOnAssert(false)
-            , breakOnException(false)
-            , ignoreStoredConfig(false)
-            , applyDiff(false)
-            , parallel(false)
+        char* nameOfJit = nullptr;
+        char* nameOfJit2 = nullptr;
+        char* nameOfInputMethodContextFile = nullptr;
+        char* verbosity = nullptr;
+        char* writeLogFile = nullptr;
+        char* reproName = nullptr;
+        bool  breakOnError = false;
+        bool  breakOnAssert = false;
+        bool  breakOnException = false;
+        bool  ignoreStoredConfig = false;
+        bool  applyDiff = false;
+        bool  parallel = false;        // User specified to use /parallel mode.
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
-            , useCoreDisTools(true) // if CoreDisTools is available (but MSVCDIS is not), use it.
+        bool  useCoreDisTools = true; // Use CoreDisTools library instead of Msvcdis
 #else
-            , useCoreDisTools(false) // Otherwise, use MSVCDIS if that is available (else no diffs are available).
+        bool  useCoreDisTools = false; // Use CoreDisTools library instead of Msvcdis
 #endif
-            , skipCleanup(false)
-            , workerCount(-1)
-            , indexCount(-1)
-            , failureLimit(-1)
-            , indexes(nullptr)
-            , hash(nullptr)
-            , methodStatsTypes(nullptr)
-            , baseMetricsSummaryFile(nullptr)
-            , diffMetricsSummaryFile(nullptr)
-            , mclFilename(nullptr)
-            , diffsInfo(nullptr)
-            , targetArchitecture(nullptr)
-            , compileList(nullptr)
-            , offset(-1)
-            , increment(-1)
-            , forceJitOptions(nullptr)
-            , forceJit2Options(nullptr)
-            , jitOptions(nullptr)
-            , jit2Options(nullptr)
-        {
-        }
-
-        char* nameOfJit;
-        char* nameOfJit2;
-        char* nameOfInputMethodContextFile;
-        char* verbosity;
-        char* writeLogFile;
-        char* reproName;
-        bool  breakOnError;
-        bool  breakOnAssert;
-        bool  breakOnException;
-        bool  ignoreStoredConfig;
-        bool  applyDiff;
-        bool  parallel;        // User specified to use /parallel mode.
-        bool  useCoreDisTools; // Use CoreDisTools library instead of Msvcdis
-        bool  skipCleanup; // In /parallel mode, do we skip cleanup of temporary files? Used for debugging /parallel.
-        int   workerCount; // Number of workers to use for /parallel mode. -1 (or 1) means don't use parallel mode.
-        int   indexCount;  // If indexCount is -1 and hash points to nullptr it means compile all.
-        int   failureLimit; // Number of failures after which bail out the replay/asmdiffs.
-        int*  indexes;
-        char* hash;
-        char* methodStatsTypes;
-        char* baseMetricsSummaryFile;
-        char* diffMetricsSummaryFile;
-        char* mclFilename;
-        char* diffsInfo;
-        char* targetArchitecture;
-        char* compileList;
-        int   offset;
-        int   increment;
-        LightWeightMap<DWORD, DWORD>* forceJitOptions;
-        LightWeightMap<DWORD, DWORD>* forceJit2Options;
-        LightWeightMap<DWORD, DWORD>* jitOptions;
-        LightWeightMap<DWORD, DWORD>* jit2Options;
+        bool  skipCleanup = false; // In /parallel mode, do we skip cleanup of temporary files? Used for debugging /parallel.
+        int   workerCount = -1; // Number of workers to use for /parallel mode. -1 (or 1) means don't use parallel mode.
+        int   indexCount = -1;  // If indexCount is -1 and hash points to nullptr it means compile all.
+        int   failureLimit = -1; // Number of failures after which bail out the replay/asmdiffs.
+        int   repeatCount = 1;   // Number of times given methods should be compiled.
+        int*  indexes = nullptr;
+        char* hash = nullptr;
+        char* methodStatsTypes = nullptr;
+        char* details = nullptr;
+        char* mclFilename = nullptr;
+        char* targetArchitecture = nullptr;
+        char* compileList = nullptr;
+        int   offset = -1;
+        int   increment = -1;
+        LightWeightMap<DWORD, DWORD>* forceJitOptions = nullptr;
+        LightWeightMap<DWORD, DWORD>* forceJit2Options = nullptr;
+        LightWeightMap<DWORD, DWORD>* jitOptions = nullptr;
+        LightWeightMap<DWORD, DWORD>* jit2Options = nullptr;
     };
 
     static bool Parse(int argc, char* argv[], /* OUT */ Options* o);

@@ -1,104 +1,52 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace TestUnhandledException
 {
-    class Program
+    public delegate void MyCallback();
+
+    unsafe class Program
     {
-        static int Main(string[] args)
+        [DllImport("foreignunhandled")]
+        public static extern void InvokeCallbackOnNewThread(delegate*unmanaged<void> callBack);
+
+        private const string INTERNAL_CALL = "__internal";
+
+        [SuppressGCTransition]
+        [DllImport(INTERNAL_CALL, EntryPoint = "HelloCpp")]
+        private static extern void Test();
+
+        [UnmanagedCallersOnly]
+        static void ThrowException()
         {
-            if (args.Length != 0)
+            SetDllResolver();
+            Test();
+        }
+
+        private static void SetDllResolver()
+        {
+            NativeLibrary.SetDllImportResolver(
+                Assembly.GetExecutingAssembly(),
+                static (library, _, _) =>
+                    library == INTERNAL_CALL ? NativeLibrary.GetMainProgramHandle() : IntPtr.Zero
+            );
+        }
+
+        static void Main(string[] args)
+        {
+            if (args[0] == "main")
             {
                 throw new Exception("Test");
             }
-
-            List<string> lines = new List<string>();
-
-            Process testProcess = new Process();
-
-            // We don't need to trigger createdump logic.
-            testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
-
-            testProcess.StartInfo.FileName = Environment.ProcessPath;
-            testProcess.StartInfo.Arguments = Environment.CommandLine + " throw";
-            testProcess.StartInfo.RedirectStandardError = true;
-            testProcess.ErrorDataReceived += (sender, line) => 
+            else if (args[0] == "foreign")
             {
-                Console.WriteLine($"\"{line.Data}\"");
-                if (!string.IsNullOrEmpty(line.Data))
-                {
-                    lines.Add(line.Data);
-                }
-            };
-
-            testProcess.Start();
-            testProcess.BeginErrorReadLine();
-            testProcess.WaitForExit();
-            testProcess.CancelErrorRead();
-
-            int expectedExitCode;
-            if (TestLibrary.Utilities.IsMonoRuntime)
-            {
-                expectedExitCode = 1;
+                InvokeCallbackOnNewThread(&ThrowException);
             }
-            else if (!OperatingSystem.IsWindows())
-            {
-                expectedExitCode = 128 + 6;
-            }
-            else if (TestLibrary.Utilities.IsNativeAot)
-            {
-                expectedExitCode = unchecked((int)0xC0000409);
-            }
-            else
-            {
-                expectedExitCode = unchecked((int)0xE0434352);
-            }
-
-            if (expectedExitCode != testProcess.ExitCode)
-            {
-                Console.WriteLine($"Wrong exit code 0x{testProcess.ExitCode:X8}");
-                return 101;
-            }
-
-            int exceptionStackFrameLine = 1;
-            if (TestLibrary.Utilities.IsMonoRuntime)
-            {
-                if (lines[0] != "Unhandled Exception:")
-                {
-                    Console.WriteLine("Missing Unhandled exception header");
-                    return 102;
-                }
-                if (lines[1] != "System.Exception: Test")
-                {
-                    Console.WriteLine("Missing exception type and message");
-                    return 103;
-                }
-
-                exceptionStackFrameLine = 2;
-            }
-            else
-            {
-                if (lines[0] != "Unhandled exception. System.Exception: Test")
-                {
-                    Console.WriteLine("Missing Unhandled exception header");
-                    return 102;
-                }
-
-            }
-
-            if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
-            {
-                Console.WriteLine("Missing exception source frame");
-                return 103;
-            }
-
-            return 100;
         }
     }
 }

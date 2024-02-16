@@ -297,7 +297,7 @@ public:
         m_pMD(pMD),
         m_pCallTarget(pCallTarget),
         m_methodSig(*pSig),
-        m_argIt(pSig)
+        m_argIt(pSig, pMD)
     {
         CONTRACTL
         {

@@ -1,4 +1,5 @@
 using System;
+using Xunit;
 
 /* Regression test for https://github.com/dotnet/runtime/issues/78638
  * and https://github.com/dotnet/runtime/issues/82187 ensure AOT
@@ -9,7 +10,8 @@ using System;
 [MySpecial(typeof(MeineTüre))]
 public class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var attr = (MySpecialAttribute)Attribute.GetCustomAttribute(typeof (Program), typeof(MySpecialAttribute), false);
         if (attr == null)

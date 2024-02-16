@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
+    <Compile Include="TestNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\src\System\Diagnostics\Metrics\Aggregator.cs" Link="Aggregator.cs" />

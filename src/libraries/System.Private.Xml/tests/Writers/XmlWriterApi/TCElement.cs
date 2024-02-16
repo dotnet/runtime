@@ -69,7 +69,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Element name = null should error
@@ -91,7 +91,7 @@ namespace System.Xml.XmlWriterApiTests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Element NS = String.Empty
@@ -197,7 +197,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 w.Dispose();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
 
@@ -222,7 +222,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 w.Dispose();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Write many attributes and dup prefix
@@ -246,7 +246,7 @@ namespace System.Xml.XmlWriterApiTests
             {
                 w.Dispose();
             }
-            Assert.True(false);
+            Assert.Fail();
         }
 
         // Write invalid DOCTYPE with many attributes with prefix
@@ -269,7 +269,7 @@ namespace System.Xml.XmlWriterApiTests
                 catch (XmlException e)
                 {
                     CError.WriteLine(e);
-                    Assert.True(false);
+                    Assert.Fail();
                 }
             }
             return;
@@ -382,7 +382,7 @@ namespace System.Xml.XmlWriterApiTests
             catch (InvalidOperationException e)
             {
                 CError.WriteLine(e);
-                Assert.True(false);
+                Assert.Fail();
             }
             Assert.True(utils.CompareString(exp));
         }

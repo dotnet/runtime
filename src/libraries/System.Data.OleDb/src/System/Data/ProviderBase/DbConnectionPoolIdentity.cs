@@ -8,10 +8,10 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.Principal;
 using System.Threading;
-using System.Runtime.Versioning;
 
 namespace System.Data.ProviderBase
 {

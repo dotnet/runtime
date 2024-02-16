@@ -309,25 +309,16 @@ namespace System.Buffers
 
             if (Vector128.IsHardwareAccelerated && value.Length > 1 && value.Length <= maxLength)
             {
-                if (!ignoreCase)
+                SearchValues<string>? searchValues = value.Length switch
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseSensitive>(value);
-                }
+                    < 4 => TryCreateSingleValuesThreeChars<ValueLengthLessThan4>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                    < 8 => TryCreateSingleValuesThreeChars<ValueLength4To7>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                    _ => TryCreateSingleValuesThreeChars<ValueLength8OrLongerOrUnknown>(value, uniqueValues, ignoreCase, allAscii, asciiLettersOnly),
+                };
 
-                if (asciiLettersOnly)
+                if (searchValues is not null)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(value);
-                }
-
-                if (allAscii)
-                {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAscii>(value);
-                }
-
-                // When ignoring casing, all anchor chars we search for must be ASCII.
-                if (char.IsAscii(value[0]) && value.AsSpan().LastIndexOfAnyInRange((char)0, (char)127) > 0)
-                {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveUnicode>(value);
+                    return searchValues;
                 }
             }
 
@@ -336,6 +327,39 @@ namespace System.Buffers
             return ignoreCase
                 ? new SingleStringSearchValuesFallback<SearchValues.TrueConst>(value, uniqueValues)
                 : new SingleStringSearchValuesFallback<SearchValues.FalseConst>(value, uniqueValues);
+        }
+
+        private static SearchValues<string>? TryCreateSingleValuesThreeChars<TValueLength>(
+            string value,
+            HashSet<string>? uniqueValues,
+            bool ignoreCase,
+            bool allAscii,
+            bool asciiLettersOnly)
+            where TValueLength : struct, IValueLength
+        {
+            if (!ignoreCase)
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseSensitive>(uniqueValues, value);
+            }
+
+            if (asciiLettersOnly)
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAsciiLetters>(uniqueValues, value);
+            }
+
+            if (allAscii)
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveAscii>(uniqueValues, value);
+            }
+
+            // SingleStringSearchValuesThreeChars doesn't have logic to handle non-ASCII case conversion, so we require that anchor characters are ASCII.
+            // Right now we're always selecting the first character as one of the anchors, and we need at least two.
+            if (char.IsAscii(value[0]) && value.AsSpan(1).ContainsAnyInRange((char)0, (char)127))
+            {
+                return new SingleStringSearchValuesThreeChars<TValueLength, CaseInsensitiveUnicode>(uniqueValues, value);
+            }
+
+            return null;
         }
 
         private static void AnalyzeValues(

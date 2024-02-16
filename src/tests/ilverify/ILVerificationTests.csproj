@@ -5,6 +5,8 @@
     <!-- The test uses xunit directly and it fails to find the test assembly for some reason -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,13 +2,13 @@
 
 Please consult [documentation](https://docs.microsoft.com/dotnet/core/deploying/native-aot) for instructions how to compile and publish application.
 
-The rest of this document covers advanced topics only. Adding an explicit package reference to `Microsoft.DotNet.ILCompiler` will generate warning when publishing and it can run into version errors. When possible, use the PublishAot property to publish a native AOT application.
+The rest of this document covers advanced topics only.
 
 ## Using daily builds
 
 For using daily builds, you need to make sure the `nuget.config` file for your project contains the following package sources under the `<packageSources>` element:
 ```xml
-<add key="dotnet8" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet8/nuget/v3/index.json" />
+<add key="dotnet9" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet9/nuget/v3/index.json" />
 <add key="nuget" value="https://api.nuget.org/v3/index.json" />
 ```
 
@@ -21,54 +21,49 @@ from the project's root directory. New package sources must be added after the `
 
 Once you have added the package sources, add a reference to the ILCompiler package either by running
 ```bash
-> dotnet add package Microsoft.DotNet.ILCompiler -v 8.0.0-*
+> dotnet add package Microsoft.DotNet.ILCompiler -v 9.0.0-*
 ```
 
 or by adding the following element to the project file:
 ```xml
 <ItemGroup>
-  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="8.0.0-*" />
+  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="9.0.0-*" />
 </ItemGroup>
 ```
 
+Adding an explicit package reference to `Microsoft.DotNet.ILCompiler` will generate warning when publishing and it can run into version errors. When possible, use the default `Microsoft.DotNet.ILCompiler` version to publish a native AOT application.
+
 ## Cross-architecture compilation
 
-Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux and is now supported in the SDK. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported. For SDK support, add the following to your project file,
+Native AOT toolchain allows targeting ARM64 on an x64 host and vice versa for both Windows and Linux. Cross-OS compilation, such as targeting Linux on a Windows host, is not supported.
 
-```xml
-<PropertyGroup>
-  <PublishAot>true</PublishAot>
-</PropertyGroup>
-```
-
-Targeting win-arm64 on a Windows x64 host machine,
+The target architecture can be specified using `-r` or `--arch` options of the `dotnet publish` command. For example, the following command produces Windows Arm64 binary on a Windows x64 host machine:
 
 ```bash
-> dotnet publish -r win-arm64 -c Release
+> dotnet publish -r win-arm64
 ```
+
+The cross-architecture compilation requires native build tools for the target platform to be installed and configured correctly. On Linux, you may need to follow [cross-building instructions](../../../../docs/workflow/building/coreclr/cross-building.md) to create your own sysroot directory and specify path to it using the `SysRoot` property.
+
+See [Building native AOT apps in containers](containers.md) for a streamlined path to establishing a Linux cross-compilation environments.
+
+#### Using daily builds with cross-architecture compilation
 
 For using daily builds according to the instructions above, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.win-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
-<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-alpha.1.23456.7" />
+<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23456.7" />
 ```
 
-Replace `8.0.0-alpha.1.23456.7` with the latest version from the [dotnet8](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet8/NuGet/Microsoft.DotNet.ILCompiler/) feed.
+Replace `9.0.0-alpha.1.23456.7` with the latest version from the [dotnet9](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet9/NuGet/Microsoft.DotNet.ILCompiler/) feed.
 Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues. After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
-> dotnet publish -r win-arm64 -c Release
+> dotnet publish -r win-arm64
 ```
 
 Similarly, to target linux-arm64 on a Linux x64 host, in addition to the `Microsoft.DotNet.ILCompiler` package reference, also add the `runtime.linux-x64.Microsoft.DotNet.ILCompiler` package reference to get the x64-hosted compiler:
 ```xml
-<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.linux-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-alpha.1.23456.7" />
+<PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.linux-x64.Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23456.7" />
 ```
-
-You also need to specify the sysroot directory for Clang using the `SysRoot` property. For example, assuming you are using one of ARM64-targeting [Docker images](../../../../docs/workflow/building/coreclr/linux-instructions.md#Docker-Images) employed for cross-compilation by this repo, you may publish for linux-arm64 with the following command:
-```bash
-> dotnet publish -r linux-arm64 -c Release -p:CppCompilerAndLinker=clang-9 -p:SysRoot=/crossrootfs/arm64
-```
-
-You may also follow [cross-building instructions](../../../../docs/workflow/building/coreclr/cross-building.md) to create your own sysroot directory.
 
 ## Using statically linked ICU
 This feature can statically link libicu libraries (such as libicui18n.a) into your applications at build time.

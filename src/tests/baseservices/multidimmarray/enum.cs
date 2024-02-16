@@ -1,9 +1,11 @@
 using System;
+using Xunit;
 
 public class Test
 {
     enum State : sbyte { OK = 0, BUG = -1 }
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestLibrary.TestFramework.BeginTestCase("Enum MultidimmArray");
         var s = new State[1, 1];

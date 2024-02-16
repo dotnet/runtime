@@ -336,7 +336,6 @@ namespace System.Collections.Tests
             {
                 publicComparer = EqualityComparer<string>.Default;
             }
-
             foreach (var pair in new[] {
                 ("Hello", "Hello"), // exactly equal
                 ("Hello", "Goodbye"), // not equal at all

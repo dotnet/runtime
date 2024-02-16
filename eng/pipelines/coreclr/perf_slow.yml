@@ -98,18 +98,19 @@ extends:
             platforms:
             - linux_arm64
             jobParameters:
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
+              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoAOTEnableLLVM=true /p:MonoEnableLLVM=true /p:BuildMonoAOTCrossCompiler=true /p:MonoLibClang="/usr/local/lib/libclang.so.16" /p:AotHostArchitecture=arm64 /p:AotHostOS=linux
               nameSuffix: AOT
               isOfficialBuild: false
-              extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-              extraStepsParameters:
-                rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-                includeRootFolder: true
-                displayName: AOT Mono Artifacts
-                artifactName: LinuxMonoAOTarm64
-                archiveExtension: '.tar.gz'
-                archiveType: tar
-                tarCompression: gz
+              postBuildSteps:
+                - template: /eng/pipelines/common/upload-artifact-step.yml
+                  parameters:
+                    rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+                    includeRootFolder: true
+                    displayName: AOT Mono Artifacts
+                    artifactName: LinuxMonoAOTarm64
+                    archiveExtension: '.tar.gz'
+                    archiveType: tar
+                    tarCompression: gz
 
         # run mono aot microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -147,7 +148,7 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
 
-      # run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
+      #run coreclr Linux arm64 ampere no dynamic pgo microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
             jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -164,6 +165,24 @@ extends:
               logicalmachine: 'perfampere'
               timeoutInMinutes: 780
               pgoRunType: --nodynamicpgo
+
+      #run coreclr Linux arm64 ampere no R2R microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - linux_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              timeoutInMinutes: 780
+              r2rRunType: --nor2r
 
       # run coreclr Windows arm64 microbenchmarks perf job
         - template: /eng/pipelines/common/platform-matrix.yml
@@ -214,6 +233,24 @@ extends:
               runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
               logicalmachine: 'perfampere'
               pgoRunType: -NoDynamicPGO
+              timeoutInMinutes: 780
+
+      # run coreclr Windows arm64 ampere no R2R microbenchmarks perf job
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+            buildConfig: release
+            runtimeFlavor: coreclr
+            platforms:
+            - windows_arm64
+            jobParameters:
+              testGroup: perf
+              liveLibrariesBuildConfig: Release
+              projectFile: microbenchmarks.proj
+              runKind: micro
+              runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+              logicalmachine: 'perfampere'
+              r2rRunType: -NoR2R
               timeoutInMinutes: 780
 
         # run coreclr cloudvm microbenchmarks perf job

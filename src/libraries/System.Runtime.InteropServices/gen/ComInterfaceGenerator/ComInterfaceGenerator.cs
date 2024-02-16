@@ -267,6 +267,7 @@ namespace Microsoft.Interop
                     generatedComInterfaceAttributeData,
                     generatedComAttribute),
                 environment,
+                new CodeEmitOptions(SkipInit: true),
                 typeof(VtableIndexStubGenerator).Assembly);
 
             if (!symbol.MethodImplementationFlags.HasFlag(MethodImplAttributes.PreserveSig))
@@ -297,7 +298,6 @@ namespace Microsoft.Interop
                             var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
                             {
                                 RefKind = RefKind.Out,
-                                RefKindSyntax = SyntaxKind.OutKeyword,
                                 ManagedIndex = TypePositionInfo.ReturnIndex,
                                 NativeIndex = symbol.Parameters.Length
                             };
@@ -371,8 +371,7 @@ namespace Microsoft.Interop
                 callConv.ToSequenceEqualImmutableArray(SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
                 new ComExceptionMarshalling(),
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
-                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
+                environment.EnvironmentFlags,
                 owningInterface,
                 declaringType,
                 generatorDiagnostics.Diagnostics.ToSequenceEqualImmutableArray(),
@@ -568,7 +567,8 @@ namespace Microsoft.Interop
                 interfaceMethods.DeclaredMethods
                     .Where(context => context.UnmanagedToManagedStub.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error))
                     .Select(context => context.GenerationContext),
-                vtableLocalName);
+                vtableLocalName,
+                ComInterfaceGeneratorHelpers.GetGeneratorResolver);
 
             return ImplementationInterfaceTemplate
                 .AddMembers(

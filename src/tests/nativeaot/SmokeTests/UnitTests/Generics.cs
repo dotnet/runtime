@@ -5,7 +5,12 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
+[UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "MakeGenericType - Intentional")]
+[UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "MakeGenericType/MakeGenericMethod - Intentional")]
+[UnconditionalSuppressMessage("AOT", "IL3054", Justification = "Generic expansion aborted - Intentional")]
 class Generics
 {
     internal static int Run()
@@ -13,6 +18,7 @@ class Generics
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
+        TestSynchronizedMethods.Run();
         TestDelegateFatFunctionPointers.Run();
         TestDelegateToCanonMethods.Run();
         TestVirtualMethodUseTracking.Run();
@@ -53,6 +59,7 @@ class Generics
         TestRefAny.Run();
         TestNullableCasting.Run();
         TestVariantCasting.Run();
+        TestVariantDispatchUnconstructedTypes.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
@@ -602,6 +609,54 @@ class Generics
         }
     }
 
+    class TestSynchronizedMethods
+    {
+        static class Gen<T>
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize() => 42;
+        }
+
+        static class NonGen
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize<T>() => 42;
+        }
+
+        static class GenReflected<T>
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize() => 42;
+        }
+
+        static class NonGenReflected
+        {
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public static int Synchronize<T>() => 42;
+        }
+
+        static Type s_genReflectedType = typeof(GenReflected<>);
+        static MethodInfo s_nonGenReflectedSynchronizeMethod = typeof(NonGenReflected).GetMethod("Synchronize");
+
+        public static void Run()
+        {
+            Gen<object>.Synchronize();
+            NonGen.Synchronize<object>();
+            Gen<int>.Synchronize();
+            NonGen.Synchronize<int>();
+
+            {
+                var mi = (MethodInfo)s_genReflectedType.MakeGenericType(typeof(object)).GetMemberWithSameMetadataDefinitionAs(typeof(GenReflected<>).GetMethod("Synchronize"));
+                mi.Invoke(null, Array.Empty<object>());
+            }
+
+            {
+                var mi = s_nonGenReflectedSynchronizeMethod.MakeGenericMethod(typeof(object));
+                mi.Invoke(null, Array.Empty<object>());
+            }
+        }
+    }
+
     /// <summary>
     /// Tests that lazily built vtables for canonically equivalent types have the same shape.
     /// </summary>
@@ -1106,6 +1161,24 @@ class Generics
 
             var foo = (Foo<string>)s_foo;
             if (foo.Value != 42)
+                throw new Exception();
+        }
+    }
+
+    class TestVariantDispatchUnconstructedTypes
+    {
+        interface IFoo { }
+        class Foo : IFoo { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static IEnumerable<IFoo> GetFoos() => new Foo[5];
+
+        public static void Run()
+        {
+            int j = 0;
+            foreach (var f in GetFoos())
+                j++;
+            if (j != 5)
                 throw new Exception();
         }
     }

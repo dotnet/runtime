@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET6_0_OR_GREATER
+using System.Runtime.Intrinsics;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -397,6 +400,20 @@ namespace System
                 throw new XunitException(AddOptionalUserMessage($"Expected: {actual} to be greater than or equal to {greaterThanOrEqualTo}", userMessage));
         }
 
+        /// <summary>
+        /// Validate that a given enum value has the expected flag set.
+        /// </summary>
+        /// <typeparam name="T">The enum type.</typeparam>
+        /// <param name="expected">The flag which should be present in <paramref name="actual"/>.</param>
+        /// <param name="actual">The value which should contain the flag <paramref name="expected"/>.</param>
+        public static void HasFlag<T>(T expected, T actual, string userMessage = null) where T : Enum
+        {
+            if (!actual.HasFlag(expected))
+            {
+                throw new XunitException(AddOptionalUserMessage($"Expected: Value {actual} (of enum type {typeof(T).FullName}) to have the flag {expected} set.", userMessage));
+            }
+        }
+
         // NOTE: Consider using SequenceEqual below instead, as it will give more useful information about what
         // the actual differences are, especially for large arrays/spans.
         /// <summary>
@@ -413,7 +430,7 @@ namespace System
             {
                 string expectedString = string.Join(", ", expected);
                 string actualString = string.Join(", ", actual);
-                throw new AssertActualExpectedException(expectedString, actualString, null);
+                throw EqualException.ForMismatchedValues(expectedString, actualString);
             }
         }
 
@@ -599,11 +616,11 @@ namespace System
             switch(exception)
             {
                 case null:
-                    throw new ThrowsException(typeof(E));
+                    throw ThrowsException.ForNoException(typeof(E));
                 case E ex when (ex.GetType() == typeof(E)):
                     return ex;
                 default:
-                    throw new ThrowsException(typeof(E), exception);
+                    throw ThrowsException.ForIncorrectExceptionType(typeof(E), exception);
             }
         }
 
@@ -624,11 +641,11 @@ namespace System
             switch(exception)
             {
                 case null:
-                    throw new ThrowsException(typeof(E));
+                    throw ThrowsException.ForNoException(typeof(E));
                 case E ex when (ex.GetType() == typeof(E)):
                     return ex;
                 default:
-                    throw new ThrowsException(typeof(E), exception);
+                    throw ThrowsException.ForIncorrectExceptionType(typeof(E), exception);
             }
         }
 
@@ -660,6 +677,126 @@ namespace System
             }
         }
 
+        static unsafe bool IsNegativeZero(float value)
+        {
+            return (*(uint*)(&value)) == 0x80000000;
+        }
+
+        static unsafe bool IsPositiveZero(float value)
+        {
+            return (*(uint*)(&value)) == 0x00000000;
+        }
+
+        static unsafe bool IsNegativeZero(double value)
+        {
+            return (*(ulong*)(&value)) == 0x8000000000000000;
+        }
+
+        static unsafe bool IsPositiveZero(double value)
+        {
+            return (*(ulong*)(&value)) == 0x0000000000000000;
+        }
+
+#if NET6_0_OR_GREATER
+        static unsafe bool IsNegativeZero(Half value)
+        {
+            return (*(ushort*)(&value)) == 0x8000;
+        }
+
+        static unsafe bool IsPositiveZero(Half value)
+        {
+            return (*(ushort*)(&value)) == 0x0000;
+        }
+#endif
+
+        // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
+        // but also NaN and +-infinity) are correctly and consistently represented.
+        static string ToStringPadded(float value)
+        {
+            if (float.IsNaN(value))
+            {
+                return "NaN".PadLeft(10);
+            }
+            else if (float.IsPositiveInfinity(value))
+            {
+                return "+\u221E".PadLeft(10);
+            }
+            else if (float.IsNegativeInfinity(value))
+            {
+                return "-\u221E".PadLeft(10);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(10);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(10);
+            }
+            else
+            {
+                return $"{value,10:G9}";
+            }
+        }
+
+        static string ToStringPadded(double value)
+        {
+            if (double.IsNaN(value))
+            {
+                return "NaN".PadLeft(20);
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                return "+\u221E".PadLeft(20);
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                return "-\u221E".PadLeft(20);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(20);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(20);
+            }
+            else
+            {
+                return $"{value,20:G17}";
+            }
+        }
+
+#if NET6_0_OR_GREATER
+        static string ToStringPadded(Half value)
+        {
+            if (Half.IsNaN(value))
+            {
+                return "NaN".PadLeft(5);
+            }
+            else if (Half.IsPositiveInfinity(value))
+            {
+                return "+\u221E".PadLeft(5);
+            }
+            else if (Half.IsNegativeInfinity(value))
+            {
+                return "-\u221E".PadLeft(5);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(5);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(5);
+            }
+            else
+            {
+                return $"{value,5:G5}";
+            }
+        }
+#endif
+
         /// <summary>Verifies that two <see cref="double"/> values are equal, within the <paramref name="allowedVariance"/>.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>
@@ -674,11 +811,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (double.IsNaN(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (double.IsNegativeInfinity(expected))
@@ -688,11 +825,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (double.IsNegativeInfinity(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (double.IsPositiveInfinity(expected))
@@ -702,11 +839,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (double.IsPositiveInfinity(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (IsNegativeZero(expected))
@@ -718,7 +855,7 @@ namespace System
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -729,7 +866,7 @@ namespace System
             {
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -746,7 +883,7 @@ namespace System
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -757,7 +894,7 @@ namespace System
             {
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -769,47 +906,7 @@ namespace System
 
             if (delta > variance)
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            static unsafe bool IsNegativeZero(double value)
-            {
-                return (*(ulong*)(&value)) == 0x8000000000000000;
-            }
-
-            static unsafe bool IsPositiveZero(double value)
-            {
-                return (*(ulong*)(&value)) == 0x0000000000000000;
-            }
-
-            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-            // but also NaN and +-infinity) are correctly and consistently represented.
-            static string ToStringPadded(double value)
-            {
-                if (double.IsNaN(value))
-                {
-                    return "NaN".PadLeft(20);
-                }
-                else if (double.IsPositiveInfinity(value))
-                {
-                    return "+\u221E".PadLeft(20);
-                }
-                else if (double.IsNegativeInfinity(value))
-                {
-                    return "-\u221E".PadLeft(20);
-                }
-                else if (IsNegativeZero(value))
-                {
-                    return "-0.0".PadLeft(20);
-                }
-                else if (IsPositiveZero(value))
-                {
-                    return "+0.0".PadLeft(20);
-                }
-                else
-                {
-                    return $"{value,20:G17}";
-                }
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
         }
 
@@ -827,11 +924,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (float.IsNaN(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (float.IsNegativeInfinity(expected))
@@ -841,11 +938,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (float.IsNegativeInfinity(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (float.IsPositiveInfinity(expected))
@@ -855,11 +952,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (float.IsPositiveInfinity(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (IsNegativeZero(expected))
@@ -871,7 +968,7 @@ namespace System
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -882,7 +979,7 @@ namespace System
             {
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -899,7 +996,7 @@ namespace System
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -910,7 +1007,7 @@ namespace System
             {
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -922,47 +1019,7 @@ namespace System
 
             if (delta > variance)
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
-            }
-
-            static unsafe bool IsNegativeZero(float value)
-            {
-                return (*(uint*)(&value)) == 0x80000000;
-            }
-
-            static unsafe bool IsPositiveZero(float value)
-            {
-                return (*(uint*)(&value)) == 0x00000000;
-            }
-
-            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-            // but also NaN and +-infinity) are correctly and consistently represented.
-            static string ToStringPadded(float value)
-            {
-                if (float.IsNaN(value))
-                {
-                    return "NaN".PadLeft(10);
-                }
-                else if (float.IsPositiveInfinity(value))
-                {
-                    return "+\u221E".PadLeft(10);
-                }
-                else if (float.IsNegativeInfinity(value))
-                {
-                    return "-\u221E".PadLeft(10);
-                }
-                else if (IsNegativeZero(value))
-                {
-                    return "-0.0".PadLeft(10);
-                }
-                else if (IsPositiveZero(value))
-                {
-                    return "+0.0".PadLeft(10);
-                }
-                else
-                {
-                    return $"{value,10:G9}";
-                }
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
         }
 
@@ -981,11 +1038,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (Half.IsNaN(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (Half.IsNegativeInfinity(expected))
@@ -995,11 +1052,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (Half.IsNegativeInfinity(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (Half.IsPositiveInfinity(expected))
@@ -1009,11 +1066,11 @@ namespace System
                     return;
                 }
 
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
             else if (Half.IsPositiveInfinity(actual))
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
             }
 
             if (IsNegativeZero(expected))
@@ -1025,7 +1082,7 @@ namespace System
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -1036,7 +1093,7 @@ namespace System
             {
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -1053,7 +1110,7 @@ namespace System
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -1064,7 +1121,7 @@ namespace System
             {
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                    throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
                 }
 
                 // When the variance is not +-0.0, then we are handling a case where
@@ -1076,48 +1133,75 @@ namespace System
 
             if (delta > variance)
             {
-                throw new EqualException(ToStringPadded(expected), ToStringPadded(actual));
+                throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+            }
+        }
+#endif
+
+        /// <summary>Verifies that two <see cref="double"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
+        public static void Equal(double expected, double actual)
+        {
+            if (BitConverter.DoubleToInt64Bits(expected) == BitConverter.DoubleToInt64Bits(actual))
+            {
+                return;
             }
 
-            static unsafe bool IsNegativeZero(Half value)
+            if (PlatformDetection.IsRiscV64Process && double.IsNaN(expected) && double.IsNaN(actual))
             {
-                return (*(ushort*)(&value)) == 0x8000;
+                // RISC-V does not preserve payload
+                return;
             }
 
-            static unsafe bool IsPositiveZero(Half value)
+            throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+        }
+
+        /// <summary>Verifies that two <see cref="float"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
+        public static void Equal(float expected, float actual)
+        {
+            static unsafe int SingleToInt32Bits(float value)
             {
-                return (*(ushort*)(&value)) == 0x0000;
+                return *(int*)&value;
             }
 
-            // We have a custom ToString here to ensure that edge cases (specifically +-0.0,
-            // but also NaN and +-infinity) are correctly and consistently represented.
-            static string ToStringPadded(Half value)
+            if (SingleToInt32Bits(expected) == SingleToInt32Bits(actual))
             {
-                if (Half.IsNaN(value))
-                {
-                    return "NaN".PadLeft(5);
-                }
-                else if (Half.IsPositiveInfinity(value))
-                {
-                    return "+\u221E".PadLeft(5);
-                }
-                else if (Half.IsNegativeInfinity(value))
-                {
-                    return "-\u221E".PadLeft(5);
-                }
-                else if (IsNegativeZero(value))
-                {
-                    return "-0.0".PadLeft(5);
-                }
-                else if (IsPositiveZero(value))
-                {
-                    return "+0.0".PadLeft(5);
-                }
-                else
-                {
-                    return $"{value,5:G5}";
-                }
+                return;
             }
+
+            if (PlatformDetection.IsRiscV64Process && float.IsNaN(expected) && float.IsNaN(actual))
+            {
+                // RISC-V does not preserve payload
+                return;
+            }
+
+            throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
+        }
+
+#if NET6_0_OR_GREATER
+        /// <summary>Verifies that two <see cref="Half"/> values's binary representations are identical.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
+        public static void Equal(Half expected, Half actual)
+        {
+            if (BitConverter.HalfToInt16Bits(expected) == BitConverter.HalfToInt16Bits(actual))
+            {
+                return;
+            }
+
+            if (PlatformDetection.IsRiscV64Process && Half.IsNaN(expected) && Half.IsNaN(actual))
+            {
+                // RISC-V does not preserve payload
+                return;
+            }
+
+            throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual));
         }
 #endif
     }

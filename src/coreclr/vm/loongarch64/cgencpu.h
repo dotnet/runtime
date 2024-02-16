@@ -114,14 +114,13 @@ struct CalleeSavedRegisters {
 // will probably have to communicate this back to the PromoteCallerStack
 // routine to avoid a double promotion.
 //--------------------------------------------------------------------
+#define NUM_ARGUMENT_REGISTERS 8
 typedef DPTR(struct ArgumentRegisters) PTR_ArgumentRegisters;
 struct ArgumentRegisters {
-    INT64 a[8]; // a0 ....a7
+    INT64 a[NUM_ARGUMENT_REGISTERS]; // a0 ....a7
 };
-#define NUM_ARGUMENT_REGISTERS 8
 
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
-
 
 //--------------------------------------------------------------------
 // This represents the floating point argument registers which are saved
@@ -130,41 +129,34 @@ struct ArgumentRegisters {
 // C++ helpers will need to preserve the values in these volatile
 // registers.
 //--------------------------------------------------------------------
+#define NUM_FLOAT_ARGUMENT_REGISTERS 8
 typedef DPTR(struct FloatArgumentRegisters) PTR_FloatArgumentRegisters;
 struct FloatArgumentRegisters {
-    //TODO: not supports LOONGARCH-SIMD.
-    double  f[8];  // f0-f7
+    double f[NUM_FLOAT_ARGUMENT_REGISTERS]; // fa0-fa7
 };
-#define NUM_FLOAT_ARGUMENT_REGISTERS 8
 
-
+#ifdef PROFILING_SUPPORTED
 //**********************************************************************
 // Profiling
 //**********************************************************************
-
-#ifdef PROFILING_SUPPORTED
-
-// Scratch space to store HFA return values (max 16 bytes)
-#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
 
 typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 {
     void*                  Fp;
     void*                  Pc;
-    void*                  x8;
-    ArgumentRegisters      argumentRegisters;
-    FunctionID             functionId;
-    FloatArgumentRegisters floatArgumentRegisters;
     void*                  probeSp;
     void*                  profiledSp;
     void*                  hiddenArg;
+    FunctionID             functionId;
     UINT32                 flags;
-    UINT32                 unused;
-    BYTE                   buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
+    ArgumentRegisters      argumentRegisters;
+    FloatArgumentRegisters floatArgumentRegisters;
+    // Scratch space to reconstruct struct passed two registers:
+    // one float register and one general register. Including the return args.
+    BYTE buffer[sizeof(ArgumentRegisters) + sizeof(FloatArgumentRegisters)];
 } PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
 
 #endif  // PROFILING_SUPPORTED
-
 
 //**********************************************************************
 // Exception handling

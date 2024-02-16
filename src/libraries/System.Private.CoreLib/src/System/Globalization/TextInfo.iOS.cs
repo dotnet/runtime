@@ -20,7 +20,7 @@ namespace System.Globalization
                 result = Interop.Globalization.ChangeCaseNative(_cultureName, _cultureName.Length, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
 
             if (result != (int)Interop.Globalization.ResultCode.Success)
-                throw new Exception(result == (int)Interop.Globalization.ResultCode.InvalidCodePoint ? "Invalid code point while case changing"  :
+                throw new Exception(result == (int)Interop.Globalization.ResultCode.InvalidCodePoint ? "Invalid code point while case changing" :
                                     result == (int)Interop.Globalization.ResultCode.InsufficientBuffer ? "Insufficiently sized destination buffer" : "Exception occurred while case changing");
         }
     }

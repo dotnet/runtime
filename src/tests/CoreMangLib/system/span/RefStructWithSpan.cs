@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Xunit;
 
 ref struct MyStruct<A, B>
 {
@@ -44,7 +45,7 @@ ref struct MyStruct<A, B>
     }
 }
 
-class My
+public class My
 {
     static void Stress()
     {
@@ -68,7 +69,8 @@ class My
 
     public static int[][] g = new int[10000][];
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] empty = new int[] { 1 };
         for (int i = 0; i < g.Length; i++)

@@ -2117,7 +2117,7 @@ private:
     void WalkHandles();
     static inline bool IsAlwaysStrongReference(unsigned int type)
     {
-        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED || type == HNDTYPE_ASYNCPINNED || type == HNDTYPE_SIZEDREF;
+        return type == HNDTYPE_STRONG || type == HNDTYPE_PINNED || type == HNDTYPE_SIZEDREF;
     }
 
 private:
@@ -3393,7 +3393,7 @@ private:
 //----------------------------------------------------------------------------
 
 #ifdef FEATURE_EH_FUNCLETS
-typedef ExceptionTracker ClrDataExStateType;
+typedef ExceptionTrackerBase ClrDataExStateType;
 #else // FEATURE_EH_FUNCLETS
 typedef ExInfo ClrDataExStateType;
 #endif // FEATURE_EH_FUNCLETS

@@ -39,7 +39,8 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
         File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
         File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
-        File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
+        if (UseWBTOverridePackTargets)
+            File.Copy(BuildEnvironment.WasmOverridePacksTargetsPath, Path.Combine(_projectDir, Path.GetFileName(BuildEnvironment.WasmOverridePacksTargetsPath)), overwrite: true);
     }
 
     public string CreateBlazorWasmTemplateProject(string id)
@@ -62,7 +63,9 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
+        {
             AssertBundle(res.Output, options with { IsPublish = false });
+        }
 
         return (res, logPath);
     }
@@ -76,6 +79,10 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
+            // Because we do relink in Release publish by default
+            if (options.Config == "Release")
+                options = options with { ExpectedFileType = NativeFilesType.Relinked };
+
             AssertBundle(res.Output, options with { IsPublish = true });
         }
 

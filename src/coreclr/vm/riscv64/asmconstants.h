@@ -153,7 +153,7 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags)
 ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
 
 #define MethodTable__m_ElementType     DBG_FRE(0x38, 0x30)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_pMultipurposeSlot1));
+ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
 
 #define ArrayBase__m_NumComponents     0x8
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
@@ -255,7 +255,11 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offseto
 #define PROFILE_LEAVE    2
 #define PROFILE_TAILCALL 4
 
-#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 312
+// NOTE: this should be 16-byte aligned as stack size.
+#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA  0x140
+ASMCONSTANTS_C_ASSERT(SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA == (sizeof(PROFILE_PLATFORM_SPECIFIC_DATA)+8))
+ASMCONSTANTS_C_ASSERT((SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA & 0xf) == 0)
+
 #define PROFILE_PLATFORM_SPECIFIC_DATA__argumentRegisters 16
 #define PROFILE_PLATFORM_SPECIFIC_DATA__functionId 80
 #define PROFILE_PLATFORM_SPECIFIC_DATA__floatArgumentRegisters 88
@@ -263,8 +267,6 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offseto
 #define PROFILE_PLATFORM_SPECIFIC_DATA__profiledSp 160
 #define PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg 168
 #define PROFILE_PLATFORM_SPECIFIC_DATA__flags 176
-
-ASMCONSTANTS_C_ASSERT(SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA == sizeof(PROFILE_PLATFORM_SPECIFIC_DATA))
 
 #define ASMCONSTANTS_C_ASSERT_OFFSET(type, field) \
     ASMCONSTANTS_C_ASSERT(type##__##field == offsetof(type, field))

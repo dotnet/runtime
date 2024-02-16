@@ -492,7 +492,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     }
                     else
                     {
-                        // Arm, Arm64 and LoongArch64 use the same GcInfo format as Amd64
+                        // Arm, Arm64, LoongArch64 and RISCV64 use the same GcInfo format as Amd64
                         _gcInfo = new Amd64.GcInfo(_readyToRunReader.Image, gcInfoOffset, _readyToRunReader.Machine, _readyToRunReader.ReadyToRunHeader.MajorVersion);
                     }
                 }

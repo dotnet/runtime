@@ -11,21 +11,23 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoAOTCompiler", "..\..\..
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Build.Tests", "..\Wasm.Build.Tests\Wasm.Build.Tests.csproj", "{94E18644-B0E5-4DBB-9CE4-EA1515ACE4C2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebuggerTestSuite", "..\debugger\DebuggerTestSuite\DebuggerTestSuite.csproj", "{4C0EE027-FC30-4167-B2CF-A6D18F00E08F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DebuggerTestSuite", "..\..\browser\debugger\DebuggerTestSuite\DebuggerTestSuite.csproj", "{4C0EE027-FC30-4167-B2CF-A6D18F00E08F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrowserDebugHost", "..\debugger\BrowserDebugHost\BrowserDebugHost.csproj", "{292A88FD-795F-467A-8801-B5B791CEF96E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrowserDebugHost", "..\..\browser\debugger\BrowserDebugHost\BrowserDebugHost.csproj", "{292A88FD-795F-467A-8801-B5B791CEF96E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrowserDebugProxy", "..\debugger\BrowserDebugProxy\BrowserDebugProxy.csproj", "{F5AE2AF5-3C30-45E3-A0C6-D962C51FE5E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrowserDebugProxy", "..\..\browser\debugger\BrowserDebugProxy\BrowserDebugProxy.csproj", "{F5AE2AF5-3C30-45E3-A0C6-D962C51FE5E7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmAppHost", "..\host\WasmAppHost.csproj", "{C7099764-EC2E-4FAF-9057-0321893DE4F8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmSymbolicator", "..\symbolicator\WasmSymbolicator.csproj", "{ABC41254-EC2E-4FAF-9057-091ABF4DE4F8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdateReferencedAssembly", "..\debugger\tests\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj", "{75477B6F-DC8E-4002-88B8-017C992C568E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ApplyUpdateReferencedAssembly", "..\..\browser\debugger\tests\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj", "{75477B6F-DC8E-4002-88B8-017C992C568E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.Sdk.WebAssembly.Pack.Tasks", "..\..\..\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj", "{5EEC2925-2021-4830-B7E9-72BB8B2C283D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wasi.Build.Tests", "..\..\wasi\Wasi.Build.Tests\Wasi.Build.Tests.csproj", "{3A3AEAE5-0110-45D3-89B0-B82AC430535C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasi.Build.Tests", "..\..\wasi\Wasi.Build.Tests\Wasi.Build.Tests.csproj", "{3A3AEAE5-0110-45D3-89B0-B82AC430535C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmTestRunner", "..\..\..\libraries\Common\tests\WasmTestRunner\WasmTestRunner.csproj", "{2BBE4AA8-5424-44AB-933C-66554B688872}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -81,6 +83,10 @@ Global
 		{3A3AEAE5-0110-45D3-89B0-B82AC430535C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A3AEAE5-0110-45D3-89B0-B82AC430535C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A3AEAE5-0110-45D3-89B0-B82AC430535C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BBE4AA8-5424-44AB-933C-66554B688872}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BBE4AA8-5424-44AB-933C-66554B688872}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BBE4AA8-5424-44AB-933C-66554B688872}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BBE4AA8-5424-44AB-933C-66554B688872}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

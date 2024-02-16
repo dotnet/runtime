@@ -761,7 +761,7 @@ namespace System.Data.Tests
             }
             else
             {
-                Assert.False(true);
+                Assert.Fail();
             }
 
             //now test when the mode is exclude schema
@@ -783,7 +783,7 @@ namespace System.Data.Tests
             }
             else
             {
-                Assert.False(true);
+                Assert.Fail();
             }
         }
 

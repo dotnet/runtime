@@ -332,6 +332,3 @@
 
 # performance testing sandbox
 **/sandbox
-
-#IL linker for testing
-**/linker
