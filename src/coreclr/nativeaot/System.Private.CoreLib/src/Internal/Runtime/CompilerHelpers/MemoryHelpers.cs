@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime;
-using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -12,7 +11,6 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class MemoryHelpers
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void MemSet(byte* dest, int value, nuint size)
         {
             if (size > 0)
@@ -22,7 +20,6 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void MemCopy(byte* dest, byte* src, nuint size)
         {
             if (size > 0)
