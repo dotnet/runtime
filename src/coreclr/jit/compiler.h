@@ -3578,7 +3578,7 @@ public:
 
     //-------------------------------------------------------------------------
     // Get the handle for a ref type.
-    CORINFO_CLASS_HANDLE gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull, bool vnBased = false);
+    CORINFO_CLASS_HANDLE gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull);
     // Get the class handle for an helper call
     CORINFO_CLASS_HANDLE gtGetHelperCallClassHandle(GenTreeCall* call, bool* pIsExact, bool* pIsNonNull);
     // Get the element handle for an array of ref type.
@@ -5501,6 +5501,7 @@ public:
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
     bool     fgSsaValid;           // True if SSA info is valid and can be cross-checked versus IR
+    bool     fgVnValid;            // True if VN info is valid
 
 #ifdef DEBUG
     void DumpSsaSummary();

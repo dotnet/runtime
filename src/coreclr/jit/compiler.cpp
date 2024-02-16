@@ -1946,6 +1946,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaValid                 = false;
+    fgVnValid                  = false;
     fgVNPassesCompleted        = 0;
 
     // check that HelperCallProperties are initialized
@@ -5008,6 +5009,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 DoPhase(this, PHASE_VN_BASED_DEAD_STORE_REMOVAL, &Compiler::optVNBasedDeadStoreRemoval);
             }
 
+            // Conservatively mark all VNs as stale
+            fgVnValid = false;
+
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
@@ -5805,6 +5809,7 @@ void Compiler::ResetOptAnnotations()
     fgSsaPassesCompleted = 0;
     fgVNPassesCompleted  = 0;
     fgSsaValid           = false;
+    fgVnValid            = false;
 
     for (BasicBlock* const block : Blocks())
     {

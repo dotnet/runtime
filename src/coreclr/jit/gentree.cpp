@@ -18500,7 +18500,6 @@ bool Compiler::gtStoreDefinesField(
 //    tree -- tree to find handle for
 //    pIsExact   [out] -- whether handle is exact type
 //    pIsNonNull [out] -- whether tree value is known not to be null
-//    vnBased          -- can we rely on value numbering to find the handle?
 //
 // Return Value:
 //    nullptr if class handle is unknown,
@@ -18510,7 +18509,7 @@ bool Compiler::gtStoreDefinesField(
 //    *pIsNonNull set true if tree value is known not to be null,
 //        otherwise a null value is possible.
 
-CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull, bool vnBased)
+CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull)
 {
     // Set default values for our out params.
     *pIsNonNull                   = false;
@@ -18790,7 +18789,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
     }
 
-    if (vnBased && (objClass == NO_CLASS_HANDLE))
+    if ((objClass == NO_CLASS_HANDLE) && fgVnValid)
     {
         // Try VN if we haven't found a class handle yet
         objClass = vnStore->GetObjectType(tree->gtVNPair.GetConservative(), pIsExact, pIsNonNull);

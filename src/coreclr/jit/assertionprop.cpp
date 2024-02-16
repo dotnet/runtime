@@ -2710,7 +2710,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
             {
                 bool                 isExact;
                 bool                 isNonNull;
-                CORINFO_CLASS_HANDLE castFrom = gtGetClassHandle(castObjArg, &isExact, &isNonNull, true);
+                CORINFO_CLASS_HANDLE castFrom = gtGetClassHandle(castObjArg, &isExact, &isNonNull);
                 if (castFrom != NO_CLASS_HANDLE)
                 {
                     CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
