@@ -2676,12 +2676,15 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //
 GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call)
 {
+    bool isCastClass = false;
     switch (call->GetHelperNum())
     {
         case CORINFO_HELP_CHKCASTARRAY:
         case CORINFO_HELP_CHKCASTANY:
         case CORINFO_HELP_CHKCASTINTERFACE:
         case CORINFO_HELP_CHKCASTCLASS:
+            isCastClass = true;
+            FALLTHROUGH;
         case CORINFO_HELP_ISINSTANCEOFARRAY:
         case CORINFO_HELP_ISINSTANCEOFCLASS:
         case CORINFO_HELP_ISINSTANCEOFANY:
@@ -2713,7 +2716,16 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                     fgSetTreeSeq(result);
                     return result;
                 }
-                // TODO-CQ: castResult == TypeCompareState::MustNot means isinst can be folded to just null
+
+                // if obj is guaranteed to fail this isinst (in this case we require it to be exact)
+                // then we can fold it to a just null + side effects.
+                if (!isCastClass && isExact && (castResult == TypeCompareState::MustNot))
+                {
+                    GenTree* result = gtWrapWithSideEffects(gtNewIconNode(0, TYP_REF), call, GTF_ALL_EFFECT, true);
+                    fgSetTreeSeq(result);
+                    return result;
+                }
+
                 return nullptr;
             }
 
