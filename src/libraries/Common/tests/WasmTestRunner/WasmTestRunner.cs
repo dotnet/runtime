@@ -67,8 +67,8 @@ public class WasmTestRunner : WasmApplicationEntryPoint
                     runner.IsThreadless = false;
                     break;
                 case "-parallelThreads":
-                    runner.RunInParallel = true;
-                    runner.MaxParallelThreadsFromArg = int.Parse(args[i + 1]);
+                    runner.MaxParallelThreadsFromArg = Math.Max(1, int.Parse(args[i + 1]));
+                    runner.RunInParallel = runner.MaxParallelThreadsFromArg > 1;
                     i++;
                     break;
                 case "-verbosity":
