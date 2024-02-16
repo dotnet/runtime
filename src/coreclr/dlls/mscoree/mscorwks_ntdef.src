@@ -71,6 +71,5 @@ EXPORTS
         mono_unity_allocation_granularity
         mono_unity_class_has_failure
         mono_unity_g_free
-        mono_unity_gc_handles_foreach_get_target
         mono_unity_loader_get_last_error_and_error_prepare_exception
         unity_coreclr_create_delegate

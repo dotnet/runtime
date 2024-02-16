@@ -913,11 +913,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_g_free(void* p)
     free(p);
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_unity_gc_handles_foreach_get_target (MonoDataFunc callback, void* userData)
-{
-    ASSERT_NOT_IMPLEMENTED;
-}
-
 extern "C" EXPORT_API MonoException* EXPORT_CC mono_unity_loader_get_last_error_and_error_prepare_exception()
 {
     //ASSERT_NOT_IMPLEMENTED;

@@ -82,7 +82,6 @@ typedef int (*vprintf_func)(const char* msg, va_list args);
 
 typedef void(*MonoDataFunc) (void *data, void *userData);
 
-DO_API(void, mono_unity_gc_handles_foreach_get_target, (MonoDataFunc callback, void* userData))
 DO_API(uint32_t, mono_unity_allocation_granularity, ())
 
 // GLib functions
