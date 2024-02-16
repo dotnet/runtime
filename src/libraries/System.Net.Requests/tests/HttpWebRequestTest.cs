@@ -2160,15 +2160,15 @@ namespace System.Net.Tests
                 },
                 async (server) =>
                 {
-                    await server.AcceptConnectionAsync(async (client) =>
+                    await server.AcceptConnectionAsync(async (connection) =>
                     {
                         byte[] buffer = new byte[5];
-                        await client.ReadRequestHeaderAsync();
-                        int readBytes = await client.ReadBlockAsync(buffer, 0, 5);
+                        await connection.ReadRequestHeaderAsync();
+                        int readBytes = await connection.ReadBlockAsync(buffer, 0, 5);
                         Assert.Equal("Hello"u8.Length, readBytes);
                         Assert.Equal("Hello"u8, buffer[0..5]);
                         tcs.SetResult();
-                        await client.SendResponseAsync();
+                        await connection.SendResponseAsync();
                     });
                 }
             );
@@ -2192,12 +2192,12 @@ namespace System.Net.Tests
                 },
                 async (server) =>
                 {
-                    await server.AcceptConnectionAsync(async (client) => 
+                    await server.AcceptConnectionAsync(async (connection) => 
                     {
-                        await client.ReadRequestHeaderAsync();
+                        await connection.ReadRequestHeaderAsync();
                         // This should time out, because we're expecting the body itself but we'll get it after 30 sec.
-                        await Assert.ThrowsAsync<TimeoutException>(() => client.ReadLineAsync().WaitAsync(TimeSpan.FromMilliseconds(100)));
-                        await client.SendResponseAsync();
+                        await Assert.ThrowsAsync<TimeoutException>(() => connection.ReadLineAsync().WaitAsync(TimeSpan.FromMilliseconds(100)));
+                        await connection.SendResponseAsync();
                     });
                 }
             );
@@ -2223,13 +2223,13 @@ namespace System.Net.Tests
                 },
                 async (server) =>
                 {
-                    await server.AcceptConnectionAsync(async (client) => 
+                    await server.AcceptConnectionAsync(async (connection) => 
                     {
-                        await client.ReadRequestHeaderAsync();
+                        await connection.ReadRequestHeaderAsync();
                         // This should not time out, because we're expecting the body itself and we should get it after 1 sec.
-                        string data = await client.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
+                        string data = await connection.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
                         Assert.StartsWith("aaaa", data);
-                        await client.SendResponseAsync();
+                        await connection.SendResponseAsync();
                     });
                 });
         }
@@ -2250,9 +2250,9 @@ namespace System.Net.Tests
                 async (server) =>
                 {
                     await server.AcceptConnectionAsync(
-                        async (client) =>
+                        async (connection) =>
                         {
-                            List<string> headers = await client.ReadRequestHeaderAsync();
+                            List<string> headers = await connection.ReadRequestHeaderAsync();
                             if (expect100Continue)
                             {
                                 Assert.Contains("Expect: 100-continue", headers);
@@ -2261,7 +2261,7 @@ namespace System.Net.Tests
                             {
                                 Assert.DoesNotContain("Expect: 100-continue", headers);
                             }
-                            await client.SendResponseAsync();
+                            await connection.SendResponseAsync();
                         }
                     );
                 }
