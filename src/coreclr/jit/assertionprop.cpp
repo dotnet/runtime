@@ -2664,7 +2664,104 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
-// optVNConstantPropOnTree: Substitutes tree with an evaluated constant while
+// optVNBasedFoldExpr_Call: Folds given call using VN to a simpler tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    call   -  The call to fold
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call)
+{
+    switch (call->GetHelperNum())
+    {
+        //
+        // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
+        // where CAST is either ISINST or CASTCLASS.
+        //
+        case CORINFO_HELP_CHKCASTARRAY:
+        case CORINFO_HELP_CHKCASTANY:
+        case CORINFO_HELP_CHKCASTINTERFACE:
+        case CORINFO_HELP_CHKCASTCLASS:
+        case CORINFO_HELP_ISINSTANCEOFARRAY:
+        case CORINFO_HELP_ISINSTANCEOFCLASS:
+        case CORINFO_HELP_ISINSTANCEOFANY:
+        case CORINFO_HELP_ISINSTANCEOFINTERFACE:
+        {
+            GenTree* castClsArg   = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* castObjArg   = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            ValueNum castClsArgVN = castClsArg->gtVNPair.GetConservative();
+            ValueNum castObjArgVN = castObjArg->gtVNPair.GetConservative();
+
+            if ((castObjArg->gtFlags & GTF_ALL_EFFECT) != 0)
+            {
+                // It won't be trivial to properly extract side-effects from the call node.
+                // Ideally, we only need side effects from the castClsArg argument as the call itself
+                // won't throw any exceptions. But we should not forget about the EarlyNode (setup args)
+                return nullptr;
+            }
+
+            VNFuncApp funcApp;
+            if (vnStore->GetVNFunc(castObjArgVN, &funcApp) && (funcApp.m_func == VNF_IsInstanceOf))
+            {
+                ValueNum innerCastClsVN = funcApp.m_args[0];
+                if (innerCastClsVN == castClsArgVN)
+                {
+                    // The outer cast is redundant, remove it and preserve its side effects
+                    // We do ignoreRoot here because the actual cast node never throws any exceptions.
+                    GenTree* result = gtWrapWithSideEffects(castObjArg, call, GTF_ALL_EFFECT, true);
+                    fgSetTreeSeq(result);
+                    return result;
+                }
+            }
+        }
+        break;
+
+        default:
+            break;
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldExpr: Folds given tree using VN to a constant or a simpler tree.
+//
+// Arguments:
+//    block  -  The block containing the tree.
+//    parent -  The parent node of the tree.
+//    tree   -  The tree to fold.
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
+{
+    // First, attempt to fold it to a constant if possible.
+    GenTree* foldedToCns = optVNBasedFoldConstExpr(block, parent, tree);
+    if (foldedToCns != nullptr)
+    {
+        return foldedToCns;
+    }
+
+    switch (tree->OperGet())
+    {
+        case GT_CALL:
+            return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
+
+        // We can add more VN-based foldings here.
+
+        default:
+            break;
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldConstExpr: Substitutes tree with an evaluated constant while
 //                          managing side-effects.
 //
 // Arguments:
@@ -2691,7 +2788,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //    the relop will evaluate to "true" or "false" statically, then the side-effects
 //    will be put into new statements, presuming the JTrue will be folded away.
 //
-GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* parent, GenTree* tree)
+GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
     if (tree->OperGet() == GT_JTRUE)
     {
@@ -5109,21 +5206,10 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             unsigned index = optAssertionIsSubtype(arg1, arg2, assertions);
             if (index != NO_ASSERTION_INDEX)
             {
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
-                    gtDispTree(call, nullptr, nullptr, true);
-                }
-#endif
-                GenTree* list = nullptr;
-                gtExtractSideEffList(call, &list, GTF_SIDE_EFFECT, true);
-                if (list != nullptr)
-                {
-                    arg1 = gtNewOperNode(GT_COMMA, call->TypeGet(), list, arg1);
-                    fgSetTreeSeq(arg1);
-                }
+                JITDUMP("\nDid VN based subtype prop for index #%02u in " FMT_BB ":\n", index, compCurBB->bbNum);
+                DISPTREE(call);
 
+                arg1 = gtWrapWithSideEffects(arg1, call, GTF_SIDE_EFFECT, true);
                 return optAssertionProp_Update(arg1, call, stmt);
             }
 
@@ -6301,8 +6387,8 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 }
 
 //------------------------------------------------------------------------------
-// optVNConstantPropCurStmt
-//    Performs constant prop on the current statement's tree nodes.
+// optVNBasedFoldCurStmt: Performs VN-based folding
+//    on the current statement's tree nodes using VN.
 //
 // Assumption:
 //    This function is called as part of a post-order tree walk.
@@ -6316,17 +6402,12 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
 // Return Value:
 //    Returns the standard visitor walk result.
 //
-// Description:
-//    Checks if a node is an R-value and evaluates to a constant. If the node
-//    evaluates to constant, then the tree is replaced by its side effects and
-//    the constant node.
-//
-Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
-                                                          Statement*  stmt,
-                                                          GenTree*    parent,
-                                                          GenTree*    tree)
+Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
+                                                       Statement*  stmt,
+                                                       GenTree*    parent,
+                                                       GenTree*    tree)
 {
-    // Don't perform const prop on expressions marked with GTF_DONT_CSE
+    // Don't try and fold expressions marked with GTF_DONT_CSE
     // TODO-ASG: delete.
     if (!tree->CanCSE())
     {
@@ -6414,8 +6495,8 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
             return WALK_CONTINUE;
     }
 
-    // Perform the constant propagation
-    GenTree* newTree = optVNConstantPropOnTree(block, parent, tree);
+    // Perform the VN-based folding:
+    GenTree* newTree = optVNBasedFoldExpr(block, parent, tree);
 
     if (newTree == nullptr)
     {
@@ -6428,7 +6509,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block,
 
     optAssertionProp_Update(newTree, tree, stmt);
 
-    JITDUMP("After constant propagation on [%06u]:\n", tree->gtTreeID);
+    JITDUMP("After VN-based fold of [%06u]:\n", tree->gtTreeID);
     DBEXEC(VERBOSE, gtDispStmt(stmt));
 
     return WALK_CONTINUE;
@@ -6496,7 +6577,7 @@ Compiler::fgWalkResult Compiler::optVNAssertionPropCurStmtVisitor(GenTree** ppTr
 
     pThis->optVnNonNullPropCurStmt(pData->block, pData->stmt, *ppTree);
 
-    return pThis->optVNConstantPropCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
+    return pThis->optVNBasedFoldCurStmt(pData->block, pData->stmt, data->parent, *ppTree);
 }
 
 /*****************************************************************************

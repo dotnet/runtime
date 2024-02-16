@@ -2333,6 +2333,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             if (con->ImmedValNeedsReloc(compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+                if (tree->IsTlsIconHandle())
+                {
+                    // no need to generate because we generate it as part of GT_CALL
+                    break;
+                }
             }
 
             if (targetType == TYP_BYREF)

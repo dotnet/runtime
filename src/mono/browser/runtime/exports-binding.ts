@@ -5,7 +5,6 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_bind_cs_function } from "./invoke-cs";
 import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_import_async, mono_wasm_invoke_import_sync, mono_wasm_invoke_js_import } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
@@ -92,7 +91,6 @@ export const mono_wasm_imports = [
     mono_wasm_bind_js_import,
     mono_wasm_invoke_js_function,
     mono_wasm_invoke_js_import,
-    mono_wasm_bind_cs_function,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
     mono_wasm_change_case_invariant,
