@@ -11,22 +11,22 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class MemoryHelpers
     {
-        private static unsafe void MemSet(byte* dest, int value, nuint size)
+        private static unsafe void MemSet(ref byte dest, byte value, nuint size)
         {
             if (size > 0)
             {
-                _ = *dest;
-                RuntimeImports.memset(dest, value, size);
+                _ = dest;
+                SpanHelpers.Fill(ref dest, size, value);
             }
         }
 
-        private static unsafe void MemCopy(byte* dest, byte* src, nuint size)
+        private static unsafe void MemCopy(ref byte dest, ref byte src, nuint size)
         {
             if (size > 0)
             {
-                _ = *dest;
-                _ = *src;
-                RuntimeImports.memcpy(dest, src, size);
+                _ = dest;
+                _ = src;
+                Buffer.Memmove(ref dest, ref src, size);
             }
         }
     }

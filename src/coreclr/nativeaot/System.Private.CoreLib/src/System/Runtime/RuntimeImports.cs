@@ -1099,9 +1099,6 @@ namespace System.Runtime
         internal static unsafe partial void* memmove(byte* dmem, byte* smem, nuint size);
 
         [LibraryImport(RuntimeImports.RuntimeLibrary)]
-        internal static unsafe partial void* memcpy(byte* dmem, byte* smem, nuint size);
-
-        [LibraryImport(RuntimeImports.RuntimeLibrary)]
         internal static unsafe partial void* memset(byte* mem, int value, nuint size);
 
 #if TARGET_X86 || TARGET_AMD64
