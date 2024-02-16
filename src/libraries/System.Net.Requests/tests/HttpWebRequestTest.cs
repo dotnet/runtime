@@ -2239,6 +2239,9 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Linux,
+            "Socket.Bind() auto-enables SO_REUSEADDR on Unix to allow Bind() during TIME_WAIT to " +
+            "emulate Windows behavior, see SystemNative_Bind() in 'pal_networking.c'.")]
         public async Task SendHttpRequest_BindIPEndPoint_Throws()
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
