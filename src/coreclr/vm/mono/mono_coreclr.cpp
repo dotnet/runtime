@@ -907,12 +907,6 @@ extern "C" EXPORT_API void EXPORT_CC mono_unity_g_free(void* p)
     free(p);
 }
 
-extern "C" EXPORT_API MonoException* EXPORT_CC mono_unity_loader_get_last_error_and_error_prepare_exception()
-{
-    //ASSERT_NOT_IMPLEMENTED;
-    return NULL;
-}
-
 extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID* classId, const guint16* profilerDllPathUtf16)
 {
     STATIC_CONTRACT_NOTHROW;

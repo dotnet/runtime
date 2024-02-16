@@ -71,8 +71,6 @@ DO_API(MonoClass*, mono_class_from_mono_type, (MonoType * image))
 
 DO_API(int, mono_array_element_size, (MonoClass * classOfArray))
 
-DO_API(MonoException*, mono_unity_loader_get_last_error_and_error_prepare_exception, (void))
-
 #ifdef WIN32
 typedef int (__cdecl *vprintf_func)(const char* msg, va_list args);
 #else
