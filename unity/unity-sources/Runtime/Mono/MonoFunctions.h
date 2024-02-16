@@ -84,7 +84,6 @@ typedef void(*MonoDataFunc) (void *data, void *userData);
 
 DO_API(void, mono_unity_gc_handles_foreach_get_target, (MonoDataFunc callback, void* userData))
 DO_API(uint32_t, mono_unity_allocation_granularity, ())
-DO_API(void, mono_unity_type_get_name_full_chunked, (MonoType * type, MonoDataFunc appendCallback, void* userData))
 
 // GLib functions
 #define g_free mono_unity_g_free

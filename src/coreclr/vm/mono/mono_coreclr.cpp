@@ -924,11 +924,6 @@ extern "C" EXPORT_API MonoException* EXPORT_CC mono_unity_loader_get_last_error_
     return NULL;
 }
 
-extern "C" EXPORT_API void EXPORT_CC mono_unity_type_get_name_full_chunked(MonoType * type, MonoDataFunc appendCallback, void* userData)
-{
-    ASSERT_NOT_IMPLEMENTED;
-}
-
 extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID* classId, const guint16* profilerDllPathUtf16)
 {
     STATIC_CONTRACT_NOTHROW;

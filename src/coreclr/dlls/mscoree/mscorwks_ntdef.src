@@ -73,5 +73,4 @@ EXPORTS
         mono_unity_g_free
         mono_unity_gc_handles_foreach_get_target
         mono_unity_loader_get_last_error_and_error_prepare_exception
-        mono_unity_type_get_name_full_chunked
         unity_coreclr_create_delegate
