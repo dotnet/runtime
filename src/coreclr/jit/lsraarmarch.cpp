@@ -368,6 +368,21 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     if (ctrlExpr != nullptr)
     {
+#ifdef TARGET_ARM64
+        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && (call->gtArgs.CountArgs() == 0) &&
+            ctrlExpr->IsTlsIconHandle())
+        {
+            // For NativeAOT linux/arm64, we generate the needed code as part of
+            // call node because the generated code has to be in specific format
+            // that linker can patch. As such, the code needs specific registers
+            // that we will attach to this node to guarantee that they are available
+            // during generating this node.
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
+            newRefPosition(REG_R0, currentLoc, RefTypeFixedReg, nullptr, genRegMask(REG_R0));
+            newRefPosition(REG_R1, currentLoc, RefTypeFixedReg, nullptr, genRegMask(REG_R1));
+            ctrlExprCandidates = genRegMask(REG_R2);
+        }
+#endif
         BuildUse(ctrlExpr, ctrlExprCandidates);
         srcCount++;
     }

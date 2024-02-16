@@ -5,7 +5,7 @@ import { mono_wasm_new_root, mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, WasmRoot, WasmRootBuffer } from "./types/internal";
 import { Module } from "./globals";
 import cwraps from "./cwraps";
-import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16 } from "./memory";
+import { isSharedArrayBuffer, localHeapViewU8, getU32_local, setU16_local, localHeapViewU32, getU16_local, localHeapViewU16, _zero_region } from "./memory";
 import { NativePointer, CharPtr } from "./types/emscripten";
 
 export const interned_js_string_table = new Map<string, MonoString>();
@@ -31,6 +31,8 @@ export function strings_init(): void {
         }
         mono_wasm_string_decoder_buffer = Module._malloc(12);
     }
+    if (!mono_wasm_string_root)
+        mono_wasm_string_root = mono_wasm_new_root();
 }
 
 export function stringToUTF8(str: string): Uint8Array {
@@ -40,6 +42,15 @@ export function stringToUTF8(str: string): Uint8Array {
         return buffer;
     }
     return _text_encoder_utf8.encode(str);
+}
+
+export function stringToUTF8Ptr(str: string): CharPtr {
+    const bytes = str.length * 2;
+    const ptr = Module._malloc(bytes) as any;
+    _zero_region(ptr, str.length * 2);
+    const buffer = localHeapViewU8().subarray(ptr, ptr + bytes);
+    buffer.set(stringToUTF8(str));
+    return ptr;
 }
 
 export function utf8ToStringRelaxed(buffer: Uint8Array): string {
@@ -257,8 +268,6 @@ let mono_wasm_string_root: any;
 export function monoStringToStringUnsafe(mono_string: MonoString): string | null {
     if (mono_string === MonoStringNull)
         return null;
-    if (!mono_wasm_string_root)
-        mono_wasm_string_root = mono_wasm_new_root();
 
     mono_wasm_string_root.value = mono_string;
     const result = monoStringToString(mono_wasm_string_root);

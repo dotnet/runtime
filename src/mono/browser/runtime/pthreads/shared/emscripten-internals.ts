@@ -3,10 +3,10 @@
 
 import { Module } from "../../globals";
 import { Thread } from "../browser";
-import { PThreadInfo, pthreadPtr } from "./types";
+import { PThreadInfo, PThreadPtr } from "./types";
 
 /** @module emscripten-internals accessors to the functions in the emscripten PThreads library, including
- * the low-level representations of {@linkcode pthreadPtr} thread info structs, etc.
+ * the low-level representations of {@linkcode PThreadPtr} thread info structs, etc.
  * Additionally, note that some of these functions are replaced by {@linkcode file://./emscripten-replacements.ts}.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with
  *    {@linkcode file://./../../../emsdk/upstream/emscripten/src/library_pthread.js}
@@ -27,7 +27,7 @@ export interface PThreadLibrary {
 
 /// N.B. emscripten deletes the `pthread` property from the worker when it is not actively running a pthread
 export interface PThreadWorker extends Worker {
-    pthread_ptr: pthreadPtr;
+    pthread_ptr: PThreadPtr;
     loaded: boolean;
     // this info is updated via async messages from the worker, it could be stale
     info: PThreadInfo;
@@ -35,12 +35,12 @@ export interface PThreadWorker extends Worker {
 }
 
 interface PThreadInfoMap {
-    [key: pthreadPtr]: PThreadWorker;
+    [key: number]: PThreadWorker;
 }
 
 
-export function getWorker(pthreadPtr: pthreadPtr): PThreadWorker | undefined {
-    return getModulePThread().pthreads[pthreadPtr];
+export function getWorker(pthreadPtr: PThreadPtr): PThreadWorker | undefined {
+    return getModulePThread().pthreads[pthreadPtr as any];
 }
 
 export function allocateUnusedWorker(): void {

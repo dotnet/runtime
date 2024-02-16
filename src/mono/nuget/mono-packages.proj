@@ -9,6 +9,8 @@
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />
     <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
     <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
+
+    <ProjectReference Include="Microsoft.NET.Runtime.WorkloadTesting.Internal\Microsoft.NET.Runtime.WorkloadTesting.Internal.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
@@ -28,11 +30,7 @@
     <ProjectReference Include="Microsoft.NET.Runtime.LibraryBuilder.Sdk\Microsoft.NET.Runtime.LibraryBuilder.Sdk.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' != 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoTargets.Sdk\Microsoft.NET.Runtime.MonoTargets.Sdk.pkgproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="Microsoft.NET.Runtime.WorkloadTesting.Internal\Microsoft.NET.Runtime.WorkloadTesting.Internal.pkgproj" />
   </ItemGroup>
 </Project>

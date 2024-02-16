@@ -165,20 +165,20 @@
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Target Name="GetNuGetsToBuildForWorkloadTesting"
-          Returns="@(_NuGetsToBuild)"
+          Returns="@(NuGetsToBuildForWorkloadTesting)"
           DependsOnTargets="$(GetNuGetsToBuildForWorkloadTestingDependsOn)"
           Condition="'$(PreparePackagesForWorkloadInstall)' == 'true'" />
 
-  <Target Name="_PreparePackagesForWorkloadInstall" Inputs="%(_NuGetsToBuild.Project);%(_NuGetsToBuild.Dependencies)" Outputs="%(_NuGetsToBuild.Identity)" Condition="'$(PreparePackagesForWorkloadInstall)' == 'true'">
+  <Target Name="_PreparePackagesForWorkloadInstall" Inputs="%(NuGetsToBuildForWorkloadTesting.Project);%(NuGetsToBuildForWorkloadTesting.Dependencies)" Outputs="%(NuGetsToBuildForWorkloadTesting.Identity)" Condition="'$(PreparePackagesForWorkloadInstall)' == 'true'">
     <Message Importance="High" Text="
-** Building %(_NuGetsToBuild.Descriptor) **
+** Building %(NuGetsToBuildForWorkloadTesting.Descriptor) **
       " />
 
-    <MSBuild Projects="%(_NuGetsToBuild.Project)"
-             Properties="%(_NuGetsToBuild.Properties);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
+    <MSBuild Projects="%(NuGetsToBuildForWorkloadTesting.Project)"
+             Properties="%(NuGetsToBuildForWorkloadTesting.Properties);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
              Targets="Restore" />
-    <MSBuild Projects="%(_NuGetsToBuild.Project)"
-             Properties="%(_NuGetsToBuild.Properties)"
+    <MSBuild Projects="%(NuGetsToBuildForWorkloadTesting.Project)"
+             Properties="%(NuGetsToBuildForWorkloadTesting.Properties)"
              Targets="Pack" />
   </Target>
 

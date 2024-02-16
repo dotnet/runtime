@@ -2312,6 +2312,7 @@ void Compiler::compSetProcessor()
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+            codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
         }
         if (canUseEvexEncoding())
         {
@@ -5035,7 +5036,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    optLoopsRequirePreHeaders = false;
+    optLoopsCanonical = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -9088,7 +9089,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -9101,7 +9102,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
     fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -10614,6 +10615,31 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "undefined";
     }
 }
+
+//------------------------------------------------------------------------------
+// printfAlloc: printf a string and allocate the result in CMK_DebugOnly
+// memory.
+//
+// Arguments:
+//    format - Format string
+//
+// Returns:
+//    Allocated string.
+//
+const char* Compiler::printfAlloc(const char* format, ...)
+{
+    char    str[512];
+    va_list args;
+    va_start(args, format);
+    int result = vsprintf_s(str, ArrLen(str), format, args);
+    va_end(args);
+    assert((result >= 0) && ((unsigned)result < ArrLen(str)));
+
+    char* resultStr = new (this, CMK_DebugOnly) char[result + 1];
+    memcpy(resultStr, str, (unsigned)result + 1);
+    return resultStr;
+}
+
 #endif // defined(DEBUG)
 
 #if TRACK_ENREG_STATS

@@ -2,6 +2,7 @@
   <ItemGroup>
     <!-- The officially-supported subset of these RIDs should be included in ILCompilerSupportedRids in
          https://github.com/dotnet/installer/blob/main/src/redist/targets/GenerateBundledVersions.targets -->
+    <OfficialBuildRID Include="linux-musl-arm" Platform="arm" />
     <OfficialBuildRID Include="linux-arm" Platform="arm" />
     <OfficialBuildRID Include="linux-musl-arm64" Platform="arm64" />
     <OfficialBuildRID Include="linux-arm64" Platform="arm64" />

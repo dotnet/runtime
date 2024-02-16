@@ -102,15 +102,6 @@ Return value:
 BOOL FILEInitStdHandles(void);
 
 /*++
-FILECleanupStdHandles
-
-Close promary handles for stdin, stdout and stderr
-
-(no parameters, no return value)
---*/
-void FILECleanupStdHandles(void);
-
-/*++
 
 Function :
     FILEGetProperNotFoundError
@@ -122,86 +113,6 @@ Windows behavoir.
     LPDWORD lpErrorCode - The error to set.
 */
 void FILEGetProperNotFoundError( LPCSTR lpPath, LPDWORD lpErrorCode );
-
-/*++
-PAL_fflush
-
-Calls fflush
-
-Input parameters:
-
-PAL_FILE *stream = stream to be flushed.
-
-Return value:
-    0 is returned on success, otherwise EOF is returned.
---*/
-int _cdecl PAL_fflush( PAL_FILE *stream );
-
-/*++
-PAL_fgets
-
-Wrapper function for InternalFgets.
-
-Input parameters:
-
-sz = stores characters read from the given file stream
-nSize = number of characters to be read
-pf = stream to read characters from
-
-Return value:
-    Returns a pointer to the string storing the characters on success
-    and NULL on failure.
---*/
-char * __cdecl PAL_fgets(char *sz, int nSize, PAL_FILE *pf);
-
-/*++
-PAL_fwrite
-
-Wrapper function for InternalFwrite
-
-Input parameters:
-
-pvBuffer = array of objects to write to the given file stream
-nSize = size of a object in bytes
-nCount = number of objects to write
-pf = stream to write characters to
-
-Return value:
-    Returns the number of objects written.
---*/
-size_t __cdecl PAL_fwrite(const void *pvBuffer, size_t nSize, size_t nCount, PAL_FILE *pf);
-
-/*++
-PAL__open
-
-Wrapper function for InternalOpen.
-
-Input parameters:
-
-szPath = pointer to a pathname of a file to be opened
-nFlags = arguments that control how the file should be accessed
-mode = file permission settings that are used only when a file is created
-
-Return value:
-    File descriptor on success, -1 on failure
---*/
-int __cdecl PAL__open(const char *szPath, int nFlags, ...);
-
-/*++
-PAL_fseek
-
-Wrapper function for fseek
-
-Input parameters:
-
-pf = a given file stream
-lOffset = distance from position to set file-position indicator
-nWhence = method used to determine the file_position indicator location relative to lOffset
-
-Return value:
-    0 on success, -1 on failure.
---*/
-int _cdecl PAL_fseek(PAL_FILE *pf, LONG lOffset, int nWhence);
 
 #ifdef __cplusplus
 }

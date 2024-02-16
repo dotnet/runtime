@@ -7,7 +7,7 @@ import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, mono_wasm_release_cs_owned_object, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
@@ -21,6 +21,8 @@ import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerTyp
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
 import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { call_delegate } from "./managed-exports";
+import { gc_locked } from "./gc-lock";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -57,7 +59,7 @@ export function initialize_marshalers_to_js(): void {
 }
 
 export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToJs | undefined {
-    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard) {
         return undefined;
     }
 
@@ -199,7 +201,7 @@ function _marshal_delegate_to_js(arg: JSMarshalerArgument, _?: MarshalerType, re
         result = (arg1_js: any, arg2_js: any, arg3_js: any): any => {
             mono_assert(!WasmEnableThreads || !result.isDisposed, "Delegate is disposed and should not be invoked anymore.");
             // arg numbers are shifted by one, the real first is a gc handle of the callback
-            return runtimeHelpers.javaScriptExports.call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
+            return call_delegate(gc_handle, arg1_js, arg2_js, arg3_js, res_converter, arg1_converter, arg2_converter, arg3_converter);
         };
         result.dispose = () => {
             if (!result.isDisposed) {
@@ -493,6 +495,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             result[index] = marshal_string_to_js(element_arg);
         }
         if (!WasmEnableJsInteropByValue) {
+            mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
         }
     }
@@ -503,6 +506,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             result[index] = _marshal_cs_object_to_js(element_arg);
         }
         if (!WasmEnableJsInteropByValue) {
+            mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
         }
     }

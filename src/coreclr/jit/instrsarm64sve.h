@@ -942,13 +942,13 @@ INST3(stnt1d,            "stnt1d",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_ID_2A        SVE_IE_2A                   
-INST2(ldr,               "ldr",                   LD,                      IF_SVE_2AA,              0x85800000,      0x85804000                  )
+INST2(ldr,               "ldr",                   0,                       IF_SVE_2AA,              0x85800000,      0x85804000                  )
     // LDR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_ID_2A           1000010110iiiiii 000iiinnnnn0TTTT     8580 0000   
     // LDR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_IE_2A           1000010110iiiiii 010iiinnnnnttttt     8580 4000   
 
 
 //    enum               name                     info                                              SVE_JG_2A        SVE_JH_2A                   
-INST2(str,               "str",                   ST,                      IF_SVE_2AB,              0xE5800000,      0xE5804000                  )
+INST2(str,               "str",                   0,                       IF_SVE_2AB,              0xE5800000,      0xE5804000                  )
     // STR     <Pt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_JG_2A           1110010110iiiiii 000iiinnnnn0TTTT     E580 0000   
     // STR     <Zt>, [<Xn|SP>{, #<imm>, MUL VL}]                                         SVE_JH_2A           1110010110iiiiii 010iiinnnnnttttt     E580 4000   
 
@@ -1312,8 +1312,8 @@ INST2(pmullt,            "pmullt",                0,                       IF_SV
 
 
 //    enum               name                     info                                              SVE_GQ_3A        SVE_HG_2A                   
-INST2(fcvtnt,            "fcvtnt",                0,                       IF_SVE_2BJ,              0x64CAA000,      0x650A3C00                  )
-    // FCVTNT  <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_GQ_3A           0110010011001010 101gggnnnnnddddd     64CA A000   
+INST2(fcvtnt,            "fcvtnt",                0,                       IF_SVE_2BJ,              0x6488A000,      0x650A3C00                  )
+    // FCVTNT  <Zd>.H, <Pg>/M, <Zn>.S                                                    SVE_GQ_3A           0110010010001000 101gggnnnnnddddd     6488 A000   
     // FCVTNT  <Zd>.B, {<Zn1>.S-<Zn2>.S }                                                SVE_HG_2A           0110010100001010 001111nnnn0ddddd     650A 3C00   
 
 
@@ -2669,8 +2669,8 @@ INST1(histcnt,           "histcnt",               0,                       IF_SV
 INST1(bfcvtnt,           "bfcvtnt",               0,                       IF_SVE_GQ_3A,            0x648AA000                                   )
     // BFCVTNT <Zd>.H, <Pg>/M, <Zn>.S                                                    SVE_GQ_3A           0110010010001010 101gggnnnnnddddd     648A A000   
 
-INST1(fcvtlt,            "fcvtlt",                0,                       IF_SVE_GQ_3A,            0x64CBA000                                   )
-    // FCVTLT  <Zd>.D, <Pg>/M, <Zn>.S                                                    SVE_GQ_3A           0110010011001011 101gggnnnnnddddd     64CB A000   
+INST1(fcvtlt,            "fcvtlt",                0,                       IF_SVE_GQ_3A,            0x6489A000                                   )
+    // FCVTLT  <Zd>.S, <Pg>/M, <Zn>.H                                                    SVE_GQ_3A           0110010010001001 101gggnnnnnddddd     6489 A000   
 
 INST1(fcvtxnt,           "fcvtxnt",               0,                       IF_SVE_GQ_3A,            0x640AA000                                   )
     // FCVTXNT <Zd>.S, <Pg>/M, <Zn>.D                                                    SVE_GQ_3A           0110010000001010 101gggnnnnnddddd     640A A000   

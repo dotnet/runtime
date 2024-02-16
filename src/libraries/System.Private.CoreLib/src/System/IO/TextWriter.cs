@@ -672,6 +672,8 @@ namespace System.IO
 
             public override IFormatProvider FormatProvider => CultureInfo.InvariantCulture;
             public override Encoding Encoding => Encoding.Unicode;
+            [AllowNull]
+            public override string NewLine { get => base.NewLine; set { } }
 
             // To avoid all unnecessary overhead in the base, override all Flush/Write methods as pure nops.
 

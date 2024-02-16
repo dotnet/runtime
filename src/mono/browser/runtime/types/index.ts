@@ -81,7 +81,7 @@ export interface DotnetHostBuilder {
     run(): Promise<number>;
 }
 
-// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
+// when adding new fields, please consider if it should be impacting the config hash. If not, please drop it in the getCacheKey()
 export type MonoConfig = {
     /**
      * Additional search locations for assets.
@@ -144,10 +144,6 @@ export type MonoConfig = {
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolSize?: number,
-    /**
-     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
-     */
-    startupMemoryCache?: boolean,
     /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
@@ -320,7 +316,15 @@ export type SingleAssetBehaviors =
     /**
      * Typically blazor.boot.json
      */
-    | "manifest";
+    | "manifest"
+    /**
+     * The debugging symbols
+     */
+    | "symbols"
+    /**
+     * Load segmentation rules file for Hybrid Globalization.
+     */
+    | "segmentation-rules";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
@@ -351,14 +355,6 @@ export type AssetBehaviors = SingleAssetBehaviors |
      * The javascript module that came from nuget package .
      */
     | "js-module-library-initializer"
-    /**
-     * The javascript module for threads.
-     */
-    | "symbols"
-    /**
-     * Load segmentation rules file for Hybrid Globalization.
-     */
-    | "segmentation-rules"
 
 export const enum GlobalizationMode {
     /**

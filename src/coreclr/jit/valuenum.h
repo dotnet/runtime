@@ -1025,6 +1025,9 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a specific handle constant.
+    bool IsVNHandle(ValueNum vn, GenTreeFlags flag);
+
     // Returns true iff the VN represents an object handle constant.
     bool IsVNObjHandle(ValueNum vn);
 
@@ -1099,7 +1102,8 @@ private:
 
 #ifdef _MSC_VER
 
-                assert(&typeid(T) == &typeid(size_t)); // We represent ref/byref constants as size_t's.
+                assert((&typeid(T) == &typeid(size_t)) ||
+                       (&typeid(T) == &typeid(ssize_t))); // We represent ref/byref constants as size_t/ssize_t
 
 #endif // _MSC_VER
 
