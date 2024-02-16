@@ -22,6 +22,7 @@ namespace ILLink.RoslynAnalyzer
 		public const string attributeArgument = "attributeArgument";
 		public const string FullyQualifiedDynamicallyAccessedMembersAttribute = "System.Diagnostics.CodeAnalysis." + DynamicallyAccessedMembersAttribute;
 		public const string FullyQualifiedFeatureCheckAttribute  = "System.Diagnostics.CodeAnalysis.FeatureCheckAttribute";
+		public const string FullyQualifiedFeatureDependsOnAttribute  = "System.Diagnostics.CodeAnalysis.FeatureDependsOnAttribute";
 		public static Lazy<ImmutableArray<RequiresAnalyzerBase>> RequiresAnalyzers { get; } = new Lazy<ImmutableArray<RequiresAnalyzerBase>> (GetRequiresAnalyzers);
 		static ImmutableArray<RequiresAnalyzerBase> GetRequiresAnalyzers () =>
 			ImmutableArray.Create<RequiresAnalyzerBase> (
