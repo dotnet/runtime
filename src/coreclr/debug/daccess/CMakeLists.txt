@@ -1,8 +1,6 @@
 add_definitions(-DFEATURE_NO_HOST)
 
-include(${CLR_ARTIFACTS_OBJ_DIR}/libhellomanaged/libhellomanaged.cmake)
-
-message(STATUS "Using libhellomanaged in ${LIBHELLOMANAGED_MODE} mode")
+include(${CLR_ARTIFACTS_OBJ_DIR}/libhellomanaged/libhellomanaged.cmake OPTIONAL RESULT_VARIABLE INCLUDED_HELLOMANAGED)
 
 include_directories(BEFORE ${VM_DIR})
 include_directories(BEFORE ${VM_DIR}/${ARCH_SOURCES_DIR})
@@ -41,15 +39,17 @@ include_directories(${ARCH_SOURCES_DIR})
 
 convert_to_absolute_path(DACCESS_SOURCES ${DACCESS_SOURCES})
 
-add_imported_nativeaot_library_clr(libhellomanagedTarget LIBHELLOMANAGED)
-
 add_library_clr(daccess ${DACCESS_SOURCES})
 set_target_properties(daccess PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(daccess PRIVATE [["stdafx.h"]])
-target_link_libraries(daccess PRIVATE libhellomanagedTarget)
 
-# FIXME: can we put this with mscordaccore instead?
-install_clr(TARGETS libhellomanagedTarget DESTINATIONS . sharedFramework COMPONENT debug)
+if(NOT "${INCLUDED_HELLOMANAGED}" STREQUAL "NOTFOUND")
+  add_imported_nativeaot_library_clr(libhellomanagedTarget LIBHELLOMANAGED)
+  target_link_libraries(daccess PRIVATE libhellomanagedTarget)
+  target_compile_definitions(daccess PRIVATE HAVE_LIBHELLOMANAGED)
+  # FIXME: can we put this with mscordaccore instead?
+  install_clr(TARGETS libhellomanagedTarget DESTINATIONS . sharedFramework COMPONENT debug)
+endif()
 
 add_dependencies(daccess eventing_headers)
 
