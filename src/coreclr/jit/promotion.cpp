@@ -1219,13 +1219,8 @@ public:
             for (Replacement& rep : reps)
             {
 #ifdef DEBUG
-                char buf[32];
-                sprintf_s(buf, sizeof(buf), "V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
-                          rep.Offset + genTypeSize(rep.AccessType));
-                size_t len  = strlen(buf) + 1;
-                char*  bufp = new (m_compiler, CMK_DebugOnly) char[len];
-                strcpy_s(bufp, len, buf);
-                rep.Description = bufp;
+                rep.Description = m_compiler->printfAlloc("V%02u.[%03u..%03u)", agg->LclNum, rep.Offset,
+                                                          rep.Offset + genTypeSize(rep.AccessType));
 #endif
 
                 rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));

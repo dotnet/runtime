@@ -1548,9 +1548,6 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<ulong> InsertSelectedScalar(Vector128<ulong> result, [ConstantExpected(Max = (byte)(1))] byte resultIndex, Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte valueIndex) => Insert(result, resultIndex, Extract(value, valueIndex));
 
-#if false
-            // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-        
             /// <summary>
             ///   A64: LD2 { Vn.16B, Vn+1.16B }[Vm], [Xn]
             /// </summary>
@@ -1700,7 +1697,7 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: LD4 { Vn.2D, Vn+1.2D, Vn+2.2D, Vn+3.2D }[Vm], [Xn]
             /// </summary>
             public static unsafe (Vector128<double> Value1, Vector128<double> Value2, Vector128<double> Value3, Vector128<double> Value4) LoadAndInsertScalar((Vector128<double>, Vector128<double>, Vector128<double>, Vector128<double>) values, [ConstantExpected(Max = (byte)(1))] byte index, double* address) => LoadAndInsertScalar(values, index, address);
-#endif
+
             /// <summary>
             /// float64x2_t vld1q_dup_f64 (float64_t const * ptr)
             ///   A64: LD1R { Vt.2D }, [Xn]
@@ -9164,9 +9161,6 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector128<ulong> LoadAndInsertScalar(Vector128<ulong> value, [ConstantExpected(Max = (byte)(1))] byte index, ulong* address) => LoadAndInsertScalar(value, index, address);
 
-#if false
-        // Should be disabled until Mono implements these APIs. See https://github.com/dotnet/runtime/issues/93081
-
         /// <summary>
         ///   A64: LD2 { Vn.8B, Vn+1.8B }[Vm], [Xn]
         /// </summary>
@@ -9271,7 +9265,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD4 { Vn.2S, Vn+1.2S, Vn+2.2S, Vn+3.2S }[Vm], [Xn]
         /// </summary>
         public static unsafe (Vector64<float> Value1, Vector64<float> Value2, Vector64<float> Value3, Vector64<float> Value4) LoadAndInsertScalar((Vector64<float>, Vector64<float>, Vector64<float>, Vector64<float>) values, [ConstantExpected(Max = (byte)(1))] byte index, float* address) => LoadAndInsertScalar(values, index, address);
-#endif
 
         /// <summary>
         /// uint8x8_t vld1_dup_u8 (uint8_t const * ptr)

@@ -14,7 +14,7 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
+    <XunitShowProgress>true</XunitShowProgress>
   </PropertyGroup>
 
   <ItemGroup>
