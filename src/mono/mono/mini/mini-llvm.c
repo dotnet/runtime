@@ -11634,7 +11634,7 @@ MONO_RESTORE_WARNING
 			lhs = LLVMBuildLoad2 (builder, ret_t, addresses [ins->sreg1]->value, "");
 
 			LLVMValueRef *args = g_new0(LLVMValueRef, n_elem_tuple + 2);
-			int idx = 0;
+			unsigned int idx = 0;
 			for ( ; idx < n_elem_tuple; idx++) {
 				args [idx] = LLVMBuildExtractValue (builder, lhs, idx, "extract_elem");
 			}
