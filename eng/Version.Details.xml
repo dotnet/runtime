@@ -392,18 +392,18 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>b5ac2d9031d4b2dc40683b31de86b05a20b670af</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.10.0-2.24115.8">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.10.0-2.24116.4">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>d3a41ae7c758b1195f64dc5f57a6eafc8d959469</Sha>
+      <Sha>f656544b1a42c3d212362dab79829e0b3abe30f4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.10.0-2.24115.8">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.10.0-2.24116.4">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>d3a41ae7c758b1195f64dc5f57a6eafc8d959469</Sha>
+      <Sha>f656544b1a42c3d212362dab79829e0b3abe30f4</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.10.0-2.24115.8">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.10.0-2.24116.4">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>d3a41ae7c758b1195f64dc5f57a6eafc8d959469</Sha>
+      <Sha>f656544b1a42c3d212362dab79829e0b3abe30f4</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0-beta1.24109.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
@@ -414,9 +414,9 @@
       <Sha>68c643b4667c6808bd21910ef32f7e2f7bd776c5</Sha>
     </Dependency>
     <!-- Intermediate is necessary for source build. -->
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.10.0-2.24115.8">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.roslyn" Version="4.10.0-2.24116.4">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>d3a41ae7c758b1195f64dc5f57a6eafc8d959469</Sha>
+      <Sha>f656544b1a42c3d212362dab79829e0b3abe30f4</Sha>
       <SourceBuild RepoName="roslyn" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="9.0.100-preview.2.24112.1">
