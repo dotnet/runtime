@@ -103,7 +103,12 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         // Build and run multithreaded
         await PublishAndRunAsync(id, config, true);
 
+        Directory.EnumerateFiles(_provider.FindBinFrameworkDir(config, true, DefaultTargetFramework), "dotnet.native.worker.*");
+
         // Build and run singlethreaded without clean
+        await PublishAndRunAsync(id, config, false);
+
+        // Build and run multithreaded again
         await PublishAndRunAsync(id, config, false);
     }
 
