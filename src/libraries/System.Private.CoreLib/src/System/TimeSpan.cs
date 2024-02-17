@@ -402,7 +402,7 @@ namespace System
         /// </exception>
         public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
             => FromDays(0, minutes: minutes, seconds: seconds, milliseconds: milliseconds, microseconds: microseconds);
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TimeSpan"/> structure to a specified number of
         /// seconds.
