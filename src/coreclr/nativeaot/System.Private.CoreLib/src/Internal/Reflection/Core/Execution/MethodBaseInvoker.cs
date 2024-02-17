@@ -57,7 +57,7 @@ namespace Internal.Reflection.Core.Execution
                 throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
 
             if (!RuntimeAugments.IsAssignable(thisObject, declaringTypeHandle))
-                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
+                throw new TargetException(SR.Format(SR.RFLCT_Targ_ITargMismatch_WithType, declaringTypeHandle.GetRuntimeTypeInfoForRuntimeTypeHandle().Name, thisObject.GetType().Name));
         }
     }
 }

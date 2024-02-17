@@ -17133,6 +17133,41 @@ bool Compiler::gtSplitTree(
 }
 
 //------------------------------------------------------------------------
+// gtWrapWithSideEffects: Extracts side effects from sideEffectSource (if any)
+//    and wraps the input tree with a COMMA node with them.
+//
+// Arguments:
+//    tree              - the expression tree to wrap with side effects (if any)
+//                        it has to be either a side effect free subnode of sideEffectsSource
+//                        or any tree outside sideEffectsSource's hierarchy
+//    sideEffectsSource - the expression tree to extract side effects from
+//    sideEffectsFlags  - side effect flags to be considered
+//    ignoreRoot        - ignore side effects on the expression root node
+//
+// Return Value:
+//    The original tree wrapped with a COMMA node that contains the side effects
+//    or just the tree itself if sideEffectSource has no side effects.
+//
+GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
+                                         GenTree*     sideEffectsSource,
+                                         GenTreeFlags sideEffectsFlags,
+                                         bool         ignoreRoot)
+{
+    GenTree* sideEffects = nullptr;
+    gtExtractSideEffList(sideEffectsSource, &sideEffects, sideEffectsFlags, ignoreRoot);
+    if (sideEffects != nullptr)
+    {
+        // TODO: assert if tree is a subnode of sideEffectsSource and the tree has its own side effects
+        // otherwise the resulting COMMA might have some side effects to be duplicated
+        // It should be possible to be smarter here and allow such cases by extracting the side effects
+        // properly for this particular case. For now, caller is responsible for avoiding such cases.
+
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+    }
+    return tree;
+}
+
+//------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:
@@ -18970,7 +19005,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
 
 CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull)
 {
-    CORINFO_CLASS_HANDLE fieldClass   = nullptr;
+    CORINFO_CLASS_HANDLE fieldClass   = NO_CLASS_HANDLE;
     CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
 
     if (fieldCorType == CORINFO_TYPE_CLASS)
@@ -18984,7 +19019,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldH
 #if DEBUG
             char fieldNameBuffer[128];
             char classNameBuffer[128];
-            JITDUMP("Querying runtime about current class of field %s (declared as %s)\n",
+            JITDUMP("\nQuerying runtime about current class of field %s (declared as %s)\n",
                     eeGetFieldName(fieldHnd, true, fieldNameBuffer, sizeof(fieldNameBuffer)),
                     eeGetClassName(fieldClass, classNameBuffer, sizeof(classNameBuffer)));
 #endif // DEBUG
@@ -26447,6 +26482,95 @@ bool GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic() const
 {
     genTreeOps Oper = HWOperGet();
     return Oper == GT_AND || Oper == GT_OR || Oper == GT_XOR || Oper == GT_AND_NOT;
+}
+
+//------------------------------------------------------------------------
+// OperIsEmbRoundingEnabled: Is this HWIntrinsic a node with embedded rounding feature.
+//
+// Return Value:
+//    Whether "this" is a node with embedded rounding feature.
+//
+bool GenTreeHWIntrinsic::OperIsEmbRoundingEnabled() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+
+    if (!HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId))
+    {
+        return false;
+    }
+
+    size_t numArgs = GetOperandCount();
+    switch (intrinsicId)
+    {
+        // these intrinsics only have the embedded rounding enabled implementation.
+        case NI_AVX512F_AddScalar:
+        case NI_AVX512F_DivideScalar:
+        case NI_AVX512F_MultiplyScalar:
+        case NI_AVX512F_SubtractScalar:
+        case NI_AVX512F_SqrtScalar:
+        {
+            return true;
+        }
+
+        case NI_AVX512F_FusedMultiplyAdd:
+        case NI_AVX512F_FusedMultiplyAddScalar:
+        case NI_AVX512F_FusedMultiplyAddNegated:
+        case NI_AVX512F_FusedMultiplyAddNegatedScalar:
+        case NI_AVX512F_FusedMultiplyAddSubtract:
+        case NI_AVX512F_FusedMultiplySubtract:
+        case NI_AVX512F_FusedMultiplySubtractAdd:
+        case NI_AVX512F_FusedMultiplySubtractNegated:
+        case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
+        case NI_AVX512F_FusedMultiplySubtractScalar:
+        {
+            return numArgs == 4;
+        }
+
+        case NI_AVX512F_Add:
+        case NI_AVX512F_Divide:
+        case NI_AVX512F_Multiply:
+        case NI_AVX512F_Subtract:
+
+        case NI_AVX512F_Scale:
+        case NI_AVX512F_ScaleScalar:
+
+        case NI_AVX512F_ConvertScalarToVector128Single:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertScalarToVector128Double:
+        case NI_AVX512F_X64_ConvertScalarToVector128Single:
+#endif // TARGET_AMD64
+        {
+            return numArgs == 3;
+        }
+
+        case NI_AVX512F_Sqrt:
+        case NI_AVX512F_ConvertToInt32:
+        case NI_AVX512F_ConvertToUInt32:
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256Single:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_ConvertToVector512Single:
+        case NI_AVX512F_ConvertToVector512UInt32:
+        case NI_AVX512F_ConvertToVector512Int32:
+#if defined(TARGET_AMD64)
+        case NI_AVX512F_X64_ConvertToInt64:
+        case NI_AVX512F_X64_ConvertToUInt64:
+#endif // TARGET_AMD64
+        case NI_AVX512DQ_ConvertToVector256Single:
+        case NI_AVX512DQ_ConvertToVector512Double:
+        case NI_AVX512DQ_ConvertToVector512Int64:
+        case NI_AVX512DQ_ConvertToVector512UInt64:
+        {
+            return numArgs == 2;
+        }
+
+        default:
+            unreached();
+    }
+#else  // !TARGET_XARCH
+    return false;
+#endif // TARGET_XARCH
 }
 
 //------------------------------------------------------------------------------
