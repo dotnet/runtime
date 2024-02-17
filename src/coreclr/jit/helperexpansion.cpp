@@ -576,8 +576,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     //      use(tlsRoot);
     // ...
 
-    GenTree*             tlsRootAddr   = nullptr;
-    CORINFO_CONST_LOOKUP tlsRootObject = threadStaticInfo.tlsRootObject;
+    GenTree*               tlsRootAddr   = nullptr;
+    CORINFO_GENERIC_HANDLE tlsRootObject = threadStaticInfo.tlsRootObject.handle;
 
     if (TargetOS::IsWindows)
     {
@@ -598,7 +598,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
         // This resolves to an offset which is TYP_INT
-        GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject.handle, TYP_INT);
+        GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject, TYP_INT);
         tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
 
         // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
@@ -606,34 +606,63 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     }
     else if (TargetOS::IsUnix)
     {
-        // Code sequence to access thread local variable on linux/x64:
-        //      data16
-        //      lea      rdi, 0x7FE5C418CD28  ; tlsRootObject
-        //      data16 data16
-        //      call     _tls_get_addr
-        //
-        // This sequence along with `data16` prefix is expected by the linker so it
-        // will patch these with TLS access.
-        GenTree* tls_get_addr_val =
-            gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
-        tls_get_addr_val->SetContained();
+        if (TargetArchitecture::IsX64)
+        {
+            // Code sequence to access thread local variable on linux/x64:
+            //      data16
+            //      lea      rdi, 0x7FE5C418CD28  ; tlsRootObject
+            //      data16 data16
+            //      call     _tls_get_addr
+            //
+            // This sequence along with `data16` prefix is expected by the linker so it
+            // will patch these with TLS access.
+            GenTree* tls_get_addr_val =
+                gtNewIconHandleNode((size_t)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
+            tls_get_addr_val->SetContained();
 
-        // GenTreeCall* tlsRefCall = gtNewCallNode(CT_ tls_get_addr_val, TYP_I_IMPL);
-        GenTreeCall* tlsRefCall = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
-        tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
-        // //
+            GenTreeCall* tlsRefCall = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+            tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
 
-        // This is an indirect call which takes an argument.
-        // Populate and set the ABI appropriately.
-        assert(tlsRootObject.handle != 0);
-        GenTree* tlsArg = gtNewIconNode((size_t)tlsRootObject.handle, TYP_I_IMPL);
-        tlsArg->gtFlags |= GTF_ICON_TLSGD_OFFSET;
-        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
+            // This is an indirect call which takes an argument.
+            // Populate and set the ABI appropriately.
+            assert(tlsRootObject != 0);
+            GenTree* tlsArg = gtNewIconNode((size_t)tlsRootObject, TYP_I_IMPL);
+            tlsArg->gtFlags |= GTF_ICON_TLSGD_OFFSET;
+            tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
 
-        fgMorphArgs(tlsRefCall);
+            fgMorphArgs(tlsRefCall);
 
-        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
-        tlsRootAddr = tlsRefCall;
+            tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+            tlsRootAddr = tlsRefCall;
+        }
+        else if (TargetArchitecture::IsArm64)
+        {
+            /*
+            x0 = adrp :tlsdesc:tlsRoot ; 1st parameter
+            x0 += tlsdesc_lo12:tlsRoot ; update 1st parameter
+
+            x1 = tpidr_el0             ; 2nd parameter
+
+            x2 = [x0]                  ; call
+            blr x2
+
+            */
+
+            GenTree* tlsRootOffset = gtNewIconHandleNode((size_t)tlsRootObject, GTF_ICON_TLS_HDL);
+            tlsRootOffset->gtFlags |= GTF_ICON_TLSGD_OFFSET;
+
+            GenTree*     tlsCallIndir = gtCloneExpr(tlsRootOffset);
+            GenTreeCall* tlsRefCall   = gtNewIndCallNode(tlsCallIndir, TYP_I_IMPL);
+            tlsRefCall->gtFlags |= GTF_TLS_GET_ADDR;
+            fgMorphArgs(tlsRefCall);
+
+            tlsRefCall->gtFlags |= GTF_EXCEPT | (tlsCallIndir->gtFlags & GTF_GLOB_EFFECT);
+            tlsRootAddr = tlsRefCall;
+        }
+        else
+        {
+            unreached();
+        }
     }
     else
     {

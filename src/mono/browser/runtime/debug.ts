@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import BuildConfiguration from "consts:configuration";
-import { INTERNAL, Module, runtimeHelpers } from "./globals";
+import { INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
@@ -158,9 +158,9 @@ export function mono_wasm_debugger_attached(): void {
     cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 
-export function mono_wasm_set_entrypoint_breakpoint(assembly_name: CharPtr, entrypoint_method_token: number): void {
+export function mono_wasm_set_entrypoint_breakpoint(entrypoint_method_token: number): void {
     //keep these assignments, these values are used by BrowserDebugProxy
-    _assembly_name_str = utf8ToString(assembly_name).concat(".dll");
+    _assembly_name_str = loaderHelpers.config.mainAssemblyName + ".dll";
     _entrypoint_method_token = entrypoint_method_token;
     //keep this console.assert, otherwise optimization will remove the assignments
     // eslint-disable-next-line no-console
