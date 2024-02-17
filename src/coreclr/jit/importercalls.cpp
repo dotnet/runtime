@@ -98,11 +98,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     CORINFO_SIG_INFO calliSig;
     NewCallArg       extraArg;
 
-#ifdef SWIFT_SUPPORT
     // Swift calls may use special register types that require additional IR to handle,
     // so if we're importing a Swift call, look for these types in the signature
-    int swiftErrorIndex = -1;
-#endif // SWIFT_SUPPORT
+    CallArg* swiftErrorArg = nullptr;
+    CallArg* swiftSelfArg = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -670,57 +669,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 
         checkForSmallType = true;
-        bool spillAllArgs = false;
 
-#ifdef SWIFT_SUPPORT
-        // We are importing an unmanaged Swift call, which might require special parameter handling:
-        // - SwiftError* is passed to capture the address of an error thrown during the Swift call.
-        if (call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Swift)
-        {
-            // Check the signature of the Swift call for the special types.
-            CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
-
-            for (unsigned short argIndex = 0; argIndex < sig->numArgs;
-                 sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
-            {
-                CORINFO_CLASS_HANDLE argClass;
-                CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
-                bool                 argIsByrefOrPtr = false;
-
-                if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
-                {
-                    argClass        = info.compCompHnd->getArgClass(sig, sigArg);
-                    argType         = info.compCompHnd->getChildType(argClass, &argClass);
-                    argIsByrefOrPtr = true;
-                }
-
-                if ((argType != CORINFO_TYPE_VALUECLASS) || !info.compCompHnd->isIntrinsicType(argClass))
-                {
-                    continue;
-                }
-
-                const char* namespaceName;
-                const char* className = info.compCompHnd->getClassNameFromMetadata(argClass, &namespaceName);
-
-                if ((strcmp(className, "SwiftError") == 0) &&
-                    (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
-                {
-                    // For error handling purposes, we expect a pointer to a SwiftError to be passed
-                    assert(argIsByrefOrPtr);
-                    if (swiftErrorIndex != -1)
-                    {
-                        BADCODE("Duplicate SwiftError* parameter");
-                    }
-
-                    swiftErrorIndex = argIndex;
-                    spillAllArgs    = true;
-                }
-                // TODO: Handle SwiftSelf, SwiftAsync
-            }
-        }
-#endif // SWIFT_SUPPORT
-
-        impPopArgsForUnmanagedCall(call->AsCall(), sig, spillAllArgs);
+        impPopArgsForUnmanagedCall(call->AsCall(), sig, &swiftErrorArg, &swiftSelfArg);
 
         goto DONE;
     }
@@ -1543,16 +1493,13 @@ DONE_CALL:
     }
 
 #ifdef SWIFT_SUPPORT
-    if (swiftErrorIndex >= 0)
+    if (swiftErrorArg != nullptr)
     {
         // This Swift call uses the error register
         assert(call->IsCall());
         assert(call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Swift);
-        assert(swiftErrorIndex < (int)sig->numArgs);
-        CallArg* errorArg = call->AsCall()->gtArgs.GetArgByIndex(swiftErrorIndex);
 
-        assert(errorArg != nullptr);
-        GenTree* argNode = errorArg->GetNode();
+        GenTree* argNode = swiftErrorArg->GetNode();
         assert(argNode != nullptr);
 
         // SwiftError* arg should have been spilled to a local temp variable
@@ -1570,7 +1517,7 @@ DONE_CALL:
         call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
 
         // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
-        call->AsCall()->gtArgs.Remove(errorArg);
+        call->AsCall()->gtArgs.Remove(swiftErrorArg);
     }
 #endif // SWIFT_SUPPORT
 
@@ -1911,7 +1858,7 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
 /*****************************************************************************/
 
-void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, const bool spillAllArgs)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg, /* OUT */ CallArg** swiftSelfArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
@@ -1935,19 +1882,73 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
         argsToReverse--;
     }
 
+#ifdef SWIFT_SUPPORT
+    unsigned short swiftErrorIndex = sig->numArgs;
+
+    // We are importing an unmanaged Swift call, which might require special parameter handling:
+    if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
+    {
+        bool spillAllArgs = false;
+        
+        // Check the signature of the Swift call for the special types.
+        CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+
+        for (unsigned short argIndex = 0; argIndex < sig->numArgs;
+             sigArg                  = info.compCompHnd->getArgNext(sigArg), argIndex++)
+        {
+            CORINFO_CLASS_HANDLE argClass;
+            CorInfoType          argType         = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+            bool                 argIsByrefOrPtr = false;
+
+            if ((argType == CORINFO_TYPE_BYREF) || (argType == CORINFO_TYPE_PTR))
+            {
+                argClass        = info.compCompHnd->getArgClass(sig, sigArg);
+                argType         = info.compCompHnd->getChildType(argClass, &argClass);
+                argIsByrefOrPtr = true;
+            }
+
+            if ((argType != CORINFO_TYPE_VALUECLASS) || !info.compCompHnd->isIntrinsicType(argClass))
+            {
+                continue;
+            }
+
+            const char* namespaceName;
+            const char* className = info.compCompHnd->getClassNameFromMetadata(argClass, &namespaceName);
+
+            if ((strcmp(className, "SwiftError") == 0) &&
+                (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
+            {
+                // For error handling purposes, we expect a pointer to a SwiftError to be passed
+                assert(argIsByrefOrPtr);
+                if (swiftErrorIndex != sig->numArgs)
+                {
+                    BADCODE("Duplicate SwiftError* parameter");
+                }
+
+                swiftErrorIndex = argIndex;
+                spillAllArgs    = true;
+            }
+            // TODO: Handle SwiftSelf, SwiftAsync
+        }
+
+        // Don't need to reverse args for Swift calls
+        argsToReverse = 0;
+
+        // If using one of the Swift register types, spill all args to the stack
+        if (spillAllArgs)
+        {
+            for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
+            {
+                impSpillStackEntry(level,
+                                   BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - spillAllArgs=true"));
+            }
+        }
+    }
+#endif // SWIFT_SUPPORT
+
 #ifndef TARGET_X86
     // Don't reverse args on ARM or x64 - first four args always placed in regs in order
     argsToReverse = 0;
-
-    // Fast path for spilling all args
-    if (spillAllArgs)
-    {
-        for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
-        {
-            impSpillStackEntry(level,
-                               BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - spillAllArgs=true"));
-        }
-    }
 #endif
 
     for (unsigned level = verCurrentState.esStackDepth - argsToReverse; level < verCurrentState.esStackDepth; level++)
@@ -1991,6 +1992,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
         assert(thisPtr->TypeGet() == TYP_I_IMPL || thisPtr->TypeGet() == TYP_BYREF);
     }
 
+    unsigned short argIndex = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
         GenTree* argNode = arg.GetEarlyNode();
@@ -2013,6 +2015,18 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
                 assert(!"*** invalid IL: gc ref passed to unmanaged call");
             }
         }
+
+#ifdef SWIFT_SUPPORT
+        if (argIndex == swiftErrorIndex)
+        {
+            // Found the SwiftError* arg
+            assert(swiftErrorArg != nullptr);
+            *swiftErrorArg = &arg;
+        }
+        // TODO: SwiftSelf, SwiftAsync
+#endif // SWIFT_SUPPORT
+
+        argIndex++;
     }
 }
 

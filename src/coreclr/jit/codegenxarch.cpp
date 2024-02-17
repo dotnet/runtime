@@ -4697,7 +4697,14 @@ void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
 {
     assert(tree->OperIs(GT_SWIFT_ERROR));
 
-    tree->SetRegNum(REG_SWIFT_ERROR);
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    
+    assert(targetReg == REG_SWIFT_ERROR);
+
+    inst_Mov(targetType, targetReg, REG_SWIFT_ERROR, /* canSkip */ true);
+    genTransferRegGCState(targetReg, REG_SWIFT_ERROR);
 
     genProduceReg(tree);
 }
