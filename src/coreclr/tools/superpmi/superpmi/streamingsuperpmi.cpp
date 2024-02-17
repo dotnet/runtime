@@ -171,18 +171,18 @@ int doStreamingSuperPMI(CommandLine::Options& o)
 
     JitInstance* jit = nullptr;
 
-    enum { BUFSIZ = 2048 };
+    enum { BUFFER_SIZE = 2048 };
 
-    char line[BUFSIZ];
+    char line[BUFFER_SIZE];
     const char* const seps = "!";
     char *next = nullptr;
 
     // Syntax is dddd { ! <jit-option>=value }*
     // Likes starting with '#' are ignored
     //
-    while (fgets(line, BUFSIZ, streamFile) != nullptr)
+    while (fgets(line, BUFFER_SIZE, streamFile) != nullptr)
     {
-        for (int i = 0; i < BUFSIZ; i++)
+        for (int i = 0; i < BUFFER_SIZE; i++)
         {
             if (line[i] == '\n' || line[i] == '\r')
             {
@@ -190,7 +190,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
                 break;
             }
         }
-        line[BUFSIZ - 1] = '0';
+        line[BUFFER_SIZE - 1] = '0';
 
         LogDebug("[streaming] Request: '%s'", line);
 
