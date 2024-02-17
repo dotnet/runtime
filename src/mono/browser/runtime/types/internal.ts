@@ -3,6 +3,7 @@
 
 import type { AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, RuntimeAPI, SingleAssetBehaviors } from ".";
 import type { PThreadLibrary } from "../pthreads/shared/emscripten-internals";
+import { PThreadPtr } from "../pthreads/shared/types";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -200,6 +201,9 @@ export type RuntimeHelpers = {
     getWasmIndirectFunctionTable(): WebAssembly.Table,
     runtimeReady: boolean,
     proxyGCHandle: GCHandle | undefined,
+    managedThreadTID: PThreadPtr,
+    isCurrentThread: boolean,
+    isPendingSynchronousCall: boolean, // true when we are in the middle of a synchronous call from managed code with the same JSProxyContext
     cspPolicy: boolean,
 
     allAssetsInMemory: PromiseAndController<void>,
@@ -333,6 +337,7 @@ export enum MarshalerType {
     Span,
     Action,
     Function,
+    OneWay,
 
     // only on runtime
     JSException,

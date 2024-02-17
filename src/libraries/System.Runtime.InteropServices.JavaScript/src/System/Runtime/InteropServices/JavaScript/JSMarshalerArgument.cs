@@ -60,6 +60,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
             [FieldOffset(16)]
             internal IntPtr ContextHandle;
+
+            [FieldOffset(20)]
+            internal bool ReceiverShouldFree;
         }
 
         /// <summary>

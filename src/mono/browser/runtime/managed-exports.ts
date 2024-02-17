@@ -60,7 +60,7 @@ export function call_entry_point(main_assembly_name: string, program_args: strin
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
-        invoke_sync_method(managedExports.CallEntrypoint, args);
+        invoke_async_jsexport(managedExports.CallEntrypoint, args, 5);
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -84,7 +84,7 @@ export function load_satellite_assembly(dll: Uint8Array): void {
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Array);
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
-        invoke_sync_method(managedExports.LoadSatelliteAssembly, args);
+        invoke_sync_jsexport(managedExports.LoadSatelliteAssembly, args);
     } finally {
         Module.stackRestore(sp);
     }
@@ -101,7 +101,7 @@ export function load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): voi
         set_arg_type(arg2, MarshalerType.Array);
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
         marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
-        invoke_sync_method(managedExports.LoadLazyAssembly, args);
+        invoke_sync_jsexport(managedExports.LoadLazyAssembly, args);
     } finally {
         Module.stackRestore(sp);
     }
@@ -117,7 +117,8 @@ export function release_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
         const arg1 = get_arg(args, 2);
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, gc_handle);
-        invoke_sync_method(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
+        // this must stay synchronous for free_gcv_handle sake
+        invoke_sync_jsexport(managedExports.ReleaseJSOwnedObjectByGCHandle, args);
     } finally {
         Module.stackRestore(sp);
     }
@@ -145,7 +146,7 @@ export function complete_task(holder_gc_handle: GCHandle, isCanceling: boolean, 
             mono_assert(res_converter, "res_converter missing");
             res_converter(arg3, data);
         }
-        invoke_sync_method(managedExports.CompleteTask, args);
+        invoke_async_jsexport(managedExports.CompleteTask, args, 4);
     } finally {
         Module.stackRestore(sp);
     }
@@ -176,7 +177,7 @@ export function call_delegate(callback_gc_handle: GCHandle, arg1_js: any, arg2_j
             arg3_converter(arg4, arg3_js);
         }
 
-        invoke_sync_method(managedExports.CallDelegate, args);
+        invoke_sync_jsexport(managedExports.CallDelegate, args);
 
         if (res_converter) {
             const res = get_arg(args, 1);
@@ -198,7 +199,7 @@ export function get_managed_stack_trace(exception_gc_handle: GCHandle) {
         set_arg_type(arg1, MarshalerType.Exception);
         set_gc_handle(arg1, exception_gc_handle);
 
-        invoke_sync_method(managedExports.GetManagedStackTrace, args);
+        invoke_sync_jsexport(managedExports.GetManagedStackTrace, args);
         const res = get_arg(args, 1);
         return marshal_string_to_js(res);
     } finally {
@@ -220,7 +221,7 @@ export function install_main_synchronization_context(): GCHandle {
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
         set_arg_intptr(arg1, mono_wasm_main_thread_ptr() as any);
-        cwraps.mono_wasm_invoke_method(managedExports.InstallMainSynchronizationContext!, args);
+        cwraps.mono_wasm_invoke_jsexport(managedExports.InstallMainSynchronizationContext!, args);
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
@@ -231,9 +232,40 @@ export function install_main_synchronization_context(): GCHandle {
     }
 }
 
-export function invoke_sync_method(method: MonoMethod, args: JSMarshalerArguments): void {
+export function invoke_async_jsexport(method: MonoMethod, args: JSMarshalerArguments, size: number): void {
     assert_js_interop();
-    cwraps.mono_wasm_invoke_method(method, args as any);
+    if (!WasmEnableThreads || runtimeHelpers.isCurrentThread) {
+        cwraps.mono_wasm_invoke_jsexport(method, args as any);
+        if (is_args_exception(args)) {
+            const exc = get_arg(args, 0);
+            throw marshal_exception_to_js(exc);
+        }
+    } else {
+        throw new Error("Should be unreachable until we implement deputy." + size);
+        /*
+        set_receiver_should_free(args);
+        const bytes = JavaScriptMarshalerArgSize * size;
+        const cpy = Module._malloc(bytes) as any;
+        copyBytes(args as any, cpy, bytes);
+        twraps.mono_wasm_invoke_jsexport_async_post(runtimeHelpers.managedThreadTID, method, cpy);
+        */
+    }
+}
+
+export function invoke_sync_jsexport(method: MonoMethod, args: JSMarshalerArguments): void {
+    assert_js_interop();
+    if (!WasmEnableThreads || runtimeHelpers.isCurrentThread) {
+        cwraps.mono_wasm_invoke_jsexport(method, args as any);
+    } else {
+        throw new Error("Should be unreachable until we implement deputy.");
+        /*
+        if (!runtimeHelpers.isCurrentThread && runtimeHelpers.isPendingSynchronousCall) {
+            throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+        }
+        // this is blocking too
+        twraps.mono_wasm_invoke_jsexport_async_send(runtimeHelpers.managedThreadTID, method, args as any);
+        */
+    }
     if (is_args_exception(args)) {
         const exc = get_arg(args, 0);
         throw marshal_exception_to_js(exc);
@@ -253,7 +285,7 @@ export function bind_assembly_exports(assemblyName: string): Promise<void> {
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated);
 
-        invoke_sync_method(managedExports.BindAssemblyExports, args);
+        invoke_async_jsexport(managedExports.BindAssemblyExports, args, 3);
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);

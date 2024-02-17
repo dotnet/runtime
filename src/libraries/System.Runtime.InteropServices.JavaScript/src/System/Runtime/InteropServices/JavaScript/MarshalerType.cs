@@ -34,6 +34,7 @@ namespace System.Runtime.InteropServices.JavaScript
         Span,
         Action,
         Function,
+        OneWay,
 
 #if !JSIMPORTGENERATOR
         // only on runtime

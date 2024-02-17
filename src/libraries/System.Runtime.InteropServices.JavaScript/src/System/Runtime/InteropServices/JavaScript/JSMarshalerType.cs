@@ -45,6 +45,15 @@ namespace System.Runtime.InteropServices.JavaScript
         });
 
         /// <summary>
+        /// Dispatches the call asynchronously and doesn't wait for result.
+        /// </summary>
+        /// <returns>The marshaler metadata.</returns>
+        public static JSMarshalerType OneWay { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
+        {
+            Type = MarshalerType.OneWay
+        });
+
+        /// <summary>
         /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</see> type.
         /// </summary>
         /// <returns>The marshaler metadata.</returns>

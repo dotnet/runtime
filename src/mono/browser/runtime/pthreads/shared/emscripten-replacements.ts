@@ -80,6 +80,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
 
 let availableThreadCount = 0;
 export function is_thread_available() {
+    if (!WasmEnableThreads) return true;
     return availableThreadCount > 0;
 }
 

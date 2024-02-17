@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../../globals";
-import { mono_log_debug, set_thread_prefix } from "../../logging";
+import { set_thread_prefix } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
 import { GCHandle, GCHandleNull, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
@@ -33,9 +33,11 @@ export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
 export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle): void {
     if (!WasmEnableThreads) return;
     bindings_init();
-    if (!runtimeHelpers.proxyGCHandle) {
-        runtimeHelpers.proxyGCHandle = context_gc_handle;
-        mono_log_debug("Installed JSSynchronizationContext");
+    mono_assert(!runtimeHelpers.proxyGCHandle, "JS interop should not be already installed on this worker.");
+    runtimeHelpers.proxyGCHandle = context_gc_handle;
+    if (ENVIRONMENT_IS_PTHREAD) {
+        runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+        runtimeHelpers.isCurrentThread = true;
     }
     Module.runtimeKeepalivePush();
     monoThreadInfo.isDirtyBecauseOfInterop = true;

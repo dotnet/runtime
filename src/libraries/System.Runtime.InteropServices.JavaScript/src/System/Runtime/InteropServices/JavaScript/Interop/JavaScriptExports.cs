@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -28,6 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_MANAGED_THREADS
                 // when we arrive here, we are on the thread which owns the proxies
                 arg_exc.AssertCurrentThreadContext();
+                Debug.Assert(arg_result.slot.Type == MarshalerType.TaskPreCreated);
 #endif
 
                 arg_1.ToManaged(out IntPtr assemblyNamePtr);
@@ -47,6 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
         public static void LoadLazyAssembly(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
@@ -70,6 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
         public static void LoadSatelliteAssembly(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
@@ -91,10 +96,8 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        // The JS layer invokes this method when the JS wrapper for a JS owned object
-        //  has been collected by the JS garbage collector
-        // the marshaled signature is:
-        // void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
+        // The JS layer invokes this method when the JS wrapper for a JS owned object has been collected by the JS garbage collector
+        // the marshaled signature is: void ReleaseJSOwnedObjectByGCHandle(GCHandle gcHandle)
         public static void ReleaseJSOwnedObjectByGCHandle(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
