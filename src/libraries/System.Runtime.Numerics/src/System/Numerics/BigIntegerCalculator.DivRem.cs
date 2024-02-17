@@ -570,7 +570,6 @@ namespace System.Numerics
             }
         }
 
-
         private static void BurnikelZieglerD2n1n(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> quotient, Span<uint> remainder)
         {
             // Fast recursive division: Algorithm 1
@@ -617,32 +616,11 @@ namespace System.Numerics
             ReadOnlySpan<uint> b2 = right.Slice(0, halfN);
             Span<uint> r1 = remainder.Slice(halfN);
 
-            if (CompareActual(a1, b1) < 0)
-            {
-                BurnikelZieglerD2n1n(left12, b1, quotient, r1);
-            }
-            else
-            {
-                quotient.Fill(uint.MaxValue);
-
-                uint[]? bbFromPool = null;
-
-                Span<uint> bb = (left12.Length <= StackAllocThreshold ?
-                                stackalloc uint[StackAllocThreshold]
-                                : bbFromPool = ArrayPool<uint>.Shared.Rent(left12.Length)).Slice(0, left12.Length);
-                b1.CopyTo(bb.Slice(halfN));
-                r1.Clear();
-
-                SubtractSelf(bb, b1);
-                SubtractSelf(r1, bb);
-
-                if (bbFromPool != null)
-                    ArrayPool<uint>.Shared.Return(bbFromPool);
-            }
-
+            // Normalized to a1 < b1 in Algorithm 3.
+            Debug.Assert(CompareActual(a1, b1) < 0);
+            BurnikelZieglerD2n1n(left12, b1, quotient, r1);
 
             uint[]? dFromPool = null;
-
             Span<uint> d = (right.Length <= StackAllocThreshold ?
                             stackalloc uint[StackAllocThreshold]
                             : dFromPool = ArrayPool<uint>.Shared.Rent(right.Length)).Slice(0, right.Length);
