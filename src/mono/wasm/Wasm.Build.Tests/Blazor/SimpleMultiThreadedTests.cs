@@ -92,4 +92,51 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         if (!hasEmittedWasmEnableThreads)
             throw new XunitException($"The test didn't emit expected message 'WasmEnableThreads=true'");
     }
+
+    [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
+    [InlineData("Debug")]
+    public async Task SwitchSingleAndMultiThreaded(string config)
+    {
+        string id = $"blazor_mt_{config}_{GetRandomId()}";
+        string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+
+        // Build and run multithreaded
+        await PublishAndRunAsync(id, config, true);
+
+        // Build and run singlethreaded without clean
+        await PublishAndRunAsync(id, config, false);
+    }
+
+    private async Task PublishAndRunAsync(string id, string config, bool isMultiThreaded) 
+    {
+        BlazorPublish(
+            new BlazorBuildOptions(
+                id,
+                config,
+                NativeFilesType.FromRuntimePack,
+                RuntimeType: isMultiThreaded ? RuntimeVariant.MultiThreaded : RuntimeVariant.SingleThreaded
+            ), 
+            isMultiThreaded ? new string[] { "-p:WasmEnableThreads=true"} : new string[0]
+        );
+
+        StringBuilder errorOutput = new();
+        await BlazorRunForPublishWithWebServer(
+            runOptions: new BlazorRunOptions(
+                Config: config,
+                ExtraArgs: isMultiThreaded ? "--web-server-use-cors --web-server-use-cop" : string.Empty,
+                OnConsoleMessage: (message) =>
+                {
+                    if (message.Type == "error")
+                        errorOutput.AppendLine(message.Text);
+                },
+                OnErrorMessage: (message) =>
+                {
+                    errorOutput.AppendLine(message);
+                }
+            )
+        );
+
+        if (errorOutput.Length > 0)
+            throw new XunitException($"Errors found in browser console output:\n{errorOutput}");
+    }
 }
