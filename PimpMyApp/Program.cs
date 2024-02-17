@@ -9,9 +9,12 @@ public class Program
 {
     public static int Main()
     {
-        return Bambala(23, 45);
+        return Bambala2(23, 45, 66, 27);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Bambala(int x, int y) => (x | 5) | (y | 3);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Bambala2(int u, int x, int y, int z) => (u | 2) | (x | 5) | (y | 3) | (z | 6);
 }

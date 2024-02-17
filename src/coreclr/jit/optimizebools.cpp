@@ -1971,16 +1971,21 @@ PhaseStatus Compiler::optOptimizeBools()
                         {
                             GenTreeOp* intVarTree = this->gtNewOperNode(GT_OR, TYP_INT, 
                                 intBoolOpDsc.lclVarArr[0], intBoolOpDsc.lclVarArr[1]);
-                            intVarTree->gtPrev = intBoolOpDsc.lclVarArr[0];
-                            intVarTree->gtNext = intBoolOpDsc.lclVarArr[1];
-                            intBoolOpDsc.lclVarArr[1]->gtPrev = intVarTree;
+                            intVarTree->gtPrev = intBoolOpDsc.lclVarArr[1];
+                            intBoolOpDsc.lclVarArr[1]->gtNext = intVarTree;
+                            intBoolOpDsc.lclVarArr[1]->gtPrev = intBoolOpDsc.lclVarArr[0];
+                            intBoolOpDsc.lclVarArr[0]->gtNext = intBoolOpDsc.lclVarArr[1];
                             intBoolOpDsc.lclVarArr[0]->gtPrev = nullptr;
-                            intBoolOpDsc.lclVarArr[0]->gtNext = intVarTree;
+                            GenTree* temp = intVarTree;
+                            
                             for (int i = 2; i < intBoolOpDsc.lclVarArrLength; i++)
                             {
-                                GenTreeOp* newIntVarTree = this->gtNewOperNode(GT_OR, TYP_INT, intVarTree, intBoolOpDsc.lclVarArr[i]);
-                                newIntVarTree->gtPrev = intVarTree;
-                                intVarTree->gtPrev = intBoolOpDsc.lclVarArr[i];
+                                GenTreeOp* newIntVarTree = this->gtNewOperNode(GT_OR, TYP_INT, temp, intBoolOpDsc.lclVarArr[i]);
+                                newIntVarTree->gtPrev = intBoolOpDsc.lclVarArr[i];
+                                intBoolOpDsc.lclVarArr[i]->gtNext = newIntVarTree;
+                                intBoolOpDsc.lclVarArr[i]->gtPrev = temp;
+                                temp->gtNext = intBoolOpDsc.lclVarArr[i];
+                                temp = newIntVarTree;
                             }
 
                             size_t optimizedCst = 0;
@@ -1990,11 +1995,17 @@ PhaseStatus Compiler::optOptimizeBools()
                             }
 
                             GenTreeIntCon* optimizedCstTree = this->gtNewIconNode(optimizedCst, TYP_INT);
-                            optimizedCstTree->gtPrev = nullptr;
-                            GenTreeOp* optimizedTree = this->gtNewOperNode(GT_OR, TYP_INT, intVarTree, optimizedCstTree);
-                            optimizedTree->gtPrev = intVarTree;
-                            intVarTree->gtPrev = optimizedCstTree;
+                            GenTreeOp* optimizedTree = this->gtNewOperNode(GT_OR, TYP_INT, temp, optimizedCstTree);
+                            optimizedTree->gtPrev = optimizedCstTree;
+                            optimizedCstTree->gtNext = optimizedTree;
+                            optimizedCstTree->gtPrev = temp;
+                            temp->gtNext = optimizedCstTree;
                             b3->gtPrev = optimizedTree;
+                            b3->AsOp()->gtOp1 = optimizedTree;
+                            optimizedTree->gtNext = b3;
+                            b2->SetTreeList(intBoolOpDsc.lclVarArr[0]);
+                            b2->SetTreeListEnd(optimizedCstTree);
+                            numReturn++;
                             JITDUMP("lets the fire begin");
                         }
 
