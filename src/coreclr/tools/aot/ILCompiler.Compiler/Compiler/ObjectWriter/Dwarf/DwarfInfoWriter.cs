@@ -107,7 +107,7 @@ namespace ILCompiler.ObjectWriter
         public void WriteInfoAbsReference(long offset)
         {
             Debug.Assert(offset < uint.MaxValue);
-            _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", offset);
+            WriteUInt32((uint)offset);
         }
 
         public void WriteInfoReference(uint typeIndex)
