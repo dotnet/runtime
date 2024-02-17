@@ -27,6 +27,7 @@ internal static class SignatureMapper
                 nameof(String) => 'I',
                 nameof(Boolean) => 'I',
                 nameof(Char) => 'I',
+                nameof(SByte) => 'I',
                 nameof(Byte) => 'I',
                 nameof(Int16) => 'I',
                 nameof(UInt16) => 'I',
