@@ -275,7 +275,7 @@ mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, v
 
 // sync
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_jsexport_async_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
+mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
 {
 	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport, method, args);
 }

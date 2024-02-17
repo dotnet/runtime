@@ -263,7 +263,7 @@ export function invoke_sync_jsexport(method: MonoMethod, args: JSMarshalerArgume
             throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
         }
         // this is blocking too
-        twraps.mono_wasm_invoke_jsexport_async_send(runtimeHelpers.managedThreadTID, method, args as any);
+        twraps.mono_wasm_invoke_jsexport_sync_send(runtimeHelpers.managedThreadTID, method, args as any);
         */
     }
     if (is_args_exception(args)) {
