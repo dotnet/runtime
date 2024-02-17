@@ -35,7 +35,8 @@ struct IntBoolOpDsc
     int32_t lclVarArrLength;
     ssize_t* ctsArray;
     int32_t ctsArrayLength;
-    bool onlyIntVarCtsOrOp;
+    GenTree* start;
+    GenTree* end;
 };
 
 //-----------------------------------------------------------------------------
@@ -1743,6 +1744,151 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     return opr1;
 }
 
+IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
+{
+    IntBoolOpDsc intBoolOpDsc;
+    intBoolOpDsc.ctsArray = nullptr;
+    intBoolOpDsc.ctsArrayLength = 0;
+    intBoolOpDsc.lclVarArr = nullptr;
+    intBoolOpDsc.lclVarArrLength = 0;
+    intBoolOpDsc.start = nullptr;
+    intBoolOpDsc.end = nullptr;
+
+    if (b3 == nullptr)
+    {
+        return intBoolOpDsc;
+    }
+
+    GenTree* b4 = b3->gtPrev;
+    while (b4 != nullptr)
+    {
+        if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
+        {
+            if (intBoolOpDsc.start == nullptr)
+            {
+                if (b4->OperIsUnary())
+                {
+                    b4 = b4->gtPrev;
+                }
+                else
+                {
+                    b4 = b4->gtPrev->gtPrev;
+                }
+                continue;
+            }
+
+            if (intBoolOpDsc.ctsArrayLength >= 2 && intBoolOpDsc.lclVarArrLength >= 2)
+            {
+                intBoolOpDsc.end = b4;
+                return intBoolOpDsc;
+            }
+            else
+            {
+                intBoolOpDsc.start = nullptr;
+                intBoolOpDsc.end = nullptr;
+                free(intBoolOpDsc.ctsArray);
+                intBoolOpDsc.ctsArrayLength = 0;
+                intBoolOpDsc.ctsArray = nullptr;
+                free(intBoolOpDsc.lclVarArr);
+                intBoolOpDsc.lclVarArrLength = 0;
+                intBoolOpDsc.lclVarArr = nullptr;
+                b4 = b4->gtPrev;
+                continue;
+            }
+        }
+
+        if (intBoolOpDsc.start == nullptr)
+        {
+            intBoolOpDsc.start = b4->gtNext;
+        }
+
+        switch (b4->gtOper)
+        {
+            case GT_LCL_VAR:
+            {
+                intBoolOpDsc.lclVarArrLength++;
+                if (intBoolOpDsc.lclVarArr == nullptr)
+                {
+                    intBoolOpDsc.lclVarArr = reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc.lclVarArrLength));
+                }
+                else
+                {
+                    intBoolOpDsc.lclVarArr = reinterpret_cast<GenTree**>(
+                        realloc(intBoolOpDsc.lclVarArr, sizeof(GenTree*) * intBoolOpDsc.lclVarArrLength));
+                }
+                
+                intBoolOpDsc.lclVarArr[intBoolOpDsc.lclVarArrLength - 1] = b4;
+                break;
+            }
+            case GT_CNS_INT:
+            {
+                intBoolOpDsc.ctsArrayLength++;
+                if (intBoolOpDsc.ctsArray == nullptr)
+                {
+                    intBoolOpDsc.ctsArray = reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc.ctsArrayLength));
+                }
+                else
+                {
+                    intBoolOpDsc.ctsArray = reinterpret_cast<ssize_t*>(realloc(intBoolOpDsc.ctsArray, sizeof(ssize_t) * intBoolOpDsc.ctsArrayLength));
+                }
+                ssize_t constant = b4->AsIntConCommon()->IconValue();
+                intBoolOpDsc.ctsArray[intBoolOpDsc.ctsArrayLength - 1] = constant;
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+
+        b4 = b4->gtPrev;
+    }
+
+    return intBoolOpDsc;
+}
+
+void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc intBoolOpDsc)
+{
+    GenTreeOp* intVarTree = compiler->gtNewOperNode(GT_OR, TYP_INT, 
+        intBoolOpDsc.lclVarArr[0], intBoolOpDsc.lclVarArr[1]);
+    intVarTree->gtPrev = intBoolOpDsc.lclVarArr[1];
+    intBoolOpDsc.lclVarArr[1]->gtNext = intVarTree;
+    intBoolOpDsc.lclVarArr[1]->gtPrev = intBoolOpDsc.lclVarArr[0];
+    intBoolOpDsc.lclVarArr[0]->gtNext = intBoolOpDsc.lclVarArr[1];
+    intBoolOpDsc.lclVarArr[0]->gtPrev = intBoolOpDsc.end;
+    GenTree* tempIntVatTree = intVarTree;
+    
+    for (int i = 2; i < intBoolOpDsc.lclVarArrLength; i++)
+    {
+        GenTreeOp* newIntVarTree = compiler->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, intBoolOpDsc.lclVarArr[i]);
+        newIntVarTree->gtPrev = intBoolOpDsc.lclVarArr[i];
+        intBoolOpDsc.lclVarArr[i]->gtNext = newIntVarTree;
+        intBoolOpDsc.lclVarArr[i]->gtPrev = tempIntVatTree;
+        tempIntVatTree->gtNext = intBoolOpDsc.lclVarArr[i];
+        tempIntVatTree = newIntVarTree;
+    }
+
+    size_t optimizedCst = 0;
+    for (int i = 0; i < intBoolOpDsc.ctsArrayLength; i++)
+    {
+        optimizedCst = optimizedCst | intBoolOpDsc.ctsArray[i];
+    }
+
+    GenTreeIntCon* optimizedCstTree = compiler->gtNewIconNode(optimizedCst, TYP_INT);
+    GenTreeOp* optimizedTree = compiler->gtNewOperNode(GT_OR, TYP_INT, tempIntVatTree, optimizedCstTree);
+    optimizedTree->gtPrev = optimizedCstTree;
+    optimizedCstTree->gtNext = optimizedTree;
+    optimizedCstTree->gtPrev = tempIntVatTree;
+    tempIntVatTree->gtNext = optimizedCstTree;
+    intBoolOpDsc.start->gtPrev = optimizedTree;
+    optimizedTree->gtNext = intBoolOpDsc.start;
+
+    if (intBoolOpDsc.start->OperIs(GT_RETURN))
+    {
+        intBoolOpDsc.start->AsOp()->gtOp1 = optimizedTree;
+    }
+}
+
 //-----------------------------------------------------------------------------
 // optOptimizeBools:    Folds boolean conditionals for GT_JTRUE/GT_RETURN nodes
 //
@@ -1900,6 +2046,11 @@ PhaseStatus Compiler::optOptimizeBools()
 
             // We're only interested in conditional jumps here
 
+            if (!b1->KindIs(BBJ_COND, BBJ_RETURN))
+            {
+                continue;
+            }
+
             if (b1->KindIs(BBJ_RETURN))
             {
                 Statement* b2 = b1->firstStmt();
@@ -1908,122 +2059,34 @@ PhaseStatus Compiler::optOptimizeBools()
                     GenTree* b3 = b2->GetRootNode();
                     if (b3 != nullptr && b3->OperIs(GT_RETURN) && b3->TypeIs(TYP_INT))
                     {
-                        IntBoolOpDsc intBoolOpDsc;
-                        intBoolOpDsc.ctsArray = nullptr;
-                        intBoolOpDsc.ctsArrayLength = 0;
-                        intBoolOpDsc.lclVarArr = nullptr;
-                        intBoolOpDsc.lclVarArrLength = 0;
-                        intBoolOpDsc.onlyIntVarCtsOrOp = true;
-
-                        GenTree* b4 = b3->gtPrev;
-                        while (b4 != nullptr)
-                        {
-                            if (!b4->OperIs(GT_OR, GT_LCL_VAR, GT_CNS_INT) || !b4->TypeIs(TYP_INT))
-                            {
-                                intBoolOpDsc.onlyIntVarCtsOrOp = false;
-                                break;
-                            }
-
-                            switch (b4->gtOper)
-                            {
-                                case GT_LCL_VAR:
-                                {
-                                    intBoolOpDsc.lclVarArrLength++;
-                                    if (intBoolOpDsc.lclVarArr == nullptr)
-                                    {
-                                        intBoolOpDsc.lclVarArr = reinterpret_cast<GenTree**>(malloc(sizeof(GenTree*) * intBoolOpDsc.lclVarArrLength));
-                                    }
-                                    else
-                                    {
-                                        intBoolOpDsc.lclVarArr = reinterpret_cast<GenTree**>(
-                                            realloc(intBoolOpDsc.lclVarArr, sizeof(GenTree*) * intBoolOpDsc.lclVarArrLength));
-                                    }
-                                    
-                                    intBoolOpDsc.lclVarArr[intBoolOpDsc.lclVarArrLength - 1] = b4;
-                                    break;
-                                }
-                                case GT_CNS_INT:
-                                {
-                                    intBoolOpDsc.ctsArrayLength++;
-                                    if (intBoolOpDsc.ctsArray == nullptr)
-                                    {
-                                        intBoolOpDsc.ctsArray = reinterpret_cast<ssize_t*>(malloc(sizeof(ssize_t) * intBoolOpDsc.ctsArrayLength));
-                                    }
-                                    else
-                                    {
-                                        intBoolOpDsc.ctsArray = reinterpret_cast<ssize_t*>(realloc(intBoolOpDsc.ctsArray, sizeof(ssize_t) * intBoolOpDsc.ctsArrayLength));
-                                    }
-                                    ssize_t constant = b4->AsIntConCommon()->IconValue();
-                                    intBoolOpDsc.ctsArray[intBoolOpDsc.ctsArrayLength - 1] = constant;
-                                    break;
-                                }
-                                default:
-                                {
-                                    break;
-                                }
-                            }
-
-                            b4 = b4->gtPrev;
-                        }
-
-                        if (intBoolOpDsc.onlyIntVarCtsOrOp && intBoolOpDsc.ctsArrayLength >= 2
+                        IntBoolOpDsc intBoolOpDsc = GetNextIntBoolOpToOptimize(b3);
+                        while (intBoolOpDsc.ctsArrayLength >= 2
                              && intBoolOpDsc.lclVarArrLength >= 2)
                         {
-                            GenTreeOp* intVarTree = this->gtNewOperNode(GT_OR, TYP_INT, 
-                                intBoolOpDsc.lclVarArr[0], intBoolOpDsc.lclVarArr[1]);
-                            intVarTree->gtPrev = intBoolOpDsc.lclVarArr[1];
-                            intBoolOpDsc.lclVarArr[1]->gtNext = intVarTree;
-                            intBoolOpDsc.lclVarArr[1]->gtPrev = intBoolOpDsc.lclVarArr[0];
-                            intBoolOpDsc.lclVarArr[0]->gtNext = intBoolOpDsc.lclVarArr[1];
-                            intBoolOpDsc.lclVarArr[0]->gtPrev = nullptr;
-                            GenTree* temp = intVarTree;
+                            OptimizeIntBoolOp(this, intBoolOpDsc);
+
+                            if (intBoolOpDsc.end == nullptr)
+                            {
+                                b2->SetTreeList(intBoolOpDsc.lclVarArr[0]);
+                            }
+
+                            if (intBoolOpDsc.ctsArray != nullptr)
+                            {
+                                free(intBoolOpDsc.ctsArray);
+                                intBoolOpDsc.ctsArray = nullptr;
+                            }
+
+                            if (intBoolOpDsc.lclVarArr != nullptr)
+                            {
+                                free(intBoolOpDsc.lclVarArr);
+                                intBoolOpDsc.lclVarArr = nullptr;
+                            }
                             
-                            for (int i = 2; i < intBoolOpDsc.lclVarArrLength; i++)
-                            {
-                                GenTreeOp* newIntVarTree = this->gtNewOperNode(GT_OR, TYP_INT, temp, intBoolOpDsc.lclVarArr[i]);
-                                newIntVarTree->gtPrev = intBoolOpDsc.lclVarArr[i];
-                                intBoolOpDsc.lclVarArr[i]->gtNext = newIntVarTree;
-                                intBoolOpDsc.lclVarArr[i]->gtPrev = temp;
-                                temp->gtNext = intBoolOpDsc.lclVarArr[i];
-                                temp = newIntVarTree;
-                            }
-
-                            size_t optimizedCst = 0;
-                            for (int i = 0; i < intBoolOpDsc.ctsArrayLength; i++)
-                            {
-                                optimizedCst = optimizedCst | intBoolOpDsc.ctsArray[i];
-                            }
-
-                            GenTreeIntCon* optimizedCstTree = this->gtNewIconNode(optimizedCst, TYP_INT);
-                            GenTreeOp* optimizedTree = this->gtNewOperNode(GT_OR, TYP_INT, temp, optimizedCstTree);
-                            optimizedTree->gtPrev = optimizedCstTree;
-                            optimizedCstTree->gtNext = optimizedTree;
-                            optimizedCstTree->gtPrev = temp;
-                            temp->gtNext = optimizedCstTree;
-                            b3->gtPrev = optimizedTree;
-                            b3->AsOp()->gtOp1 = optimizedTree;
-                            optimizedTree->gtNext = b3;
-                            b2->SetTreeList(intBoolOpDsc.lclVarArr[0]);
-                            b2->SetTreeListEnd(optimizedCstTree);
                             numReturn++;
-                            JITDUMP("lets the fire begin");
-                        }
-
-                        if (intBoolOpDsc.ctsArray != nullptr)
-                        {
-                            free(intBoolOpDsc.ctsArray);
-                        }
-
-                        if (intBoolOpDsc.lclVarArr != nullptr)
-                        {
-                            free(intBoolOpDsc.lclVarArr);
+                            intBoolOpDsc = GetNextIntBoolOpToOptimize(intBoolOpDsc.end);
                         }
                     }
                 }
-            }
-
-            if (!b1->KindIs(BBJ_COND))
-            {
                 continue;
             }
 
