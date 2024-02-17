@@ -460,12 +460,8 @@ namespace System.Tests
             // while neither of them individually overflow or underflow
             for (var i = 0; i < individualMaxValues.Length; i++)
             {
-                for (var j = 0; j < individualMaxValues.Length; j++)
+                for (var j = i + 1; j < individualMaxValues.Length; j++)
                 {
-                    if (i == j)
-                    {
-                        continue;
-                    }
                     var iVal = individualMaxValues[i];
                     var jVal = individualMaxValues[j];
                     object[] result = [ 0, 0, 0, 0, 0, 0 ];
