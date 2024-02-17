@@ -525,8 +525,8 @@ namespace System.Numerics.Tests
             public static BinaryIntegerWrapper<T> operator -(BinaryIntegerWrapper<T> value) => -value.Value;
             public static BinaryIntegerWrapper<T> operator -(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value - right.Value;
             public static BinaryIntegerWrapper<T> operator ~(BinaryIntegerWrapper<T> value) => ~value.Value;
-            public static BinaryIntegerWrapper<T> operator ++(BinaryIntegerWrapper<T> value) => value.Value++;
-            public static BinaryIntegerWrapper<T> operator --(BinaryIntegerWrapper<T> value) => value.Value--;
+            public static BinaryIntegerWrapper<T> operator ++(BinaryIntegerWrapper<T> value) => value.Value + 1;
+            public static BinaryIntegerWrapper<T> operator --(BinaryIntegerWrapper<T> value) => value.Value - 1;
             public static BinaryIntegerWrapper<T> operator *(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value * right.Value;
             public static BinaryIntegerWrapper<T> operator /(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value / right.Value;
             public static BinaryIntegerWrapper<T> operator %(BinaryIntegerWrapper<T> left, BinaryIntegerWrapper<T> right) => left.Value % right.Value;
@@ -749,8 +749,8 @@ namespace System.Numerics.Tests
             public static BinaryFloatingPointIeee754Wrapper<T> operator -(BinaryFloatingPointIeee754Wrapper<T> value) => -value.Value;
             public static BinaryFloatingPointIeee754Wrapper<T> operator -(BinaryFloatingPointIeee754Wrapper<T> left, BinaryFloatingPointIeee754Wrapper<T> right) => left.Value - right.Value;
             public static BinaryFloatingPointIeee754Wrapper<T> operator ~(BinaryFloatingPointIeee754Wrapper<T> value) => ~value.Value;
-            public static BinaryFloatingPointIeee754Wrapper<T> operator ++(BinaryFloatingPointIeee754Wrapper<T> value) => value.Value++;
-            public static BinaryFloatingPointIeee754Wrapper<T> operator --(BinaryFloatingPointIeee754Wrapper<T> value) => value.Value--;
+            public static BinaryFloatingPointIeee754Wrapper<T> operator ++(BinaryFloatingPointIeee754Wrapper<T> value) => value.Value + 1;
+            public static BinaryFloatingPointIeee754Wrapper<T> operator --(BinaryFloatingPointIeee754Wrapper<T> value) => value.Value - 1;
             public static BinaryFloatingPointIeee754Wrapper<T> operator *(BinaryFloatingPointIeee754Wrapper<T> left, BinaryFloatingPointIeee754Wrapper<T> right) => left.Value * right.Value;
             public static BinaryFloatingPointIeee754Wrapper<T> operator /(BinaryFloatingPointIeee754Wrapper<T> left, BinaryFloatingPointIeee754Wrapper<T> right) => left.Value / right.Value;
             public static BinaryFloatingPointIeee754Wrapper<T> operator %(BinaryFloatingPointIeee754Wrapper<T> left, BinaryFloatingPointIeee754Wrapper<T> right) => left.Value % right.Value;
