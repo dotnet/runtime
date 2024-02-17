@@ -112,7 +112,6 @@ function initRunArgs(runArgs) {
     runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/blazor.boot.json' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
-    runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
     runArgs.interpreterPgo = runArgs.interpreterPgo === undefined ? false : runArgs.interpreterPgo;
 
     return runArgs;
@@ -145,8 +144,6 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.debugging = true;
         } else if (currentArg == "--no-forward-console") {
             runArgs.forwardConsole = false;
-        } else if (currentArg == "--no-memory-snapshot") {
-            runArgs.memorySnapshot = false;
         } else if (currentArg == "--interpreter-pgo") {
             runArgs.interpreterPgo = true;
         } else if (currentArg == "--no-interpreter-pgo") {
@@ -254,6 +251,7 @@ function configureRuntime(dotnet, runArgs) {
         .withElementOnExit()
         .withInteropCleanupOnExit()
         .withAssertAfterExit()
+        .withDumpThreadsOnNonZeroExit()
         .withConfig({
             loadAllSatelliteResources: true
         });
@@ -272,9 +270,13 @@ function configureRuntime(dotnet, runArgs) {
             })
         }
     }
+
+    // dotnet.withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
+    // dotnet.withEnvironmentVariable("MONO_LOG_MASK", "gc")
+    // dotnet.withEnvironmentVariable("MONO_GC_DEBUG", "9")
+    // dotnet.withEnvironmentVariable("DOTNET_DebugWriteToStdErr", "1")
+
     if (ENVIRONMENT_IS_WEB) {
-        if (runArgs.memorySnapshot)
-            dotnet.withStartupMemoryCache(true);
         if (runArgs.interpreterPgo)
             dotnet.withInterpreterPgo(true);
         dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
@@ -291,52 +293,10 @@ function configureRuntime(dotnet, runArgs) {
     }
 }
 
-async function dry_run(runArgs) {
-    try {
-        console.log("Silently starting separate runtime instance as another ES6 module to populate caches...");
-        // this separate instance of the ES6 module, in which we just populate the caches
-        const { dotnet } = await import('./_framework/dotnet.js?dry_run=true');
-        configureRuntime(dotnet, runArgs);
-        // silent minimal startup
-        await dotnet.withConfig({
-            forwardConsoleLogsToWS: false,
-            diagnosticTracing: false,
-            appendElementOnExit: false,
-            logExitCode: false,
-            virtualWorkingDirectory: undefined,
-            pthreadPoolSize: 0,
-            interopCleanupOnExit: false,
-            // this just means to not continue startup after the snapshot is taken.
-            // If there was previously a matching snapshot, it will be used.
-            exitAfterSnapshot: true
-        }).create();
-        console.log("Separate runtime instance finished loading.");
-    } catch (err) {
-        if (err && err.status === 0) {
-            return true;
-        }
-        console.log("Separate runtime instance failed loading.", err);
-        return false;
-    }
-    return true;
-}
-
 async function run() {
     try {
         const runArgs = await getArgs();
         console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
-
-        if (ENVIRONMENT_IS_WEB && runArgs.memorySnapshot) {
-            if (globalThis.isSecureContext) {
-                const dryOk = await dry_run(runArgs);
-                if (!dryOk) {
-                    mono_exit(1, "Failed during dry run");
-                    return;
-                }
-            } else {
-                console.log("Skipping dry run as the context is not secure and the snapshot would be not trusted.");
-            }
-        }
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run.
         // This way, we are testing that the cached version works.

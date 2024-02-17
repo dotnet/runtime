@@ -2059,6 +2059,9 @@ private:
     // The source of the control flow
     BasicBlock* m_sourceBlock;
 
+    // The destination of the control flow
+    BasicBlock* m_destBlock;
+
     // Edge weights
     weight_t m_edgeWeightMin;
     weight_t m_edgeWeightMax;
@@ -2070,18 +2073,19 @@ private:
     // The count of duplicate "edges" (used for switch stmts or degenerate branches)
     unsigned m_dupCount;
 
-#ifdef DEBUG
+    // True if likelihood has been set
     bool m_likelihoodSet;
-#endif
 
 public:
-    FlowEdge(BasicBlock* block, FlowEdge* rest)
+    FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
         : m_nextPredEdge(rest)
-        , m_sourceBlock(block)
+        , m_sourceBlock(sourceBlock)
+        , m_destBlock(destBlock)
         , m_edgeWeightMin(0)
         , m_edgeWeightMax(0)
         , m_likelihood(0)
-        , m_dupCount(0) DEBUGARG(m_likelihoodSet(false))
+        , m_dupCount(0)
+        , m_likelihoodSet(false)
     {
     }
 
@@ -2102,12 +2106,26 @@ public:
 
     BasicBlock* getSourceBlock() const
     {
+        assert(m_sourceBlock != nullptr);
         return m_sourceBlock;
     }
 
     void setSourceBlock(BasicBlock* newBlock)
     {
+        assert(newBlock != nullptr);
         m_sourceBlock = newBlock;
+    }
+
+    BasicBlock* getDestinationBlock() const
+    {
+        assert(m_destBlock != nullptr);
+        return m_destBlock;
+    }
+
+    void setDestinationBlock(BasicBlock* newBlock)
+    {
+        assert(newBlock != nullptr);
+        m_destBlock = newBlock;
     }
 
     weight_t edgeWeightMin() const
@@ -2137,22 +2155,20 @@ public:
     {
         assert(likelihood >= 0.0);
         assert(likelihood <= 1.0);
-        INDEBUG(m_likelihoodSet = true);
-        m_likelihood = likelihood;
+        m_likelihoodSet = true;
+        m_likelihood    = likelihood;
     }
 
     void clearLikelihood()
     {
-        m_likelihood = 0.0;
-        INDEBUG(m_likelihoodSet = false);
+        m_likelihood    = 0.0;
+        m_likelihoodSet = false;
     }
 
-#ifdef DEBUG
     bool hasLikelihood() const
     {
         return m_likelihoodSet;
     }
-#endif
 
     weight_t getLikelyWeight() const
     {

@@ -295,7 +295,7 @@ namespace Internal.Runtime.CompilerHelpers
             if (j == 0)
                 return ThrowIntDivByZero();
             else if (j == -1 && i == int.MinValue)
-                return ThrowIntArithExc();
+                return ThrowIntOvf();
             else
                 return RhpIDiv(i, j);
         }
@@ -320,6 +320,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             if (j == 0)
                 return ThrowIntDivByZero();
+            else if (j == -1 && i == int.MinValue)
+                return ThrowIntOvf();
             else
                 return RhpIMod(i, j);
         }
@@ -377,12 +379,6 @@ namespace Internal.Runtime.CompilerHelpers
         private static uint ThrowUIntDivByZero()
         {
             throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int ThrowIntArithExc()
-        {
-            throw new ArithmeticException();
         }
 #endif // TARGET_ARM
     }

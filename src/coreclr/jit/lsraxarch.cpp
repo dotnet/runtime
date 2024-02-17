@@ -1341,6 +1341,16 @@ int LinearScan::BuildCall(GenTreeCall* call)
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
+    if (call->NeedsVzeroupper(compiler))
+    {
+        // Much like for Contains256bitOrMoreAVX, we want to track if any
+        // call needs a vzeroupper inserted. This allows us to reduce
+        // the total number of vzeroupper being inserted for cases where
+        // no 256+ AVX is used directly by the method.
+
+        compiler->GetEmitter()->SetContainsCallNeedingVzeroupper(true);
+    }
+
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
@@ -1467,7 +1477,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // We need a float temporary if we're doing SIMD operations
 
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    SetContainsAVXFlags(size);
+                    SetContainsAVXFlags(regSize);
 
                     remainder %= regSize;
                 }
@@ -2500,6 +2510,52 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_AVX512F_BlendVariableMask:
+            {
+                assert(numArgs == 3);
+
+                if (op2->IsEmbMaskOp())
+                {
+                    // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
+                    assert(!op2->isRMWHWIntrinsic(compiler));
+
+                    if (isRMW)
+                    {
+                        assert(!op1->isContained());
+
+                        tgtPrefUse = BuildUse(op1);
+                        srcCount += 1;
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildDelayFreeUses(operand, op1);
+                        }
+                    }
+                    else
+                    {
+                        assert(op1->isContained() && op1->IsVectorZero());
+                        srcCount += BuildOperandUses(op1);
+
+                        assert(op2->isContained());
+
+                        for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
+                        {
+                            assert(varTypeIsSIMD(operand));
+                            srcCount += BuildOperandUses(operand);
+                        }
+                    }
+
+                    assert(!op3->isContained());
+                    srcCount += BuildOperandUses(op3);
+
+                    buildUses = false;
+                }
+                break;
+            }
+
             case NI_AVX512F_PermuteVar8x64x2:
             case NI_AVX512F_PermuteVar16x32x2:
             case NI_AVX512F_VL_PermuteVar2x64x2:
@@ -3007,18 +3063,9 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 
     compiler->GetEmitter()->SetContainsAVX(true);
 
-    if (sizeOfSIMDVector == 32)
+    if (sizeOfSIMDVector >= 32)
     {
-        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
-    }
-
-    if (!compiler->canUseEvexEncoding())
-    {
-        return;
-    }
-
-    if (sizeOfSIMDVector == 64)
-    {
+        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncoding()));
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }

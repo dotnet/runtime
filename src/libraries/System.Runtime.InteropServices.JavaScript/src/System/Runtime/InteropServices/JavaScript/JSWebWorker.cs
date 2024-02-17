@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 #pragma warning disable CA1416
 
@@ -66,6 +66,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 // TODO TaskCreationOptions.HideScheduler ?
                 _taskCompletionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                 _thread = new Thread(ThreadMain);
+                _thread.Name = "JSWebWorker";
                 _resultTask = null;
                 _cancellationToken = cancellationToken;
                 _cancellationRegistration = null;
@@ -112,6 +113,9 @@ namespace System.Runtime.InteropServices.JavaScript
                         return;
                     }
 
+                    // JSSynchronizationContext also registers to _cancellationToken
+                    _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
+
                     // receive callback when the cancellation is requested
                     _cancellationRegistration = _cancellationToken.Register(static (o) =>
                     {
@@ -119,9 +123,6 @@ namespace System.Runtime.InteropServices.JavaScript
                         // this could be executing on any thread
                         self.PropagateCompletionAndDispose(Task.FromCanceled<T>(self._cancellationToken));
                     }, this);
-
-                    // JSSynchronizationContext also registers to _cancellationToken
-                    _jsSynchronizationContext = JSSynchronizationContext.InstallWebWorkerInterop(false, _cancellationToken);
 
                     var childScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 

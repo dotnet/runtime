@@ -251,18 +251,13 @@ namespace System.Linq
         // For the simple case of OrderBy(...).First() or OrderByDescending(...).First() (i.e. where
         // there's just a single comparer we need to factor in), we can just do the iteration directly.
 
-        public override TElement? TryGetFirst(out bool found) =>
-            _parent is not null ?
-                base.TryGetFirst(out found) :
-                TryGetFirstOrLast(out found, first: !_descending);
-
-        public override TElement? TryGetLast(out bool found) =>
-            _parent is not null ?
-                base.TryGetLast(out found) :
-                TryGetFirstOrLast(out found, first: _descending);
-
-        private TElement? TryGetFirstOrLast(out bool found, bool first)
+        public override TElement? TryGetFirst(out bool found)
         {
+            if (_parent is not null)
+            {
+                return base.TryGetFirst(out found);
+            }
+
             using IEnumerator<TElement> e = _source.GetEnumerator();
 
             if (e.MoveNext())
@@ -273,13 +268,65 @@ namespace System.Linq
                 TElement resultValue = e.Current;
                 TKey resultKey = keySelector(resultValue);
 
-                if (first)
+                if (_descending)
+                {
+                    while (e.MoveNext())
+                    {
+                        TElement nextValue = e.Current;
+                        TKey nextKey = keySelector(nextValue);
+                        if (comparer.Compare(nextKey, resultKey) > 0)
+                        {
+                            resultKey = nextKey;
+                            resultValue = nextValue;
+                        }
+                    }
+                }
+                else
                 {
                     while (e.MoveNext())
                     {
                         TElement nextValue = e.Current;
                         TKey nextKey = keySelector(nextValue);
                         if (comparer.Compare(nextKey, resultKey) < 0)
+                        {
+                            resultKey = nextKey;
+                            resultValue = nextValue;
+                        }
+                    }
+                }
+
+                found = true;
+                return resultValue;
+            }
+
+            found = false;
+            return default;
+        }
+
+        public override TElement? TryGetLast(out bool found)
+        {
+            if (_parent is not null)
+            {
+                return base.TryGetLast(out found);
+            }
+
+            using IEnumerator<TElement> e = _source.GetEnumerator();
+
+            if (e.MoveNext())
+            {
+                IComparer<TKey> comparer = _comparer;
+                Func<TElement, TKey> keySelector = _keySelector;
+
+                TElement resultValue = e.Current;
+                TKey resultKey = keySelector(resultValue);
+
+                if (_descending)
+                {
+                    while (e.MoveNext())
+                    {
+                        TElement nextValue = e.Current;
+                        TKey nextKey = keySelector(nextValue);
+                        if (comparer.Compare(nextKey, resultKey) <= 0)
                         {
                             resultKey = nextKey;
                             resultValue = nextValue;

@@ -196,10 +196,45 @@ inline unsigned __int64 BitsBetween(unsigned __int64 value, unsigned __int64 end
            (end - 1);                       // Ones to the right of set bit in the end mask.
 }
 
-/*****************************************************************************/
-
+//------------------------------------------------------------------------------
+// jitIsScaleIndexMul: Check if the value is a valid addressing mode multiplier
+// amount for x64.
+//
+// Parameters:
+//   val - The multiplier
+//
+// Returns:
+//   True if value is 1, 2, 4 or 8.
+//
 inline bool jitIsScaleIndexMul(size_t val)
 {
+    // TODO-Cleanup: On arm64 the scale that can be used in addressing modes
+    // depends on the containing indirection, so this function should be reevaluated.
+    switch (val)
+    {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+// jitIsScaleIndexMul: Check if the value is a valid addressing mode multiplier amount.
+//
+// Parameters:
+//   val - The multiplier
+//   naturalMul - For arm64, the natural multiplier (size of containing indirection)
+//
+// Returns:
+//   True if the multiplier can be used in an address mode.
+//
+inline bool jitIsScaleIndexMul(size_t val, unsigned naturalMul)
+{
+#if defined(TARGET_XARCH)
     switch (val)
     {
         case 1:
@@ -211,6 +246,11 @@ inline bool jitIsScaleIndexMul(size_t val)
         default:
             return false;
     }
+#elif defined(TARGET_ARM64)
+    return val == naturalMul;
+#else
+    return false;
+#endif
 }
 
 // Returns "tree" iff "val" is a valid addressing mode scale shift amount on
@@ -252,6 +292,19 @@ class Dumpable
 {
 public:
     virtual void dump(FILE* output) = 0;
+};
+
+// Helper class record and display a simple single value.
+class Counter : public Dumpable
+{
+public:
+    int64_t Value;
+
+    Counter(int64_t initialValue = 0) : Value(initialValue)
+    {
+    }
+
+    void dump(FILE* output);
 };
 
 // Helper class to record and display a histogram of different values.
@@ -1284,9 +1337,10 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
     GenTreeIntCon* node;
 #if defined(LATE_DISASM)
-    node = new (this, LargeOpOpcode()) GenTreeIntCon(TYP_I_IMPL, value, fields DEBUGARG(/*largeNode*/ true));
+    node = new (this, LargeOpOpcode())
+        GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields DEBUGARG(/*largeNode*/ true));
 #else
-    node             = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, value, fields);
+    node             = new (this, GT_CNS_INT) GenTreeIntCon(gtGetTypeForIconFlags(flags), value, fields);
 #endif
     node->gtFlags |= flags;
     return node;
@@ -4924,6 +4978,51 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitLoopBlocksLexical(TFunc func)
         }
 
         cur = cur->Next();
+    }
+
+    return BasicBlockVisit::Continue;
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphNaturalLoop::VisitRegularExitBlocks: Visit non-handler blocks that
+// are outside the loop but that may have regular predecessors inside the loop.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//   BasicBlockVisit that indicated whether the visit was aborted by the
+//   callback or whether all blocks were visited.
+//
+// Remarks:
+//   Note that no handler begins are visited by this function, even if they
+//   have regular predecessors inside the loop (for example, finally handlers
+//   can have regular BBJ_CALLFINALLY predecessors inside the loop). This
+//   choice is motivated by the fact that such handlers will also show up as
+//   exceptional exit blocks that must always be handled specially by client
+//   code regardless.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
+{
+    Compiler* comp = m_dfsTree->GetCompiler();
+
+    BitVecTraits traits = m_dfsTree->PostOrderTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    for (FlowEdge* edge : ExitEdges())
+    {
+        BasicBlock* exit = edge->getDestinationBlock();
+        assert(m_dfsTree->Contains(exit) && !ContainsBlock(exit));
+        if (!comp->bbIsHandlerBeg(exit) && BitVecOps::TryAddElemD(&traits, visited, exit->bbPostorderNum) &&
+            (func(exit) == BasicBlockVisit::Abort))
+        {
+            return BasicBlockVisit::Abort;
+        }
     }
 
     return BasicBlockVisit::Continue;

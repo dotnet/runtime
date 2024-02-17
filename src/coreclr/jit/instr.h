@@ -84,6 +84,26 @@ enum instruction : uint32_t
     INS_count = INS_none
 };
 
+//------------------------------------------------------------------------
+// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
+// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a sse or avx or avx512 instruction.
+//
+inline bool IsAvx512OrPriorInstruction(instruction ins)
+{
+#if defined(TARGET_XARCH)
+    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+#else
+    return false;
+#endif // TARGET_XARCH
+}
+
 /*****************************************************************************/
 
 enum insUpdateModes
@@ -205,13 +225,36 @@ enum insOpts: unsigned
 {
     INS_OPTS_NONE = 0,
 
-    INS_OPTS_EVEX_eb_er_rd = 1, // Embedded Broadcast or Round down
+    // Two-bits: 0b0000_0011
+    INS_OPTS_EVEX_b_MASK = 0x03,         // mask for EVEX.b related features.
 
-    INS_OPTS_EVEX_er_ru = 2, // Round up
+    INS_OPTS_EVEX_eb_er_rd = 1,     // Embedded Broadcast or Round down
 
-    INS_OPTS_EVEX_er_rz = 3, // Round towards zero
+    INS_OPTS_EVEX_er_ru = 2,        // Round up
 
-    INS_OPTS_b_MASK = (INS_OPTS_EVEX_eb_er_rd | INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_er_rz), // mask for Evex.b related features.
+    INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
+
+    // Two-bits: 0b0001_1100
+    INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features
+
+    INS_OPTS_EVEX_em_k1 = 1 << 2,   // Embedded mask uses K1
+
+    INS_OPTS_EVEX_em_k2 = 2 << 2,   // Embedded mask uses K2
+
+    INS_OPTS_EVEX_em_k3 = 3 << 2,   // Embedded mask uses K3
+
+    INS_OPTS_EVEX_em_k4 = 4 << 2,   // Embedded mask uses K4
+
+    INS_OPTS_EVEX_em_k5 = 5 << 2,   // Embedded mask uses K5
+
+    INS_OPTS_EVEX_em_k6 = 6 << 2,   // Embedded mask uses K6
+
+    INS_OPTS_EVEX_em_k7 = 7 << 2,   // Embedded mask uses K7
+
+    // One-bit:  0b0010_0000
+    INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
+
+    INS_OPTS_EVEX_em_zero,          // Embedded mask merges with zero
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -331,6 +374,8 @@ enum insScalableOpts : unsigned
 
     INS_SCALABLE_OPTS_LSL_N,               // Variants with a LSL #N (eg {<Zt>.<T>}, <Pg>, [<Xn|SP>, <Xm>, LSL #2])
     INS_SCALABLE_OPTS_MOD_N,               // Variants with a <mod> #N (eg {<Zt>.S }, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2])
+
+    INS_SCALABLE_OPTS_WITH_VECTOR_PAIR,    // Variants with {<Zn1>.<T>, <Zn2>.<T>} sve register pair (eg splice)
 
     // Removable once REG_V0 and REG_P0 are distinct
     INS_SCALABLE_OPTS_UNPREDICATED,      // Variants without a predicate (eg add)

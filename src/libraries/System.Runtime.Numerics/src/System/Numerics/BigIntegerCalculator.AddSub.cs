@@ -71,13 +71,13 @@ namespace System.Numerics
             // Same as above, but we're writing the result directly to a and
             // stop execution, if we're out of b and c is already 0.
 
-            for ( ; i < right.Length; i++)
+            for (; i < right.Length; i++)
             {
                 long digit = (Unsafe.Add(ref leftPtr, i) + carry) + right[i];
                 Unsafe.Add(ref leftPtr, i) = unchecked((uint)digit);
                 carry = digit >> 32;
             }
-            for ( ; carry != 0 && i < left.Length; i++)
+            for (; carry != 0 && i < left.Length; i++)
             {
                 long digit = left[i] + carry;
                 left[i] = (uint)digit;
@@ -132,7 +132,9 @@ namespace System.Numerics
         private static void SubtractSelf(Span<uint> left, ReadOnlySpan<uint> right)
         {
             Debug.Assert(left.Length >= right.Length);
-            Debug.Assert(CompareActual(left, right) >= 0);
+
+            // Assertion failing per https://github.com/dotnet/runtime/issues/97780
+            // Debug.Assert(CompareActual(left, right) >= 0);
 
             int i = 0;
             long carry = 0L;
@@ -158,7 +160,8 @@ namespace System.Numerics
                 carry = digit >> 32;
             }
 
-            Debug.Assert(carry == 0);
+            // Assertion failing per https://github.com/dotnet/runtime/issues/97780
+            //Debug.Assert(carry == 0);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

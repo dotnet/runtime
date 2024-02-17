@@ -39,7 +39,7 @@ extends:
           runProfile: 'v8'
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           onlySanityCheck: true
-          #perfForkToUse: - dummy change
+          #perfForkToUse: # dummy change
             #url: https://github.com/radical/performance
             #branch: fix-build
           #downloadSpecificBuild:

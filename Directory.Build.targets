@@ -85,6 +85,12 @@
     <GenerateRequiresPreviewFeaturesAttribute Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">true</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- when building from source we need to use the current version of MetadataLoadContext as the toolset version, but source-build imports
+         another props file which overrides the SystemReflectionMetadataLoadContextVersion from Version.props so we can't set it there -->
+    <SystemReflectionMetadataLoadContextToolsetVersion Condition="'$(DotNetBuildFromSource)' == 'true'">$(SystemReflectionMetadataLoadContextVersion)</SystemReflectionMetadataLoadContextToolsetVersion>
+  </PropertyGroup>
+
   <Target Name="ValidateTargetOSLowercase"
           Condition="!$(TargetOS.Equals($(TargetOS.ToLower()), StringComparison.InvariantCulture))">
     <Error Text="The passed-in TargetOS property value '$(TargetOS)' must be lowercase." />

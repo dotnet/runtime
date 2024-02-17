@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors
 {
@@ -1924,6 +1926,89 @@ namespace System.Numerics.Tensors
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
+        /// <para>
+        /// Behaves the same as either <see cref="MultiplyAdd{T}(ReadOnlySpan{T}, ReadOnlySpan{T}, ReadOnlySpan{T}, Span{T})"/> or
+        /// <see cref="FusedMultiplyAdd{T}(ReadOnlySpan{T}, ReadOnlySpan{T}, ReadOnlySpan{T}, Span{T})"/> depending on the current machine's capabilities.
+        /// </para>
+        /// </remarks>
+        public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> addend, Span<T> destination)
+            where T : INumberBase<T> =>
+            InvokeSpanSpanSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="addend">The third tensor, represented as a scalar.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" />.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />[i]) + <paramref name="addend" /></c>.
+        /// It corresponds to the <c>axpy</c> method defined by <c>BLAS1</c>.
+        /// </para>
+        /// <para>
+        /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
+        /// </para>
+        /// <para>
+        /// Behaves the same as either <see cref="MultiplyAdd{T}(ReadOnlySpan{T}, ReadOnlySpan{T}, T, Span{T})"/> or
+        /// <see cref="FusedMultiplyAdd{T}(ReadOnlySpan{T}, ReadOnlySpan{T}, T, Span{T})"/> depending on the current machine's capabilities.
+        /// </para>
+        /// </remarks>
+        public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T addend, Span<T> destination)
+            where T : INumberBase<T> =>
+            InvokeSpanSpanScalarIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a scalar.</param>
+        /// <param name="addend">The third tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="addend" />.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="addend"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />) + <paramref name="addend" />[i]</c>.
+        /// </para>
+        /// <para>
+        /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
+        /// </para>
+        /// <para>
+        /// Behaves the same as either <see cref="MultiplyAdd{T}(ReadOnlySpan{T}, T, ReadOnlySpan{T}, Span{T})"/> or
+        /// <see cref="FusedMultiplyAdd{T}(ReadOnlySpan{T}, T, ReadOnlySpan{T}, Span{T})"/> depending on the current machine's capabilities.
+        /// </para>
+        /// </remarks>
+        public static void MultiplyAddEstimate<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> addend, Span<T> destination)
+            where T : INumberBase<T> =>
+            InvokeSpanScalarSpanIntoSpan<T, MultiplyAddEstimateOperator<T>>(x, y, addend, destination);
+
+        /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) * <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
+        /// <param name="x">The first tensor, represented as a span.</param>
+        /// <param name="y">The second tensor, represented as a span.</param>
+        /// <param name="addend">The third tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Length of <paramref name="x" /> must be same as length of <paramref name="y" /> and length of <paramref name="addend" />.</exception>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="y"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <exception cref="ArgumentException"><paramref name="addend"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = (<paramref name="x" />[i] * <paramref name="y" />[i]) + <paramref name="addend" />[i]</c>.
+        /// </para>
+        /// <para>
+        /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
+        /// </para>
+        /// <para>
+        /// This computes (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, adds <paramref name="addend"/> to that result as if to
+        /// infinite precision, and finally rounds to the nearest representable value. This differs from the non-fused sequence which would compute
+        /// (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend"/> to the
+        /// rounded result as if to infinite precision, and finally round to the nearest representable value.
+        /// </para>
         /// </remarks>
         public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> addend, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
@@ -1946,6 +2031,12 @@ namespace System.Numerics.Tensors
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
         /// </para>
+        /// <para>
+        /// This computes (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, adds <paramref name="addend"/> to that result as if to
+        /// infinite precision, and finally rounds to the nearest representable value. This differs from the non-fused sequence which would compute
+        /// (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend"/> to the
+        /// rounded result as if to infinite precision, and finally round to the nearest representable value.
+        /// </para>
         /// </remarks>
         public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T addend, Span<T> destination)
             where T : IFloatingPointIeee754<T> =>
@@ -1966,6 +2057,12 @@ namespace System.Numerics.Tensors
         /// </para>
         /// <para>
         /// If either of the element-wise input values is equal to <see cref="IFloatingPointIeee754{TSelf}.NaN"/>, the resulting element-wise value is also NaN.
+        /// </para>
+        /// <para>
+        /// This computes (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, adds <paramref name="addend"/> to that result as if to
+        /// infinite precision, and finally rounds to the nearest representable value. This differs from the non-fused sequence which would compute
+        /// (<paramref name="x"/> * <paramref name="y"/>) as if to infinite precision, round the result to the nearest representable value, add <paramref name="addend"/> to the
+        /// rounded result as if to infinite precision, and finally round to the nearest representable value.
         /// </para>
         /// </remarks>
         public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> addend, Span<T> destination)
@@ -2259,21 +2356,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RootN<T>(ReadOnlySpan<T> x, int n, Span<T> destination)
-            where T : IRootFunctions<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RootN(x[i], n);
-            }
-        }
+            where T : IRootFunctions<T> =>
+            InvokeSpanIntoSpan(x, new RootNOperator<T>(n), destination);
 
         /// <summary>Computes the element-wise rotation left of numbers in the specified tensor by the specified rotation amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2287,21 +2371,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RotateLeft<T>(ReadOnlySpan<T> x, int rotateAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RotateLeft(x[i], rotateAmount);
-            }
-        }
+            where T : IBinaryInteger<T> =>
+            InvokeSpanIntoSpan(x, new RotateLeftOperator<T>(rotateAmount), destination);
 
         /// <summary>Computes the element-wise rotation right of numbers in the specified tensor by the specified rotation amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2315,21 +2386,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void RotateRight<T>(ReadOnlySpan<T> x, int rotateAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.RotateRight(x[i], rotateAmount);
-            }
-        }
+            where T : IBinaryInteger<T> =>
+            InvokeSpanIntoSpan(x, new RotateRightOperator<T>(rotateAmount), destination);
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2343,7 +2401,7 @@ namespace System.Numerics.Tensors
         /// </remarks>
         public static void Round<T>(ReadOnlySpan<T> x, Span<T> destination)
             where T : IFloatingPoint<T> =>
-            Round(x, digits: 0, MidpointRounding.ToEven, destination);
+            InvokeSpanIntoSpan<T, RoundToEvenOperator<T>>(x, destination);
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2357,8 +2415,34 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Round<T>(ReadOnlySpan<T> x, MidpointRounding mode, Span<T> destination)
-            where T : IFloatingPoint<T> =>
-            Round(x, digits: 0, mode, destination);
+            where T : IFloatingPoint<T>
+        {
+            switch (mode)
+            {
+                case MidpointRounding.ToEven:
+                    Round(x, destination);
+                    return;
+
+                case MidpointRounding.AwayFromZero:
+                    InvokeSpanIntoSpan<T, RoundAwayFromZeroOperator<T>>(x, destination);
+                    break;
+
+                case MidpointRounding.ToZero:
+                    Truncate(x, destination);
+                    return;
+
+                case MidpointRounding.ToNegativeInfinity:
+                    Floor(x, destination);
+                    return;
+
+                case MidpointRounding.ToPositiveInfinity:
+                    Ceiling(x, destination);
+                    return;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
+            }
+        }
 
         /// <summary>Computes the element-wise rounding of the numbers in the specified tensor</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2393,42 +2477,62 @@ namespace System.Numerics.Tensors
         {
             if (digits == 0)
             {
-                switch (mode)
+                Round(x, mode, destination);
+            }
+
+            ReadOnlySpan<T> roundPower10;
+            if (typeof(T) == typeof(float))
+            {
+                ReadOnlySpan<float> roundPower10Single = [1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f];
+                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<float, T>(ref MemoryMarshal.GetReference(roundPower10Single)), roundPower10Single.Length);
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                Debug.Assert(typeof(T) == typeof(double));
+                ReadOnlySpan<double> roundPower10Double = [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
+                roundPower10 = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<double, T>(ref MemoryMarshal.GetReference(roundPower10Double)), roundPower10Double.Length);
+            }
+            else
+            {
+                if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
                 {
-                    case MidpointRounding.ToZero:
-                        Truncate(x, destination);
-                        return;
-
-                    case MidpointRounding.ToNegativeInfinity:
-                        Floor(x, destination);
-                        return;
-
-                    case MidpointRounding.ToPositiveInfinity:
-                        Ceiling(x, destination);
-                        return;
-
-                    case MidpointRounding.AwayFromZero:
-                    case MidpointRounding.ToEven:
-                        // TODO: Vectorize the remaining modes
-                        break;
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
                 }
+
+                InvokeSpanIntoSpan(x, new RoundFallbackOperator<T>(digits, mode), destination);
+                return;
             }
 
-            if (x.Length > destination.Length)
+            if ((uint)digits >= (uint)roundPower10.Length)
             {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
+                throw new ArgumentOutOfRangeException(nameof(digits));
             }
 
-            if ((uint)mode > (uint)MidpointRounding.ToPositiveInfinity)
+            T power10 = roundPower10[digits];
+            switch (mode)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
-            }
+                case MidpointRounding.ToEven:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundToEvenOperator<T>>(power10), destination);
+                    return;
 
-            ValidateInputOutputSpanNonOverlapping(x, destination);
+                case MidpointRounding.AwayFromZero:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, RoundAwayFromZeroOperator<T>>(power10), destination);
+                    break;
 
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.Round(x[i], digits, mode);
+                case MidpointRounding.ToZero:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, TruncateOperator<T>>(power10), destination);
+                    return;
+
+                case MidpointRounding.ToNegativeInfinity:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, FloorOperator<T>>(power10), destination);
+                    return;
+
+                case MidpointRounding.ToPositiveInfinity:
+                    InvokeSpanIntoSpan(x, new MultiplyRoundDivideOperator<T, CeilingOperator<T>>(power10), destination);
+                    return;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, typeof(MidpointRounding)), nameof(mode));
             }
         }
 
@@ -2444,21 +2548,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ScaleB<T>(ReadOnlySpan<T> x, int n, Span<T> destination)
-            where T : IFloatingPointIeee754<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = T.ScaleB(x[i], n);
-            }
-        }
+            where T : IFloatingPointIeee754<T> =>
+            InvokeSpanIntoSpan(x, new ScaleBOperator<T>(n), destination);
 
         /// <summary>Computes the element-wise shifting left of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2472,21 +2563,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftLeft<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] << shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftLeftOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise arithmetic (signed) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2500,21 +2578,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightArithmetic<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] >> shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftRightArithmeticOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise logical (unsigned) shifting right of numbers in the specified tensor by the specified shift amount.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2528,21 +2593,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void ShiftRightLogical<T>(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
-            where T : IBinaryInteger<T>
-        {
-            if (x.Length > destination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort();
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, destination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                destination[i] = x[i] >>> shiftAmount;
-            }
-        }
+            where T : IShiftOperators<T, int, T> =>
+            InvokeSpanIntoSpan(x, new ShiftRightLogicalOperator<T>(shiftAmount), destination);
 
         /// <summary>Computes the element-wise sigmoid function on the specified non-empty tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2653,26 +2705,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void SinCos<T>(ReadOnlySpan<T> x, Span<T> sinDestination, Span<T> cosDestination)
-            where T : ITrigonometricFunctions<T>
-        {
-            if (x.Length > sinDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(sinDestination));
-            }
-            if (x.Length > cosDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(cosDestination));
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, sinDestination);
-            ValidateInputOutputSpanNonOverlapping(x, cosDestination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                (sinDestination[i], cosDestination[i]) = T.SinCos(x[i]);
-            }
-        }
+            where T : ITrigonometricFunctions<T> =>
+            InvokeSpanIntoSpan_TwoOutputs<T, SinCosOperator<T>>(x, sinDestination, cosDestination);
 
         /// <summary>Computes the element-wise sine and cosine of the value in the specified tensor that has been multiplied by Pi.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
@@ -2690,26 +2724,8 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void SinCosPi<T>(ReadOnlySpan<T> x, Span<T> sinPiDestination, Span<T> cosPiDestination)
-            where T : ITrigonometricFunctions<T>
-        {
-            if (x.Length > sinPiDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(sinPiDestination));
-            }
-            if (x.Length > cosPiDestination.Length)
-            {
-                ThrowHelper.ThrowArgument_DestinationTooShort(nameof(cosPiDestination));
-            }
-
-            ValidateInputOutputSpanNonOverlapping(x, sinPiDestination);
-            ValidateInputOutputSpanNonOverlapping(x, cosPiDestination);
-
-            // TODO: Vectorize
-            for (int i = 0; i < x.Length; i++)
-            {
-                (sinPiDestination[i], cosPiDestination[i]) = T.SinCosPi(x[i]);
-            }
-        }
+            where T : ITrigonometricFunctions<T> =>
+            InvokeSpanIntoSpan_TwoOutputs<T, SinCosPiOperator<T>>(x, sinPiDestination, cosPiDestination);
 
         /// <summary>Computes the softmax function over the specified non-empty tensor of numbers.</summary>
         /// <param name="x">The tensor, represented as a span.</param>
