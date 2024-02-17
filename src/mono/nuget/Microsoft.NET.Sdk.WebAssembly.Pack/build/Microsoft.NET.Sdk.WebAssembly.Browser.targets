@@ -256,8 +256,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ComputeWasmBuildAssets>
 
     <PropertyGroup>
-      <_WasmBuildWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil'))</_WasmBuildWebCilPath>
-      <_WasmBuildTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil'))</_WasmBuildTmpWebCilPath>
+      <_WasmWebcilFolderName>webcil</_WasmWebcilFolderName>
+      <_WasmWebcilFolderName Condition="'$(WasmEnableThreads)' == 'true'">$(_WasmWebcilFolderName)-threads</_WasmWebcilFolderName>
+      <_WasmBuildWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), '$(_WasmWebcilFolderName)'))</_WasmBuildWebCilPath>
+      <_WasmBuildTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-$(_WasmWebcilFolderName)'))</_WasmBuildTmpWebCilPath>
     </PropertyGroup>
 
     <ConvertDllsToWebCil Candidates="@(_BuildAssetsCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebCilPath)" OutputPath="$(_WasmBuildWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
@@ -445,8 +447,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ComputeWasmPublishAssets>
 
     <PropertyGroup>
-      <_WasmPublishWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil', 'publish'))</_WasmPublishWebCilPath>
-      <_WasmPublishTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebCilPath>
+      <_WasmPublishWebcilFolderName>webcil</_WasmPublishWebcilFolderName>
+      <_WasmPublishWebcilFolderName Condition="'$(WasmEnableThreads)' == 'true'">$(_WasmPublishWebcilFolderName)-threads</_WasmPublishWebcilFolderName>
+      <_WasmPublishWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), '$(_WasmPublishWebcilFolderName)', 'publish'))</_WasmPublishWebCilPath>
+      <_WasmPublishTmpWebCilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-$(_WasmPublishWebcilFolderName)', 'publish'))</_WasmPublishTmpWebCilPath>
     </PropertyGroup>
 
     <ConvertDllsToWebCil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebCilPath)" OutputPath="$(_WasmPublishWebCilPath)" IsEnabled="$(_WasmEnableWebcil)">
