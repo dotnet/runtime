@@ -410,7 +410,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void FromSeconds_Int_ProblematicWhenUsingDouble()
+        public static void FromSeconds_Int_ShouldGiveResultWithPrecision()
         {
             // Given example of problem with double in: https://github.com/dotnet/runtime/issues/93890#issue-1957706751
             Assert.Equal(new TimeSpan(0, 0, 0, 101, 832), TimeSpan.FromSeconds(101, 832));
@@ -422,8 +422,8 @@ namespace System.Tests
             var expected = TimeSpan.MaxValue;
             var actual = TimeSpan.FromDays(expected.Days, expected.Hours, expected.Minutes, expected.Seconds, expected.Milliseconds, expected.Microseconds);
             // Should be within TicksPerMicrosecond (10) ticks of expected
-            var diffTicks = (expected-actual).Ticks;
-            Assert.True(diffTicks < 10, $"Diff ticks was {diffTicks}");
+            var diffTicks = (expected - actual).Ticks;
+            Assert.True(Math.Abs(diffTicks) < 10, $"Diff ticks was {diffTicks}");
         }
         [Fact]
         public static void FromDays_Int_ShouldConstructMinValueAproximation()
@@ -431,8 +431,8 @@ namespace System.Tests
             var expected = TimeSpan.MinValue;
             var actual = TimeSpan.FromDays(expected.Days, expected.Hours, expected.Minutes, expected.Seconds, expected.Milliseconds, expected.Microseconds);
             // Should be within TicksPerMicrosecond (10) ticks of expected
-            var diffTicks = (actual-expected).Ticks;
-            Assert.True(diffTicks < 10, $"Diff ticks was {diffTicks}");
+            var diffTicks = (actual - expected).Ticks;
+            Assert.True(Math.Abs(diffTicks) < 10, $"Diff ticks was {diffTicks}");
         }
 
         // Consts copied from internal const in TimeSpan
@@ -481,7 +481,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds));
         }
 
-        public static IEnumerable<object[]> FromDays_Int_ShouldNotOverflow_WhenOverflowParamIsCounteredByOppositeSignParam_Data()
+        public static IEnumerable<object[]> FromDays_Int_ShouldNotOverflow_WhenOverflowingParamIsCounteredByOppositeSignParam_Data()
         {
             long[] individualMaxValues = [ maxDays, maxHours, maxMinutes, maxSeconds, maxMilliseconds, maxMicroseconds ];
             for (var i = 0; i < individualMaxValues.Length; i++)
@@ -502,11 +502,12 @@ namespace System.Tests
             }
         }
         [Theory]
-        [MemberData(nameof(FromDays_Int_ShouldNotOverflow_WhenOverflowParamIsCounteredByOppositeSignParam_Data))]
-        public static void FromDays_Int_ShouldNotOverflow_WhenOverflowParamIsCounteredByOppositeSignParam(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        [MemberData(nameof(FromDays_Int_ShouldNotOverflow_WhenOverflowingParamIsCounteredByOppositeSignParam_Data))]
+        public static void FromDays_Int_ShouldNotOverflow_WhenOverflowingParamIsCounteredByOppositeSignParam(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds)
         {
             var actual = TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds);
             // 2 individually overflowing or underflowing params with opposite sign should end up close to TimeSpan.FromDays(0)
+            // This is an implementation detail of the chosen test data, but a nice sanity check of expected result
             Assert.True(actual > TimeSpan.FromDays(-1));
             Assert.True(actual < TimeSpan.FromDays(1));
         }
@@ -521,7 +522,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(-maxDays, -maxHours, -maxMinutes, -maxSeconds, -maxMilliseconds, -maxMicroseconds));
         }
         [Fact]
-        public static void FromDays_Int_WhenIntermediateCalculationOverflows()
+        public static void FromDays_Int_ShouldOverflow_WhenIntermediateCalculationCouldOverflowBackIntoValidRange()
         {
             // Given example of problematic day count in comment in abandoned pr https://github.com/dotnet/runtime/pull/95779/files#r1439772903
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(1067519900));
