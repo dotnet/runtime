@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis;
@@ -122,7 +123,7 @@ namespace ILCompiler.ObjectWriter
             }
             else
             {
-                _infoSectionWriter.EmitSymbolReference(RelocType.IMAGE_REL_BASED_HIGHLOW, ".debug_info", offset);
+                WriteUInt32(offset);
             }
         }
 
@@ -195,17 +196,10 @@ namespace ILCompiler.ObjectWriter
             // Debug.Assert(_dieStack.Count == 0);
 
             // Flush late bound forward references
-            int streamOffset = (int)_infoSectionWriter.Position;
             foreach (var lateBoundReference in _lateBoundReferences)
             {
                 uint offset = _builder.ResolveOffset(lateBoundReference.TypeIndex);
-
-                _infoSectionWriter.EmitRelocation(
-                    - streamOffset + lateBoundReference.Position,
-                    lateBoundReference.Data,
-                    RelocType.IMAGE_REL_BASED_HIGHLOW,
-                    ".debug_info",
-                    (int)offset);
+                BinaryPrimitives.WriteUInt32LittleEndian(lateBoundReference.Data, offset);
             }
 
             // Write abbreviation section
