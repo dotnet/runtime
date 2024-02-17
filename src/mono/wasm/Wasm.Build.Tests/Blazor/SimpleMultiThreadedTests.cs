@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using Wasm.Build.Tests.Blazor;
 using Xunit;
@@ -103,7 +104,11 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         // Build and run multithreaded
         await PublishAndRunAsync(id, config, true);
 
-        Directory.EnumerateFiles(_provider.FindBinFrameworkDir(config, true, DefaultTargetFramework), "dotnet.native.worker.*");
+        File.Delete(
+            Directory
+                .EnumerateFiles(_provider.FindBinFrameworkDir(config, true, DefaultTargetFramework), "dotnet.native.worker.*")
+                .First()
+        );
 
         // Build and run singlethreaded without clean
         await PublishAndRunAsync(id, config, false);
