@@ -23721,6 +23721,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                 default:
                     assert(ins == INS_sve_prfb);
             }
+            dst += emitOutput_Instr(dst, code);
             break;
             
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
@@ -23809,6 +23810,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
             code |= id->idSvePrfop();                      // oooo
             code |= insEncodeSimm6_21_to_16(imm);          // iiiiii
+            dst += emitOutput_Instr(dst, code);
             break;
             
         case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
