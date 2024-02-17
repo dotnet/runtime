@@ -10,6 +10,8 @@ namespace System.Buffers
 {
     internal sealed class Any1CharPackedIgnoreCaseSearchValues : SearchValues<char>
     {
+        // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[{" => "{").
+        // _lowerCase is therefore not necessarily a lower case ASCII letter, but just the higher value (the one with the 0x20 bit set).
         private readonly char _lowerCase, _upperCase;
 
         public Any1CharPackedIgnoreCaseSearchValues(char value)

@@ -104,6 +104,9 @@ namespace System.Buffers
 
                 if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
                 {
+                    // If the two values are the same ASCII letter with both cases, we can use an approach that
+                    // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
+                    // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[{" => "{").
                     return (value0 ^ value1) == 0x20
                         ? new Any1CharPackedIgnoreCaseSearchValues((char)Math.Max(value0, value1))
                         : new Any2CharPackedSearchValues(value0, value1);
@@ -138,7 +141,7 @@ namespace System.Buffers
                     if ((copy[0] ^ copy[2]) == 0x20 &&
                         (copy[1] ^ copy[3]) == 0x20)
                     {
-                        // "AaBb" => 'a', 'b'
+                        // We pick the higher two values (with the 0x20 bit set). "AaBb" => 'a', 'b'
                         return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
                     }
                 }

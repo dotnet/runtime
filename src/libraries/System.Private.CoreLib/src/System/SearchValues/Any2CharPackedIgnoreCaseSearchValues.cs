@@ -12,6 +12,8 @@ namespace System.Buffers
 {
     internal sealed class Any2CharPackedIgnoreCaseSearchValues : SearchValues<char>
     {
+        // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
+        // _e0 and _e1 are therefore not necessarily lower case ASCII letters, but just the higher values (the ones with the 0x20 bit set).
         private readonly char _e0, _e1;
         private IndexOfAnyAsciiSearcher.AsciiState _state;
 
