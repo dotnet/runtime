@@ -860,265 +860,6 @@ namespace System
                 }
             }
         }
-        internal readonly ref struct PowersOf1e9
-        {
-            // Holds 1000000000^(1<<<n).
-            private readonly ReadOnlySpan<uint> pow1E9;
-            public const uint TenPowMaxPartial = 1000000000;
-            public const int MaxPartialDigits = 9;
-
-            // indexes[i] is pre-calculated length of (10^9)^i
-            // This means that pow1E9[indexes[i-1]..indexes[i]] equals 1000000000 * (1<<i)
-            //
-            // The `indexes` are calculated as follows
-            //    const double digitRatio = 0.934292276687070661; // log_{2^32}(10^9)
-            //    int[] indexes = new int[32];
-            //    indexes[0] = 0;
-            //    for (int i = 0; i + 1 < indexes.Length; i++)
-            //    {
-            //        int length = unchecked((int)(digitRatio * (1 << i)) + 1);
-            //        length -= (9*(1<<i)) >> 5;
-            //        indexes[i+1] = indexes[i] + length;
-            //    }
-            private static ReadOnlySpan<int> Indexes => new int[]
-            {
-                0,
-                1,
-                3,
-                6,
-                12,
-                23,
-                44,
-                86,
-                170,
-                338,
-                673,
-                1342,
-                2680,
-                5355,
-                10705,
-                21405,
-                42804,
-                85602,
-                171198,
-                342390,
-                684773,
-                1369538,
-                2739067,
-                5478125,
-                10956241,
-                21912473,
-                43824936,
-                87649862,
-                175299713,
-                484817143,
-                969634274,
-                1939268536,
-            };
-
-            // The PowersOf1e9 structure holds 1000000000^(1<<<n). However, if the lower element is zero,
-            // it is truncated. Therefore, if the lower element becomes zero in the process of calculating
-            // 1000000000^(1<<<n), it must be truncated. If 1000000000^(1<<<<n) is calculated in advance
-            // for less than 6, there is no need to consider the case where the lower element becomes zero
-            // during the calculation process, since 1000000000^(1<<<<n) mod 32 is always zero.
-            private static ReadOnlySpan<uint> FivePowers1E9 => new uint[]
-            {
-                // 1000000000^(1<<0)
-                1000000000,
-                // 1000000000^(1<<1)
-                2808348672,
-                232830643,
-                // 1000000000^(1<<2)
-                3008077584,
-                2076772117,
-                12621774,
-                // 1000000000^(1<<3)
-                4130660608,
-                835571558,
-                1441351422,
-                977976457,
-                264170013,
-                37092,
-                // 1000000000^(1<<4)
-                767623168,
-                4241160024,
-                1260959332,
-                2541775228,
-                2965753944,
-                1796720685,
-                484800439,
-                1311835347,
-                2945126454,
-                3563705203,
-                1375821026,
-                // 1000000000^(1<<5)
-                3940379521,
-                184513341,
-                2872588323,
-                2214530454,
-                38258512,
-                2980860351,
-                114267010,
-                2188874685,
-                234079247,
-                2101059099,
-                1948702207,
-                947446250,
-                864457656,
-                507589568,
-                1321007357,
-                3911984176,
-                1011110295,
-                2382358050,
-                2389730781,
-                730678769,
-                440721283,
-            };
-
-            public PowersOf1e9(Span<uint> pow1E9)
-            {
-                Debug.Assert(pow1E9.Length >= 1);
-                Debug.Assert(Indexes[6] == FivePowers1E9.Length);
-                if (pow1E9.Length < Indexes[7])
-                {
-                    this.pow1E9 = FivePowers1E9;
-                    return;
-                }
-                FivePowers1E9.CopyTo(pow1E9.Slice(0, FivePowers1E9.Length));
-                this.pow1E9 = pow1E9;
-
-                ReadOnlySpan<uint> src = pow1E9.Slice(Indexes[5], Indexes[6] - Indexes[5]);
-                int toExclusive = Indexes[6];
-                for (int i = 6; i + 1 < Indexes.Length; i++)
-                {
-                    Debug.Assert(2 * src.Length - (Indexes[i + 1] - Indexes[i]) is 0 or 1);
-                    if (pow1E9.Length - toExclusive < (src.Length << 1))
-                        break;
-                    Span<uint> dst = pow1E9.Slice(toExclusive, src.Length << 1);
-                    BigIntegerCalculator.Square(src, dst);
-                    int from = toExclusive;
-                    toExclusive = Indexes[i + 1];
-                    src = pow1E9.Slice(from, toExclusive - from);
-                    Debug.Assert(toExclusive == pow1E9.Length || pow1E9[toExclusive] == 0);
-                }
-            }
-
-            public static int GetBufferSize(int digits)
-            {
-                int scale1E9 = digits / MaxPartialDigits;
-                int log2 = BitOperations.Log2((uint)scale1E9) + 1;
-                return (uint)log2 < (uint)Indexes.Length ? Indexes[log2] + 1 : Indexes[^1];
-            }
-
-            public ReadOnlySpan<uint> GetSpan(int index)
-            {
-                // Returns 1E9^(1<<index) >> (32*(9*(1<<index)/32))
-                int from = Indexes[index];
-                int toExclusive = Indexes[index + 1];
-                return pow1E9.Slice(from, toExclusive - from);
-            }
-
-            public static int OmittedLength(int index)
-            {
-                // Returns 9*(1<<index)/32
-                return (MaxPartialDigits * (1 << index)) >> 5;
-            }
-
-            public void MultiplyPowerOfTen(ReadOnlySpan<uint> left, int trailingZeroCount, Span<uint> bits)
-            {
-                Debug.Assert(trailingZeroCount >= 0);
-                if (trailingZeroCount <= UInt32PowersOfTen.Length)
-                {
-                    BigIntegerCalculator.Multiply(left, UInt32PowersOfTen[trailingZeroCount], bits.Slice(0, left.Length + 1));
-                    return;
-                }
-
-                uint[]? powersOfTenFromPool = null;
-
-                Span<uint> powersOfTen = (
-                    bits.Length <= BigIntegerCalculator.StackAllocThreshold
-                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
-                    : powersOfTenFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
-                scoped Span<uint> powersOfTen2 = bits;
-
-                int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
-
-                int fi = BitOperations.TrailingZeroCount(trailingPartialCount);
-                int omittedLength = OmittedLength(fi);
-
-                // Copy first
-                ReadOnlySpan<uint> first = GetSpan(fi);
-                int curLength = first.Length;
-                trailingPartialCount >>= fi;
-                trailingPartialCount >>= 1;
-
-                if ((BitOperations.PopCount((uint)trailingPartialCount) & 1) != 0)
-                {
-                    powersOfTen2 = powersOfTen;
-                    powersOfTen = bits;
-                    powersOfTen2.Clear();
-                }
-
-                first.CopyTo(powersOfTen);
-
-                for (++fi; trailingPartialCount != 0; ++fi, trailingPartialCount >>= 1)
-                {
-                    Debug.Assert(fi + 1 < Indexes.Length);
-                    if ((trailingPartialCount & 1) != 0)
-                    {
-                        omittedLength += OmittedLength(fi);
-
-                        ReadOnlySpan<uint> power = GetSpan(fi);
-                        Span<uint> src = powersOfTen.Slice(0, curLength);
-                        Span<uint> dst = powersOfTen2.Slice(0, curLength += power.Length);
-
-                        if (power.Length < src.Length)
-                            BigIntegerCalculator.Multiply(src, power, dst);
-                        else
-                            BigIntegerCalculator.Multiply(power, src, dst);
-
-                        Span<uint> tmp = powersOfTen;
-                        powersOfTen = powersOfTen2;
-                        powersOfTen2 = tmp;
-                        powersOfTen2.Clear();
-
-                        // Trim
-                        while (--curLength >= 0 && powersOfTen[curLength] == 0) ;
-                        ++curLength;
-                    }
-                }
-
-                Debug.Assert(Unsafe.AreSame(ref bits[0], ref powersOfTen2[0]));
-
-                powersOfTen = powersOfTen.Slice(0, curLength);
-                Span<uint> bits2 = bits.Slice(omittedLength, curLength += left.Length);
-                if (left.Length < powersOfTen.Length)
-                    BigIntegerCalculator.Multiply(powersOfTen, left, bits2);
-                else
-                    BigIntegerCalculator.Multiply(left, powersOfTen, bits2);
-
-                if (powersOfTenFromPool != null)
-                    ArrayPool<uint>.Shared.Return(powersOfTenFromPool);
-
-                if (remainingTrailingZeroCount > 0)
-                {
-                    uint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
-                    uint carry = 0;
-                    for (int i = 0; i < bits2.Length; i++)
-                    {
-                        ulong p = (ulong)multiplier * bits2[i] + carry;
-                        bits2[i] = (uint)p;
-                        carry = (uint)(p >> 32);
-                    }
-
-                    if (carry != 0)
-                    {
-                        bits[curLength] = carry;
-                    }
-                }
-            }
-        }
-
 
         internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
@@ -1538,6 +1279,265 @@ namespace System
                 charsWritten = 0;
                 spanSuccess = false;
                 return null;
+            }
+        }
+
+        internal readonly ref struct PowersOf1e9
+        {
+            // Holds 1000000000^(1<<<n).
+            private readonly ReadOnlySpan<uint> pow1E9;
+            public const uint TenPowMaxPartial = 1000000000;
+            public const int MaxPartialDigits = 9;
+
+            // indexes[i] is pre-calculated length of (10^9)^i
+            // This means that pow1E9[indexes[i-1]..indexes[i]] equals 1000000000 * (1<<i)
+            //
+            // The `indexes` are calculated as follows
+            //    const double digitRatio = 0.934292276687070661; // log_{2^32}(10^9)
+            //    int[] indexes = new int[32];
+            //    indexes[0] = 0;
+            //    for (int i = 0; i + 1 < indexes.Length; i++)
+            //    {
+            //        int length = unchecked((int)(digitRatio * (1 << i)) + 1);
+            //        length -= (9*(1<<i)) >> 5;
+            //        indexes[i+1] = indexes[i] + length;
+            //    }
+            private static ReadOnlySpan<int> Indexes =>
+            [
+                0,
+                1,
+                3,
+                6,
+                12,
+                23,
+                44,
+                86,
+                170,
+                338,
+                673,
+                1342,
+                2680,
+                5355,
+                10705,
+                21405,
+                42804,
+                85602,
+                171198,
+                342390,
+                684773,
+                1369538,
+                2739067,
+                5478125,
+                10956241,
+                21912473,
+                43824936,
+                87649862,
+                175299713,
+                484817143,
+                969634274,
+                1939268536,
+            ];
+
+            // The PowersOf1e9 structure holds 1000000000^(1<<<n). However, if the lower element is zero,
+            // it is truncated. Therefore, if the lower element becomes zero in the process of calculating
+            // 1000000000^(1<<<n), it must be truncated. If 1000000000^(1<<<<n) is calculated in advance
+            // for less than 6, there is no need to consider the case where the lower element becomes zero
+            // during the calculation process, since 1000000000^(1<<<<n) mod 32 is always zero.
+            private static ReadOnlySpan<uint> LeadingPowers1E9 =>
+            [
+                // 1000000000^(1<<0)
+                1000000000,
+                // 1000000000^(1<<1)
+                2808348672,
+                232830643,
+                // 1000000000^(1<<2)
+                3008077584,
+                2076772117,
+                12621774,
+                // 1000000000^(1<<3)
+                4130660608,
+                835571558,
+                1441351422,
+                977976457,
+                264170013,
+                37092,
+                // 1000000000^(1<<4)
+                767623168,
+                4241160024,
+                1260959332,
+                2541775228,
+                2965753944,
+                1796720685,
+                484800439,
+                1311835347,
+                2945126454,
+                3563705203,
+                1375821026,
+                // 1000000000^(1<<5)
+                3940379521,
+                184513341,
+                2872588323,
+                2214530454,
+                38258512,
+                2980860351,
+                114267010,
+                2188874685,
+                234079247,
+                2101059099,
+                1948702207,
+                947446250,
+                864457656,
+                507589568,
+                1321007357,
+                3911984176,
+                1011110295,
+                2382358050,
+                2389730781,
+                730678769,
+                440721283,
+            ];
+
+            public PowersOf1e9(Span<uint> pow1E9)
+            {
+                Debug.Assert(pow1E9.Length >= 1);
+                Debug.Assert(Indexes[6] == LeadingPowers1E9.Length);
+                if (pow1E9.Length <= LeadingPowers1E9.Length)
+                {
+                    this.pow1E9 = LeadingPowers1E9;
+                    return;
+                }
+                LeadingPowers1E9.CopyTo(pow1E9.Slice(0, LeadingPowers1E9.Length));
+                this.pow1E9 = pow1E9;
+
+                ReadOnlySpan<uint> src = pow1E9.Slice(Indexes[5], Indexes[6] - Indexes[5]);
+                int toExclusive = Indexes[6];
+                for (int i = 6; i + 1 < Indexes.Length; i++)
+                {
+                    Debug.Assert(2 * src.Length - (Indexes[i + 1] - Indexes[i]) is 0 or 1);
+                    if (pow1E9.Length - toExclusive < (src.Length << 1))
+                        break;
+                    Span<uint> dst = pow1E9.Slice(toExclusive, src.Length << 1);
+                    BigIntegerCalculator.Square(src, dst);
+                    int from = toExclusive;
+                    toExclusive = Indexes[i + 1];
+                    src = pow1E9.Slice(from, toExclusive - from);
+                    Debug.Assert(toExclusive == pow1E9.Length || pow1E9[toExclusive] == 0);
+                }
+            }
+
+            public static int GetBufferSize(int digits)
+            {
+                int scale1E9 = digits / MaxPartialDigits;
+                int log2 = BitOperations.Log2((uint)scale1E9) + 1;
+                return (uint)log2 < (uint)Indexes.Length ? Indexes[log2] + 1 : Indexes[^1];
+            }
+
+            public ReadOnlySpan<uint> GetSpan(int index)
+            {
+                // Returns 1E9^(1<<index) >> (32*(9*(1<<index)/32))
+                int from = Indexes[index];
+                int toExclusive = Indexes[index + 1];
+                return pow1E9.Slice(from, toExclusive - from);
+            }
+
+            public static int OmittedLength(int index)
+            {
+                // Returns 9*(1<<index)/32
+                return (MaxPartialDigits * (1 << index)) >> 5;
+            }
+
+            public void MultiplyPowerOfTen(ReadOnlySpan<uint> left, int trailingZeroCount, Span<uint> bits)
+            {
+                Debug.Assert(trailingZeroCount >= 0);
+                if (trailingZeroCount <= UInt32PowersOfTen.Length)
+                {
+                    BigIntegerCalculator.Multiply(left, UInt32PowersOfTen[trailingZeroCount], bits.Slice(0, left.Length + 1));
+                    return;
+                }
+
+                uint[]? powersOfTenFromPool = null;
+
+                Span<uint> powersOfTen = (
+                    bits.Length <= BigIntegerCalculator.StackAllocThreshold
+                    ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                    : powersOfTenFromPool = ArrayPool<uint>.Shared.Rent(bits.Length)).Slice(0, bits.Length);
+                scoped Span<uint> powersOfTen2 = bits;
+
+                int trailingPartialCount = Math.DivRem(trailingZeroCount, MaxPartialDigits, out int remainingTrailingZeroCount);
+
+                int fi = BitOperations.TrailingZeroCount(trailingPartialCount);
+                int omittedLength = OmittedLength(fi);
+
+                // Copy first
+                ReadOnlySpan<uint> first = GetSpan(fi);
+                int curLength = first.Length;
+                trailingPartialCount >>= fi;
+                trailingPartialCount >>= 1;
+
+                if ((BitOperations.PopCount((uint)trailingPartialCount) & 1) != 0)
+                {
+                    powersOfTen2 = powersOfTen;
+                    powersOfTen = bits;
+                    powersOfTen2.Clear();
+                }
+
+                first.CopyTo(powersOfTen);
+
+                for (++fi; trailingPartialCount != 0; ++fi, trailingPartialCount >>= 1)
+                {
+                    Debug.Assert(fi + 1 < Indexes.Length);
+                    if ((trailingPartialCount & 1) != 0)
+                    {
+                        omittedLength += OmittedLength(fi);
+
+                        ReadOnlySpan<uint> power = GetSpan(fi);
+                        Span<uint> src = powersOfTen.Slice(0, curLength);
+                        Span<uint> dst = powersOfTen2.Slice(0, curLength += power.Length);
+
+                        if (power.Length < src.Length)
+                            BigIntegerCalculator.Multiply(src, power, dst);
+                        else
+                            BigIntegerCalculator.Multiply(power, src, dst);
+
+                        Span<uint> tmp = powersOfTen;
+                        powersOfTen = powersOfTen2;
+                        powersOfTen2 = tmp;
+                        powersOfTen2.Clear();
+
+                        // Trim
+                        while (--curLength >= 0 && powersOfTen[curLength] == 0) ;
+                        ++curLength;
+                    }
+                }
+
+                Debug.Assert(Unsafe.AreSame(ref bits[0], ref powersOfTen2[0]));
+
+                powersOfTen = powersOfTen.Slice(0, curLength);
+                Span<uint> bits2 = bits.Slice(omittedLength, curLength += left.Length);
+                if (left.Length < powersOfTen.Length)
+                    BigIntegerCalculator.Multiply(powersOfTen, left, bits2);
+                else
+                    BigIntegerCalculator.Multiply(left, powersOfTen, bits2);
+
+                if (powersOfTenFromPool != null)
+                    ArrayPool<uint>.Shared.Return(powersOfTenFromPool);
+
+                if (remainingTrailingZeroCount > 0)
+                {
+                    uint multiplier = UInt32PowersOfTen[remainingTrailingZeroCount];
+                    uint carry = 0;
+                    for (int i = 0; i < bits2.Length; i++)
+                    {
+                        ulong p = (ulong)multiplier * bits2[i] + carry;
+                        bits2[i] = (uint)p;
+                        carry = (uint)(p >> 32);
+                    }
+
+                    if (carry != 0)
+                    {
+                        bits[curLength] = carry;
+                    }
+                }
             }
         }
     }
