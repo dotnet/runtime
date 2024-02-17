@@ -22,6 +22,7 @@ import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
 import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
+import { gc_locked } from "./gc-lock";
 
 export function initialize_marshalers_to_js(): void {
     if (cs_to_js_marshalers.size == 0) {
@@ -58,7 +59,7 @@ export function initialize_marshalers_to_js(): void {
 }
 
 export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToJs | undefined {
-    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard) {
         return undefined;
     }
 
@@ -494,6 +495,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             result[index] = marshal_string_to_js(element_arg);
         }
         if (!WasmEnableJsInteropByValue) {
+            mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
         }
     }
@@ -504,6 +506,7 @@ function _marshal_array_to_js_impl(arg: JSMarshalerArgument, element_type: Marsh
             result[index] = _marshal_cs_object_to_js(element_arg);
         }
         if (!WasmEnableJsInteropByValue) {
+            mono_assert(!WasmEnableThreads || !gc_locked, "GC must not be locked when disposing a GC root");
             cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
         }
     }

@@ -1012,9 +1012,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/ContextualReflection/ContextualReflection/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/165</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/201</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection/SetValue/TrySetReadonlyStaticField/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/200</Issue>
         </ExcludeList>
@@ -1185,13 +1182,10 @@
             <Issue>https://github.com/dotnet/runtime/issues/88689</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
-            <Issue>https://github.com/dotnet/runtime/issues/71095</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Remainder/Regressions/Regression1/**">
-            <Issue>https://github.com/dotnet/runtime/issues/79022</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/90308</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74223</Issue>
+            <Issue>https://github.com/dotnet/runtime/issues/69399</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>

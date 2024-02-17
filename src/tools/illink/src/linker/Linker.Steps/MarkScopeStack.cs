@@ -22,7 +22,7 @@ namespace Mono.Linker.Steps
 
 		readonly Stack<Scope> _scopeStack;
 
-		readonly struct LocalScope : IDisposable
+		internal readonly struct LocalScope : IDisposable
 		{
 			readonly MessageOrigin _origin;
 			readonly MarkScopeStack _scopeStack;
@@ -51,7 +51,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		readonly struct ParentScope : IDisposable
+		internal readonly struct ParentScope : IDisposable
 		{
 			readonly Scope _parentScope;
 			readonly Scope _childScope;
@@ -76,6 +76,21 @@ namespace Mono.Linker.Steps
 		public MarkScopeStack ()
 		{
 			_scopeStack = new Stack<Scope> ();
+		}
+
+		internal LocalScope PushLocalScope (in MessageOrigin origin)
+		{
+			return new LocalScope (origin, this);
+		}
+
+		internal LocalScope PushLocalScope (in Scope scope)
+		{
+			return new LocalScope (scope, this);
+		}
+
+		internal ParentScope PopToParentScope ()
+		{
+			return new ParentScope (this);
 		}
 
 		public IDisposable PushScope (in MessageOrigin origin)

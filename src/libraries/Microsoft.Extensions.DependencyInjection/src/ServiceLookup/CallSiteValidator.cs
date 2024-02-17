@@ -10,21 +10,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     internal sealed class CallSiteValidator : CallSiteVisitor<CallSiteValidator.CallSiteValidatorState, Type?>
     {
         // Keys are services being resolved via GetService, values - first scoped service in their call site tree
-        private readonly ConcurrentDictionary<ServiceCacheKey, Type> _scopedServices = new ConcurrentDictionary<ServiceCacheKey, Type>();
+        private readonly ConcurrentDictionary<ServiceCacheKey, Type?> _scopedServices = new ConcurrentDictionary<ServiceCacheKey, Type?>();
 
-        public void ValidateCallSite(ServiceCallSite callSite)
-        {
-            Type? scoped = VisitCallSite(callSite, default);
-            if (scoped != null)
-            {
-                _scopedServices[callSite.Cache.Key] = scoped;
-            }
-        }
+        public void ValidateCallSite(ServiceCallSite callSite) => VisitCallSite(callSite, default);
 
         public void ValidateResolution(ServiceCallSite callSite, IServiceScope scope, IServiceScope rootScope)
         {
             if (ReferenceEquals(scope, rootScope)
-                && _scopedServices.TryGetValue(callSite.Cache.Key, out Type? scopedService))
+                && _scopedServices.TryGetValue(callSite.Cache.Key, out Type? scopedService)
+                && scopedService != null)
             {
                 Type serviceType = callSite.ServiceType;
                 if (serviceType == scopedService)
@@ -40,6 +34,25 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         scopedService,
                         nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
             }
+        }
+
+        protected override Type? VisitCallSite(ServiceCallSite callSite, CallSiteValidatorState argument)
+        {
+            // First, check if we have encountered this call site before to prevent visiting call site trees that have already been visited
+            // If firstScopedServiceInCallSiteTree is null there are no scoped dependencies in this service's call site tree
+            // If firstScopedServiceInCallSiteTree has a value, it contains the first scoped service in this service's call site tree
+            if (_scopedServices.TryGetValue(callSite.Cache.Key, out Type? firstScopedServiceInCallSiteTree))
+            {
+                return firstScopedServiceInCallSiteTree;
+            }
+
+            // Walk the tree
+            Type? scoped = base.VisitCallSite(callSite, argument);
+
+            // Store the result for each visited service
+            _scopedServices[callSite.Cache.Key] = scoped;
+
+            return scoped;
         }
 
         protected override Type? VisitConstructor(ConstructorCallSite constructorCallSite, CallSiteValidatorState state)

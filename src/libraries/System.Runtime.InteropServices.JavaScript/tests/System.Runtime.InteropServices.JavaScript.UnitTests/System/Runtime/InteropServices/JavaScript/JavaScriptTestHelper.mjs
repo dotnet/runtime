@@ -214,6 +214,24 @@ export function invoke1(arg1, name) {
     return res;
 }
 
+export async function invoke1Async(arg1, name) {
+    if (globalThis.gc) {
+        // console.log('globalThis.gc');
+        globalThis.gc();
+    }
+    // console.log(`invoke1: ${name}(arg1:${arg1 !== null ? typeof arg1 : '<null>'})`)
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper[name];
+
+    await delay(10);
+
+    // console.log("invoke1:" + typeof fn);
+    // console.log("invoke1:" + fn.toString());
+    const res = fn(arg1);
+    // console.log(`invoke1: res ${res !== null ? typeof res : '<null>'}`)
+    return res;
+}
+
 export function invoke2(arg1, name) {
     const fn = dllExports.JavaScriptTestHelperNoNamespace[name];
     //console.log("invoke1:" + fn.toString());
@@ -379,6 +397,15 @@ export function backback(arg1, arg2, arg3) {
     }
 }
 
+export async function backbackAsync(arg1, arg2, arg3) {
+    if (globalThis.gc) {
+        // console.log('globalThis.gc');
+        globalThis.gc();
+    }
+    await delay(10);
+    return arg1(arg2, arg3);
+}
+
 export const instance = {}
 
 globalThis.javaScriptTestHelper = instance;
@@ -396,3 +423,7 @@ export async function setup() {
 }
 
 // console.log('JavaScriptTestHelper:' Object.keys(globalThis.JavaScriptTestHelper));
+
+export function delay(ms) {
+    return new Promise(resolve => globalThis.setTimeout(resolve, ms));
+}
