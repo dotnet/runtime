@@ -1568,6 +1568,9 @@ DONE_CALL:
 
         // Indicate the error register will be checked after this call returns
         call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
+
+        // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
+        call->AsCall()->gtArgs.Remove(errorArg);
     }
 #endif // SWIFT_SUPPORT
 
