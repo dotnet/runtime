@@ -13,6 +13,7 @@ namespace System.Buffers
         // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[{" => "{").
         // _lowerCase is therefore not necessarily a lower case ASCII letter, but just the higher value (the one with the 0x20 bit set).
         private readonly char _lowerCase, _upperCase;
+        private readonly uint _lowerCaseUint;
 
         public Any1CharPackedIgnoreCaseSearchValues(char value)
         {
@@ -20,6 +21,7 @@ namespace System.Buffers
 
             _lowerCase = value;
             _upperCase = (char)(value & ~0x20);
+            _lowerCaseUint = value;
         }
 
         internal override char[] GetValues() =>
@@ -27,7 +29,7 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value) =>
-            value == _lowerCase || value == _upperCase;
+            (uint)(value | 0x20) == _lowerCaseUint;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]

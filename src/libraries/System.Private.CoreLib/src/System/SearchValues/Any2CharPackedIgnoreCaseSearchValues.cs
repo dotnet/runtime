@@ -15,6 +15,7 @@ namespace System.Buffers
         // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
         // _e0 and _e1 are therefore not necessarily lower case ASCII letters, but just the higher values (the ones with the 0x20 bit set).
         private readonly char _e0, _e1;
+        private readonly uint _uint0, _uint1;
         private IndexOfAnyAsciiSearcher.AsciiState _state;
 
         public Any2CharPackedIgnoreCaseSearchValues(char value0, char value1)
@@ -23,6 +24,7 @@ namespace System.Buffers
             Debug.Assert((value1 | 0x20) == value1 && char.IsAscii(value1));
 
             (_e0, _e1) = (value0, value1);
+            (_uint0, _uint1) = (value0, value1);
             IndexOfAnyAsciiSearcher.ComputeAsciiState([(char)(_e0 & ~0x20), _e0, (char)(_e1 & ~0x20), _e1], out _state);
         }
 
@@ -32,8 +34,8 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal override bool ContainsCore(char value)
         {
-            value = (char)(value | 0x20);
-            return value == _e0 || value == _e1;
+            uint lowerCase = (uint)(value | 0x20);
+            return lowerCase == _uint0 || lowerCase == _uint1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
