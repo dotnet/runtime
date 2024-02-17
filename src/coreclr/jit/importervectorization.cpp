@@ -152,6 +152,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     GenTree* vec2    = gtNewIndir(simdType, gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data), offset2));
 
     GenTree* xor1;
+    GenTree* orr;
 
     if (cmpMode == OrdinalIgnoreCase)
     {
@@ -159,8 +160,21 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         GenTreeVecCon* toLowerVec1 = gtNewVconNode(simdType, toLowerMask);
         GenTreeVecCon* toLowerVec2 = gtNewVconNode(simdType, (BYTE*)toLowerMask + byteLen - simdSize);
 
-        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
-        xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
+#if defined(TARGET_XARCH)
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+        {
+            GenTree* control;
+
+            control = gtNewIconNode(static_cast<uint8_t>((0xF0 | 0xCC) ^ 0xAA)); // (A | B)) ^ C
+            xor1    = gtNewSimdTernaryLogicNode(simdType, vec1, toLowerVec1, cnsVec1, control, baseType, simdSize);
+        }
+        else
+#endif // TARGET_XARCH
+        {
+            vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
+            xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
+        }
+
         vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize);
     }
     else
@@ -168,9 +182,24 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
     }
 
-    // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
-    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
-    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
+// ((v1 ^ cns1) | (v2 ^ cns2)) == zero
+
+#if defined(TARGET_XARCH)
+    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+    {
+        GenTree* control;
+
+        control = gtNewIconNode(static_cast<uint8_t>(0xF0 | (0xCC ^ 0xAA))); // A | (B ^ C)
+        orr     = gtNewSimdTernaryLogicNode(simdType, xor1, vec2, cnsVec2, control, baseType, simdSize);
+    }
+    else
+#endif // TARGET_XARCH
+    {
+        GenTree* xor2;
+
+        xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
+        orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
+    }
 
     // Optimization: use a single load when byteLen equals simdSize.
     // For code simplicity we always create nodes for two vectors case.
