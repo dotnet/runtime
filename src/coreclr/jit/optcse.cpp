@@ -611,6 +611,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     CSEdsc*  hashDsc;
     bool     isSharedConst = false;
     size_t   key           = optKeyForCSE(tree, &isSharedConst);
+    ValueNum vnLib         = tree->GetVN(VNK_Liberal);
 
     // Make sure that the result of Is_Shared_Const_CSE(key) matches isSharedConst.
     // Note that when isSharedConst is true then we require that the TARGET_SIGN_BIT is set in the key
@@ -955,12 +956,12 @@ void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
         GenTree* op2 = compare->gtGetOp2();
 
         vnStore->GetCompareCheckedBoundArithInfo(compareVN, &info);
-        if (GetVNFuncForNode(op1) == (VNFunc)info.arrOper)
+        if (!op1->OperIs(GT_CAST) && (GetVNFuncForNode(op1) == (VNFunc)info.arrOper))
         {
             // The arithmetic node is the bound's parent.
             boundParent = op1;
         }
-        else if (GetVNFuncForNode(op2) == (VNFunc)info.arrOper)
+        else if (!op2->OperIs(GT_CAST) && (GetVNFuncForNode(op2) == (VNFunc)info.arrOper))
         {
             // The arithmetic node is the bound's parent.
             boundParent = op2;
