@@ -20,6 +20,7 @@ import { postRunWorker, preRunWorker } from "../../startup";
 import { mono_log_debug, mono_log_error } from "../../logging";
 import { CharPtr } from "../../types/emscripten";
 import { utf8ToString } from "../../strings";
+import { forceThreadMemoryViewRefresh } from "../../memory";
 
 // re-export some of the events types
 export {
@@ -85,6 +86,10 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     mono_log_debug("got message from main on the dedicated channel", event.data);
 }
 
+export function onRunMessage(pthread_ptr: PThreadPtr) {
+    monoThreadInfo.pthreadId = pthread_ptr;
+    forceThreadMemoryViewRefresh();
+}
 
 /// Called by emscripten when a pthread is setup to run on a worker.  Can be called multiple times
 /// for the same webworker, since emscripten can reuse workers.
@@ -92,6 +97,8 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 export function mono_wasm_pthread_on_pthread_created(): void {
     if (!WasmEnableThreads) return;
     try {
+        forceThreadMemoryViewRefresh();
+
         const pthread_id = mono_wasm_pthread_ptr();
         mono_assert(!is_nullish(pthread_id), "pthread_self() returned null");
         monoThreadInfo.pthreadId = pthread_id;

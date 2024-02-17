@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { marshal_exception_to_cs, bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { get_signature_argument_count, bound_js_function_symbol, get_sig, get_signature_version, get_signature_type, imported_js_function_symbol, get_signature_handle, get_signature_function_name, get_signature_module_name } from "./marshal";
-import { setI32_unchecked, receiveWorkerHeapViews } from "./memory";
+import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh } from "./memory";
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
@@ -52,6 +52,9 @@ export function mono_wasm_invoke_import_async(args: JSMarshalerArguments, signat
     let max_postpone_count = 10;
     function postpone_invoke_import_async() {
         if (max_postpone_count < 0 || is_thread_available()) {
+            if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
+            }
             bound_fn(args);
             Module._free(args as any);
         } else {
