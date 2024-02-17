@@ -1116,6 +1116,7 @@ namespace
             : Kind{ kind }
             , Declaration{ pMD }
             , DeclarationSig{ pMD }
+            , TargetTypeSig{}
             , TargetType{}
             , IsTargetStatic{ false }
             , TargetMethod{}
@@ -1125,6 +1126,7 @@ namespace
         UnsafeAccessorKind Kind;
         MethodDesc* Declaration;
         MetaSig DeclarationSig;
+        SigPointer TargetTypeSig;
         TypeHandle TargetType;
         bool IsTargetStatic;
         MethodDesc* TargetMethod;
@@ -1321,6 +1323,7 @@ namespace
         TypeHandle targetType = cxt.TargetType;
         _ASSERTE(!targetType.IsTypeDesc());
 
+        CorElementType elemType = fieldType.GetSignatureCorElementType();
         ApproxFieldDescIterator fdIterator(
             targetType.AsMethodTable(),
             (cxt.IsTargetStatic ? ApproxFieldDescIterator::STATIC_FIELDS : ApproxFieldDescIterator::INSTANCE_FIELDS));
@@ -1328,12 +1331,26 @@ namespace
         while ((pField = fdIterator.Next()) != NULL)
         {
             // Validate the name and target type match.
-            if (strcmp(fieldName, pField->GetName()) == 0
-                && fieldType == pField->LookupFieldTypeHandle())
+            if (strcmp(fieldName, pField->GetName()) != 0)
+                continue;
+
+            // We check if the possible field is class or valuetype
+            // since generic fields need resolution.
+            CorElementType fieldTypeMaybe = pField->GetFieldType();
+            if (fieldTypeMaybe == ELEMENT_TYPE_CLASS
+                || fieldTypeMaybe == ELEMENT_TYPE_VALUETYPE)
             {
-                cxt.TargetField = pField;
-                return true;
+                if (fieldType != pField->LookupFieldTypeHandle())
+                    continue;
             }
+            else
+            {
+                if (elemType != fieldTypeMaybe)
+                    continue;
+            }
+
+            cxt.TargetField = pField;
+            return true;
         }
         return false;
     }
@@ -1351,12 +1368,14 @@ namespace
         ilResolver->SetStubMethodDesc(cxt.Declaration);
         ilResolver->SetStubTargetMethodDesc(cxt.TargetMethod);
 
-        // [TODO] Handle generics
-        SigTypeContext emptyContext;
+        SigTypeContext genericContext;
+        if (cxt.Declaration->GetClassification() == mcInstantiated)
+            SigTypeContext::InitTypeContext(cxt.Declaration, &genericContext);
+
         ILStubLinker sl(
             cxt.Declaration->GetModule(),
             cxt.Declaration->GetSignature(),
-            &emptyContext,
+            &genericContext,
             cxt.TargetMethod,
             (ILStubLinkerFlags)ILSTUB_LINKER_FLAG_NONE);
 
@@ -1389,12 +1408,44 @@ namespace
             pCode->EmitCALL(pCode->GetToken(cxt.TargetMethod), targetArgCount, targetRetCount);
             break;
         case UnsafeAccessorKind::Field:
+        {
             _ASSERTE(cxt.TargetField != NULL);
-            pCode->EmitLDFLDA(pCode->GetToken(cxt.TargetField));
+            mdToken target;
+            if (!cxt.TargetType.HasInstantiation())
+            {
+                target = pCode->GetToken(cxt.TargetField);
+            }
+            else
+            {
+                // See the static field case for why this can be mdTokenNil.
+                mdToken targetTypeSigToken = mdTokenNil;
+                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken, cxt.TargetType.GetInstantiation());
+            }
+            pCode->EmitLDFLDA(target);
             break;
+        }
         case UnsafeAccessorKind::StaticField:
             _ASSERTE(cxt.TargetField != NULL);
-            pCode->EmitLDSFLDA(pCode->GetToken(cxt.TargetField));
+            mdToken target;
+            if (!cxt.TargetType.HasInstantiation())
+            {
+                target = pCode->GetToken(cxt.TargetField);
+            }
+            else
+            {
+                // For accessing a generic instance field, every instantiation will
+                // be at the same offset, and be the same size, with the same GC layout,
+                // as long as the generic is canonically equivalent. However, for static fields,
+                // while the offset, size and GC layout remain the same, the address of the
+                // field is different, and needs to be found by a lookup of some form. The
+                // current form of lookup means the exact type isn't with a type signature.
+                PCCOR_SIGNATURE sig;
+                uint32_t sigLen;
+                cxt.TargetTypeSig.GetSignature(&sig, &sigLen);
+                mdToken targetTypeSigToken = pCode->GetSigToken(sig, sigLen);
+                target = pCode->GetToken(cxt.TargetField, targetTypeSigToken, cxt.TargetType.GetInstantiation());
+            }
+            pCode->EmitLDSFLDA(target);
             break;
         default:
             _ASSERTE(!"Unknown UnsafeAccessorKind");
@@ -1449,16 +1500,21 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     if (!IsStatic())
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
-    // Block generic support early
-    if (HasClassOrMethodInstantiation())
-        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
-
     UnsafeAccessorKind kind;
     SString name;
 
     CustomAttributeParser ca(data, dataLen);
     if (!TryParseUnsafeAccessorAttribute(this, ca, kind, name))
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+    // Block generic support on methods
+    if (HasClassOrMethodInstantiation()
+        && (kind == UnsafeAccessorKind::Constructor
+            || kind == UnsafeAccessorKind::Method
+            || kind == UnsafeAccessorKind::StaticMethod))
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+    }
 
     GenerationContext context{ kind, this };
 
@@ -1473,6 +1529,9 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     if (argCount > 0)
     {
         context.DeclarationSig.NextArg();
+
+        // Get the target type signature and resolve to a type handle.
+        context.TargetTypeSig = context.DeclarationSig.GetArgProps();
         firstArgType = context.DeclarationSig.GetLastTypeHandleThrowing();
     }
 

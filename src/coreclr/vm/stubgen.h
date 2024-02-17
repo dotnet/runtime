@@ -307,10 +307,12 @@ public:
         for (COUNT_T i = 0; i < pSrc->m_signatures.GetCount(); i++)
         {
             const CQuickBytesSpecifySize<16>& src = pSrc->m_signatures[i];
-            CQuickBytesSpecifySize<16>& dst = *m_signatures.Append();
-            dst.AllocThrows(src.Size());
-            memcpy(dst.Ptr(), src.Ptr(), src.Size());
+            auto dst = m_signatures.Append();
+            dst->AllocThrows(src.Size());
+            memcpy(dst->Ptr(), src.Ptr(), src.Size());
         }
+
+        m_memberRefs.Set(pSrc->m_memberRefs);
     }
 
     TypeHandle LookupTypeDef(mdToken token)
@@ -328,6 +330,34 @@ public:
         WRAPPER_NO_CONTRACT;
         return LookupTokenWorker<mdtFieldDef, FieldDesc*>(token);
     }
+
+    struct MemberRefEntry final
+    {
+        CorTokenType Type;
+        mdToken ClassSignatureToken;
+        Instantiation ClassInstantiation;
+        union
+        {
+            FieldDesc* Field;
+            MethodDesc* Method;
+        } Entry;
+    };
+    MemberRefEntry LookupMemberRef(mdToken token)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(RidFromToken(token) - 1 < m_memberRefs.GetCount());
+            PRECONDITION(RidFromToken(token) != 0);
+            PRECONDITION(TypeFromToken(token) == mdtMemberRef);
+        }
+        CONTRACTL_END;
+
+        return m_memberRefs[static_cast<COUNT_T>(RidFromToken(token) - 1)];
+    }
+
     SigPointer LookupSig(mdToken token)
     {
         CONTRACTL
@@ -362,6 +392,26 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetTokenWorker<mdtFieldDef, FieldDesc*>(pFieldDesc);
     }
+    mdToken GetToken(FieldDesc* pFieldDesc, mdToken typeSignature, Instantiation inst)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(pFieldDesc != NULL);
+            PRECONDITION(!inst.IsEmpty());
+        }
+        CONTRACTL_END;
+
+        MemberRefEntry* entry;
+        mdToken token = GetMemberRefWorker(&entry);
+        entry->Type = mdtFieldDef;
+        entry->ClassSignatureToken = typeSignature;
+        entry->ClassInstantiation = inst;
+        entry->Entry.Field = pFieldDesc;
+        return token;
+    }
 
     mdToken GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
     {
@@ -382,6 +432,22 @@ public:
     }
 
 protected:
+    mdToken GetMemberRefWorker(MemberRefEntry** entry)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            MODE_ANY;
+            GC_NOTRIGGER;
+            PRECONDITION(entry != NULL);
+        }
+        CONTRACTL_END;
+
+        mdToken token = TokenFromRid(m_memberRefs.GetCount(), mdtMemberRef) + 1;
+        *entry = &*m_memberRefs.Append(); // Dereference the iterator and then take the address
+        return token;
+    }
+
     template<mdToken TokenType, typename HandleType>
     HandleType LookupTokenWorker(mdToken token)
     {
@@ -423,9 +489,10 @@ protected:
         return token;
     }
 
-    unsigned int                                   m_nextAvailableRid;
+    uint32_t                                       m_nextAvailableRid;
     CQuickBytesSpecifySize<TOKEN_LOOKUP_MAP_SIZE>  m_qbEntries;
     SArray<CQuickBytesSpecifySize<16>, FALSE>      m_signatures;
+    SArray<MemberRefEntry, FALSE>                  m_memberRefs;
 };
 
 class ILCodeLabel;
@@ -595,6 +662,7 @@ protected:
     int GetToken(MethodTable* pMT);
     int GetToken(TypeHandle th);
     int GetToken(FieldDesc* pFD);
+    int GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst);
     int GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig);
     DWORD NewLocal(CorElementType typ = ELEMENT_TYPE_I);
     DWORD NewLocal(LocalDesc loc);
@@ -824,6 +892,7 @@ public:
     int GetToken(MethodTable* pMT);
     int GetToken(TypeHandle th);
     int GetToken(FieldDesc* pFD);
+    int GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst);
     int GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig);
 
     DWORD NewLocal(CorElementType typ = ELEMENT_TYPE_I);

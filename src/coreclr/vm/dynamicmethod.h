@@ -37,6 +37,14 @@ public:
     void Delete();
 };
 
+struct ResolvedToken final
+{
+    TypeHandle TypeHandle;
+    SigPointer Signature; // Needed for generic look-up (for example, static fields on generic types)
+    MethodDesc* Method;
+    FieldDesc* Field;
+};
+
 //---------------------------------------------------------------------------------------
 //
 class DynamicResolver
@@ -90,7 +98,7 @@ public:
     virtual OBJECTHANDLE ConstructStringLiteral(mdToken metaTok) = 0;
     virtual BOOL IsValidStringRef(mdToken metaTok) = 0;
     virtual STRINGREF GetStringLiteral(mdToken metaTok) = 0;
-    virtual void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD) = 0;
+    virtual void ResolveToken(mdToken token, ResolvedToken* resolvedToken) = 0;
     virtual SigPointer ResolveSignature(mdToken token) = 0;
     virtual SigPointer ResolveSignatureForVarArg(mdToken token) = 0;
     virtual void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause) = 0;
@@ -141,7 +149,7 @@ public:
 
     OBJECTHANDLE ConstructStringLiteral(mdToken metaTok);
     BOOL IsValidStringRef(mdToken metaTok);
-    void ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD);
+    void ResolveToken(mdToken token, ResolvedToken* resolvedToken);
     SigPointer ResolveSignature(mdToken token);
     SigPointer ResolveSignatureForVarArg(mdToken token);
     void GetEHInfo(unsigned EHnumber, CORINFO_EH_CLAUSE* clause);

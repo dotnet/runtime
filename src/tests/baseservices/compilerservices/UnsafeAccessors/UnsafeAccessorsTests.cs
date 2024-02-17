@@ -100,10 +100,12 @@ public static unsafe class UnsafeAccessorsTests
         private static T _GF;
         private T _gf;
 
+        public static void SetStaticGenericField(T val) => _GF = val;
+
         private static string _F = PrivateStatic;
         private string _f;
 
-        public UserDataGenericClass() { _f = Private; }
+        public UserDataGenericClass(T t) { _f = Private; _gf = t; }
 
         private static string _GM(T s, ref T sr, in T si) => typeof(T).ToString();
         private string _gm(T s, ref T sr, in T si) => typeof(T).ToString();
@@ -216,7 +218,6 @@ public static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/92633")]
     public static void Verify_AccessStaticFieldGenericClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldGenericClass)}");
@@ -225,11 +226,25 @@ public static unsafe class UnsafeAccessorsTests
 
         Assert.Equal(PrivateStatic, GetPrivateStaticFieldString((UserDataGenericClass<string>)null));
 
+        {
+            int expected = 10;
+            UserDataGenericClass<int>.SetStaticGenericField(expected);
+            Assert.Equal(expected, GetPrivateStaticField((UserDataGenericClass<int>)null));
+        }
+        {
+            string expected = "abc";
+            UserDataGenericClass<string>.SetStaticGenericField(expected);
+            Assert.Equal(expected, GetPrivateStaticField((UserDataGenericClass<string>)null));
+        }
+
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataGenericClass<int>.StaticFieldName)]
         extern static ref string GetPrivateStaticFieldInt(UserDataGenericClass<int> d);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataGenericClass<string>.StaticFieldName)]
         extern static ref string GetPrivateStaticFieldString(UserDataGenericClass<string> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataGenericClass<string>.StaticGenericFieldName)]
+        extern static ref T GetPrivateStaticField<T>(UserDataGenericClass<T> d);
     }
 
     [Fact]
@@ -260,20 +275,32 @@ public static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/92633")]
     public static void Verify_AccessFieldGenericClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessFieldGenericClass)}");
 
-        Assert.Equal(Private, GetPrivateFieldInt(new UserDataGenericClass<int>()));
+        Assert.Equal(Private, GetPrivateFieldInt(new UserDataGenericClass<int>(0)));
 
-        Assert.Equal(Private, GetPrivateFieldString(new UserDataGenericClass<string>()));
+        Assert.Equal(Private, GetPrivateFieldString(new UserDataGenericClass<string>(string.Empty)));
+
+        {
+            int expected = 10;
+            Assert.Equal(expected, GetPrivateField(new UserDataGenericClass<int>(expected)));
+        }
+
+        {
+            string expected = "abc";
+            Assert.Equal(expected, GetPrivateField(new UserDataGenericClass<string>(expected)));
+        }
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataGenericClass<int>.FieldName)]
         extern static ref string GetPrivateFieldInt(UserDataGenericClass<int> d);
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataGenericClass<string>.FieldName)]
         extern static ref string GetPrivateFieldString(UserDataGenericClass<string> d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataGenericClass<string>.GenericFieldName)]
+        extern static ref T GetPrivateField<T>(UserDataGenericClass<T> d);
     }
 
     [Fact]

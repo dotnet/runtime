@@ -133,13 +133,10 @@ STRINGREF ILStubResolver::GetStringLiteral(mdToken metaTok)
     return NULL;
 }
 
-void ILStubResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc ** ppMD, FieldDesc ** ppFD)
+void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
 {
     STANDARD_VM_CONTRACT;
-
-    *pTH = NULL;
-    *ppMD = NULL;
-    *ppFD = NULL;
+    _ASSERTE(resolvedToken != NULL);
 
     switch (TypeFromToken(token))
     {
@@ -147,8 +144,8 @@ void ILStubResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc **
         {
             MethodDesc* pMD = m_pCompileTimeState->m_tokenLookupMap.LookupMethodDef(token);
             _ASSERTE(pMD);
-            *ppMD = pMD;
-            *pTH = TypeHandle(pMD->GetMethodTable());
+            resolvedToken->Method = pMD;
+            resolvedToken->TypeHandle = TypeHandle(pMD->GetMethodTable());
         }
         break;
 
@@ -156,7 +153,7 @@ void ILStubResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc **
         {
             TypeHandle typeHnd = m_pCompileTimeState->m_tokenLookupMap.LookupTypeDef(token);
             _ASSERTE(!typeHnd.IsNull());
-            *pTH = typeHnd;
+            resolvedToken->TypeHandle = typeHnd;
         }
         break;
 
@@ -164,10 +161,33 @@ void ILStubResolver::ResolveToken(mdToken token, TypeHandle * pTH, MethodDesc **
         {
             FieldDesc* pFD = m_pCompileTimeState->m_tokenLookupMap.LookupFieldDef(token);
             _ASSERTE(pFD);
-            *ppFD = pFD;
-            *pTH = TypeHandle(pFD->GetEnclosingMethodTable());
+            resolvedToken->Field = pFD;
+            resolvedToken->TypeHandle = TypeHandle(pFD->GetEnclosingMethodTable());
         }
         break;
+
+#if !defined(DACCESS_COMPILE)
+    case mdtMemberRef:
+        {
+            TokenLookupMap::MemberRefEntry entry = m_pCompileTimeState->m_tokenLookupMap.LookupMemberRef(token);
+            if (entry.Type == mdtFieldDef)
+            {
+                _ASSERTE(entry.Entry.Field != NULL);
+
+                if (entry.ClassSignatureToken != mdTokenNil)
+                    resolvedToken->Signature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+
+                resolvedToken->Field = entry.Entry.Field;
+                resolvedToken->TypeHandle = TypeHandle(entry.Entry.Field->GetApproxEnclosingMethodTable()).Instantiate(entry.ClassInstantiation);
+            }
+            else
+            {
+                _ASSERTE(entry.Type == mdtMethodDef);
+                _ASSERTE(entry.Entry.Method != NULL);
+            }
+        }
+        break;
+#endif // !defined(DACCESS_COMPILE)
 
     default:
         UNREACHABLE_MSG("unexpected metadata token type");

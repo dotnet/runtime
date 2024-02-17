@@ -3151,6 +3151,12 @@ int ILStubLinker::GetToken(FieldDesc* pFD)
     return m_tokenMap.GetToken(pFD);
 }
 
+int ILStubLinker::GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst)
+{
+    STANDARD_VM_CONTRACT;
+    return m_tokenMap.GetToken(pFD, typeSignature, inst);
+}
+
 int ILStubLinker::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
 {
     STANDARD_VM_CONTRACT;
@@ -3241,6 +3247,11 @@ int ILCodeStream::GetToken(FieldDesc* pFD)
 {
     STANDARD_VM_CONTRACT;
     return m_pOwner->GetToken(pFD);
+}
+int ILCodeStream::GetToken(FieldDesc* pFD, mdToken typeSignature, Instantiation inst)
+{
+    STANDARD_VM_CONTRACT;
+    return m_pOwner->GetToken(pFD, typeSignature, inst);
 }
 int ILCodeStream::GetSigToken(PCCOR_SIGNATURE pSig, DWORD cbSig)
 {

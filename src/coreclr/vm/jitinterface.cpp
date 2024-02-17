@@ -156,15 +156,13 @@ inline CORINFO_MODULE_HANDLE GetScopeHandle(MethodDesc* method)
 //This is common refactored code from within several of the access check functions.
 static BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
                                  TypeHandle *pOwnerTypeForSecurity,
-                                 AccessCheckOptions::AccessCheckType *pAccessCheckType,
-                                 DynamicResolver** ppAccessContext)
+                                 AccessCheckOptions::AccessCheckType *pAccessCheckType)
 {
     CONTRACTL {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pResolver));
         PRECONDITION(CheckPointer(pOwnerTypeForSecurity));
         PRECONDITION(CheckPointer(pAccessCheckType));
-        PRECONDITION(CheckPointer(ppAccessContext));
         PRECONDITION(*pAccessCheckType == AccessCheckOptions::kNormalAccessibilityChecks);
     } CONTRACTL_END;
 
@@ -883,7 +881,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
     if (IsDynamicScope(pResolvedToken->tokenScope))
     {
-        GetDynamicResolver(pResolvedToken->tokenScope)->ResolveToken(pResolvedToken->token, &th, &pMD, &pFD);
+        ResolvedToken resolved{};
+        GetDynamicResolver(pResolvedToken->tokenScope)->ResolveToken(pResolvedToken->token, &resolved);
+
+        th = resolved.TypeHandle;
+        pMD = resolved.Method;
+        pFD = resolved.Field;
 
         //
         // Check that we got the expected handles and fill in missing data if necessary
@@ -897,8 +900,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 ThrowBadTokenException(pResolvedToken);
             if ((tokenType & CORINFO_TOKENKIND_Method) == 0)
                 ThrowBadTokenException(pResolvedToken);
-            if (th.IsNull())
-                th = pMD->GetMethodTable();
 
             // "PermitUninstDefOrRef" check
             if ((tokenType != CORINFO_TOKENKIND_Ldtoken) && pMD->ContainsGenericVariables())
@@ -924,8 +925,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 ThrowBadTokenException(pResolvedToken);
             if ((tokenType & CORINFO_TOKENKIND_Field) == 0)
                 ThrowBadTokenException(pResolvedToken);
-            if (th.IsNull())
-                th = pFD->GetApproxEnclosingMethodTable();
+
+            // If a signature was supplied, set the TypeSpec for resolution.
+            if (!resolved.Signature.IsNull())
+            {
+                resolved.Signature.GetSignature(&pResolvedToken->pTypeSpec, &pResolvedToken->cbTypeSpec);
+            }
 
             if (pFD->IsStatic() && (tokenType != CORINFO_TOKENKIND_Ldtoken))
             {
@@ -1703,7 +1708,9 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             SigTypeContext::InitTypeContext(pCallerForSecurity, &typeContext);
 
             SigPointer sigptr(pResolvedToken->pTypeSpec, pResolvedToken->cbTypeSpec);
-            fieldTypeForSecurity = sigptr.GetTypeHandleThrowing((Module *)pResolvedToken->tokenScope, &typeContext);
+
+            Module* targetModule = GetModule(pResolvedToken->tokenScope);
+            fieldTypeForSecurity = sigptr.GetTypeHandleThrowing(targetModule, &typeContext);
 
             // typeHnd can be a variable type
             if (fieldTypeForSecurity.GetMethodTable() == NULL)
@@ -1715,15 +1722,13 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
         BOOL doAccessCheck = TRUE;
         AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
 
-        DynamicResolver * pAccessContext = NULL;
-
         //More in code:CEEInfo::getCallInfo, but the short version is that the caller and callee Descs do
         //not completely describe the type.
         TypeHandle callerTypeForSecurity = TypeHandle(pCallerForSecurity->GetMethodTable());
         if (IsDynamicScope(pResolvedToken->tokenScope))
         {
             doAccessCheck = ModifyCheckForDynamicMethod(GetDynamicResolver(pResolvedToken->tokenScope), &callerTypeForSecurity,
-                &accessCheckType, &pAccessContext);
+                &accessCheckType);
         }
 
         //Now for some link time checks.
@@ -1735,7 +1740,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
         {
             //Well, let's check some visibility at least.
             AccessCheckOptions accessCheckOptions(accessCheckType,
-                pAccessContext,
+                NULL,
                 FALSE,
                 pField);
 
@@ -1849,22 +1854,19 @@ CEEInfo::findCallSiteSig(
         {
             _ASSERTE(TypeFromToken(sigMethTok) == mdtMethodDef);
 
-            TypeHandle classHandle;
-            MethodDesc * pMD = NULL;
-            FieldDesc * pFD = NULL;
-
             // in this case a method is asked for its sig. Resolve the method token and get the sig
-            pResolver->ResolveToken(sigMethTok, &classHandle, &pMD, &pFD);
-            if (pMD == NULL)
+            ResolvedToken resolved{};
+            pResolver->ResolveToken(sigMethTok, &resolved);
+            if (resolved.Method == NULL)
                 COMPlusThrow(kInvalidProgramException);
 
             PCCOR_SIGNATURE pSig = NULL;
             DWORD           cbSig;
-            pMD->GetSig(&pSig, &cbSig);
+            resolved.Method->GetSig(&pSig, &cbSig);
             sig = SigPointer(pSig, cbSig);
 
-            context = MAKE_METHODCONTEXT(pMD);
-            scopeHnd = GetScopeHandle(pMD->GetModule());
+            context = MAKE_METHODCONTEXT(resolved.Method);
+            scopeHnd = GetScopeHandle(resolved.Method->GetModule());
         }
 
         sig.GetSignature(&pSig, &cbSig);
@@ -3248,7 +3250,7 @@ NoSpecialCase:
         sigBuilder.AppendData(pContextMT->GetNumDicts() - 1);
     }
 
-    Module * pModule = (Module *)pResolvedToken->tokenScope;
+    Module * pModule = GetModule(pResolvedToken->tokenScope);
 
     switch (entryKind)
     {
@@ -4929,7 +4931,6 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
 
     BOOL doAccessCheck = TRUE;
     AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
-    DynamicResolver * pAccessContext = NULL;
 
     //All access checks must be done on the open instantiation.
     MethodDesc * pCallerForSecurity = GetMethodForSecurity(callerHandle);
@@ -4953,8 +4954,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
     if (IsDynamicScope(pResolvedToken->tokenScope))
     {
         doAccessCheck = ModifyCheckForDynamicMethod(GetDynamicResolver(pResolvedToken->tokenScope),
-                                                    &callerTypeForSecurity, &accessCheckType,
-                                                    &pAccessContext);
+                                                    &callerTypeForSecurity, &accessCheckType);
     }
 
     //Since this is a check against a TypeHandle, there are some things we can stick in a TypeHandle that
@@ -4969,7 +4969,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
     if (doAccessCheck)
     {
         AccessCheckOptions accessCheckOptions(accessCheckType,
-                                              pAccessContext,
+                                              NULL,
                                               FALSE /*throw on error*/,
                                               pCalleeForSecurity.GetMethodTable());
 
@@ -5602,14 +5602,13 @@ void CEEInfo::getCallInfo(
         BOOL doAccessCheck = TRUE;
         BOOL canAccessMethod = TRUE;
         AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
-        DynamicResolver * pAccessContext = NULL;
 
         callerTypeForSecurity = TypeHandle(pCallerForSecurity->GetMethodTable());
         if (pCallerForSecurity->IsDynamicMethod())
         {
             doAccessCheck = ModifyCheckForDynamicMethod(pCallerForSecurity->AsDynamicMethodDesc()->GetResolver(),
                                                         &callerTypeForSecurity,
-                                                        &accessCheckType, &pAccessContext);
+                                                        &accessCheckType);
         }
 
         pResult->accessAllowed = CORINFO_ACCESS_ALLOWED;
@@ -5617,7 +5616,7 @@ void CEEInfo::getCallInfo(
         if (doAccessCheck)
         {
             AccessCheckOptions accessCheckOptions(accessCheckType,
-                                                  pAccessContext,
+                                                  NULL,
                                                   FALSE,
                                                   pCalleeForSecurity);
 
@@ -12332,10 +12331,11 @@ void CEEJitInfo::setEHinfo (
         ((pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_FILTER) == 0) &&
         (clause->ClassToken != NULL))
     {
-        MethodDesc * pMD; FieldDesc * pFD;
-        m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver()->ResolveToken(clause->ClassToken, (TypeHandle *)&pEHClause->TypeHandle, &pMD, &pFD);
+        ResolvedToken resolved{};
+        m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver()->ResolveToken(clause->ClassToken, &resolved);
+        pEHClause->TypeHandle = (void*)resolved.TypeHandle.AsPtr();
         SetHasCachedTypeHandle(pEHClause);
-        LOG((LF_EH, LL_INFO1000000, "  CachedTypeHandle: 0x%08lx  ->  0x%08lx\n",        clause->ClassToken,    pEHClause->TypeHandle));
+        LOG((LF_EH, LL_INFO1000000, "  CachedTypeHandle: 0x%08x  ->  %p\n",        clause->ClassToken,    pEHClause->TypeHandle));
     }
 
     EE_TO_JIT_TRANSITION();
@@ -12939,18 +12939,17 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         //and its return type.
         AccessCheckOptions::AccessCheckType accessCheckType = AccessCheckOptions::kNormalAccessibilityChecks;
         TypeHandle ownerTypeForSecurity = TypeHandle(pMethodForSecurity->GetMethodTable());
-        DynamicResolver *pAccessContext = NULL;
         BOOL doAccessCheck = TRUE;
         if (pMethodForSecurity->IsDynamicMethod())
         {
             doAccessCheck = ModifyCheckForDynamicMethod(pMethodForSecurity->AsDynamicMethodDesc()->GetResolver(),
                                                         &ownerTypeForSecurity,
-                                                        &accessCheckType, &pAccessContext);
+                                                        &accessCheckType);
         }
         if (doAccessCheck)
         {
             AccessCheckOptions accessCheckOptions(accessCheckType,
-                                                  pAccessContext,
+                                                  NULL,
                                                   TRUE /*Throw on error*/,
                                                   pMethodForSecurity);
 
