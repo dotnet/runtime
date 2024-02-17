@@ -4421,17 +4421,7 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
-                if (IsVNHandle(arg0VN) || IsVNHandle(arg1VN))
-                {
-                    return false;
-                }
-                break;
-
-            case GT_GT:
-            case GT_GE:
-            case GT_LT:
-            case GT_LE:
-                if ((IsVNHandle(arg0VN) && arg1VN != VNForNull()) || (IsVNHandle(arg1VN) && arg0VN != VNForNull()))
+                if (m_pComp->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
                 {
                     return false;
                 }
@@ -4439,10 +4429,10 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
 
             case GT_EQ:
             case GT_NE:
-                if ((IsVNHandle(arg0VN) || arg0VN == VNForNull()) != (IsVNHandle(arg1VN) || arg1VN == VNForNull()))
-                {
-                    return false;
-                }
+            case GT_GT:
+            case GT_GE:
+            case GT_LT:
+            case GT_LE:
                 break;
 
             default:
@@ -4457,11 +4447,6 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case VNF_GE_UN:
             case VNF_LT_UN:
             case VNF_LE_UN:
-                if ((IsVNHandle(arg0VN) && arg1VN != VNForNull()) || (IsVNHandle(arg1VN) && arg0VN != VNForNull()))
-                {
-                    return false;
-                }
-                break;
 
             case VNF_ADD_OVF:
             case VNF_SUB_OVF:
@@ -4469,7 +4454,7 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case VNF_ADD_UN_OVF:
             case VNF_SUB_UN_OVF:
             case VNF_MUL_UN_OVF:
-                if (IsVNHandle(arg0VN) || IsVNHandle(arg1VN))
+                if (m_pComp->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
                 {
                     return false;
                 }
