@@ -10,14 +10,13 @@ import { setI32_unchecked, receiveWorkerHeapViews, forceThreadMemoryViewRefresh 
 import { stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
 
 export const js_import_wrapper_by_fn_handle: Function[] = <any>[null];// 0th slot is dummy, main thread we free them on shutdown. On web worker thread we free them when worker is detached.
 
@@ -99,7 +98,6 @@ function bind_js_import(signature: JSFunctionSignature): Function {
 
     const is_oneway = res_marshaler_type == MarshalerType.OneWay;
     const is_async = res_marshaler_type == MarshalerType.Task || res_marshaler_type == MarshalerType.TaskPreCreated;
-    const is_UI = WasmEnableThreads && !ENVIRONMENT_IS_WORKER;
 
     const closure: BindingClosure = {
         fn,
@@ -146,37 +144,19 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         }
     }
 
-    function postponed_bound_fn(args: JSMarshalerArguments, cnt?: number): void {
-        const count = cnt || 0;
-        let shouldDelay = false;
-        const args_buffer_owned = is_receiver_should_free(args);
-        if (WasmEnableThreads && is_UI && !is_thread_available()) {
-            shouldDelay = true;
+    function async_bound_fn(args: JSMarshalerArguments): void {
+        if (WasmEnableThreads) {
+            forceThreadMemoryViewRefresh();
         }
-        if (WasmEnableThreads && is_oneway && count === 0 && args_buffer_owned) {
-            shouldDelay = true;
-        }
-        if (WasmEnableThreads && is_async && count === 0) {
-            shouldDelay = true;
-        }
-        if (count > 10) {
-            shouldDelay = false;
-        }
-        if (shouldDelay) {
-            mono_assert(args_buffer_owned, "The buffer should be owned by the receiver"); // otherwise it would be use after free
-            setTimeout(() => postponed_bound_fn(args, count + 1), count);
-        } else {
-            if (WasmEnableThreads) {
-                forceThreadMemoryViewRefresh();
-            }
-            bound_fn(args);
-        }
+        bound_fn(args);
     }
-
-    function pending_sync_bound_fn(args: JSMarshalerArguments): void {
+    function sync_bound_fn(args: JSMarshalerArguments): void {
         const previous = runtimeHelpers.isPendingSynchronousCall;
         try {
             runtimeHelpers.isPendingSynchronousCall = true;
+            if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
+            }
             bound_fn(args);
         }
         finally {
@@ -186,10 +166,10 @@ function bind_js_import(signature: JSFunctionSignature): Function {
 
     let wrapped_fn: WrappedJSFunction;
     if (is_async || is_oneway) {
-        wrapped_fn = postponed_bound_fn;
+        wrapped_fn = async_bound_fn;
     }
     else {
-        wrapped_fn = pending_sync_bound_fn;
+        wrapped_fn = sync_bound_fn;
     }
 
     (<any>wrapped_fn)[imported_js_function_symbol] = closure;

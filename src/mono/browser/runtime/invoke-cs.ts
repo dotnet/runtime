@@ -38,6 +38,14 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
 
     const res_sig = get_sig(signature, 1);
     let res_marshaler_type = get_signature_type(res_sig);
+
+    // hack until we have public API for JSType.OneWay
+    if (WasmEnableThreads && shortClassName === "DefaultWebAssemblyJSRuntime"
+        && namespaceName === "Microsoft.AspNetCore.Components.WebAssembly.Services"
+        && (methodName === "BeginInvokeDotNet" || methodName === "EndInvokeJS")) {
+        res_marshaler_type = MarshalerType.OneWay;
+    }
+
     const is_async = res_marshaler_type == MarshalerType.Task;
     const is_oneway = res_marshaler_type == MarshalerType.OneWay;
     if (is_async) {

@@ -1038,7 +1038,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static Task DisposeAsync()
         {
-            // TODO _module?.Dispose();
+            _module?.Dispose();
             _module = null;
             return Task.CompletedTask;
         }
