@@ -2827,26 +2827,38 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_String_Equals:
             {
-                retNode = impStringEqualsOrStartsWith(/*startsWith:*/ false, sig, methodFlags);
+                retNode = impUtf16StringComparison(Equals, sig, methodFlags);
                 break;
             }
 
             case NI_System_MemoryExtensions_Equals:
             case NI_System_MemoryExtensions_SequenceEqual:
             {
-                retNode = impSpanEqualsOrStartsWith(/*startsWith:*/ false, sig, methodFlags);
+                retNode = impUtf16SpanComparison(Equals, sig, methodFlags);
                 break;
             }
 
             case NI_System_String_StartsWith:
             {
-                retNode = impStringEqualsOrStartsWith(/*startsWith:*/ true, sig, methodFlags);
+                retNode = impUtf16StringComparison(StartsWith, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_String_EndsWith:
+            {
+                retNode = impUtf16StringComparison(EndsWith, sig, methodFlags);
                 break;
             }
 
             case NI_System_MemoryExtensions_StartsWith:
             {
-                retNode = impSpanEqualsOrStartsWith(/*startsWith:*/ true, sig, methodFlags);
+                retNode = impUtf16SpanComparison(StartsWith, sig, methodFlags);
+                break;
+            }
+
+            case NI_System_MemoryExtensions_EndsWith:
+            {
+                retNode = impUtf16SpanComparison(EndsWith, sig, methodFlags);
                 break;
             }
 
@@ -8932,6 +8944,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_MemoryExtensions_StartsWith;
                         }
+                        else if (strcmp(methodName, "EndsWith") == 0)
+                        {
+                            result = NI_System_MemoryExtensions_EndsWith;
+                        }
                     }
                     break;
                 }
@@ -9031,6 +9047,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "StartsWith") == 0)
                         {
                             result = NI_System_String_StartsWith;
+                        }
+                        else if (strcmp(methodName, "EndsWith") == 0)
+                        {
+                            result = NI_System_String_EndsWith;
                         }
                     }
                     break;
