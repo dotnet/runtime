@@ -5114,8 +5114,7 @@ PhaseStatus Compiler::optOptimizeValnumCSEs()
 
     optValnumCSE_Init();
 
-    bool useNewLocate = false;
-    INDEBUG(useNewLocate = (JitConfig.JitCSELocateNew() > 0));
+    bool useNewLocate = (JitConfig.JitCSELocateNew() > 0);
 
     if (useNewLocate)
     {

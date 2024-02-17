@@ -377,6 +377,9 @@ CONFIG_INTEGER(JitConstCSE, W("JitConstCSE"), 0)
 #define CONST_CSE_ENABLE_ALL 3
 #define CONST_CSE_ENABLE_ALL_NO_SHARING 4
 
+// Use new dominanced-based CSE candidate finder
+CONFIG_INTEGER(JitCSELocateNew, W("JitCSELocateNew"), 1)
+
 #if defined(DEBUG)
 // Allow fine-grained controls of CSEs done in a particular method
 //
@@ -401,9 +404,6 @@ CONFIG_INTEGER(JitCSEMask, W("JitCSEMask"), 0)
 
 // Enable metric output in jit disasm & elsewhere
 CONFIG_INTEGER(JitMetrics, W("JitMetrics"), 0)
-
-// Use new dominanced-based CSE candidate finder
-CONFIG_INTEGER(JitCSELocateNew, W("JitCSELocateNew"), 1)
 
 // When nonzero, choose CSE candidates randomly, with hash salt
 // specified by the (decimal) value of the config
