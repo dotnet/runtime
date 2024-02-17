@@ -354,8 +354,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             PublicKey publicKey = PublicKey.CreateFromSubjectPublicKeyInfo(spkiBytes, out _);
             EncodeDecodePublicKey(publicKey, algorithm, critical, expectedDer, expectedIdentifier);
         }
-
-
         private static void EncodeDecodePublicKey(
             PublicKey publicKey,
             X509SubjectKeyIdentifierHashAlgorithm algorithm,
