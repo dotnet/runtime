@@ -450,8 +450,9 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
         {
             // For EndsWith we need to adjust dataAddr to point to the end of the string minus value's length
             // We spawn a local that we're going to set below
-            unsigned dataTmp = lvaGrabTemp(true DEBUGARG("clonning data ptr"));
-            dataAddr         = gtNewLclvNode(dataTmp, TYP_BYREF);
+            unsigned dataTmp         = lvaGrabTemp(true DEBUGARG("clonning data ptr"));
+            lvaTable[dataTmp].lvType = TYP_BYREF;
+            dataAddr                 = gtNewLclvNode(dataTmp, TYP_BYREF);
         }
 
         GenTree* indirCmp = nullptr;
@@ -475,12 +476,15 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
 
         if (kind == EndsWith)
         {
+            // len is expected to be small, so no overflow is possible
+            assert((len * 2) > len);
+
             // dataAddr = dataAddr + (length * 2 - len * 2)
             GenTree*   castedLen = gtNewCastNode(TYP_I_IMPL, gtCloneExpr(lengthFld), false, TYP_I_IMPL);
             GenTree*   byteLen   = gtNewOperNode(GT_MUL, TYP_I_IMPL, castedLen, gtNewIconNode(2, TYP_I_IMPL));
-            GenTreeOp* cmpStart =
-                gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data),
-                              gtNewOperNode(GT_SUB, TYP_I_IMPL, byteLen, gtNewIconNode(len * 2, TYP_I_IMPL)));
+            GenTreeOp* cmpStart  = gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(data),
+                                                gtNewOperNode(GT_SUB, TYP_I_IMPL, byteLen,
+                                                              gtNewIconNode((ssize_t)(len * 2), TYP_I_IMPL)));
             GenTree* storeTmp = gtNewTempStore(dataAddr->GetLclNum(), cmpStart);
             indirCmp          = gtNewOperNode(GT_COMMA, indirCmp->TypeGet(), storeTmp, indirCmp);
         }
