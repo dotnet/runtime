@@ -101,7 +101,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // Swift calls may use special register types that require additional IR to handle,
     // so if we're importing a Swift call, look for these types in the signature
     CallArg* swiftErrorArg = nullptr;
-    CallArg* swiftSelfArg = nullptr;
+    CallArg* swiftSelfArg  = nullptr;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -1838,7 +1838,10 @@ GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugI
 
 /*****************************************************************************/
 
-void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, /* OUT */ CallArg** swiftErrorArg, /* OUT */ CallArg** swiftSelfArg)
+void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
+                                          CORINFO_SIG_INFO*   sig,
+                                          /* OUT */ CallArg** swiftErrorArg,
+                                          /* OUT */ CallArg** swiftSelfArg)
 {
     assert(call->gtFlags & GTF_CALL_UNMANAGED);
 
@@ -1869,7 +1872,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
         bool spillAllArgs = false;
-        
+
         // Check the signature of the Swift call for the special types
         CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
 
@@ -1919,8 +1922,8 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
         {
             for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
             {
-                impSpillStackEntry(level,
-                                   BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impPopArgsForUnmanagedCall - spillAllArgs=true"));
+                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false)
+                                              DEBUGARG("impPopArgsForUnmanagedCall - spillAllArgs=true"));
             }
         }
     }
@@ -2003,7 +2006,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
             assert(swiftErrorArg != nullptr);
             *swiftErrorArg = &arg;
         }
-        // TODO: SwiftSelf, SwiftAsync
+// TODO: SwiftSelf, SwiftAsync
 #endif // SWIFT_SUPPORT
 
         argIndex++;
@@ -2024,7 +2027,7 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftE
     assert(call != nullptr);
     assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
     assert(swiftErrorArg != nullptr);
-    
+
     GenTree* const argNode = swiftErrorArg->GetNode();
     assert(argNode != nullptr);
 
@@ -5741,8 +5744,8 @@ void Compiler::impCheckForPInvokeCall(
     // return here without inlining the native call.
     if (unmanagedCallConv == CorInfoCallConvExtension::Managed ||
         unmanagedCallConv == CorInfoCallConvExtension::Fastcall ||
-        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction)// ||
-        //unmanagedCallConv == CorInfoCallConvExtension::Swift)
+        unmanagedCallConv == CorInfoCallConvExtension::FastcallMemberFunction) // ||
+    // unmanagedCallConv == CorInfoCallConvExtension::Swift)
     {
         return;
     }
