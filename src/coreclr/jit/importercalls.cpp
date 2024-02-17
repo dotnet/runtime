@@ -1493,31 +1493,11 @@ DONE_CALL:
     }
 
 #ifdef SWIFT_SUPPORT
+    // If call is a Swift call with error handling, append additional IR
+    // to handle storing the error register's value post-call.
     if (swiftErrorArg != nullptr)
     {
-        // This Swift call uses the error register
-        assert(call->IsCall());
-        assert(call->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Swift);
-
-        GenTree* argNode = swiftErrorArg->GetNode();
-        assert(argNode != nullptr);
-
-        // SwiftError* arg should have been spilled to a local temp variable
-        assert(argNode->OperIs(GT_LCL_VAR));
-
-        // Store the error register value to where the SwiftError* points to
-        GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_REF);
-        errorRegNode->SetHasOrderingSideEffect();
-
-        GenTree*         argNodeCopy     = gtNewLclvNode(argNode->AsLclVar()->GetLclNum(), argNode->TypeGet());
-        GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNodeCopy->TypeGet(), argNodeCopy, errorRegNode);
-        impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
-
-        // Indicate the error register will be checked after this call returns
-        call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
-
-        // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
-        call->AsCall()->gtArgs.Remove(swiftErrorArg);
+        impAppendSwiftErrorStore(call->AsCall(), swiftErrorArg);
     }
 #endif // SWIFT_SUPPORT
 
@@ -1885,12 +1865,12 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
 #ifdef SWIFT_SUPPORT
     unsigned short swiftErrorIndex = sig->numArgs;
 
-    // We are importing an unmanaged Swift call, which might require special parameter handling:
+    // We are importing an unmanaged Swift call, which might require special parameter handling
     if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
         bool spillAllArgs = false;
         
-        // Check the signature of the Swift call for the special types.
+        // Check the signature of the Swift call for the special types
         CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
 
         for (unsigned short argIndex = 0; argIndex < sig->numArgs;
@@ -2029,6 +2009,44 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
         argIndex++;
     }
 }
+
+#ifdef SWIFT_SUPPORT
+//------------------------------------------------------------------------
+// impAppendSwiftErrorStore: Append IR to store the Swift error register value
+// to the SwiftError* argument specified by swiftErrorArg, post-Swift call
+//
+// Arguments:
+//    call - the Swift call
+//    swiftErrorArg - the SwiftError* argument passed to call
+//
+void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftErrorArg)
+{
+    assert(call != nullptr);
+    assert(call->unmgdCallConv == CorInfoCallConvExtension::Swift);
+    assert(swiftErrorArg != nullptr);
+    
+    GenTree* const argNode = swiftErrorArg->GetNode();
+    assert(argNode != nullptr);
+
+    // SwiftError* arg should have been spilled to a local temp variable
+    assert(argNode->OperIs(GT_LCL_VAR));
+
+    // Store the error register value to where the SwiftError* points to
+    GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
+    errorRegNode->SetHasOrderingSideEffect();
+    errorRegNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
+
+    GenTree*         argNodeCopy     = gtNewLclvNode(argNode->AsLclVar()->GetLclNum(), argNode->TypeGet());
+    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNodeCopy->TypeGet(), argNodeCopy, errorRegNode);
+    impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
+
+    // Indicate the error register will be checked after this call returns
+    call->gtCallMoreFlags |= GTF_CALL_M_SWIFT_ERROR_HANDLING;
+
+    // Swift call isn't going to use the SwiftError* arg, so don't bother emitting it
+    call->gtArgs.Remove(swiftErrorArg);
+}
+#endif // SWIFT_SUPPORT
 
 //------------------------------------------------------------------------
 // impInitializeArrayIntrinsic: Attempts to replace a call to InitializeArray

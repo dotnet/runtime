@@ -7066,6 +7066,9 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
         case GT_KEEPALIVE:
             return true;
 
+        case GT_SWIFT_ERROR:
+            return true;
+
         case GT_INTRINSIC:
             return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicName);
 
