@@ -8899,8 +8899,8 @@ calli_end:
 			ins->sreg2 = sp [1]->dreg;
 			type_from_op (cfg, ins, sp [0], sp [1]);
 			CHECK_TYPE (ins);
-			// Don't multiply r4 with r8, In RISC-V
 #ifdef TARGET_RISCV
+			// Don't multiply r4 with r8 in RISC-V
 			if (((sp [0]->type == STACK_R4 && sp [1]->type == STACK_R8) ||
 			     (sp [0]->type == STACK_R8 && sp [1]->type == STACK_R4)))
 				add_widen_op (cfg, ins, &sp [0], &sp [1]);
