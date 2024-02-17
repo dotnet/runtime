@@ -415,6 +415,156 @@ namespace System.Tests
             // Given example of problem with double in: https://github.com/dotnet/runtime/issues/93890#issue-1957706751
             Assert.Equal(new TimeSpan(0, 0, 0, 101, 832), TimeSpan.FromSeconds(101, 832));
         }
+
+        [Fact]
+        public static void FromDays_Int_ShouldConstructMaxValueAproximation()
+        {
+            var expected = TimeSpan.MaxValue;
+            var actual = TimeSpan.FromDays(expected.Days, expected.Hours, expected.Minutes, expected.Seconds, expected.Milliseconds, expected.Microseconds);
+            // Should be within TicksPerMicrosecond (10) ticks of expected
+            var diffTicks = (expected-actual).Ticks;
+            Assert.True(diffTicks < 10, $"Diff ticks was {diffTicks}");
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldConstructMinValueAproximation()
+        {
+            var expected = TimeSpan.MinValue;
+            var actual = TimeSpan.FromDays(expected.Days, expected.Hours, expected.Minutes, expected.Seconds, expected.Milliseconds, expected.Microseconds);
+            // Should be within TicksPerMicrosecond (10) ticks of expected
+            var diffTicks = (actual-expected).Ticks;
+            Assert.True(diffTicks < 10, $"Diff ticks was {diffTicks}");
+        }
+
+        // Consts copied from internal const in TimeSpan
+        // Max and Min are symmetrical
+        private const long maxMicroseconds = 922_337_203_685_477_580;
+        private const long maxMilliseconds = 922_337_203_685_477;
+        private const long maxSeconds = 922_337_203_685;
+        private const long maxMinutes = 15_372_286_728;
+        private const int maxHours = 256_204_778;
+        private const int maxDays = 10_675_199;
+        public static IEnumerable<object[]> FromDays_Int_ShouldOverflowOrUnderflow_Data()
+        {
+            long[] individualMaxValues = [ maxDays, maxHours, maxMinutes, maxSeconds, maxMilliseconds, maxMicroseconds ];
+            // Each possibility for individual property to overflow or underflow
+            for (var i = 0; i < individualMaxValues.Length; i++)
+            {
+               object[] result = [ 0, 0, 0, 0, 0, 0 ];
+               var iVal = individualMaxValues[i] + 1;
+               result[i] = iVal;
+               yield return result;
+               result[i] = -iVal;
+               yield return result;
+            }
+            // Each possibility for 2 properties to overflow or underflow
+            // while neither of them individually overflow or underflow
+            for (var i = 0; i < individualMaxValues.Length; i++)
+            {
+                for (var j = 0; j < individualMaxValues.Length; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+                    var iVal = individualMaxValues[i];
+                    var jVal = individualMaxValues[j];
+                    object[] result = [ 0, 0, 0, 0, 0, 0 ];
+                    result[i] = iVal;
+                    result[j] = jVal;
+                    yield return result;
+                    result[i] = -iVal;
+                    result[j] = -jVal;
+                    yield return result;
+                }
+            }
+        }
+        [Theory]
+        [MemberData(nameof(FromDays_Int_ShouldOverflowOrUnderflow_Data))]
+        public static void FromDays_Int_ShouldOverflowOrUnderflow(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds));
+        }
+
+        public static IEnumerable<object[]> FromDays_Int_ShouldNotOverflow_WhenOverflowParamIsCounteredByOppositeSignParam_Data()
+        {
+            long[] individualMaxValues = [ maxDays, maxHours, maxMinutes, maxSeconds, maxMilliseconds, maxMicroseconds ];
+            for (var i = 0; i < individualMaxValues.Length; i++)
+            {
+                for (var j = 0; j < individualMaxValues.Length; j++)
+                {
+                    if (i == j)
+                    {
+                        continue;
+                    }
+                    var iVal = individualMaxValues[i] + 1;
+                    var jVal = individualMaxValues[j] + 1;
+                    object[] result = [ 0, 0, 0, 0, 0, 0 ];
+                    result[i] = iVal;
+                    result[j] = -jVal;
+                    yield return result;
+                }
+            }
+        }
+        [Theory]
+        [MemberData(nameof(FromDays_Int_ShouldNotOverflow_WhenOverflowParamIsCounteredByOppositeSignParam_Data))]
+        public static void FromDays_Int_ShouldNotOverflow_WhenOverflowParamIsCounteredByOppositeSignParam(int days, int hours, long minutes, long seconds, long milliseconds, long microseconds)
+        {
+            var actual = TimeSpan.FromDays(days, hours, minutes, seconds, milliseconds, microseconds);
+            // 2 individually overflowing or underflowing params with opposite sign should end up close to TimeSpan.FromDays(0)
+            Assert.True(actual > TimeSpan.FromDays(-1));
+            Assert.True(actual < TimeSpan.FromDays(1));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenAllParamsIsMaxValidValue()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(maxDays, maxHours, maxMinutes, maxSeconds, maxMilliseconds, maxMicroseconds));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldUnderflow_WhenAllParamsIsMinValidValue()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(-maxDays, -maxHours, -maxMinutes, -maxSeconds, -maxMilliseconds, -maxMicroseconds));
+        }
+        [Fact]
+        public static void FromDays_Int_WhenIntermediateCalculationOverflows()
+        {
+            // Given example of problematic day count in comment in abandoned pr https://github.com/dotnet/runtime/pull/95779/files#r1439772903
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(1067519900));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenParamIsTypeMaxValue_All()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(int.MaxValue, int.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue, long.MaxValue));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenParamIsTypeMaxValue_Days()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(int.MaxValue, 0, 0, 0, 0, 0));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenParamIsTypeMaxValue_Hours()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(0, int.MaxValue, 0, 0, 0, 0));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenParamIsTypeMaxValue_Minutes()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(0, 0, long.MaxValue, 0, 0, 0));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenParamIsTypeMaxValue_Seconds()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(0, 0, 0, long.MaxValue, 0, 0));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenParamIsTypeMaxValue_Milliseconds()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(0, 0, 0, 0, long.MaxValue, 0));
+        }
+        [Fact]
+        public static void FromDays_Int_ShouldOverflow_WhenParamIsTypeMaxValue_Microseconds()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => TimeSpan.FromDays(0, 0, 0, 0, 0, long.MaxValue));
+        }
 #endregion
 
         public static IEnumerable<object[]> FromDays_TestData()

@@ -311,18 +311,18 @@ namespace System
         public static TimeSpan FromDays(int days) => FromDays(days, 0);
         public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
         {
-            long totalMicroseconds = (days * MicrosecondsPerDay)
-                                   + (hours * MicrosecondsPerHour)
-                                   + (minutes * MicrosecondsPerMinute)
-                                   + (seconds * MicrosecondsPerSecond)
-                                   + (milliseconds * MicrosecondsPerMillisecond)
-                                   + microseconds;
+            Int128 totalMicroseconds = ((Int128)days * (Int128)MicrosecondsPerDay)
+                                     + ((Int128)hours * (Int128)MicrosecondsPerHour)
+                                     + ((Int128)minutes * (Int128)MicrosecondsPerMinute)
+                                     + ((Int128)seconds * (Int128)MicrosecondsPerSecond)
+                                     + ((Int128)milliseconds * (Int128)MicrosecondsPerMillisecond)
+                                     + (Int128)microseconds;
 
             if ((totalMicroseconds > MaxMicroseconds) || (totalMicroseconds < MinMicroseconds))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             }
-            var ticks = totalMicroseconds * TicksPerMicrosecond;
+            var ticks = (long)totalMicroseconds * TicksPerMicrosecond;
             return new TimeSpan(ticks);
         }
         public static TimeSpan FromHours(int hours) => FromDays(0, hours: hours);
