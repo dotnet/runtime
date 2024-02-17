@@ -264,15 +264,6 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
     ReturnKind returnKind = callMD->GetReturnKind(true);
-    if (!IsValidReturnKind(returnKind))
-    {
-#if defined(TARGET_AMD64) && defined(TARGET_UNIX)
-        _ASSERTE(!"Unexpected return kind for x64 Unix.");
-#else
-        // SKip GC coverage after the call.
-        return;
-#endif
-    }
     _ASSERTE(IsValidReturnKind(returnKind));
 
     bool ispointerKind = IsPointerReturnKind(returnKind);
@@ -548,7 +539,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
         {
         case InstructionType::Call_IndirectUnconditional:
 #ifdef TARGET_AMD64
-            if(safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
+            if(!safePointDecoder.AreSafePointsInterruptible() && 
+                safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
             {
                *(cur + writeableOffset) = INTERRUPT_INSTR_CALL;        // return value.  May need to protect
@@ -559,7 +551,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
             if(fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
             {
 #ifdef TARGET_AMD64
-                if(safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
+                if(!safePointDecoder.AreSafePointsInterruptible() &&
+                   safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
                 {
                     PBYTE nextInstr;
@@ -596,6 +589,11 @@ void GCCoverageInfo::SprinkleBreakpoints(
         size_t dwRelOffset = (cur - codeStart) + regionOffsetAdj;
         _ASSERTE(FitsIn<DWORD>(dwRelOffset));
         if (codeMan->IsGcSafe(&codeInfo, static_cast<DWORD>(dwRelOffset)))
+        {
+            *(cur + writeableOffset) = INTERRUPT_INSTR;
+        }
+        else if (safePointDecoder.AreSafePointsInterruptible() &&
+            safePointDecoder.IsSafePoint((UINT32)dwRelOffset))
         {
             *(cur + writeableOffset) = INTERRUPT_INSTR;
         }
