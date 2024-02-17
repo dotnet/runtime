@@ -1935,25 +1935,18 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
         switch (helper)
         {
             case CORINFO_HELP_CHKCASTCLASS:
-                // A small optimization - use a slightly faster fallback which assumes that we've already checked
-                // for null and for castToCls itself, so it won't do it again.
-                *typeCheckFailed = TypeCheckFailedAction::CallHelper_Specialized;
-                FALLTHROUGH;
             case CORINFO_HELP_CHKCASTARRAY:
             case CORINFO_HELP_CHKCASTANY:
-                // 50% chance of successful type check (speculative guess)
-                likelihoods[0] = 50;
+                likelihoods[0] = 50; // 50% speculative guess
                 candidates[0]  = NO_CLASS_HANDLE;
                 return 1;
 
             default:
-                break;
+                // Otherwise, bail out. We don't expect the constant handles to be CSE'd as they normally
+                // have GTF_DONT_CSE flag set on them for cast helpers.
+                // TODO-InlineCast: One missing case to handle is isinst against Class<_Canon>
+                return 0;
         }
-
-        // Otherwise, bail out. We don't expect the constant handles to be CSE'd as they normally
-        // have GTF_DONT_CSE flag set on them for cast helpers.
-        // TODO-InlineCast: One missing case to handle is isinst against Class<_Canon>
-        return 0;
     }
 
     if ((objArg->gtFlags & GTF_ALL_EFFECT) != 0 && comp->lvaHaveManyLocals())
