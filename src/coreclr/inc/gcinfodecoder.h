@@ -62,7 +62,7 @@ struct GCInfoToken
     GCInfoToken(PTR_VOID info)
     {
         Info = info;
-        Version = 2;
+        Version = 3;
     }
 };
 
