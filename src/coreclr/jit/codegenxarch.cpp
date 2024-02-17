@@ -4683,33 +4683,6 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     genProduceReg(tree);
 }
 
-#ifdef SWIFT_SUPPORT
-//---------------------------------------------------------------------
-// genCodeForSwiftErrorReg - generate code for a GT_SWIFT_ERROR node
-//
-// Arguments
-//    tree - the GT_SWIFT_ERROR node
-//
-// Return value:
-//    None
-//
-void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
-{
-    assert(tree->OperIs(GT_SWIFT_ERROR));
-
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->GetRegNum();
-
-    
-    assert(targetReg == REG_SWIFT_ERROR);
-
-    inst_Mov(targetType, targetReg, REG_SWIFT_ERROR, /* canSkip */ true);
-    genTransferRegGCState(targetReg, REG_SWIFT_ERROR);
-
-    genProduceReg(tree);
-}
-#endif // SWIFT_SUPPORT
-
 //---------------------------------------------------------------------
 // genCodeForNullCheck - generate code for a GT_NULLCHECK node
 //
