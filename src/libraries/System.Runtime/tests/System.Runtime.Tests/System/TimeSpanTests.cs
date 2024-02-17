@@ -347,6 +347,76 @@ namespace System.Tests
             Assert.Equal(expected, timeSpan1.Equals(obj));
         }
 
+#region FromX_int_overloads
+        [Fact]
+        public static void FromDays_Int_Overload1()
+        {
+            Assert.Equal(new TimeSpan(1, 0, 0, 0), TimeSpan.FromDays(1));
+        }
+        [Fact]
+        public static void FromDays_Int_Overload2()
+        {
+            var expectedaaa = new TimeSpan(1, 2, 3, 4, 5, 6);
+            var actual = TimeSpan.FromDays(1, 2, 3, 4, 5, 6);
+            Assert.Equal(expectedaaa, actual);
+        }
+        [Fact]
+        public static void FromHours_Int_Overload1()
+        {
+            Assert.Equal(new TimeSpan(1, 0, 0), TimeSpan.FromHours(1));
+        }
+        [Fact]
+        public static void FromHours_Int_Overload2()
+        {
+            var expecteda = new TimeSpan(0, 1, 2, 3, 4, 5);
+            var actual = TimeSpan.FromHours(1, 2, 3, 4, 5);
+            Assert.Equal(expecteda, actual);
+        }
+        [Fact]
+        public static void FromMinutes_Int_Overload1()
+        {
+            Assert.Equal(new TimeSpan(0, 1, 0), TimeSpan.FromMinutes(1));
+        }
+        [Fact]
+        public static void FromMinutes_Int_Overload2()
+        {
+            var expected = new TimeSpan(0, 0, 1, 2, 3, 4);
+            var actual = TimeSpan.FromMinutes(1, 2, 3, 4);
+            Assert.Equal(expected, actual);
+        }
+        [Fact]
+        public static void FromSeconds_Int_Overload1()
+        {
+            Assert.Equal(new TimeSpan(0, 0, 1), TimeSpan.FromSeconds(1));
+        }
+        [Fact]
+        public static void FromSeconds_Int_Overload2()
+        {
+            var expected = new TimeSpan(0, 0, 0, 1, 2, 3);
+            var actualaaa = TimeSpan.FromSeconds(1, 2, 3);
+            Assert.Equal(expected, actualaaa);
+        }
+        [Fact]
+        public static void FromMilliseconds_Int_Overload()
+        {
+            var expected = new TimeSpan(0, 0, 0, 0, 1, 2);
+            var actuala = TimeSpan.FromMilliseconds(1, 2);
+            Assert.Equal(expected, actuala);
+        }
+        [Fact]
+        public static void FromMicroseconds_Int_Overload()
+        {
+            Assert.Equal(new TimeSpan(0, 0, 0, 0, 0, 1), TimeSpan.FromMicroseconds(1));
+        }
+
+        [Fact]
+        public static void FromSeconds_Int_ProblematicWhenUsingDouble()
+        {
+            // Given example of problem with double in: https://github.com/dotnet/runtime/issues/93890#issue-1957706751
+            Assert.Equal(new TimeSpan(0, 0, 0, 101, 832), TimeSpan.FromSeconds(101, 832));
+        }
+#endregion
+
         public static IEnumerable<object[]> FromDays_TestData()
         {
             yield return new object[] { 100.5, new TimeSpan(100, 12, 0, 0) };

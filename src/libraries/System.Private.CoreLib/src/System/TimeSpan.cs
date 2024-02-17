@@ -308,6 +308,35 @@ namespace System
 
         public override int GetHashCode() => _ticks.GetHashCode();
 
+        public static TimeSpan FromDays(int days) => FromDays(days, 0);
+        public static TimeSpan FromDays(int days, int hours = 0, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+        {
+            long totalMicroseconds = (days * MicrosecondsPerDay)
+                                   + (hours * MicrosecondsPerHour)
+                                   + (minutes * MicrosecondsPerMinute)
+                                   + (seconds * MicrosecondsPerSecond)
+                                   + (milliseconds * MicrosecondsPerMillisecond)
+                                   + microseconds;
+
+            if ((totalMicroseconds > MaxMicroseconds) || (totalMicroseconds < MinMicroseconds))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
+            }
+            var ticks = totalMicroseconds * TicksPerMicrosecond;
+            return new TimeSpan(ticks);
+        }
+        public static TimeSpan FromHours(int hours) => FromDays(0, hours: hours);
+        public static TimeSpan FromHours(int hours, long minutes = 0, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+            => FromDays(0, hours: hours, minutes: minutes, seconds: seconds, milliseconds: milliseconds, microseconds: microseconds);
+        public static TimeSpan FromMinutes(long minutes) => FromDays(0, minutes: minutes);
+        public static TimeSpan FromMinutes(long minutes, long seconds = 0, long milliseconds = 0, long microseconds = 0)
+            => FromDays(0, minutes: minutes, seconds: seconds, milliseconds: milliseconds, microseconds: microseconds);
+        public static TimeSpan FromSeconds(long seconds) => FromDays(0, seconds: seconds);
+        public static TimeSpan FromSeconds(long seconds, long milliseconds = 0, long microseconds = 0)
+            => FromDays(0, seconds: seconds, milliseconds: milliseconds, microseconds: microseconds);
+        public static TimeSpan FromMilliseconds(long milliseconds, long microseconds = 0) => FromDays(0, milliseconds: milliseconds, microseconds: microseconds);
+        public static TimeSpan FromMicroseconds(long microseconds) => FromDays(0, microseconds: microseconds);
+
         public static TimeSpan FromHours(double value) => Interval(value, TicksPerHour);
 
         private static TimeSpan Interval(double value, double scale)
