@@ -20,6 +20,13 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(supportsRawMetadata, hasMetadata);
             Assert.Equal(supportsRawMetadata, blob != null);
             Assert.Equal(supportsRawMetadata, length > 0);
+
+            if (supportsRawMetadata)
+            {
+                var metadataReader = new MetadataReader(blob, length);
+                string assemblyName = metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name);
+                Assert.Equal(assembly.GetName().Name, assemblyName);
+            }
         }
     }
 }
