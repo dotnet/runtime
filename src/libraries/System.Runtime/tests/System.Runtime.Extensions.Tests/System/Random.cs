@@ -734,7 +734,7 @@ namespace System.Tests
 			string[] items = ["", ""];
 			object[] array = items;
             random.Shuffle(array);
-            AssertExtensions.SequenceEqual((ReadOnlySpan<T>)["", ""], items);
+            AssertExtensions.SequenceEqual((ReadOnlySpan<string>)["", ""], items);
         }
 
         [Fact]
