@@ -1722,10 +1722,6 @@ namespace System.Net
                                         try
                                         {
                                             socket.Bind(endPoint);
-                                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                                            {
-                                                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, false);
-                                            }
                                             return; // Bind successful, exit loops.
                                         }
                                         catch
