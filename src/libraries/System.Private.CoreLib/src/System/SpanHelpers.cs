@@ -59,7 +59,7 @@ namespace System
                 return;
             }
 
-            // If we reached this point, we cannot vectorize this T, or there are too few
+            // If we reached this point, we cannot vectorize this data, or there are too few
             // elements for us to vectorize. Fall back to an unrolled loop.
             nuint i = 0;
 
@@ -69,6 +69,7 @@ namespace System
                 nuint stopLoopAtOffset = byteLength & ~(nuint)7;
                 do
                 {
+                    // JIT is expected to coalesce these stores into a single 8-byte store on 64-bit platforms
                     Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i) = 0;
                     Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i + 4) = 0;
                 } while ((i += 8) < stopLoopAtOffset);
