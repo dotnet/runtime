@@ -562,7 +562,8 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
 
     # Enable maximum fortification
-    remove_definitions(-D_FORTIFY_SOURCE)
+    string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-9] " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REGEX REPLACE "-D_FORTIFY_SOURCE=[0-9] " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     add_compile_definitions("$<$<CONFIG:RELEASE>:_FORTIFY_SOURCE=3>")
   endif()
 
