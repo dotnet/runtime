@@ -40,7 +40,29 @@ namespace System.Numerics
         /// <summary>Explicitly converts a <see cref="float" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to its nearest representable <see cref="BFloat16"/> value.</returns>
-        public static explicit operator BFloat16(float value) => new BFloat16((ushort)(BitConverter.SingleToUInt32Bits(value) >> 16));
+        public static explicit operator BFloat16(float value)
+        {
+            uint bits = BitConverter.SingleToUInt32Bits(value);
+            uint upper = bits >> 16;
+            // Only do rounding for finite numbers
+            if (float.IsFinite(value))
+            {
+                uint lower = bits & 0xFFFF;
+                uint sign = upper & 0x8000;
+                // Strip sign from upper
+                upper &= 0x7FFF;
+                // Determine the increment for rounding
+                // When upper is even, midpoint (0x8000) will tie to no increment, which is effectively a decrement of lower
+                uint lowerShift = (~upper) & (lower >> 15) & 1; // Upper is even & lower>=0x8000 (not 0)
+                lower -= lowerShift;
+                uint increment = lower >> 15;
+                // Do the increment, MaxValue will be correctly increased to Infinity
+                upper += increment;
+                // Put back sign with upper bits and done
+                upper |= sign;
+            }
+            return new BFloat16((ushort)upper);
+        }
 
         /// <summary>Explicitly converts a <see cref="double" /> value to its nearest representable <see cref="BFloat16"/> value.</summary>
         /// <param name="value">The value to convert.</param>
