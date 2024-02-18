@@ -80,7 +80,6 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
         }
 
         *pDst++ = valueSrc;
-        captureX19_X29[i] = copy->captureX19_X29[i];
     }
 
 
