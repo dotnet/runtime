@@ -170,6 +170,9 @@ namespace Internal.IL
 
             }
 
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MemCpy), "Can be used by multiple IL opcodes implicitly");
+            _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MemSet), "Can be used by multiple IL opcodes implicitly");
+
             FindBasicBlocks();
             ImportBasicBlocks();
 
