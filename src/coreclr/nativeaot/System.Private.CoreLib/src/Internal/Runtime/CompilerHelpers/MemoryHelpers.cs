@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -15,7 +16,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             if (size > 0)
             {
-                _ = dest;
+                // Implicit nullcheck
+                _ = Unsafe.ReadUnaligned<byte>(ref dest);
                 SpanHelpers.Fill(ref dest, size, value);
             }
         }
@@ -24,8 +26,9 @@ namespace Internal.Runtime.CompilerHelpers
         {
             if (size > 0)
             {
-                _ = dest;
-                _ = src;
+                // Implicit nullchecks
+                _ = Unsafe.ReadUnaligned<byte>(ref dest);
+                _ = Unsafe.ReadUnaligned<byte>(ref src);
                 Buffer.Memmove(ref dest, ref src, size);
             }
         }
