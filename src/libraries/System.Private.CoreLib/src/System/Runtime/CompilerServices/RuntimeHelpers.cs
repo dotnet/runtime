@@ -130,6 +130,9 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant(int t) => false;
 #pragma warning restore IDE0060
 
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
+#endif
         private static unsafe void MemSet(ref byte dest, byte value, nuint size)
         {
             if (size > 0)
@@ -140,6 +143,9 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+#if NATIVEAOT
+        [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemCopy")]
+#endif
         private static unsafe void MemCopy(ref byte dest, ref byte src, nuint size)
         {
             if (size > 0)
