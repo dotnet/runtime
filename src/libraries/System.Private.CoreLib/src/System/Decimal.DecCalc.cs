@@ -213,7 +213,7 @@ namespace System
                 {
                     uint remainder = 0;
 
-                if (bufNum.U2 != 0)
+                    if (bufNum.U2 != 0)
                         goto Div3Word;
                     if (bufNum.U1 >= den)
                         goto Div2Word;
@@ -235,25 +235,25 @@ namespace System
                     ulong tmp, div, rem;
                     if (bufNum.U2 != 0)
                     {
-                    tmp = bufNum.High64;
+                        tmp = bufNum.High64;
 
                         (div, rem) = Math.DivRem(tmp, den);
-                    bufNum.High64 = div;
+                        bufNum.High64 = div;
                         tmp = (rem << 32) | bufNum.U0;
-                    if (tmp == 0)
-                        return 0;
+                        if (tmp == 0)
+                            return 0;
                         (div, rem) = Math.DivRem(tmp, den);
                         bufNum.U0 = (uint)div;
                         return (uint)rem;
-                }
+                    }
 
-                tmp = bufNum.Low64;
-                if (tmp == 0)
-                    return 0;
+                    tmp = bufNum.Low64;
+                    if (tmp == 0)
+                        return 0;
                     (div, rem) = Math.DivRem(tmp, den);
-                bufNum.Low64 = div;
+                    bufNum.Low64 = div;
                     return (uint)rem;
-            }
+                }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -456,7 +456,7 @@ namespace System
 
                     low = (t << 32 | mull);
                     return (uint)(t >> 32);
-                }               
+                }
             }
 
             /// <summary>
@@ -489,7 +489,7 @@ namespace System
                 }
                 else
                 {
-                // TODO: https://github.com/dotnet/runtime/issues/5213
+                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     quo = (uint)(dividend / den);
                     remainder = (uint)dividend - quo * den;
                 }
@@ -560,7 +560,7 @@ PosRem:
 
             /// <summary>
             /// Multiply the two numbers 64bit * 32bit.
-            /// The 96 bits of the result overwrite the input. 
+            /// The 96 bits of the result overwrite the input.
             /// </summary>
             /// <param name="bufNum">64-bit number as array of uints, least-sig first</param>
             /// <param name="power">Scale factor to multiply by</param>
@@ -573,12 +573,12 @@ PosRem:
                 }
                 else
                 {
-                ulong tmp = Math.BigMul(bufNum.U0, power);
-                bufNum.U0 = (uint)tmp;
-                tmp >>= 32;
-                tmp += Math.BigMul(bufNum.U1, power);
-                bufNum.High64 = tmp;
-            }
+                    ulong tmp = Math.BigMul(bufNum.U0, power);
+                    bufNum.U0 = (uint)tmp;
+                    tmp >>= 32;
+                    tmp += Math.BigMul(bufNum.U1, power);
+                    bufNum.High64 = tmp;
+                }
             }
 
             /// <summary>
@@ -2084,6 +2084,7 @@ ReturnZero:
                             {
                                 if (scale < 0)
                                 {
+                                    // TODO: consider 64bit powers
                                     curScale = Math.Min(9, -scale);
                                     goto HaveScale64;
                                 }
