@@ -5108,10 +5108,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
         callTarget = callTargetReg;
 
-        // adrp + add with relocations will be emitted
-        GetEmitter()->emitIns_R_AI(INS_adrp, EA_PTR_DSP_RELOC, callTarget,
-                                   (ssize_t)pAddr DEBUGARG((size_t)compiler->eeFindHelper(helper))
-                                       DEBUGARG(GTF_ICON_METHOD_HDL));
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTarget, (ssize_t)pAddr);
         GetEmitter()->emitIns_R_R(INS_ldr, EA_PTRSIZE, callTarget, callTarget);
         callType = emitter::EC_INDIR_R;
     }

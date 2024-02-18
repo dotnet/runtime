@@ -134,10 +134,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.MemCpy:
-                    methodDesc = context.GetHelperEntryPoint("RuntimeHelpers", "MemCopy");
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "RuntimeHelpers").GetKnownMethod("MemCopy", null);
                     break;
                 case ReadyToRunHelper.MemSet:
-                    methodDesc = context.GetHelperEntryPoint("RuntimeHelpers", "MemSet");
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "RuntimeHelpers").GetKnownMethod("MemSet", null);
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:

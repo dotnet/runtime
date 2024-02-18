@@ -12,24 +12,17 @@ namespace Internal.IL
 {
     internal static class HelperExtensions
     {
-        private static string GetTypeNamespace(string type)
-        {
-            return type switch
-            {
-                "RuntimeHelpers" => "System.Runtime.CompilerServices",
-                _ => "Internal.Runtime.CompilerHelpers"
-            };
-        }
+        private const string HelperTypesNamespace = "Internal.Runtime.CompilerHelpers";
 
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {
-            MetadataType helperType = context.SystemModule.GetKnownType(GetTypeNamespace(name), name);
+            MetadataType helperType = context.SystemModule.GetKnownType(HelperTypesNamespace, name);
             return helperType;
         }
 
         public static MetadataType GetOptionalHelperType(this TypeSystemContext context, string name)
         {
-            MetadataType helperType = context.SystemModule.GetType(GetTypeNamespace(name), name, throwIfNotFound: false);
+            MetadataType helperType = context.SystemModule.GetType(HelperTypesNamespace, name, throwIfNotFound: false);
             return helperType;
         }
 
