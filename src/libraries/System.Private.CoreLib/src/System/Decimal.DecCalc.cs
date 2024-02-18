@@ -194,27 +194,66 @@ namespace System
             /// <returns>Returns remainder. Quotient overwrites dividend.</returns>
             private static uint Div96By32(ref Buf12 bufNum, uint den)
             {
-                // TODO: https://github.com/dotnet/runtime/issues/5213
-                ulong tmp, div;
-                if (bufNum.U2 != 0)
+                if (X86.X86Base.X64.IsSupported)
                 {
+                    uint hiRes = 0;
+                    ulong remainder = bufNum.U2;
+
+                    if (remainder < den)
+                        goto Div164bit;
+
+                    (hiRes, remainder) = X86.X86Base.DivRem(bufNum.U2, 0u, den);
+
+                Div164bit:
+                    bufNum.U2 = hiRes;
+                    (bufNum.Low64, remainder) = X86.X86Base.X64.DivRem(bufNum.Low64, remainder, (ulong)den);
+                    return (uint)remainder;
+                }
+                else if (X86.X86Base.IsSupported)
+                {
+                    uint remainder = 0;
+
+                if (bufNum.U2 != 0)
+                        goto Div3Word;
+                    if (bufNum.U1 >= den)
+                        goto Div2Word;
+
+                    remainder = bufNum.U1;
+                    bufNum.U1 = 0;
+                    goto Div1Word;
+
+                Div3Word:
+                    (bufNum.U2, remainder) = X86.X86Base.DivRem(bufNum.U2, 0, den);
+                Div2Word:
+                    (bufNum.U1, remainder) = X86.X86Base.DivRem(bufNum.U1, remainder, den);
+                Div1Word:
+                    (bufNum.U0, remainder) = X86.X86Base.DivRem(bufNum.U0, remainder, den);
+                    return remainder;
+                }
+                else
+                {
+                    ulong tmp, div, rem;
+                    if (bufNum.U2 != 0)
+                    {
                     tmp = bufNum.High64;
-                    div = tmp / den;
+
+                        (div, rem) = Math.DivRem(tmp, den);
                     bufNum.High64 = div;
-                    tmp = ((tmp - (uint)div * den) << 32) | bufNum.U0;
+                        tmp = (rem << 32) | bufNum.U0;
                     if (tmp == 0)
                         return 0;
-                    uint div32 = (uint)(tmp / den);
-                    bufNum.U0 = div32;
-                    return (uint)tmp - div32 * den;
+                        (div, rem) = Math.DivRem(tmp, den);
+                        bufNum.U0 = (uint)div;
+                        return (uint)rem;
                 }
 
                 tmp = bufNum.Low64;
                 if (tmp == 0)
                     return 0;
-                div = tmp / den;
+                    (div, rem) = Math.DivRem(tmp, den);
                 bufNum.Low64 = div;
-                return (uint)(tmp - div * den);
+                    return (uint)rem;
+            }
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -322,6 +361,14 @@ namespace System
             private static uint Div96By64(ref Buf12 bufNum, ulong den)
             {
                 Debug.Assert(den > bufNum.High64);
+
+                if (X86.X86Base.X64.IsSupported)
+                {
+                    // Assert above states: den > bufNum.High64 so den > bufNum.U2 and we can be sure we will not overflow
+                    (ulong quotient, bufNum.Low64) = X86.X86Base.X64.DivRem(bufNum.Low64, bufNum.U2, den);
+                    return (uint)quotient;
+                }
+
                 ulong num;
                 uint num2 = bufNum.U2;
                 if (num2 == 0)
@@ -392,6 +439,26 @@ namespace System
                 return quo;
             }
 
+            private static uint BigMul64By32(ulong a, uint b, out ulong low)
+            {
+                if (IntPtr.Size == 8)
+                {
+                    return (uint)Math.BigMul(a, b, out low);
+                }
+                else
+                {
+                    uint al = (uint)a;
+                    uint ah = (uint)(a >> 32);
+                    uint bl = (uint)b;
+
+                    ulong mull = ((ulong)al) * bl;
+                    ulong t = ((ulong)ah) * bl + (mull >> 32);
+
+                    low = (t << 32 | mull);
+                    return (uint)(t >> 32);
+                }               
+            }
+
             /// <summary>
             /// Do partial divide, yielding 32-bit result and 96-bit remainder.
             /// Top divisor uint must be larger than top dividend uint. This is
@@ -413,20 +480,25 @@ namespace System
                     //
                     return 0;
 
+
+                uint quo;
+                uint remainder;
+                if (X86.X86Base.IsSupported)
+                {
+                    (quo, remainder) = X86.X86Base.DivRem(bufNum.U2, bufNum.U3, den);
+                }
+                else
+                {
                 // TODO: https://github.com/dotnet/runtime/issues/5213
-                uint quo = (uint)(dividend / den);
-                uint remainder = (uint)dividend - quo * den;
+                    quo = (uint)(dividend / den);
+                    remainder = (uint)dividend - quo * den;
+                }
 
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
-                ulong prod1 = Math.BigMul(quo, bufDen.U0); // quo * lo divisor
-                ulong prod2 = Math.BigMul(quo, bufDen.U1); // quo * mid divisor
-                prod2 += prod1 >> 32;
-                prod1 = (uint)prod1 | (prod2 << 32);
-                prod2 >>= 32;
-
-                ulong num = bufNum.Low64;
-                num -= prod1;
+                ulong prod1;
+                uint prod2 = BigMul64By32(bufDen.Low64, quo, out prod1);
+                ulong num = bufNum.Low64 - prod1;
                 remainder -= (uint)prod2;
 
                 // Propagate carries
@@ -479,24 +551,34 @@ PosRem:
             /// <returns>Returns highest 32 bits of product</returns>
             private static uint IncreaseScale(ref Buf12 bufNum, uint power)
             {
-                ulong tmp = Math.BigMul(bufNum.U0, power);
-                bufNum.U0 = (uint)tmp;
-                tmp >>= 32;
-                tmp += Math.BigMul(bufNum.U1, power);
-                bufNum.U1 = (uint)tmp;
-                tmp >>= 32;
-                tmp += Math.BigMul(bufNum.U2, power);
+                ulong tmp = BigMul64By32(bufNum.Low64, power, out ulong low);
+                bufNum.Low64 = low;
+                tmp = Math.BigMul(bufNum.U2, power) + tmp;
                 bufNum.U2 = (uint)tmp;
                 return (uint)(tmp >> 32);
             }
 
+            /// <summary>
+            /// Multiply the two numbers 64bit * 32bit.
+            /// The 96 bits of the result overwrite the input. 
+            /// </summary>
+            /// <param name="bufNum">64-bit number as array of uints, least-sig first</param>
+            /// <param name="power">Scale factor to multiply by</param>
             private static void IncreaseScale64(ref Buf12 bufNum, uint power)
             {
+                if (IntPtr.Size == 8)
+                {
+                    bufNum.U2 = (uint)Math.BigMul(bufNum.Low64, power, out ulong low);
+                    bufNum.Low64 = low;
+                }
+                else
+                {
                 ulong tmp = Math.BigMul(bufNum.U0, power);
                 bufNum.U0 = (uint)tmp;
                 tmp >>= 32;
                 tmp += Math.BigMul(bufNum.U1, power);
                 bufNum.High64 = tmp;
+            }
             }
 
             /// <summary>
