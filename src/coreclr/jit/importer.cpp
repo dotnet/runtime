@@ -314,11 +314,8 @@ void Compiler::impEndTreeList(BasicBlock* block)
         impLastILoffsStmt = nullptr;
     }
 #endif
-    if (impLclValues != nullptr)
-    {
-        assert(impLclMapSize > 0);
-        memset(impLclValues, 0, impLclMapSize * sizeof(GenTree*));
-    }
+    impLclCurVer++;
+    assert(impLclCurVer != 0);
     impStmtList = impLastStmt = nullptr;
 }
 
@@ -1101,6 +1098,10 @@ GenTree* Compiler::impGetLclVal(GenTree* val)
         GenTree* lclValue = impLclValues[lclNum];
         if (lclValue != nullptr)
         {
+            if (impLclVersions[lclNum] != impLclCurVer)
+            {
+                return nullptr;
+            }
             if (lclValue->OperIs(GT_LCL_VAR))
             {
                 unsigned newLcl = lclValue->AsLclVar()->GetLclNum();
@@ -1129,20 +1130,25 @@ GenTree* Compiler::impGetLclVal(GenTree* val)
 //
 void Compiler::impSetLclVal(unsigned lclNum, GenTree* val)
 {
+    assert(val != nullptr);
     if (lclNum >= impLclMapSize)
     {
         if (impLclValues != nullptr)
         {
+            assert(impLclVersions != nullptr);
             JITDUMP("impLclValues is too small to hold local V%02u\n", lclNum);
             return;
         }
         // reserve more space for locals created later
-        impLclMapSize = max(lvaCount * 2, 32);
-        impLclValues  = new (getAllocator(CMK_ImpLclMap)) GenTree*[impLclMapSize];
-        memset(impLclValues, 0, impLclMapSize * sizeof(GenTree*));
+        impLclMapSize  = max(lvaCount * 2, 32);
+        impLclValues   = new (getAllocator(CMK_ImpLclMap)) GenTree*[impLclMapSize];
+        impLclVersions = new (getAllocator(CMK_ImpLclMap)) unsigned[impLclMapSize];
+        memset(impLclVersions, 0, impLclMapSize * sizeof(unsigned));
     }
     assert(impLclValues != nullptr);
+    assert(impLclVersions != nullptr);
     impLclValues[lclNum] = val;
+    impLclVersions[lclNum] = impLclCurVer;
 }
 
 //------------------------------------------------------------------------

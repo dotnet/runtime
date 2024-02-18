@@ -1965,7 +1965,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compUsesThrowHelper = false;
 
     impLclValues = nullptr;
+    impLclVersions = nullptr;
     impLclMapSize = 0;
+    impLclCurVer = 1;
 
     m_preferredInitCctor = CORINFO_HELP_UNDEF;
 }

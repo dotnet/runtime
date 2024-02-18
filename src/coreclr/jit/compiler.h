@@ -4551,8 +4551,13 @@ protected:
 
     Statement* impStmtList; // Statements for the BB being imported.
     Statement* impLastStmt; // The last statement for the current BB.
+
+    //----------------- Importer forward sub ----------------------
+
     GenTree** impLclValues; // Current values stored in locals.
+    unsigned* impLclVersions; // Versions current values belong to.
     unsigned impLclMapSize; // Current local map size.
+    unsigned impLclCurVer; // Current local map version.
 
 public:
     static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
