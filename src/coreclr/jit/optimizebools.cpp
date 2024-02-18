@@ -1744,6 +1744,28 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     return opr1;
 }
 
+void CleanIntBoolOpDsc(IntBoolOpDsc* intBoolOpDsc)
+{
+    intBoolOpDsc->start = nullptr;
+    intBoolOpDsc->end = nullptr;
+
+    if (intBoolOpDsc->ctsArray != nullptr)
+    {
+        free(intBoolOpDsc->ctsArray);
+        intBoolOpDsc->ctsArray = nullptr;
+    }
+
+    intBoolOpDsc->ctsArrayLength = 0;
+
+    if (intBoolOpDsc->lclVarArr != nullptr)
+    {
+        free(intBoolOpDsc->lclVarArr);
+        intBoolOpDsc->lclVarArr = nullptr;
+    }
+
+    intBoolOpDsc->lclVarArrLength = 0;
+}
+
 IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
 {
     IntBoolOpDsc intBoolOpDsc;
@@ -1766,13 +1788,13 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
         {
             if (intBoolOpDsc.start == nullptr)
             {
-                if (b4->OperIsUnary())
+                if (b4->OperIsBinary())
                 {
-                    b4 = b4->gtPrev;
+                    b4 = b4->gtPrev->gtPrev;
                 }
                 else
                 {
-                    b4 = b4->gtPrev->gtPrev;
+                    b4 = b4->gtPrev;
                 }
                 continue;
             }
@@ -1784,14 +1806,7 @@ IntBoolOpDsc GetNextIntBoolOpToOptimize(GenTree* b3)
             }
             else
             {
-                intBoolOpDsc.start = nullptr;
-                intBoolOpDsc.end = nullptr;
-                free(intBoolOpDsc.ctsArray);
-                intBoolOpDsc.ctsArrayLength = 0;
-                intBoolOpDsc.ctsArray = nullptr;
-                free(intBoolOpDsc.lclVarArr);
-                intBoolOpDsc.lclVarArrLength = 0;
-                intBoolOpDsc.lclVarArr = nullptr;
+                CleanIntBoolOpDsc(&intBoolOpDsc);
                 b4 = b4->gtPrev;
                 continue;
             }
@@ -1883,10 +1898,46 @@ void OptimizeIntBoolOp(Compiler* compiler, IntBoolOpDsc intBoolOpDsc)
     intBoolOpDsc.start->gtPrev = optimizedTree;
     optimizedTree->gtNext = intBoolOpDsc.start;
 
-    if (intBoolOpDsc.start->OperIs(GT_RETURN))
+    if (intBoolOpDsc.start->OperIsUnary())
     {
         intBoolOpDsc.start->AsOp()->gtOp1 = optimizedTree;
     }
+    else if (intBoolOpDsc.start->gtNext != nullptr && intBoolOpDsc.start->gtNext->OperIsBinary())
+    {
+        intBoolOpDsc.start->gtNext->AsOp()->gtOp1 = optimizedTree;
+    }
+}
+
+unsigned int TryOptimizeIntBoolOp(Compiler* compiler, BasicBlock* b1)
+{
+    unsigned int result = 0;
+    Statement* b2 = b1->firstStmt();
+    if (b2 != nullptr)
+    {
+        GenTree* b3 = b2->GetRootNode();
+        if (b3 != nullptr && b3->OperIs(GT_RETURN))
+        {
+            IntBoolOpDsc intBoolOpDsc = GetNextIntBoolOpToOptimize(b3);
+            while (intBoolOpDsc.ctsArrayLength >= 2
+                    && intBoolOpDsc.lclVarArrLength >= 2)
+            {
+                OptimizeIntBoolOp(compiler, intBoolOpDsc);
+
+                if (intBoolOpDsc.end == nullptr)
+                {
+                    b2->SetTreeList(intBoolOpDsc.lclVarArr[0]);
+                }
+
+                CleanIntBoolOpDsc(&intBoolOpDsc);
+                result++;
+                intBoolOpDsc = GetNextIntBoolOpToOptimize(intBoolOpDsc.end);
+            }
+
+            CleanIntBoolOpDsc(&intBoolOpDsc);
+        }
+    }
+
+    return result;
 }
 
 //-----------------------------------------------------------------------------
@@ -2053,40 +2104,7 @@ PhaseStatus Compiler::optOptimizeBools()
 
             if (b1->KindIs(BBJ_RETURN))
             {
-                Statement* b2 = b1->firstStmt();
-                if (b2 != nullptr)
-                {
-                    GenTree* b3 = b2->GetRootNode();
-                    if (b3 != nullptr && b3->OperIs(GT_RETURN) && b3->TypeIs(TYP_INT))
-                    {
-                        IntBoolOpDsc intBoolOpDsc = GetNextIntBoolOpToOptimize(b3);
-                        while (intBoolOpDsc.ctsArrayLength >= 2
-                             && intBoolOpDsc.lclVarArrLength >= 2)
-                        {
-                            OptimizeIntBoolOp(this, intBoolOpDsc);
-
-                            if (intBoolOpDsc.end == nullptr)
-                            {
-                                b2->SetTreeList(intBoolOpDsc.lclVarArr[0]);
-                            }
-
-                            if (intBoolOpDsc.ctsArray != nullptr)
-                            {
-                                free(intBoolOpDsc.ctsArray);
-                                intBoolOpDsc.ctsArray = nullptr;
-                            }
-
-                            if (intBoolOpDsc.lclVarArr != nullptr)
-                            {
-                                free(intBoolOpDsc.lclVarArr);
-                                intBoolOpDsc.lclVarArr = nullptr;
-                            }
-                            
-                            numReturn++;
-                            intBoolOpDsc = GetNextIntBoolOpToOptimize(intBoolOpDsc.end);
-                        }
-                    }
-                }
+                numReturn += TryOptimizeIntBoolOp(this, b1);
                 continue;
             }
 
