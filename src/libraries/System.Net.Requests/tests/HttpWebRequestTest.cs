@@ -2180,6 +2180,7 @@ namespace System.Net.Tests
                     var exception = bool.Parse(async) ?
                         await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync()) :
                         Assert.Throws<WebException>(() => request.GetResponse());
+                    Assert.NotNull(exception.Response);
                     using (var responseStream = exception.Response.GetResponseStream())
                     {
                         Assert.Equal(5, responseStream.Length);
@@ -2239,21 +2240,11 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Linux,
-            "Socket.Bind() auto-enables SO_REUSEADDR on Unix to allow Bind() during TIME_WAIT to " +
-            "emulate Windows behavior, see SystemNative_Bind() in 'pal_networking.c'.")]
         public async Task SendHttpRequest_BindIPEndPoint_Throws()
         {
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            var disableSocketOption = (SocketOptionName name) =>
-            {
-                if (socket.GetSocketOption(SocketOptionLevel.Socket, name) is true)
-                {
-                    socket.SetSocketOption(SocketOptionLevel.Socket, name, false);
-                }
-            };
-            disableSocketOption(SocketOptionName.ReuseAddress);
             socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, false);
 
             // URI shouldn't matter because it should throw exception before connection open.
             HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
