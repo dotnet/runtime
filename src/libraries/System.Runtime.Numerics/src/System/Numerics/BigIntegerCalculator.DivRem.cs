@@ -75,7 +75,7 @@ namespace System.Numerics
             DummyForDebug(quotient);
             DummyForDebug(remainder);
 
-            if (right.Length < DivideThreshold || left.Length - right.Length < DivideThreshold)
+            if (right.Length <= DivideThreshold || left.Length - right.Length <= DivideThreshold)
             {
                 left.CopyTo(remainder);
                 DivideGrammarSchool(remainder, right, quotient);
@@ -92,7 +92,7 @@ namespace System.Numerics
             Debug.Assert(quotient.Length == left.Length - right.Length + 1);
             DummyForDebug(quotient);
 
-            if (right.Length < DivideThreshold || left.Length - right.Length < DivideThreshold)
+            if (right.Length <= DivideThreshold || left.Length - right.Length <= DivideThreshold)
             {
                 // Same as above, but only returning the quotient.
 
@@ -123,7 +123,7 @@ namespace System.Numerics
             Debug.Assert(remainder.Length == left.Length);
             DummyForDebug(remainder);
 
-            if (right.Length < DivideThreshold || left.Length - right.Length < DivideThreshold)
+            if (right.Length <= DivideThreshold || left.Length - right.Length <= DivideThreshold)
             {
                 // Same as above, but only returning the remainder.
 
@@ -158,7 +158,7 @@ namespace System.Numerics
                 || quotient.Length == 0);
             DummyForDebug(quotient);
 
-            if (right.Length < DivideThreshold || left.Length - right.Length < DivideThreshold)
+            if (right.Length <= DivideThreshold || left.Length - right.Length <= DivideThreshold)
                 DivideGrammarSchool(left, right, quotient);
             else
             {
@@ -580,7 +580,7 @@ namespace System.Numerics
             Debug.Assert(remainder.Length >= right.Length + 1);
             Debug.Assert(right[^1] > 0);
 
-            if (right.Length % 2 != 0 || right.Length < DivideThreshold)
+            if ((right.Length & 1) != 0 || right.Length <= DivideThreshold)
             {
                 BurnikelZieglerFallback(left, right, quotient, remainder);
                 return;
