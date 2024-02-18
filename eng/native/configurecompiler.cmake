@@ -548,7 +548,10 @@ if (CLR_CMAKE_HOST_UNIX)
     check_c_compiler_flag(-fstack-clash-protection COMPILER_SUPPORTS_F_STACK_CLASH_PROTECTION)
     # explicit check for gcc is required because while clang does not implement stack-protection,
     # it does not return 'unknown argument' either, instead:
-    # clang: warning: argument unused during compilation: '-fstack-clash-protection' [-Wunused-command-line-argument]
+    #   clang: warning: argument unused during compilation: '-fstack-clash-protection' [-Wunused-command-line-argument]
+    # see:
+    #   https://github.com/llvm/llvm-project/issues/40148
+    #   https://gitlab.kitware.com/cmake/cmake/-/issues/25390
     if (COMPILER_SUPPORTS_F_STACK_CLASH_PROTECTION AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
       add_compile_options(-fstack-clash-protection)
     endif()
