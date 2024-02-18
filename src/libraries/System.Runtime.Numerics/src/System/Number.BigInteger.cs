@@ -1449,7 +1449,7 @@ namespace System
             public void MultiplyPowerOfTen(ReadOnlySpan<uint> left, int trailingZeroCount, Span<uint> bits)
             {
                 Debug.Assert(trailingZeroCount >= 0);
-                if (trailingZeroCount <= UInt32PowersOfTen.Length)
+                if (trailingZeroCount < UInt32PowersOfTen.Length)
                 {
                     BigIntegerCalculator.Multiply(left, UInt32PowersOfTen[trailingZeroCount], bits.Slice(0, left.Length + 1));
                     return;
