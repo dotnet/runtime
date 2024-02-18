@@ -207,26 +207,29 @@ export function get_managed_stack_trace(exception_gc_handle: GCHandle) {
     }
 }
 
-// void InstallMainSynchronizationContext(nint jsNativeTID, out GCHandle contextHandle)
+// GCHandle InstallMainSynchronizationContext(nint jsNativeTID)
 export function install_main_synchronization_context(): GCHandle {
     if (!WasmEnableThreads) return GCHandleNull;
     assert_c_interop();
 
     const sp = Module.stackSave();
     try {
-        // tid in, gc_handle out
-        const bytes = JavaScriptMarshalerArgSize * 4;
+        // this block is like alloc_stack_frame() but without set_args_context()
+        const bytes = JavaScriptMarshalerArgSize * 3;
         const args = Module.stackAlloc(bytes) as any;
         _zero_region(args, bytes);
+
+        const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
-        const arg2 = get_arg(args, 3);
         set_arg_intptr(arg1, mono_wasm_main_thread_ptr() as any);
+
+        // this block is like invoke_sync_jsexport() but without assert_js_interop()
         cwraps.mono_wasm_invoke_jsexport(managedExports.InstallMainSynchronizationContext!, args);
         if (is_args_exception(args)) {
             const exc = get_arg(args, 0);
             throw marshal_exception_to_js(exc);
         }
-        return get_arg_gc_handle(arg2) as any;
+        return get_arg_gc_handle(res) as any;
     } finally {
         Module.stackRestore(sp);
     }

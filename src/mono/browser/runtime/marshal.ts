@@ -279,12 +279,6 @@ export function set_arg_proxy_context(arg: JSMarshalerArgument): void {
     setI32(<any>arg + 16, <any>runtimeHelpers.proxyGCHandle);
 }
 
-export function get_arg_proxy_context(arg: JSMarshalerArgument): GCHandle {
-    if (!WasmEnableThreads) return GCHandleNull;
-    mono_assert(arg, "Null arg");
-    return getI32(<any>arg + 16) as any;
-}
-
 export function set_js_handle(arg: JSMarshalerArgument, jsHandle: JSHandle): void {
     mono_assert(arg, "Null arg");
     setI32(<any>arg + 4, <any>jsHandle);

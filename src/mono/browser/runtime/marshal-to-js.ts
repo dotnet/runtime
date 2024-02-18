@@ -338,6 +338,7 @@ function create_task_holder(res_converter?: MarshalerToJs) {
 
 export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments): void {
     const exc = get_arg(args, 0);
+    const is_async = WasmEnableThreads && is_receiver_should_free(args);
     try {
         loaderHelpers.assert_runtime_running();
 
@@ -352,7 +353,7 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         mono_assert(holder, () => `Cannot find Promise for JSHandle ${js_handle}`);
 
         holder.resolve_or_reject(type, js_handle, arg_value);
-        if (is_receiver_should_free(args)) {
+        if (is_async) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
             Module._free(args as any);
         }
@@ -362,7 +363,7 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         }
 
     } catch (ex: any) {
-        if (WasmEnableThreads) {
+        if (is_async) {
             mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
         }
         marshal_exception_to_cs(exc, ex);

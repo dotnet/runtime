@@ -279,6 +279,7 @@ function bind_fn(closure: BindingClosure) {
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
+        const is_async = WasmEnableThreads && is_receiver_should_free(args);
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -308,7 +309,7 @@ function bind_fn(closure: BindingClosure) {
             marshal_exception_to_cs(<any>args, ex);
         }
         finally {
-            if (is_receiver_should_free(args)) {
+            if (is_async) {
                 Module._free(args as any);
             }
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
