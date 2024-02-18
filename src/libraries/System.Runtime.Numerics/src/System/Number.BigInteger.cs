@@ -1087,14 +1087,15 @@ namespace System
                 bool sign = (value._sign < 0);
                 int scale = cchMax - ichDst;
 
-                byte[]? buffer = ArrayPool<byte>.Shared.Rent(scale + 1);
+                byte[]? buffer = ArrayPool<byte>.Shared.Rent(rgchBufSize + 1);
                 fixed (byte* ptr = buffer) // NumberBuffer expects pinned Digits
                 {
                     scoped NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, buffer);
 
                     for (int i = 0; i < rgch.Length - ichDst; i++)
                         number.Digits[i] = (byte)rgch[ichDst + i];
-                    number.DigitsCount = DecimalPrecision; // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
+                    number.Digits[rgch.Length - ichDst] = 0;
+                    number.DigitsCount = rgch.Length - ichDst - 1; // The cut-off point to switch (G)eneral from (F)ixed-point to (E)xponential form
                     number.Scale = scale;
                     number.IsNegative = sign;
 
@@ -1119,7 +1120,7 @@ namespace System
                     {
                         charsWritten = 0;
                         spanSuccess = false;
-                        string result = vlb.AsSpan().ToString();
+                        string result = MemoryMarshal.Cast<Utf16Char, char>(vlb.AsSpan()).ToString();
                         vlb.Dispose();
                         return result;
                     }
