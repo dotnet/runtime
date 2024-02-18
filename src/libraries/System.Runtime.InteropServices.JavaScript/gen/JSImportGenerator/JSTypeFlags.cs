@@ -22,6 +22,7 @@ namespace System.Runtime.InteropServices.JavaScript
         MemoryView = 0x800,
         Any = 0x1000,
         Discard = 0x2000,
+        OneWay = 0x4000,
         Missing = 0x4000_0000,
     }
 }

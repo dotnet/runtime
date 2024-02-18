@@ -228,7 +228,7 @@ mono_wasm_load_runtime (int debug_level)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_method (MonoMethod *method, void* args)
+mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 {
 	PVOLATILE(MonoObject) temp_exc = NULL;
 
@@ -244,7 +244,7 @@ mono_wasm_invoke_method (MonoMethod *method, void* args)
 		PVOLATILE(MonoObject) exc2 = NULL;
 		store_volatile((MonoObject**)&temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
 		if (exc2) {
-			mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_invoke_method unexpected double fault", 1, NULL);
+			mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_invoke_jsexport unexpected double fault", 1, NULL);
 		} else {
 			mono_wasm_trace_logger ("jsinterop", "critical", mono_string_to_utf8((MonoString*)temp_exc), 1, NULL);
 		}
@@ -252,6 +252,35 @@ mono_wasm_invoke_method (MonoMethod *method, void* args)
 	}
 	MONO_EXIT_GC_UNSAFE;
 }
+
+#ifndef DISABLE_THREADS
+
+extern void mono_threads_wasm_async_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+
+static void
+mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
+{
+	mono_wasm_invoke_jsexport (method, args);
+	// TODO assert receiver_should_free ?
+	free (args);
+}
+
+// async
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
+}
+
+// sync
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport, method, args);
+}
+
+#endif /* DISABLE_THREADS */
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoString **result)

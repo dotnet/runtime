@@ -153,6 +153,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 var type = signature.Sigs[i] = types[i + 1]._signatureType;
             }
             signature.IsAsync = types[0]._signatureType.Type == MarshalerType.Task;
+            signature.IsOneWay = types[0]._signatureType.Type == MarshalerType.OneWay;
 
             signature.Header[0].ImportHandle = signature.ImportHandle;
             signature.Header[0].FunctionNameLength = functionNameBytes;

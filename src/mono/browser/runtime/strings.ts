@@ -171,7 +171,7 @@ export function stringToMonoStringRoot(string: string, result: WasmRoot<MonoStri
     }
 }
 
-export function stringToInternedMonoStringRoot(string: string | symbol, result: WasmRoot<MonoString>): void {
+function stringToInternedMonoStringRoot(string: string | symbol, result: WasmRoot<MonoString>): void {
     let text: string | undefined;
     if (typeof (string) === "symbol") {
         text = string.description;
@@ -244,6 +244,7 @@ function storeStringInInternTable(string: string, root: WasmRoot<MonoString>, in
 
 function stringToMonoStringNewRoot(string: string, result: WasmRoot<MonoString>): void {
     const bufferLen = (string.length + 1) * 2;
+    // TODO this could be stack allocated
     const buffer = Module._malloc(bufferLen);
     stringToUTF16(buffer as any, buffer as any + bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);

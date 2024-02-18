@@ -8,7 +8,7 @@ import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { alloc_gcv_handle, assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, loaderHelpers, mono_assert } from "./globals";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,
@@ -59,11 +59,12 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.None, _marshal_null_to_cs);// also void
         js_to_cs_marshalers.set(MarshalerType.Discard, _marshal_null_to_cs);// also void
         js_to_cs_marshalers.set(MarshalerType.Void, _marshal_null_to_cs);// also void
+        js_to_cs_marshalers.set(MarshalerType.OneWay, _marshal_null_to_cs);// also void
     }
 }
 
 export function bind_arg_marshal_to_cs(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToCs | undefined {
-    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void) {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard || marshaler_type === MarshalerType.OneWay) {
         return undefined;
     }
     let res_marshaler: MarshalerToCs | undefined = undefined;
@@ -234,7 +235,7 @@ export function marshal_string_to_cs(arg: JSMarshalerArgument, value: string) {
 function _marshal_string_to_cs_impl(arg: JSMarshalerArgument, value: string) {
     if (WasmEnableJsInteropByValue) {
         const bufferLen = value.length * 2;
-        const buffer = Module._malloc(bufferLen);
+        const buffer = Module._malloc(bufferLen);// together with Marshal.FreeHGlobal
         stringToUTF16(buffer as any, buffer as any + bufferLen, value);
         set_arg_intptr(arg, buffer);
         set_arg_length(arg, value.length);
@@ -261,13 +262,14 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
     mono_check(value && value instanceof Function, "Value is not a Function");
 
     // TODO: we could try to cache value -> existing JSHandle
-    const wrapper: any = (args: JSMarshalerArguments) => {
+    const wrapper: any = function delegate_wrapper(args: JSMarshalerArguments) {
         const exc = get_arg(args, 0);
         const res = get_arg(args, 1);
         const arg1 = get_arg(args, 2);
         const arg2 = get_arg(args, 3);
         const arg3 = get_arg(args, 4);
 
+        const previousPendingSynchronousCall = runtimeHelpers.isPendingSynchronousCall;
         try {
             mono_assert(!WasmEnableThreads || !wrapper.isDisposed, "Function is disposed and should not be invoked anymore.");
 
@@ -283,6 +285,7 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
             if (arg3_converter) {
                 arg3_js = arg3_converter(arg3);
             }
+            runtimeHelpers.isPendingSynchronousCall = true; // this is alway synchronous call for now
             const res_js = value(arg1_js, arg2_js, arg3_js);
             if (res_converter) {
                 res_converter(res, res_js);
@@ -290,6 +293,8 @@ function _marshal_function_to_cs(arg: JSMarshalerArgument, value: Function, _?: 
 
         } catch (ex) {
             marshal_exception_to_cs(exc, ex);
+        } finally {
+            runtimeHelpers.isPendingSynchronousCall = previousPendingSynchronousCall;
         }
     };
 

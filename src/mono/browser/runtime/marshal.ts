@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region } from "./memory";
+import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region, getB32, setB32 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
 import { TypedArray, VoidPtr } from "./types/emscripten";
@@ -40,6 +40,17 @@ export function is_args_exception(args: JSMarshalerArguments): boolean {
     mono_assert(args, "Null args");
     const exceptionType = get_arg_type(<any>args);
     return exceptionType !== MarshalerType.None;
+}
+
+export function is_receiver_should_free(args: JSMarshalerArguments): boolean {
+    if (WasmEnableThreads) return false;
+    mono_assert(args, "Null args");
+    return getB32(<any>args + 20);
+}
+
+export function set_receiver_should_free(args: JSMarshalerArguments): void {
+    mono_assert(args, "Null args");
+    setB32(<any>args + 20, true);
 }
 
 export function set_args_context(args: JSMarshalerArguments): void {

@@ -25,7 +25,7 @@ import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 // threads
 import { preAllocatePThreadWorkerPool, mono_wasm_init_threads } from "./pthreads/browser";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads/worker";
-import { update_thread_info } from "./pthreads/shared";
+import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads/shared";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
@@ -516,6 +516,8 @@ export function start_runtime() {
             monoThreadInfo.isRegistered = true;
             update_thread_info();
             runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
+            runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+            runtimeHelpers.isCurrentThread = true;
         }
 
         // get GCHandle of the ctx

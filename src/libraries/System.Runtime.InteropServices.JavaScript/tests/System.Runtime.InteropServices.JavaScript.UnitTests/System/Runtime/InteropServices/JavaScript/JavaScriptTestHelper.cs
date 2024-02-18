@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public partial class JavaScriptTestHelper
     {
         [JSImport("globalThis.console.log")]
+        [return: JSMarshalAs<JSType.OneWay>]
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 
         [JSImport("globalThis.window.location.toString")]
@@ -27,6 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial string ReboundMemberEcho(string message);
 
         [JSExport]
+        [return: JSMarshalAs<JSType.OneWay>]
         public static void ConsoleWriteLine([JSMarshalAs<JSType.String>] string message)
         {
             Console.WriteLine(message);
@@ -72,6 +74,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
         [JSImport("invoke1V", "JavaScriptTestHelper")]
         public static partial void invoke1V(int a1);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.OneWay>]
+        public static void Optimized1O(int a1)
+        {
+            optimizedReached += a1;
+        }
+        [JSImport("invoke1O", "JavaScriptTestHelper")]
+        public static partial void invoke1O(int a1);
 
         [JSExport]
         public static int Optimized1R(int a1)
@@ -261,6 +272,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("store1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Void>]
         internal static partial void store1_Int32([JSMarshalAs<JSType.Number>] int value);
+
+        [JSImport("store1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.OneWay>]
+        internal static partial void store1OneWay_Int32([JSMarshalAs<JSType.Number>] int value);
+
         [JSImport("retrieve1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int retrieve1_Int32();
