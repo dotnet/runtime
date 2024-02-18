@@ -12,6 +12,7 @@ import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./t
 import { Module, runtimeHelpers } from "./globals";
 import { mono_log_error } from "./logging";
 import { mono_assert } from "./globals";
+import { PThreadPtr } from "./pthreads/shared/types";
 
 type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
@@ -25,6 +26,8 @@ const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
     [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
     [false, "mono_wasm_init_finalizer_thread", null, []],
+    [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
+    [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
@@ -61,7 +64,7 @@ const fn_signatures: SigLine[] = [
     [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
     [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
     [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
-    [false, "mono_wasm_invoke_method", "void", ["number", "number"]],
+    [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
     [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
     [true, "mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
     [true, "mono_wasm_i52_to_f64", "number", ["number", "number"]],
@@ -140,6 +143,8 @@ export interface t_ThreadingCwraps {
     mono_wasm_diagnostic_server_post_resume_runtime(): void;
     mono_wasm_diagnostic_server_create_stream(): VoidPtr;
     mono_wasm_init_finalizer_thread(): void;
+    mono_wasm_invoke_jsexport_async_post(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
+    mono_wasm_invoke_jsexport_sync_send(targetTID: PThreadPtr, method: MonoMethod, args: VoidPtr): void;
 }
 
 export interface t_ProfilerCwraps {
@@ -176,7 +181,7 @@ export interface t_Cwraps {
     mono_wasm_getenv(name: string): CharPtr;
     mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
     mono_wasm_exec_regression(verbose_level: number, image: string): number;
-    mono_wasm_invoke_method(method: MonoMethod, args: JSMarshalerArguments): void;
+    mono_wasm_invoke_jsexport(method: MonoMethod, args: JSMarshalerArguments): void;
     mono_wasm_write_managed_pointer_unsafe(destination: VoidPtr | MonoObjectRef, pointer: ManagedPointer): void;
     mono_wasm_copy_managed_pointer(destination: VoidPtr | MonoObjectRef, source: VoidPtr | MonoObjectRef): void;
     mono_wasm_i52_to_f64(source: VoidPtr, error: Int32Ptr): number;

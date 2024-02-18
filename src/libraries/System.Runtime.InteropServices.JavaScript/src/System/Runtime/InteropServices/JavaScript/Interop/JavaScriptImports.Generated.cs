@@ -57,6 +57,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #if DEBUG
         [JSImport("globalThis.console.log")]
+        [return: JSMarshalAs<JSType.OneWay>]
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 #endif
     }

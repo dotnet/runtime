@@ -30,6 +30,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static volatile uint nextImportHandle = 1;
         internal int ImportHandle;
         internal bool IsAsync;
+        internal bool IsOneWay;
 #if DEBUG
         internal string? FunctionName;
 #endif
@@ -285,6 +286,11 @@ namespace System.Runtime.InteropServices.JavaScript
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
 
+            if (signature.IsOneWay)
+            {
+                arguments[1].slot.Type = MarshalerType.OneWay;
+            }
+
 #if FEATURE_WASM_MANAGED_THREADS
             // if we are on correct thread already or this is synchronous call, just call it
             if (targetContext.IsCurrentThread())
@@ -299,15 +305,15 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
 
             }
-            else if (!signature.IsAsync)
-            {
-                //sync
-                DispatchJSImportSyncSend(signature, targetContext, arguments);
-            }
-            else
+            else if (signature.IsAsync || signature.IsOneWay)
             {
                 //async
                 DispatchJSImportAsyncPost(signature, targetContext, arguments);
+            }
+            else
+            {
+                //sync
+                DispatchJSImportSyncSend(signature, targetContext, arguments);
             }
 #else
             InvokeJSImportCurrent(signature, arguments);
@@ -332,9 +338,9 @@ namespace System.Runtime.InteropServices.JavaScript
             fixed (JSMarshalerArgument* args = arguments)
             {
 #if FEATURE_WASM_MANAGED_THREADS
-                Interop.Runtime.InvokeJSImportSync((nint)args, (nint)signature.Header);
+                Interop.Runtime.InvokeJSImportSync((nint)signature.Header, (nint)args);
 #else
-                Interop.Runtime.InvokeJSImport(signature.ImportHandle, (nint)args);
+                Interop.Runtime.InvokeJSImportST(signature.ImportHandle, (nint)args);
 #endif
             }
 
@@ -361,7 +367,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
             // so it could take some time, while target is CPU busy, but not forever
             // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
-            Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, args, sig);
+            Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, sig, args);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
             if (exceptionArg.slot.Type != MarshalerType.None)
@@ -375,7 +381,10 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void DispatchJSImportAsyncPost(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
-            // this copy is freed in mono_wasm_invoke_import_async
+            // meaning JS side needs to dispose it
+            ref JSMarshalerArgument exc = ref arguments[0];
+            exc.slot.ReceiverShouldFree = true;
+
             var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
             void* cpy = (void*)Marshal.AllocHGlobal(bytes);
             void* src = Unsafe.AsPointer(ref arguments[0]);
@@ -385,7 +394,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // we already know that we are not on the right thread
             // this will return quickly after sending the message
             // async
-            Interop.Runtime.InvokeJSImportAsyncPost(targetContext.JSNativeTID, (nint)cpy, sig);
+            Interop.Runtime.InvokeJSImportAsyncPost(targetContext.JSNativeTID, sig, (nint)cpy);
 
         }
 
@@ -431,8 +440,8 @@ namespace System.Runtime.InteropServices.JavaScript
             else
             {
                 // meaning JS side needs to dispose it
-                ref JSMarshalerArgument res = ref arguments[1];
-                res.slot.BooleanValue = true;
+                ref JSMarshalerArgument exc = ref arguments[0];
+                exc.slot.ReceiverShouldFree = true;
 
                 // this copy is freed in mono_wasm_resolve_or_reject_promise
                 var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
