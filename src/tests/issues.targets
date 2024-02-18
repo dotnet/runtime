@@ -1873,7 +1873,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>https://github.com/dotnet/runtime/issues/90374</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/Structs/MemsetMemcpyNullref/**">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/Structs/MemsetMemcpyNullref/MemsetMemcpyNullref/**">
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
     </ItemGroup>

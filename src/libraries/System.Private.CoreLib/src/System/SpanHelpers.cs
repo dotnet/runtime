@@ -15,28 +15,24 @@ namespace System
     {
         public static void ClearWithoutReferences(ref byte b, nuint byteLength)
         {
-            if (!Vector.IsHardwareAccelerated) { goto CannotVectorize; }
-            if (byteLength > (nuint)Vector<byte>.Count) { goto CannotVectorize; }
+            if (byteLength > Buffer.ZeroMemoryNativeThreshold)
+                goto PInvoke;
 
-            if (byteLength >= (uint)(Vector<byte>.Count))
+            if (Vector.IsHardwareAccelerated && byteLength >= (uint)(Vector<byte>.Count))
             {
                 // We have enough data for at least one vectorized write.
-
-                Vector<byte> vector = Vector<byte>.Zero;
-
                 nuint stopLoopAtOffset = byteLength & (nuint)(nint)(2 * (int)-Vector<byte>.Count); // intentional sign extension carries the negative bit
                 nuint offset = 0;
 
                 // Loop, writing 2 vectors at a time.
                 // Compare 'numElements' rather than 'stopLoopAtOffset' because we don't want a dependency
                 // on the very recently calculated 'stopLoopAtOffset' value.
-
                 if (byteLength >= (uint)(2 * Vector<byte>.Count))
                 {
                     do
                     {
-                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref b, offset), vector);
-                        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref b, offset + (nuint)Vector<byte>.Count), vector);
+                        Vector<byte>.Zero.StoreUnsafe(ref b, offset);
+                        Vector<byte>.Zero.StoreUnsafe(ref b, offset + (nuint)Vector<byte>.Count);
                         offset += (uint)(2 * Vector<byte>.Count);
                     } while (offset < stopLoopAtOffset);
                 }
@@ -46,10 +42,9 @@ namespace System
                 // If the total byte length instead involves us writing an odd number of vectors, write
                 // one additional vector now. The bit check below tells us if we're in an "odd vector
                 // count" situation.
-
                 if ((byteLength & (nuint)Vector<byte>.Count) != 0)
                 {
-                    Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref b, offset), vector);
+                    Vector<byte>.Zero.StoreUnsafe(ref b, offset);
                 }
 
                 // It's possible that some small buffer remains to be populated - something that won't
@@ -58,65 +53,49 @@ namespace System
                 // populated data, which is fine since we're splatting the same value for all entries.
                 // There's no need to perform a length check here because we already performed this
                 // check before entering the vectorized code path.
-
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref b, byteLength - (nuint)Vector<byte>.Count), vector);
+                Vector<byte>.Zero.StoreUnsafe(ref b, byteLength - (nuint)Vector<byte>.Count);
 
                 // And we're done!
-
                 return;
             }
 
-        CannotVectorize:
-
-            // If we reached this point, we cannot vectorize this data, or there are too few
+            // If we reached this point, we cannot vectorize this T, or there are too few
             // elements for us to vectorize. Fall back to an unrolled loop.
-
             nuint i = 0;
 
             // Write 8 elements at a time
-
             if (byteLength >= 8)
             {
                 nuint stopLoopAtOffset = byteLength & ~(nuint)7;
                 do
                 {
-                    Unsafe.Add(ref b, (nint)i + 0) = 0;
-                    Unsafe.Add(ref b, (nint)i + 1) = 0;
-                    Unsafe.Add(ref b, (nint)i + 2) = 0;
-                    Unsafe.Add(ref b, (nint)i + 3) = 0;
-                    Unsafe.Add(ref b, (nint)i + 4) = 0;
-                    Unsafe.Add(ref b, (nint)i + 5) = 0;
-                    Unsafe.Add(ref b, (nint)i + 6) = 0;
-                    Unsafe.Add(ref b, (nint)i + 7) = 0;
+                    Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i) = 0;
+                    Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i + 4) = 0;
                 } while ((i += 8) < stopLoopAtOffset);
             }
 
             // Write next 4 elements if needed
-
             if ((byteLength & 4) != 0)
             {
-                Unsafe.Add(ref b, (nint)i + 0) = 0;
-                Unsafe.Add(ref b, (nint)i + 1) = 0;
-                Unsafe.Add(ref b, (nint)i + 2) = 0;
-                Unsafe.Add(ref b, (nint)i + 3) = 0;
+                Unsafe.AddByteOffset(ref Unsafe.As<byte, uint>(ref b), (nint)i) = 0;
                 i += 4;
             }
 
             // Write next 2 elements if needed
-
             if ((byteLength & 2) != 0)
             {
-                Unsafe.Add(ref b, (nint)i + 0) = 0;
-                Unsafe.Add(ref b, (nint)i + 1) = 0;
+                Unsafe.AddByteOffset(ref Unsafe.As<byte, ushort>(ref b), (nint)i) = 0;
                 i += 2;
             }
 
             // Write final element if needed
-
             if ((byteLength & 1) != 0)
             {
-                Unsafe.Add(ref b, (nint)i) = 0;
+                Unsafe.AddByteOffset(ref b, (nint)i) = 0;
             }
+
+        PInvoke:
+            Buffer._ZeroMemory(ref b, byteLength);
         }
 
         public static unsafe void ClearWithReferences(ref IntPtr ip, nuint pointerSizeLength)

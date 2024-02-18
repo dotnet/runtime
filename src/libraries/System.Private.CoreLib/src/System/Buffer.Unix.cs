@@ -15,5 +15,6 @@ namespace System
 #else
         private const nuint MemmoveNativeThreshold = 2048;
 #endif
+        internal const nuint ZeroMemoryNativeThreshold = 768;
     }
 }
