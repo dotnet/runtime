@@ -9,6 +9,7 @@ import { ENVIRONMENT_IS_WORKER, loaderHelpers } from "./globals";
 
 const methods = ["debug", "log", "trace", "warn", "info", "error"];
 const prefix = "MONO_WASM: ";
+const emscriptenNoise = "keeping the worker alive for asynchronous operation";
 let consoleWebSocket: WebSocket;
 let theConsoleApi: any;
 let originalConsoleMethods: any;
@@ -71,7 +72,7 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
 
             if (typeof payload === "string") {
                 if (WasmEnableThreads) {
-                    if (ENVIRONMENT_IS_WORKER && payload.indexOf("keeping the worker alive for asynchronous operation") !== -1) {
+                    if (ENVIRONMENT_IS_WORKER && payload.indexOf(emscriptenNoise) !== -1) {
                         // muting emscripten noise
                         return;
                     }
@@ -98,6 +99,19 @@ function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
         } catch (err) {
             originalConsoleMethods.error(`proxyConsole failed: ${err}`);
         }
+    };
+}
+
+export function mute_worker_console(): void {
+    originalConsoleMethods = {
+        ...console
+    };
+    console.error = (...args: any[]) => {
+        const payload = args.length > 0 ? args[0] : "";
+        if (payload.indexOf(emscriptenNoise) !== -1) {
+            return;
+        }
+        originalConsoleMethods.error(...args);
     };
 }
 

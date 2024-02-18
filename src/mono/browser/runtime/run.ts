@@ -75,8 +75,6 @@ export async function mono_run_main(main_assembly_name?: string, args?: string[]
     }
 }
 
-
-
 export function nativeExit(code: number) {
     if (WasmEnableThreads) {
         cancelThreads();
