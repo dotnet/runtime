@@ -23,14 +23,21 @@ namespace System.Numerics
         public static explicit operator double(BFloat16 value) => (double)(float)value;
 
         // Comparison
-        public int CompareTo(object value);
-        public int CompareTo(BFloat16 value);
-        public static bool operator ==(BFloat16 left, BFloat16 right);
-        public static bool operator !=(BFloat16 left, BFloat16 right);
-        public static bool operator <(BFloat16 left, BFloat16 right);
-        public static bool operator >(BFloat16 left, BFloat16 right);
-        public static bool operator <=(BFloat16 left, BFloat16 right);
-        public static bool operator >=(BFloat16 left, BFloat16 right);
+        public int CompareTo(object? obj)
+        {
+            if (obj is not BFloat16 other)
+            {
+                return (obj is null) ? 1 : throw new ArgumentException(SR.Arg_MustBeBFloat16);
+            }
+            return CompareTo(other);
+        }
+        public int CompareTo(BFloat16 other) => ((float)this).CompareTo((float)other);
+        public static bool operator ==(BFloat16 left, BFloat16 right) => (float)left == (float)right;
+        public static bool operator !=(BFloat16 left, BFloat16 right) => (float)left != (float)right;
+        public static bool operator <(BFloat16 left, BFloat16 right) => (float)left < (float)right;
+        public static bool operator >(BFloat16 left, BFloat16 right) => (float)left > (float)right;
+        public static bool operator <=(BFloat16 left, BFloat16 right) => (float)left <= (float)right;
+        public static bool operator >=(BFloat16 left, BFloat16 right) => (float)left >= (float)right;
 
         // Equality
         public bool Equals(BFloat16 other) => ((float)this).Equals((float)other);
