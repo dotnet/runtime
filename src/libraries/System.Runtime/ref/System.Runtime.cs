@@ -10590,6 +10590,29 @@ namespace System.Net
 }
 namespace System.Numerics
 {
+    public readonly partial struct BFloat16 : System.IComparable, System.IComparable<System.Numerics.BFloat16>, System.IEquatable<System.Numerics.BFloat16>
+    {
+        private readonly int _dummyPrimitive;
+        public static System.Numerics.BFloat16 Epsilon { get { throw null; } }
+        public static System.Numerics.BFloat16 MaxValue { get { throw null; } }
+        public static System.Numerics.BFloat16 MinValue { get { throw null; } }
+        public int CompareTo(System.Numerics.BFloat16 other) { throw null; }
+        public int CompareTo(object? obj) { throw null; }
+        public bool Equals(System.Numerics.BFloat16 other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static explicit operator System.Numerics.BFloat16 (double value) { throw null; }
+        public static explicit operator double (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator float (System.Numerics.BFloat16 value) { throw null; }
+        public static explicit operator System.Numerics.BFloat16 (float value) { throw null; }
+        public static bool operator >(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator >=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator !=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator <(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public static bool operator <=(System.Numerics.BFloat16 left, System.Numerics.BFloat16 right) { throw null; }
+        public override string ToString() { throw null; }
+    }
     public static partial class BitOperations
     {
         [System.CLSCompliantAttribute(false)]
