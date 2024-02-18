@@ -12,8 +12,6 @@ namespace System
 {
     internal static partial class Number
     {
-        internal const int DecimalPrecision = 29; // Decimal.DecCalc also uses this value
-
         private const int DefaultPrecisionExponentialFormat = 6;
 
         private const int MaxUInt32DecDigits = 10;
