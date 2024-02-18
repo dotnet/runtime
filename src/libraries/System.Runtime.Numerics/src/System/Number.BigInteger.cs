@@ -1535,7 +1535,7 @@ namespace System
 
                     if (carry != 0)
                     {
-                        bits[curLength] = carry;
+                        bits[omittedLength + curLength] = carry;
                     }
                 }
             }

@@ -243,11 +243,17 @@ namespace System.Numerics.Tests
                 VerifyParseToString(GetDigitSequence(100, 1000, random));
             }
 
-            // Trailing Zero
+            // Trailing Zero - Small
             VerifyParseToString("99000000000");
             for (int i = 0; i < s_samples; i++)
             {
-                VerifyParseToString(GetDigitSequence(1, 10, random) + "1000000000");
+                VerifyParseToString(GetDigitSequence(1, 10, random) + new string('0', random.Next(10, 50)));
+            }
+
+            // Trailing Zero - Large
+            for (int i = 0; i < s_samples; i++)
+            {
+                VerifyParseToString(GetDigitSequence(10, 100, random) + new string('0', random.Next(100, 1000)));
             }
 
             // Leading White
