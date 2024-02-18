@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
-
 namespace System.Numerics
 {
     public readonly struct BFloat16
@@ -35,11 +33,11 @@ namespace System.Numerics
         public static bool operator >=(BFloat16 left, BFloat16 right);
 
         // Equality
-        public bool Equals(BFloat16 obj);
-        public override bool Equals(object? obj);
-        public override int GetHashCode();
+        public bool Equals(BFloat16 other) => ((float)this).Equals((float)other);
+        public override bool Equals(object? obj) => obj is BFloat16 other && Equals(other);
+        public override int GetHashCode() => ((float)this).GetHashCode();
 
         // ToString override
-        public override string ToString();
+        public override string ToString() => ((float)this).ToString();
     }
 }
