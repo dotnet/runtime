@@ -711,7 +711,8 @@ void CodeGen::genCodeForBBlist()
 
                     if ((call != nullptr) && (call->gtOper == GT_CALL))
                     {
-                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0)
+                        if ((call->AsCall()->gtCallMoreFlags & GTF_CALL_M_DOES_NOT_RETURN) != 0 ||
+                            Compiler::s_helperCallProperties.AlwaysThrow(call->AsCall()->GetHelperNum()))
                         {
                             instGen(INS_BREAKPOINT); // This should never get executed
                         }
