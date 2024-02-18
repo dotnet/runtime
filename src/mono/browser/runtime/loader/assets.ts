@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
+import { PThreadPtrNull, type AssetEntryInternal, type PThreadWorker, type PromiseAndController } from "../types/internal";
 import type { AssetBehaviors, AssetEntry, LoadingResource, ResourceList, SingleAssetBehaviors as SingleAssetBehaviors, WebAssemblyBootResourceType } from "../types";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
@@ -732,5 +732,25 @@ export async function streamingCompileWasm() {
     }
     catch (err) {
         loaderHelpers.wasmCompilePromise.promise_control.reject(err);
+    }
+}
+
+export function preloadWorkers() {
+    if (!WasmEnableThreads) return;
+    const jsModuleWorker = resolve_single_asset_path("js-module-threads");
+    for (let i = 0; i < loaderHelpers.config.pthreadPoolSize!; i++) {
+        const workerNumber = loaderHelpers.workerNextNumber++;
+        const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
+            name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+        });
+        worker.info = {
+            workerNumber,
+            pthreadId: PThreadPtrNull,
+            reuseCount: 0,
+            updateCount: 0,
+            threadPrefix: "          -    ",
+            threadName: "emscripten-pool",
+        } as any;
+        loaderHelpers.loadingWorkers.push(worker as any);
     }
 }

@@ -5,11 +5,9 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_PTHREAD, loaderHelpers, mono_assert } from "../../globals";
+import { ENVIRONMENT_IS_PTHREAD, loaderHelpers, mono_assert, runtimeHelpers } from "../../globals";
 import { mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "../shared";
-import { PThreadInfo, PThreadPtr, PThreadPtrNull } from "../shared/types";
-import { WorkerToMainMessageType, is_nullish } from "../../types/internal";
-import { MonoThreadMessage } from "../shared";
+import { MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, WorkerToMainMessageType, is_nullish } from "../../types/internal";
 import {
     makeWorkerThreadEvent,
     dotnetPthreadCreated,
@@ -58,13 +56,14 @@ class WorkerSelf implements PThreadSelf {
 // we are lying that this is never null, but afterThreadInit should be the first time we get to run any code
 // in the worker, so this becomes non-null very early.
 export let pthread_self: PThreadSelf = null as any as PThreadSelf;
-export const monoThreadInfo: PThreadInfo = {
+const monoThreadInfoPartial: Partial<PThreadInfo> = {
     pthreadId: PThreadPtrNull,
     reuseCount: 0,
     updateCount: 0,
     threadPrefix: "          -    ",
     threadName: "emscripten-loaded",
 };
+export let monoThreadInfo: PThreadInfo = monoThreadInfoPartial as PThreadInfo;
 
 /// This is the "public internal" API for runtime subsystems that wish to be notified about
 /// pthreads that are running on the current worker.
@@ -78,6 +77,7 @@ export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any
 export function initWorkerThreadEvents() {
     // treeshake if threads are disabled
     currentWorkerThreadEvents = WasmEnableThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
+    monoThreadInfo = Object.assign(monoThreadInfo, runtimeHelpers.monoThreadInfo);
 }
 
 // this is the message handler for the worker that receives messages from the main thread

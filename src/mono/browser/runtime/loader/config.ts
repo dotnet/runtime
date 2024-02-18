@@ -187,9 +187,12 @@ export function normalizeConfig() {
         config.cachedResourcesPurgeDelay = 10000;
     }
 
+    // ActiveIssue https://github.com/dotnet/runtime/issues/75602
     if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolSize)) {
-        // ActiveIssue https://github.com/dotnet/runtime/issues/75602
         config.pthreadPoolSize = 7;
+    }
+    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolReady)) {
+        config.pthreadPoolReady = 3;
     }
 
     // this is how long the Mono GC will try to wait for all threads to be suspended before it gives up and aborts the process

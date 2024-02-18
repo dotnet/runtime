@@ -198,6 +198,7 @@ export async function getCacheKey(prefix: string): Promise<string | null> {
     delete inputs.dumpThreadsOnNonZeroExit;
     delete inputs.logExitCode;
     delete inputs.pthreadPoolSize;
+    delete inputs.pthreadPoolReady;
     delete inputs.asyncFlushOnExit;
     delete inputs.remoteSources;
     delete inputs.ignorePdbLoadErrors;

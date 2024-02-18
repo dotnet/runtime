@@ -8,19 +8,11 @@ import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelp
 import { set_thread_prefix } from "../../logging";
 import { bindings_init } from "../../startup";
 import { forceDisposeProxies } from "../../gc-handles";
-import { GCHandle, GCHandleNull, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
-import { MonoWorkerToMainMessage, PThreadPtr, PThreadPtrNull } from "./types";
+import { GCHandle, GCHandleNull, MonoThreadMessage, PThreadPtr, PThreadPtrNull, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
+import { MonoWorkerToMainMessage } from "./types";
 import { monoThreadInfo } from "../worker";
 
 /// Messages sent on the dedicated mono channel between a pthread and the browser thread
-
-// We use a namespacing scheme to avoid collisions: type/command should be unique.
-export interface MonoThreadMessage {
-    // Type of message.  Generally a subsystem like "diagnostic_server", or "event_pipe", "debugger", etc.
-    type: string;
-    // A particular kind of message. For example, "started", "stopped", "stopped_with_error", etc.
-    cmd: string;
-}
 
 export function isMonoThreadMessage(x: unknown): x is MonoThreadMessage {
     if (typeof (x) !== "object" || x === null) {
@@ -65,6 +57,7 @@ export function mono_wasm_uninstall_js_worker_interop(): void {
 
 // this is just for Debug build of the runtime, making it easier to debug worker threads
 export function update_thread_info(): void {
+    if (!WasmEnableThreads) return;
     const threadType = !monoThreadInfo.isRegistered ? "emsc"
         : monoThreadInfo.isUI ? "-UI-"
             : monoThreadInfo.isTimer ? "timr"

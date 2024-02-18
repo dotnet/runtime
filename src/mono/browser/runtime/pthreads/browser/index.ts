@@ -3,22 +3,16 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { MonoWorkerToMainMessage, PThreadInfo, PThreadPtr, PThreadPtrNull } from "../shared/types";
-import { MonoThreadMessage, mono_wasm_pthread_ptr, update_thread_info } from "../shared";
-import { PThreadWorker, allocateUnusedWorker, getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "../shared/emscripten-internals";
-import { createPromiseController, mono_assert, runtimeHelpers } from "../../globals";
-import { MainToWorkerMessageType, PromiseAndController, PromiseController, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
-import { mono_log_info } from "../../logging";
+import { MonoWorkerToMainMessage } from "../shared/types";
+import { mono_wasm_pthread_ptr, update_thread_info } from "../shared";
+import { ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../../globals";
+import { MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseAndController, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
+import { mono_log_error, mono_log_info } from "../../logging";
 import { monoThreadInfo } from "../worker";
-import { mono_wasm_init_diagnostics } from "../../diagnostics";
+import { getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "./replacements";
+import { threads_c_functions as cwraps } from "../../cwraps";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
-
-export interface Thread {
-    readonly pthreadPtr: PThreadPtr;
-    readonly port: MessagePort;
-    postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
-}
 
 class ThreadImpl implements Thread {
     constructor(readonly pthreadPtr: PThreadPtr, readonly worker: Worker, readonly port: MessagePort) { }
@@ -30,6 +24,7 @@ class ThreadImpl implements Thread {
 /// wait until the thread with the given id has set up a message port to the runtime
 export function waitForThread(pthreadPtr: PThreadPtr): Promise<Thread> {
     if (!WasmEnableThreads) return null as any;
+    mono_assert(!ENVIRONMENT_IS_WORKER, "waitForThread should only be called from the UI thread");
     const worker = getWorker(pthreadPtr);
     if (worker?.thread) {
         return Promise.resolve(worker?.thread);
@@ -81,8 +76,7 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
     let port: MessagePort;
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
-
-    worker.info = Object.assign(worker.info, message.info, {});
+    worker.info = Object.assign({}, worker.info, message.info);
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
             // this one shot port from setupPreloadChannelToMainThread
@@ -90,7 +84,8 @@ function monoWorkerMessageHandler(worker: PThreadWorker, ev: MessageEvent<any>):
             port.postMessage({
                 type: "pthread",
                 cmd: MainToWorkerMessageType.applyConfig,
-                config: JSON.stringify(runtimeHelpers.config)
+                config: JSON.stringify(runtimeHelpers.config),
+                monoThreadInfo: JSON.stringify(worker.info),
             });
             port.close();
             break;
@@ -140,35 +135,26 @@ export function thread_available(): Promise<void> {
     return pendingWorkerLoad.promise;
 }
 
+export function populateEmscriptenPool(): void {
+    if (!WasmEnableThreads) return;
+    const unused = getUnusedWorkerPool();
+    for (const worker of loaderHelpers.loadingWorkers) {
+        unused.push(worker);
+    }
+    loaderHelpers.loadingWorkers.length = 0; // GC
+}
+
 export async function mono_wasm_init_threads() {
     if (!WasmEnableThreads) return;
+
+    // setup the UI thread
     monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
     monoThreadInfo.threadName = "UI Thread";
     monoThreadInfo.isUI = true;
     monoThreadInfo.isRunning = true;
     update_thread_info();
-    await instantiateWasmPThreadWorkerPool();
-    await mono_wasm_init_diagnostics();
-}
 
-/// We call on the main thread this during startup to pre-allocate a pool of pthread workers.
-/// At this point asset resolution needs to be working (ie we loaded MonoConfig).
-/// This is used instead of the Emscripten PThread.initMainThread because we call it later.
-export function preAllocatePThreadWorkerPool(pthreadPoolSize: number): void {
-    if (!WasmEnableThreads) return;
-    for (let i = 0; i < pthreadPoolSize; i++) {
-        allocateUnusedWorker();
-    }
-}
-
-/// We call this on the main thread during startup once we fetched WasmModule.
-/// This sends a message to each pre-allocated worker to load the WasmModule and dotnet.js and to set up
-/// message handling.
-/// This is used instead of the Emscripten "receiveInstance" in "createWasm" because that code is
-/// conditioned on a non-zero PTHREAD_POOL_SIZE (but we set it to 0 to avoid early worker allocation).
-export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
-    if (!WasmEnableThreads) return null as any;
-    // this is largely copied from emscripten's "receiveInstance" in "createWasm" in "src/preamble.js"
+    // wait until all workers in the pool are loaded - ready to be used as pthread synchronously
     const workers = getUnusedWorkerPool();
     if (workers.length > 0) {
         const promises = workers.map(loadWasmModuleToWorker);
@@ -178,6 +164,7 @@ export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
 
 // when we create threads with browser event loop, it's not able to be joined by mono's thread join during shutdown and blocks process exit
 export function cancelThreads() {
+    if (!WasmEnableThreads) return;
     const workers: PThreadWorker[] = getRunningWorkers();
     for (const worker of workers) {
         if (worker.info.isExternalEventLoop) {
@@ -189,14 +176,16 @@ export function cancelThreads() {
 export function dumpThreads(): void {
     if (!WasmEnableThreads) return;
     mono_log_info("Dumping web worker info as seen by UI thread, it could be stale: ");
-    const emptyInfo = {
-        pthreadId: 0,
+    const emptyInfo: PThreadInfo = {
+        workerNumber: -1,
+        pthreadId: PThreadPtrNull,
         threadPrefix: "          -    ",
         threadName: "????",
         isRunning: false,
         isAttached: false,
         isExternalEventLoop: false,
         reuseCount: 0,
+        updateCount: 0,
     };
     const threadInfos: PThreadInfo[] = [
         Object.assign({}, emptyInfo, monoThreadInfo), // UI thread
@@ -207,8 +196,8 @@ export function dumpThreads(): void {
     for (const worker of getUnusedWorkerPool()) {
         threadInfos.push(Object.assign({}, emptyInfo, worker.info));
     }
-    threadInfos.forEach((info, i) => {
-        const idx = (i + "").padStart(2, "0");
+    threadInfos.forEach((info) => {
+        const idx = info.workerNumber.toString().padStart(3, "0");
         const isRunning = (info.isRunning + "").padStart(5, " ");
         const isAttached = (info.isAttached + "").padStart(5, " ");
         const isEventLoop = (info.isExternalEventLoop + "").padStart(5, " ");
@@ -216,4 +205,17 @@ export function dumpThreads(): void {
         // eslint-disable-next-line no-console
         console.info(`${idx} | ${info.threadPrefix}: isRunning:${isRunning} isAttached:${isAttached} isEventLoop:${isEventLoop} reuseCount:${reuseCount} - ${info.threadName}`);
     });
+}
+
+export function init_finalizer_thread() {
+    // we don't need it immediately, so we can wait a bit, to keep CPU working on normal startup
+    setTimeout(() => {
+        try {
+            cwraps.mono_wasm_init_finalizer_thread();
+        }
+        catch (err) {
+            mono_log_error("init_finalizer_thread() failed", err);
+            loaderHelpers.mono_exit(1, err);
+        }
+    }, 200);
 }

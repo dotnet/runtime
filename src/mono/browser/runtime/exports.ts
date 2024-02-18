@@ -70,6 +70,10 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         runtimeList = globalThisAny.getDotnetRuntime.__list;
     }
 
+    if (BuildConfiguration === "Debug") {
+        globalThisAny.INTERNAL = globals.internal;
+    }
+
     return exportedRuntimeAPI;
 }
 

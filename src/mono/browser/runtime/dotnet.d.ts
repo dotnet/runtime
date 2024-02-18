@@ -191,6 +191,10 @@ type MonoConfig = {
      */
     pthreadPoolSize?: number;
     /**
+     * initial number of unused workers keep in the emscripten pthread pool after startup
+     */
+    pthreadPoolReady?: number;
+    /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
      */
