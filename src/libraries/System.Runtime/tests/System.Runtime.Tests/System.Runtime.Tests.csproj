@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
@@ -132,6 +132,7 @@
     <Compile Include="System\NullableMetadataTests.cs" />
     <Compile Include="System\NullableTests.cs" />
     <Compile Include="System\NullReferenceExceptionTests.cs" />
+    <Compile Include="System\Numerics\BFloat16Tests.cs" />
     <Compile Include="System\Numerics\IExponentialFunctionsTests.cs" />
     <Compile Include="System\Numerics\IFloatingPointTests.cs" />
     <Compile Include="System\Numerics\TotalOrderIeee754ComparerTests.cs" />
