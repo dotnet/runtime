@@ -8,9 +8,14 @@ namespace System.Numerics
           IComparable<BFloat16>,
           IEquatable<BFloat16>
     {
-        public static BFloat16 Epsilon { get; }
-        public static BFloat16 MinValue { get; }
-        public static BFloat16 MaxValue { get; }
+        private const ushort EpsilonBits = 0x0001;
+
+        private const ushort MinValueBits = 0xFF7F;
+        private const ushort MaxValueBits = 0x7F7F;
+
+        public static BFloat16 Epsilon => new BFloat16(EpsilonBits);
+        public static BFloat16 MinValue => new BFloat16(MinValueBits);
+        public static BFloat16 MaxValue => new BFloat16(MaxValueBits);
 
         internal readonly ushort _value;
 
@@ -21,6 +26,9 @@ namespace System.Numerics
         public static explicit operator BFloat16(double value) => (BFloat16)(float)value;
         public static explicit operator float(BFloat16 value) => BitConverter.Int32BitsToSingle(value._value << 16);
         public static explicit operator double(BFloat16 value) => (double)(float)value;
+
+        // BFloat is effectively a truncation of Single, with lower 16 bits of precision truncated.
+        // Delegating all operations to Single should be correct and effective.
 
         // Comparison
         public int CompareTo(object? obj)
