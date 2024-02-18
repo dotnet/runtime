@@ -122,6 +122,23 @@ namespace System
                 '\0';
         }
 
+#if !SYSTEM_PRIVATE_CORELIB
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            // TODO: Consider to bring optimized implementation from CoreLib
+
+            while (value != 0 || digits > 0)
+            {
+                digits--;
+                (value, uint remainder) = Math.DivRem(value, 10);
+                *(--bufferEnd) = TChar.CastFrom(remainder + '0');
+            }
+
+            return bufferEnd;
+        }
+#endif
+
         internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(sizeof(TChar) == sizeof(char) || sizeof(TChar) == sizeof(byte));
@@ -934,16 +951,9 @@ namespace System
                 }
             }
 
-#if SYSTEM_PRIVATE_CORELIB
             TChar* digits = stackalloc TChar[MaxUInt32DecDigits];
             TChar* p = UInt32ToDecChars(digits + MaxUInt32DecDigits, (uint)value, minDigits);
             vlb.Append(new ReadOnlySpan<TChar>(p, (int)(digits + MaxUInt32DecDigits - p)));
-#else
-            Debug.Assert(sizeof(TChar) == sizeof(char));
-            char* digits = stackalloc char[MaxUInt32DecDigits];
-            ((uint)value).TryFormat(new Span<char>(digits, MaxUInt32DecDigits), out int charsWritten);
-            vlb.Append(new Span<TChar>((TChar*)digits, charsWritten));
-#endif
         }
 
         private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IUtfChar<TChar>
