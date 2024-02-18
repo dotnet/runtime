@@ -5,11 +5,11 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { dumpThreads, onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
-import { mono_wasm_pthread_on_pthread_created } from "../worker";
+import { mono_wasm_pthread_on_pthread_created, onRunMessage } from "../worker";
 import { PThreadLibrary, PThreadWorker, getModulePThread, getUnusedWorkerPool } from "./emscripten-internals";
-import { loaderHelpers, mono_assert } from "../../globals";
+import { Module, loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
-import { PThreadPtrNull } from "./types";
+import { PThreadPtr, PThreadPtrNull } from "./types";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with
@@ -22,6 +22,13 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
     const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
     const originalThreadInitTLS = modulePThread.threadInitTLS;
     const originalReturnWorkerToPool = modulePThread.returnWorkerToPool;
+    const original_emscripten_thread_init = (Module as any)["__emscripten_thread_init"];
+
+
+    (Module as any)["__emscripten_thread_init"] = (pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) => {
+        onRunMessage(pthread_ptr);
+        original_emscripten_thread_init(pthread_ptr, isMainBrowserThread, isMainRuntimeThread, canBlock);
+    };
 
     modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
