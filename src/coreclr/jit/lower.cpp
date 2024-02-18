@@ -1841,6 +1841,153 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+// LowerCallMemset: Replaces the following memset-like special intrinsics:
+//
+//    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, 0)
+//    SpanHelpers.ClearWithoutReferences(ref dstRef, CNS_SIZE)
+//
+//  with a GT_STORE_BLK node:
+//
+//    *  STORE_BLK struct<CNS_SIZE> (init) (Unroll)
+//    +--*  LCL_VAR   byref  dstRef
+//    \--*  CNS_INT   int    0
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
+{
+    JITDUMP("Considering Memset-like call [%06d] for unrolling.. ", comp->dspTreeID(call))
+
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n");
+        return false;
+    }
+
+    // void SpanHelpers::Fill<T>(ref T dstRef, nuint numElements, T value)
+    // void SpanHelpers::ClearWithoutReferences(ref byte dstRef, nuint byteLength)
+
+    GenTree* dstRefArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* lengthArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+    GenTree* valueArg  = nullptr;
+
+    if (!lengthArg->IsIntegralConst())
+    {
+        JITDUMP("Length is not a constant - bail out.\n")
+        return false;
+    }
+
+    // Fill<T>'s length is not in bytes, so we need to scale it depending on the signature
+    unsigned lengthScale;
+
+    const NamedIntrinsic ni = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
+    if (ni == NI_System_SpanHelpers_Fill)
+    {
+        // void SpanHelpers::Fill<T>(ref T refData, nuint numElements, T value)
+        //
+        assert(call->gtArgs.CountUserArgs() == 3);
+        valueArg = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+
+        // Get that <T> from the signature
+        CORINFO_SIG_INFO sig;
+        comp->info.compCompHnd->getMethodSig(call->gtCallMethHnd, &sig, nullptr);
+        assert(sig.sigInst.methInstCount == 1);
+        lengthScale = genTypeSize(
+            JITtype2varType(comp->info.compCompHnd->getTypeForPrimitiveValueClass(sig.sigInst.methInst[0])));
+
+        // If value is not zero, we can only unroll for single-byte values
+        if (!valueArg->IsIntegralConst(0) && (lengthScale != 1))
+        {
+            JITDUMP("SpanHelpers.Fill's value is not unroll-friendly - bail out.\n")
+            return false;
+        }
+    }
+    else
+    {
+        // void SpanHelpers::ClearWithoutReferences(ref byte b, nuint byteLength)
+        //
+        assert(call->gtArgs.CountUserArgs() == 2);
+        assert(ni == NI_System_SpanHelpers_ClearWithoutReferences);
+
+        lengthScale = 1; // it's always in bytes
+    }
+
+    // Convert lenCns to bytes
+    ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
+    if (lenCns > (lenCns * lengthScale))
+    {
+        // lenCns overflows
+        JITDUMP("lenCns * lengthScale overflows - bail out.\n")
+        return false;
+    }
+    lenCns *= lengthScale;
+
+    // TODO-CQ: drop the whole thing in case of lenCns = 0
+    if ((lenCns <= 0) || (lenCns > (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
+    {
+        JITDUMP("Size is either 0 or too big to unroll - bail out.\n")
+        return false;
+    }
+
+    JITDUMP("Accepted for unrolling!\nOld tree:\n");
+    DISPTREE(call);
+
+    GenTree* blkInnerValue = nullptr;
+    GenTree* blkValue;
+    if (valueArg == nullptr || valueArg->IsIntegralConst(0))
+    {
+        // Simple zeroing
+        blkValue = comp->gtNewZeroConNode(TYP_INT);
+        blkValue->SetContained();
+    }
+    else
+    {
+        // Non-zero (byte) value
+        blkInnerValue = comp->gtCloneExpr(valueArg);
+        blkInnerValue->SetContained();
+        blkValue = comp->gtNewOperNode(GT_INIT_VAL, TYP_INT, blkInnerValue);
+        blkValue->SetContained();
+    }
+
+    GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
+        GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstRefArg, blkValue, comp->typGetBlkLayout((unsigned)lenCns));
+    storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+    storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+    // Insert/Remove trees into LIR
+    BlockRange().InsertBefore(call, blkValue);
+    BlockRange().InsertBefore(call, storeBlk);
+    BlockRange().Remove(lengthArg);
+    BlockRange().Remove(call);
+    if (valueArg != nullptr)
+    {
+        BlockRange().Remove(valueArg);
+    }
+    if (blkInnerValue != nullptr)
+    {
+        BlockRange().InsertBefore(blkValue, blkInnerValue);
+    }
+
+    // Remove all non-user args (e.g. r2r cell)
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.IsArgAddedLate())
+        {
+            arg.GetNode()->SetUnusedValue();
+        }
+    }
+
+    JITDUMP("\nNew tree:\n");
+    DISPTREE(storeBlk);
+    *next = storeBlk->gtNext;
+    return true;
+}
+
 //------------------------------------------------------------------------
 // LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
 //
@@ -2216,12 +2363,33 @@ GenTree* Lowering::LowerCall(GenTree* node)
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-        GenTree*       nextNode = nullptr;
-        NamedIntrinsic ni       = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
-        if (((ni == NI_System_Buffer_Memmove) && LowerCallMemmove(call, &nextNode)) ||
-            ((ni == NI_System_SpanHelpers_SequenceEqual) && LowerCallMemcmp(call, &nextNode)))
+        GenTree* nextNode = nullptr;
+        switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
-            return nextNode;
+            case NI_System_Buffer_Memmove:
+                if (LowerCallMemmove(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_SequenceEqual:
+                if (LowerCallMemcmp(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            case NI_System_SpanHelpers_Fill:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
+                if (LowerCallMemset(call, &nextNode))
+                {
+                    return nextNode;
+                }
+                break;
+
+            default:
+                break;
         }
     }
 #endif

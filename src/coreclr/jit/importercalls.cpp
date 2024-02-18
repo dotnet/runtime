@@ -3974,6 +3974,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8:
             case NI_System_SpanHelpers_SequenceEqual:
+            case NI_System_SpanHelpers_ClearWithoutReferences:
             case NI_System_Buffer_Memmove:
             {
                 if (sig->sigInst.methInstCount == 0)
@@ -3982,6 +3983,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     isSpecial = true;
                 }
                 // The generic version is also marked as [Intrinsic] just as a hint for the inliner
+                break;
+            }
+
+            case NI_System_SpanHelpers_Fill:
+            {
+                if (sig->sigInst.methInstCount == 1)
+                {
+                    // We'll try to unroll this in lower for constant input.
+                    isSpecial = true;
+                }
                 break;
             }
 
@@ -9008,6 +9019,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "SequenceEqual") == 0)
                         {
                             result = NI_System_SpanHelpers_SequenceEqual;
+                        }
+                        else if (strcmp(methodName, "Fill") == 0)
+                        {
+                            result = NI_System_SpanHelpers_Fill;
+                        }
+                        else if (strcmp(methodName, "ClearWithoutReferences") == 0)
+                        {
+                            result = NI_System_SpanHelpers_ClearWithoutReferences;
                         }
                     }
                     else if (strcmp(className, "String") == 0)

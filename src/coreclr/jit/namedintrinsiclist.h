@@ -117,6 +117,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_Span_get_Length,
+    NI_System_SpanHelpers_ClearWithoutReferences,
+    NI_System_SpanHelpers_Fill,
     NI_System_SpanHelpers_SequenceEqual,
     NI_System_ReadOnlySpan_get_Item,
     NI_System_ReadOnlySpan_get_Length,
