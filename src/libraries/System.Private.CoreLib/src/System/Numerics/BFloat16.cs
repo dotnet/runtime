@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+
 namespace System.Numerics
 {
     public readonly struct BFloat16
@@ -12,11 +14,15 @@ namespace System.Numerics
         public static BFloat16 MinValue { get; }
         public static BFloat16 MaxValue { get; }
 
+        internal readonly ushort _value;
+
+        internal BFloat16(ushort value) => _value = value;
+
         // Casting
-        public static explicit operator BFloat16(float value);
-        public static explicit operator BFloat16(double value);
-        public static explicit operator float(BFloat16 value);
-        public static explicit operator double(BFloat16 value);
+        public static explicit operator BFloat16(float value) => new BFloat16((ushort)(BitConverter.SingleToUInt32Bits(value) >> 16));
+        public static explicit operator BFloat16(double value) => (BFloat16)(float)value;
+        public static explicit operator float(BFloat16 value) => BitConverter.Int32BitsToSingle(value._value << 16);
+        public static explicit operator double(BFloat16 value) => (double)(float)value;
 
         // Comparison
         public int CompareTo(object value);
