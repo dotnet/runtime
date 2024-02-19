@@ -1901,8 +1901,12 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
             if ((strcmp(className, "SwiftError") == 0) &&
                 (strcmp(namespaceName, "System.Runtime.InteropServices.Swift") == 0))
             {
-                // For error handling purposes, we expect a pointer to a SwiftError to be passed
-                assert(argIsByrefOrPtr);
+                // For error handling purposes, we expect a pointer/reference to a SwiftError to be passed
+                if (!argIsByrefOrPtr)
+                {
+                    BADCODE("Expected SwiftError pointer/reference, got value class");
+                }
+
                 if (swiftErrorIndex != sig->numArgs)
                 {
                     BADCODE("Duplicate SwiftError* parameter");
