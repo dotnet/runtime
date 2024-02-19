@@ -20,6 +20,7 @@ let parallel_count = 0;
 const assetsToLoad: AssetEntryInternal[] = [];
 const singleAssets: Map<string, AssetEntryInternal> = new Map();
 
+// A duplicate in pthreads/shared.ts
 const worker_empty_prefix = "          -    ";
 
 const jsRuntimeModulesAssetTypes: {
