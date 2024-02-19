@@ -609,6 +609,7 @@ namespace System.Numerics
             Debug.Assert(2 * quotient.Length == right.Length);
             Debug.Assert(remainder.Length >= right.Length + 1);
             Debug.Assert(right[^1] > 0);
+            Debug.Assert(CompareActual(left12, right) < 0);
 
             int halfN = right.Length >> 1;
 
@@ -616,18 +617,30 @@ namespace System.Numerics
             ReadOnlySpan<uint> b1 = right.Slice(halfN);
             ReadOnlySpan<uint> b2 = right.Slice(0, halfN);
             Span<uint> r1 = remainder.Slice(halfN);
-
-            // Normalized to a1 < b1 in Algorithm 3.
-            Debug.Assert(CompareActual(a1, b1) < 0);
-            BurnikelZieglerD2n1n(left12, b1, quotient, r1);
-
             uint[]? dFromPool = null;
             Span<uint> d = (right.Length <= StackAllocThreshold ?
                             stackalloc uint[StackAllocThreshold]
                             : dFromPool = ArrayPool<uint>.Shared.Rent(right.Length)).Slice(0, right.Length);
-            d.Clear();
 
-            MultiplyActual(quotient, b2, d);
+            if (CompareActual(a1, b1) < 0)
+            {
+                BurnikelZieglerD2n1n(left12, b1, quotient, r1);
+
+                d.Clear();
+                MultiplyActual(quotient, b2, d);
+            }
+            else
+            {
+                Debug.Assert(CompareActual(a1, b1) == 0);
+                quotient.Fill(uint.MaxValue);
+
+                ReadOnlySpan<uint> a2 = left12.Slice(0, halfN);
+                Add(a2, b1, r1);
+
+                d.Slice(0, halfN).Clear();
+                b2.CopyTo(d.Slice(halfN));
+                SubtractSelf(d, b2);
+            }
 
             // R = [R1, A3]
             left3.CopyTo(remainder.Slice(0, halfN));
