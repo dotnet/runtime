@@ -170,7 +170,7 @@ static void PrintDiffsCsvRow(
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \
     fw.Print(",");                           \
-    fw.Print(baseRes.CompileResults->name); \
+    fw.Print(baseRes.CompileResults->name);  \
     fw.Print(",");                           \
     fw.Print(diffRes.CompileResults->name);
 
