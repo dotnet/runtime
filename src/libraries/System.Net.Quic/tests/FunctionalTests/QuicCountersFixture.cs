@@ -13,13 +13,35 @@ using Xunit.Abstractions;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
-public class QuicCountersListener : IDisposable
+[CollectionDefinition(nameof(QuicTestCollection))]
+public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>, IDisposable
 {
+    public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
+
+    public QuicTestCollection()
+    {
+        string msQuicLibraryVersion = GetMsQuicLibraryVersion();
+        // If any of the reflection bellow breaks due to changes in "System.Net.Quic.MsQuicApi", also check and fix HttpStress project as it uses the same hack.
+        Console.WriteLine($"MsQuic {(IsSupported ? "supported" : "not supported")} and using '{msQuicLibraryVersion}'.");
+
+        if (IsSupported)
+        {
+            QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+            settings.IsSet.MaxWorkerQueueDelayUs = 1;
+            settings.MaxWorkerQueueDelayUs = 2_500_000u; // 2.5s, 10x the default
+            if (MsQuic.StatusFailed(GetApiTable()->SetParam(null, MsQuic.QUIC_PARAM_GLOBAL_SETTINGS, (uint)sizeof(QUIC_SETTINGS), (byte*)&settings)))
+            {
+                Console.WriteLine($"Unable to set MsQuic MaxWorkerQueueDelayUs.");
+            }
+        }
+    }
+
     public unsafe void Dispose()
     {
-        Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
-        object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
-        QUIC_API_TABLE* apiTable = (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>())));
+        if (!IsSupported)
+        {
+            return;
+        }
 
         long[] counters = new long[(int)QUIC_PERFORMANCE_COUNTERS.MAX];
         int countersAvailable;
@@ -28,7 +50,7 @@ public class QuicCountersListener : IDisposable
         fixed (long* pCounters = counters)
         {
             uint size = (uint)counters.Length * sizeof(long);
-            status = apiTable->GetParam(null, QUIC_PARAM_GLOBAL_PERF_COUNTERS, &size, (byte*)pCounters);
+            status = GetApiTable()->GetParam(null, QUIC_PARAM_GLOBAL_PERF_COUNTERS, &size, (byte*)pCounters);
             countersAvailable = (int)size / sizeof(long);
         }
 
@@ -37,7 +59,6 @@ public class QuicCountersListener : IDisposable
             System.Console.WriteLine($"Failed to read MsQuic counters: {status}");
             return;
         }
-
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("MsQuic Counters:");
@@ -58,9 +79,18 @@ public class QuicCountersListener : IDisposable
 
         System.Console.WriteLine(sb.ToString());
     }
-}
 
-[CollectionDefinition(nameof(QuicCountersListener), DisableParallelization = true)]
-public class QuicCountersCollection : ICollectionFixture<QuicCountersListener>
-{
+    private static string? GetMsQuicLibraryVersion()
+    {
+        Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
+
+        return (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+    }
+
+    private static QUIC_API_TABLE* GetApiTable()
+    {
+        Type msQuicApiType = Type.GetType("System.Net.Quic.MsQuicApi, System.Net.Quic");
+        object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+        return (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>())));
+    }
 }

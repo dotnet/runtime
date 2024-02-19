@@ -46,7 +46,7 @@ namespace System.Net.Quic.Tests
         }
     }
 
-    [Collection(nameof(QuicCountersListener))]
+    [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {

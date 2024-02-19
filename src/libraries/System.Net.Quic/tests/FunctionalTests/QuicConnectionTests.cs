@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [Collection(nameof(QuicCountersListener))]
+    [Collection(nameof(QuicTestCollection))]
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported), nameof(QuicTestBase.IsNotArm32CoreClrStressTest))]
     public sealed class QuicConnectionTests : QuicTestBase
     {
