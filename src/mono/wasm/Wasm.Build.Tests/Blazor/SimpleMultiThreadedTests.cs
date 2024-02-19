@@ -102,7 +102,8 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
 
         // Build and run multithreaded
-        await PublishAndRunAsync(id, config, true);
+        _testOutput.WriteLine("Publish and run MT");
+        await PublishAndRunAsync(id, config, true, "First MT");
 
         File.Delete(
             Directory
@@ -111,20 +112,23 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
         );
 
         // Build and run singlethreaded without clean
-        await PublishAndRunAsync(id, config, false);
+        _testOutput.WriteLine("Publish and run ST");
+        await PublishAndRunAsync(id, config, false, "ST after MT");
 
         // Build and run multithreaded again
-        await PublishAndRunAsync(id, config, false);
+        _testOutput.WriteLine("Publish and run MT");
+        await PublishAndRunAsync(id, config, false, "MT after ST");
     }
 
-    private async Task PublishAndRunAsync(string id, string config, bool isMultiThreaded) 
+    private async Task PublishAndRunAsync(string id, string config, bool isMultiThreaded, string label) 
     {
         BlazorPublish(
             new BlazorBuildOptions(
                 id,
                 config,
                 NativeFilesType.FromRuntimePack,
-                RuntimeType: isMultiThreaded ? RuntimeVariant.MultiThreaded : RuntimeVariant.SingleThreaded
+                RuntimeType: isMultiThreaded ? RuntimeVariant.MultiThreaded : RuntimeVariant.SingleThreaded,
+                Label: label
             ), 
             isMultiThreaded ? new string[] { "-p:WasmEnableThreads=true"} : new string[0]
         );

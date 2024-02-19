@@ -20,5 +20,6 @@ public record BlazorBuildOptions
     GlobalizationMode GlobalizationMode = GlobalizationMode.Sharded,
     string PredefinedIcudt = "",
     bool AssertAppBundle = true,
-    string? BinFrameworkDir = null
+    string? BinFrameworkDir = null,
+    string? Label = null
 );

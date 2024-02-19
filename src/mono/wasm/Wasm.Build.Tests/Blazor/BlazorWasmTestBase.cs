@@ -60,7 +60,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, expectSuccess: options.ExpectSuccess, label: options.Label, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -75,7 +75,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         if (options.WarnAsError)
             extraArgs = extraArgs.Append("/warnaserror").ToArray();
 
-        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, extraArgs);
+        (CommandResult res, string logPath) = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, expectSuccess: options.ExpectSuccess, label: options.Label, extraArgs);
 
         if (options.ExpectSuccess && options.AssertAppBundle)
         {
@@ -95,6 +95,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
         bool publish = false,
         bool setWasmDevel = true,
         bool expectSuccess = true,
+        string? label = null,
         params string[] extraArgs)
     {
         try
@@ -102,7 +103,7 @@ public abstract class BlazorWasmTestBase : WasmTemplateTestBase
             return BuildProjectWithoutAssert(
                         id,
                         config,
-                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish, ExpectSuccess: expectSuccess),
+                        new BuildProjectOptions(CreateProject: false, UseCache: false, Publish: publish, ExpectSuccess: expectSuccess, Label: label),
                         extraArgs.Concat(new[]
                         {
                             "-p:BlazorEnableCompression=false",
