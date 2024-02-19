@@ -152,11 +152,11 @@ namespace System.Numerics.Tests
         [Fact]
         public void D3n2nBound()
         {
-            var right = (BigInteger.One << (BigIntegerCalculator.DivideThreshold * 4 * 32 - 1))
-                + (BigInteger.One << (BigIntegerCalculator.DivideThreshold * 2 * 32)) - 1;
+            var right = (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 4 * 32 - 1))
+                + (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 2 * 32)) - 1;
             var rem = right - 1;
 
-            var qi = BigIntegerCalculator.DivideThreshold * 8 * 32 * 4 - 1;
+            var qi = BigIntegerCalculator.DivideBurnikelZieglerThreshold * 8 * 32 * 4 - 1;
             var q = (BigInteger.One << qi) - 1;
             var left = q * right + rem;
 
