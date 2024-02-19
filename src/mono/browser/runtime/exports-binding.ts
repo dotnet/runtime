@@ -10,8 +10,7 @@ import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js }
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
-import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
-import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered, mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name } from "./pthreads/worker";
+import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
@@ -22,12 +21,14 @@ import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
 import { mono_wasm_change_case, mono_wasm_change_case_invariant } from "./hybrid-globalization/change-case";
 import { mono_wasm_compare_string, mono_wasm_ends_with, mono_wasm_starts_with, mono_wasm_index_of } from "./hybrid-globalization/collations";
 import { mono_wasm_get_calendar_info } from "./hybrid-globalization/calendar";
-import { mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop } from "./pthreads/shared";
 
 import { mono_wasm_get_culture_info } from "./hybrid-globalization/culture-info";
 import { mono_wasm_get_first_day_of_week, mono_wasm_get_first_week_of_year } from "./hybrid-globalization/locales";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
+
+import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered, mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name } from "./pthreads";
+import { mono_wasm_install_js_worker_interop, mono_wasm_uninstall_js_worker_interop } from "./pthreads";
 
 // the JS methods would be visible to EMCC linker and become imports of the WASM module
 

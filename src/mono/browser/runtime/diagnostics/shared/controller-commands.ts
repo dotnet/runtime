@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { isMonoThreadMessage } from "../../pthreads/shared";
+import { isMonoThreadMessage } from "../../pthreads";
 import type { MonoThreadMessage } from "../../types/internal";
 
 // Messages from the main thread to the diagnostic server thread

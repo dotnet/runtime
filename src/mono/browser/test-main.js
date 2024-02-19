@@ -312,8 +312,6 @@ async function run() {
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
 
-        // globalThis.INTERNAL.dumpThreads();
-
         console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {

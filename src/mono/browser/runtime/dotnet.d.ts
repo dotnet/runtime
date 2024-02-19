@@ -189,11 +189,15 @@ type MonoConfig = {
     /**
      * initial number of workers to add to the emscripten pthread pool
      */
-    pthreadPoolSize?: number;
+    pthreadPoolInitialSize?: number;
     /**
-     * initial number of unused workers keep in the emscripten pthread pool after startup
+     * number of unused workers kept in the emscripten pthread pool after startup
      */
-    pthreadPoolReady?: number;
+    pthreadPoolUnusedSize?: number;
+    /**
+     * Delay in milliseconds before starting the finalizer thread
+     */
+    finalizerThreadStartDelayMs?: number;
     /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application

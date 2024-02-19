@@ -5,8 +5,8 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import type { EmscriptenReplacements } from "./types/internal";
 import type { TypedArray } from "./types/emscripten";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WORKER, INTERNAL, Module, loaderHelpers, runtimeHelpers } from "./globals";
-import { replaceEmscriptenPThreadUI } from "./pthreads/browser/replacements";
-import { replaceEmscriptenPThreadWorker } from "./pthreads/worker/replacements";
+import { replaceEmscriptenPThreadWorker } from "./pthreads";
+import { replaceEmscriptenPThreadUI } from "./pthreads";
 
 const dummyPerformance = {
     now: function () {

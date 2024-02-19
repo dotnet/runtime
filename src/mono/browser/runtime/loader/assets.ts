@@ -20,6 +20,8 @@ let parallel_count = 0;
 const assetsToLoad: AssetEntryInternal[] = [];
 const singleAssets: Map<string, AssetEntryInternal> = new Map();
 
+const worker_empty_prefix = "          -    ";
+
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
@@ -738,7 +740,7 @@ export async function streamingCompileWasm() {
 export function preloadWorkers() {
     if (!WasmEnableThreads) return;
     const jsModuleWorker = resolve_single_asset_path("js-module-threads");
-    for (let i = 0; i < loaderHelpers.config.pthreadPoolSize!; i++) {
+    for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
         const workerNumber = loaderHelpers.workerNextNumber++;
         const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
@@ -748,7 +750,7 @@ export function preloadWorkers() {
             pthreadId: PThreadPtrNull,
             reuseCount: 0,
             updateCount: 0,
-            threadPrefix: "          -    ",
+            threadPrefix: worker_empty_prefix,
             threadName: "emscripten-pool",
         } as any;
         loaderHelpers.loadingWorkers.push(worker as any);

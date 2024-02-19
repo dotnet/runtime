@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
+import BuildConfiguration from "consts:configuration";
 
-import { MonoWorkerToMainMessage } from "../shared/types";
-import { mono_wasm_pthread_ptr, update_thread_info } from "../shared";
-import { ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../../globals";
-import { MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseAndController, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../../types/internal";
-import { mono_log_error, mono_log_info } from "../../logging";
-import { monoThreadInfo } from "../worker";
-import { getRunningWorkers, getUnusedWorkerPool, getWorker, loadWasmModuleToWorker } from "./replacements";
-import { threads_c_functions as cwraps } from "../../cwraps";
+import { } from "../globals";
+import { mono_log_warn } from "../logging";
+import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_thread_info, worker_empty_prefix } from "./shared";
+import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
+import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseAndController, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
+import { mono_log_error, mono_log_info } from "../logging";
+import { threads_c_functions as cwraps } from "../cwraps";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -141,7 +141,7 @@ export function populateEmscriptenPool(): void {
     for (const worker of loaderHelpers.loadingWorkers) {
         unused.push(worker);
     }
-    loaderHelpers.loadingWorkers.length = 0; // GC
+    loaderHelpers.loadingWorkers = [];
 }
 
 export async function mono_wasm_init_threads() {
@@ -179,7 +179,7 @@ export function dumpThreads(): void {
     const emptyInfo: PThreadInfo = {
         workerNumber: -1,
         pthreadId: PThreadPtrNull,
-        threadPrefix: "          -    ",
+        threadPrefix: worker_empty_prefix,
         threadName: "????",
         isRunning: false,
         isAttached: false,
@@ -217,5 +217,135 @@ export function init_finalizer_thread() {
             mono_log_error("init_finalizer_thread() failed", err);
             loaderHelpers.mono_exit(1, err);
         }
-    }, 200);
+    }, loaderHelpers.config.finalizerThreadStartDelayMs);
+}
+
+export function replaceEmscriptenPThreadUI(modulePThread: PThreadLibrary): void {
+    if (!WasmEnableThreads) return;
+
+    const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
+    const originalReturnWorkerToPool = modulePThread.returnWorkerToPool;
+
+    modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
+        const afterLoaded = originalLoadWasmModuleToWorker(worker);
+        afterLoaded.then(() => {
+            availableThreadCount++;
+        });
+        onWorkerLoadInitiated(worker, afterLoaded);
+        if (loaderHelpers.config.exitOnUnhandledError) {
+            worker.onerror = (e) => {
+                loaderHelpers.mono_exit(1, e);
+            };
+        }
+        return afterLoaded;
+    };
+    modulePThread.allocateUnusedWorker = allocateUnusedWorker;
+    modulePThread.getNewWorker = () => getNewWorker(modulePThread);
+    modulePThread.returnWorkerToPool = (worker: PThreadWorker) => {
+        // when JS interop is installed on JSWebWorker
+        // we can't reuse the worker, because user code could leave the worker JS globals in a dirty state
+        worker.info.isRunning = false;
+        resolveThreadPromises(worker.pthread_ptr, undefined);
+        worker.info.pthreadId = PThreadPtrNull;
+        if (worker.thread?.port) {
+            worker.thread.port.close();
+        }
+        worker.thread = undefined;
+        if (worker.info && worker.info.isDirtyBecauseOfInterop) {
+            // we are on UI thread, invoke the handler directly to destroy the dirty worker
+            worker.onmessage!(new MessageEvent("message", {
+                data: {
+                    "cmd": "killThread",
+                    thread: worker.pthread_ptr
+                }
+            }));
+        } else {
+            availableThreadCount++;
+            originalReturnWorkerToPool(worker);
+        }
+    };
+    if (BuildConfiguration === "Debug") {
+        (globalThis as any).dumpThreads = dumpThreads;
+        (globalThis as any).getModulePThread = getModulePThread;
+    }
+}
+
+let availableThreadCount = 0;
+export function is_thread_available() {
+    if (!WasmEnableThreads) return true;
+    return availableThreadCount > 0;
+}
+
+function getNewWorker(modulePThread: PThreadLibrary): PThreadWorker {
+    if (!WasmEnableThreads) return null as any;
+
+    if (modulePThread.unusedWorkers.length == 0) {
+        mono_log_warn(`Failed to find unused WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+        const worker = allocateUnusedWorker();
+        modulePThread.loadWasmModuleToWorker(worker);
+        availableThreadCount--;
+        return worker;
+    }
+
+    // keep them pre-allocated all the time, not just during startup
+    if (modulePThread.unusedWorkers.length <= loaderHelpers.config.pthreadPoolUnusedSize!) {
+        const worker = allocateUnusedWorker();
+        modulePThread.loadWasmModuleToWorker(worker);
+    }
+
+    for (let i = 0; i < modulePThread.unusedWorkers.length; i++) {
+        const worker = modulePThread.unusedWorkers[i];
+        if (worker.loaded) {
+            modulePThread.unusedWorkers.splice(i, 1);
+            availableThreadCount--;
+            return worker;
+        }
+    }
+    mono_log_warn(`Failed to find loaded WebWorker, this may deadlock. Please increase the pthreadPoolReady. Running threads ${modulePThread.runningWorkers.length}. Loading workers: ${modulePThread.unusedWorkers.length}`);
+    availableThreadCount--; // negative value
+    return modulePThread.unusedWorkers.pop()!;
+}
+
+/// We replace Module["PThreads"].allocateUnusedWorker with this version that knows about assets
+function allocateUnusedWorker(): PThreadWorker {
+    if (!WasmEnableThreads) return null as any;
+
+    const asset = loaderHelpers.resolve_single_asset_path("js-module-threads");
+    const uri = asset.resolvedUrl;
+    mono_assert(uri !== undefined, "could not resolve the uri for the js-module-threads asset");
+    const workerNumber = loaderHelpers.workerNextNumber++;
+    const worker = new Worker(uri, {
+        name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+    }) as PThreadWorker;
+    getUnusedWorkerPool().push(worker);
+    worker.loaded = false;
+    worker.info = {
+        workerNumber,
+        pthreadId: PThreadPtrNull,
+        reuseCount: 0,
+        updateCount: 0,
+        threadPrefix: worker_empty_prefix,
+        threadName: "emscripten-pool",
+    };
+    return worker;
+}
+
+export function getWorker(pthreadPtr: PThreadPtr): PThreadWorker | undefined {
+    return getModulePThread().pthreads[pthreadPtr as any];
+}
+
+export function getUnusedWorkerPool(): PThreadWorker[] {
+    return getModulePThread().unusedWorkers;
+}
+
+export function getRunningWorkers(): PThreadWorker[] {
+    return getModulePThread().runningWorkers;
+}
+
+export function loadWasmModuleToWorker(worker: PThreadWorker): Promise<PThreadWorker> {
+    return getModulePThread().loadWasmModuleToWorker(worker);
+}
+
+export function getModulePThread(): PThreadLibrary {
+    return (<any>Module).PThread as PThreadLibrary;
 }

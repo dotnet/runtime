@@ -188,11 +188,14 @@ export function normalizeConfig() {
     }
 
     // ActiveIssue https://github.com/dotnet/runtime/issues/75602
-    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolSize)) {
-        config.pthreadPoolSize = 7;
+    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolInitialSize)) {
+        config.pthreadPoolInitialSize = 7;
     }
-    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolReady)) {
-        config.pthreadPoolReady = 3;
+    if (WasmEnableThreads && !Number.isInteger(config.pthreadPoolUnusedSize)) {
+        config.pthreadPoolUnusedSize = 3;
+    }
+    if (WasmEnableThreads && !Number.isInteger(config.finalizerThreadStartDelayMs)) {
+        config.finalizerThreadStartDelayMs = 200;
     }
 
     // this is how long the Mono GC will try to wait for all threads to be suspended before it gives up and aborts the process
