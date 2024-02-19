@@ -26,12 +26,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         [Theory]
         [MemberData(nameof(MarshalInt32Cases))]
-        public async Task JsExportInt32OneWay(int value)
+        public async Task JsExportInt32DiscardNoWait(int value)
         {
             JavaScriptTestHelper.optimizedReached=0;
-            
             JavaScriptTestHelper.invoke1O(value);
-            await Task.Yield();
+            await JavaScriptTestHelper.Delay(0);
             Assert.Equal(value, JavaScriptTestHelper.optimizedReached);
         }
 

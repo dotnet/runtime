@@ -263,7 +263,8 @@ mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
 {
 	mono_wasm_invoke_jsexport (method, args);
 	// TODO assert receiver_should_free ?
-	free (args);
+	if (args)
+		free (args);
 }
 
 // async

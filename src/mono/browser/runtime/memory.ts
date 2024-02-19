@@ -392,9 +392,7 @@ export function localHeapViewF64(): Float64Array {
 
 export function copyBytes(srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): void {
     const heap = localHeapViewU8();
-    const src = heap.subarray(srcPtr as any, srcPtr as any + bytes);
-    const dst = heap.subarray(dstPtr as any, dstPtr as any + bytes);
-    dst.set(src);
+    heap.copyWithin(dstPtr as any, srcPtr as any, srcPtr as any + bytes);
 }
 
 // when we run with multithreading enabled, we need to make sure that the memory views are updated on each worker

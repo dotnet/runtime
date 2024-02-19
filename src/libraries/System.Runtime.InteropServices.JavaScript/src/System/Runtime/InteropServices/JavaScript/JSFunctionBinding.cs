@@ -30,54 +30,51 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static volatile uint nextImportHandle = 1;
         internal int ImportHandle;
         internal bool IsAsync;
-        internal bool IsOneWay;
+        internal bool IsDiscardNoWait;
 #if DEBUG
         internal string? FunctionName;
 #endif
 
-        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        // keep in sync with JSBindingHeaderOffsets in marshal.ts
+        [StructLayout(LayoutKind.Explicit, Pack = 4)]
         internal struct JSBindingHeader
         {
             internal const int JSMarshalerSignatureHeaderSize = 4 * 8; // without Exception and Result
 
+            [FieldOffset(0)]
             public int Version;
+            [FieldOffset(4)]
             public int ArgumentCount;
+            [FieldOffset(8)]
             public int ImportHandle;
-            public int _Reserved;
+            [FieldOffset(16)]
             public int FunctionNameOffset;
+            [FieldOffset(20)]
             public int FunctionNameLength;
+            [FieldOffset(24)]
             public int ModuleNameOffset;
+            [FieldOffset(28)]
             public int ModuleNameLength;
+            [FieldOffset(32)]
             public JSBindingType Exception;
+            [FieldOffset(64)]
             public JSBindingType Result;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 4, Size = 32)]
+        // keep in sync with JSBindingTypeOffsets in marshal.ts
+        [StructLayout(LayoutKind.Explicit, Pack = 4, Size = 32)]
         internal struct JSBindingType
         {
+            [FieldOffset(0)]
             internal MarshalerType Type;
-            internal MarshalerType __ReservedB1;
-            internal MarshalerType __ReservedB2;
-            internal MarshalerType __ReservedB3;
-            internal IntPtr __Reserved;
-            internal IntPtr JSCustomMarshallerCode;
-            internal int JSCustomMarshallerCodeLength;
+            [FieldOffset(16)]
             internal MarshalerType ResultMarshalerType;
-            internal MarshalerType __ReservedB4;
-            internal MarshalerType __ReservedB5;
-            internal MarshalerType __ReservedB6;
+            [FieldOffset(20)]
             internal MarshalerType Arg1MarshalerType;
-            internal MarshalerType __ReservedB7;
-            internal MarshalerType __ReservedB8;
-            internal MarshalerType __ReservedB9;
+            [FieldOffset(24)]
             internal MarshalerType Arg2MarshalerType;
-            internal MarshalerType __ReservedB10;
-            internal MarshalerType __ReservedB11;
-            internal MarshalerType __ReservedB12;
+            [FieldOffset(28)]
             internal MarshalerType Arg3MarshalerType;
-            internal MarshalerType __ReservedB13;
-            internal MarshalerType __ReservedB14;
-            internal MarshalerType __ReservedB15;
         }
 
         internal unsafe int ArgumentCount
@@ -286,9 +283,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
 
-            if (signature.IsOneWay)
+            if (signature.IsDiscardNoWait)
             {
-                arguments[1].slot.Type = MarshalerType.OneWay;
+                arguments[1].slot.Type = MarshalerType.DiscardNoWait;
             }
 
 #if FEATURE_WASM_MANAGED_THREADS
@@ -305,7 +302,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
 
             }
-            else if (signature.IsAsync || signature.IsOneWay)
+            else if (signature.IsAsync || signature.IsDiscardNoWait)
             {
                 //async
                 DispatchJSImportAsyncPost(signature, targetContext, arguments);

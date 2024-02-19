@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public partial class JavaScriptTestHelper
     {
         [JSImport("globalThis.console.log")]
-        [return: JSMarshalAs<JSType.OneWay>]
+        [return: JSMarshalAs<JSType.DiscardNoWait>]
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 
         [JSImport("globalThis.window.location.toString")]
@@ -28,11 +28,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial string ReboundMemberEcho(string message);
 
         [JSExport]
-        [return: JSMarshalAs<JSType.OneWay>]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
         public static void ConsoleWriteLine([JSMarshalAs<JSType.String>] string message)
         {
             Console.WriteLine(message);
         }
+
+        [JSImport("delay", "JavaScriptTestHelper")]
+        public static partial Task Delay(int ms);
 
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
@@ -76,7 +79,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial void invoke1V(int a1);
 
         [JSExport]
-        [return: JSMarshalAs<JSType.OneWay>]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
         public static void Optimized1O(int a1)
         {
             optimizedReached += a1;
@@ -274,8 +277,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static partial void store1_Int32([JSMarshalAs<JSType.Number>] int value);
 
         [JSImport("store1", "JavaScriptTestHelper")]
-        [return: JSMarshalAs<JSType.OneWay>]
-        internal static partial void store1OneWay_Int32([JSMarshalAs<JSType.Number>] int value);
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
+        internal static partial void store1DiscardNoWait_Int32([JSMarshalAs<JSType.Number>] int value);
 
         [JSImport("retrieve1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
