@@ -70,6 +70,52 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Theory]
+        [InlineData("", 0)]
+        [InlineData("\0NullCharacterIsNotAllowed", 0)]
+        [InlineData("Null\0CharacterIsNotAllowed", 4)]
+        [InlineData("NullCharacterIsNotAllowed\0", 25)]
+        [InlineData("\bBackspaceIsNotAllowed", 0)]
+        [InlineData("EscapingIsNotAllowed\\", 20)]
+        [InlineData("EscapingIsNotAllowed\\\\", 20)]
+        [InlineData("EscapingIsNotAllowed\\*", 20)]
+        [InlineData("EscapingIsNotAllowed\\&", 20)]
+        [InlineData("EscapingIsNotAllowed\\+", 20)]
+        [InlineData("EscapingIsNotAllowed\\[", 20)]
+        [InlineData("EscapingIsNotAllowed\\]", 20)]
+        [InlineData("Slash/IsNotAllowed", 5)]
+        [InlineData("Whitespaces AreNotAllowed", 11)]
+        [InlineData("WhitespacesAre\tNotAllowed", 14)]
+        [InlineData("WhitespacesAreNot\r\nAllowed", 17)]
+        [InlineData("Question?MarkIsNotAllowed", 8)]
+        [InlineData("Quotes\"AreNotAllowed", 6)]
+        [InlineData("Quote'IsNotAllowed", 5)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", -1)]
+        [InlineData("ABCDEFGHIJKLMNOPQRSTUVWXYZ", -1)]
+        [InlineData("0123456789", -1)]
+        [InlineData("!@#$%^()-_={}|<>.~", -1)]
+        [InlineData("BacktickIsOk`1", -1)]
+        public void GetIndexOfFirstInvalidCharacter_ReturnsFirstInvalidCharacter(string input, int expected)
+        {
+            Assert.Equal(expected, TypeNameParserHelpers.GetIndexOfFirstInvalidCharacter(input.AsSpan(), strictMode: true));
+
+            TypeNameParserOptions strictOptions = new()
+            {
+                StrictValidation = true
+            };
+
+            if (expected >= 0)
+            {
+                Assert.False(TypeName.TryParse(input.AsSpan(), out _, strictOptions));
+                Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan(), strictOptions));
+            }
+            else
+            {
+                Assert.True(TypeName.TryParse(input.AsSpan(), out TypeName parsed, strictOptions));
+                Assert.Equal(input, parsed.FullName);
+            }
+        }
+
+        [Theory]
         [InlineData(TypeNameParserHelpers.SZArray, "[]")]
         [InlineData(TypeNameParserHelpers.Pointer, "*")]
         [InlineData(TypeNameParserHelpers.ByRef, "&")]

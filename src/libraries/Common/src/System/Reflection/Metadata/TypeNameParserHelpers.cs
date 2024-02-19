@@ -153,6 +153,174 @@ namespace System.Reflection.Metadata
             return (int)Math.Min((uint)offset, (uint)input.Length);
         }
 
+        internal static int GetIndexOfFirstInvalidCharacter(ReadOnlySpan<char> input, bool strictMode)
+        {
+            if (input.IsEmpty)
+            {
+                return 0;
+            }
+
+            if (strictMode)
+            {
+                ReadOnlySpan<bool> allowedAsciiCharsMap = GetAsciiCharsAllowMap();
+                Debug.Assert(allowedAsciiCharsMap.Length == 128);
+
+                for (int i = 0; i < input.Length; i++)
+                {
+                    char c = input[i];
+                    if (c < (uint)allowedAsciiCharsMap.Length)
+                    {
+                        // ASCII - fast track
+                        if (!allowedAsciiCharsMap[c])
+                        {
+                            return i;
+                        }
+                    }
+                    else
+                    {
+                        if (IsControl(c) || IsWhiteSpace(c))
+                        {
+                            return i;
+                        }
+                    }
+                }
+            }
+
+            return -1;
+
+            static ReadOnlySpan<bool> GetAsciiCharsAllowMap() =>
+            [
+                    false, // U+0000 (NUL)
+                    false, // U+0001 (SOH)
+                    false, // U+0002 (STX)
+                    false, // U+0003 (ETX)
+                    false, // U+0004 (EOT)
+                    false, // U+0005 (ENQ)
+                    false, // U+0006 (ACK)
+                    false, // U+0007 (BEL)
+                    false, // U+0008 (BS)
+                    false, // U+0009 (TAB)
+                    false, // U+000A (LF)
+                    false, // U+000B (VT)
+                    false, // U+000C (FF)
+                    false, // U+000D (CR)
+                    false, // U+000E (SO)
+                    false, // U+000F (SI)
+                    false, // U+0010 (DLE)
+                    false, // U+0011 (DC1)
+                    false, // U+0012 (DC2)
+                    false, // U+0013 (DC3)
+                    false, // U+0014 (DC4)
+                    false, // U+0015 (NAK)
+                    false, // U+0016 (SYN)
+                    false, // U+0017 (ETB)
+                    false, // U+0018 (CAN)
+                    false, // U+0019 (EM)
+                    false, // U+001A (SUB)
+                    false, // U+001B (ESC)
+                    false, // U+001C (FS)
+                    false, // U+001D (GS)
+                    false, // U+001E (RS)
+                    false, // U+001F (US)
+                    false, // U+0020 ' '
+                    true, // U+0021 '!'
+                    false, // U+0022 '"'
+                    true, // U+0023 '#'
+                    true, // U+0024 '$'
+                    true, // U+0025 '%'
+                    false, // U+0026 '&'
+                    false, // U+0027 '''
+                    true, // U+0028 '('
+                    true, // U+0029 ')'
+                    false, // U+002A '*'
+                    true, // U+002B '+'
+                    false, // U+002C ','
+                    true, // U+002D '-'
+                    true, // U+002E '.'
+                    false, // U+002F '/'
+                    true, // U+0030 '0'
+                    true, // U+0031 '1'
+                    true, // U+0032 '2'
+                    true, // U+0033 '3'
+                    true, // U+0034 '4'
+                    true, // U+0035 '5'
+                    true, // U+0036 '6'
+                    true, // U+0037 '7'
+                    true, // U+0038 '8'
+                    true, // U+0039 '9'
+                    false, // U+003A ':'
+                    false, // U+003B ';'
+                    true, // U+003C '<'
+                    true, // U+003D '='
+                    true, // U+003E '>'
+                    false, // U+003F '?'
+                    true, // U+0040 '@'
+                    true, // U+0041 'A'
+                    true, // U+0042 'B'
+                    true, // U+0043 'C'
+                    true, // U+0044 'D'
+                    true, // U+0045 'E'
+                    true, // U+0046 'F'
+                    true, // U+0047 'G'
+                    true, // U+0048 'H'
+                    true, // U+0049 'I'
+                    true, // U+004A 'J'
+                    true, // U+004B 'K'
+                    true, // U+004C 'L'
+                    true, // U+004D 'M'
+                    true, // U+004E 'N'
+                    true, // U+004F 'O'
+                    true, // U+0050 'P'
+                    true, // U+0051 'Q'
+                    true, // U+0052 'R'
+                    true, // U+0053 'S'
+                    true, // U+0054 'T'
+                    true, // U+0055 'U'
+                    true, // U+0056 'V'
+                    true, // U+0057 'W'
+                    true, // U+0058 'X'
+                    true, // U+0059 'Y'
+                    true, // U+005A 'Z'
+                    false, // U+005B '['
+                    false, // U+005C '\'
+                    false, // U+005D ']'
+                    true, // U+005E '^'
+                    true, // U+005F '_'
+                    true, // U+0060 '`'
+                    true, // U+0061 'a'
+                    true, // U+0062 'b'
+                    true, // U+0063 'c'
+                    true, // U+0064 'd'
+                    true, // U+0065 'e'
+                    true, // U+0066 'f'
+                    true, // U+0067 'g'
+                    true, // U+0068 'h'
+                    true, // U+0069 'i'
+                    true, // U+006A 'j'
+                    true, // U+006B 'k'
+                    true, // U+006C 'l'
+                    true, // U+006D 'm'
+                    true, // U+006E 'n'
+                    true, // U+006F 'o'
+                    true, // U+0070 'p'
+                    true, // U+0071 'q'
+                    true, // U+0072 'r'
+                    true, // U+0073 's'
+                    true, // U+0074 't'
+                    true, // U+0075 'u'
+                    true, // U+0076 'v'
+                    true, // U+0077 'w'
+                    true, // U+0078 'x'
+                    true, // U+0079 'y'
+                    true, // U+007A 'z'
+                    true, // U+007B '{'
+                    true, // U+007C '|'
+                    true, // U+007D '}'
+                    true, // U+007E '~'
+                    false, // U+007F (DEL)
+            ];
+        }
+
         internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
         {
 #if NET8_0_OR_GREATER

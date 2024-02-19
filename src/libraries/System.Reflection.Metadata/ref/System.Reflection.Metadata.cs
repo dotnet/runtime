@@ -2430,12 +2430,12 @@ namespace System.Reflection.Metadata
         public int GetArrayRank() { throw null; }
         public System.Reflection.Metadata.TypeName[] GetGenericArguments() { throw null; }
     }
-    public partial class TypeNameParserOptions
+    public sealed partial class TypeNameParserOptions
     {
         public TypeNameParserOptions() { }
         public bool AllowFullyQualifiedName { get { throw null; } set { } }
         public int MaxRecursiveDepth { get { throw null; } set { } }
-        public virtual bool ValidateIdentifier(System.ReadOnlySpan<char> candidate, bool throwOnError) { throw null; }
+        public bool StrictValidation { get; set; }
     }
     public readonly partial struct TypeReference
     {

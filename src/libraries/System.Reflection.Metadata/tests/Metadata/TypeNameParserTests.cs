@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests
@@ -72,15 +71,6 @@ namespace System.Reflection.Metadata.Tests
         [InlineData("Namespace.Kość", "Namespace.Kość")]
         public void UnicodeCharactersAreAllowedByDefault(string input, string expectedFullName)
             => Assert.Equal(expectedFullName, TypeName.Parse(input.AsSpan()).FullName);
-
-        [Theory]
-        [InlineData("Namespace.Kość")]
-        public void UsersCanCustomizeIdentifierValidation(string input)
-        {
-            Assert.Throws<ArgumentException>(() => TypeName.Parse(input.AsSpan(), new NonAsciiNotAllowed()));
-
-            Assert.False(TypeName.TryParse(input.AsSpan(), out _, new NonAsciiNotAllowed()));
-        }
 
         public static IEnumerable<object[]> TypeNamesWithAssemblyNames()
         {
@@ -569,31 +559,5 @@ namespace System.Reflection.Metadata.Tests
                 }
             }
         }
-
-        internal sealed class NonAsciiNotAllowed : TypeNameParserOptions
-        {
-            public override bool ValidateIdentifier(ReadOnlySpan<char> candidate, bool throwOnError)
-            {
-                if (!base.ValidateIdentifier(candidate, throwOnError))
-                {
-                    return false;
-                }
-
-#if NET8_0_OR_GREATER
-                if (!Ascii.IsValid(candidate))
-#else
-                if (candidate.ToArray().Any(c => c >= 128))
-#endif
-                {
-                    if (throwOnError)
-                    {
-                        throw new ArgumentException("Non ASCII char found");
-                    }
-                    return false;
-                }
-                return true;
-            }
-        }
-
     }
 }

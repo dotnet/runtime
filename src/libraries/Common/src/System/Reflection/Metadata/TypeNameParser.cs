@@ -97,7 +97,8 @@ namespace System.Reflection.Metadata
             }
 
             ReadOnlySpan<char> fullTypeName = _inputString.Slice(0, fullTypeNameLength);
-            if (!_parseOptions.ValidateIdentifier(fullTypeName, _throwOnError))
+            int invalidCharIndex = GetIndexOfFirstInvalidCharacter(fullTypeName, _parseOptions.StrictValidation);
+            if (invalidCharIndex >= 0)
             {
                 return null;
             }
