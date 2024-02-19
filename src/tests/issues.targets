@@ -2467,8 +2467,13 @@
         <ExcludeList Include="$(XunitTestBinBase)JIT/SIMD/Vector3Interop_ro/**" />
         <ExcludeList Include="$(XunitTestBinBase)JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**" />
         <ExcludeList Include="$(XunitTestBinBase)JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_ro/**" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_r/*" />
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_ro/*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/badendfinally/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/badendfinally_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/ceeillegal/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/coverage/importer/Desktop/ceeillegal_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/**" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetsAppleMobile)' == 'true')">
