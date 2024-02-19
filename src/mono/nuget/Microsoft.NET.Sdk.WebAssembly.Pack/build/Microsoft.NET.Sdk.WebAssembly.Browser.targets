@@ -219,7 +219,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Error Code="WASM0005" Text="Unable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
   </Target>
 
-  <Target Name="ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
+  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
     <ItemGroup>
       <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
 
