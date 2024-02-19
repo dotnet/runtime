@@ -18,7 +18,7 @@ import {
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
-import { _zero_region, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { _zero_region, forceThreadMemoryViewRefresh, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
@@ -359,6 +359,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             mono_assert(!holder.isCanceled, "This promise already canceled.");
             holder.isResolved = true;
             if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
                 settleUnsettledPromise();
             }
             // we can unregister the GC handle just on JS side
@@ -387,6 +388,7 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
             mono_assert(!holder.isResolved, "This promise already resolved.");
             holder.isResolved = true;
             if (WasmEnableThreads) {
+                forceThreadMemoryViewRefresh();
                 settleUnsettledPromise();
             }
             // we can unregister the GC handle just on JS side

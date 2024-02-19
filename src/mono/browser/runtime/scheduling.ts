@@ -34,6 +34,9 @@ function prevent_timer_throttling_tick() {
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
+    if (WasmEnableThreads) {
+        forceThreadMemoryViewRefresh();
+    }
     cwraps.mono_wasm_execute_timer();
     pump_count++;
     mono_background_exec_until_done();
