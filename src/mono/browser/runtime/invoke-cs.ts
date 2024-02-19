@@ -125,7 +125,8 @@ function bind_fn_0V(closure: BindingClosure) {
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(2);
+            const size = 2;
+            const args = alloc_stack_frame(size);
             // call C# side
             invoke_sync_jsexport(method, args);
         } finally {
@@ -146,7 +147,8 @@ function bind_fn_1V(closure: BindingClosure) {
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(3);
+            const size = 3;
+            const args = alloc_stack_frame(size);
             marshaler1(args, arg1);
 
             // call C# side
@@ -170,7 +172,8 @@ function bind_fn_1R(closure: BindingClosure) {
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(3);
+            const size = 3;
+            const args = alloc_stack_frame(size);
             marshaler1(args, arg1);
 
             // call C# side
@@ -197,14 +200,15 @@ function bind_fn_1RA(closure: BindingClosure) {
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(3);
+            const size = 3;
+            const args = alloc_stack_frame(size);
             marshaler1(args, arg1);
 
             // pre-allocate the promise
             let promise = res_converter(args);
 
             // call C# side
-            invoke_async_jsexport(method, args, 3);
+            invoke_async_jsexport(method, args, size);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -230,7 +234,8 @@ function bind_fn_2R(closure: BindingClosure) {
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(4);
+            const size = 4;
+            const args = alloc_stack_frame(size);
             marshaler1(args, arg1);
             marshaler2(args, arg2);
 
@@ -259,7 +264,8 @@ function bind_fn_2RA(closure: BindingClosure) {
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(4);
+            const size = 4;
+            const args = alloc_stack_frame(size);
             marshaler1(args, arg1);
             marshaler2(args, arg2);
 
@@ -267,7 +273,7 @@ function bind_fn_2RA(closure: BindingClosure) {
             let promise = res_converter(args);
 
             // call C# side
-            invoke_async_jsexport(method, args, 4);
+            invoke_async_jsexport(method, args, size);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -295,7 +301,8 @@ function bind_fn(closure: BindingClosure) {
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
-            const args = alloc_stack_frame(2 + args_count);
+            const size = 2 + args_count;
+            const args = alloc_stack_frame(size);
             for (let index = 0; index < args_count; index++) {
                 const marshaler = arg_marshalers[index];
                 if (marshaler) {
@@ -311,13 +318,13 @@ function bind_fn(closure: BindingClosure) {
 
             // call C# side
             if (is_async) {
-                invoke_async_jsexport(method, args, 2 + args_count);
+                invoke_async_jsexport(method, args, size);
                 // in case the C# side returned synchronously
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
             }
             else if (is_discard_no_wait) {
                 // call C# side, fire and forget
-                invoke_async_jsexport(method, args, 2 + args_count);
+                invoke_async_jsexport(method, args, size);
             }
             else {
                 invoke_sync_jsexport(method, args);
