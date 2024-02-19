@@ -9,125 +9,125 @@ import type {
     MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments, PThreadPtr
 } from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./globals";
+import { Module } from "./globals";
 import { mono_log_error } from "./logging";
-import { mono_assert } from "./globals";
 
-type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
+type SigLine = [name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
 const threading_cwraps: SigLine[] = WasmEnableThreads ? [
     // MONO.diagnostics
-    [true, "mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
-    [true, "mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
-    [true, "mono_wasm_event_pipe_session_disable", "bool", ["number"]],
-    [true, "mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
-    [true, "mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
-    [true, "mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
-    [true, "mono_wasm_diagnostic_server_create_stream", "number", []],
-    [false, "mono_wasm_init_finalizer_thread", null, []],
-    [false, "mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
-    [false, "mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
+    ["mono_wasm_event_pipe_enable", "bool", ["string", "number", "number", "string", "bool", "number"]],
+    ["mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
+    ["mono_wasm_event_pipe_session_disable", "bool", ["number"]],
+    ["mono_wasm_diagnostic_server_create_thread", "bool", ["string", "number"]],
+    ["mono_wasm_diagnostic_server_thread_attach_to_runtime", "void", []],
+    ["mono_wasm_diagnostic_server_post_resume_runtime", "void", []],
+    ["mono_wasm_diagnostic_server_create_stream", "number", []],
+    ["mono_wasm_init_finalizer_thread", null, []],
+    ["mono_wasm_invoke_jsexport_async_post", "void", ["number", "number", "number"]],
+    ["mono_wasm_invoke_jsexport_sync_send", "void", ["number", "number", "number"]],
 ] : [];
 
 // when the method is assigned/cached at usage, instead of being invoked directly from cwraps, it can't be marked lazy, because it would be re-bound on each call
 const fn_signatures: SigLine[] = [
-    [true, "mono_wasm_register_root", "number", ["number", "number", "string"]],
-    [true, "mono_wasm_deregister_root", null, ["number"]],
-    [true, "mono_wasm_string_get_data_ref", null, ["number", "number", "number", "number"]],
-    [true, "mono_wasm_set_is_debugger_attached", "void", ["bool"]],
-    [true, "mono_wasm_send_dbg_command", "bool", ["number", "number", "number", "number", "number"]],
-    [true, "mono_wasm_send_dbg_command_with_parms", "bool", ["number", "number", "number", "number", "number", "number", "string"]],
-    [true, "mono_wasm_setenv", null, ["string", "string"]],
-    [true, "mono_wasm_parse_runtime_options", null, ["number", "number"]],
-    [true, "mono_wasm_strdup", "number", ["string"]],
-    [true, "mono_background_exec", null, []],
-    [true, "mono_wasm_execute_timer", null, []],
-    [true, "mono_wasm_load_icu_data", "number", ["number"]],
-    [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
-    [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
-    [false, "mono_wasm_load_runtime", null, ["string", "number"]],
-    [true, "mono_wasm_change_debugger_log_level", "void", ["number"]],
+    ["mono_wasm_register_root", "number", ["number", "number", "string"]],
+    ["mono_wasm_deregister_root", null, ["number"]],
+    ["mono_wasm_string_get_data_ref", null, ["number", "number", "number", "number"]],
+    ["mono_wasm_set_is_debugger_attached", "void", ["bool"]],
+    ["mono_wasm_send_dbg_command", "bool", ["number", "number", "number", "number", "number"]],
+    ["mono_wasm_send_dbg_command_with_parms", "bool", ["number", "number", "number", "number", "number", "number", "string"]],
+    ["mono_wasm_setenv", null, ["string", "string"]],
+    ["mono_wasm_parse_runtime_options", null, ["number", "number"]],
+    ["mono_wasm_strdup", "number", ["string"]],
+    ["mono_background_exec", null, []],
+    ["mono_wasm_execute_timer", null, []],
+    ["mono_wasm_load_icu_data", "number", ["number"]],
+    ["mono_wasm_add_assembly", "number", ["string", "number", "number"]],
+    ["mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
+    ["mono_wasm_load_runtime", null, ["string", "number"]],
+    ["mono_wasm_change_debugger_log_level", "void", ["number"]],
 
-    [true, "mono_wasm_assembly_load", "number", ["string"]],
-    [true, "mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
-    [true, "mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
-    [true, "mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
-    [true, "mono_wasm_intern_string_ref", "void", ["number"]],
+    ["mono_wasm_assembly_load", "number", ["string"]],
+    ["mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
+    ["mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
+    ["mono_wasm_string_from_utf16_ref", "void", ["number", "number", "number"]],
+    ["mono_wasm_intern_string_ref", "void", ["number"]],
 
-    [false, "mono_wasm_exit", "void", ["number"]],
-    [false, "mono_wasm_abort", "void", []],
-    [true, "mono_wasm_getenv", "number", ["string"]],
-    [true, "mono_wasm_set_main_args", "void", ["number", "number"]],
-    // These two need to be lazy because they may be missing
-    [() => !runtimeHelpers.emscriptenBuildOptions.enableAotProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [() => !runtimeHelpers.emscriptenBuildOptions.enableBrowserProfiler, "mono_wasm_profiler_init_aot", "void", ["string"]],
-    [true, "mono_wasm_profiler_init_browser", "void", ["number"]],
-    [false, "mono_wasm_exec_regression", "number", ["number", "string"]],
-    [false, "mono_wasm_invoke_jsexport", "void", ["number", "number"]],
-    [true, "mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
-    [true, "mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
-    [true, "mono_wasm_i52_to_f64", "number", ["number", "number"]],
-    [true, "mono_wasm_u52_to_f64", "number", ["number", "number"]],
-    [true, "mono_wasm_f64_to_i52", "number", ["number", "number"]],
-    [true, "mono_wasm_f64_to_u52", "number", ["number", "number"]],
-    [true, "mono_wasm_method_get_name", "number", ["number"]],
-    [true, "mono_wasm_method_get_full_name", "number", ["number"]],
-    [true, "mono_wasm_gc_lock", "void", []],
-    [true, "mono_wasm_gc_unlock", "void", []],
-    [true, "mono_wasm_get_i32_unaligned", "number", ["number"]],
-    [true, "mono_wasm_get_f32_unaligned", "number", ["number"]],
-    [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
-    [true, "mono_wasm_read_as_bool_or_null_unsafe", "number", ["number"]],
+    ["mono_wasm_exit", "void", ["number"]],
+    ["mono_wasm_abort", "void", []],
+    ["mono_wasm_getenv", "number", ["string"]],
+    ["mono_wasm_set_main_args", "void", ["number", "number"]],
+
+    ["mono_wasm_profiler_init_aot", "void", ["string"]],
+    ["mono_wasm_profiler_init_browser", "void", ["string"]],
+
+    ["mono_wasm_profiler_init_browser", "void", ["number"]],
+    ["mono_wasm_exec_regression", "number", ["number", "string"]],
+    ["mono_wasm_invoke_jsexport", "void", ["number", "number"]],
+    ["mono_wasm_write_managed_pointer_unsafe", "void", ["number", "number"]],
+    ["mono_wasm_copy_managed_pointer", "void", ["number", "number"]],
+    ["mono_wasm_i52_to_f64", "number", ["number", "number"]],
+    ["mono_wasm_u52_to_f64", "number", ["number", "number"]],
+    ["mono_wasm_f64_to_i52", "number", ["number", "number"]],
+    ["mono_wasm_f64_to_u52", "number", ["number", "number"]],
+    ["mono_wasm_method_get_name", "number", ["number"]],
+    ["mono_wasm_method_get_full_name", "number", ["number"]],
+    ["mono_wasm_gc_lock", "void", []],
+    ["mono_wasm_gc_unlock", "void", []],
+    ["mono_wasm_get_i32_unaligned", "number", ["number"]],
+    ["mono_wasm_get_f32_unaligned", "number", ["number"]],
+    ["mono_wasm_get_f64_unaligned", "number", ["number"]],
+    ["mono_wasm_read_as_bool_or_null_unsafe", "number", ["number"]],
 
     // jiterpreter
-    [true, "mono_jiterp_trace_bailout", "void", ["number"]],
-    [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
-    [true, "mono_jiterp_value_copy", "void", ["number", "number", "number"]],
-    [true, "mono_jiterp_get_member_offset", "number", ["number"]],
-    [true, "mono_jiterp_encode_leb52", "number", ["number", "number", "number"]],
-    [true, "mono_jiterp_encode_leb64_ref", "number", ["number", "number", "number"]],
-    [true, "mono_jiterp_encode_leb_signed_boundary", "number", ["number", "number", "number"]],
-    [true, "mono_jiterp_write_number_unaligned", "void", ["number", "number", "number"]],
-    [true, "mono_jiterp_type_is_byref", "number", ["number"]],
-    [true, "mono_jiterp_get_size_of_stackval", "number", []],
-    [true, "mono_jiterp_parse_option", "number", ["string"]],
-    [true, "mono_jiterp_get_options_as_json", "number", []],
-    [true, "mono_jiterp_get_options_version", "number", []],
-    [true, "mono_jiterp_adjust_abort_count", "number", ["number", "number"]],
-    [true, "mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
-    [true, "mono_jiterp_type_get_raw_value_size", "number", ["number"]],
-    [true, "mono_jiterp_get_signature_has_this", "number", ["number"]],
-    [true, "mono_jiterp_get_signature_return_type", "number", ["number"]],
-    [true, "mono_jiterp_get_signature_param_count", "number", ["number"]],
-    [true, "mono_jiterp_get_signature_params", "number", ["number"]],
-    [true, "mono_jiterp_type_to_ldind", "number", ["number"]],
-    [true, "mono_jiterp_type_to_stind", "number", ["number"]],
-    [true, "mono_jiterp_imethod_to_ftnptr", "number", ["number"]],
-    [true, "mono_jiterp_debug_count", "number", []],
-    [true, "mono_jiterp_get_trace_hit_count", "number", ["number"]],
-    [true, "mono_jiterp_get_polling_required_address", "number", []],
-    [true, "mono_jiterp_get_rejected_trace_count", "number", []],
-    [true, "mono_jiterp_boost_back_branch_target", "void", ["number"]],
-    [true, "mono_jiterp_is_imethod_var_address_taken", "number", ["number", "number"]],
-    [true, "mono_jiterp_get_opcode_value_table_entry", "number", ["number"]],
-    [true, "mono_jiterp_get_simd_intrinsic", "number", ["number", "number"]],
-    [true, "mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
-    [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
-    [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
-    [true, "mono_wasm_is_zero_page_reserved", "number", []],
-    [true, "mono_jiterp_is_special_interface", "number", ["number"]],
-    [true, "mono_jiterp_initialize_table", "void", ["number", "number", "number"]],
-    [true, "mono_jiterp_allocate_table_entry", "number", ["number"]],
-    [true, "mono_jiterp_get_interp_entry_func", "number", ["number"]],
-    [true, "mono_jiterp_get_counter", "number", ["number"]],
-    [true, "mono_jiterp_modify_counter", "number", ["number", "number"]],
-    [true, "mono_jiterp_tlqueue_next", "number", ["number"]],
-    [true, "mono_jiterp_tlqueue_add", "number", ["number", "number"]],
-    [true, "mono_jiterp_tlqueue_clear", "void", ["number"]],
-    [true, "mono_jiterp_begin_catch", "void", ["number"]],
-    [true, "mono_jiterp_end_catch", "void", []],
-    [true, "mono_interp_pgo_load_table", "number", ["number", "number"]],
-    [true, "mono_interp_pgo_save_table", "number", ["number", "number"]],
+    ["mono_jiterp_trace_bailout", "void", ["number"]],
+    ["mono_jiterp_get_trace_bailout_count", "number", ["number"]],
+    ["mono_jiterp_value_copy", "void", ["number", "number", "number"]],
+    ["mono_jiterp_get_member_offset", "number", ["number"]],
+    ["mono_jiterp_encode_leb52", "number", ["number", "number", "number"]],
+    ["mono_jiterp_encode_leb64_ref", "number", ["number", "number", "number"]],
+    ["mono_jiterp_encode_leb_signed_boundary", "number", ["number", "number", "number"]],
+    ["mono_jiterp_write_number_unaligned", "void", ["number", "number", "number"]],
+    ["mono_jiterp_type_is_byref", "number", ["number"]],
+    ["mono_jiterp_get_size_of_stackval", "number", []],
+    ["mono_jiterp_parse_option", "number", ["string"]],
+    ["mono_jiterp_get_options_as_json", "number", []],
+    ["mono_jiterp_get_options_version", "number", []],
+    ["mono_jiterp_adjust_abort_count", "number", ["number", "number"]],
+    ["mono_jiterp_register_jit_call_thunk", "void", ["number", "number"]],
+    ["mono_jiterp_type_get_raw_value_size", "number", ["number"]],
+    ["mono_jiterp_get_signature_has_this", "number", ["number"]],
+    ["mono_jiterp_get_signature_return_type", "number", ["number"]],
+    ["mono_jiterp_get_signature_param_count", "number", ["number"]],
+    ["mono_jiterp_get_signature_params", "number", ["number"]],
+    ["mono_jiterp_type_to_ldind", "number", ["number"]],
+    ["mono_jiterp_type_to_stind", "number", ["number"]],
+    ["mono_jiterp_imethod_to_ftnptr", "number", ["number"]],
+    ["mono_jiterp_debug_count", "number", []],
+    ["mono_jiterp_get_trace_hit_count", "number", ["number"]],
+    ["mono_jiterp_get_polling_required_address", "number", []],
+    ["mono_jiterp_get_rejected_trace_count", "number", []],
+    ["mono_jiterp_boost_back_branch_target", "void", ["number"]],
+    ["mono_jiterp_is_imethod_var_address_taken", "number", ["number", "number"]],
+    ["mono_jiterp_get_opcode_value_table_entry", "number", ["number"]],
+    ["mono_jiterp_get_simd_intrinsic", "number", ["number", "number"]],
+    ["mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
+    ["mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
+    ["mono_jiterp_get_opcode_info", "number", ["number", "number"]],
+    ["mono_wasm_is_zero_page_reserved", "number", []],
+    ["mono_jiterp_is_special_interface", "number", ["number"]],
+    ["mono_jiterp_initialize_table", "void", ["number", "number", "number"]],
+    ["mono_jiterp_allocate_table_entry", "number", ["number"]],
+    ["mono_jiterp_get_interp_entry_func", "number", ["number"]],
+    ["mono_jiterp_get_counter", "number", ["number"]],
+    ["mono_jiterp_modify_counter", "number", ["number", "number"]],
+    ["mono_jiterp_tlqueue_next", "number", ["number"]],
+    ["mono_jiterp_tlqueue_add", "number", ["number", "number"]],
+    ["mono_jiterp_tlqueue_clear", "void", ["number"]],
+    ["mono_jiterp_begin_catch", "void", ["number"]],
+    ["mono_jiterp_end_catch", "void", []],
+    ["mono_interp_pgo_load_table", "number", ["number", "number"]],
+    ["mono_interp_pgo_save_table", "number", ["number", "number"]],
 
     ...threading_cwraps,
 ];
@@ -304,20 +304,12 @@ export function init_c_exports(): void {
     const fns = [...fn_signatures];
     for (const sig of fns) {
         const wf: any = wrapped_c_functions;
-        const [lazyOrSkip, name, returnType, argTypes, opts] = sig;
-        const maybeSkip = typeof lazyOrSkip === "function";
-        if (lazyOrSkip === true || maybeSkip) {
-            // lazy init on first run
-            wf[name] = function (...args: any[]) {
-                const isNotSkipped = !maybeSkip || !lazyOrSkip();
-                mono_assert(isNotSkipped, () => `cwrap ${name} should not be called when binding was skipped`);
-                const fce = cwrap(name, returnType, argTypes, opts);
-                wf[name] = fce;
-                return fce(...args);
-            };
-        } else {
+        const [name, returnType, argTypes, opts] = sig;
+        // lazy init on first run
+        wf[name] = function (...args: any[]) {
             const fce = cwrap(name, returnType, argTypes, opts);
             wf[name] = fce;
-        }
+            return fce(...args);
+        };
     }
 }

@@ -4,7 +4,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
+import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -14,7 +14,6 @@ import { initialize_marshalers_to_js } from "./marshal-to-js";
 import { init_polyfills_async } from "./polyfills";
 import { strings_init, utf8ToString } from "./strings";
 import { init_managed_exports, install_main_synchronization_context } from "./managed-exports";
-import { cwraps_internal } from "./exports-internal";
 import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
 import { wait_for_all_assets } from "./assets";
 import { replace_linker_placeholders } from "./exports-binding";
@@ -378,7 +377,6 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     }
 
     init_c_exports();
-    cwraps_internal(INTERNAL);
     // removeRunDependency triggers the dependenciesFulfilled callback (runCaller) in
     // emscripten - on a worker since we don't have any other dependencies that causes run() to get
     // called too soon; and then it will get called a second time when dotnet.native.js calls it directly.
