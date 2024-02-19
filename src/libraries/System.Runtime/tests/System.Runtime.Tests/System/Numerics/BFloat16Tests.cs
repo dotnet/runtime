@@ -146,8 +146,8 @@ namespace System.Numerics.Tests
                 (UInt16BitsToBFloat16(0b1_01111111_0000000), -1f), // -1
                 (BFloat16.MaxValue, BitConverter.UInt32BitsToSingle(0x7F7F0000)), // 3.3895314E+38
                 (BFloat16.MinValue, BitConverter.UInt32BitsToSingle(0xFF7F0000)), // -3.3895314E+38
-                (UInt16BitsToBFloat16(0b0_01111011_1001100), 0.099609375f), // 0.1ish
-                (UInt16BitsToBFloat16(0b1_01111011_1001100), -0.099609375f), // -0.1ish
+                (UInt16BitsToBFloat16(0b0_01111011_1001101), 0.10009765625f), // 0.1ish
+                (UInt16BitsToBFloat16(0b1_01111011_1001101), -0.10009765625f), // -0.1ish
                 (UInt16BitsToBFloat16(0b0_10000100_0101000), 42f), // 42
                 (UInt16BitsToBFloat16(0b1_10000100_0101000), -42f), // -42
                 // (BFloat16.PositiveInfinity, float.PositiveInfinity), // PosInfinity
@@ -173,7 +173,7 @@ namespace System.Numerics.Tests
                 (UInt16BitsToBFloat16(0b0_00000000_0111111), BitConverter.UInt32BitsToSingle(0x003F0000)), // just below middle subnormal
                 (UInt16BitsToBFloat16(0b0_00000000_0000001), BitConverter.UInt32BitsToSingle(0x00010000)), // smallest subnormal
                 (UInt16BitsToBFloat16(0b1_00000000_0000001), BitConverter.UInt32BitsToSingle(0x80010000)), // highest negative subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_0111111), BitConverter.UInt32BitsToSingle(0x803F8000)), // just above negative middle subnormal
+                (UInt16BitsToBFloat16(0b1_00000000_0111111), BitConverter.UInt32BitsToSingle(0x803F0000)), // just above negative middle subnormal
                 (UInt16BitsToBFloat16(0b1_00000000_1000000), BitConverter.UInt32BitsToSingle(0x80400000)), // negative middle subnormal
                 (UInt16BitsToBFloat16(0b1_00000000_1111111), BitConverter.UInt32BitsToSingle(0x807F0000)), // lowest negative subnormal
                 (UInt16BitsToBFloat16(0b1_00000001_0000000), BitConverter.UInt32BitsToSingle(0x80800000)) // highest negative normal
@@ -216,8 +216,8 @@ namespace System.Numerics.Tests
                 (-0f, UInt16BitsToBFloat16(0b1_00000000_0000000)), // -0
                 (42f, UInt16BitsToBFloat16(0b0_10000100_0101000)), // 42
                 (-42f, UInt16BitsToBFloat16(0b1_10000100_0101000)), // -42
-                (0.1f, UInt16BitsToBFloat16(0b0_01111011_1001100)), // 0.0999755859375
-                (-0.1f, UInt16BitsToBFloat16(0b1_01111011_1001100)), // -0.0999755859375
+                (0.1f, UInt16BitsToBFloat16(0b0_01111011_1001101)), // 0.10009765625
+                (-0.1f, UInt16BitsToBFloat16(0b1_01111011_1001101)), // -0.10009765625
                 (1.5f, UInt16BitsToBFloat16(0b0_01111111_1000000)), // 1.5
                 (-1.5f, UInt16BitsToBFloat16(0b1_01111111_1000000)), // -1.5
                 (1.5078125f, UInt16BitsToBFloat16(0b0_01111111_1000001)), // 1.5078125
@@ -225,7 +225,7 @@ namespace System.Numerics.Tests
                 (BitConverter.UInt32BitsToSingle(0x00800000), UInt16BitsToBFloat16(0b0_00000001_0000000)), // smallest normal
                 (BitConverter.UInt32BitsToSingle(0x007F0000), UInt16BitsToBFloat16(0b0_00000000_1111111)), // largest subnormal
                 (BitConverter.UInt32BitsToSingle(0x00400000), UInt16BitsToBFloat16(0b0_00000000_1000000)), // middle subnormal
-                (BitConverter.UInt32BitsToSingle(0x003F8000), UInt16BitsToBFloat16(0b0_00000000_0111111)), // just below middle subnormal
+                (BitConverter.UInt32BitsToSingle(0x003F0000), UInt16BitsToBFloat16(0b0_00000000_0111111)), // just below middle subnormal
                 (BitConverter.UInt32BitsToSingle(0x00010000), UInt16BitsToBFloat16(0b0_00000000_0000001)), // smallest subnormal
                 (BitConverter.UInt32BitsToSingle(0x80010000), UInt16BitsToBFloat16(0b1_00000000_0000001)), // highest negative subnormal
                 (BitConverter.UInt32BitsToSingle(0x803F0000), UInt16BitsToBFloat16(0b1_00000000_0111111)), // just above negative middle subnormal
