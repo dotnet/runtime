@@ -1871,7 +1871,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
     // We are importing an unmanaged Swift call, which might require special parameter handling
     if (call->unmgdCallConv == CorInfoCallConvExtension::Swift)
     {
-        bool spillAllArgs = false;
+        bool checkEntireStack = false;
 
         // Check the signature of the Swift call for the special types
         CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
@@ -1908,8 +1908,8 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
                     BADCODE("Duplicate SwiftError* parameter");
                 }
 
-                swiftErrorIndex = argIndex;
-                spillAllArgs    = true;
+                swiftErrorIndex  = argIndex;
+                checkEntireStack = true;
             }
             // TODO: Handle SwiftSelf, SwiftAsync
         }
@@ -1917,13 +1917,13 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
         // Don't need to reverse args for Swift calls
         argsToReverse = 0;
 
-        // If using one of the Swift register types, spill all args to the stack
-        if (spillAllArgs)
+        // If using one of the Swift register types, check entire stack for side effects
+        if (checkEntireStack)
         {
             for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
             {
                 impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false)
-                                              DEBUGARG("impPopArgsForUnmanagedCall - spillAllArgs=true"));
+                                              DEBUGARG("impPopArgsForUnmanagedCall - checkEntireStack=true"));
             }
         }
     }
