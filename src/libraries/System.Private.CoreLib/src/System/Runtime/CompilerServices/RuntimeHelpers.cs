@@ -133,6 +133,7 @@ namespace System.Runtime.CompilerServices
 #if NATIVEAOT
         [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemSet")]
 #endif
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static unsafe void MemSet(ref byte dest, byte value, nuint size)
         {
             if (size > 0)
@@ -146,6 +147,7 @@ namespace System.Runtime.CompilerServices
 #if NATIVEAOT
         [System.Runtime.RuntimeExport("RhRuntimeHelpers_MemCopy")]
 #endif
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static unsafe void MemCopy(ref byte dest, ref byte src, nuint size)
         {
             if (size > 0)
