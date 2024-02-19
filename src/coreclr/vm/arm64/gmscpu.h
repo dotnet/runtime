@@ -26,6 +26,8 @@ struct MachState {
     TADDR          _sp; // stack pointer after the function returns
     BOOL           _isValid;
 #ifdef __APPLE__
+    // libunwind on macOS doesn't support context pointers and we cannot modify the captureX19_X29,
+    // so we store the unwound values in a separate array.
     ULONG64        unwoundX19_X29[NUM_NONVOLATILE_CONTEXT_POINTERS]; // preserved registers
 #endif // __APPLE__
 
