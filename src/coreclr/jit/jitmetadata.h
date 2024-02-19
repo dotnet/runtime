@@ -26,4 +26,5 @@ public:
 #include "jitmetadatalist.h"
 
     void report(Compiler* comp);
+    void dump(Compiler* comp);
 };

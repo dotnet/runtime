@@ -5223,8 +5223,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
     }
 
-    INDEBUG(Metrics.report(this));
-
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
     JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
 
@@ -6656,9 +6654,13 @@ void Compiler::compCompileFinish()
         printf(""); // in our logic this causes a flush
     }
 
+    JITDUMP("Final metrics:\n");
+    Metrics.report(this);
+    DBEXEC(verbose, Metrics.dump(this));
+
     if (verbose)
     {
-        printf("****** DONE compiling %s\n", info.compFullName);
+        printf("\n****** DONE compiling %s\n", info.compFullName);
         printf(""); // in our logic this causes a flush
     }
 

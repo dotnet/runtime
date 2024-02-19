@@ -38,4 +38,34 @@ void JitMetrics::report(Compiler* comp)
 #include "jitmetadatalist.h"
 }
 
+static void printMetric(double value)
+{
+    printf("%f", value);
+}
+
+static void printMetric(int value)
+{
+    printf("%d", value);
+}
+
+static void printMetric(int64_t value)
+{
+    printf("%lld", value);
+}
+
+void JitMetrics::dump(Compiler* comp)
+{
+    int nameMaxWidth = 0;
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) nameMaxWidth = max(nameMaxWidth, (int)strlen(#name));
+#include "jitmetadatalist.h"
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags)                                                                           \
+    printf("%-*s: ", nameMaxWidth + 5, #name);                                                                         \
+    printMetric(name);                                                                                                 \
+    printf("\n");
+#include "jitmetadatalist.h"
+}
+
 #endif

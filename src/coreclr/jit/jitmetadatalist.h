@@ -18,10 +18,17 @@ JITMETADATAINFO(TieringName,                   const char*,      0)
 JITMETADATAMETRIC(PerfScore,                   double,           JIT_METADATA_LOWER_IS_BETTER)
 JITMETADATAMETRIC(LoopsFoundDuringOpts,        int,              0)
 JITMETADATAMETRIC(LoopsCloned,                 int,              0)
+JITMETADATAMETRIC(LoopsUnrolled,               int,              0)
 JITMETADATAMETRIC(LoopAlignmentCandidates,     int,              0)
 JITMETADATAMETRIC(LoopsAligned,                int,              0)
+JITMETADATAMETRIC(VarsInSsa,                   int,              0)
+JITMETADATAMETRIC(HoistedExpressions,          int,              0)
+JITMETADATAMETRIC(Cses,                        int,              0)
+JITMETADATAMETRIC(RedundantBranchesEliminated, int,              0)
+JITMETADATAMETRIC(JumpThreadingsPerformed,     int,              0)
 JITMETADATAMETRIC(BytesAllocated,              int64_t,          0)
 JITMETADATAMETRIC(BasicBlocksAtCodegen,        int,              0)
+JITMETADATAMETRIC(PhysicallyPromotedFields,    int,              0)
 
 #undef  JITMETADATA
 #undef  JITMETADATAINFO

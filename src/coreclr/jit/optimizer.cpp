@@ -1292,6 +1292,8 @@ PhaseStatus Compiler::optUnrollLoops()
     {
         assert(anyIRchange);
 
+        Metrics.LoopsUnrolled += unrollCount;
+
 #ifdef DEBUG
         if (verbose)
         {
@@ -5139,6 +5141,8 @@ void Compiler::optHoistCandidate(GenTree*              tree,
 
     // Record the hoisted expression in hoistCtxt
     hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
+
+    Metrics.HoistedExpressions++;
 }
 
 bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNSet* loopVnInvariantCache)
