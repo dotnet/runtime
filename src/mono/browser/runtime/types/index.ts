@@ -145,7 +145,7 @@ export type MonoConfig = {
      */
     pthreadPoolSize?: number,
     /**
-     * initial number of unused workers keep in the emscripten pthread pool after startup
+     * initial number of unused workers kept in the emscripten pthread pool after startup
      */
     pthreadPoolReady?: number,
     /**
