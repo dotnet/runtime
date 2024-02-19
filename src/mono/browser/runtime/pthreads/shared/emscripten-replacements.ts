@@ -4,11 +4,12 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
-import { mono_wasm_pthread_on_pthread_created } from "../worker";
-import { PThreadLibrary, PThreadWorker, getModulePThread, getRunningWorkers, getUnusedWorkerPool } from "./emscripten-internals";
-import { loaderHelpers, mono_assert } from "../../globals";
+import { dumpThreads, onWorkerLoadInitiated, resolveThreadPromises } from "../browser";
+import { mono_wasm_pthread_on_pthread_created, onRunMessage } from "../worker";
+import { PThreadLibrary, PThreadWorker, getModulePThread, getUnusedWorkerPool } from "./emscripten-internals";
+import { Module, loaderHelpers, mono_assert } from "../../globals";
 import { mono_log_warn } from "../../logging";
+import { PThreadPtr, PThreadPtrNull } from "./types";
 
 /** @module emscripten-replacements Replacements for individual functions in the emscripten PThreads library.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with
@@ -21,6 +22,13 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
     const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
     const originalThreadInitTLS = modulePThread.threadInitTLS;
     const originalReturnWorkerToPool = modulePThread.returnWorkerToPool;
+    const original_emscripten_thread_init = (Module as any)["__emscripten_thread_init"];
+
+
+    (Module as any)["__emscripten_thread_init"] = (pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) => {
+        onRunMessage(pthread_ptr);
+        original_emscripten_thread_init(pthread_ptr, isMainBrowserThread, isMainRuntimeThread, canBlock);
+    };
 
     modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
@@ -46,7 +54,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
         // we can't reuse the worker, because user code could leave the worker JS globals in a dirty state
         worker.info.isRunning = false;
         resolveThreadPromises(worker.pthread_ptr, undefined);
-        worker.info.pthreadId = 0;
+        worker.info.pthreadId = PThreadPtrNull;
         if (worker.thread?.port) {
             worker.thread.port.close();
         }
@@ -72,6 +80,7 @@ export function replaceEmscriptenPThreadLibrary(modulePThread: PThreadLibrary): 
 
 let availableThreadCount = 0;
 export function is_thread_available() {
+    if (!WasmEnableThreads) return true;
     return availableThreadCount > 0;
 }
 
@@ -116,29 +125,13 @@ function allocateUnusedWorker(): PThreadWorker {
     getUnusedWorkerPool().push(worker);
     worker.loaded = false;
     worker.info = {
-        pthreadId: 0,
+        pthreadId: PThreadPtrNull,
         reuseCount: 0,
         updateCount: 0,
-        threadName: "",
+        threadPrefix: "          -    ",
+        threadName: "emscripten-pool",
     };
     return worker;
 }
 
 
-export function dumpThreads(): void {
-    if (!WasmEnableThreads) return;
-    // eslint-disable-next-line no-console
-    console.log("Running workers:");
-    getRunningWorkers().forEach((worker) => {
-        // eslint-disable-next-line no-console
-        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
-    });
-
-    // eslint-disable-next-line no-console
-    console.log("Unused workers:");
-    getUnusedWorkerPool().forEach((worker) => {
-        // eslint-disable-next-line no-console
-        console.log(`${worker.info.threadName}: isRunning:${worker.info.isRunning} isAttached:${worker.info.isAttached} isExternalEventLoop:${worker.info.isExternalEventLoop}  ${JSON.stringify(worker.info)}`);
-    });
-
-}

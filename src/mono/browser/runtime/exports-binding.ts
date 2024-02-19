@@ -5,14 +5,13 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_bind_cs_function } from "./invoke-cs";
-import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_import_async, mono_wasm_invoke_import_sync, mono_wasm_invoke_js_import } from "./invoke-js";
+import { mono_wasm_bind_js_import, mono_wasm_invoke_js_function, mono_wasm_invoke_jsimport, mono_wasm_invoke_jsimport_ST } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter, mono_jiterp_free_method_data_js } from "./jiterpreter";
 import { mono_interp_jit_wasm_entry_trampoline, mono_interp_record_interp_entry } from "./jiterpreter-interp-entry";
 import { mono_interp_jit_wasm_jit_call_trampoline, mono_interp_invoke_wasm_jit_call_trampoline, mono_interp_flush_jitcall_queue } from "./jiterpreter-jit-call";
 import { mono_wasm_resolve_or_reject_promise } from "./marshal-to-js";
 import { mono_wasm_eventloop_has_unsettled_interop_promises } from "./pthreads/shared/eventloop";
-import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered, mono_wasm_pthread_on_pthread_registered } from "./pthreads/worker";
+import { mono_wasm_pthread_on_pthread_attached, mono_wasm_pthread_on_pthread_unregistered, mono_wasm_pthread_on_pthread_registered, mono_wasm_pthread_set_name } from "./pthreads/worker";
 import { mono_wasm_schedule_timer, schedule_background_exec } from "./scheduling";
 import { mono_wasm_asm_loaded } from "./startup";
 import { mono_wasm_diagnostic_server_on_server_thread_created } from "./diagnostics/server_pthread";
@@ -37,6 +36,8 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     mono_wasm_pthread_on_pthread_registered,
     mono_wasm_pthread_on_pthread_attached,
     mono_wasm_pthread_on_pthread_unregistered,
+    mono_wasm_pthread_set_name,
+
     // threads.c
     mono_wasm_eventloop_has_unsettled_interop_promises,
     // diagnostics_server.c
@@ -47,8 +48,7 @@ export const mono_wasm_threads_imports = !WasmEnableThreads ? [] : [
     // corebindings.c
     mono_wasm_install_js_worker_interop,
     mono_wasm_uninstall_js_worker_interop,
-    mono_wasm_invoke_import_async,
-    mono_wasm_invoke_import_sync,
+    mono_wasm_invoke_jsimport,
 ];
 
 export const mono_wasm_imports = [
@@ -89,8 +89,7 @@ export const mono_wasm_imports = [
     mono_wasm_release_cs_owned_object,
     mono_wasm_bind_js_import,
     mono_wasm_invoke_js_function,
-    mono_wasm_invoke_js_import,
-    mono_wasm_bind_cs_function,
+    mono_wasm_invoke_jsimport_ST,
     mono_wasm_resolve_or_reject_promise,
     mono_wasm_cancel_promise,
     mono_wasm_change_case_invariant,

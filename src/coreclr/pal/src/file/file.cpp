@@ -1529,6 +1529,52 @@ done:
     return bRet;
 }
 
+/*++
+InternalOpen
+
+Wrapper for open.
+
+Input parameters:
+
+szPath = pointer to a pathname of a file to be opened
+nFlags = arguments that control how the file should be accessed
+mode = file permission settings that are used only when a file is created
+
+Return value:
+    File descriptor on success, -1 on failure
+--*/
+int
+CorUnix::InternalOpen(
+    const char *szPath,
+    int nFlags,
+    ...
+    )
+{
+    int nRet = -1;
+    int mode = 0;
+    va_list ap;
+
+    // If nFlags does not contain O_CREAT, the mode parameter will be ignored.
+    if (nFlags & O_CREAT)
+    {
+        va_start(ap, nFlags);
+        mode = va_arg(ap, int);
+        va_end(ap);
+    }
+
+    do
+    {
+#if OPEN64_IS_USED_INSTEAD_OF_OPEN
+        nRet = open64(szPath, nFlags, mode);
+#else
+        nRet = open(szPath, nFlags, mode);
+#endif
+    }
+    while ((nRet == -1) && (errno == EINTR));
+
+    return nRet;
+}
+
 PAL_ERROR
 CorUnix::InternalWriteFile(
     CPalThread *pThread,
@@ -3546,43 +3592,4 @@ fail:
     pStdOut = INVALID_HANDLE_VALUE;
     pStdErr = INVALID_HANDLE_VALUE;
     return FALSE;
-}
-
-/*++
-FILECleanupStdHandles
-
-Remove all regions, locked by a file pointer, from shared memory
-
-(no parameters)
-
---*/
-void FILECleanupStdHandles(void)
-{
-    HANDLE stdin_handle;
-    HANDLE stdout_handle;
-    HANDLE stderr_handle;
-
-    TRACE("closing standard handles\n");
-    stdin_handle = pStdIn;
-    stdout_handle = pStdOut;
-    stderr_handle = pStdErr;
-
-    pStdIn = INVALID_HANDLE_VALUE;
-    pStdOut = INVALID_HANDLE_VALUE;
-    pStdErr = INVALID_HANDLE_VALUE;
-
-    if (stdin_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stdin_handle);
-    }
-
-    if (stdout_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stdout_handle);
-    }
-
-    if (stderr_handle != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(stderr_handle);
-    }
 }

@@ -2578,7 +2578,7 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
 
     assemblyData->AssemblyPtr = HOST_CDADDR(pAssembly);
     assemblyData->ClassLoader = HOST_CDADDR(pAssembly->GetLoader());
-    assemblyData->ParentDomain = HOST_CDADDR(pAssembly->GetDomain());
+    assemblyData->ParentDomain = HOST_CDADDR(AppDomain::GetCurrentDomain());
     assemblyData->isDynamic = pAssembly->IsDynamic();
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = FALSE;

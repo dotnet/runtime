@@ -7,14 +7,14 @@ import { mono_log_info, mono_log_debug } from "./logging";
 
 export function init_globalization() {
     loaderHelpers.preferredIcuAsset = getIcuResourceName(loaderHelpers.config);
-    loaderHelpers.invariantMode = loaderHelpers.config.globalizationMode == GlobalizationMode.Invariant;
+    let invariantMode = loaderHelpers.config.globalizationMode == GlobalizationMode.Invariant;
 
-    if (!loaderHelpers.invariantMode) {
+    if (!invariantMode) {
         if (loaderHelpers.preferredIcuAsset) {
             mono_log_debug("ICU data archive(s) available, disabling invariant mode");
         } else if (loaderHelpers.config.globalizationMode !== GlobalizationMode.Custom && loaderHelpers.config.globalizationMode !== GlobalizationMode.All && loaderHelpers.config.globalizationMode !== GlobalizationMode.Sharded) {
             mono_log_debug("ICU data archive(s) not available, using invariant globalization mode");
-            loaderHelpers.invariantMode = true;
+            invariantMode = true;
             loaderHelpers.preferredIcuAsset = null;
         } else {
             const msg = "invariant globalization mode is inactive and no ICU data archives are available";
@@ -29,7 +29,7 @@ export function init_globalization() {
     if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
         env_variables[hybridEnv] = "1";
     }
-    else if (env_variables[invariantEnv] === undefined && loaderHelpers.invariantMode) {
+    else if (env_variables[invariantEnv] === undefined && invariantMode) {
         env_variables[invariantEnv] = "1";
     }
     if (env_variables["TZ"] === undefined) {

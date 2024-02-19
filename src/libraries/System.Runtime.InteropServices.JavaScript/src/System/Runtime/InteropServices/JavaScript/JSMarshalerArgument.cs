@@ -58,8 +58,13 @@ namespace System.Runtime.InteropServices.JavaScript
             [FieldOffset(13)]
             internal MarshalerType ElementType;
 
+#if FEATURE_WASM_MANAGED_THREADS
             [FieldOffset(16)]
             internal IntPtr ContextHandle;
+
+            [FieldOffset(20)]
+            internal bool ReceiverShouldFree;
+#endif
         }
 
         /// <summary>
@@ -74,6 +79,7 @@ namespace System.Runtime.InteropServices.JavaScript
             // also this is called multiple times
             JSProxyContext.JSImportWithUnknownContext();
             slot.ContextHandle = IntPtr.Zero;
+            slot.ReceiverShouldFree = false;
 #endif
         }
 
@@ -83,6 +89,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             slot.Type = MarshalerType.None;
             slot.ContextHandle = knownProxyContext.ContextHandle;
+            slot.ReceiverShouldFree = false;
         }
 #endif
         // this is always called from ToManaged() marshaler

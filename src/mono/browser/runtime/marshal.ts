@@ -5,11 +5,12 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region } from "./memory";
+import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8, _zero_region, getB32, setB32, forceThreadMemoryViewRefresh } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
 import { TypedArray, VoidPtr } from "./types/emscripten";
 import { utf16ToString } from "./strings";
+import { get_managed_stack_trace } from "./managed-exports";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
@@ -23,6 +24,9 @@ export const JSMarshalerTypeSize = 32;
 export const JSMarshalerSignatureHeaderSize = 4 * 8; // without Exception and Result
 
 export function alloc_stack_frame(size: number): JSMarshalerArguments {
+    if (WasmEnableThreads) {
+        forceThreadMemoryViewRefresh();
+    }
     const bytes = JavaScriptMarshalerArgSize * size;
     const args = Module.stackAlloc(bytes) as any;
     _zero_region(args, bytes);
@@ -39,6 +43,17 @@ export function is_args_exception(args: JSMarshalerArguments): boolean {
     mono_assert(args, "Null args");
     const exceptionType = get_arg_type(<any>args);
     return exceptionType !== MarshalerType.None;
+}
+
+export function is_receiver_should_free(args: JSMarshalerArguments): boolean {
+    if (WasmEnableThreads) return false;
+    mono_assert(args, "Null args");
+    return getB32(<any>args + 20);
+}
+
+export function set_receiver_should_free(args: JSMarshalerArguments): void {
+    mono_assert(args, "Null args");
+    setB32(<any>args + 20, true);
 }
 
 export function set_args_context(args: JSMarshalerArguments): void {
@@ -265,7 +280,7 @@ export function get_arg_js_handle(arg: JSMarshalerArgument): JSHandle {
 export function set_arg_proxy_context(arg: JSMarshalerArgument): void {
     if (!WasmEnableThreads) return;
     mono_assert(arg, "Null arg");
-    setI32(<any>arg + 16, <any>runtimeHelpers.proxy_context_gc_handle);
+    setI32(<any>arg + 16, <any>runtimeHelpers.proxyGCHandle);
 }
 
 export function set_js_handle(arg: JSMarshalerArgument, jsHandle: JSHandle): void {
@@ -353,10 +368,10 @@ export class ManagedError extends Error implements IDisposable {
             this.managed_stack = "... omitted managed stack trace.\n" + this.getSuperStack();
             return this.managed_stack;
         }
-        if (!WasmEnableThreads || runtimeHelpers.proxy_context_gc_handle) {
+        if (!WasmEnableThreads || runtimeHelpers.proxyGCHandle) {
             const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
             if (gc_handle !== GCHandleNull) {
-                const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
+                const managed_stack = get_managed_stack_trace(gc_handle);
                 if (managed_stack) {
                     this.managed_stack = managed_stack + "\n" + this.getSuperStack();
                     return this.managed_stack;

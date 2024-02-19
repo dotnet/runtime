@@ -1660,9 +1660,6 @@ public:
     // Clone block state and statements from `from` block to `to` block (which must be new/empty)
     static void CloneBlockState(Compiler* compiler, BasicBlock* to, const BasicBlock* from);
 
-    // Copy the block kind and targets. The `from` block is untouched.
-    void CopyTarget(Compiler* compiler, const BasicBlock* from);
-
     // Copy the block kind and take memory ownership of the targets.
     void TransferTarget(BasicBlock* from);
 
@@ -1838,6 +1835,8 @@ struct BBswtDesc
     BBswtDesc() : bbsHasDefault(true), bbsHasDominantCase(false)
     {
     }
+
+    BBswtDesc(const BBswtDesc* other);
 
     BBswtDesc(Compiler* comp, const BBswtDesc* other);
 
@@ -2059,6 +2058,9 @@ private:
     // The source of the control flow
     BasicBlock* m_sourceBlock;
 
+    // The destination of the control flow
+    BasicBlock* m_destBlock;
+
     // Edge weights
     weight_t m_edgeWeightMin;
     weight_t m_edgeWeightMax;
@@ -2074,9 +2076,10 @@ private:
     bool m_likelihoodSet;
 
 public:
-    FlowEdge(BasicBlock* block, FlowEdge* rest)
+    FlowEdge(BasicBlock* sourceBlock, BasicBlock* destBlock, FlowEdge* rest)
         : m_nextPredEdge(rest)
-        , m_sourceBlock(block)
+        , m_sourceBlock(sourceBlock)
+        , m_destBlock(destBlock)
         , m_edgeWeightMin(0)
         , m_edgeWeightMax(0)
         , m_likelihood(0)
@@ -2102,12 +2105,26 @@ public:
 
     BasicBlock* getSourceBlock() const
     {
+        assert(m_sourceBlock != nullptr);
         return m_sourceBlock;
     }
 
     void setSourceBlock(BasicBlock* newBlock)
     {
+        assert(newBlock != nullptr);
         m_sourceBlock = newBlock;
+    }
+
+    BasicBlock* getDestinationBlock() const
+    {
+        assert(m_destBlock != nullptr);
+        return m_destBlock;
+    }
+
+    void setDestinationBlock(BasicBlock* newBlock)
+    {
+        assert(newBlock != nullptr);
+        m_destBlock = newBlock;
     }
 
     weight_t edgeWeightMin() const
