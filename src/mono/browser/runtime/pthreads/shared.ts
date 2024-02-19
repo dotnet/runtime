@@ -12,6 +12,7 @@ import { bindings_init } from "../startup";
 import { forceDisposeProxies } from "../gc-handles";
 import { monoMessageSymbol, GCHandleNull, PThreadPtrNull, WorkerToMainMessageType } from "../types/internal";
 
+// A duplicate in loader/assets.ts
 export const worker_empty_prefix = "          -    ";
 
 const monoThreadInfoPartial: Partial<PThreadInfo> = {
