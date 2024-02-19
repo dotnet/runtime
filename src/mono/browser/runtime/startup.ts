@@ -268,12 +268,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         Module.runtimeKeepalivePush();
 
-        // load runtime and apply environment settings (if necessary)
+        // load mono runtime and apply environment settings (if necessary)
         await start_runtime();
-
-        if (runtimeHelpers.config.interpreterPgo) {
-            await interp_pgo_load_data();
-        }
 
         if (!ENVIRONMENT_IS_WORKER) {
             Module.runtimeKeepalivePush();
@@ -515,9 +511,9 @@ export async function start_runtime() {
 
         if (WasmEnableThreads) {
             monoThreadInfo.isAttached = true;
+            monoThreadInfo.isRunning = true;
             monoThreadInfo.isRegistered = true;
             monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
-            monoThreadInfo.workerNumber = 0;
             update_thread_info();
             runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
             runtimeHelpers.isCurrentThread = true;
@@ -528,6 +524,10 @@ export async function start_runtime() {
 
         // get GCHandle of the ctx
         runtimeHelpers.afterMonoStarted.promise_control.resolve(runtimeHelpers.proxyGCHandle);
+
+        if (runtimeHelpers.config.interpreterPgo) {
+            await interp_pgo_load_data();
+        }
 
         endMeasure(mark, MeasuredBlock.startRuntime);
     } catch (err) {

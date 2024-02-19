@@ -8,153 +8,72 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace Sample
+namespace Sample;
+
+public partial class Test
 {
-    public partial class Test
+    private static int _animationCounter = 0;
+    private static int _callCounter = 0;
+    private static bool _isRunning = false;
+    private static readonly IReadOnlyList<string> _animations = new string[] { "\u2680", "\u2681", "\u2682", "\u2683", "\u2684", "\u2685" };
+
+    public static int Main(string[] args)
     {
-        public static int Main(string[] args)
-        {
-            Console.WriteLine("Hello, World!");
-            return 0;
-        }
-
-        [JSImport("globalThis.console.log")]
-        public static partial void ConsoleLog(string status);
-
-        [JSImport("Sample.Test.updateProgress", "main.js")]
-        static partial void updateProgress(string status);
-
-        internal static void UpdateProgress(string status) => updateProgress(status);
-
-        static Demo _demo = null;
-
-        [JSExport]
-        public static void Start(int n)
-        {
-            var comp = new ExpensiveComputation(n);
-            comp.Start();
-            #pragma warning disable CS4014
-            WaitForCompletion(comp);
-            _demo = new Demo(UpdateProgress, comp);
-        }
-
-        public static async Task WaitForCompletion (ExpensiveComputation comp) {
-            Console.WriteLine($"WaitForCompletion started on thread {Thread.CurrentThread.ManagedThreadId}");
-            await comp.Completion;
-            Console.WriteLine($"WaitForCompletion completed on thread {Thread.CurrentThread.ManagedThreadId}");
-            UpdateProgress("\u270C\uFE0E");
-        }
-
-        [JSExport]
-        public static int Progress()
-        {
-            if (_demo.Progress())
-                return 0; /* done */
-            else
-                return 1; /* continue */
-        }
-
-        [JSExport]
-        public static int GetAnswer() { return _demo.Result; }
+        Console.WriteLine("Hello, World!");
+        return 0;
     }
 
-}
+    [JSImport("globalThis.console.log")]
+    public static partial void ConsoleLog(string status);
 
-public class ExpensiveComputation
-{
-    private readonly TaskCompletionSource<int> _tcs = new();
-    private readonly int UpTo;
-    public ExpensiveComputation(int n) { UpTo = n; }
-    public long CallCounter { get; private set; }
-    public Task<int> Completion => _tcs.Task;
+    [JSImport("Sample.Test.updateProgress", "main.js")]
+    static partial void updateProgress(string status);
 
-    public void Start()
+    [JSExport]
+    public static bool Progress()
     {
-        new Thread((o) => ((ExpensiveComputation)o).Run()).Start(this);
+        updateProgress(""+_animations[_animationCounter++]);
+        if (_animationCounter >= _animations.Count)
+        {
+            _animationCounter = 0;
+        }
+        return _isRunning;
     }
 
-    public void Run()
+    [JSExport]
+    [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+    public static Task<long> Fib(int n)
     {
-        Console.WriteLine("Hello from ManagedThreadId " + Thread.CurrentThread.ManagedThreadId);
-        long result = Fib(UpTo);
-        if (result < (long)int.MaxValue)
-            _tcs.SetResult((int)result);
-        else
-            _tcs.SetException(new Exception("Fibonacci computation exceeded Int32.MaxValue"));
+        return Task.Run(()=>{
+            _isRunning = true;
+            var res = FibImpl(n);
+            _isRunning = false;
+            return Task.FromResult(res);
+        });
     }
-    public long Fib(int n)
+
+    private static long FibImpl(int n)
     {
-        CallCounter++;
+        _callCounter++;
         // make some garbage every 1000 calls
-        if (CallCounter % 1000 == 0)
+        if (_callCounter % 1000 == 0)
         {
             AllocateGarbage();
         }
         // and collect it every once in a while
-        if (CallCounter % 500000 == 0)
+        if (_callCounter % 500000 == 0)
             GC.Collect();
 
         if (n < 2)
             return n;
-        return Fib(n - 1) + Fib(n - 2);
+        return FibImpl(n - 1) + FibImpl(n - 2);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private void AllocateGarbage()
+    private static void AllocateGarbage()
     {
         object[] garbage = new object[200];
         garbage[12] = new object();
         garbage[197] = garbage;
     }
-
-}
-
-public class Demo
-{
-    public class Animation
-    {
-        private readonly Action<string> _updateProgress;
-        private int _counter = 0;
-
-        private readonly IReadOnlyList<string> _animations = new string[] { "\u2680", "\u2681", "\u2682", "\u2683", "\u2684", "\u2685" };
-
-        public void Step(string suffix = "")
-        {
-            _updateProgress(_animations[_counter++] + suffix);
-            if (_counter >= _animations.Count)
-            {
-                _counter = 0;
-            }
-        }
-
-        public Animation(Action<string> updateProgress)
-        {
-            _updateProgress = updateProgress;
-        }
-
-
-    }
-
-    private readonly Action<string> _updateProgress;
-    private readonly Animation _animation;
-    private readonly ExpensiveComputation _expensiveComputation;
-
-    public Demo(Action<string> updateProgress, ExpensiveComputation comp)
-    {
-        _updateProgress = updateProgress;
-        _animation = new Animation(updateProgress);
-        _expensiveComputation = comp;
-    }
-
-    public bool Progress()
-    {
-        if (!_expensiveComputation.Completion.IsCompleted)
-        {
-            _animation.Step($"{_expensiveComputation.CallCounter} calls");
-        }
-
-        return _expensiveComputation.Completion.IsCompleted;
-    }
-
-    public int Result => _expensiveComputation.Completion.Result;
 }
