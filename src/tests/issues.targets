@@ -1158,10 +1158,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/CustomAttributes/**">
             <Issue>Dynamic code generation is not supported on this platform</Issue>
         </ExcludeList>
-
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93631</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
