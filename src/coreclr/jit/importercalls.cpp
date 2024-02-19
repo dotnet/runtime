@@ -1904,7 +1904,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
                 // For error handling purposes, we expect a pointer/reference to a SwiftError to be passed
                 if (!argIsByrefOrPtr)
                 {
-                    BADCODE("Expected SwiftError pointer/reference, got value class");
+                    BADCODE("Expected SwiftError pointer/reference, got struct");
                 }
 
                 if (swiftErrorIndex != sig->numArgs)

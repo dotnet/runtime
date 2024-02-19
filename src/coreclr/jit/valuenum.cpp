@@ -11245,7 +11245,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             break;
 
             case GT_CATCH_ARG:
+            case GT_SWIFT_ERROR:
                 // We know nothing about the value of a caught expression.
+                // We also know nothing about the error register's value post-Swift call.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 break;
 
@@ -11256,7 +11258,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
 
             // These do not represent values.
-            case GT_SWIFT_ERROR:
             case GT_NO_OP:
             case GT_NOP:
             case GT_JMP:   // Control flow
