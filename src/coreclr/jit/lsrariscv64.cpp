@@ -309,7 +309,7 @@ int LinearScan::BuildNode(GenTree* tree)
                         needTemp = true;
                 }
 
-                if (!needTemp && (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD))
+                if (!needTemp && tree->OperIs(GT_DIV, GT_MOD))
                 {
                     if ((exceptions & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
                         needTemp = true;
