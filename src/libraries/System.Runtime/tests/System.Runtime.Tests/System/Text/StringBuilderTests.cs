@@ -378,17 +378,85 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => builder.Append((long)1));
         }
 
+        public static IEnumerable<object[]> Append_Object_TestData()
+        {
+            yield return new object[] { "Hello", "abc", "Helloabc" };
+            yield return new object[] { "", "g", "g" };
+            yield return new object[] { "Hello", "", "Hello" };
+            yield return new object[] { "Hello", null, "Hello" };
+            yield return new object[] { "Hello", $"abc", "Helloabc" };
+            // ISpanFormattable inputs: simple validation of known types that implement the interface
+            yield return new object[] { "", (byte)42, "42" };
+            yield return new object[] { "", 'A', "A" };
+            yield return new object[] { "", DateTime.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "3/15/2021 2:52:51 PM" };
+            yield return new object[] { "", DateTimeOffset.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "3/15/2021 2:52:51 PM +00:00" };
+            yield return new object[] { "", (decimal)42, "42" };
+            yield return new object[] { "", (double)42, "42" };
+            yield return new object[] { "", Guid.Parse("68d9cfaf-feab-4d5b-96d8-a3fd889ae89f"), "68d9cfaf-feab-4d5b-96d8-a3fd889ae89f" };
+            yield return new object[] { "", (Half)42, "42" };
+            yield return new object[] { "", (short)42, "42" };
+            yield return new object[] { "", (int)42, "42" };
+            yield return new object[] { "", (long)42, "42" };
+            yield return new object[] { "", (IntPtr)42, "42" };
+            yield return new object[] { "", new Rune('A'), "A" };
+            yield return new object[] { "", (sbyte)42, "42" };
+            yield return new object[] { "", (float)42, "42" };
+            yield return new object[] { "", TimeSpan.FromSeconds(42), "00:00:42" };
+            yield return new object[] { "", (ushort)42, "42" };
+            yield return new object[] { "", (uint)42, "42" };
+            yield return new object[] { "", (ulong)42, "42" };
+            yield return new object[] { "", (UIntPtr)42, "42" };
+            yield return new object[] { "", new Version(1, 2, 3, 4), "1.2.3.4" };
+            // ISpanFormattable inputs: advanced validation to ensure that ToString() is not called by default.
+            yield return new object[] { "Hello", new FormattableStringWithSpanOnly("abc"), "Helloabc" };
+            yield return new object[] { "Hello", $"{new FormattableStringWithSpanOnly("abc")}", "Helloabc" };
+        }
+
+        private struct FormattableStringWithSpanOnly : ISpanFormattable
+        {
+            private string _value;
+
+            public FormattableStringWithSpanOnly(string value) => _value = value;
+
+            public override readonly string ToString() => throw new NotImplementedException();
+            public readonly string ToString(string? format, IFormatProvider? formatProvider) => ToString();
+
+            public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+                destination.TryWrite($"{_value}", out charsWritten);
+        }
+
         [Theory]
-        [InlineData("Hello", "abc", "Helloabc")]
-        [InlineData("Hello", "def", "Hellodef")]
-        [InlineData("", "g", "g")]
-        [InlineData("Hello", "", "Hello")]
-        [InlineData("Hello", null, "Hello")]
+        [MemberData(nameof(Append_Object_TestData))]
         public static void Append_Object(string original, object value, string expected)
         {
             var builder = new StringBuilder(original);
             builder.Append(value);
             Assert.Equal(expected, builder.ToString());
+        }
+		
+		[Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Append_Object_InvalidTryFormatCharsWritten_Throws(bool tooBig) // vs tooSmall
+        {
+            var builder = new StringBuilder();
+            Assert.Throws<FormatException>(() => builder.Append(new InvalidCharsWritten(tooBig)));
+        }
+
+        private sealed class InvalidCharsWritten : ISpanFormattable
+        {
+            private bool _tooBig;
+
+            public InvalidCharsWritten(bool tooBig) => _tooBig = tooBig;
+
+            public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider provider)
+            {
+                charsWritten = _tooBig ? destination.Length + 1 : -1;
+                return true;
+            }
+
+            public string ToString(string format, IFormatProvider formatProvider) =>
+                throw new NotImplementedException();
         }
 
         [Fact]
