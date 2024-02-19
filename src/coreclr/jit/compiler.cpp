@@ -1861,10 +1861,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
-//
-// Initialize all the per-method statistics gathering data structures.
-//
-
+        //
+        // Initialize all the per-method statistics gathering data structures.
+        //
+        CLANG_FORMAT_COMMENT_ANCHOR;
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
         m_curLoopHasHoistedExpression = false;
