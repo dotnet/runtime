@@ -545,6 +545,13 @@ public:
                 pcsExceptionHandler->EmitINITOBJ(m_slIL.GetDispatchCodeStream()->GetToken(returnTypeHnd));
             }
             break;
+        case ELEMENT_TYPE_PTR:
+            pcsExceptionHandler->EmitPOP();
+            pcsExceptionHandler->EmitLDC(0);
+            pcsExceptionHandler->EmitCONV_U();
+            _ASSERTE(retvalLocalNum != (DWORD)-1);
+            pcsExceptionHandler->EmitSTLOC(retvalLocalNum);
+            break;
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_CHAR:
         case ELEMENT_TYPE_I1:
