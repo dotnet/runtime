@@ -1325,6 +1325,7 @@ bool Lowering::TryLowerSwitchToBitTest(
         bbSwitch->SetCond(bbCase0, bbCase1);
     }
 
+    // TODO: Use old edges to influence new edge likelihoods?
     comp->fgAddRefPred(bbCase0, bbSwitch);
     comp->fgAddRefPred(bbCase1, bbSwitch);
 

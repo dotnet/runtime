@@ -707,21 +707,9 @@ void Compiler::fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, Bas
             {
                 if (jumpTab[i]->getDestinationBlock() == oldTarget)
                 {
-                    changed                 = true;
-                    FlowEdge* const oldEdge = fgRemoveRefPred(oldTarget, block);
-                    FlowEdge* const newEdge = fgAddRefPred(newTarget, block, oldEdge);
-                    jumpTab[i]              = newEdge;
-
-                    // Handle the profile update, once we get our hands on the old edge.
-                    // (see notes in fgChangeSwitchBlock for why this extra step is necessary)
-                    //
-                    // We do it slightly differently here so we don't lose the old
-                    // edge weight propagation that would sometimes happen
-                    //
-                    if ((oldEdge != nullptr) && !newEdge->hasLikelihood())
-                    {
-                        newEdge->setLikelihood(oldEdge->getLikelihood());
-                    }
+                    fgRemoveRefPred(jumpTab[i]);
+                    jumpTab[i] = fgAddRefPred(newTarget, block, jumpTab[i]);
+                    changed    = true;
                 }
             }
 
