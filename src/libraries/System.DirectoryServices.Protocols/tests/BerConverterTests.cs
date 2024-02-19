@@ -239,5 +239,20 @@ namespace System.DirectoryServices.Protocols.Tests
         {
             Assert.Throws<BerConversionException>(() => BerConverter.Decode(format, values));
         }
+
+        public static IEnumerable<object[]> Manual_Wrapping_Required_Data()
+        {
+            yield return new object[] { "v", new object[] { new string[] { "abc", "def" } } };
+
+            yield return new object[] { "V", new object[] { new byte[][] { [97, 98, 99], [100, 101, 102] } } };
+        }
+
+        [Theory]
+        [MemberData(nameof(Manual_Wrapping_Required_Data))]
+        public void Must_Manually_Wrap_Several_OctetStrings_In_Sequence(string format, object[] values)
+        {
+            Assert.Throws<BerConversionException>(() => BerConverter.Decode(format, BerConverter.Encode(format, values)));
+            Assert.Equal(values, BerConverter.Decode(format, BerConverter.Encode("{" + format + "}", values)));
+        }
     }
 }
