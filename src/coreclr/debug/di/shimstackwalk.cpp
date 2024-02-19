@@ -312,6 +312,7 @@ void ShimStackWalk::Populate()
                             // because of the leaf STUBFRAME_EXCEPTION.
                             chainInfo.CancelUMChain();
                             swInfo.m_fSkipChain = true;
+                            swInfo.m_fHasException = true;
                         }
                     }
 
@@ -366,6 +367,26 @@ void ShimStackWalk::Populate()
                     }
                     else
                     {
+                        if (swInfo.m_fHasException)
+                        {
+                            RSExtSmartPtr<ICorDebugILFrame> pNFrame3;
+                            hr = pFrame->QueryInterface(IID_ICorDebugILFrame, reinterpret_cast<void **>(&pNFrame3));
+                            if (pNFrame3 != NULL)
+                            {
+                                CordbJITILFrame* JITILFrameToAdjustIP = (static_cast<CordbJITILFrame*>(pNFrame3.GetValue()));
+                                CordbNativeFrame* nativeFrameToAdjustIP = JITILFrameToAdjustIP->m_nativeFrame;
+                                if (!JITILFrameToAdjustIP->m_adjustedIP)
+                                {
+                                    DWORD nativeOffsetToMap = (DWORD)nativeFrameToAdjustIP->m_ip - STACKWALK_CONTROLPC_ADJUST_OFFSET;
+                                    CorDebugMappingResult mappingType;
+                                    ULONG uILOffset = nativeFrameToAdjustIP->m_nativeCode->GetSequencePoints()->MapNativeOffsetToIL(
+                                            nativeOffsetToMap,
+                                            &mappingType);
+                                    JITILFrameToAdjustIP->m_ip= uILOffset;
+                                }
+                                swInfo.m_fHasException = false;                                    
+                            }
+                        }
                         AppendFrame(pFrame, &swInfo);
                     }
 
@@ -1469,7 +1490,8 @@ ShimStackWalk::StackWalkInfo::StackWalkInfo()
     m_fProcessingInternalFrame(false),
     m_fSkipChain(false),
     m_fLeafFrame(true),
-    m_fHasConvertedFrame(false)
+    m_fHasConvertedFrame(false),
+    m_fHasException(false)
 {
     m_pChildFrame.Assign(NULL);
     m_pConvertedInternalFrame2.Assign(NULL);
