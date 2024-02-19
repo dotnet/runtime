@@ -170,9 +170,9 @@ static void PrintDiffsCsvRow(
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \
     fw.Print(",");                           \
-    fw.Print(baseRes.CompileResults->##name); \
+    fw.Print(baseRes.CompileResults->name); \
     fw.Print(",");                           \
-    fw.Print(diffRes.CompileResults->##name);
+    fw.Print(diffRes.CompileResults->name);
 
 #include "jitmetadatalist.h"
 
@@ -207,7 +207,7 @@ static void PrintReplayCsvRow(
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \
     fw.Print(",");                           \
-    fw.Print(res.CompileResults->##name);
+    fw.Print(res.CompileResults->name);
 
 #include "jitmetadatalist.h"
 

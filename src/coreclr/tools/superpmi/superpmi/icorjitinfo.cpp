@@ -1055,7 +1055,7 @@ void MyICJI::reportMetadata(const char* key, const void* value)
 #define JITMETADATAMETRIC(name, type, flags) \
     if (strcmp(key, #name) == 0)                                   \
     {                                                              \
-        memcpy(&jitInstance->mc->cr->##name, value, sizeof(type)); \
+        memcpy(&jitInstance->mc->cr->name, value, sizeof(type)); \
         return;                                                    \
     }
 
