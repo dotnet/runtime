@@ -109,7 +109,7 @@ namespace System
             {
                 if (!Interop.Kernel32.SetConsoleCP(enc.CodePage))
                 {
-                    HandleSetConsoleEncodingError();
+                    HandleSetConsoleEncodingError(Marshal.GetLastPInvokeError());
                 }
             }
         }
@@ -125,14 +125,13 @@ namespace System
             {
                 if (!Interop.Kernel32.SetConsoleOutputCP(enc.CodePage))
                 {
-                    HandleSetConsoleEncodingError();
+                    HandleSetConsoleEncodingError(Marshal.GetLastPInvokeError());
                 }
             }
         }
 
-        private static void HandleSetConsoleEncodingError()
+        private static void HandleSetConsoleEncodingError(int lastError)
         {
-            int lastError = Marshal.GetLastPInvokeError();
             if (lastError == Interop.Errors.ERROR_INVALID_HANDLE
                 || lastError == Interop.Errors.ERROR_INVALID_ACCESS)
             {
