@@ -641,3 +641,8 @@ const MethodContext::Environment& JitInstance::getEnvironment()
 {
     return environment;
 }
+
+void JitInstance::updateForceOptions(LightWeightMap<DWORD, DWORD>* newForceOptions)
+{
+    forceOptions = newForceOptions;
+}

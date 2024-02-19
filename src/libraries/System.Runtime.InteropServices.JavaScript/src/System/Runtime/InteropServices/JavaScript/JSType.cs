@@ -32,9 +32,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Could return immediately without waiting for the execution to finish, when dispatching the call to another thread.
         /// Suppresses marshaling of the JavaScript function's return value.
         /// </summary>
-        public sealed class OneWay : JSType
+        public sealed class DiscardNoWait : JSType
         {
-            internal OneWay() { }
+            internal DiscardNoWait() { }
         }
 
         /// <summary>

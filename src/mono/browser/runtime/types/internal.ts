@@ -342,7 +342,7 @@ export enum MarshalerType {
     Span,
     Action,
     Function,
-    OneWay,
+    DiscardNoWait,
 
     // only on runtime
     JSException,

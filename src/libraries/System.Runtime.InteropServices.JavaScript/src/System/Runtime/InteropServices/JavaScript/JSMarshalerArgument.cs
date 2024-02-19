@@ -20,6 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
     {
         internal JSMarshalerArgumentImpl slot;
 
+        // keep in sync with JSMarshalerArgumentOffsets in marshal.ts
         [StructLayout(LayoutKind.Explicit, Pack = 32, Size = 32)]
         internal struct JSMarshalerArgumentImpl
         {
