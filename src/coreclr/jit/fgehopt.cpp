@@ -1099,7 +1099,7 @@ PhaseStatus Compiler::fgCloneFinally()
             }
             else
             {
-                optRedirectBlock(block, newBlock, &blockMap);
+                optInitDuplicatedBlockTargets(block, newBlock, &blockMap);
             }
         }
 

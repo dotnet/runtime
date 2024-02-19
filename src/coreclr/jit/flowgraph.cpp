@@ -5603,8 +5603,8 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
         assert(!newBlk->HasInitializedTarget());
 
         // Redirect the new block according to "blockMap".
-        // opRedirectBlock will set newBlk's successors, and add pred edges for the successors.
-        comp->optRedirectBlock(blk, newBlk, map);
+        // optInitDuplicatedBlockTargets will set newBlk's successors, and add pred edges for the successors.
+        comp->optInitDuplicatedBlockTargets(blk, newBlk, map);
 
         return BasicBlockVisit::Continue;
     });

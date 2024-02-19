@@ -553,7 +553,7 @@ void Compiler::optCheckPreds()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// optRedirectBlock: Initialize the branch successors of a block based on a block map.
+// optInitDuplicatedBlockTargets: Initialize the branch successors of a block based on a block map.
 //
 // Updates the successors of `newBlk`, a copy of `blk`:
 // If `blk2` is a branch successor of `blk`, and there is a mapping
@@ -570,7 +570,7 @@ void Compiler::optCheckPreds()
 //     Upon returning, `newBlk` should have all of its successors initialized.
 //     `blk` must have its successors set upon entry; these won't be changed.
 //
-void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
+void Compiler::optInitDuplicatedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
 {
     // Caller should not have initialized newBlk's target yet
     assert(newBlk->KindIs(BBJ_ALWAYS));
