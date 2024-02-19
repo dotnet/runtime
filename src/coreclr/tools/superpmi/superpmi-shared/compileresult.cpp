@@ -35,6 +35,10 @@ CompileResult::CompileResult()
     MethodFullName = nullptr;
     TieringName = nullptr;
     memoryTracker = nullptr;
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) name = 0;
+#include "jitmetadatalist.h"
 }
 
 CompileResult::~CompileResult()

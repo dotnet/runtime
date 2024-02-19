@@ -146,7 +146,7 @@ static void PrintDiffsCsvHeader(FileWriter& fw)
 
 #include "jitmetadatalist.h"
 
-    fw.Print("%s\n");
+    fw.Print("\n");
 }
 
 static void PrintDiffsCsvRow(
@@ -181,7 +181,7 @@ static void PrintDiffsCsvRow(
 
 static void PrintReplayCsvHeader(FileWriter& fw)
 {
-    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Size,Instructions\n");
+    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Size,Instructions");
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) fw.Print("," #name);
@@ -196,7 +196,7 @@ static void PrintReplayCsvRow(
     int context, uint32_t contextSize,
     const ReplayResults& res)
 {
-    fw.Printf("%d,%u,\"%s\",\"%s\",%s,%s,%s,%s,%u,%lld",
+    fw.Printf("%d,%u,\"%s\",%s,%s,%s,%u,%lld",
         context, contextSize,
         res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName,
         res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName,

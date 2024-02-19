@@ -1031,14 +1031,6 @@ void MyICJI::reportMetadata(const char* key, const void* value)
 {
     jitInstance->mc->cr->AddCall("reportMetadata");
 
-#define JITMETADATAINFO(name, type, flags)
-#define JITMETADATAMETRIC(name, type, flags) \
-    if (strcmp(key, #name) == 0)                                   \
-    {                                                              \
-        memcpy(&jitInstance->mc->cr->##name, value, sizeof(type)); \
-        return;                                                    \
-    }
-
     if (strcmp(key, "MethodFullName") == 0)
     {
         const char* str = static_cast<const char*>(value);
@@ -1058,6 +1050,16 @@ void MyICJI::reportMetadata(const char* key, const void* value)
         jitInstance->mc->cr->TieringName = buf;
         return;
     }
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) \
+    if (strcmp(key, #name) == 0)                                   \
+    {                                                              \
+        memcpy(&jitInstance->mc->cr->##name, value, sizeof(type)); \
+        return;                                                    \
+    }
+
+#include "jitmetadatalist.h"
 }
 
 /*-------------------------- Misc ---------------------------------------*/
