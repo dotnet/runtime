@@ -411,7 +411,6 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
             pParam->pThis->mc->cr->recMessageLog(jitResult == CORJIT_OK ? "Successful Compile" : "Successful Compile (BADCODE)");
 
             pParam->results.NumCodeBytes = NCodeSizeBlock;
-            pParam->results.CompileResults = pParam->pThis->mc->cr;
         }
         else
         {
@@ -460,6 +459,7 @@ ReplayResults JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcI
     }
 
     mc->cr->secondsToCompile = stj.GetSeconds();
+    param.results.CompileResults = mc->cr;
 
     UINT64 insCountAfter = 0;
     Instrumentor_GetInsCount(&insCountAfter);
