@@ -27,10 +27,7 @@ bool FileWriter::Printf(const char* fmt, ...)
         }
         else
         {
-            DWORD numWritten;
-            bool result =
-                WriteFile(m_file.Get(), pBuffer, static_cast<DWORD>(printed), &numWritten, nullptr) &&
-                (numWritten == static_cast<DWORD>(printed));
+            bool result = Print(pBuffer, static_cast<size_t>(printed));
 
             if (pBuffer != stackBuffer)
                 delete[] pBuffer;
