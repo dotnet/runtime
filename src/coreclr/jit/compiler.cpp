@@ -1793,9 +1793,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compMethodName = eeGetMethodName(methodHnd);
     info.compClassName  = eeGetClassName(info.compClassHnd);
     info.compFullName   = eeGetMethodFullName(methodHnd);
-    info.compPerfScore  = 0.0;
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
+
+    JitMetadata::report(this, JitMetadataName::MethodFullName, info.compFullName);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG)
@@ -1860,11 +1861,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
         lvMemoryPerSsaData = SsaDefArray<SsaMemDef>();
 
-        //
-        // Initialize all the per-method statistics gathering data structures.
-        //
-
-        optLoopsCloned = 0;
+//
+// Initialize all the per-method statistics gathering data structures.
+//
 
 #if LOOP_HOIST_STATS
         m_loopsConsidered             = 0;
@@ -1965,6 +1964,8 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     compUsesThrowHelper = false;
 
     m_preferredInitCctor = CORINFO_HELP_UNDEF;
+
+    new (&Metrics, jitstd::placement_t()) JitMetrics();
 }
 
 /*****************************************************************************
@@ -5212,7 +5213,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
         if (JitConfig.JitMetrics() > 0)
         {
-            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", info.compPerfScore, optCSEcount);
+            sprintf_s(metricPart, 128, ", perfScore=%.2f, numCse=%u", Metrics.PerfScore, optCSEcount);
         }
 #endif
 
@@ -5221,6 +5222,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
                info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
     }
+
+    INDEBUG(Metrics.report(this));
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
     JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
@@ -5416,7 +5419,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         {
             block->SetFlags(BBF_LOOP_ALIGN);
             BitVecOps::AddElemD(&loopTraits, alignedLoops, loop->GetIndex());
-            INDEBUG(loopAlignCandidates++);
+            Metrics.LoopAlignmentCandidates++;
 
             BasicBlock* prev = block->Prev();
             // shouldAlignLoop should have guaranteed these properties.
@@ -5465,7 +5468,7 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
         }
     }
 
-    JITDUMP("Found %u candidates for loop alignment\n", loopAlignCandidates);
+    JITDUMP("Found %d candidates for loop alignment\n", Metrics.LoopAlignmentCandidates);
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
@@ -6438,6 +6441,8 @@ void Compiler::compCompileFinish()
         compArenaAllocator->finishMemStats();
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
+
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6621,7 +6626,7 @@ void Compiler::compCompileFinish()
 
         printf(" %3d |", optCallCount);
         printf(" %3d |", optIndirectCallCount);
-        printf(" %3d |", fgBBcountAtCodegen);
+        printf(" %3d |", Metrics.BasicBlocksAtCodegen);
         printf(" %3d |", lvaCount);
 
         if (opts.MinOpts())
@@ -6634,13 +6639,13 @@ void Compiler::compCompileFinish()
             printf(" %3d |", optCSEcount);
         }
 
-        if (info.compPerfScore < 9999.995)
+        if (Metrics.PerfScore < 9999.995)
         {
-            printf(" %7.2f |", info.compPerfScore);
+            printf(" %7.2f |", Metrics.PerfScore);
         }
         else
         {
-            printf(" %7.0f |", info.compPerfScore);
+            printf(" %7.0f |", Metrics.PerfScore);
         }
 
         printf(" %4d |", info.compMethodInfo->ILCodeSize);
@@ -7145,6 +7150,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Disable JitDisasm for non-optimized code.
         opts.disAsm = false;
     }
+
+    INDEBUG(JitMetadata::report(this, JitMetadataName::TieringName, compGetTieringName(true)));
 
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);
@@ -9074,12 +9081,12 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compILCodeSize);
     fprintf(s_csvFile, "%u,", comp->fgBBcount);
     fprintf(s_csvFile, "%u,", comp->opts.MinOpts());
-    fprintf(s_csvFile, "%u,", comp->optNumNaturalLoopsFound);
-    fprintf(s_csvFile, "%u,", comp->optLoopsCloned);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsFoundDuringOpts);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsCloned);
 #if FEATURE_LOOP_ALIGN
 #ifdef DEBUG
-    fprintf(s_csvFile, "%u,", comp->loopAlignCandidates);
-    fprintf(s_csvFile, "%u,", comp->loopsAligned);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopAlignmentCandidates);
+    fprintf(s_csvFile, "%d,", comp->Metrics.LoopsAligned);
 #endif // DEBUG
 #endif // FEATURE_LOOP_ALIGN
     unsigned __int64 totCycles = 0;

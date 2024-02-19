@@ -41,6 +41,26 @@ bool FileWriter::Printf(const char* fmt, ...)
     }
 }
 
+bool FileWriter::Print(const char* value)
+{
+    return Printf("%s", value);
+}
+
+bool FileWriter::Print(int value)
+{
+    return Printf("%d", value);
+}
+
+bool FileWriter::Print(int64_t value)
+{
+    return Printf("%lld", value);
+}
+
+bool FileWriter::Print(double value)
+{
+    return Printf("%f", value);
+}
+
 bool FileWriter::CreateNew(const char* path, FileWriter* fw)
 {
     FileHandle handle(CreateFile(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr));

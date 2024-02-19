@@ -845,6 +845,14 @@ void interceptor_ICJI::reportRichMappings(
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
+void interceptor_ICJI::reportMetadata(
+          const char* key,
+          const void* value)
+{
+    mcs->AddCall("reportMetadata");
+    original_ICorJitInfo->reportMetadata(key, value);
+}
+
 void* interceptor_ICJI::allocateArray(
           size_t cBytes)
 {

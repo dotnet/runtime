@@ -1028,6 +1028,15 @@ void WrapICorJitInfo::reportRichMappings(
     API_LEAVE(reportRichMappings);
 }
 
+void WrapICorJitInfo::reportMetadata(
+          const char* key,
+          const void* value)
+{
+    API_ENTER(reportMetadata);
+    wrapHnd->reportMetadata(key, value);
+    API_LEAVE(reportMetadata);
+}
+
 void* WrapICorJitInfo::allocateArray(
           size_t cBytes)
 {

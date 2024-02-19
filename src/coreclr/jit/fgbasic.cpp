@@ -49,8 +49,7 @@ void Compiler::fgInit()
     fgBBcount = 0;
 
 #ifdef DEBUG
-    fgBBcountAtCodegen = 0;
-    fgBBOrder          = nullptr;
+    fgBBOrder = nullptr;
 #endif // DEBUG
 
     fgMightHaveNaturalLoops = false;

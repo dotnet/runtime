@@ -94,6 +94,10 @@ public:
     }
 
     bool Printf(const char* fmt, ...);
+    bool Print(const char* value);
+    bool Print(int value);
+    bool Print(int64_t value);
+    bool Print(double value);
 
     static bool CreateNew(const char* path, FileWriter* fw);
 };

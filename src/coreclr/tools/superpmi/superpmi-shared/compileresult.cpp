@@ -32,6 +32,8 @@ CompileResult::CompileResult()
     allocGCInfoDets.retval = nullptr;
     allocGCInfoDets.size   = 0;
 
+    MethodFullName = nullptr;
+    MethodName = nullptr;
     memoryTracker = nullptr;
 }
 

@@ -21,13 +21,7 @@ void Compiler::optInit()
 {
     fgHasLoops = false;
 
-    optLoopsCanonical       = false;
-    optNumNaturalLoopsFound = 0;
-
-#ifdef DEBUG
-    loopAlignCandidates = 0;
-    loopsAligned        = 0;
-#endif
+    optLoopsCanonical = false;
 
     /* Keep track of the number of calls and indirect calls made by this method */
     optCallCount         = 0;
@@ -2668,7 +2662,7 @@ PhaseStatus Compiler::optFindLoopsPhase()
         optFindAndScaleGeneralLoopBlocks();
     }
 
-    optNumNaturalLoopsFound = (unsigned)m_loops->NumLoops();
+    Metrics.LoopsFoundDuringOpts = (int)m_loops->NumLoops();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
