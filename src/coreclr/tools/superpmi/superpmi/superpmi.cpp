@@ -139,7 +139,7 @@ static const char* ResultToString(ReplayResult result)
 
 static void PrintDiffsCsvHeader(FileWriter& fw)
 {
-    fw.Print("Context,Context size,Method name,Method full name,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base instructions,Diff instructions");
+    fw.Print("Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base size,Diff size,Base instructions,Diff instructions");
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) fw.Print(",Base " #name ",Diff " #name);
@@ -157,10 +157,10 @@ static void PrintDiffsCsvRow(
     bool hasDiff)
 {
     fw.Printf(
-        "%d,%u,\"%s\",\"%s\",%s,%s,%s,%s,%u,%u,%lld,%lld",
+        "%d,%u,\"%s\",%s,%s,%s,%s,%s,%u,%u,%lld,%lld",
         context, contextSize,
-        baseRes.CompileResults->MethodName == nullptr ? "" : baseRes.CompileResults->MethodName,
         baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName,
+        baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
         baseRes.IsMinOpts ? "True" : "False",
         hasDiff ? "True" : "False",
@@ -181,7 +181,7 @@ static void PrintDiffsCsvRow(
 
 static void PrintReplayCsvHeader(FileWriter& fw)
 {
-    fw.Printf("Context,Context size,Method name,Method full name,Result,MinOpts,Size,Instructions\n");
+    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Size,Instructions\n");
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) fw.Print("," #name);
@@ -198,8 +198,8 @@ static void PrintReplayCsvRow(
 {
     fw.Printf("%d,%u,\"%s\",\"%s\",%s,%s,%s,%s,%u,%lld",
         context, contextSize,
-        res.CompileResults->MethodName == nullptr ? "" : res.CompileResults->MethodName,
         res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName,
+        res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName,
         ResultToString(res.Result),
         res.IsMinOpts ? "True" : "False",
         res.NumCodeBytes, res.NumExecutedInstructions);
