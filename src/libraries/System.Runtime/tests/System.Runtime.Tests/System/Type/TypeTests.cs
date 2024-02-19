@@ -522,6 +522,11 @@ namespace System.Tests
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
         [InlineData(".System.Int32", typeof(TypeLoadException), false)]
         [InlineData("..Outside`1", typeof(TypeLoadException), false)]
+        [InlineData("System.Int32&&", typeof(TypeLoadException), false)]
+        [InlineData("System.Int32&*", typeof(TypeLoadException), false)]
+        [InlineData("System.Int32&[]", typeof(TypeLoadException), false)]
+        [InlineData("System.Int32&[*]", typeof(TypeLoadException), false)]
+        [InlineData("System.Int32&[,]", typeof(TypeLoadException), false)]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
