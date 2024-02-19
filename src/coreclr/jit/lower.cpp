@@ -871,7 +871,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // Remove extra predecessor links if there was more than one case.
         for (unsigned i = 1; i < jumpCnt; ++i)
         {
-            comp->fgRemoveRefPred(jumpTab[i]->getDestinationBlock(), originalSwitchBB);
+            comp->fgRemoveRefPred(jumpTab[i]);
         }
 
         // We have to get rid of the GT_SWITCH node but a child might have side effects so just assign
@@ -961,8 +961,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
-    FlowEdge* const oldEdge = comp->fgRemoveRefPred(defaultBB, afterDefaultCondBlock);
-    comp->fgAddRefPred(defaultBB, originalSwitchBB, oldEdge);
+    comp->fgRemoveRefPred(jumpTab[jumpCnt - 1]);
+    comp->fgAddRefPred(defaultBB, originalSwitchBB, jumpTab[jumpCnt - 1]);
 
     // Turn originalSwitchBB into a BBJ_COND.
     originalSwitchBB->SetCond(defaultBB, afterDefaultCondBlock);
@@ -1011,7 +1011,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         for (unsigned i = 1; i < jumpCnt - 1; ++i)
         {
             assert(jumpTab[i] == uniqueSucc);
-            comp->fgRemoveRefPred(uniqueSucc->getDestinationBlock(), afterDefaultCondBlock);
+            comp->fgRemoveRefPred(uniqueSucc);
         }
 
         afterDefaultCondBlock->SetKindAndTarget(BBJ_ALWAYS, uniqueSucc->getDestinationBlock());
@@ -1054,7 +1054,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            FlowEdge* oldEdge = comp->fgRemoveRefPred(targetBlock, afterDefaultCondBlock);
+            comp->fgRemoveRefPred(jumpTab[i]);
 
             if (targetBlock == followingBB)
             {
@@ -1067,7 +1067,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // If we haven't used the afterDefaultCondBlock yet, then use that.
             if (fUsedAfterDefaultCondBlock)
             {
-                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true);
+                BasicBlock* newBlock = comp->fgNewBBafter(BBJ_ALWAYS, currentBlock, true, currentBlock->Next());
                 newBlock->SetFlags(BBF_NONE_QUIRK);
                 currentBlock->SetFalseTarget(newBlock);
                 comp->fgAddRefPred(newBlock, currentBlock); // The fall-through predecessor.
@@ -1081,7 +1081,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             }
 
             // Wire up the predecessor list for the "branch" case.
-            comp->fgAddRefPred(targetBlock, currentBlock, oldEdge);
+            comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1097,7 +1097,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
                 currentBlock->SetCond(targetBlock, currentBlock->Next());
-                comp->fgAddRefPred(currentBlock->Next(), currentBlock);
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1119,7 +1118,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             // There is a fall-through to the following block. In the loop
             // above, we deleted all the predecessor edges from the switch.
             // In this case, we need to add one back.
-            assert(comp->fgGetPredForBlock(currentBlock->Next(), currentBlock) != nullptr);
+            comp->fgAddRefPred(currentBlock->Next(), currentBlock);
         }
 
         if (!fUsedAfterDefaultCondBlock)
@@ -1130,10 +1129,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             JITDUMP("Lowering switch " FMT_BB ": all switch cases were fall-through\n", originalSwitchBB->bbNum);
             assert(currentBlock == afterDefaultCondBlock);
             assert(currentBlock->KindIs(BBJ_SWITCH));
-            assert(comp->fgGetPredForBlock(currentBlock->Next(), currentBlock) == nullptr);
             currentBlock->SetKindAndTarget(BBJ_ALWAYS, currentBlock->Next());
             currentBlock->RemoveFlags(BBF_DONT_REMOVE);
-            comp->fgAddRefPred(currentBlock->Next(), currentBlock);
             comp->fgRemoveBlock(currentBlock, /* unreachable */ false); // It's an empty block.
         }
     }
