@@ -100,7 +100,9 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
     // in Release configuration, it would be a trimmed by rollup
     if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         try {
-            bound_fn = new Function("fn", "return (function JSExport_" + methodName + "(){ return fn.apply(this, arguments)});")(bound_fn);
+            const url = `//# sourceURL=https://dotnet/JSExport/${methodName}`;
+            const body = `return (function JSExport_${methodName}(){ return fn.apply(this, arguments)});`;
+            bound_fn = new Function("fn", url + "\r\n" + body)(bound_fn);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;

@@ -137,7 +137,10 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     // in Release configuration, it would be a trimmed by rollup
     if (BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         try {
-            bound_fn = new Function("fn", "return (function JSImport_" + js_function_name.replaceAll(".", "_") + "(){ return fn.apply(this, arguments)});")(bound_fn);
+            const fname = js_function_name.replaceAll(".", "_");
+            const url = `//# sourceURL=https://dotnet/JSImport/${fname}`;
+            const body = `return (function JSImport_${fname}(){ return fn.apply(this, arguments)});`;
+            bound_fn = new Function("fn", url + "\r\n" + body)(bound_fn);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;

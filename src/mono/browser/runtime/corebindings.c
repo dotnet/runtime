@@ -283,6 +283,7 @@ void mono_wasm_invoke_jsimport_sync_send (pthread_t target_tid, void* signature,
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_jsimport, (gpointer)signature, (gpointer)args);
 }
 
+// sync
 void mono_wasm_invoke_js_function_send (pthread_t target_tid, int function_js_handle, void *args)
 {
 	mono_threads_wasm_sync_run_in_target_thread_vii (target_tid, (void (*) (gpointer, gpointer))mono_wasm_invoke_js_function, (gpointer)function_js_handle, (gpointer)args);

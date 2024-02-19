@@ -87,11 +87,16 @@ export function update_thread_info(): void {
         set_thread_prefix(monoThreadInfo.threadPrefix!);
     }
 
-    (globalThis as any).monoThreadInfo = monoThreadInfo;
+    // this is just to make debugging easier by naming the thread debugger window.
+    // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
+    // in Release configuration, it would be a trimmed by rollup
     if (WasmEnableThreads && BuildConfiguration === "Debug" && !runtimeHelpers.cspPolicy) {
         monoThreadInfo.updateCount++;
         try {
-            (globalThis as any).monoThreadInfoFn = new Function(`//# sourceURL=https://${monoThreadInfo.updateCount}WorkerInfo${monoThreadInfo.isAttached ? monoThreadInfo.threadPrefix : ""}/\r\nconsole.log("${JSON.stringify(monoThreadInfo)}");`);
+            const url = `//# sourceURL=https://dotnet/thread/${monoThreadInfo.updateCount}-${monoThreadInfo.threadPrefix}`;
+            const infoJson = JSON.stringify(monoThreadInfo, null, 2);
+            const body = `const monoThreadInfo=${infoJson};\r\nconsole.log(monoThreadInfo);`;
+            (globalThis as any).monoThreadInfoFn = new Function(body + "\r\n" + url);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;

@@ -85,7 +85,7 @@ export function is_args_exception(args: JSMarshalerArguments): boolean {
 }
 
 export function is_receiver_should_free(args: JSMarshalerArguments): boolean {
-    if (WasmEnableThreads) return false;
+    if (!WasmEnableThreads) return false;
     mono_assert(args, "Null args");
     return getB32(<any>args + JSMarshalerArgumentOffsets.ReceiverShouldFree);
 }
