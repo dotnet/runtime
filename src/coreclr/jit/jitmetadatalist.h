@@ -15,7 +15,6 @@
 //              Name,                          type              flags
 JITMETADATAINFO(MethodFullName,                const char*,      0)
 JITMETADATAINFO(TieringName,                   const char*,      0)
-JITMETADATAINFO(MethodOptimized,               bool,             0)
 JITMETADATAMETRIC(PerfScore,                   double,           JIT_METADATA_LOWER_IS_BETTER)
 JITMETADATAMETRIC(LoopsFoundDuringOpts,        int,              0)
 JITMETADATAMETRIC(LoopsCloned,                 int,              0)

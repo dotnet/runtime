@@ -1049,13 +1049,13 @@ void MyICJI::reportMetadata(const char* key, const void* value)
         return;
     }
 
-    if (strcmp(key, "MethodName") == 0)
+    if (strcmp(key, "TieringName") == 0)
     {
         const char* str = static_cast<const char*>(value);
         size_t len = strlen(str);
         char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(len + 1));
         memcpy(buf, str, len + 1);
-        jitInstance->mc->cr->MethodName = buf;
+        jitInstance->mc->cr->TieringName = buf;
         return;
     }
 }

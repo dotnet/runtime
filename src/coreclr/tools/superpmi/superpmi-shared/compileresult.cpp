@@ -33,7 +33,7 @@ CompileResult::CompileResult()
     allocGCInfoDets.size   = 0;
 
     MethodFullName = nullptr;
-    MethodName = nullptr;
+    TieringName = nullptr;
     memoryTracker = nullptr;
 }
 

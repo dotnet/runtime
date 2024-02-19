@@ -221,10 +221,10 @@ public:
 #define JITMETADATAMETRIC(name, type, flags) type name;
 #include "jitmetadatalist.h"
 
-    // Reported method name from JIT (not available with release JIT)
-    const char* MethodName;
     // Reported method full name from JIT (not available with release JIT)
     const char* MethodFullName;
+    // Reported compilation tier from JIT
+    const char* TieringName;
 
     // not persisted to disk.
 public:
