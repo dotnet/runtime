@@ -279,7 +279,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Arrange
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddSingleton<IBoo, Boo>();
-            var serviceProvider = serviceCollection.BuildServiceProvider(true);
 
             // Act + Assert
             serviceCollection.BuildServiceProvider(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true });
