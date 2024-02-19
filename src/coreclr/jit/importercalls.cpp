@@ -3470,6 +3470,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 assert(sig->numArgs == 3);
 
                 GenTree* op3 = impPopStack().val; // comparand
+                if (varTypeIsSmall(callType))
+                {
+                    // small types need the comparand to have its upper bits zeroed
+                    op3 = gtNewCastNode(genActualType(callType), op3, /* uns */ false, varTypeToUnsigned(callType));
+                }
                 GenTree* op2 = impPopStack().val; // value
                 GenTree* op1 = impPopStack().val; // location
                 retNode      = gtNewAtomicNode(GT_CMPXCHG, callType, op1, op2, op3);
