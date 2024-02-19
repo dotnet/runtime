@@ -10597,6 +10597,8 @@ public:
     static EnregisterStats s_enregisterStats;
 #endif // TRACK_ENREG_STATS
 
+    JitMetrics Metrics;
+
     bool compIsForInlining() const;
     bool compDonotInline();
 
@@ -10975,9 +10977,7 @@ public:
     // test attributes are satisfied.
     void JitTestCheckSSA(); // SSA builder tests.
     void JitTestCheckVN();  // Value numbering tests.
-
-    JitMetrics Metrics;
-#endif // DEBUG
+#endif                      // DEBUG
 
     FieldSeqStore* m_fieldSeqStore;
 
