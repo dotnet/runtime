@@ -156,10 +156,10 @@ static void PrintDiffsCsvRow(
     const ReplayResults& diffRes,
     bool hasDiff)
 {
+    fw.Printf("%d,%u,", context, contextSize);
+    fw.PrintQuotedCsvField(baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName);
     fw.Printf(
-        "%d,%u,\"%s\",%s,%s,%s,%s,%s,%u,%u,%lld,%lld",
-        context, contextSize,
-        baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName,
+        ",%s,%s,%s,%s,%s,%u,%u,%lld,%lld",
         baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
         baseRes.IsMinOpts ? "True" : "False",
@@ -196,9 +196,9 @@ static void PrintReplayCsvRow(
     int context, uint32_t contextSize,
     const ReplayResults& res)
 {
-    fw.Printf("%d,%u,\"%s\",%s,%s,%s,%u,%lld",
-        context, contextSize,
-        res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName,
+    fw.Printf("%d,%u,", context, contextSize);
+    fw.PrintQuotedCsvField(res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName);
+    fw.Printf(",%s,%s,%s,%u,%lld",
         res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName,
         ResultToString(res.Result),
         res.IsMinOpts ? "True" : "False",

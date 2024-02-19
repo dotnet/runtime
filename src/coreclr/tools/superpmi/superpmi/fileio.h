@@ -93,11 +93,13 @@ public:
     {
     }
 
-    bool Printf(const char* fmt, ...);
+    bool Print(const char* value, size_t numChars);
     bool Print(const char* value);
     bool Print(int value);
     bool Print(int64_t value);
     bool Print(double value);
+    bool PrintQuotedCsvField(const char* value);
+    bool Printf(const char* fmt, ...);
 
     static bool CreateNew(const char* path, FileWriter* fw);
 };
