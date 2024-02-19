@@ -240,7 +240,6 @@ namespace System.Net
             if (s_countersLastFetched == 0 || Stopwatch.GetElapsedTime(s_countersLastFetched).TotalMilliseconds > 50)
             {
                 UpdateCounters();
-                System.Console.WriteLine($"Fetched MsQuic after {Stopwatch.GetElapsedTime(s_countersLastFetched).TotalMilliseconds}ms");
                 s_countersLastFetched = Stopwatch.GetTimestamp();
             }
 
