@@ -59,12 +59,12 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.None, _marshal_null_to_cs);// also void
         js_to_cs_marshalers.set(MarshalerType.Discard, _marshal_null_to_cs);// also void
         js_to_cs_marshalers.set(MarshalerType.Void, _marshal_null_to_cs);// also void
-        js_to_cs_marshalers.set(MarshalerType.OneWay, _marshal_null_to_cs);// also void
+        js_to_cs_marshalers.set(MarshalerType.DiscardNoWait, _marshal_null_to_cs);// also void
     }
 }
 
 export function bind_arg_marshal_to_cs(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToCs | undefined {
-    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard || marshaler_type === MarshalerType.OneWay) {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard || marshaler_type === MarshalerType.DiscardNoWait) {
         return undefined;
     }
     let res_marshaler: MarshalerToCs | undefined = undefined;

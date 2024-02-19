@@ -96,7 +96,7 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     const res_marshaler_type = get_signature_type(res_sig);
     const res_converter = bind_arg_marshal_to_cs(res_sig, res_marshaler_type, 1);
 
-    const is_oneway = res_marshaler_type == MarshalerType.OneWay;
+    const is_discard_no_wait = res_marshaler_type == MarshalerType.DiscardNoWait;
     const is_async = res_marshaler_type == MarshalerType.Task || res_marshaler_type == MarshalerType.TaskPreCreated;
 
     const closure: BindingClosure = {
@@ -107,12 +107,12 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         res_converter,
         has_cleanup,
         arg_cleanup,
-        is_oneway,
+        is_discard_no_wait,
         is_async,
         isDisposed: false,
     };
     let bound_fn: WrappedJSFunction;
-    if (is_async || is_oneway || has_cleanup) {
+    if (is_async || is_discard_no_wait || has_cleanup) {
         bound_fn = bind_fn(closure);
     }
     else {
@@ -165,7 +165,7 @@ function bind_js_import(signature: JSFunctionSignature): Function {
     }
 
     let wrapped_fn: WrappedJSFunction;
-    if (is_async || is_oneway) {
+    if (is_async || is_discard_no_wait) {
         wrapped_fn = async_bound_fn;
     }
     else {
@@ -279,7 +279,7 @@ function bind_fn(closure: BindingClosure) {
     const fqn = closure.fqn;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(args: JSMarshalerArguments) {
-        const is_async = WasmEnableThreads && is_receiver_should_free(args);
+        const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
         const mark = startMeasure();
         try {
             mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -309,7 +309,7 @@ function bind_fn(closure: BindingClosure) {
             marshal_exception_to_cs(<any>args, ex);
         }
         finally {
-            if (is_async) {
+            if (receiver_should_free) {
                 Module._free(args as any);
             }
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
@@ -327,7 +327,7 @@ type BindingClosure = {
     arg_marshalers: (BoundMarshalerToJs)[],
     res_converter: BoundMarshalerToCs | undefined,
     has_cleanup: boolean,
-    is_oneway: boolean,
+    is_discard_no_wait: boolean,
     is_async: boolean,
     arg_cleanup: (Function | undefined)[]
 }

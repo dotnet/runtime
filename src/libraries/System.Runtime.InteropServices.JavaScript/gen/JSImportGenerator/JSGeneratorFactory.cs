@@ -42,8 +42,8 @@ namespace Microsoft.Interop.JavaScript
                     return ResolvedGenerator.NotSupported(new(info, context));
 
                 // void
-                case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.OneWay }:
-                    return ResolvedGenerator.Resolved(new VoidGenerator(MarshalerType.OneWay));
+                case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.DiscardNoWait }:
+                    return ResolvedGenerator.Resolved(new VoidGenerator(MarshalerType.DiscardNoWait));
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Discard }:
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Void }:
                 case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.None }:
@@ -55,8 +55,8 @@ namespace Microsoft.Interop.JavaScript
                     return fail(SR.DiscardOnlyVoid);
 
                 // oneway no void
-                case { JSType: JSTypeFlags.OneWay }:
-                    return fail(SR.OneWayOnlyVoid);
+                case { JSType: JSTypeFlags.DiscardNoWait }:
+                    return fail(SR.DiscardNoWaitOnlyVoid);
 
                 // primitive
                 case { TypeInfo: JSSimpleTypeInfo simple }:
