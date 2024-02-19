@@ -9,7 +9,7 @@
 #endif
 
 #if !defined(JITMETADATAINFO) || !defined(JITMETADATAMETRIC)
-#error  Define JITMETADATAINFO and JITMETADATAMETRIC before including this file.
+#error Define JITMETADATAINFO and JITMETADATAMETRIC before including this file.
 #endif
 
 //              Name,                          type              flags
@@ -30,8 +30,8 @@ JITMETADATAMETRIC(BasicBlocksAtCodegen,        int,              0)
 JITMETADATAMETRIC(PerfScore,                   double,           JIT_METADATA_LOWER_IS_BETTER)
 JITMETADATAMETRIC(BytesAllocated,              int64_t,          JIT_METADATA_LOWER_IS_BETTER)
 
-#undef  JITMETADATA
-#undef  JITMETADATAINFO
-#undef  JITMETADATAMETRIC
+#undef JITMETADATA
+#undef JITMETADATAINFO
+#undef JITMETADATAMETRIC
 
 // clang-format on

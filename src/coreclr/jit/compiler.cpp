@@ -1796,7 +1796,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 
-    JitMetadata::report(this, JitMetadataName::MethodFullName, info.compFullName);
+    if (!compIsForInlining())
+    {
+        JitMetadata::report(this, JitMetadataName::MethodFullName, info.compFullName);
+    }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
 #if defined(DEBUG)
