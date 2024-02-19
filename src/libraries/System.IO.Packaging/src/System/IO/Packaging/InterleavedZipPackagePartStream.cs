@@ -46,7 +46,7 @@ namespace System.IO.Packaging
         {
             // The PieceDirectory mediates access to pieces.
             // It maps offsets to piece numbers and piece numbers to streams and start offsets.
-            // Mode and access are entirely managed by the underlying streams, assumed to be seekable.
+            // Mode and access are entirely managed by the underlying streams.
             _dir = new PieceDirectory(sortedPieceInfoList, zipStreamManager, access);
 
             // GetCurrentPieceNumber is operational from the beginning.
@@ -115,14 +115,13 @@ namespace System.IO.Packaging
 #if !NETFRAMEWORK && !NETSTANDARD2_0
                         int numBytesRead = pieceStream.Read(buffer.Slice(totalBytesRead));
 #else
-                    int numBytesRead = pieceStream.Read(
-                        tempInputBuffer,
-                        totalBytesRead,
-                        buffer.Length - totalBytesRead);
+                        int numBytesRead = pieceStream.Read(
+                            tempInputBuffer,
+                            totalBytesRead,
+                            buffer.Length - totalBytesRead);
 
-                    tempInputBuffer.AsSpan(totalBytesRead, numBytesRead).CopyTo(buffer.Slice(totalBytesRead, numBytesRead));
+                        tempInputBuffer.AsSpan(totalBytesRead, numBytesRead).CopyTo(buffer.Slice(totalBytesRead, numBytesRead));
 #endif
-
 
                         // End of the current stream: try to move to the next stream.
                         if (numBytesRead == 0)
@@ -476,8 +475,6 @@ namespace System.IO.Packaging
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
-
-
             try
             {
                 if (disposing)
@@ -530,13 +527,16 @@ namespace System.IO.Packaging
             const int BufferSize = 4096;
             long remainingBytes = byteCount;
             byte[] readBuffer = ArrayPool<byte>.Shared.Rent(BufferSize);
-            int bytesRead = byteCount < BufferSize ? (int)byteCount : BufferSize;
 
             try
             {
+                int bytesRead;
+
                 do
                 {
-                    bytesRead = pieceStream.Read(readBuffer, 0, bytesRead);
+                    int bytesToRead = remainingBytes < readBuffer.Length ? (int)remainingBytes : readBuffer.Length;
+
+                    bytesRead = pieceStream.Read(readBuffer, 0, bytesToRead);
                     remainingBytes -= bytesRead;
                 } while (remainingBytes > 0 && bytesRead > 0);
             }
@@ -547,7 +547,7 @@ namespace System.IO.Packaging
 
             if (remainingBytes != 0)
             {
-                throw new NullReferenceException();
+                throw new EndOfStreamException();
             }
         }
 

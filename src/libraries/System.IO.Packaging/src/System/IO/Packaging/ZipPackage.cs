@@ -107,7 +107,6 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
         protected override void DeletePartCore(Uri partUri)
         {
-
             //Validating the PartUri - this method will do the argument checking required for uri.
             partUri = PackUriHelper.ValidatePartUri(partUri);
 
@@ -148,7 +147,6 @@ namespace System.IO.Packaging
 
             //Delete the content type for this part if it was specified as an override
             _contentTypeHelper.DeleteContentType((PackUriHelper.ValidatedPartUri)partUri);
-
         }
 
         /// <summary>
@@ -572,9 +570,8 @@ namespace System.IO.Packaging
                 return;
 
             string? normalizedPrefixNameForCurrentSequence = null;
-            int startIndexOfCurrentSequence = 0; // Value is ignored as long as
-                                                 // prefixNameForCurrentSequence is null.
-
+            // Value is ignored as long as prefixNameForCurrentSequence is null.
+            int startIndexOfCurrentSequence = 0;
             List<ZipPackagePartPiece> pieces = new List<ZipPackagePartPiece>(pieceSet);
 
             for (int i = 0; i < pieces.Count; ++i)
@@ -596,7 +593,6 @@ namespace System.IO.Packaging
                         normalizedPrefixNameForCurrentSequence = pieces[i].NormalizedPrefixName;
                     }
                 }
-
                 // Not a start piece. Carry out validity checks.
                 else
                 {
@@ -632,7 +628,6 @@ namespace System.IO.Packaging
                             normalizedPrefixNameForCurrentSequence = null;
                             continue;
                         }
-
                     }
                 }
 
@@ -1193,7 +1188,6 @@ namespace System.IO.Packaging
                     throw new XmlException(SR.OverrideTagDoesNotMatchSchema, null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
 
                 // get the required Extension and ContentType attributes
-
                 string? partNameAttributeValue = reader.GetAttribute(PartNameAttributeName);
                 ValidateXmlAttribute(PartNameAttributeName, partNameAttributeValue, OverrideTagName, reader);
 
@@ -1424,21 +1418,19 @@ namespace System.IO.Packaging
             /// </summary>
             /// <param name="partUri"></param>
             internal void Delete(PackUriHelper.ValidatedPartUri partUri)
+                => DeleteCore(partUri.NormalizedPartUriString);
+
+            private void DeleteCore(string normalizedPartName)
             {
-                string normalizedPartName = partUri.NormalizedPartUriString;
                 if (_ignoredItemDictionary.TryGetValue(normalizedPartName, out List<string>? zipFileInfoNames))
                 {
-                    foreach (ZipArchiveEntry entry in _zipArchive.Entries)
+                    foreach (string zipFileInfoName in zipFileInfoNames)
                     {
-                        foreach (string zipFileInfoName in zipFileInfoNames)
-                        {
-                            if (entry.FullName == zipFileInfoName)
-                            {
-                                entry.Delete();
-                                break;
-                            }
-                        }
+                        ZipArchiveEntry? entry = _zipArchive.GetEntry(zipFileInfoName);
+
+                        entry?.Delete();
                     }
+
                     _ignoredItemDictionary.Remove(normalizedPartName);
                 }
             }
@@ -1454,28 +1446,7 @@ namespace System.IO.Packaging
                 {
                     foreach (string normalizedPartName in normalizedPartNames)
                     {
-                        if (_ignoredItemDictionary.TryGetValue(normalizedPartName, out List<string>? zipFileInfoNames))
-                        {
-                            foreach (string zipFileInfoName in zipFileInfoNames)
-                            {
-                                ZipArchiveEntry? entry = _zipArchive.GetEntry(zipFileInfoName);
-
-                                entry?.Delete();
-                            }
-
-                            /*foreach (ZipArchiveEntry entry in _zipArchive.Entries)
-                            {
-                                foreach (string zipFileInfoName in zipFileInfoNames)
-                                {
-                                    if (entry.FullName == zipFileInfoName)
-                                    {
-                                        entry.Delete();
-                                        break;
-                                    }
-                                }
-                            }*/
-                            _ignoredItemDictionary.Remove(normalizedPartName);
-                        }
+                        DeleteCore(normalizedPartName);
                     }
                     _extensionDictionary.Remove(extension);
                 }

@@ -79,16 +79,12 @@ namespace System.IO.Packaging
             /// </summary>
             internal PieceDirectory(List<ZipPackagePartPiece> sortedPieceInfoList, ZipStreamManager zipStreamManager, FileAccess access)
             {
-                if (sortedPieceInfoList == null)
-                    throw new ArgumentNullException(nameof(sortedPieceInfoList));
-
                 Debug.Assert(sortedPieceInfoList.Count > 0);
 
                 // Initialize the first piece.
-                _pieceStreamInfoList = [
-                    new PieceStreamInfo(
-                    zipStreamManager.Open(sortedPieceInfoList[0].ZipArchiveEntry, access),
-                    0 /*startOffset*/)
+                _pieceStreamInfoList =
+                [
+                    new PieceStreamInfo(zipStreamManager.Open(sortedPieceInfoList[0].ZipArchiveEntry, access), pieceStart: 0)
                 ];
 
                 //Index of the last piece stream that has been accessed
@@ -285,7 +281,6 @@ namespace System.IO.Packaging
             /// </summary>
             internal int GetNumberOfPieces()
             {
-                //return _pieceStreamInfoList.Count;
                 return _lastPieceIndex + 1;
             }
 
@@ -372,9 +367,6 @@ namespace System.IO.Packaging
                 // Record the compression parameters of the first piece to apply them to the new piece.
                 // (Though this part will be created as empty, it may grow later.)
                 ZipArchiveEntry firstPieceInfo = _sortedPieceInfoList[0].ZipArchiveEntry;
-
-                //CompressionMethodEnum compressionMethod = firstPieceInfo.CompressionMethod;
-                //DeflateOptionEnum deflateOption = firstPieceInfo.DeflateOption;
 
                 // We have to special-case SetLength(0), because in that case, there is no nonempty
                 // piece at all; and only the last piece is allowed to be empty.
