@@ -538,8 +538,8 @@ namespace System.Tests
                                                 BitConverter.UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal + ULP rounds higher
                 (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001110000000000000)),
                                                 BitConverter.UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal rounds to even
-                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001101111111111111)),
-                                                BitConverter.UInt16BitsToHalf(0b1_00000_1000000011)), // neg subnormal - ULP rounds lower,
+                (BitConverter.Int32BitsToSingle(unchecked((int)0b1_01110000_00000001110000000000001)),
+                                                BitConverter.UInt16BitsToHalf(0b1_00000_1000000100)), // neg subnormal - ULP rounds lower,
                 (BitConverter.Int32BitsToSingle(0x33000000), BitConverter.UInt16BitsToHalf(0b0_00000_000000000)), // (half-precision minimum subnormal / 2) should underflow to zero
             };
 
