@@ -124,19 +124,70 @@ namespace System.DirectoryServices.Protocols.Tests
 
         public static IEnumerable<object[]> Decode_TestData()
         {
+            // Content: zero-length sequence
+            // Parsed as such
             yield return new object[] { "{}", new byte[] { 48, 0, 0, 0, 0, 0 }, new object[0] };
+
+            // Content: sequence containing octet string
+            // Parsed as such
             yield return new object[] { "{a}", new byte[] { 48, 132, 0, 0, 0, 5, 4, 3, 97, 98, 99 }, new object[] { "abc" } };
+
+            // Content: sequence containing integer
+            // Parsed as such
             yield return new object[] { "{i}", new byte[] { 48, 132, 0, 0, 0, 3, 2, 1, 10 }, new object[] { 10 } };
+
+            // Content: sequence containing two booleans
+            // Parsed as a sequence containing an integer, followed by an enumerated value
             yield return new object[] { "{ie}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { -1, 0 } };
+
+            // Content: sequence containing two booleans
+            // Parsed as such
             yield return new object[] { "{bb}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { true, false } };
+
+            // Content: sequence containing two booleans
+            // Parsed as a sequence containing two octet strings
             yield return new object[] { "{OO}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[] { 255 }, new byte[] { 0 } } };
+
+            // Content: sequence containing two booleans
+            // Parsed as a sequence containing two bitstrings
             yield return new object[] { "{BB}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[] { 255 }, new byte[] { 0 } } };
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // vv and VV formats are not supported yet in Linux
             {
+                // Content: sequence containing three octet strings
+                // Parsed as a sequence containing two sequences of octet strings
                 yield return new object[] { "{vv}", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { null, null } };
+
+                // Content: sequence containing three octet strings
+                // Parsed as two sequences of octet strings
+                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { new string[] { "abc", "", "" }, null } };
+
+                // Content: sequence containing two sequences of octet strings
+                // Parsed as such
+                yield return new object[] { "{vv}", new byte[] { 48, 14, 48, 5, 4, 3, 97, 98, 99, 48, 5, 4, 3, 100, 101, 102 }, new object[] { new string[] { "abc" }, new string[] { "def" } } };
+
+                // Content: sequence containing two booleans
+                // Parsed as a sequence containing two sequences of octet strings
                 yield return new object[] { "{vv}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new string[] { "\x01" }, null } };
+
+                // Content: sequence containing two booleans. First boolean has a valid value which is also a valid UTF8 character
+                // Parsed as two sequences of octet strings
+                yield return new object[] { "vv", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 48, 1, 1, 0 }, new object[] { new string[] { "\x30", "\x00" }, null } };
+
+                // Content: sequence of octet strings
+                // Parsed as a sequence containing two sequences of octet strings (returned as bytes)
                 yield return new object[] { "{VV}", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { null, null } };
-                yield return new object[] { "{VV}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[][] { new byte[] { 1 } }, null } };
+
+                // Content: sequence of octet strings
+                // Parsed as two sequences of octet strings (returned as bytes)
+                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 9, 4, 3, 97, 98, 99, 4, 0, 4, 0 }, new object[] { new byte[][] { [97, 98, 99], [], [] }, null } };
+
+                // Content: sequence containing two booleans
+                // Parsed as a sequence containing two sequences of octet strings (returned as bytes)
+                yield return new object[] { "{VV}", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[][] { [1] }, null } };
+
+                // Content: sequence containing two booleans
+                // Parsed as two sequences of octet strings (returned as bytes)
+                yield return new object[] { "VV", new byte[] { 48, 132, 0, 0, 0, 6, 1, 1, 255, 1, 1, 0 }, new object[] { new byte[][] { [255], [0] }, null } };
             }
         }
 
