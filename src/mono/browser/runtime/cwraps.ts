@@ -6,13 +6,12 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import type {
     MonoAssembly, MonoClass,
     MonoMethod, MonoObject,
-    MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments
+    MonoType, MonoObjectRef, MonoStringRef, JSMarshalerArguments, PThreadPtr
 } from "./types/internal";
 import type { VoidPtr, CharPtrPtr, Int32Ptr, CharPtr, ManagedPointer } from "./types/emscripten";
 import { Module, runtimeHelpers } from "./globals";
 import { mono_log_error } from "./logging";
 import { mono_assert } from "./globals";
-import { PThreadPtr } from "./pthreads/shared/types";
 
 type SigLine = [lazyOrSkip: boolean | (() => boolean), name: string, returnType: string | null, argTypes?: string[], opts?: any];
 
