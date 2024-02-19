@@ -151,7 +151,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="signature">Generated metadata about the method signature used for marshaling.</param>
         /// <param name="arguments">The intermediate buffer with marshalled arguments.</param>
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
             InvokeJSImportImpl(signature, arguments);

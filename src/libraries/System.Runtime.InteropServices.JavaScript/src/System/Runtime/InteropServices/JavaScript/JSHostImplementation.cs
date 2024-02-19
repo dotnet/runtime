@@ -64,7 +64,9 @@ namespace System.Runtime.InteropServices.JavaScript
             throw new InvalidOperationException();
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static void ThrowException(ref JSMarshalerArgument arg)
         {
             arg.ToManaged(out Exception? ex);
@@ -85,7 +87,9 @@ namespace System.Runtime.InteropServices.JavaScript
                 ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static async Task<JSObject> CancellationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
         {
             if (jsTask.IsCompletedSuccessfully)
@@ -310,7 +314,9 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
         {
             var temp = new IntPtrAndHandle { ptr = ptr };

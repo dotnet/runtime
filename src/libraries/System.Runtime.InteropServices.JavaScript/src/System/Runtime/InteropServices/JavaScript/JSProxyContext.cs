@@ -41,7 +41,9 @@ namespace System.Runtime.InteropServices.JavaScript
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public bool IsCurrentThread()
         {
             return ManagedTID == Environment.CurrentManagedThreadId;
@@ -232,7 +234,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
 #endif
 
+#if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         public static JSProxyContext AssertIsInteropThread()
         {
 #if FEATURE_WASM_MANAGED_THREADS

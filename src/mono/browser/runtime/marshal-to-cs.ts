@@ -15,7 +15,7 @@ import {
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
     get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
-    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type
+    set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type, set_arg_proxy_context
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
 import { _zero_region, forceThreadMemoryViewRefresh, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
@@ -441,6 +441,7 @@ export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): v
 export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
+        set_arg_proxy_context(arg);
     }
     else {
         // if value was ManagedObject, it would be double proxied, but the C# signature requires that
@@ -459,6 +460,7 @@ export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): v
 function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
+        set_arg_proxy_context(arg);
     }
     else {
         const gc_handle = value[js_owned_gc_handle_symbol];
