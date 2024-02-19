@@ -132,7 +132,7 @@ namespace System
 
         private static void HandleSetConsoleEncodingError()
         {
-            var lastError = Marshal.GetLastPInvokeError();
+            int lastError = Marshal.GetLastPInvokeError();
             if (lastError == Interop.Errors.ERROR_INVALID_HANDLE
                 || lastError == Interop.Errors.ERROR_INVALID_ACCESS)
             {
