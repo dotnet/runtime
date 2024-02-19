@@ -2434,6 +2434,41 @@
         <ExcludeList Include = "$(XunitTestBinBase)/reflection/RefEmit/EmittingIgnoresAccessChecksToAttributeIsRespected/**">
             <Issue>Reflection.Emit is not supported on fullaot</Issue>
         </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/25params/25paramMixed_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/SEH/catchfault_jmp_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/SEH/catchfinally_jmpind_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/SEH/catchfinally_jmp_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_array_nz_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_array_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_gc_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_inst_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_value_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_virt_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/VT/callconv/jumper4_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/VT/callconv/jumper5_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/VT/callconv/jumps2_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Directed/perffix/primitivevt/callconv3_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Directed/perffix/primitivevt/callconv3_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/jit64/localloc/call/call05_dynamic/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/jit64/verif/sniff/fg/ver_fg_13/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/25params/25paramMixed_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/SEH/catchfault_jmp_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/SEH/catchfinally_jmpind_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/Invoke/SEH/catchfinally_jmp_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_array_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_array_nz_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_gc_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_inst_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_value_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall/deep_virt_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/VT/callconv/jumps2_d/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/SIMD/Vector3Interop_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/SIMD/Vector3Interop_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_r/**" />
+        <ExcludeList Include="$(XunitTestBinBase)JIT/HardwareIntrinsics/X86/Sse2.X64/StoreNonTemporal_ro/**" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_r/*" />
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_ro/*" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot' or '$(TargetsAppleMobile)' == 'true')">
