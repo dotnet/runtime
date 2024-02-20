@@ -1926,8 +1926,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
         {
             for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
             {
-                impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false)
-                                              DEBUGARG("impPopArgsForUnmanagedCall - checkEntireStack=true"));
+                impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift calls"));
             }
         }
     }
@@ -2035,16 +2034,12 @@ void Compiler::impAppendSwiftErrorStore(GenTreeCall* call, CallArg* const swiftE
     GenTree* const argNode = swiftErrorArg->GetNode();
     assert(argNode != nullptr);
 
-    // SwiftError* arg should have been spilled to a local temp variable
-    assert(argNode->OperIs(GT_LCL_VAR));
-
     // Store the error register value to where the SwiftError* points to
     GenTree* errorRegNode = new (this, GT_SWIFT_ERROR) GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
     errorRegNode->SetHasOrderingSideEffect();
     errorRegNode->gtFlags |= (GTF_CALL | GTF_GLOB_REF);
 
-    GenTree*         argNodeCopy     = gtNewLclvNode(argNode->AsLclVar()->GetLclNum(), argNode->TypeGet());
-    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNodeCopy->TypeGet(), argNodeCopy, errorRegNode);
+    GenTreeStoreInd* swiftErrorStore = gtNewStoreIndNode(argNode->TypeGet(), argNode, errorRegNode);
     impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, false);
 
     // Indicate the error register will be checked after this call returns
