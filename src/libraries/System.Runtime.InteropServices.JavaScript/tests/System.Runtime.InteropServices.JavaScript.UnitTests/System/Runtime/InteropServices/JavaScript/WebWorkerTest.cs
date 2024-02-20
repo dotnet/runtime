@@ -4,6 +4,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Runtime.InteropServices.JavaScript.Tests
@@ -468,6 +469,42 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
                 executor.AssertAwaitCapturedContext();
             }, cts.Token);
+        }
+
+        [OuterLoop]
+        [Fact]
+        public async Task VeryLongRunningGC()
+        {
+            using var cts = new CancellationTokenSource();
+            for(int i=0;i<100;i++)
+            {
+                var executor = new Executor(ExecutorType.NewThread);
+                Console.WriteLine("VeryLongRunningGC " + executor.Type + " " + i);
+                await executor.Execute(() =>
+                {
+                    long cnt = 0;
+                    long[] data = new long[1024*1024*32];
+                    var end = DateTime.Now + TimeSpan.FromMilliseconds(10000);
+                    do
+                    {
+                        // these are just dummy computations to keep CPU busy
+                        Interlocked.Increment(ref cnt);
+                        data = new long[1024*1024*32];
+                        data[0] = cnt;
+
+                        // force some GC
+                        if(cnt % 10000 == 0)
+                        {
+                            GC.Collect();
+                            var total = GC.GetTotalMemory(true);
+                            Console.WriteLine("GC.GetTotalMemory: "+total);
+                        }
+                    }
+                    while(DateTime.Now<end);
+
+                    return Task.CompletedTask;
+                }, cts.Token);
+            }
         }
 
         #endregion
