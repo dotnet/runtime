@@ -1079,6 +1079,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_BZ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
         case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
         case IF_SVE_CA_3A:   // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
+        case IF_SVE_EH_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE integer dot product (unpredicated)
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -10784,6 +10785,16 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg3));                        // mmmmm
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             fmt = IF_SVE_CA_3A;
+            break;
+
+        case INS_sve_sdot:
+        case INS_sve_udot:
+            assert(insOptsScalableWords(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_EH_3A;
             break;
 
         case INS_sve_clz:
@@ -22295,6 +22306,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_BZ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
         case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
         case IF_SVE_CA_3A:   // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
+        case IF_SVE_EH_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE integer dot product (unpredicated)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                     // nnnnn
@@ -26537,6 +26549,16 @@ void emitter::emitDispInsHelp(
             emitDispImm(emitGetInsSC(id), false);               // iiiiiiii
             break;
 
+        // <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
+        case IF_SVE_EH_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE integer dot product (unpredicated)
+        {
+            const insOpts smallSizeSpecifier = (insOpts)(id->idInsOpt() - 2);
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);      // ddddd
+            emitDispSveReg(id->idReg2(), smallSizeSpecifier, true);  // nnnnn
+            emitDispSveReg(id->idReg3(), smallSizeSpecifier, false); // mmmmm
+            break;
+        }
+
         // CDOT <Zda>.<T>, <Zn>.<Tb>, <Zm>.<Tb>, <const>
         case IF_SVE_EJ_3A: // ........xx.mmmmm ....rrnnnnnddddd -- SVE2 complex integer dot product
         {
@@ -29551,6 +29573,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_FH_3B:   // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply (indexed)
         case IF_SVE_FJ_3A:   // ...........iimmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
         case IF_SVE_FJ_3B:   // ...........immmm ....i.nnnnnddddd -- SVE2 saturating multiply-add (indexed)
+        case IF_SVE_EH_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE integer dot product (unpredicated)
             result.insLatency    = PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
