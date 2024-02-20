@@ -7844,6 +7844,106 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     }
 }
 
+void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
+{
+    // We shouldn't be using helper calls for blocks on heap containing GC pointers.
+    // due to atomicity guarantees.
+    assert(!blkNode->IsZeroingGcPointersOnHeap());
+
+    LIR::Use use;
+    assert(!BlockRange().TryGetUse(blkNode, &use));
+
+    GenTree* dest = blkNode->Addr();
+    GenTree* data = blkNode->Data();
+    GenTree* size;
+
+    if (blkNode->OperIsInitBlkOp())
+    {
+        if (data->OperIsInitVal())
+        {
+            BlockRange().Remove(data);
+            data = data->gtGetOp1();
+        }
+    }
+    else
+    {
+        if (data->OperIs(GT_IND))
+        {
+            BlockRange().Remove(data);
+            data = data->AsIndir()->Addr();
+        }
+
+        if (varTypeIsStruct(data))
+        {
+            const unsigned lclNum = data->AsLclVarCommon()->GetLclNum();
+            GenTreeLclFld* addr   = comp->gtNewLclAddrNode(lclNum, data->AsLclVarCommon()->GetLclOffs(), TYP_BYREF);
+            BlockRange().InsertAfter(data, addr);
+            BlockRange().Remove(data);
+            data = addr;
+        }
+    }
+
+    if (blkNode->OperIs(GT_STORE_DYN_BLK))
+    {
+        size = blkNode->AsStoreDynBlk()->gtDynamicSize;
+    }
+    else
+    {
+        size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
+        BlockRange().InsertBefore(data, size);
+    }
+
+    GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
+    GenTree* dataPlaceholder = comp->gtNewZeroConNode(data->TypeGet());
+    GenTree* sizePlaceholder = comp->gtNewZeroConNode(size->TypeGet());
+
+    CorInfoHelpFunc helper = blkNode->OperIsInitBlkOp() ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
+    GenTreeCall* call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
+    comp->fgMorphTree(call);
+
+    LIR::Range range      = LIR::SeqTree(comp, call);
+    GenTree*   rangeStart = range.FirstNode();
+    GenTree*   rangeEnd   = range.LastNode();
+
+    BlockRange().InsertBefore(blkNode, std::move(range));
+    blkNode->gtBashToNOP();
+
+    LIR::Use destUse;
+    LIR::Use dataUse;
+    LIR::Use sizeUse;
+    BlockRange().TryGetUse(destPlaceholder, &destUse);
+    BlockRange().TryGetUse(dataPlaceholder, &dataUse);
+    BlockRange().TryGetUse(sizePlaceholder, &sizeUse);
+    destUse.ReplaceWith(dest);
+    dataUse.ReplaceWith(data);
+    sizeUse.ReplaceWith(size);
+    destPlaceholder->SetUnusedValue();
+    dataPlaceholder->SetUnusedValue();
+    sizePlaceholder->SetUnusedValue();
+
+    LowerRange(rangeStart, rangeEnd);
+
+    // Finally move all GT_PUTARG_* nodes
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    {
+        GenTree* node = arg.GetEarlyNode();
+        // Non-value nodes in early args are setup nodes for late args.
+        if (node->IsValue())
+        {
+            assert(node->OperIsPutArg() || node->OperIsFieldList());
+            MoveCFGCallArg(call, node);
+        }
+    }
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        GenTree* node = arg.GetLateNode();
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
+    }
+
+    // TODO: emit memory barriers for volatile block stores (volatile. cpblk/initblk)
+}
+
 struct StoreCoalescingData
 {
     var_types targetType;
@@ -8503,7 +8603,7 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
 
         // We can reorder indirs with some calls, but introducing a LIR edge
         // that spans a call can introduce spills (or callee-saves).
-        if (cur->IsCall() || (cur->OperIsStoreBlk() && (cur->AsBlk()->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper)))
+        if (cur->IsCall())
         {
             JITDUMP("  ..but they are separated by node [%06u] that kills registers\n", Compiler::dspTreeID(cur));
             return false;
@@ -8840,7 +8940,7 @@ void Lowering::LowerLclHeap(GenTree* node)
                     GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero, comp->typGetBlkLayout((unsigned)alignedSize));
                 storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
                 BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
-                LowerNode(storeBlk);
+                return;
             }
             else
             {
