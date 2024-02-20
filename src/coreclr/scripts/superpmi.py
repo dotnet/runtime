@@ -2272,7 +2272,7 @@ class SuperPMIReplayAsmDiffs:
                         delta_bytes = diff_bytes - base_bytes
                         logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
 
-                        if "PerfScore" in self.coreclr_args.metrics:
+                        if self.coreclr_args.metrics is not None and "PerfScore" in self.coreclr_args.metrics:
                             base_perfscore = base_metrics["Overall"]["Diffed PerfScore"]
                             diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
                             logging.info("Total PerfScore of base: {}".format(base_perfscore))
