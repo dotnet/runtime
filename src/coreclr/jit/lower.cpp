@@ -7903,10 +7903,9 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         else
         {
             assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-
-            // Convert local to LCL_ADDR
             data->ChangeOper(GT_LCL_ADDR);
-            data->ChangeType(TYP_I_IMPL);
+            data->ChangeType(TYP_BYREF);
+            data->ClearContained();
         }
     }
 
