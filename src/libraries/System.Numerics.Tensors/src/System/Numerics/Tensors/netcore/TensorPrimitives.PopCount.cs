@@ -13,50 +13,22 @@ namespace System.Numerics.Tensors
 {
     public static partial class TensorPrimitives
     {
-        // Defines vectorizable operators for types implementing IBinaryInteger<T> or related interfaces.
-
-        /// <summary>x ^ y</summary>
-        internal readonly struct XorOperator<T> : IBinaryOperator<T> where T : IBitwiseOperators<T, T, T>
-        {
-            public static bool Vectorizable => true;
-            public static T Invoke(T x, T y) => x ^ y;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x ^ y;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x ^ y;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x ^ y;
-        }
-
-        /// <summary>~x</summary>
-        internal readonly struct OnesComplementOperator<T> : IUnaryOperator<T, T> where T : IBitwiseOperators<T, T, T>
-        {
-            public static bool Vectorizable => true;
-            public static T Invoke(T x) => ~x;
-            public static Vector128<T> Invoke(Vector128<T> x) => ~x;
-            public static Vector256<T> Invoke(Vector256<T> x) => ~x;
-            public static Vector512<T> Invoke(Vector512<T> x) => ~x;
-        }
-
-        /// <summary>x &amp; y</summary>
-        internal readonly struct BitwiseAndOperator<T> : IBinaryOperator<T> where T : IBitwiseOperators<T, T, T>
-        {
-            public static bool Vectorizable => true;
-            public static T Invoke(T x, T y) => x & y;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x & y;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x & y;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x & y;
-        }
-
-        /// <summary>x | y</summary>
-        internal readonly struct BitwiseOrOperator<T> : IBinaryOperator<T> where T : IBitwiseOperators<T, T, T>
-        {
-            public static bool Vectorizable => true;
-            public static T Invoke(T x, T y) => x | y;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x | y;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x | y;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x | y;
-        }
+        /// <summary>Computes the element-wise population count of numbers in the specified tensor.</summary>
+        /// <param name="x">The tensor, represented as a span.</param>
+        /// <param name="destination">The destination tensor, represented as a span.</param>
+        /// <exception cref="ArgumentException">Destination is too short.</exception>
+        /// <exception cref="ArgumentException"><paramref name="x"/> and <paramref name="destination"/> reference overlapping memory locations and do not begin at the same location.</exception>
+        /// <remarks>
+        /// <para>
+        /// This method effectively computes <c><paramref name="destination" />[i] = T.PopCount(<paramref name="x" />[i])</c>.
+        /// </para>
+        /// </remarks>
+        public static void PopCount<T>(ReadOnlySpan<T> x, Span<T> destination)
+            where T : IBinaryInteger<T> =>
+            InvokeSpanIntoSpan<T, PopCountOperator<T>>(x, destination);
 
         /// <summary>T.PopCount(x)</summary>
-        internal readonly unsafe struct PopCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
+        private readonly unsafe struct PopCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
         {
             // TODO https://github.com/dotnet/runtime/issues/96162: Use AVX512 popcount operations when available
 
@@ -223,91 +195,6 @@ namespace System.Numerics.Tensors
                     return tmp.As<uint, T>();
                 }
             }
-        }
-
-        /// <summary>T.LeadingZeroCount(x)</summary>
-        internal readonly struct LeadingZeroCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
-        {
-            public static bool Vectorizable => false; // TODO: Vectorize
-            public static T Invoke(T x) => T.LeadingZeroCount(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
-        }
-
-        /// <summary>T.TrailingZeroCount(x)</summary>
-        internal readonly struct TrailingZeroCountOperator<T> : IUnaryOperator<T, T> where T : IBinaryInteger<T>
-        {
-            public static bool Vectorizable => false; // TODO: Vectorize
-            public static T Invoke(T x) => T.TrailingZeroCount(x);
-            public static Vector128<T> Invoke(Vector128<T> x) => throw new NotSupportedException();
-            public static Vector256<T> Invoke(Vector256<T> x) => throw new NotSupportedException();
-            public static Vector512<T> Invoke(Vector512<T> x) => throw new NotSupportedException();
-        }
-
-        /// <summary>T.RotateLeft(amount)</summary>
-        internal readonly unsafe struct RotateLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
-        {
-            private readonly int _amount = amount;
-
-            public static bool Vectorizable => true;
-
-            public T Invoke(T x) => T.RotateLeft(x, _amount);
-            public Vector128<T> Invoke(Vector128<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
-            public Vector256<T> Invoke(Vector256<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
-            public Vector512<T> Invoke(Vector512<T> x) => (x << _amount) | (x >>> ((sizeof(T) * 8) - _amount));
-        }
-
-        /// <summary>T.RotateRight(amount)</summary>
-        internal readonly unsafe struct RotateRightOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IBinaryInteger<T>
-        {
-            private readonly int _amount = amount;
-
-            public static bool Vectorizable => true;
-
-            public T Invoke(T x) => T.RotateRight(x, _amount);
-            public Vector128<T> Invoke(Vector128<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
-            public Vector256<T> Invoke(Vector256<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
-            public Vector512<T> Invoke(Vector512<T> x) => (x >>> _amount) | (x << ((sizeof(T) * 8) - _amount));
-        }
-
-        /// <summary>T &lt;&lt; amount</summary>
-        internal readonly struct ShiftLeftOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
-        {
-            private readonly int _amount = amount;
-
-            public static bool Vectorizable => true;
-
-            public T Invoke(T x) => x << _amount;
-            public Vector128<T> Invoke(Vector128<T> x) => x << _amount;
-            public Vector256<T> Invoke(Vector256<T> x) => x << _amount;
-            public Vector512<T> Invoke(Vector512<T> x) => x << _amount;
-        }
-
-        /// <summary>T &gt;&gt; amount</summary>
-        internal readonly struct ShiftRightArithmeticOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
-        {
-            private readonly int _amount = amount;
-
-            public static bool Vectorizable => true;
-
-            public T Invoke(T x) => x >> _amount;
-            public Vector128<T> Invoke(Vector128<T> x) => x >> _amount;
-            public Vector256<T> Invoke(Vector256<T> x) => x >> _amount;
-            public Vector512<T> Invoke(Vector512<T> x) => x >> _amount;
-        }
-
-        /// <summary>T &gt;&gt;&gt; amount</summary>
-        internal readonly struct ShiftRightLogicalOperator<T>(int amount) : IStatefulUnaryOperator<T> where T : IShiftOperators<T, int, T>
-        {
-            private readonly int _amount = amount;
-
-            public static bool Vectorizable => true;
-
-            public T Invoke(T x) => x >>> _amount;
-            public Vector128<T> Invoke(Vector128<T> x) => x >>> _amount;
-            public Vector256<T> Invoke(Vector256<T> x) => x >>> _amount;
-            public Vector512<T> Invoke(Vector512<T> x) => x >>> _amount;
         }
     }
 }
