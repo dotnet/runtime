@@ -22,7 +22,7 @@ import { _zero_region, forceThreadMemoryViewRefresh, localHeapViewF64, localHeap
 import { stringToMonoStringRoot, stringToUTF16 } from "./strings";
 import { JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
-import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
+import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads";
 import { mono_log_debug } from "./logging";
 import { complete_task } from "./managed-exports";
 import { gc_locked } from "./gc-lock";

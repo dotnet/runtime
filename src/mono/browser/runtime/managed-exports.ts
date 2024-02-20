@@ -11,7 +11,7 @@ import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, mars
 import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
 import { do_not_force_dispose } from "./gc-handles";
 import { assert_c_interop, assert_js_interop } from "./invoke-js";
-import { mono_wasm_main_thread_ptr } from "./pthreads/shared";
+import { mono_wasm_main_thread_ptr } from "./pthreads";
 import { _zero_region } from "./memory";
 import { stringToUTF8Ptr } from "./strings";
 

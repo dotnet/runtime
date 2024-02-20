@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
 import { ENVIRONMENT_IS_NODE, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, ENVIRONMENT_IS_WORKER } from "./globals";
-import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
+import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_browser_profiler } from "./profiler";
@@ -23,14 +23,15 @@ import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { mono_log_debug, mono_log_error, mono_log_warn } from "./logging";
 
 // threads
-import { preAllocatePThreadWorkerPool, mono_wasm_init_threads } from "./pthreads/browser";
-import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads/worker";
-import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads/shared";
+import { populateEmscriptenPool, mono_wasm_init_threads, init_finalizer_thread } from "./pthreads";
+import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
+import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8 } from "./memory";
 import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
+import { mono_wasm_init_diagnostics } from "./diagnostics";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -268,7 +269,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         Module.runtimeKeepalivePush();
 
         // load runtime and apply environment settings (if necessary)
-        start_runtime();
+        await start_runtime();
 
         if (runtimeHelpers.config.interpreterPgo) {
             await interp_pgo_load_data();
@@ -325,10 +326,6 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         // create /usr/share folder which is SpecialFolder.CommonApplicationData
         Module["FS_createPath"]("/", "usr", true, true);
         Module["FS_createPath"]("/", "usr/share", true, true);
-
-        if (WasmEnableThreads) {
-            tcwraps.mono_wasm_init_finalizer_thread();
-        }
 
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
@@ -396,7 +393,7 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
     if (WasmEnableThreads) {
-        preAllocatePThreadWorkerPool(runtimeHelpers.config.pthreadPoolSize!);
+        populateEmscriptenPool();
     }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
@@ -483,7 +480,7 @@ async function ensureUsedWasmFeatures() {
     }
 }
 
-export function start_runtime() {
+export async function start_runtime() {
     try {
         const mark = startMeasure();
         mono_log_debug("Initializing mono runtime");
@@ -503,6 +500,11 @@ export function start_runtime() {
         if (runtimeHelpers.config.browserProfilerOptions)
             mono_wasm_init_browser_profiler(runtimeHelpers.config.browserProfilerOptions);
 
+        if (WasmEnableThreads) {
+            // this is not mono-attached thread, so we can start it earlier
+            await mono_wasm_init_diagnostics();
+        }
+
         mono_wasm_load_runtime();
 
         jiterpreter_allocate_tables();
@@ -514,10 +516,14 @@ export function start_runtime() {
         if (WasmEnableThreads) {
             monoThreadInfo.isAttached = true;
             monoThreadInfo.isRegistered = true;
+            monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+            monoThreadInfo.workerNumber = 0;
             update_thread_info();
             runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
-            runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             runtimeHelpers.isCurrentThread = true;
+
+            // start finalizer thread, lazy
+            init_finalizer_thread();
         }
 
         // get GCHandle of the ctx
