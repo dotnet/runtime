@@ -509,72 +509,11 @@ extern "C" EXPORT_API void* EXPORT_CC unity_coreclr_create_delegate(const char* 
     return (void*)func;
 }
 
-extern "C" EXPORT_API gboolean EXPORT_CC mono_metadata_signature_equal(MonoMethodSignature *sig1, MonoMethodSignature *sig2)
-{
-    if (mono_signature_get_param_count(sig1) != mono_signature_get_param_count(sig2))
-        return FALSE;
-    if (mono_signature_get_return_type(sig1) != mono_signature_get_return_type(sig2))
-        return FALSE;
-    if (mono_signature_is_instance(sig1) != mono_signature_is_instance(sig2))
-        return FALSE;
-
-    gpointer iter1 = NULL;
-    gpointer iter2 = NULL;
-    bool match = true;
-    while (MonoType *paramType1 = mono_signature_get_params(sig1, &iter1))
-    {
-        MonoType *paramType2 = mono_signature_get_params(sig2, &iter2);
-        if (paramType1 != paramType2)
-            match = false;
-    }
-    return match;
-}
-
 extern "C" EXPORT_API gboolean EXPORT_CC mono_metadata_type_equal (MonoType * t1, MonoType * t2)
 {
     MonoType_clr* type1 = (MonoType_clr*)t1;
     MonoType_clr* type2 = (MonoType_clr*)t2;
     return type1->IsEquivalentTo(*type2);
-}
-
-extern "C" EXPORT_API char* EXPORT_CC mono_method_full_name(MonoMethod* method, gboolean signature)
-{
-    auto methodclr = reinterpret_cast<MonoMethod_clr*>(method);
- 	LPCUTF8 name, namespaze;
-    auto mt = methodclr->GetMethodTable();
-	mt->GetMDImport()->GetNameOfTypeDef(mt->GetCl(), &name, &namespaze);
-
-    InlineSString<256> fullName(SString::Utf8);
-    if (namespaze != NULL)
-    {
-        fullName += InlineSString<256>(SString::Utf8, namespaze);
-        fullName += '.';
-    }
-    fullName += InlineSString<256>(SString::Utf8, name);
-    fullName += ':';
-    fullName +=  InlineSString<256>(SString::Utf8, methodclr->GetName());
-
-    if (signature)
-    {
-        fullName += InlineSString<2>(SString::Utf8, " (");
-
-        MonoMethodSignature* sig = mono_method_signature(method);
-        gpointer iter = NULL;
-
-        MonoType *paramType = mono_signature_get_params(sig, &iter);
-        if (paramType)
-        {
-            fullName += InlineSString<256>(SString::Utf8, mono_type_get_name(paramType));
-            while ((paramType = mono_signature_get_params(sig, &iter)))
-            {
-                fullName += ',';
-                fullName += InlineSString<256>(SString::Utf8, mono_type_get_name(paramType));
-            }
-        }
-
-        fullName += ')';
-    }
-    return _strdup(fullName.GetUTF8());
 }
 
 extern "C" EXPORT_API MonoClass* EXPORT_CC mono_method_get_class(MonoMethod *method)
@@ -836,13 +775,6 @@ extern "C" EXPORT_API MonoType* EXPORT_CC mono_signature_get_return_type(MonoMet
     return (MonoType*)reth.AsPtr();
 }
 
-extern "C" EXPORT_API char EXPORT_CC mono_signature_is_instance(MonoMethodSignature *sig)
-{
-    MonoMethodSignature_clr* sig_clr = (MonoMethodSignature_clr*)sig;
-    MetaSig msig(sig_clr);
-    return (char)msig.HasThis();
-}
-
 extern "C" EXPORT_API MonoThread* EXPORT_CC mono_thread_attach(MonoDomain *domain)
 {
     MonoThread_clr* currentThread = GetThreadNULLOk();
@@ -878,42 +810,6 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_thread_has_sufficient_execution_st
 {
     // TODO: Investigate if we need to implement this
     return TRUE;
-}
-
-extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name(MonoType *type)
-{
-    // To be compatible with Mono behavior.
-    return mono_type_get_name_full(type, MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_IL);
-}
-
-// The method can be moved to C# code, but will require introduction
-// of core_clr_FreeHGlobal method to properly free an allocated string
-extern "C" EXPORT_API char* EXPORT_CC mono_type_get_name_full(MonoType *type, MonoTypeNameFormat monoFormat)
-{
-    TRACE_API("%p %d", type, format);
-
-    DWORD format = TypeString::FormatBasic;
-    switch (monoFormat)
-    {
-        case MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_IL:
-            // The closest managed equivalent is Type.ToString()
-            format = TypeString::FormatNamespace;
-            break;
-        case MonoTypeNameFormat::MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED:
-            // The managed equivalent is Type.AssemblyQualifiedName
-            format = TypeString::FormatNamespace | TypeString::FormatAssembly | TypeString::FormatFullInst;
-            break;
-
-        default:
-            ASSERT_NOT_IMPLEMENTED;
-            return NULL;
-    }
-
-    TypeHandle handle = TypeHandle::FromPtr((PTR_VOID)type);
-    SString ssBuf;
-    TypeString::AppendType(ssBuf, handle, format);
-
-    return _strdup(ssBuf.GetUTF8());
 }
 
 extern "C" EXPORT_API int EXPORT_CC mono_type_get_type(MonoType *type)

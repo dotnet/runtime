@@ -31,20 +31,17 @@ DO_API(MonoMethod*, mono_method_desc_search_in_class, (MonoMethodDesc * desc, Mo
 DO_API(void, mono_method_desc_free, (MonoMethodDesc * desc))
 DO_API(gboolean, mono_type_generic_inst_is_valuetype, (MonoType*))
 #endif
-DO_API(char*, mono_type_get_name_full, (MonoType * type, MonoTypeNameFormat format))
 
 DO_API(const char*, mono_field_get_name, (MonoClassField * field))
 DO_API(MonoClass*, mono_field_get_parent, (MonoClassField * field))
 DO_API(int, mono_type_get_type, (MonoType * type))
 DO_API(const char*, mono_method_get_name, (MonoMethod * method))
-DO_API(char*, mono_method_full_name, (MonoMethod * method, gboolean signature))
 DO_API(MonoImage*, mono_assembly_get_image, (MonoAssembly * assembly))
 DO_API(MonoClass*, mono_method_get_class, (MonoMethod * method))
 DO_API(guint32, mono_signature_get_param_count, (MonoMethodSignature * sig))
 DO_API(MonoClass*, mono_class_get_parent, (MonoClass * klass))
 DO_API(const char*, mono_class_get_namespace, (MonoClass * klass))
 DO_API(const char*, mono_class_get_name, (MonoClass * klass))
-DO_API(char*, mono_type_get_name, (MonoType * type))
 DO_API(gboolean, mono_metadata_type_equal, (MonoType * t1, MonoType * t2))
 
 DO_API(void*, unity_coreclr_create_delegate, (const char* assemblyName, const char* typeName, const char* methodName))
@@ -65,9 +62,7 @@ DO_API(MonoType*, mono_class_get_type, (MonoClass * klass))
 
 DO_API(int, mono_assembly_name_parse, (const char* name, MonoAssemblyName * assembly))
 DO_API(int, mono_image_get_table_rows, (MonoImage * image, int table_id))
-DO_API(gboolean, mono_metadata_signature_equal, (MonoMethodSignature * sig1, MonoMethodSignature * sig2))
 
-DO_API(char, mono_signature_is_instance, (MonoMethodSignature * signature))
 DO_API(MonoMethod*, mono_method_get_last_managed, ())
 
 DO_API(gint32, mono_class_instance_size, (MonoClass * klass))
@@ -100,15 +95,6 @@ DO_API(void, mono_unity_g_free, (void* p))
 DO_API(int, mono_unity_backtrace_from_context, (void* context, void* array[], int count))
 #endif
 
-#if UNITY_ANDROID
-DO_API(void, mono_file_map_override, (MonoFileMapOpen open_func, MonoFileMapSize size_func, MonoFileMapFd fd_func, MonoFileMapClose close_func, MonoFileMapMap map_func, MonoFileMapUnmap unmap_func))
-DO_API(void, mono_register_machine_config, (const char *config_xml))
-
-DO_API(void, mono_sigctx_to_monoctx, (void *sigctx, MonoContext * mctx))
-DO_API(void, mono_walk_stack_with_ctx, (MonoJitStackWalk func, MonoContext * start_ctx, MonoUnwindOptions options, void *user_data))
-DO_API(char *, mono_debug_print_stack_frame, (MonoMethod * method, guint32 native_offset, MonoDomain * domain))
-#endif
-
 #if ENABLE_MONO_MEMORY_CALLBACKS
 DO_API(void, mono_unity_install_memory_callbacks, (MonoMemoryCallbacks * callbacks))
 #endif
@@ -116,14 +102,6 @@ DO_API(void, mono_unity_install_memory_callbacks, (MonoMemoryCallbacks * callbac
 #if UNITY_EDITOR
 typedef UNUSED_SYMBOL size_t(*RemapPathFunction)(const char* path, char* buffer, size_t buffer_len);
 DO_API(void, mono_unity_register_path_remapper, (RemapPathFunction func))
-DO_API_OPTIONAL(void, mono_unity_set_enable_handler_block_guards, (gboolean allow))
-#endif
-
-DO_API_OPTIONAL(void, mono_unity_install_unitytls_interface, (void* callbacks))
-
-#if ENABLE_OUT_OF_PROCESS_CRASH_HANDLER && UNITY_64 && PLATFORM_WIN && ENABLE_MONO && !PLATFORM_XBOXONE
-DO_API_OPTIONAL(void*, mono_unity_lock_dynamic_function_access_tables64, (unsigned int))
-DO_API_OPTIONAL(void, mono_unity_unlock_dynamic_function_access_tables64, (void))
 #endif
 
 #if LOAD_MONO_DYNAMICALLY
