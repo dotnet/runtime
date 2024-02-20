@@ -2881,7 +2881,7 @@ GetTempFileNameW(
         prefix_stringPS.CloseBuffer(prefix_size - 1);
     }
 
-    tempfile_name = (char*)InternalMalloc(MAX_LONGPATH);
+    tempfile_name = (char*)malloc(MAX_LONGPATH);
     if (tempfile_name == NULL)
     {
         pThread->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
