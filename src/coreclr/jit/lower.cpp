@@ -7965,12 +7965,12 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     BlockRange().Remove(dataPlaceholder);
     BlockRange().Remove(sizePlaceholder);
 
-    // Wrap with memory barriers on weak memory models
-    // if the block store was volatile
+// Wrap with memory barriers on weak memory models
+// if the block store was volatile
 #ifndef TARGET_XARCH
     if (isVolatile)
     {
-        GenTree* firstBarrier = comp->gtNewMemoryBarrier();
+        GenTree* firstBarrier  = comp->gtNewMemoryBarrier();
         GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
         BlockRange().InsertBefore(call, firstBarrier);
         BlockRange().InsertAfter(call, secondBarrier);
