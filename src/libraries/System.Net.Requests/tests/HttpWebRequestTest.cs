@@ -2089,7 +2089,7 @@ namespace System.Net.Tests
                     request.ContinueTimeout = 30000;
                     Stream requestStream = await request.GetRequestStreamAsync();
                     requestStream.Write("aaaa\r\n\r\n"u8);
-                    await request.GetResponseAsync();
+                    await GetResponseAsync(request);
                 },
                 async (server) =>
                 {
@@ -2118,7 +2118,7 @@ namespace System.Net.Tests
                     request.ContinueTimeout = continueTimeout;
                     Stream requestStream = await request.GetRequestStreamAsync();
                     requestStream.Write("aaaa\r\n\r\n"u8);
-                    await request.GetResponseAsync();
+                    await GetResponseAsync(request);
                 },
                 async (server) =>
                 {
@@ -2144,7 +2144,7 @@ namespace System.Net.Tests
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.Method = "POST";
                     request.ServicePoint.Expect100Continue = expect100Continue;
-                    await request.GetResponseAsync();
+                    await GetResponseAsync(request);
                 },
                 async (server) =>
                 {
@@ -2167,23 +2167,18 @@ namespace System.Net.Tests
             );
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
+        [Fact]
+        public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
         {
-            RemoteExecutor.Invoke(async (async) =>
-            {
-                await LoopbackServer.CreateClientAndServerAsync(
+            await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     HttpWebRequest.DefaultMaximumErrorResponseLength = 5;
-                    var exception = bool.Parse(async) ?
-                        await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync()) :
-                        Assert.Throws<WebException>(() => request.GetResponse());
+                    var exception = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
                     Assert.NotNull(exception.Response);
                     using (var responseStream = exception.Response.GetResponseStream())
                     {
-                        Assert.Equal(5, responseStream.Length);
                         var buffer = new byte[10];
                         int readLen = responseStream.Read(buffer, 0, buffer.Length);
                         Assert.Equal(5, readLen);
@@ -2198,7 +2193,6 @@ namespace System.Net.Tests
                             await client.SendResponseAsync(statusCode: HttpStatusCode.InternalServerError, content: new string('a', 10));
                         });
                 });
-            }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
         }
 
         [Fact]
@@ -2216,16 +2210,18 @@ namespace System.Net.Tests
         [Fact]
         public async Task SendHttpRequest_BindIPEndPoint_Success()
         {
+            TaskCompletionSource tcs = new TaskCompletionSource();
             await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     request.ServicePoint.BindIPEndPointDelegate =
                         (sp, ep, retryCount) => { return new IPEndPoint(IPAddress.Loopback, 27277); };
-                    using (var response = (HttpWebResponse)await request.GetResponseAsync())
+                    using (var response = (HttpWebResponse)await GetResponseAsync(request))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
+                    tcs.SetResult();
                 },
                 async (server) =>
                 {
@@ -2235,25 +2231,42 @@ namespace System.Net.Tests
                             var ipEp = (IPEndPoint)client.Socket.RemoteEndPoint;
                             Assert.Equal(27277, ipEp.Port);
                             await client.SendResponseAsync();
+                            await tcs.Task;
                         });
                 });
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Linux,
-            "Socket.Bind() auto-enables SO_REUSEADDR on Unix to allow Bind() during TIME_WAIT to " +
-            "emulate Windows behavior, see SystemNative_Bind() in 'pal_networking.c'.")]
         public async Task SendHttpRequest_BindIPEndPoint_Throws()
         {
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            ValueTask<Socket>? clientSocket = null;
+            CancellationTokenSource cts = new CancellationTokenSource();
+            if (PlatformDetection.IsLinux)
+            {
+                socket.Listen();
+                clientSocket = socket.AcceptAsync(cts.Token);
+            }
 
-            // URI shouldn't matter because it should throw exception before connection open.
-            HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
-            request.ServicePoint.BindIPEndPointDelegate =
-                (sp, ep, retryCount) => { return (IPEndPoint)socket.LocalEndPoint!; };
-            var exception = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
-            Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
+            try
+            {
+                // URI shouldn't matter because it should throw exception before connection open.
+                HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
+                request.ServicePoint.BindIPEndPointDelegate =
+                    (sp, ep, retryCount) => { return (IPEndPoint)socket.LocalEndPoint!; };
+                var exception = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
+                Assert.IsType<OverflowException>(exception.InnerException?.InnerException);
+            }
+            finally
+            {
+                if (clientSocket is not null)
+                {
+                    await cts.CancelAsync();
+                }
+                socket.Dispose();
+                cts.Dispose();
+            }
         }
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
