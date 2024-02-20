@@ -69,7 +69,7 @@ public partial class QuicConnection
         internal unsafe void StartAsyncCertificateValidation(void* certificatePtr, void* chainPtr)
         {
             //
-            // the provided data pointers are valid only while still inside this function, so they need to be
+            // The provided data pointers are valid only while still inside this function, so they need to be
             // copied to separate buffers which are then handed off to threadpool.
             //
 
@@ -89,8 +89,8 @@ public partial class QuicConnection
                 }
                 else
                 {
-                    // on non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the content is buffers
-                    // with DER encoded cert and chain
+                    // On non-SChannel backends we specify USE_PORTABLE_CERTIFICATES and the content is buffers
+                    // with DER encoded cert and chain.
                     QUIC_BUFFER* certificateBuffer = (QUIC_BUFFER*)certificatePtr;
                     QUIC_BUFFER* chainBuffer = (QUIC_BUFFER*)chainPtr;
 
@@ -110,7 +110,7 @@ public partial class QuicConnection
                 }
             }
 
-            // hand-off rest of the work to the threadpool, certificatePtr and chainPtr are invalid inside the lambda
+            // Hand-off rest of the work to the threadpool, certificatePtr and chainPtr are invalid inside the lambda.
             QuicConnection thisConnection = _connection; // cannot use "this" inside lambda since SslConnectionOptions is struct
             _ = Task.Run(() =>
             {

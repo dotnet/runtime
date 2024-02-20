@@ -572,7 +572,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     private unsafe int HandleEventPeerCertificateReceived(ref PEER_CERTIFICATE_RECEIVED_DATA data)
     {
         //
-        // the certificate validation is an expensive operation and we don't want to delay MsQuic
+        // The certificate validation is an expensive operation and we don't want to delay MsQuic
         // worker thread. So we offload the validation to the .NET threadpool. Incidentally, this
         // also prevents potential user RemoteCertificateValidationCallback from blocking MsQuic
         // worker threads.
