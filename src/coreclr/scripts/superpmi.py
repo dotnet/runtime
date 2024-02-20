@@ -1808,10 +1808,10 @@ def compute_pct(base, diff):
     else:
         return 0.0
 
-def format_pct(pct):
+def format_pct(pct, num_decimals = 2):
     plus_if_positive = "+" if pct > 0 else ""
 
-    text = "{}{:.2f}%".format(plus_if_positive, pct)
+    text = "{}{:.{prec}f}%".format(plus_if_positive, pct, prec=num_decimals)
     if pct != 0:
         color = "red" if pct > 0 else "green"
         return html_color(color, text)
@@ -2536,19 +2536,21 @@ class SuperPMIReplayAsmDiffs:
                 sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
 
                 with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
-                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
-                    write_fh.write("|---|--:|--:|\n")
+                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|Rel PerfScore Geomean|Rel PerfScore Geomean over Diffs\n")
+                    write_fh.write("|---|--:|--:|--:|--:|\n")
                     for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
                         # Exclude this particular row?
                         if not has_diffs(diff_metrics[row]):
                             continue
 
-                        write_fh.write("|{}|{:,d}|{}|\n".format(
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|\n".format(
                             mch_file,
                             base_metrics[row]["Diffed code bytes"],
                             format_delta(
                                 base_metrics[row]["Diffed code bytes"],
-                                diff_metrics[row]["Diffed code bytes"])))
+                                diff_metrics[row]["Diffed code bytes"]),
+                            format_pct(diff_metrics[row]["Relative PerfScore Geomean"] * 100 - 100, 4),
+                            format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100, 4)))
 
             write_top_context_section()
             write_pivot_section("Overall")
