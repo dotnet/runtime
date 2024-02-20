@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast($"CallEntrypoint: Unexpected synchronous failure in {Environment.CurrentManagedThreadId}: " + ex);
+                Environment.FailFast($"CallEntrypoint: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
