@@ -2355,6 +2355,53 @@ void emitter::emitInsSanityCheck(instrDesc* id)
                                                      // iiiiii
             break;
 
+        case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+        case IF_SVE_HY_3A_A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit
+                             // scaled offsets)
+            elemsize = id->idOpSize();
+            assert(insOptsScalable32bitExtends(id->idInsOpt()));
+            assert(isLowPredicateRegister(id->idReg1()));
+            assert(isGeneralRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_HY_3B: // ...........mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+            elemsize = id->idOpSize();
+            assert(id->idInsOpt() == INS_OPTS_SCALABLE_D);
+            assert(isLowPredicateRegister(id->idReg1()));
+            assert(isGeneralRegister(id->idReg2()));
+            assert(isVectorRegister(id->idReg3()));
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_IB_3A: // ...........mmmmm ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus scalar)
+            elemsize = id->idOpSize();
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isLowPredicateRegister(id->idReg1()));
+            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegister(id->idReg3()));
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_HZ_2A_B: // ...........iiiii ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (vector plus immediate)
+            elemsize = id->idOpSize();
+            assert(insOptsScalableWords(id->idInsOpt()));
+            assert(isLowPredicateRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            assert(isScalableVectorSize(elemsize));
+            break;
+
+        case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
+            elemsize = id->idOpSize();
+            assert(insOptsNone(id->idInsOpt()));
+            assert(isLowPredicateRegister(id->idReg1()));
+            assert(isGeneralRegister(id->idReg2()));
+            assert(isScalableVectorSize(elemsize));
+            break;
+
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
             elemsize = id->idOpSize();
             assert(insOptsScalableWords(id->idInsOpt()));
@@ -15081,6 +15128,205 @@ void emitter::emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1
 
 /*****************************************************************************
  *
+ *  Add an instruction referencing three registers and a SVE 'prfop'.
+ */
+
+void emitter::emitIns_PRFOP_R_R_R(instruction     ins,
+                                  emitAttr        attr,
+                                  insSvePrfop     prfop,
+                                  regNumber       reg1,
+                                  regNumber       reg2,
+                                  regNumber       reg3,
+                                  insOpts         opt /* = INS_OPTS_NONE */,
+                                  insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
+{
+    emitAttr  size     = EA_SIZE(attr);
+    emitAttr  elemsize = EA_UNKNOWN;
+    insFormat fmt      = IF_NONE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_sve_prfb:
+            assert(insScalableOptsNone(sopt));
+            assert(isLowPredicateRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isScalableVectorSize(size));
+
+            if (insOptsScalable32bitExtends(opt))
+            {
+                assert(isVectorRegister(reg3));
+
+                if (insOptsScalableSingleWord32bitExtends(opt))
+                {
+                    fmt = IF_SVE_HY_3A;
+                }
+                else
+                {
+                    assert(insOptsScalableDoubleWord32bitExtends(opt));
+                    fmt = IF_SVE_HY_3A_A;
+                }
+            }
+            else if (isVectorRegister(reg3))
+            {
+                assert(opt == INS_OPTS_SCALABLE_D);
+                fmt = IF_SVE_HY_3B;
+            }
+            else
+            {
+                assert(insOptsNone(opt));
+                assert(isGeneralRegister(reg3));
+                fmt = IF_SVE_IB_3A;
+            }
+            break;
+
+        case INS_sve_prfh:
+        case INS_sve_prfw:
+        case INS_sve_prfd:
+            assert(isLowPredicateRegister(reg1));
+            assert(isGeneralRegister(reg2));
+            assert(isScalableVectorSize(size));
+
+            if (sopt == INS_SCALABLE_OPTS_MOD_N)
+            {
+                if (insOptsScalableSingleWord32bitExtends(opt))
+                {
+                    fmt = IF_SVE_HY_3A;
+                }
+                else
+                {
+                    assert(insOptsScalableDoubleWord32bitExtends(opt));
+                    fmt = IF_SVE_HY_3A_A;
+                }
+            }
+            else
+            {
+                assert(sopt == INS_SCALABLE_OPTS_LSL_N);
+                if (isVectorRegister(reg3))
+                {
+                    assert(opt == INS_OPTS_SCALABLE_D);
+                    fmt = IF_SVE_HY_3B;
+                }
+                else
+                {
+                    assert(insOptsNone(opt));
+                    assert(isGeneralRegister(reg3));
+                    fmt = IF_SVE_IB_3A;
+                }
+            }
+            break;
+
+        default:
+            unreached();
+            break;
+
+    } // end switch (ins)
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idIns(ins);
+    id->idInsOpt(opt);
+    id->idInsFmt(fmt);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+    id->idSvePrfop(prfop);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add an instruction referencing two registers, a SVE 'prfop' and an immediate.
+ */
+
+void emitter::emitIns_PRFOP_R_R_I(instruction ins,
+                                  emitAttr    attr,
+                                  insSvePrfop prfop,
+                                  regNumber   reg1,
+                                  regNumber   reg2,
+                                  int         imm,
+                                  insOpts     opt /* = INS_OPTS_NONE */)
+{
+    emitAttr  size     = EA_SIZE(attr);
+    emitAttr  elemsize = EA_UNKNOWN;
+    insFormat fmt      = IF_NONE;
+
+    /* Figure out the encoding format of the instruction */
+    switch (ins)
+    {
+        case INS_sve_prfb:
+        case INS_sve_prfh:
+        case INS_sve_prfw:
+        case INS_sve_prfd:
+            assert(isLowPredicateRegister(reg1));
+            assert(isScalableVectorSize(size));
+
+            if (isVectorRegister(reg2))
+            {
+                assert(insOptsScalableWords(opt));
+
+#ifdef DEBUG
+                switch (ins)
+                {
+                    case INS_sve_prfb:
+                        assert(isValidUimm5(imm));
+                        break;
+
+                    case INS_sve_prfh:
+                        assert(isValidUimm5_MultipleOf2(imm));
+                        break;
+
+                    case INS_sve_prfw:
+                        assert(isValidUimm5_MultipleOf4(imm));
+                        break;
+
+                    case INS_sve_prfd:
+                        assert(isValidUimm5_MultipleOf8(imm));
+                        break;
+
+                    default:
+                        assert(!"Invalid instruction");
+                        break;
+                }
+#endif // DEBUG
+                fmt = IF_SVE_HZ_2A_B;
+            }
+            else
+            {
+                assert(insOptsNone(opt));
+                assert(isGeneralRegister(reg2));
+                assert(isValidSimm6(imm));
+                fmt = IF_SVE_IA_2A;
+            }
+            break;
+
+        default:
+            unreached();
+            break;
+
+    } // end switch (ins)
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstrCns(attr, imm);
+
+    id->idIns(ins);
+    id->idInsOpt(opt);
+    id->idInsFmt(fmt);
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idSvePrfop(prfop);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add a memory barrier instruction with a 'barrier' immediate
  */
 
@@ -18649,6 +18895,20 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
             break;
 
+        case IF_SVE_HY_3B:
+        case IF_SVE_IB_3A:
+            switch (ins)
+            {
+                case INS_sve_prfh:
+                case INS_sve_prfw:
+                case INS_sve_prfd:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
@@ -18773,6 +19033,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
             switch (ins)
             {
                 case INS_sve_ld1d:
+                    return true;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_HY_3A:
+        case IF_SVE_HY_3A_A:
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                case INS_sve_prfh:
+                case INS_sve_prfw:
+                case INS_sve_prfd:
                     return true;
 
                 default:
@@ -19254,6 +19529,49 @@ void emitter::emitIns_Call(EmitCallType          callType,
             }
             break;
 
+        case IF_SVE_HY_3A:
+        case IF_SVE_HY_3A_A:
+            assert(!insSveIsLslN(ins, fmt));
+            assert(insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                    return 0;
+
+                case INS_sve_prfh:
+                    return 1;
+
+                case INS_sve_prfw:
+                    return 2;
+
+                case INS_sve_prfd:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
+        case IF_SVE_HY_3B:
+        case IF_SVE_IB_3A:
+            assert(insSveIsLslN(ins, fmt));
+            assert(!insSveIsModN(ins, fmt));
+            switch (ins)
+            {
+                case INS_sve_prfh:
+                    return 1;
+
+                case INS_sve_prfw:
+                    return 2;
+
+                case INS_sve_prfd:
+                    return 3;
+
+                default:
+                    break;
+            }
+            break;
+
         default:
             break;
     }
@@ -19698,7 +20016,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 2 as 5-bits at bit locations '20-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf2_20_to_16(ssize_t imm)
@@ -19709,7 +20027,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 4 as 5-bits at bit locations '20-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm)
@@ -19720,7 +20038,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm)
@@ -19731,7 +20049,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm)
@@ -19742,7 +20060,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 4 as 6-bits at bit locations '21-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf4_21_to_16(ssize_t imm)
@@ -19753,7 +20071,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*****************************************************************************
  *
- *  // Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
+ *  Returns the encoding for the immediate value that is a multiple of 8 as 6-bits at bit locations '21-16'.
  */
 
 /*static*/ emitter::code_t emitter::insEncodeUimm6_MultipleOf8_21_to_16(ssize_t imm)
@@ -19773,6 +20091,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
     if (imm < 0)
     {
         imm = (imm & 0x1F);
+    }
+    return (code_t)imm << 16;
+}
+
+/*****************************************************************************
+ *
+ *  Returns the encoding for the immediate value as 6-bits at bit locations '20-16'.
+ */
+
+/*static*/ emitter::code_t emitter::insEncodeSimm6_21_to_16(ssize_t imm)
+{
+    assert(isValidSimm6(imm));
+    if (imm < 0)
+    {
+        imm = (imm & 0x3F);
     }
     return (code_t)imm << 16;
 }
@@ -23316,6 +23649,81 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             dst += emitOutput_Instr(dst, code);
             break;
 
+        case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+        case IF_SVE_HY_3A_A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit
+                             // scaled offsets)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
+            code |= id->idSvePrfop();                      // oooo
+
+            switch (id->idInsOpt())
+            {
+                case INS_OPTS_SCALABLE_S_SXTW:
+                case INS_OPTS_SCALABLE_D_SXTW:
+                    code |= (1 << 22); // h
+                    break;
+
+                default:
+                    break;
+            }
+
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_HY_3B: // ...........mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_V_20_to_16(id->idReg3()); // mmmmm
+            code |= id->idSvePrfop();                      // oooo
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_IB_3A: // ...........mmmmm ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus scalar)
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
+            code |= insEncodeReg_R_20_to_16(id->idReg3()); // mmmmm
+            code |= id->idSvePrfop();                      // oooo
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_HZ_2A_B: // ...........iiiii ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (vector plus immediate)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_V_9_to_5(id->idReg2());   // nnnnn
+            code |= id->idSvePrfop();                      // oooo
+
+            if (id->idInsOpt() == INS_OPTS_SCALABLE_D)
+            {
+                code |= (1 << 30); // set bit '30' to make it a double-word
+            }
+
+            switch (ins)
+            {
+                case INS_sve_prfh:
+                    code |= insEncodeUimm5_MultipleOf2_20_to_16(imm); // iiiii
+                    break;
+
+                case INS_sve_prfw:
+                    code |= insEncodeUimm5_MultipleOf4_20_to_16(imm); // iiiii
+                    break;
+
+                case INS_sve_prfd:
+                    code |= insEncodeUimm5_MultipleOf8_20_to_16(imm); // iiiii
+                    break;
+
+                default:
+                    assert(ins == INS_sve_prfb);
+            }
+            dst += emitOutput_Instr(dst, code);
+            break;
+
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
@@ -23392,6 +23800,16 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
                     break;
             }
 
+            dst += emitOutput_Instr(dst, code);
+            break;
+
+        case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
+            imm  = emitGetInsSC(id);
+            code = emitInsCodeSve(ins, fmt);
+            code |= insEncodeReg_P_12_to_10(id->idReg1()); // ggg
+            code |= insEncodeReg_R_9_to_5(id->idReg2());   // nnnnn
+            code |= id->idSvePrfop();                      // oooo
+            code |= insEncodeSimm6_21_to_16(imm);          // iiiiii
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -23840,6 +24258,24 @@ void emitter::emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2
                 assert(!"Invalid instruction");
                 break;
         }
+    }
+    printf("]");
+}
+
+/*****************************************************************************
+ *
+ *  Prints the encoding for format [<Zn>.S{, #<imm>}]
+ */
+void emitter::emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt)
+{
+    printf("[");
+    emitDispSveReg(reg1, opt, imm != 0);
+    if (imm != 0)
+    {
+        // This does not have to be printed as hex.
+        // We only do it because the capstone disassembly displays this immediate as hex.
+        // We could not modify capstone without affecting other cases.
+        emitDispImm(imm, false, /* alwaysHex */ true);
     }
     printf("]");
 }
@@ -24406,6 +24842,89 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
 void emitter::emitDispSvePattern(insSvePattern pattern, bool addComma)
 {
     printf("%s", svePatternNames[pattern]);
+
+    if (addComma)
+    {
+        emitDispComma();
+    }
+}
+
+/*****************************************************************************
+ *
+ *  Display an insSvePrfop
+ */
+void emitter::emitDispSvePrfop(insSvePrfop prfop, bool addComma)
+{
+    switch (prfop)
+    {
+        case SVE_PRFOP_PLDL1KEEP:
+            printf("pldl1keep");
+            break;
+
+        case SVE_PRFOP_PLDL1STRM:
+            printf("pldl1strm");
+            break;
+
+        case SVE_PRFOP_PLDL2KEEP:
+            printf("pldl2keep");
+            break;
+
+        case SVE_PRFOP_PLDL2STRM:
+            printf("pldl2strm");
+            break;
+
+        case SVE_PRFOP_PLDL3KEEP:
+            printf("pldl3keep");
+            break;
+
+        case SVE_PRFOP_PLDL3STRM:
+            printf("pldl3strm");
+            break;
+
+        case SVE_PRFOP_PSTL1KEEP:
+            printf("pstl1keep");
+            break;
+
+        case SVE_PRFOP_PSTL1STRM:
+            printf("pstl1strm");
+            break;
+
+        case SVE_PRFOP_PSTL2KEEP:
+            printf("pstl2keep");
+            break;
+
+        case SVE_PRFOP_PSTL2STRM:
+            printf("pstl2strm");
+            break;
+
+        case SVE_PRFOP_PSTL3KEEP:
+            printf("pstl3keep");
+            break;
+
+        case SVE_PRFOP_PSTL3STRM:
+            printf("pstl3strm");
+            break;
+
+        case SVE_PRFOP_CONST6:
+            printf("#6");
+            break;
+
+        case SVE_PRFOP_CONST7:
+            printf("#7");
+            break;
+
+        case SVE_PRFOP_CONST14:
+            printf("#0xE");
+            break;
+
+        case SVE_PRFOP_CONST15:
+            printf("#0xF");
+            break;
+
+        default:
+            assert(!"Invalid prfop");
+            break;
+    }
 
     if (addComma)
     {
@@ -26979,6 +27498,51 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg2(), insGetPredicateType(fmt), id->idInsOpt(), true);
             emitDispSveReg(id->idReg3(), id->idInsOpt(), true);
             emitDispSveReg(id->idReg4(), id->idInsOpt(), false);
+            break;
+
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod>]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #1]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #2]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.S, <mod> #3]
+        case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod>]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #1]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #2]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, <mod> #3]
+        case IF_SVE_HY_3A_A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit
+                             // scaled offsets)
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #1]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #2]
+        // <prfop>, <Pg>, [<Xn|SP>, <Zm>.D, LSL #3]
+        case IF_SVE_HY_3B: // ...........mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+        // <prfop>, <Pg>, [<Xn|SP>, <Xm>]
+        // <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #1]
+        // <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #2]
+        // <prfop>, <Pg>, [<Xn|SP>, <Xm>, LSL #3]
+        case IF_SVE_IB_3A: // ...........mmmmm ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus scalar)
+            emitDispSvePrfop(id->idSvePrfop(), true);
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), true);
+            emitDispSveModAddr(ins, id->idReg2(), id->idReg3(), id->idInsOpt(), fmt);
+            break;
+
+        // <prfop>, <Pg>, [<Zn>.S{, #<imm>}]
+        // <prfop>, <Pg>, [<Zn>.D{, #<imm>}]
+        case IF_SVE_HZ_2A_B: // ...........iiiii ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (vector plus immediate)
+            imm = emitGetInsSC(id);
+            emitDispSvePrfop(id->idSvePrfop(), true);
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), true);
+            emitDispSveImm(id->idReg2(), imm, id->idInsOpt());
+            break;
+
+        // <prfop>, <Pg>, [<Xn|SP>{, #<imm>, MUL VL}]
+        case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
+            imm = emitGetInsSC(id);
+            emitDispSvePrfop(id->idSvePrfop(), true);
+            emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), true);
+            emitDispSveImmMulVl(id->idReg2(), imm);
             break;
 
         // {<Zt>.S }, <Pg>/Z, [<Zn>.S{, #<imm>}]
@@ -30688,6 +31252,165 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_HY_3A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_HY_3A_A: // .........h.mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit
+                             // scaled offsets)
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_HY_3B: // ...........mmmmm ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (scalar plus 32-bit scaled
+                           // offsets)
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_IB_3A: // ...........mmmmm ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus scalar)
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_HZ_2A_B: // ...........iiiii ...gggnnnnn.oooo -- SVE 32-bit gather prefetch (vector plus immediate)
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
+            break;
+
+        case IF_SVE_IA_2A: // ..........iiiiii ...gggnnnnn.oooo -- SVE contiguous prefetch (scalar plus immediate)
+            switch (ins)
+            {
+                case INS_sve_prfb:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfh:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                case INS_sve_prfd:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
+                    result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
