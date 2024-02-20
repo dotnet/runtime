@@ -409,7 +409,9 @@ mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
+	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
+	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 
@@ -467,11 +469,19 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 
 // JS is responsible for freeing this
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
-	return mono_method_get_full_name(method);
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_full_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method) {
-	return mono_method_get_name(method);
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE float mono_wasm_get_f32_unaligned (const float *src) {
