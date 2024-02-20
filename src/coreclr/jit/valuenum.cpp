@@ -2489,8 +2489,7 @@ ValueNum ValueNumStore::VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN
 
     //
     // Fold "CAST(IsInstanceOf(obj, cls), cls)" to "IsInstanceOf(obj, cls)"
-    // where CAST is either ISINST or CASTCLASS. Most cases like this are expected to be handled
-    // by gtGetClassHandle above, except the casts involving runtime lookups.
+    // where CAST is either ISINST or CASTCLASS.
     //
     VNFuncApp funcApp;
     if (GetVNFunc(objVN, &funcApp) && (funcApp.m_func == VNF_IsInstanceOf) && (funcApp.m_args[0] == castToVN))
@@ -2517,7 +2516,8 @@ ValueNum ValueNumStore::VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN
                 // IsInstanceOf/CastClass is guaranteed to succeed (we don't need to check for isExact here)
                 return objVN;
             }
-            else if (isExact && (func == VNF_IsInstanceOf) && (castResult == TypeCompareState::MustNot))
+
+            if ((castResult == TypeCompareState::MustNot) && isExact && (func == VNF_IsInstanceOf))
             {
                 // IsInstanceOf is guaranteed to fail -> return null (we need to check for isExact here)
                 return VNForNull();
@@ -2535,14 +2535,7 @@ ValueNum ValueNumStore::VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN
 
     // IsInstanceOf(cls, obj) -> either obj or null - we don't know
     //
-    assert(func == VNF_IsInstanceOf);
-    Chunk* const          c                 = GetAllocChunk(TYP_REF, CEA_Func2);
-    unsigned const        offsetWithinChunk = c->AllocVN();
-    VNDefFuncAppFlexible* fapp              = c->PointerToFuncApp(offsetWithinChunk, 2);
-    fapp->m_func                            = VNF_IsInstanceOf;
-    fapp->m_args[0]                         = castToVN;
-    fapp->m_args[1]                         = objVN;
-    return c->m_baseVN + offsetWithinChunk;
+    return VNForFuncNoFolding(TYP_REF, VNF_IsInstanceOf, castToVN, objVN);
 }
 
 //----------------------------------------------------------------------------------------
