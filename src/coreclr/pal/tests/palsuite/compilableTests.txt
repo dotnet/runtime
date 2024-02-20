@@ -110,7 +110,6 @@ c_runtime/_wfopen/test5/paltest_wfopen_test5
 c_runtime/_wfopen/test6/paltest_wfopen_test6
 c_runtime/_wfopen/test7/paltest_wfopen_test7
 c_runtime/_wtoi/test1/paltest_wtoi_test1
-c_runtime/__iscsym/test1/paltest_iscsym_test1
 debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1
 debug_api/OutputDebugStringW/test1/paltest_outputdebugstringw_test1
 exception_handling/RaiseException/test1/paltest_raiseexception_test1

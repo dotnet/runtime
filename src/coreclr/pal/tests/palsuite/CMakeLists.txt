@@ -168,7 +168,6 @@ add_executable_clr(paltests
   c_runtime/_wfopen/test6/test6.cpp
   c_runtime/_wfopen/test7/test7.cpp
   c_runtime/_wtoi/test1/test1.cpp
-  c_runtime/__iscsym/test1/__iscsym.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   debug_api/OutputDebugStringA/test1/helper.cpp
   debug_api/OutputDebugStringA/test1/test1.cpp

@@ -1914,7 +1914,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 for(n=0; n < numElements; n++)
                 {
                     if(n) appendStr(out," ");
-                    _gcvt_s(str,64,*((float*)dataPtr), 8);
+                    sprintf_s(str, 64, "%.*g", 8, (double)(*((float*)dataPtr)));
                     float df = (float)atof(str);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -1933,7 +1933,7 @@ BYTE* PrettyPrintCABlobValue(PCCOR_SIGNATURE &typePtr,
                 {
                     if(n) appendStr(out," ");
                     char *pch;
-                    _gcvt_s(str,64,*((double*)dataPtr), 17);
+                    sprintf_s(str, 64, "%.*g", 17, *((double*)dataPtr));
                     double df = strtod(str, &pch);
                     // Must compare as underlying bytes, not floating point otherwise optimizer will
                     // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
@@ -2605,7 +2605,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R4:
             {
                 char szf[32];
-                _gcvt_s(szf,32,MDDV.m_fltValue, 8);
+                sprintf_s(szf, 32, "%.*g", 8, (double)MDDV.m_fltValue);
                 float df = (float)atof(szf);
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
                 // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
@@ -2619,7 +2619,7 @@ void DumpDefaultValue(mdToken tok, __inout __nullterminated char* szString, void
         case ELEMENT_TYPE_R8:
             {
                 char szf[32], *pch;
-                _gcvt_s(szf,32,MDDV.m_dblValue, 17);
+                sprintf_s(szf, 32, "%.*g", 17, MDDV.m_dblValue);
                 double df = strtod(szf, &pch); //atof(szf);
                 szf[31]=0;
                 // Must compare as underlying bytes, not floating point otherwise optimizer will
