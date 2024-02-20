@@ -2535,7 +2535,14 @@ ValueNum ValueNumStore::VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN
 
     // IsInstanceOf(cls, obj) -> either obj or null - we don't know
     //
-    return VNForFuncNoFolding(TYP_REF, VNF_IsInstanceOf, castToVN, objVN);
+    assert(func == VNF_IsInstanceOf);
+    Chunk* const          c                 = GetAllocChunk(TYP_REF, CEA_Func2);
+    unsigned const        offsetWithinChunk = c->AllocVN();
+    VNDefFuncAppFlexible* fapp              = c->PointerToFuncApp(offsetWithinChunk, 2);
+    fapp->m_func                            = VNF_IsInstanceOf;
+    fapp->m_args[0]                         = castToVN;
+    fapp->m_args[1]                         = objVN;
+    return c->m_baseVN + offsetWithinChunk;
 }
 
 //----------------------------------------------------------------------------------------
