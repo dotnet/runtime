@@ -5602,36 +5602,9 @@ void FlowGraphNaturalLoop::Duplicate(BasicBlock** insertAfter, BlockToBlockMap* 
         // Jump target should not be set yet
         assert(!newBlk->HasInitializedTarget());
 
-        // First copy the jump destination(s) from "blk".
-        newBlk->CopyTarget(comp, blk);
-
-        // Now redirect the new block according to "blockMap".
-        comp->optRedirectBlock(newBlk, map);
-
-        // Add predecessor edges for the new successors, as well as the fall-through paths.
-        switch (newBlk->GetKind())
-        {
-            case BBJ_ALWAYS:
-            case BBJ_CALLFINALLY:
-            case BBJ_CALLFINALLYRET:
-                comp->fgAddRefPred(newBlk->GetTarget(), newBlk);
-                break;
-
-            case BBJ_COND:
-                comp->fgAddRefPred(newBlk->GetFalseTarget(), newBlk);
-                comp->fgAddRefPred(newBlk->GetTrueTarget(), newBlk);
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const switchDest : newBlk->SwitchTargets())
-                {
-                    comp->fgAddRefPred(switchDest, newBlk);
-                }
-                break;
-
-            default:
-                break;
-        }
+        // Redirect the new block according to "blockMap".
+        // optSetMappedBlockTargets will set newBlk's successors, and add pred edges for the successors.
+        comp->optSetMappedBlockTargets(blk, newBlk, map);
 
         return BasicBlockVisit::Continue;
     });

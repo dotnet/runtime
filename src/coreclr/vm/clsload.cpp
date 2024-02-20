@@ -2751,7 +2751,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(const TypeKey* pKey, AllocMem
             // no parameterized type allowed on a reference
             if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
             {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
+                ThrowTypeLoadException(pKey, (kind == ELEMENT_TYPE_BYREF) ? IDS_CLASSLOAD_BYREF_OF_BYREF : IDS_CLASSLOAD_POINTER_OF_BYREF);
             }
 
             // We do allow parameterized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,

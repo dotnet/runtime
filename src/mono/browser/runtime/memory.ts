@@ -390,6 +390,11 @@ export function localHeapViewF64(): Float64Array {
     return Module.HEAPF64;
 }
 
+export function copyBytes(srcPtr: VoidPtr, dstPtr: VoidPtr, bytes: number): void {
+    const heap = localHeapViewU8();
+    heap.copyWithin(dstPtr as any, srcPtr as any, srcPtr as any + bytes);
+}
+
 // when we run with multithreading enabled, we need to make sure that the memory views are updated on each worker
 // on non-MT build, this will be a no-op trimmed by rollup
 export function receiveWorkerHeapViews() {

@@ -1101,7 +1101,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         {
                             fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
-                        if (bSource->GetSwitchTargets()->getDefault() == bTarget)
+                        if (bSource->GetSwitchTargets()->getDefault()->getDestinationBlock() == bTarget)
                         {
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
@@ -2013,13 +2013,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 {
                     // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
 
-                    const unsigned     jumpCnt = ehfDesc->bbeCount;
-                    BasicBlock** const jumpTab = ehfDesc->bbeSuccs;
+                    const unsigned   jumpCnt = ehfDesc->bbeCount;
+                    FlowEdge** const jumpTab = ehfDesc->bbeSuccs;
 
                     for (unsigned i = 0; i < jumpCnt; i++)
                     {
                         printedBlockWidth += 1 /* space/comma */;
-                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
                     }
                 }
 
@@ -2066,12 +2066,12 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
 
                 const BBswtDesc* const jumpSwt = block->GetSwitchTargets();
                 const unsigned         jumpCnt = jumpSwt->bbsCount;
-                BasicBlock** const     jumpTab = jumpSwt->bbsDstTab;
+                FlowEdge** const       jumpTab = jumpSwt->bbsDstTab;
 
                 for (unsigned i = 0; i < jumpCnt; i++)
                 {
                     printedBlockWidth += 1 /* space/comma */;
-                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                    printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
 
                     const bool isDefault = jumpSwt->bbsHasDefault && (i == jumpCnt - 1);
                     if (isDefault)

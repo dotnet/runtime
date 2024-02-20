@@ -5515,11 +5515,19 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     bool expandInline = canExpandInline && shouldExpandInline;
 
-    if (op2->IsIconHandle(GTF_ICON_CLASS_HDL) && (helper != CORINFO_HELP_ISINSTANCEOFCLASS || !isClassExact))
+    if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) && isClassExact)
     {
-        // TODO-InlineCast: move these to the late cast expansion phase as well:
-        // 1) isinst <exact class>
-        // 2) op2 being GT_RUNTIMELOOKUP
+        // TODO-InlineCast: isinst against exact class
+        // It's already supported by the late cast expansion phase, but
+        // produces unexpected size regressions in some cases.
+    }
+    else if (!isCastClass && !op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+    {
+        // TODO-InlineCast: isinst against Class<_Canon>
+    }
+    else
+    {
+        // Expand later
         expandInline = false;
     }
 
@@ -5666,7 +5674,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
     temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
     qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
-    qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
 
     // Make QMark node a top level node by spilling it.
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
@@ -7667,16 +7674,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
-                    BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-                    bool         foundVal  = false;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
+                    FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+                    bool       foundVal  = false;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
-                        BasicBlock* curJump = *jumpTab;
+                        FlowEdge* curEdge = *jumpTab;
 
-                        assert(curJump->countOfInEdges() > 0);
+                        assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                         // If val matches switchVal or we are at the last entry and
                         // we never found the switch value then set the new jump dest
@@ -7684,13 +7691,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
                             // transform the basic block into a BBJ_ALWAYS
-                            block->SetKindAndTarget(BBJ_ALWAYS, curJump);
+                            block->SetKindAndTarget(BBJ_ALWAYS, curEdge->getDestinationBlock());
                             foundVal = true;
                         }
                         else
                         {
-                            // Remove 'block' from the predecessor list of 'curJump'
-                            fgRemoveRefPred(curJump, block);
+                            // Remove 'curEdge'
+                            fgRemoveRefPred(curEdge);
                         }
                     }
 
@@ -12274,7 +12281,7 @@ void Compiler::impFixPredLists()
                 if (predCount > 0)
                 {
                     jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_BasicBlock) BasicBlock*[predCount];
+                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
 
                     unsigned predNum = 0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
@@ -12290,7 +12297,7 @@ void Compiler::impFixPredLists()
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
                         newEdge->setLikelihood(1.0 / predCount);
 
-                        jumpEhf->bbeSuccs[predNum] = continuation;
+                        jumpEhf->bbeSuccs[predNum] = newEdge;
                         ++predNum;
 
                         if (!added)

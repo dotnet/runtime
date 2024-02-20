@@ -2075,7 +2075,8 @@ void CodeGen::genEmitMachineCode()
         {
             printf("; ============================================================\n\n");
         }
-        printf(""); // in our logic this causes a flush
+
+        fflush(jitstdout());
     }
 
     if (verbose)

@@ -228,7 +228,7 @@ mono_wasm_load_runtime (int debug_level)
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_invoke_method (MonoMethod *method, void* args)
+mono_wasm_invoke_jsexport (MonoMethod *method, void* args)
 {
 	PVOLATILE(MonoObject) temp_exc = NULL;
 
@@ -242,9 +242,9 @@ mono_wasm_invoke_method (MonoMethod *method, void* args)
 	// so, if that happens, we should abort the runtime
 	if (temp_exc) {
 		PVOLATILE(MonoObject) exc2 = NULL;
-		store_volatile((MonoObject**)temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
+		store_volatile((MonoObject**)&temp_exc, (MonoObject*)mono_object_to_string ((MonoObject*)temp_exc, (MonoObject **)&exc2));
 		if (exc2) {
-			mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_invoke_method unexpected double fault", 1, NULL);
+			mono_wasm_trace_logger ("jsinterop", "critical", "mono_wasm_invoke_jsexport unexpected double fault", 1, NULL);
 		} else {
 			mono_wasm_trace_logger ("jsinterop", "critical", mono_string_to_utf8((MonoString*)temp_exc), 1, NULL);
 		}
@@ -252,6 +252,36 @@ mono_wasm_invoke_method (MonoMethod *method, void* args)
 	}
 	MONO_EXIT_GC_UNSAFE;
 }
+
+#ifndef DISABLE_THREADS
+
+extern void mono_threads_wasm_async_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+extern void mono_threads_wasm_sync_run_in_target_thread_vii (void* target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+
+static void
+mono_wasm_invoke_jsexport_async_post_cb (MonoMethod *method, void* args)
+{
+	mono_wasm_invoke_jsexport (method, args);
+	// TODO assert receiver_should_free ?
+	if (args)
+		free (args);
+}
+
+// async
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_async_post (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_async_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport_async_post_cb, method, args);
+}
+
+// sync
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_invoke_jsexport_sync_send (void* target_thread, MonoMethod *method, void* args /*JSMarshalerArguments*/)
+{
+	mono_threads_wasm_sync_run_in_target_thread_vii(target_thread, (void (*)(gpointer, gpointer))mono_wasm_invoke_jsexport, method, args);
+}
+
+#endif /* DISABLE_THREADS */
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_string_from_utf16_ref (const mono_unichar2 * chars, int length, MonoString **result)
@@ -379,7 +409,9 @@ mono_wasm_init_finalizer_thread (void)
 {
 	// in the single threaded build, finalizers periodically run on the main thread instead.
 #ifndef DISABLE_THREADS
+	MONO_ENTER_GC_UNSAFE;
 	mono_gc_init_finalizer_thread ();
+	MONO_EXIT_GC_UNSAFE;
 #endif
 }
 
@@ -437,11 +469,19 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double valu
 
 // JS is responsible for freeing this
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_full_name (MonoMethod *method) {
-	return mono_method_get_full_name(method);
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_full_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE const char * mono_wasm_method_get_name (MonoMethod *method) {
-	return mono_method_get_name(method);
+	const char *res;
+	MONO_ENTER_GC_UNSAFE;
+	res = mono_method_get_name (method);
+	MONO_EXIT_GC_UNSAFE;
+	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE float mono_wasm_get_f32_unaligned (const float *src) {
