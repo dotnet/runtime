@@ -3,5 +3,6 @@
     <type fullname="System.Configuration.ClientConfigurationHost">
       <method signature="System.Void .ctor()" />
     </type>
+    <type fullname="System.Configuration.AppSettingsSection" />
   </assembly>
 </linker>
