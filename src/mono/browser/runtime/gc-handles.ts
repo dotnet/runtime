@@ -4,13 +4,14 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { loaderHelpers, mono_assert } from "./globals";
 import { assert_js_interop, js_import_wrapper_by_fn_handle } from "./invoke-js";
 import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
 import { GCHandle, GCHandleNull, JSHandle, WeakRefInternal } from "./types/internal";
 import { _use_weak_ref, create_weak_ref } from "./weak-ref";
 import { exportsByAssembly } from "./invoke-cs";
+import { release_js_owned_object_by_gc_handle } from "./managed-exports";
 
 const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
 let _js_owned_object_registry: FinalizationRegistry<any>;
@@ -152,7 +153,7 @@ export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipMana
     }
     if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle) && !skipManaged) {
         if (loaderHelpers.is_runtime_running()) {
-            runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle(gc_handle);
+            release_js_owned_object_by_gc_handle(gc_handle);
         }
     }
     if (is_gcv_handle(gc_handle)) {

@@ -143,7 +143,15 @@ export type MonoConfig = {
     /**
      * initial number of workers to add to the emscripten pthread pool
      */
-    pthreadPoolSize?: number,
+    pthreadPoolInitialSize?: number,
+    /**
+     * number of unused workers kept in the emscripten pthread pool after startup
+     */
+    pthreadPoolUnusedSize?: number,
+    /**
+     * Delay in milliseconds before starting the finalizer thread
+     */
+    finalizerThreadStartDelayMs?: number,
     /**
      * If true, a list of the methods optimized by the interpreter will be saved and used for faster startup
      *  on future runs of the application
@@ -316,7 +324,15 @@ export type SingleAssetBehaviors =
     /**
      * Typically blazor.boot.json
      */
-    | "manifest";
+    | "manifest"
+    /**
+     * The debugging symbols
+     */
+    | "symbols"
+    /**
+     * Load segmentation rules file for Hybrid Globalization.
+     */
+    | "segmentation-rules";
 
 export type AssetBehaviors = SingleAssetBehaviors |
     /**
@@ -347,14 +363,6 @@ export type AssetBehaviors = SingleAssetBehaviors |
      * The javascript module that came from nuget package .
      */
     | "js-module-library-initializer"
-    /**
-     * The javascript module for threads.
-     */
-    | "symbols"
-    /**
-     * Load segmentation rules file for Hybrid Globalization.
-     */
-    | "segmentation-rules"
 
 export const enum GlobalizationMode {
     /**

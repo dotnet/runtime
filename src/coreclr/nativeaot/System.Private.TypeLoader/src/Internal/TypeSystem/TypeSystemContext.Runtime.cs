@@ -42,7 +42,7 @@ namespace Internal.TypeSystem
             {
                 unsafe
                 {
-                    return ((MethodTable*)pointer.ToPointer())->ToRuntimeTypeHandle();
+                    return ((MethodTable*)pointer)->ToRuntimeTypeHandle();
                 }
             }
 
@@ -104,7 +104,7 @@ namespace Internal.TypeSystem
             {
                 unsafe
                 {
-                    return ((MethodTable*)pointer.ToPointer())->ToRuntimeTypeHandle();
+                    return ((MethodTable*)pointer)->ToRuntimeTypeHandle();
                 }
             }
 

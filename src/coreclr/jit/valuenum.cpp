@@ -2529,10 +2529,22 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     {
         if (func == VNF_CastClass)
         {
-            // In terms of values, a castclass always returns its second argument, the object being cast.
-            // The operation may also throw an exception
-            ValueNum vnExcSet = VNExcSetSingleton(VNForFuncNoFolding(TYP_REF, VNF_InvalidCastExc, arg1VN, arg0VN));
-            resultVN          = VNWithExc(arg1VN, vnExcSet);
+            if (arg1VN == VNForNull())
+            {
+                // CastClass(cls, null) -> null
+                resultVN = VNForNull();
+            }
+            else
+            {
+                // CastClass(cls, obj) -> obj (may throw InvalidCastException)
+                ValueNum vnExcSet = VNExcSetSingleton(VNForFuncNoFolding(TYP_REF, VNF_InvalidCastExc, arg1VN, arg0VN));
+                resultVN          = VNWithExc(arg1VN, vnExcSet);
+            }
+        }
+        else if ((func == VNF_IsInstanceOf) && (arg1VN == VNForNull()))
+        {
+            // IsInstanceOf(cls, null) -> null
+            resultVN = VNForNull();
         }
         else
         {
@@ -4409,6 +4421,11 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+                if (m_pComp->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
+                {
+                    return false;
+                }
+                break;
 
             case GT_EQ:
             case GT_NE:
@@ -4437,6 +4454,11 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case VNF_ADD_UN_OVF:
             case VNF_SUB_UN_OVF:
             case VNF_MUL_UN_OVF:
+                if (m_pComp->opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
+                {
+                    return false;
+                }
+                break;
 
             case VNF_Cast:
             case VNF_CastOvf:
@@ -8994,6 +9016,20 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
         ssize_t            val         = ConstantValue<ssize_t>(vn);
         const GenTreeFlags handleFlags = GetHandleFlags(vn);
         printf("Hnd const: 0x%p %s", dspPtr(val), GenTree::gtGetHandleKindString(handleFlags));
+        switch (handleFlags & GTF_ICON_HDL_MASK)
+        {
+            case GTF_ICON_CLASS_HDL:
+                printf(" %s", comp->eeGetClassName((CORINFO_CLASS_HANDLE)val));
+                break;
+            case GTF_ICON_METHOD_HDL:
+                printf(" %s", comp->eeGetMethodFullName((CORINFO_METHOD_HANDLE)val));
+                break;
+            case GTF_ICON_FIELD_HDL:
+                printf(" %s", comp->eeGetFieldName((CORINFO_FIELD_HANDLE)val, true));
+                break;
+            default:
+                break;
+        }
     }
     else if (IsVNConstant(vn))
     {
@@ -13070,6 +13106,13 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
             case CORINFO_HELP_OVERFLOW:
                 vnpExc = vnStore->VNPExcSetSingleton(
                     vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNPForVoid()));
+                break;
+
+            case CORINFO_HELP_CHKCASTINTERFACE:
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_CHKCASTANY:
+                // InvalidCastExc for these is set in VNForCast
                 break;
 
             default:
