@@ -1930,11 +1930,23 @@ static int PickCandidatesForTypeCheck(Compiler*              comp,
     CORINFO_CLASS_HANDLE castToCls = comp->gtGetHelperArgClassHandle(clsArg);
     if (castToCls == NO_CLASS_HANDLE)
     {
-        // We don't expect the constant handle to be CSE'd here because importer
-        // sets GTF_DONT_CSE for it. The only case when this arg is not a constant is RUNTIMELOOKUP
-        // TODO-InlineCast: we should be able to handle RUNTIMELOOKUP as well.
-        JITDUMP("clsArg is not a constant handle - bail out.\n");
-        return 0;
+        // If we don't see the constant class handle, we still can speculatively expand it
+        // for castclass case (we'll just take the unknown tree as a type check tree)
+        switch (helper)
+        {
+            case CORINFO_HELP_CHKCASTCLASS:
+            case CORINFO_HELP_CHKCASTARRAY:
+            case CORINFO_HELP_CHKCASTANY:
+                likelihoods[0] = 50; // 50% speculative guess
+                candidates[0]  = NO_CLASS_HANDLE;
+                return 1;
+
+            default:
+                // Otherwise, bail out. We don't expect the constant handles to be CSE'd as they normally
+                // have GTF_DONT_CSE flag set on them for cast helpers.
+                // TODO-InlineCast: One missing case to handle is isinst against Class<_Canon>
+                return 0;
+        }
     }
 
     if ((objArg->gtFlags & GTF_ALL_EFFECT) != 0 && comp->lvaHaveManyLocals())
@@ -2349,11 +2361,15 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     BasicBlock* lastTypeCheckBb                 = nullcheckBb;
     for (int candidateId = 0; candidateId < numOfCandidates; candidateId++)
     {
-        GenTree* expectedClsNode = gtNewIconEmbClsHndNode(expectedExactClasses[candidateId]);
-        GenTree* storeCseVal     = nullptr;
+        const CORINFO_CLASS_HANDLE expectedCls = expectedExactClasses[candidateId];
+        // if expectedCls is NO_CLASS_HANDLE, it means we should just use the original clsArg
+        GenTree* expectedClsNode = expectedCls != NO_CLASS_HANDLE
+                                       ? gtNewIconEmbClsHndNode(expectedCls)
+                                       : gtCloneExpr(call->gtArgs.GetUserArgByIndex(0)->GetNode());
 
         // Manually CSE the expectedClsNode for first type check if it's the same as the original clsArg
         // TODO-InlineCast: consider not doing this if the helper call is cold
+        GenTree* storeCseVal = nullptr;
         if (candidateId == 0)
         {
             GenTree*& castArg = call->gtArgs.GetUserArgByIndex(0)->LateNodeRef();

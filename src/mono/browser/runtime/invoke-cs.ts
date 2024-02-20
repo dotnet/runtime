@@ -14,7 +14,7 @@ import {
 import { MonoMethod, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs, MarshalerType } from "./types/internal";
 import { assert_js_interop } from "./invoke-js";
 import { startMeasure, MeasuredBlock, endMeasure } from "./profiler";
-import { bind_assembly_exports, invoke_sync_method } from "./managed-exports";
+import { bind_assembly_exports, invoke_async_jsexport, invoke_sync_jsexport } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 
 export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: string, namespaceName: string, shortClassName: string, methodName: string, signatureHash: number, signature: JSFunctionSignature): void {
@@ -38,7 +38,16 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
 
     const res_sig = get_sig(signature, 1);
     let res_marshaler_type = get_signature_type(res_sig);
+
+    // hack until we have public API for JSType.DiscardNoWait
+    if (WasmEnableThreads && shortClassName === "DefaultWebAssemblyJSRuntime"
+        && namespaceName === "Microsoft.AspNetCore.Components.WebAssembly.Services"
+        && (methodName === "BeginInvokeDotNet" || methodName === "EndInvokeJS")) {
+        res_marshaler_type = MarshalerType.DiscardNoWait;
+    }
+
     const is_async = res_marshaler_type == MarshalerType.Task;
+    const is_discard_no_wait = res_marshaler_type == MarshalerType.DiscardNoWait;
     if (is_async) {
         res_marshaler_type = MarshalerType.TaskPreCreated;
     }
@@ -51,30 +60,39 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
         arg_marshalers,
         res_converter,
         is_async,
+        is_discard_no_wait,
         isDisposed: false,
     };
     let bound_fn: Function;
-    // void
-    if (args_count == 0 && !res_converter) {
-        bound_fn = bind_fn_0V(closure);
-    }
-    else if (args_count == 1 && !res_converter) {
-        bound_fn = bind_fn_1V(closure);
-    }
-    else if (is_async && args_count == 1 && res_converter) {
-        bound_fn = bind_fn_1RA(closure);
-    }
-    else if (is_async && args_count == 2 && res_converter) {
-        bound_fn = bind_fn_2RA(closure);
-    }
-    else if (args_count == 1 && res_converter) {
-        bound_fn = bind_fn_1R(closure);
-    }
-    else if (args_count == 2 && res_converter) {
-        bound_fn = bind_fn_2R(closure);
-    }
-    else {
+
+    if (is_async) {
+        if (args_count == 1 && res_converter) {
+            bound_fn = bind_fn_1RA(closure);
+        }
+        else if (args_count == 2 && res_converter) {
+            bound_fn = bind_fn_2RA(closure);
+        }
+        else {
+            bound_fn = bind_fn(closure);
+        }
+    } else if (is_discard_no_wait) {
         bound_fn = bind_fn(closure);
+    } else {
+        if (args_count == 0 && !res_converter) {
+            bound_fn = bind_fn_0V(closure);
+        }
+        else if (args_count == 1 && !res_converter) {
+            bound_fn = bind_fn_1V(closure);
+        }
+        else if (args_count == 1 && res_converter) {
+            bound_fn = bind_fn_1R(closure);
+        }
+        else if (args_count == 2 && res_converter) {
+            bound_fn = bind_fn_2R(closure);
+        }
+        else {
+            bound_fn = bind_fn(closure);
+        }
     }
 
     // this is just to make debugging easier. 
@@ -107,7 +125,7 @@ function bind_fn_0V(closure: BindingClosure) {
         try {
             const args = alloc_stack_frame(2);
             // call C# side
-            invoke_sync_method(method, args);
+            invoke_sync_jsexport(method, args);
         } finally {
             Module.stackRestore(sp);
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
@@ -130,7 +148,7 @@ function bind_fn_1V(closure: BindingClosure) {
             marshaler1(args, arg1);
 
             // call C# side
-            invoke_sync_method(method, args);
+            invoke_sync_jsexport(method, args);
         } finally {
             Module.stackRestore(sp);
             endMeasure(mark, MeasuredBlock.callCsFunction, fqn);
@@ -154,7 +172,7 @@ function bind_fn_1R(closure: BindingClosure) {
             marshaler1(args, arg1);
 
             // call C# side
-            invoke_sync_method(method, args);
+            invoke_sync_jsexport(method, args);
 
             const js_result = res_converter(args);
             return js_result;
@@ -171,7 +189,7 @@ function bind_fn_1RA(closure: BindingClosure) {
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_1R(arg1: any) {
+    return function bind_fn_1RA(arg1: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -184,7 +202,7 @@ function bind_fn_1RA(closure: BindingClosure) {
             let promise = res_converter(args);
 
             // call C# side
-            invoke_sync_method(method, args);
+            invoke_async_jsexport(method, args, 3);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -215,7 +233,7 @@ function bind_fn_2R(closure: BindingClosure) {
             marshaler2(args, arg2);
 
             // call C# side
-            invoke_sync_method(method, args);
+            invoke_sync_jsexport(method, args);
 
             const js_result = res_converter(args);
             return js_result;
@@ -233,7 +251,7 @@ function bind_fn_2RA(closure: BindingClosure) {
     const res_converter = closure.res_converter!;
     const fqn = closure.fullyQualifiedName;
     if (!WasmEnableThreads) (<any>closure) = null;
-    return function bound_fn_2R(arg1: any, arg2: any) {
+    return function bind_fn_2RA(arg1: any, arg2: any) {
         const mark = startMeasure();
         loaderHelpers.assert_runtime_running();
         mono_assert(!WasmEnableThreads || !closure.isDisposed, "The function was already disposed");
@@ -247,7 +265,7 @@ function bind_fn_2RA(closure: BindingClosure) {
             let promise = res_converter(args);
 
             // call C# side
-            invoke_sync_method(method, args);
+            invoke_async_jsexport(method, args, 4);
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -267,6 +285,7 @@ function bind_fn(closure: BindingClosure) {
     const method = closure.method;
     const fqn = closure.fullyQualifiedName;
     const is_async = closure.is_async;
+    const is_discard_no_wait = closure.is_discard_no_wait;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
         const mark = startMeasure();
@@ -289,13 +308,20 @@ function bind_fn(closure: BindingClosure) {
             }
 
             // call C# side
-            invoke_sync_method(method, args);
             if (is_async) {
+                invoke_async_jsexport(method, args, 2 + args_count);
                 // in case the C# side returned synchronously
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
             }
-            else if (res_converter) {
-                js_result = res_converter(args);
+            else if (is_discard_no_wait) {
+                // call C# side, fire and forget
+                invoke_async_jsexport(method, args, 2 + args_count);
+            }
+            else {
+                invoke_sync_jsexport(method, args);
+                if (res_converter) {
+                    js_result = res_converter(args);
+                }
             }
             return js_result;
         } finally {
@@ -312,6 +338,7 @@ type BindingClosure = {
     arg_marshalers: (BoundMarshalerToCs)[],
     res_converter: BoundMarshalerToJs | undefined,
     is_async: boolean,
+    is_discard_no_wait: boolean,
     isDisposed: boolean,
 }
 
