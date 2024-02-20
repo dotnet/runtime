@@ -513,7 +513,7 @@ namespace System.Tests
             Assert.Equal(expectedType, Type.GetType(typeName.ToLower(), throwOnError: false, ignoreCase: true));
         }
 
-        public static IEnumerable<object[]> GetTypeByName_Invalid_ClrArguments()
+        public static IEnumerable<object[]> GetTypeByName_InvalidElementType()
         {
             Type expectedException = PlatformDetection.IsMonoRuntime
                 ? typeof(ArgumentException) // https://github.com/dotnet/runtime/issues/45033
@@ -524,6 +524,8 @@ namespace System.Tests
             yield return new object[] { "System.Int32&[]", expectedException, true };
             yield return new object[] { "System.Int32&[*]", expectedException, true };
             yield return new object[] { "System.Int32&[,]", expectedException, true };
+            yield return new object[] { "System.Void[]", expectedException, true };
+            yield return new object[] { "System.TypedReference[]", expectedException, true };
         }
 
         [Theory]
@@ -535,7 +537,7 @@ namespace System.Tests
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
         [InlineData(".System.Int32", typeof(TypeLoadException), false)]
         [InlineData("..Outside`1", typeof(TypeLoadException), false)]
-        [MemberData(nameof(GetTypeByName_Invalid_ClrArguments))]
+        [MemberData(nameof(GetTypeByName_InvalidElementType))]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
