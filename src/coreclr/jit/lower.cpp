@@ -1919,13 +1919,13 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 
     // Convert lenCns to bytes
     ssize_t lenCns = lengthArg->AsIntCon()->IconValue();
-    if (lenCns > (lenCns * lengthScale))
+    if (CheckedOps::MulOverflows(lenCns, (ssize_t)lengthScale, CheckedOps::Signed))
     {
         // lenCns overflows
         JITDUMP("lenCns * lengthScale overflows - bail out.\n")
         return false;
     }
-    lenCns *= lengthScale;
+    lenCns *= (ssize_t)lengthScale;
 
     // TODO-CQ: drop the whole thing in case of lenCns = 0
     if ((lenCns <= 0) || (lenCns > (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memset)))
