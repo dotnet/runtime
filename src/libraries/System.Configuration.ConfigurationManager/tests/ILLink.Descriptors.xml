@@ -4,5 +4,7 @@
       <method signature="System.Void .ctor()" />
     </type>
     <type fullname="System.Configuration.AppSettingsSection" />
+    <type fullname="System.Configuration.ProtectedConfigurationSection" />
+    <type fullname="System.Configuration.ConnectionStringsSection" />
   </assembly>
 </linker>
