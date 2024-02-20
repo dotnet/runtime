@@ -2536,20 +2536,19 @@ class SuperPMIReplayAsmDiffs:
                 sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
 
                 with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
-                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|PerfScore|PerfScore in Diffs\n")
-                    write_fh.write("|---|--:|--:|--:|--:|\n")
+                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|PerfScore in Diffs\n")
+                    write_fh.write("|---|--:|--:|--:|\n")
                     for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
                         # Exclude this particular row?
                         if not has_diffs(diff_metrics[row]):
                             continue
 
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|\n".format(
+                        write_fh.write("|{}|{:,d}|{}|{}|\n".format(
                             mch_file,
                             base_metrics[row]["Diffed code bytes"],
                             format_delta(
                                 base_metrics[row]["Diffed code bytes"],
                                 diff_metrics[row]["Diffed code bytes"]),
-                            format_pct(diff_metrics[row]["Relative PerfScore Geomean"] * 100 - 100, 4),
                             format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100)))
 
             write_top_context_section()
@@ -2569,26 +2568,27 @@ class SuperPMIReplayAsmDiffs:
             with DetailsSection(write_fh, "Details"):
                 if any_diffs:
                     write_fh.write("#### Improvements/regressions per collection\n\n")
-                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|\n")
-                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
+                    write_fh.write("|Collection|Contexts with diffs|Improvements|Regressions|Same size|Improvements (bytes)|Regressions (bytes)|PerfScore Overall (FullOpts)|\n")
+                    write_fh.write("|---|--:|--:|--:|--:|--:|--:|--:|\n")
 
-                    def write_row(name, diffs):
+                    def write_row(name, diffs, perfscore_geomean):
                         base_diff_sizes = [(int(r["Base size"]), int(r["Diff size"])) for r in diffs]
                         (num_improvements, num_regressions, num_same, byte_improvements, byte_regressions) = calculate_improvements_regressions(base_diff_sizes)
-                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|\n".format(
+                        write_fh.write("|{}|{:,d}|{}|{}|{}|{}|{}|{}|\n".format(
                             name,
                             len(diffs),
                             html_color("green", "{:,d}".format(num_improvements)),
                             html_color("red", "{:,d}".format(num_regressions)),
                             html_color("blue", "{:,d}".format(num_same)),
                             html_color("green", "-{:,d}".format(byte_improvements)),
-                            html_color("red", "+{:,d}".format(byte_regressions))))
+                            html_color("red", "+{:,d}".format(byte_regressions)),
+                            "" if perfscore_geomean is None else format_pct(perfscore_geomean, 4)))
 
-                    for (mch_file, _, _, diffs, _, _) in asm_diffs:
-                        write_row(mch_file, diffs)
+                    for (mch_file, _, diff_metrics, diffs, _, _) in asm_diffs:
+                        write_row(mch_file, diffs, diff_metrics["FullOpts"]["Relative PerfScore Geomean"] * 100 - 100)
 
                     if len(asm_diffs) > 1:
-                        write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs])
+                        write_row("", [r for (_, _, _, diffs, _, _) in asm_diffs for r in diffs], None)
 
                     write_fh.write("\n---\n\n")
 
