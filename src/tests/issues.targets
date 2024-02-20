@@ -1168,10 +1168,7 @@
 
     <!-- NativeAOT arm32 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm')">
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/Casting/punning*">
-            <Issue>https://github.com/dotnet/runtime/issues/98493</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/Desktop/boxunboxvaluetype_*">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/nullabletypes/Desktop/boxunboxvaluetype_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/95517</Issue>
         </ExcludeList>
     </ItemGroup>
