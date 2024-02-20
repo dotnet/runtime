@@ -5394,6 +5394,7 @@ void CseCandidateState::Consider(GenTree* tree, Statement* statement, BasicBlock
     size_t  key = m_compiler->optKeyForCSE(tree);
     CseDef* def = nullptr;
     m_defMap.Lookup(key, &def);
+    CseDef* const currentDef = def;
 
     // If a tree with this key is available, this is a potential CSE use
     //
@@ -5461,8 +5462,11 @@ void CseCandidateState::Consider(GenTree* tree, Statement* statement, BasicBlock
     // No available def, or mistyped constant, or exceptions were not covered.
     // This is a new (potential) def, shadowing the old one (if any).
     //
-    def = new (m_alloc) CseDef(tree, statement, block, def);
+    def = new (m_alloc) CseDef(tree, statement, block, currentDef);
     m_defMap.Set(key, def, KeyToDefMap::Overwrite);
+
+    JITDUMP("CSE locate pushing def [%06u] in " FMT_BB " for key %d\n", m_compiler->dspTreeID(def->tslTree),
+            block->bbNum, key);
 }
 
 //------------------------------------------------------------------------
@@ -5480,10 +5484,22 @@ void CseCandidateState::PopBlockDefs(BasicBlock* block)
         CseDef* def = origDef;
         while ((def != nullptr) && (def->tslBlock == block))
         {
+            JITDUMP("CSE locate popping def [%06u] in " FMT_BB " for key %d\n", m_compiler->dspTreeID(def->tslTree),
+                    block->bbNum, key);
             def = def->m_prevDef;
         }
         if (def != origDef)
         {
+            if (def == nullptr)
+            {
+                JITDUMP("CSE locate def for key %d is now null\n", key);
+            }
+            else
+            {
+                JITDUMP("CSE locate def for key %d is now [%06u] from " FMT_BB "\n", key,
+                        m_compiler->dspTreeID(def->tslTree), def->tslBlock->bbNum);
+            }
+
             m_defMap.Set(key, def, KeyToDefMap::SetKind::Overwrite);
         }
     }
@@ -5496,13 +5512,16 @@ void CseCandidateState::PopBlockDefs(BasicBlock* block)
 //   heuristic - CSE heuristic in use
 //
 // Notes:
-//    This is mainly intended to avoid two pitfalls of the current CSE
+//    This is mainly intended to avoid three pitfalls of the current CSE
 //    finding technique, and is inspired by the observation that there
 //    seem to be very few CSEs where a use can be reached by multiple defs:
 //    * there may be multi-def CSEs where some defs have no uses, leading
 //      to unnecessarily long live ranges (though using fewer locals)
+//      and moves via temps that sometimes LSRA cannot eliminate.
 //    * there may be exception set collisions among defs, causing CSES to
 //      be dropped with no recourse.
+//    * cse temps for multi-def CSEs don't get put into SSA, reducing
+//      the ability of downstream opts (notably Assertion Prop) to optimize.
 //
 //    There is a decent parallel here with building SSA form. We currently
 //    don't handle joins.
@@ -5544,6 +5563,7 @@ void Compiler::optValnumCSE_LocateNew(CSE_HeuristicCommon* heuristic)
         }
         void SetBlock(BasicBlock* block)
         {
+            JITDUMP("CSE locate in " FMT_BB "\n", block->bbNum);
             m_block = block;
         }
 
