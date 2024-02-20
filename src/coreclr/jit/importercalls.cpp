@@ -1924,10 +1924,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall*        call,
         // If using one of the Swift register types, check entire stack for side effects
         if (checkEntireStack)
         {
-            for (unsigned level = 0; level < verCurrentState.esStackDepth; level++)
-            {
-                impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift calls"));
-            }
+            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Spill for swift calls"));
         }
     }
 #endif // SWIFT_SUPPORT
