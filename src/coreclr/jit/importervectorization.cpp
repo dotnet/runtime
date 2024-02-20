@@ -506,7 +506,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
         if (kind == EndsWith)
         {
             // len is expected to be small, so no overflow is possible
-            assert((len * 2) > len);
+            assert(!CheckedOps::MulOverflows(len, 2, /* unsignedMul */ false));
 
             // dataAddr = dataAddr + (length * 2 - len * 2)
             GenTree*   castedLen = gtNewCastNode(TYP_I_IMPL, gtCloneExpr(lengthFld), false, TYP_I_IMPL);
@@ -622,7 +622,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
     // This optimization spawns several temps so make sure we have a room
     if (lvaHaveManyLocals(0.75))
     {
-        JITDUMP("impStringComparison: Method has too many locals - bail out.\n")
+        JITDUMP("impUtf16StringComparison: Method has too many locals - bail out.\n")
         return nullptr;
     }
 
