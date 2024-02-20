@@ -27,10 +27,7 @@ bool FileWriter::Printf(const char* fmt, ...)
         }
         else
         {
-            DWORD numWritten;
-            bool result =
-                WriteFile(m_file.Get(), pBuffer, static_cast<DWORD>(printed), &numWritten, nullptr) &&
-                (numWritten == static_cast<DWORD>(printed));
+            bool result = Print(pBuffer, static_cast<size_t>(printed));
 
             if (pBuffer != stackBuffer)
                 delete[] pBuffer;
@@ -38,6 +35,75 @@ bool FileWriter::Printf(const char* fmt, ...)
             va_end(args);
             return result;
         }
+    }
+}
+
+bool FileWriter::Print(const char* value, size_t numChars)
+{
+    DWORD numWritten;
+    bool result =
+        WriteFile(m_file.Get(), value, static_cast<DWORD>(numChars), &numWritten, nullptr) &&
+        (numWritten == static_cast<DWORD>(numChars));
+    return result;
+}
+
+bool FileWriter::Print(const char* value)
+{
+    return Print(value, strlen(value));
+}
+
+bool FileWriter::Print(int value)
+{
+    return Printf("%d", value);
+}
+
+bool FileWriter::Print(int64_t value)
+{
+    return Printf("%lld", value);
+}
+
+bool FileWriter::Print(double value)
+{
+    return Printf("%f", value);
+}
+
+bool FileWriter::PrintQuotedCsvField(const char* value)
+{
+    size_t numQuotes = 0;
+    for (const char* p = value; *p != '\0'; p++)
+    {
+        if (*p == '"')
+        {
+            numQuotes++;
+        }
+    }
+
+    if (numQuotes == 0)
+    {
+        return Printf("\"%s\"", value);
+    }
+    else
+    {
+        size_t len = 2 + strlen(value) + numQuotes;
+        char* buffer = new char[len];
+
+        size_t index = 0;
+        buffer[index++] = '"';
+        for (const char* p = value; *p != '\0'; p++)
+        {
+            if (*p == '"')
+            {
+                buffer[index++] = '"';
+            }
+            buffer[index++] = *p;
+        }
+
+        buffer[index++] = '"';
+        assert(index == len);
+
+        bool result = Print(buffer, len);
+        delete[] buffer;
+        return result;
     }
 }
 

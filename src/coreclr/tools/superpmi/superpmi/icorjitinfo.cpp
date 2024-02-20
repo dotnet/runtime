@@ -1027,6 +1027,41 @@ void MyICJI::reportRichMappings(
     freeArray(mappings);
 }
 
+void MyICJI::reportMetadata(const char* key, const void* value)
+{
+    jitInstance->mc->cr->AddCall("reportMetadata");
+
+    if (strcmp(key, "MethodFullName") == 0)
+    {
+        const char* str = static_cast<const char*>(value);
+        size_t len = strlen(str);
+        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(len + 1));
+        memcpy(buf, str, len + 1);
+        jitInstance->mc->cr->MethodFullName = buf;
+        return;
+    }
+
+    if (strcmp(key, "TieringName") == 0)
+    {
+        const char* str = static_cast<const char*>(value);
+        size_t len = strlen(str);
+        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(len + 1));
+        memcpy(buf, str, len + 1);
+        jitInstance->mc->cr->TieringName = buf;
+        return;
+    }
+
+#define JITMETADATAINFO(name, type, flags)
+#define JITMETADATAMETRIC(name, type, flags) \
+    if (strcmp(key, #name) == 0)                                   \
+    {                                                              \
+        memcpy(&jitInstance->mc->cr->name, value, sizeof(type)); \
+        return;                                                    \
+    }
+
+#include "jitmetadatalist.h"
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 
 // Used to allocate memory that needs to handed to the EE.

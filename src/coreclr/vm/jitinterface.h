@@ -897,6 +897,8 @@ public:
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings) override final;
 
+    void reportMetadata(const char* key, const void* value) override final;
+
     void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
                        void **            ppIndirection) override final;  /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);

@@ -1865,8 +1865,8 @@ def aggregate_diff_metrics(details):
     """
 
     base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
-                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diff executed instructions": 0,
-                    "Diffed contexts": 0}
+                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diffed PerfScore" : 0.0,
+                    "Diff executed instructions": 0, "Diffed contexts": 0}
     base_fullopts = base_minopts.copy()
 
     diff_minopts = base_minopts.copy()
@@ -1909,6 +1909,11 @@ def aggregate_diff_metrics(details):
             diff_insts = int(row["Diff instructions"])
             base_dict["Diff executed instructions"] += base_insts
             diff_dict["Diff executed instructions"] += diff_insts
+
+            base_perfscore = float(row["Base PerfScore"])
+            diff_perfscore = float(row["Diff PerfScore"])
+            base_dict["Diffed PerfScore"] += base_perfscore
+            diff_dict["Diffed PerfScore"] += diff_perfscore
 
             base_dict["Diffed contexts"] += 1
             diff_dict["Diffed contexts"] += 1
@@ -2267,6 +2272,14 @@ class SuperPMIReplayAsmDiffs:
                         delta_bytes = diff_bytes - base_bytes
                         logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
 
+                        if "PerfScore" in self.coreclr_args.metrics:
+                            base_perfscore = base_metrics["Overall"]["Diffed PerfScore"]
+                            diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
+                            logging.info("Total PerfScore of base: {}".format(base_perfscore))
+                            logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
+                            delta_perfscore = diff_perfscore - base_perfscore
+                            logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+
                     try:
                         current_text_diff = text_differences.get_nowait()
                     except:
@@ -2290,6 +2303,10 @@ class SuperPMIReplayAsmDiffs:
                                 if self.coreclr_args.metrics:
                                     for metric in self.coreclr_args.metrics:
                                         command += [ "--metrics", metric ]
+
+                                    if self.coreclr_args.metrics == ["PerfScore"]:
+                                        command += [ "--override-total-base-metric", str(base_perfscore), "--override-total-diff-metric", str(diff_perfscore) ]
+
                                 elif base_bytes is not None and diff_bytes is not None:
                                     command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
 
@@ -2668,7 +2685,7 @@ class SuperPMIReplayAsmDiffs:
 
         # If there are non-default metrics then we need to disassemble
         # everything so that jit-analyze can handle those.
-        if self.coreclr_args.metrics is not None:
+        if self.coreclr_args.metrics is not None and self.coreclr_args.metrics != ["PerfScore"]:
             contexts = diffs
             examples = []
         else:
@@ -2686,22 +2703,29 @@ class SuperPMIReplayAsmDiffs:
             smallest_contexts = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
             display_subset("Smallest {} contexts with binary differences:", smallest_contexts)
 
-            # Order by byte-wise improvement, largest improvements first
-            by_diff_size = sorted(diffs, key=lambda r: int(r["Diff size"]) - int(r["Base size"]))
-            # 20 top improvements, byte-wise
-            top_improvements_bytes = by_diff_size[:20]
-            # 20 top regressions, byte-wise
-            top_regressions_bytes = by_diff_size[-20:]
+            if self.coreclr_args.metrics is None:
+                base_metric_name = "Base size"
+                diff_metric_name = "Diff size"
+            else:
+                base_metric_name = "Base PerfScore"
+                diff_metric_name = "Diff PerfScore"
 
-            display_subset("Top {} improvements, byte-wise:", top_improvements_bytes)
-            display_subset("Top {} regressions, byte-wise:", top_regressions_bytes)
+            # Order by improvement, largest improvements first
+            by_diff = sorted(diffs, key=lambda r: float(r[diff_metric_name]) - float(r[base_metric_name]))
+            # 20 top improvements
+            top_improvements = by_diff[:20]
+            # 20 top regressions
+            top_regressions = by_diff[-20:]
+
+            display_subset("Top {} improvements:", top_improvements)
+            display_subset("Top {} regressions:", top_regressions)
 
             # Order by percentage-wise size improvement, largest improvements first
             def diff_pct(r):
-                base = int(r["Base size"])
+                base = float(r[base_metric_name])
                 if base == 0:
                     return 0
-                diff = int(r["Diff size"])
+                diff = float(r[diff_metric_name])
                 return (diff - base) / base
 
             by_diff_size_pct = sorted(diffs, key=diff_pct)
@@ -2723,7 +2747,7 @@ class SuperPMIReplayAsmDiffs:
 
             example_improvements = by_diff_size_pct_examples[:3]
             example_regressions = by_diff_size_pct_examples[3:][-3:]
-            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
+            contexts = smallest_contexts + top_improvements + top_regressions + top_improvements_pct + top_regressions_pct + smallest_zero_size_contexts + example_improvements + example_regressions
             examples = example_improvements + example_regressions
 
         final_contexts_indices = list(set(int(r["Context"]) for r in contexts))
