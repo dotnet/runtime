@@ -110,7 +110,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast($"ReleaseJSOwnedObjectByGCHandle: Unexpected synchronous failure in {Environment.CurrentManagedThreadId}: " + ex);
+                Environment.FailFast($"ReleaseJSOwnedObjectByGCHandle: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
