@@ -146,20 +146,20 @@
     <SystemReflectionMetadataToolsetVersion>8.0.0</SystemReflectionMetadataToolsetVersion>
     <SystemReflectionMetadataLoadContextToolsetVersion>8.0.0</SystemReflectionMetadataLoadContextToolsetVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.24108.2</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.24108.2</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>9.0.0-beta.24108.2</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>9.0.0-beta.24108.2</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>9.0.0-beta.24108.2</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>9.0.0-beta.24108.2</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>9.0.0-beta.24108.2</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>9.0.0-beta.24108.2</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>9.0.0-beta.24108.2</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>9.0.0-beta.24108.2</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>9.0.0-beta.24108.2</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>9.0.0-beta.24108.2</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>9.0.0-beta.24108.2</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>9.0.0-beta.24108.2</MicrosoftDotNetCilStripSourcesVersion>
+    <SystemRuntimeNumericsTestDataVersion>9.0.0-beta.24119.1</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>9.0.0-beta.24119.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>9.0.0-beta.24119.1</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>9.0.0-beta.24119.1</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>9.0.0-beta.24119.1</SystemFormatsTarTestDataVersion>
+    <SystemIOCompressionTestDataVersion>9.0.0-beta.24119.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>9.0.0-beta.24119.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>9.0.0-beta.24119.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>9.0.0-beta.24119.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>9.0.0-beta.24119.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>9.0.0-beta.24119.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemTextRegularExpressionsTestDataVersion>9.0.0-beta.24119.1</SystemTextRegularExpressionsTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>9.0.0-beta.24119.1</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>9.0.0-beta.24119.1</MicrosoftDotNetCilStripSourcesVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.24104.2</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.24104.2</optimizationwindows_ntx86MIBCRuntimeVersion>
