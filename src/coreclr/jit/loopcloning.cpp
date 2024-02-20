@@ -2039,9 +2039,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // We haven't set the jump target yet
     assert(slowPreheader->KindIs(BBJ_ALWAYS));
     assert(!slowPreheader->HasInitializedTarget());
-    slowPreheader->SetTarget(slowHeader);
 
-    fgAddRefPred(slowHeader, slowPreheader);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(slowHeader, slowPreheader);
+        slowPreheader->SetTargetEdge(newEdge);
+    }
+
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowPreheader->bbNum, slowHeader->bbNum);
 
     BasicBlock* condLast = optInsertLoopChoiceConditions(context, loop, slowPreheader, preheader);
@@ -2049,8 +2052,12 @@ void Compiler::optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* contex
     // Now redirect the old preheader to jump to the first new condition that
     // was inserted by the above function.
     assert(preheader->KindIs(BBJ_ALWAYS));
-    preheader->SetTarget(preheader->Next());
-    fgAddRefPred(preheader->Next(), preheader);
+    
+    {
+        FlowEdge* const newEdge = fgAddRefPred(preheader->Next(), preheader);
+        preheader->SetTargetEdge(newEdge);
+    }
+    
     preheader->SetFlags(BBF_NONE_QUIRK);
 
     // And make sure we insert a pred link for the final fallthrough into the fast preheader.

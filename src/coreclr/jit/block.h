@@ -526,7 +526,7 @@ private:
     /* The following union describes the jump target(s) of this block */
     union {
         unsigned    bbTargetOffs; // PC offset (temporary only)
-        BasicBlock* bbTarget;     // basic block
+        BasicBlock* bbTargetEdge; // successor edge for block kinds with only one successor (BBJ_ALWAYS, etc)
         BasicBlock* bbTrueTarget; // BBJ_COND jump target when its condition is true (alias for bbTarget)
         BBswtDesc*  bbSwtTargets; // switch descriptor
         BBehfDesc*  bbEhfTargets; // BBJ_EHFINALLYRET descriptor
@@ -638,17 +638,26 @@ public:
 
     BasicBlock* GetTarget() const
     {
-        // Only block kinds that use `bbTarget` can access it, and it must be non-null.
-        assert(HasInitializedTarget());
-        return bbTarget;
+        return GetTargetEdge()->getDestinationBlock();
     }
 
-    void SetTarget(BasicBlock* target)
+    FlowEdge* GetTargetEdge() const
+    {
+        // Only block kinds that use `bbTargetEdge` can access it, and it must be non-null.
+        assert(HasInitializedTarget());
+        assert(bbTargetEdge->getSourceBlock() == this);
+        assert(bbTargetEdge->getDestinationBlock() != nullptr);
+        return bbTargetEdge;
+    }
+
+    void SetTargetEdge(FlowEdge* targetEdge)
     {
         // SetKindAndTarget() nulls target for non-jump kinds,
-        // so don't use SetTarget() to null bbTarget without updating bbKind.
-        bbTarget = target;
+        // so don't use SetTargetEdge() to null bbTargetEdge without updating bbKind.
+        bbTargetEdge = targetEdge;
         assert(HasInitializedTarget());
+        assert(bbTargetEdge->getSourceBlock() == this);
+        assert(bbTargetEdge->getDestinationBlock() != nullptr);
     }
 
     BasicBlock* GetTrueTarget() const

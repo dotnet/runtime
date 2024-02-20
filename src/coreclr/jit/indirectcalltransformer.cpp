@@ -272,9 +272,9 @@ private:
             if (checkBlock != currBlock)
             {
                 assert(currBlock->KindIs(BBJ_ALWAYS));
-                currBlock->SetTarget(checkBlock);
                 FlowEdge* const newEdge = compiler->fgAddRefPred(checkBlock, currBlock);
                 newEdge->setLikelihood(1.0);
+                currBlock->SetTargetEdge(newEdge);
             }
 
             // checkBlock
@@ -1027,13 +1027,13 @@ private:
 
             // Also, thenBlock has a single pred - last checkBlock
             assert(checkBlock->KindIs(BBJ_ALWAYS));
-            checkBlock->SetTarget(thenBlock);
-            checkBlock->SetFlags(BBF_NONE_QUIRK);
-            assert(checkBlock->JumpsToNext());
             FlowEdge* const thenEdge = compiler->fgAddRefPred(thenBlock, checkBlock);
             thenEdge->setLikelihood(thenLikelihoodWt);
             FlowEdge* const elseEdge = compiler->fgAddRefPred(remainderBlock, thenBlock);
             elseEdge->setLikelihood(elseLikelihoodWt);
+            checkBlock->SetTargetEdge(thenEdge);
+            checkBlock->SetFlags(BBF_NONE_QUIRK);
+            assert(checkBlock->JumpsToNext());
 
             DevirtualizeCall(thenBlock, checkIdx);
         }

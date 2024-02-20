@@ -4436,9 +4436,9 @@ void Compiler::impImportLeave(BasicBlock* block)
                 assert(!step->HasInitializedTarget());
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
-                step->SetTarget(callBlock);
                 FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
                 newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4538,10 +4538,10 @@ void Compiler::impImportLeave(BasicBlock* block)
         // step's jump target shouldn't be set yet
         assert(!step->HasInitializedTarget());
 
-        step->SetTarget(finalStep);
         {
             FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
             newEdge->setLikelihood(1.0);
+            step->SetTargetEdge(newEdge);
         }
 
         // The new block will inherit this block's weight.
@@ -4690,10 +4690,11 @@ void Compiler::impImportLeave(BasicBlock* block)
                 {
                     fgRemoveRefPred(step->GetTarget(), step);
                 }
-                step->SetTarget(exitBlock); // the previous step (maybe a call to a nested finally, or a nested catch
-                                            // exit) returns to this block
+                
                 FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
                 newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge); // the previous step (maybe a call to a nested finally, or a nested catch
+                                              // exit) returns to this block
 
                 // The new block will inherit this block's weight.
                 exitBlock->inheritWeight(block);
@@ -4806,9 +4807,10 @@ void Compiler::impImportLeave(BasicBlock* block)
                     {
                         fgRemoveRefPred(step->GetTarget(), step);
                     }
-                    step->SetTarget(step2);
+
                     FlowEdge* const newEdge = fgAddRefPred(step2, step);
                     newEdge->setLikelihood(1.0);
+                    step->SetTargetEdge(newEdge);
                     step2->inheritWeight(block);
                     step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
@@ -4845,12 +4847,13 @@ void Compiler::impImportLeave(BasicBlock* block)
                     fgNewBBinRegion(BBJ_CALLFINALLY, callFinallyTryIndex, callFinallyHndIndex, step, HBtab->ebdHndBeg);
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTarget(), step);
+                    fgRemoveRefPred(step->GetTargetEdge());
                 }
-                step->SetTarget(callBlock); // the previous call to a finally returns to this call (to the next
-                                            // finally in the chain)
+
                 FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
                 newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge); // the previous call to a finally returns to this call (to the next
+                                              // finally in the chain)
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4951,11 +4954,12 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 if (step == block)
                 {
-                    fgRemoveRefPred(step->GetTarget(), step);
+                    fgRemoveRefPred(step->GetTargetEdge());
                 }
-                step->SetTarget(catchStep);
+
                 FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
                 newEdge->setLikelihood(1.0);
+                step->SetTargetEdge(newEdge);
 
                 // The new block will inherit this block's weight.
                 catchStep->inheritWeight(block);
@@ -5008,9 +5012,9 @@ void Compiler::impImportLeave(BasicBlock* block)
         {
             fgRemoveRefPred(step->GetTarget(), step);
         }
-        step->SetTarget(leaveTarget); // this is the ultimate destination of the LEAVE
         FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
         newEdge->setLikelihood(1.0);
+        step->SetTargetEdge(newEdge); // this is the ultimate destination of the LEAVE
 
 #ifdef DEBUG
         if (verbose)

@@ -272,9 +272,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         BasicBlock* poll = fgNewBBafter(BBJ_ALWAYS, top, true);
         bottom           = fgNewBBafter(top->GetKind(), poll, true);
 
-        poll->SetTarget(bottom);
-        assert(poll->JumpsToNext());
-
         bottom->TransferTarget(top);
 
         // Update block flags
@@ -366,9 +363,12 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         top->SetCond(bottom, poll);
         // Bottom has Top and Poll as its predecessors.  Poll has just Top as a predecessor.
-        fgAddRefPred(bottom, poll);
         fgAddRefPred(bottom, top);
         fgAddRefPred(poll, top);
+        
+        FlowEdge* const newEdge = fgAddRefPred(bottom, poll);
+        poll->SetTargetEdge(newEdge);
+        assert(poll->JumpsToNext());
 
         // Replace Top with Bottom in the predecessor list of all outgoing edges from Bottom
         // (1 for unconditional branches, 2 for conditional branches, N for switches).
@@ -2758,7 +2758,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
 
     /* Allocate a new basic block */
 
-    BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS, block);
+    BasicBlock* newHead = BasicBlock::New(this, BBJ_ALWAYS);
     newHead->SetFlags(BBF_INTERNAL | BBF_NONE_QUIRK);
     newHead->inheritWeight(block);
     newHead->bbRefs = 0;
@@ -2783,9 +2783,9 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
             {
                 case BBJ_CALLFINALLY:
                     noway_assert(predBlock->TargetIs(block));
-                    predBlock->SetTarget(newHead);
-                    fgRemoveRefPred(block, predBlock);
-                    fgAddRefPred(newHead, predBlock);
+                    fgRemoveRefPred(predBlock->GetTargetEdge());
+                    FlowEdge* const newEdge = fgAddRefPred(newHead, predBlock);
+                    predBlock->SetTargetEdge(newEdge);
                     break;
 
                 default:
@@ -2798,7 +2798,8 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     }
 
     assert(nullptr == fgGetPredForBlock(block, newHead));
-    fgAddRefPred(block, newHead);
+    FlowEdge* const newEdge = fgAddRefPred(block, newHead);
+    newHead->SetTargetEdge(newEdge);
 
     assert(newHead->HasFlag(BBF_INTERNAL));
 }

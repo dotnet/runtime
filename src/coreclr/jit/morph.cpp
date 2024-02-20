@@ -14632,15 +14632,24 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     assert(condBlock->bbWeight == remainderBlock->bbWeight);
 
     assert(block->KindIs(BBJ_ALWAYS));
-    block->SetTarget(condBlock);
-    condBlock->SetTarget(elseBlock);
-    elseBlock->SetTarget(remainderBlock);
+    {
+        FlowEdge* const newEdge = fgAddRefPred(condBlock, block);
+        block->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(elseBlock, condBlock);
+        condBlock->SetTargetEdge(newEdge);
+    }
+
+    {
+        FlowEdge* const newEdge = fgAddRefPred(remainderBlock, elseBlock);
+        elseBlock->SetTargetEdge(newEdge);
+    }
+    
     assert(condBlock->JumpsToNext());
     assert(elseBlock->JumpsToNext());
 
-    fgAddRefPred(condBlock, block);
-    fgAddRefPred(elseBlock, condBlock);
-    fgAddRefPred(remainderBlock, elseBlock);
 
     condBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
     elseBlock->SetFlags(propagateFlagsToAll | BBF_NONE_QUIRK);
