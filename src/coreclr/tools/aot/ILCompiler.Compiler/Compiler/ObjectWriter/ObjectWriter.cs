@@ -343,6 +343,16 @@ namespace ILCompiler.ObjectWriter
         private void EmitObject(string objectFilePath, IReadOnlyCollection<DependencyNode> nodes, IObjectDumper dumper, Logger logger)
         {
             // Pre-create some of the sections
+            //
+            // The order of the sections should not necessarily matter. The old LLVM-based
+            // ObjWriter used to place the "text" and "managed code" sections first. Some
+            // versions of Apple's ld-prime linker (default linker for Xcode 15+) produce
+            // incorrect unwind tables when the TEXT sections are intertwined with other
+            // sections. In order to workaround that issue we also place the "unbox" section
+            // in a pre-defined order.
+            //
+            // See https://github.com/dotnet/runtime/issues/97745#issuecomment-1925915381
+            // Reported to Apple as FB13584275 and acknowledged as a bug in their linker.
             GetOrCreateSection(ObjectNodeSection.TextSection);
             if (_nodeFactory.Target.OperatingSystem == TargetOS.Windows)
             {
