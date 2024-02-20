@@ -524,8 +524,12 @@ namespace System.Tests
             yield return new object[] { "System.Int32&[]", expectedException, true };
             yield return new object[] { "System.Int32&[*]", expectedException, true };
             yield return new object[] { "System.Int32&[,]", expectedException, true };
-            yield return new object[] { "System.Void[]", expectedException, true };
-            yield return new object[] { "System.TypedReference[]", expectedException, true };
+
+            if (!PlatformDetection.IsMonoRuntime)
+            {
+                yield return new object[] { "System.Void[]", expectedException, true };
+                yield return new object[] { "System.TypedReference[]", expectedException, true };
+            }
         }
 
         [Theory]
