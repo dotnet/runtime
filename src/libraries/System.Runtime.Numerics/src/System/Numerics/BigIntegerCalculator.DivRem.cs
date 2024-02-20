@@ -611,12 +611,12 @@ namespace System.Numerics
             Debug.Assert(right[^1] > 0);
             Debug.Assert(CompareActual(left12, right) < 0);
 
-            int halfN = right.Length >> 1;
+            int n = right.Length >> 1;
 
-            ReadOnlySpan<uint> a1 = left12.Slice(halfN);
-            ReadOnlySpan<uint> b1 = right.Slice(halfN);
-            ReadOnlySpan<uint> b2 = right.Slice(0, halfN);
-            Span<uint> r1 = remainder.Slice(halfN);
+            ReadOnlySpan<uint> a1 = left12.Slice(n);
+            ReadOnlySpan<uint> b1 = right.Slice(n);
+            ReadOnlySpan<uint> b2 = right.Slice(0, n);
+            Span<uint> r1 = remainder.Slice(n);
             uint[]? dFromPool = null;
             Span<uint> d = (right.Length <= StackAllocThreshold ?
                             stackalloc uint[StackAllocThreshold]
@@ -634,16 +634,16 @@ namespace System.Numerics
                 Debug.Assert(CompareActual(a1, b1) == 0);
                 quotient.Fill(uint.MaxValue);
 
-                ReadOnlySpan<uint> a2 = left12.Slice(0, halfN);
+                ReadOnlySpan<uint> a2 = left12.Slice(0, n);
                 Add(a2, b1, r1);
 
-                d.Slice(0, halfN).Clear();
-                b2.CopyTo(d.Slice(halfN));
+                d.Slice(0, n).Clear();
+                b2.CopyTo(d.Slice(n));
                 SubtractSelf(d, b2);
             }
 
             // R = [R1, A3]
-            left3.CopyTo(remainder.Slice(0, halfN));
+            left3.CopyTo(remainder.Slice(0, n));
 
             Span<uint> rr = remainder.Slice(0, d.Length + 1);
 
