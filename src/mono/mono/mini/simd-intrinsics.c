@@ -4209,9 +4209,13 @@ emit_arm64_intrinsics (
 			return ret;
 		}
 		case SN_StoreSelectedScalar: {
-			if (!is_intrinsics_vector_type (fsig->params [1]))
-				return NULL;
-			return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_ST1_SCALAR, 0, arg0_type, fsig, args);
+			int store_op;
+			if (is_intrinsics_vector_type (fsig->params [1]))
+				store_op = OP_ARM64_ST1_SCALAR;
+			else
+				store_op = OP_ARM64_STM_SCALAR;
+			MonoClass* klass_tuple_var = mono_class_from_mono_type_internal (fsig->params [1]);
+			return emit_simd_ins_for_sig (cfg, klass_tuple_var, store_op, 0, arg0_type, fsig, args);
 		}
 		case SN_MultiplyRoundedDoublingBySelectedScalarSaturateHigh:
 		case SN_MultiplyRoundedDoublingScalarBySelectedScalarSaturateHigh:

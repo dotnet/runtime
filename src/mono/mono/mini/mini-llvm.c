@@ -685,12 +685,12 @@ simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 {
 	const char *klass_name = m_class_get_name (klass);
 	g_assert (strstr (klass_name, "ValueTuple") != NULL);
-	MonoGenericInst *classInst = mono_class_get_generic_class (klass)->context.class_inst;
-	MonoType *etype = classInst->type_argv [0];
+	MonoGenericInst *class_inst = mono_class_get_generic_class (klass)->context.class_inst;
+	MonoType *etype = class_inst->type_argv [0];
 	g_assert (etype->type == MONO_TYPE_GENERICINST);
 	MonoClass *eklass = etype->data.generic_class->cached_class;
 	LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
-	return LLVMArrayType (ltype, classInst->type_argc);
+	return LLVMArrayType (ltype, class_inst->type_argc);
 }
 
 /* Return the 128 bit SIMD type corresponding to the mono type TYPE */
@@ -5473,7 +5473,9 @@ immediate_unroll_begin (
 	LLVMBasicBlockRef continuation = gen_bb (ctx, name);
 	LLVMValueRef switch_ins = LLVMBuildSwitch (ctx->builder, switch_index, default_case, max_cases);
 	LLVMPositionBuilderAtEnd (ctx->builder, continuation);
-	LLVMValueRef phi = LLVMBuildPhi (ctx->builder, return_type, name);
+	LLVMValueRef phi = NULL;
+	if (return_type != LLVMVoidType ())
+		phi = LLVMBuildPhi (ctx->builder, return_type, name);
 	ImmediateUnrollCtx ictx = { 0 };
 	ictx.ctx = ctx;
 	ictx.bb = bb;
@@ -5504,7 +5506,8 @@ immediate_unroll_commit (ImmediateUnrollCtx *ictx, int switch_const, LLVMValueRe
 {
 	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
 	LLVMAddCase (ictx->switch_ins, LLVMConstInt (ictx->switch_index_type, switch_const, FALSE), ictx->tmp_block);
-	LLVMAddIncoming (ictx->phi, &value, &ictx->tmp_block, 1);
+	if (ictx->phi)
+		LLVMAddIncoming (ictx->phi, &value, &ictx->tmp_block, 1);
 }
 
 static void
@@ -5517,7 +5520,8 @@ static void
 immediate_unroll_commit_default (ImmediateUnrollCtx *ictx, LLVMValueRef value)
 {
 	LLVMBuildBr (ictx->ctx->builder, ictx->continuation);
-	LLVMAddIncoming (ictx->phi, &value, &ictx->default_case, 1);
+	if (ictx->phi)
+		LLVMAddIncoming (ictx->phi, &value, &ictx->default_case, 1);
 }
 
 static void
@@ -11633,7 +11637,7 @@ MONO_RESTORE_WARNING
 
 			lhs = LLVMBuildLoad2 (builder, ret_t, addresses [ins->sreg1]->value, "");
 
-			LLVMValueRef *args = g_new0(LLVMValueRef, n_elem_tuple + 2);
+			LLVMValueRef *args = g_newa0(LLVMValueRef, n_elem_tuple + 2);
 			unsigned int idx = 0;
 			for ( ; idx < n_elem_tuple; idx++) {
 				args [idx] = LLVMBuildExtractValue (builder, lhs, idx, "extract_elem");
@@ -11750,7 +11754,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_ARM64_STM: {
-			LLVMTypeRef tuple_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef tuple_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
 
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
@@ -11784,6 +11788,82 @@ MONO_RESTORE_WARNING
 			LLVMValueRef address = convert (ctx, lhs, pointer_type (t));
 			unsigned int alignment = mono_llvm_get_prim_size_bits (t) / 8;
 			mono_llvm_build_aligned_store (builder, val, address, FALSE, alignment);
+			break;
+		}
+		case OP_ARM64_STM_SCALAR: {
+			LLVMTypeRef tuple_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
+			unsigned int n_elem_tuple = LLVMGetArrayLength (tuple_t);
+			unsigned int n_elem_vector = LLVMGetVectorSize (vec_t);
+			LLVMTypeRef elem_t = LLVMGetElementType (vec_t);
+			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+			unsigned int vector_size = n_elem_vector * elem_bits;
+			IntrinsicId iid;
+			switch (vector_size) {
+			case 64: {
+				switch (n_elem_tuple) {
+				case 2:
+					iid = INTRINS_AARCH64_ADV_SIMD_ST2LANE_V64;
+					break;
+				case 3:
+					iid = INTRINS_AARCH64_ADV_SIMD_ST3LANE_V64;
+					break;
+				case 4:
+					iid = INTRINS_AARCH64_ADV_SIMD_ST4LANE_V64;
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			}
+			case 128: {
+				switch (n_elem_tuple) {
+				case 2:
+					iid = INTRINS_AARCH64_ADV_SIMD_ST2LANE_V128;
+					break;
+				case 3:
+					iid = INTRINS_AARCH64_ADV_SIMD_ST3LANE_V128;
+					break;
+				case 4:
+					iid = INTRINS_AARCH64_ADV_SIMD_ST4LANE_V128;
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			
+			}
+
+			rhs = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "");
+
+			LLVMValueRef *args = g_newa0(LLVMValueRef, n_elem_tuple + 2);
+			unsigned int idx = 0;
+			for ( ; idx < n_elem_tuple; idx++) {
+				args [idx] = LLVMBuildExtractValue (builder, rhs, idx, "extract_elem");
+			}
+			args [idx++] = arg3;
+			args [idx] = lhs;
+
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
+
+			// convert arg3 to a constant
+			LLVMTypeRef ret_t = LLVMVoidType ();
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 16, arg3, ret_t, "");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				args [idx - 1] = const_int64 (i);
+				call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+				immediate_unroll_commit (&ictx, i, NULL);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, NULL);
+			immediate_unroll_end (&ictx, &cbb);
 			break;
 		}
 		case OP_ARM64_ADDHN:
