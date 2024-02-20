@@ -308,11 +308,11 @@ namespace System.Tests
             obj1.value.value = 1;
 
             StructContainsPointerNested obj2 = new StructContainsPointerNested();
-            obj1.o = null;
-            obj1.value.value = 2;
+            obj2.o = null;
+            obj2.value.value = 1;
 
-            Assert.False(obj1.Equals(obj2));
-            Assert.NotEqual(obj1.GetHashCode(), obj2.GetHashCode());
+            Assert.True(obj1.Equals(obj2));
+            Assert.Equal(obj1.GetHashCode(), obj2.GetHashCode());
         }
 
         public struct S
