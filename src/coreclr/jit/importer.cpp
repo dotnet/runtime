@@ -7690,7 +7690,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         else
                         {
                             // Remove 'curEdge'
-                            fgRemoveRefPred(curEdge->getDestinationBlock(), block);
+                            fgRemoveRefPred(curEdge);
                         }
                     }
 
