@@ -7906,7 +7906,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 
             // Convert local to LCL_ADDR
             data->ChangeOper(GT_LCL_ADDR);
-            data->ChangeType(TYP_BYREF);
+            data->ChangeType(TYP_I_IMPL);
         }
     }
 
