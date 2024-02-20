@@ -7894,23 +7894,19 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     else
     {
         // ... or Memcpy?
-        assert(data->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
-
-        // Drop GT_IND nodes
         if (data->OperIs(GT_IND))
         {
+            // Drop GT_IND nodes
             BlockRange().Remove(data);
             data = data->AsIndir()->Addr();
         }
-
-        if (varTypeIsStruct(data))
+        else
         {
-            // If it's a struct local, take its address
-            const unsigned lclNum = data->AsLclVarCommon()->GetLclNum();
-            GenTreeLclFld* addr   = comp->gtNewLclAddrNode(lclNum, data->AsLclVarCommon()->GetLclOffs(), TYP_BYREF);
-            BlockRange().InsertAfter(data, addr);
-            BlockRange().Remove(data);
-            data = addr;
+            assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+
+            // Convert local to LCL_ADDR
+            data->ChangeOper(GT_LCL_ADDR);
+            data->ChangeType(TYP_BYREF);
         }
     }
 
@@ -7933,7 +7929,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 
     CorInfoHelpFunc helper = blkNode->OperIsInitBlkOp() ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
     GenTreeCall* call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
-    comp->fgMorphTree(call);
+    comp->fgMorphArgs(call);
 
     LIR::Range range      = LIR::SeqTree(comp, call);
     GenTree*   rangeStart = range.FirstNode();
