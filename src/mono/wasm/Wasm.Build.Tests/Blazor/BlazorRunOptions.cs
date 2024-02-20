@@ -15,6 +15,7 @@ public record BlazorRunOptions
     bool CheckCounter = true,
     Func<IPage, Task>? Test = null,
     Action<IConsoleMessage>? OnConsoleMessage = null,
+    Action<string>? OnServerMessage = null,
     Action<string>? OnErrorMessage = null,
     string Config = "Debug",
     string? ExtraArgs = null,

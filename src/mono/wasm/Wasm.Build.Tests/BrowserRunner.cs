@@ -36,7 +36,8 @@ internal class BrowserRunner : IAsyncDisposable
 
     public async Task<string> StartServerAndGetUrlAsync(
         ToolCommand cmd,
-        string args
+        string args,
+        Action<string>? onServerMessage = null
     ) {
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
@@ -44,8 +45,13 @@ internal class BrowserRunner : IAsyncDisposable
             if (string.IsNullOrEmpty(msg))
                 return;
 
+            onServerMessage?.Invoke(msg);
+
             lock (OutputLines)
+            {
+                Console.WriteLine($"Server: {msg}");
                 OutputLines.Add(msg);
+            }
 
             Match m = s_appHostUrlRegex.Match(msg);
             if (!m.Success)
@@ -107,10 +113,11 @@ internal class BrowserRunner : IAsyncDisposable
         string args,
         bool headless = true,
         Action<IConsoleMessage>? onConsoleMessage = null,
+        Action<string>? onServerMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
-        var urlString = await StartServerAndGetUrlAsync(cmd, args);
+        var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
         var browser = await SpawnBrowserAsync(urlString, headless);
         var context = await browser.NewContextAsync();
         return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);

@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Http.Connections;
 @using System.Web;
 @inject NavigationManager NavigationManager
+@implements IDisposable
 
 <h1>Chat Room</h1>
 <div>
@@ -84,25 +85,40 @@
         _hubConnection.On<string>("ReceiveMessage", async (message) =>
         {
             chatMessages.Add(message);
-            Helper.TestOutputWriteLine($"Client: sends confirmation of receiving the reply from server = {message}, tread receiving the reply = {Environment.CurrentManagedThreadId}");
-            // on this message server calls "Environment.Exit(0)"
-            await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExitWithSuccess", message);
-            Console.WriteLine("WASM EXIT 0");
+            await SucceedAndExit(message);
         });
 
         await _hubConnection.StartAsync();
+    }
+
+    private async Task SucceedAndExit(string message)
+    {
+        Helper.TestOutputWriteLine($"Client: sends confirmation of receiving the reply from server = {message}, tread receiving the reply = {Environment.CurrentManagedThreadId}");
+        // on this message server calls "Environment.Exit(0)"
+        await _hubConnection.SendAsync("ConfirmClientReceivedMessageAndExitWithSuccess", message);
+        await DisposeHubConnection();
+        Console.WriteLine($"WASM EXIT 0");
     }
 
     private async Task FailAndExit(string message)
     {
         int code = 1;
         await _hubConnection.SendAsync("Exit", code);
+        await DisposeHubConnection();
         Console.WriteLine($"WASM EXIT {code}");
         throw new Exception(message);
     }
 
-    public ValueTask? DisposeAsync()
+    public void Dispose() => DisposeHubConnection().GetAwaiter().GetResult();
+
+    private async Task DisposeHubConnection()
     {
-        return _hubConnection?.DisposeAsync();
+        Console.WriteLine("DisposeHubConnection");
+        if (_hubConnection != null)
+        {
+            _hubConnection.Remove("ReceiveMessage");
+            await _hubConnection.DisposeAsync();
+            _hubConnection = null;
+        }
     }
 }

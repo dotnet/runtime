@@ -12,15 +12,16 @@ public class ChatHub : Hub
         await Clients.All.SendAsync("ReceiveMessage", message).ConfigureAwait(false);
     }
 
-    public void ConfirmClientReceivedMessageAndExitWithSuccess(string message)
+    public async Task ConfirmClientReceivedMessageAndExitWithSuccess(string message)
     {
         TestOutputWriteLine($"Server receives confirmation with message = {message}");
-        Exit(0);
+        await Exit(0);
     }
 
-    public void Exit(int code)
+    public async Task Exit(int code)
     {
-        TestOutputWriteLine($"Received exit code {code} from client. Exiting.");
+        TestOutputWriteLine($"Received exit code {code} from client. Exiting with 4 sec of delay.");
+        await Task.Delay(4000);
         Environment.Exit(code);
     }
 

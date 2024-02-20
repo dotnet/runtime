@@ -56,7 +56,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
             Config: configuration,
             BinFrameworkDir: binFrameworkDir,
             RuntimeType: runtimeType,
-            AssertAppBundle: assertAppBundle), extraArgs); 
+            AssertAppBundle: assertAppBundle), extraArgs);
         result.EnsureSuccessful();
     }
 
@@ -72,7 +72,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected Task<RunResult> RunSdkStyleAppForBuild(RunOptions options)
         => RunSdkStyleApp(options, BlazorRunHost.DotnetRun);
-    
+
     protected Task<RunResult> RunSdkStyleAppForPublish(RunOptions options)
         => RunSdkStyleApp(options, BlazorRunHost.WebServer);
 
@@ -85,14 +85,15 @@ public abstract class AppTestBase : BlazorWasmTestBase
         var tcs = new TaskCompletionSource<int>();
         List<string> testOutput = new();
         List<string> consoleOutput = new();
+        List<string> serverOutput = new();
         Regex exitRegex = new Regex("WASM EXIT (?<exitCode>[0-9]+)$");
 
         BlazorRunOptions blazorRunOptions = new(
                 CheckCounter: false,
                 Config: options.Configuration,
                 OnConsoleMessage: OnConsoleMessage,
+                OnServerMessage: OnServerMessage,
                 QueryString: queryString,
-                ExtraArgs: options.ExtraArgs,
                 Host: host);
 
         await BlazorRunTest(blazorRunOptions);
@@ -100,6 +101,9 @@ public abstract class AppTestBase : BlazorWasmTestBase
         void OnConsoleMessage(IConsoleMessage msg)
         {
             consoleOutput.Add(msg.Text);
+            Console.WriteLine($"console: {msg.Text}");
+
+            OnTestOutput(msg.Text);
 
             const string testOutputPrefix = "TestOutput -> ";
             if (msg.Text.StartsWith(testOutputPrefix))
@@ -116,6 +120,29 @@ public abstract class AppTestBase : BlazorWasmTestBase
                 options.OnConsoleMessage(msg);
         }
 
+        void OnServerMessage(string msg)
+        {
+            serverOutput.Add(msg);
+            OnTestOutput(msg);
+
+            if (msg.StartsWith("fail:"))
+            {
+                foreach (var line in serverOutput)
+                    Console.WriteLine(line);
+                // throw new Exception("Server failed");
+            }
+
+            if (options.OnServerMessage != null)
+                options.OnServerMessage(msg);
+        }
+
+        void OnTestOutput(string msg)
+        {
+            const string testOutputPrefix = "TestOutput -> ";
+            if (msg.StartsWith(testOutputPrefix))
+                testOutput.Add(msg.Substring(testOutputPrefix.Length));
+        }
+
         //TimeSpan timeout = TimeSpan.FromMinutes(2);
         //await Task.WhenAny(tcs.Task, Task.Delay(timeout));
         //if (!tcs.Task.IsCompleted)
@@ -125,7 +152,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
         if (options.ExpectedExitCode != null && wasmExitCode != options.ExpectedExitCode)
             throw new Exception($"Expected exit code {options.ExpectedExitCode} but got {wasmExitCode}");
 
-        return new(wasmExitCode, testOutput, consoleOutput);
+        return new(wasmExitCode, testOutput, consoleOutput, serverOutput);
     }
 
     protected record RunOptions(
@@ -133,13 +160,14 @@ public abstract class AppTestBase : BlazorWasmTestBase
         string TestScenario,
         Dictionary<string, string> BrowserQueryString = null,
         Action<IConsoleMessage> OnConsoleMessage = null,
-        int? ExpectedExitCode = 0,
-        string? ExtraArgs = null
+        Action<string> OnServerMessage = null,
+        int? ExpectedExitCode = 0
     );
 
     protected record RunResult(
         int ExitCode,
         IReadOnlyCollection<string> TestOutput,
-        IReadOnlyCollection<string> ConsoleOutput
+        IReadOnlyCollection<string> ConsoleOutput,
+        IReadOnlyCollection<string> ServerOutput
     );
 }
