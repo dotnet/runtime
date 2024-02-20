@@ -5,70 +5,66 @@
 
     <!-- Write a ProjectName.cmake fragment into the publish artifact folder with that helps with consuming the NativeAOT produced library -->
 
-    <Target Name="WriteNativeLibraryCMakeFragment" DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentStatic;WriteNativeLibraryCMakeFragmentShared" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'"
+    <Target Name="WriteNativeLibraryCMakeFragment" DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentCommon;WriteNativeLibraryCMakeFragmentStatic;WriteNativeLibraryCMakeFragmentShared" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'"
             Outputs="$(NativeLibraryCMakeFragmentPath)">
         <!-- Note: GenerateFileFromTemplate uses ${replacementVar} syntax for things that it will replace.
              Use a backtick to write a normal cmake variable reference: `${nonReplacedVar}
              Wish: GenerateFileFromTemplate should provide a way to specify the replacement sigil.
         -->
+        <PropertyGroup>
+            <NativeLibraryCmakeFragmentTemplateFile Condition="'$(NativeLib)' == 'shared'">$(MSBuildThisFileDirectory)Templates/native-lib.shared.cmake.in</NativeLibraryCmakeFragmentTemplateFile>
+            <NativeLibraryCmakeFragmentTemplateFile Condition="'$(NativeLib)' == 'static'">$(MSBuildThisFileDirectory)Templates/native-lib.static.cmake.in</NativeLibraryCmakeFragmentTemplateFile>
+        </PropertyGroup>
         <GenerateFileFromTemplate
-            TemplateFile="$(MSBuildThisFileDirectory)Templates/native-lib.shared.cmake.in"
+            TemplateFile="$(NativeLibraryCmakeFragmentTemplateFile)"
             OutputPath="$(NativeLibraryCMakeFragmentPath)"
-            Properties="@(NativeLibraryCmakeFragmentProperties->'%(Identity)=%(Value)')"
-            Condition="'$(NativeLib)' == 'shared'" />
-        <WriteLinesToFile File="$(NativeLibraryCMakeFragmentPath)"
-                          Lines="@(NativeLibraryCMakeFragmentLines)"
-                          WriteOnlyWhenDifferent="true"
-                          Overwrite="true"
-                          Condition="'$(NativeLib)' == 'static'"/>
-     </Target>
+            Properties="@(NativeLibraryCmakeFragmentProperties->'%(Identity)=%(Value)')" />
+    </Target>
 
-    <Target Name="PrepareToWriteNativeLibraryCMakeFragment" Condition="'$(PublishAot)' == 'true'">
+    <Target Name="WriteNativeLibraryCMakeFragmentCommon" DependsOnTargets="SetupProperties" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true'">
         <PropertyGroup>
             <NativeLibraryCMakeVarPrefix>$(TargetName.ToUpper())</NativeLibraryCMakeVarPrefix>
             <NativeLibraryCMakeFragmentPath Condition="'$(NativeLibraryCMakeFragmentPath)' == ''">$(ArtifactsObjDir)\$(TargetName)\$(TargetName).cmake</NativeLibraryCMakeFragmentPath>
             <NativeLibraryArtifactName>$(TargetName)</NativeLibraryArtifactName>
             <NativeLibraryArtifactExt>$(NativeBinaryExt)</NativeLibraryArtifactExt>
             <NativeLibraryArtifactLibPath>$(PublishDir)/</NativeLibraryArtifactLibPath>
-        </PropertyGroup>
-    </Target>
-
-    <Target Name="WriteNativeLibraryCMakeFragmentStatic" DependsOnTargets="SetupProperties;PrepareToWriteNativeLibraryCMakeFragment" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(NativeLib)' == 'static'">
-        <PropertyGroup>
-            <NativeLibraryArtifactIlcFrameworkPath>$(IlcFrameworkPath.TrimEnd('\\/'))</NativeLibraryArtifactIlcFrameworkPath>
-            <NativeLibraryArtifactIlcSdkPath>$(IlcSdkPath.TrimEnd('\\/'))</NativeLibraryArtifactIlcSdkPath>
-        </PropertyGroup>
-        <!-- escape backslashes in windows-style paths to make cmake happy -->
-        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-            <NativeLibraryArtifactLibPath>$(NativeLibraryArtifactLibPath.Replace('\', '\\'))</NativeLibraryArtifactLibPath>
-            <NativeLibraryArtifactIlcFrameworkPath>$(NativeLibraryArtifactIlcFrameworkPath.Replace('\', '\\'))</NativeLibraryArtifactIlcFrameworkPath>
-            <NativeLibraryArtifactIlcSdkPath>$(NativeLibraryArtifactIlcSdkPath.Replace('\', '\\'))</NativeLibraryArtifactIlcSdkPath>
-        </PropertyGroup>
-        <ItemGroup>
-            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_MODE &quot;STATIC&quot;)" />
-            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_NAME &quot;$(NativeLibraryArtifactName)&quot;)" />
-            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_EXT &quot;$(NativeLibraryArtifactExt)&quot;)" />
-            <NativeLibraryCMakeFragmentLines Include="set($(NativeLibraryCMakeVarPrefix)_LIBPATH &quot;$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))&quot;)" />
-            <NativeLibraryCMakeFragmentLines Include="set(NATIVEAOT_FRAMEWORK_PATH &quot;$(NativeLibraryArtifactIlcFrameworkPath)&quot;)" />
-            <NativeLibraryCMakeFragmentLines Include="set(NATIVEAOT_SDK_PATH &quot;$(NativeLibraryArtifactIlcSdkPath)&quot;)" />
-        </ItemGroup>
-    </Target>
-
-    <Target Name="WriteNativeLibraryCMakeFragmentShared" DependsOnTargets="SetupProperties;PrepareToWriteNativeLibraryCMakeFragment" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(NativeLib)' == 'shared'">
-        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-            <!-- the import lib is in the native sub-directory, not publish-->
-            <NativeLibraryArtifactImpLibFullPath>$([System.IO.Path]::GetFullPath('$(NativeOutputPath)$(TargetName)$(StaticLibSuffix)'))</NativeLibraryArtifactImpLibFullPath>
-        </PropertyGroup>
-        <!-- escape backslashes in windows-style paths to make cmake happy -->
-        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-            <NativeLibraryArtifactLibPath>$(NativeLibraryArtifactLibPath.Replace('\', '\\'))</NativeLibraryArtifactLibPath>
-            <NativeLibraryArtifactImpLibFullPath>$(NativeLibraryArtifactImpLibFullPath.Replace('\', '\\'))</NativeLibraryArtifactImpLibFullPath>
+            <!-- escape backslashes in windows-style paths to make cmake happy -->
+            <NativeLibraryArtifactLibPath Condition="'$(TargetOS)' == 'windows'">$(NativeLibraryArtifactLibPath.Replace('\', '\\'))</NativeLibraryArtifactLibPath>
         </PropertyGroup>
         <ItemGroup>
             <NativeLibraryCmakeFragmentProperties Include="libCmakeName" Value="$(NativeLibraryCMakeVarPrefix)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactName" Value="$(NativeLibraryArtifactName)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactExt" Value="$(NativeLibraryArtifactExt)" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactLibPath" Value="$(NativeLibraryArtifactLibPath.TrimEnd('\\/'))" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="WriteNativeLibraryCMakeFragmentStatic" DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentCommon" Condition="'$(PublishAot)' == 'true' and '$(NativeLib)' == 'static'">
+        <PropertyGroup>
+            <NativeLibraryArtifactIlcFrameworkPath>$(IlcFrameworkPath.TrimEnd('\\/'))</NativeLibraryArtifactIlcFrameworkPath>
+            <NativeLibraryArtifactIlcSdkPath>$(IlcSdkPath.TrimEnd('\\/'))</NativeLibraryArtifactIlcSdkPath>
+        </PropertyGroup>
+        <!-- escape backslashes in windows-style paths to make cmake happy -->
+        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+            <NativeLibraryArtifactIlcFrameworkPath>$(NativeLibraryArtifactIlcFrameworkPath.Replace('\', '\\'))</NativeLibraryArtifactIlcFrameworkPath>
+            <NativeLibraryArtifactIlcSdkPath>$(NativeLibraryArtifactIlcSdkPath.Replace('\', '\\'))</NativeLibraryArtifactIlcSdkPath>
+        </PropertyGroup>
+        <ItemGroup>
+            <NativeLibraryCmakeFragmentProperties Include="libArtifactNativeAotFrameworkPath" Value="$(NativeLibraryArtifactIlcFrameworkPath)" />
+            <NativeLibraryCmakeFragmentProperties Include="libArtifactNativeAotSdkPath" Value="$(NativeLibraryArtifactIlcSdkPath)" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="WriteNativeLibraryCMakeFragmentShared" DependsOnTargets="SetupProperties;WriteNativeLibraryCMakeFragmentCommon" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(NativeLib)' == 'shared'">
+        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+            <!-- the import lib is in the native sub-directory, not publish-->
+            <NativeLibraryArtifactImpLibFullPath>$([System.IO.Path]::GetFullPath('$(NativeOutputPath)$(TargetName)$(StaticLibSuffix)'))</NativeLibraryArtifactImpLibFullPath>
+        </PropertyGroup>
+        <!-- escape backslashes in windows-style paths to make cmake happy -->
+        <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+            <NativeLibraryArtifactImpLibFullPath>$(NativeLibraryArtifactImpLibFullPath.Replace('\', '\\'))</NativeLibraryArtifactImpLibFullPath>
+        </PropertyGroup>
+        <ItemGroup>
             <NativeLibraryCmakeFragmentProperties Include="libArtifactImpLibFullPath" Value="$(NativeLibraryArtifactImpLibFullPath.TrimEnd('\\/'))" Condition="'$(TargetOS)' == 'windows'" />
             <NativeLibraryCmakeFragmentProperties Include="libArtifactImpLibFullPath" Value="" Condition="'$(TargetOS)' != 'windows'" />
         </ItemGroup>
