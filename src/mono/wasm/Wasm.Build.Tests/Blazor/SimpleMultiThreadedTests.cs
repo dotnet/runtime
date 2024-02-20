@@ -95,7 +95,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsWorkloadWithMultiThreadingForDefaultFramework))]
-    [InlineData("Debug")]
+    [InlineData("Release")]
     public async Task SwitchSingleAndMultiThreaded(string config)
     {
         string id = $"blazor_mt_{config}_{GetRandomId()}";
@@ -126,7 +126,7 @@ public class SimpleMultiThreadedTests : BlazorWasmTestBase
             new BlazorBuildOptions(
                 id,
                 config,
-                NativeFilesType.FromRuntimePack,
+                NativeFilesType.Relinked,
                 RuntimeType: isMultiThreaded ? RuntimeVariant.MultiThreaded : RuntimeVariant.SingleThreaded,
                 Label: label
             ), 
