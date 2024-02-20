@@ -1426,7 +1426,7 @@ PhaseStatus Compiler::optInductionVariables()
 
             changed = true;
 
-            Statement* narrowInitStmt = nullptr;
+            Statement* insertInitAfter = nullptr;
             if ((initBlock != preheader) && (startSsaDsc->GetDefNode() != nullptr))
             {
                 GenTree* narrowInitRoot = startSsaDsc->GetDefNode();
@@ -1443,12 +1443,20 @@ PhaseStatus Compiler::optInductionVariables()
                 {
                     if (stmt->GetRootNode() == narrowInitRoot)
                     {
-                        narrowInitStmt = stmt;
+                        insertInitAfter = stmt;
                         break;
                     }
                 }
 
-                assert(narrowInitStmt != nullptr);
+                assert(insertInitAfter != nullptr);
+
+                if (insertInitAfter->IsPhiDefnStmt())
+                {
+                    while ((insertInitAfter->GetNextStmt() != nullptr) && insertInitAfter->GetNextStmt()->IsPhiDefnStmt())
+                    {
+                        insertInitAfter = insertInitAfter->GetNextStmt();
+                    }
+                }
             }
 
             Statement* initStmt  = nullptr;
@@ -1479,9 +1487,9 @@ PhaseStatus Compiler::optInductionVariables()
 
             GenTree* widenStore = gtNewTempStore(newLclNum, initVal);
             initStmt            = fgNewStmtFromTree(widenStore);
-            if (narrowInitStmt != nullptr)
+            if (insertInitAfter != nullptr)
             {
-                fgInsertStmtAfter(initBlock, narrowInitStmt, initStmt);
+                fgInsertStmtAfter(initBlock, insertInitAfter, initStmt);
             }
             else
             {
