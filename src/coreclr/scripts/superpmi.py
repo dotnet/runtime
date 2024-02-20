@@ -22,6 +22,7 @@ import csv
 import datetime
 import locale
 import logging
+import math
 import os
 import multiprocessing
 import platform
@@ -1865,7 +1866,8 @@ def aggregate_diff_metrics(details):
     """
 
     base_minopts = {"Successful compiles": 0, "Missing compiles": 0, "Failing compiles": 0,
-                    "Contexts with diffs": 0, "Diffed code bytes": 0, "Diffed PerfScore" : 0.0,
+                    "Contexts with diffs": 0, "Diffed code bytes": 0,
+                    "Diffed PerfScore" : 0.0, "Relative PerfScore Geomean": 0.0,
                     "Diff executed instructions": 0, "Diffed contexts": 0}
     base_fullopts = base_minopts.copy()
 
@@ -1915,6 +1917,11 @@ def aggregate_diff_metrics(details):
             base_dict["Diffed PerfScore"] += base_perfscore
             diff_dict["Diffed PerfScore"] += diff_perfscore
 
+            if base_perfscore > 0:
+                log_relative_perfscore = math.log(diff_perfscore / base_perfscore)
+                base_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+                diff_dict["Relative PerfScore Geomean"] += log_relative_perfscore
+
             base_dict["Diffed contexts"] += 1
             diff_dict["Diffed contexts"] += 1
 
@@ -1929,6 +1936,18 @@ def aggregate_diff_metrics(details):
     diff_overall = diff_minopts.copy()
     for k in diff_overall.keys():
         diff_overall[k] += diff_fullopts[k]
+
+    for d in [base_overall, base_minopts, base_fullopts, diff_overall, diff_minopts, diff_fullopts]:
+        sum_of_logs = d["Relative PerfScore Geomean"]
+        if d["Diffed contexts"] > 0:
+            d["Relative PerfScore Geomean"] = math.exp(sum_of_logs / d["Diffed contexts"])
+        else:
+            d["Relative PerfScore Geomean"] = 1
+
+        if d["Contexts with diffs"] > 0:
+            d["Relative PerfScore Geomean (Diffs)"] = math.exp(sum_of_logs / d["Contexts with diffs"])
+        else:
+            d["Relative PerfScore Geomean (Diffs)"] = 1
 
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
             {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts})
@@ -2271,14 +2290,21 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("Total bytes of diff: {}".format(diff_bytes))
                         delta_bytes = diff_bytes - base_bytes
                         logging.info("Total bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+                        logging.info("")
 
-                        if self.coreclr_args.metrics is not None and "PerfScore" in self.coreclr_args.metrics:
-                            base_perfscore = base_metrics["Overall"]["Diffed PerfScore"]
-                            diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
-                            logging.info("Total PerfScore of base: {}".format(base_perfscore))
-                            logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
-                            delta_perfscore = diff_perfscore - base_perfscore
-                            logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+                        base_perfscore = base_metrics["Overall"]["Diffed PerfScore"]
+                        diff_perfscore = diff_metrics["Overall"]["Diffed PerfScore"]
+                        logging.info("Total PerfScore of base: {}".format(base_perfscore))
+                        logging.info("Total PerfScore of diff: {}".format(diff_perfscore))
+                        delta_perfscore = diff_perfscore - base_perfscore
+                        logging.info("Total PerfScore of delta: {} ({:.2%} of base)".format(delta_perfscore, delta_perfscore / base_perfscore))
+                        logging.info("")
+
+                        relative_perfscore_geomean = diff_metrics["Overall"]["Relative PerfScore Geomean"]
+                        logging.info("Relative PerfScore Geomean: {:.4%}".format(relative_perfscore_geomean - 1))
+                        relative_perfscore_geomean_diffs = diff_metrics["Overall"]["Relative PerfScore Geomean (Diffs)"]
+                        logging.info("Relative PerfScore Geomean (Diffs): {:.4%}".format(relative_perfscore_geomean_diffs - 1))
+                        logging.info("")
 
                     try:
                         current_text_diff = text_differences.get_nowait()
