@@ -158,8 +158,8 @@ namespace System.Runtime
         [RuntimeImport(Redhawk.BaseName, "RhpGcSafeZeroMemory")]
         internal static extern unsafe ref byte RhpGcSafeZeroMemory(ref byte dmem, nuint size);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(Redhawk.BaseName, "memmove")]
+        [DllImport(Redhawk.BaseName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

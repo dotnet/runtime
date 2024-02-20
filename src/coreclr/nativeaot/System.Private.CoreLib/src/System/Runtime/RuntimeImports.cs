@@ -84,6 +84,7 @@ namespace System.Runtime
 
         // Wait for all pending finalizers. This must be a p/invoke to avoid starving the GC.
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static partial void RhWaitForPendingFinalizers(int allowReentrantWait);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
@@ -652,6 +653,17 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhUnregisterForGCReporting")]
         internal static extern unsafe void RhUnregisterForGCReporting(GCFrameRegistration* pRegistration);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhDebugBreak")]
+        internal static extern void RhDebugBreak();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpReversePInvoke")]
+        internal static extern unsafe void RhpReversePInvoke(void* frame);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpReversePInvokeReturn")]
+        internal static extern unsafe void RhpReversePInvokeReturn(void* frame);
 
 #if FEATURE_PERFTRACING
         //
@@ -845,260 +857,360 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpCheckedXchg")]
         internal static extern object InterlockedExchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value);
 
-        [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "acos")]
-        internal static extern double acos(double x);
+        [RuntimeImport(RuntimeLibrary, "RhpDbl2Lng")]
+        internal static extern long RhpDbl2Lng(double value);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpDbl2ULng")]
+        internal static extern ulong RhpDbl2ULng(double value);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpDbl2Int")]
+        internal static extern int RhpDbl2Int(double value);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpDbl2UInt")]
+        internal static extern uint RhpDbl2UInt(double value);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLng2Dbl")]
+        internal static extern double RhpLng2Dbl(long value);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLng2Dbl")]
+        internal static extern double RhpULng2Dbl(ulong value);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpDblRem")]
+        internal static extern double RhpDblRem(double dividend, double divisor);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpFltRem")]
+        internal static extern float RhpFltRem(float dividend, float divisor);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLMul")]
+        internal static extern long RhpLMul(long i, long j);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLRsz")]
+        internal static extern ulong RhpLRsz(ulong i, int j);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLRsh")]
+        internal static extern long RhpLRsh(long i, int j);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpLLsh")]
+        internal static extern long RhpLLsh(long i, int j);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "acosf")]
-        internal static extern float acosf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double acos(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "acosh")]
-        internal static extern double acosh(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float acosf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "acoshf")]
-        internal static extern float acoshf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double acosh(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "asin")]
-        internal static extern double asin(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float acoshf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "asinf")]
-        internal static extern float asinf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double asin(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "asinh")]
-        internal static extern double asinh(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float asinf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "asinhf")]
-        internal static extern float asinhf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double asinh(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atan")]
-        internal static extern double atan(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float asinhf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atanf")]
-        internal static extern float atanf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double atan(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atan2")]
-        internal static extern double atan2(double y, double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float atanf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atan2f")]
-        internal static extern float atan2f(float y, float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double atan2(double y, double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atanh")]
-        internal static extern double atanh(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float atan2f(float y, float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "atanhf")]
-        internal static extern float atanhf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double atanh(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "cbrt")]
-        internal static extern double cbrt(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float atanhf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "cbrtf")]
-        internal static extern float cbrtf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double cbrt(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "ceil")]
-        internal static extern double ceil(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float cbrtf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "ceilf")]
-        internal static extern float ceilf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double ceil(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "cos")]
-        internal static extern double cos(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float ceilf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "cosf")]
-        internal static extern float cosf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double cos(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "cosh")]
-        internal static extern double cosh(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float cosf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "coshf")]
-        internal static extern float coshf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double cosh(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "exp")]
-        internal static extern double exp(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float coshf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "expf")]
-        internal static extern float expf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double exp(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "floor")]
-        internal static extern double floor(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float expf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "floorf")]
-        internal static extern float floorf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double floor(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log")]
-        internal static extern double log(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float floorf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "logf")]
-        internal static extern float logf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double log(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log2")]
-        internal static extern double log2(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float logf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log2f")]
-        internal static extern float log2f(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double log2(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log10")]
-        internal static extern double log10(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float log2f(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "log10f")]
-        internal static extern float log10f(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double log10(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "pow")]
-        internal static extern double pow(double x, double y);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float log10f(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "powf")]
-        internal static extern float powf(float x, float y);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double pow(double x, double y);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "sin")]
-        internal static extern double sin(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float powf(float x, float y);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "sinf")]
-        internal static extern float sinf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double sin(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "sinh")]
-        internal static extern double sinh(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float sinf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "sinhf")]
-        internal static extern float sinhf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double sinh(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "sqrt")]
-        internal static extern double sqrt(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float sinhf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "sqrtf")]
-        internal static extern float sqrtf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double sqrt(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "tan")]
-        internal static extern double tan(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float sqrtf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "tanf")]
-        internal static extern float tanf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double tan(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "tanh")]
-        internal static extern double tanh(double x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float tanf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "tanhf")]
-        internal static extern float tanhf(float x);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double tanh(double x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "fmod")]
-        internal static extern double fmod(double x, double y);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float tanhf(float x);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "fmodf")]
-        internal static extern float fmodf(float x, float y);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double fmod(double x, double y);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "fma")]
-        internal static extern double fma(double x, double y, double z);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float fmodf(float x, float y);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "fmaf")]
-        internal static extern float fmaf(float x, float y, float z);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial double fma(double x, double y, double z);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "modf")]
-        internal static extern unsafe double modf(double x, double* intptr);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static partial float fmaf(float x, float y, float z);
 
         [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "modff")]
-        internal static extern unsafe float modff(float x, float* intptr);
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static unsafe partial double modf(double x, double* intptr);
+
+        [Intrinsic]
+        [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        internal static unsafe partial float modff(float x, float* intptr);
 
         [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void* memmove(byte* dmem, byte* smem, nuint size);
 
         [LibraryImport(RuntimeImports.RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static unsafe partial void* memset(byte* mem, int value, nuint size);
 
 #if TARGET_X86 || TARGET_AMD64

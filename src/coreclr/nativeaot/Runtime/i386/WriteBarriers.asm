@@ -99,12 +99,14 @@ DEFINE_WRITE_BARRIER macro DESTREG, REFREG
 ;; Define a helper with a name of the form RhpAssignRefEAX etc. (along with suitable calling standard
 ;; decoration). The location to be updated is in DESTREG. The object reference that will be assigned into that
 ;; location is in one of the other general registers determined by the value of REFREG.
-FASTCALL_FUNC RhpAssignRef&REFREG&, 0
+FASTCALL_FUNC RhpAssignRef&REFREG&, 8
+ALTERNATE_HELPER_ENTRY RhpAssignRef&REFREG&
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    @RhpAssignRef@0 label proc
-    PUBLIC @RhpAssignRef@0
+    @RhpAssignRef@8 label proc
+    PUBLIC @RhpAssignRef@8
+    ALTERNATE_HELPER_ENTRY RhpAssignRef
     ALTERNATE_ENTRY RhpAssignRefAVLocation
     endif
 
@@ -196,12 +198,14 @@ DEFINE_CHECKED_WRITE_BARRIER macro DESTREG, REFREG
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen on the first instruction
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
-FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 0
+FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 8
+ALTERNATE_HELPER_ENTRY RhpCheckedAssignRef&REFREG&
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    @RhpCheckedAssignRef@0 label proc
-    PUBLIC @RhpCheckedAssignRef@0
+    @RhpCheckedAssignRef@8 label proc
+    PUBLIC @RhpCheckedAssignRef@8
+    ALTERNATE_HELPER_ENTRY RhpCheckedAssignRef
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
     endif
 
@@ -239,7 +243,7 @@ DEFINE_CHECKED_WRITE_BARRIER EDX, EBP
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at @RhpCheckedLockCmpXchgAVLocation@0
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
 ;; pass third argument in EAX
-FASTCALL_FUNC RhpCheckedLockCmpXchg
+FASTCALL_FUNC RhpCheckedLockCmpXchg, 12
 ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
     lock cmpxchg    [ecx], edx
     jne              RhpCheckedLockCmpXchg_NoBarrierRequired_ECX_EDX
@@ -251,7 +255,7 @@ FASTCALL_ENDFUNC
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at @RhpCheckedXchgAVLocation@0
 ;; - Function "UnwindSimpleHelperToCaller" assumes the stack contains just the pushed return address
-FASTCALL_FUNC RhpCheckedXchg, 0
+FASTCALL_FUNC RhpCheckedXchg, 8
 
     ;; Setup eax with the new object for the exchange, that way it will automatically hold the correct result
     ;; afterwards and we can leave edx unaltered ready for the GC write barrier below.

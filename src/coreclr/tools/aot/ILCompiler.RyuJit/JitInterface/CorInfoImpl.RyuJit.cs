@@ -607,6 +607,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
                     return _compilation.NodeFactory.ExternSymbol("RhpGcPoll");
 
+                case CorInfoHelpFunc.CORINFO_HELP_ENDCATCH:
+                    return _compilation.NodeFactory.ExternSymbol("RhpEndCatch");
+
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
                     break;
@@ -1920,6 +1923,7 @@ namespace Internal.JitInterface
             MethodDesc md = HandleToObject(method);
 
             string externName = _compilation.PInvokeILProvider.GetDirectCallExternName(md);
+            externName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternMethod(externName, md);
 
             pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
         }
@@ -1928,7 +1932,8 @@ namespace Internal.JitInterface
         {
             if (ppCookieVal != null)
             {
-                *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol("__security_cookie"));
+                string securityCookieName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternVariable("__security_cookie");
+                *ppCookieVal = (IntPtr*)ObjectToHandle(_compilation.NodeFactory.ExternSymbol(securityCookieName));
                 *pCookieVal = IntPtr.Zero;
             }
             else

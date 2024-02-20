@@ -18,6 +18,7 @@ include AsmMacros.inc
 PROBE_STEP equ 1000h
 
 _RhpStackProbe PROC public
+ALTERNATE_HELPER_ENTRY RhpStackProbe
     ; On entry:
     ;   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
     ;
@@ -38,5 +39,12 @@ ProbeLoop:
     ret
 
 _RhpStackProbe ENDP
+
+_RhpEndCatch PROC stdcall public
+ALTERNATE_HELPER_ENTRY RhpEndCatch
+    int 3
+
+_RhpEndCatch ENDP
+
 
 end

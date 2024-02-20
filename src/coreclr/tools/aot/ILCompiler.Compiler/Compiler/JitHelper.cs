@@ -36,7 +36,8 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowIndexOutOfRangeException");
                     break;
                 case ReadyToRunHelper.FailFast:
-                    mangledName = "RhpFallbackFailFast"; // TODO: Report stack buffer overrun
+                    // TODO: Report stack buffer overrun
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "InternalCalls").GetKnownMethod("RhpFallbackFailFast", null);
                     break;
                 case ReadyToRunHelper.ThrowNullRef:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers", "ThrowNullReferenceException");
@@ -58,7 +59,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DebugBreak:
-                    mangledName = "RhDebugBreak";
+                    methodDesc = context.GetRuntimeImport("RhDebugBreak");
                     break;
 
                 case ReadyToRunHelper.WriteBarrier:
@@ -108,13 +109,13 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
-                    mangledName = "RhBox";
+                    methodDesc = context.GetRuntimeExport("RhBox");
                     break;
                 case ReadyToRunHelper.Unbox:
-                    mangledName = "RhUnbox2";
+                    methodDesc = context.GetRuntimeExport("RhUnbox2");
                     break;
                 case ReadyToRunHelper.Unbox_Nullable:
-                    mangledName = "RhUnboxNullable";
+                    methodDesc = context.GetRuntimeExport("RhUnboxNullable");
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
@@ -125,17 +126,17 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewArray:
-                    mangledName = "RhNewArray";
+                    methodDesc = context.GetRuntimeImport("RhNewArray");
                     break;
                 case ReadyToRunHelper.NewObject:
-                    mangledName = "RhNewObject";
+                    methodDesc = context.GetRuntimeImport("RhNewObject");
                     break;
 
                 case ReadyToRunHelper.Stelem_Ref:
-                    mangledName = "RhpStelemRef";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("StelemRef", null);
                     break;
                 case ReadyToRunHelper.Ldelema_Ref:
-                    mangledName = "RhpLdelemaRef";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("LdelemaRef", null);
                     break;
 
                 case ReadyToRunHelper.MemCpy:
@@ -159,23 +160,23 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
-                    mangledName = "RhpLng2Dbl";
+                    methodDesc = context.GetRuntimeImport("RhpLng2Dbl");
                     break;
                 case ReadyToRunHelper.ULng2Dbl:
-                    mangledName = "RhpULng2Dbl";
+                    methodDesc = context.GetRuntimeImport("RhpULng2Dbl");
                     break;
 
                 case ReadyToRunHelper.Dbl2Lng:
-                    mangledName = "RhpDbl2Lng";
+                    methodDesc = context.GetRuntimeImport("RhpDbl2Lng");
                     break;
                 case ReadyToRunHelper.Dbl2ULng:
-                    mangledName = "RhpDbl2ULng";
+                    methodDesc = context.GetRuntimeImport("RhpDbl2ULng");
                     break;
                 case ReadyToRunHelper.Dbl2Int:
-                    mangledName = "RhpDbl2Int";
+                    methodDesc = context.GetRuntimeImport("RhpDbl2Int");
                     break;
                 case ReadyToRunHelper.Dbl2UInt:
-                    mangledName = "RhpDbl2UInt";
+                    methodDesc = context.GetRuntimeImport("RhpDbl2UInt");
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
@@ -192,14 +193,14 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    mangledName = "RhpDblRem";
+                    methodDesc = context.GetRuntimeImport("RhpDblRem");
                     break;
                 case ReadyToRunHelper.FltRem:
-                    mangledName = "RhpFltRem";
+                    methodDesc = context.GetRuntimeImport("RhpFltRem");
                     break;
 
                 case ReadyToRunHelper.LMul:
-                    mangledName = "RhpLMul";
+                    methodDesc = context.GetRuntimeImport("RhpLMul");
                     break;
                 case ReadyToRunHelper.LMulOfv:
                     methodDesc = context.GetHelperEntryPoint("MathHelpers", "LMulOvf");
@@ -235,13 +236,13 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.LRsz:
-                    mangledName = "RhpLRsz";
+                    methodDesc = context.GetRuntimeImport("RhpLRsz");
                     break;
                 case ReadyToRunHelper.LRsh:
-                    mangledName = "RhpLRsh";
+                    methodDesc = context.GetRuntimeImport("RhpLRsh");
                     break;
                 case ReadyToRunHelper.LLsh:
-                    mangledName = "RhpLLsh";
+                    methodDesc = context.GetRuntimeImport("RhpLLsh");
                     break;
 
                 case ReadyToRunHelper.PInvokeBegin:
@@ -252,36 +253,36 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.ReversePInvokeEnter:
-                    mangledName = "RhpReversePInvoke";
+                    methodDesc = context.GetRuntimeImport("RhpReversePInvoke");
                     break;
                 case ReadyToRunHelper.ReversePInvokeExit:
-                    mangledName = "RhpReversePInvokeReturn";
+                    methodDesc = context.GetRuntimeImport("RhpReversePInvokeReturn");
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
-                    mangledName = "RhTypeCast_CheckCastAny";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("IsInstanceOfClass", null);
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
-                    mangledName = "RhTypeCast_CheckCastInterface";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("CheckCastInterface", null);
                     break;
                 case ReadyToRunHelper.CheckCastClass:
-                    mangledName = "RhTypeCast_CheckCastClass";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("CheckCastClass", null);
                     break;
                 case ReadyToRunHelper.CheckCastClassSpecial:
-                    mangledName = "RhTypeCast_CheckCastClassSpecial";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("CheckCastClassSpecial", null);
                     break;
 
                 case ReadyToRunHelper.CheckInstanceAny:
-                    mangledName = "RhTypeCast_IsInstanceOfAny";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("IsInstanceOfAny", null);
                     break;
                 case ReadyToRunHelper.CheckInstanceInterface:
-                    mangledName = "RhTypeCast_IsInstanceOfInterface";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("IsInstanceOfInterface", null);
                     break;
                 case ReadyToRunHelper.CheckInstanceClass:
-                    mangledName = "RhTypeCast_IsInstanceOfClass";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("IsInstanceOfClass", null);
                     break;
                 case ReadyToRunHelper.IsInstanceOfException:
-                    mangledName = "RhTypeCast_IsInstanceOfException";
+                    methodDesc = context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("IsInstanceOfException", null);
                     break;
 
                 case ReadyToRunHelper.MonitorEnter:
@@ -340,14 +341,6 @@ namespace ILCompiler
                 return "RhpNewFinalizable";
 
             return "RhpNewFast";
-        }
-
-        public static string GetNewArrayHelperForType(TypeDesc type)
-        {
-            if (type.RequiresAlign8())
-                return "RhpNewArrayAlign8";
-
-            return "RhpNewArray";
         }
     }
 }

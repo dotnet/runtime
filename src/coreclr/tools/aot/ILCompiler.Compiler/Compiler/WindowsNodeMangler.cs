@@ -11,10 +11,17 @@ namespace ILCompiler
     //
     public class WindowsNodeMangler : NodeMangler
     {
+        private TargetDetails _target;
+
         public const string NonGCStaticMemberName = "__NONGCSTATICS";
         public const string GCStaticMemberName = "__GCSTATICS";
         public const string ThreadStaticMemberName = "__THREADSTATICS";
         public const string ThreadStaticIndexName = "__THREADSTATICINDEX";
+
+        public WindowsNodeMangler(TargetDetails target)
+        {
+            _target = target;
+        }
 
         // Mangled name of boxed version of a type
         public sealed override string MangledBoxedTypeName(TypeDesc type)
@@ -68,9 +75,60 @@ namespace ILCompiler
             return GenericDictionaryNamePrefix + NameMangler.GetMangledTypeName(type);
         }
 
-        public override string MethodGenericDictionary(MethodDesc method)
+        public sealed override string MethodGenericDictionary(MethodDesc method)
         {
             return GenericDictionaryNamePrefix + NameMangler.GetMangledMethodName(method);
+        }
+
+        public sealed override string ExternMethod(string unmangledName, MethodDesc method)
+        {
+            if (_target.Architecture != TargetArchitecture.X86)
+            {
+                return unmangledName;
+            }
+
+            UnmanagedCallingConventions callConv;
+            if (method.IsPInvoke)
+            {
+                callConv = method.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.CallingConventionMask;
+            }
+            else if (method.IsUnmanagedCallersOnly)
+            {
+                // HACK: Work around GetUnmanagedCallersOnlyMethodCallingConventions crashing on non-Ecma methoddesc
+                if (method is not Internal.TypeSystem.Ecma.EcmaMethod)
+                    callConv = UnmanagedCallingConventions.Cdecl;
+                else
+                    callConv = method.GetUnmanagedCallersOnlyMethodCallingConventions() & UnmanagedCallingConventions.CallingConventionMask;
+            }
+            else
+            {
+                Debug.Assert(method is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod && (ecmaMethod.GetRuntimeExportName() != null || ecmaMethod.GetRuntimeImportName() != null));
+                callConv = UnmanagedCallingConventions.Fastcall;
+            }
+
+            int signatureBytes = 0;
+            foreach (var p in method.Signature)
+            {
+                signatureBytes += AlignmentHelper.AlignUp(p.GetElementSize().AsInt, _target.PointerSize);
+            }
+
+            return callConv switch
+            {
+                UnmanagedCallingConventions.Stdcall => string.Concat("_", unmangledName, "@", signatureBytes.ToString()),
+                UnmanagedCallingConventions.Fastcall => string.Concat("@", unmangledName, "@", signatureBytes.ToString()),
+                UnmanagedCallingConventions.Cdecl => string.Concat("_", unmangledName),
+                _ => throw new System.NotImplementedException()
+            };
+        }
+
+        public sealed override string ExternVariable(string unmangledName)
+        {
+            if (_target.Architecture != TargetArchitecture.X86)
+            {
+                return unmangledName;
+            }
+
+            return $"_{unmangledName}";
         }
     }
 }

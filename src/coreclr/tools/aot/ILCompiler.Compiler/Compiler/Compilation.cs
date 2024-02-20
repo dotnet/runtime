@@ -133,7 +133,9 @@ namespace ILCompiler
             }
             else if (field is ExternSymbolMappedField externField)
             {
-                return NodeFactory.ExternSymbol(externField.SymbolName);
+                string externName = externField.SymbolName;
+                externName = NodeFactory.NameMangler.NodeMangler.ExternVariable(externName);
+                return NodeFactory.ExternSymbol(externName);
             }
             else
             {

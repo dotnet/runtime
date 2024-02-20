@@ -11,7 +11,7 @@
 include AsmMacros.inc
 
 RhpCallFunclet equ @RhpCallFunclet@0
-RhpThrowHwEx equ @RhpThrowHwEx@0
+RhpThrowHwEx equ @RhpThrowHwEx@8
 
 extern RhpCallFunclet : proc
 
@@ -25,7 +25,7 @@ extern RhpCallFunclet : proc
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpThrowHwEx, 0
+FASTCALL_FUNC  RhpThrowHwEx, 8
 
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
@@ -90,7 +90,8 @@ FASTCALL_ENDFUNC
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpThrowEx, 0
+FASTCALL_FUNC  RhpThrowEx, 4
+ALTERNATE_HELPER_ENTRY RhpThrowEx
 
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
@@ -170,6 +171,7 @@ FASTCALL_ENDFUNC
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpRethrow, 0
+ALTERNATE_HELPER_ENTRY RhpRethrow
 
 
         esp_offsetof_ExInfo     textequ %0
@@ -272,7 +274,7 @@ endm
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpCallCatchFunclet, 0
+FASTCALL_FUNC  RhpCallCatchFunclet, 16
 
         FUNCLET_CALL_PROLOGUE 2
 
@@ -379,7 +381,7 @@ FASTCALL_ENDFUNC
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpCallFinallyFunclet, 0
+FASTCALL_FUNC  RhpCallFinallyFunclet, 8
 
         FUNCLET_CALL_PROLOGUE 0
 
@@ -446,7 +448,7 @@ FASTCALL_ENDFUNC
 ;; OUTPUT:
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-FASTCALL_FUNC  RhpCallFilterFunclet, 0
+FASTCALL_FUNC  RhpCallFilterFunclet, 12
 
         FUNCLET_CALL_PROLOGUE 0
 

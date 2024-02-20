@@ -671,7 +671,7 @@ EXTERN_C UInt32_BOOL g_fGcStressStarted;
 UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
 
 // static
-EXTERN_C void RhpStressGc()
+EXTERN_C void REDHAWK_CALLCONV RhpStressGc()
 {
     // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
     // restored after the GC operation;

@@ -24,6 +24,12 @@ decoratedName label proc
 PUBLIC decoratedName
         endm
 
+ALTERNATE_HELPER_ENTRY macro Name
+
+Name label proc
+PUBLIC Name
+        endm
+
 LABELED_RETURN_ADDRESS macro Name
 
 decoratedName TEXTEQU @CatStr( _, Name ) )
@@ -163,6 +169,12 @@ G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
 G_CARD_TABLE                                equ _g_card_table
 RhpWaitForGC2                               equ @RhpWaitForGC2@4
 RhpTrapThreads                              equ _RhpTrapThreads
+RhThrowHwEx                                 equ @RhThrowHwEx@8
+RhThrowEx                                   equ @RhThrowEx@8
+RhRethrow                                   equ @RhRethrow@8
+RhExceptionHandling_FailedAllocation        equ @RhExceptionHandling_FailedAllocation@8
+RhpStressGc                                 equ @RhpStressGc@0
+RhpGcPoll2                                  equ @RhpGcPoll2@4
 
 ifdef FEATURE_GC_STRESS
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SGXPAUPAL_LIMITED_CONTEXT@@@Z
@@ -178,6 +190,7 @@ EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC
 EXTERN RhRethrow                                : PROC
+EXTERN RhpGcPoll2                               : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC

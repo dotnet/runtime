@@ -93,6 +93,12 @@ static char& __unbox_z = __stop___unbox;
 
 #endif // _MSC_VER
 
+#if defined(_WIN32) && !defined(_WIN64)
+#define REDHAWK_CALLCONV __fastcall
+#else
+#define REDHAWK_CALLCONV
+#endif
+
 extern "C" bool RhInitialize(bool isDll);
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
@@ -103,39 +109,39 @@ extern "C" bool RhRegisterOSModule(void * pModule,
 
 extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
 
-extern "C" void GetRuntimeException();
-extern "C" void RuntimeFailFast();
-extern "C" void AppendExceptionStackFrame();
-extern "C" void GetSystemArrayEEType();
-extern "C" void OnFirstChanceException();
-extern "C" void OnUnhandledException();
-extern "C" void IDynamicCastableIsInterfaceImplemented();
-extern "C" void IDynamicCastableGetInterfaceImplementation();
+extern "C" void REDHAWK_CALLCONV GetRuntimeException(uint32_t);
+extern "C" void REDHAWK_CALLCONV RuntimeFailFast(uint32_t, uintptr_t, uintptr_t, uintptr_t);
+extern "C" void REDHAWK_CALLCONV AppendExceptionStackFrame(uintptr_t, uintptr_t, int32_t);
+extern "C" void REDHAWK_CALLCONV GetSystemArrayEEType();
+extern "C" void REDHAWK_CALLCONV OnFirstChanceException(uintptr_t);
+extern "C" void REDHAWK_CALLCONV OnUnhandledException(uintptr_t);
+extern "C" void REDHAWK_CALLCONV IDynamicCastableIsInterfaceImplemented(uintptr_t, uintptr_t, int32_t);
+extern "C" void REDHAWK_CALLCONV IDynamicCastableGetInterfaceImplementation(uintptr_t, uintptr_t, int32_t);
 #ifdef FEATURE_OBJCMARSHAL
-extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
-extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
-extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
-extern "C" void ObjectiveCMarshalGetUnhandledExceptionPropagationHandler();
+extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalTryGetTaggedMemory(uintptr_t, uintptr_t);
+extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalGetIsTrackedReferenceCallback();
+extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
+extern "C" void REDHAWK_CALLCONV ObjectiveCMarshalGetUnhandledExceptionPropagationHandler(uintptr_t, uintptr_t, uintptr_t);
 #endif
 
-typedef void(*pfn)();
+typedef void (REDHAWK_CALLCONV *pfn)();
 
 static const pfn c_classlibFunctions[] = {
-    &GetRuntimeException,
-    &RuntimeFailFast,
+    (pfn)&GetRuntimeException,
+    (pfn)&RuntimeFailFast,
     nullptr, // &UnhandledExceptionHandler,
-    &AppendExceptionStackFrame,
+    (pfn)&AppendExceptionStackFrame,
     nullptr, // &CheckStaticClassConstruction,
-    &GetSystemArrayEEType,
-    &OnFirstChanceException,
-    &OnUnhandledException,
-    &IDynamicCastableIsInterfaceImplemented,
-    &IDynamicCastableGetInterfaceImplementation,
+    (pfn)&GetSystemArrayEEType,
+    (pfn)&OnFirstChanceException,
+    (pfn)&OnUnhandledException,
+    (pfn)&IDynamicCastableIsInterfaceImplemented,
+    (pfn)&IDynamicCastableGetInterfaceImplementation,
 #ifdef FEATURE_OBJCMARSHAL
-    &ObjectiveCMarshalTryGetTaggedMemory,
-    &ObjectiveCMarshalGetIsTrackedReferenceCallback,
-    &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
-    &ObjectiveCMarshalGetUnhandledExceptionPropagationHandler,
+    (pfn)&ObjectiveCMarshalTryGetTaggedMemory,
+    (pfn)&ObjectiveCMarshalGetIsTrackedReferenceCallback,
+    (pfn)&ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
+    (pfn)&ObjectiveCMarshalGetUnhandledExceptionPropagationHandler,
 #else
     nullptr,
     nullptr,
@@ -148,18 +154,18 @@ static const pfn c_classlibFunctions[] = {
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 #endif
 
-extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
+extern "C" void __cdecl InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
 
 #ifndef NATIVEAOT_DLL
 #define NATIVEAOT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
-extern "C" int __managed__Main(int argc, wchar_t* argv[]);
+extern "C" int __cdecl __managed__Main(int argc, wchar_t* argv[]);
 #else
-extern "C" int __managed__Main(int argc, char* argv[]);
+extern "C" int __cdecl __managed__Main(int argc, char* argv[]);
 #endif
 #else
 #define NATIVEAOT_ENTRYPOINT __managed__Startup
-extern "C" void __managed__Startup();
+extern "C" void __cdecl __managed__Startup();
 #endif // !NATIVEAOT_DLL
 
 static int InitializeRuntime()

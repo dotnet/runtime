@@ -12,6 +12,8 @@ include AsmMacros.inc
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+RhpCidResolve equ @RhpCidResolve@8
+
 EXTERN RhpCidResolve : PROC
 EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
 
@@ -99,6 +101,7 @@ RhpInterfaceDispatchSlow endp
 RhpInterfaceDispatchNullReference proc public
         push    ebp
         mov     ebp, esp
+ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation
         mov     ebx, [ecx]  ;; This should A/V
         int     3
 RhpInterfaceDispatchNullReference endp
@@ -120,13 +123,11 @@ _RhpVTableOffsetDispatch endp
 
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
-_RhpInitialInterfaceDispatch proc public
-    ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
-
+FASTCALL_FUNC RhpInitialDynamicInterfaceDispatch, 0
+ALTERNATE_HELPER_ENTRY RhpInitialDynamicInterfaceDispatch
+ALTERNATE_ENTRY RhpInitialInterfaceDispatch
         jmp RhpInterfaceDispatchSlow
-
-_RhpInitialInterfaceDispatch endp
-
+FASTCALL_ENDFUNC
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH
 

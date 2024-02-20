@@ -52,12 +52,12 @@ namespace Internal.TypeSystem
         {
             // If calling convention is anything but 'unmanaged', or there's no modifiers, we can bitcast to our enum and we're done.
             MethodSignatureFlags unmanagedCallconv = signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask;
-            if (unmanagedCallconv != MethodSignatureFlags.UnmanagedCallingConvention)
+            if (unmanagedCallconv is not MethodSignatureFlags.UnmanagedCallingConvention and not 0)
             {
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
                     && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
-                Debug.Assert(unmanagedCallconv != 0);
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionFastCall == (int)UnmanagedCallingConventions.Fastcall);
                 return (UnmanagedCallingConventions)unmanagedCallconv;
             }
 
@@ -113,7 +113,8 @@ namespace Internal.TypeSystem
             {
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
                     && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
-                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall
+                    && (int)MethodSignatureFlags.UnmanagedCallingConventionFastCall == (int)UnmanagedCallingConventions.Fastcall);
                 result = (UnmanagedCallingConventions)unmanagedCallConv;
             }
             else
@@ -146,7 +147,8 @@ namespace Internal.TypeSystem
                 {
                     Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)UnmanagedCallingConventions.Cdecl
                         && (int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)UnmanagedCallingConventions.Stdcall
-                        && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall);
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)UnmanagedCallingConventions.Thiscall
+                        && (int)MethodSignatureFlags.UnmanagedCallingConventionFastCall == (int)UnmanagedCallingConventions.Fastcall);
                     return (UnmanagedCallingConventions)unmanagedCallConv;
                 }
             }

@@ -136,7 +136,7 @@ PopProbeFrame macro
         pop         eax
 endm
 
-RhpThrowHwEx equ @RhpThrowHwEx@0
+RhpThrowHwEx equ @RhpThrowHwEx@8
 extern RhpThrowHwEx : proc
 
 ;;

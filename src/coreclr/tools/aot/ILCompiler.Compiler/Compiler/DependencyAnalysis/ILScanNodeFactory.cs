@@ -36,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else if (method.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute"))
                 {
-                    return new RuntimeImportMethodNode(method);
+                    return new RuntimeImportMethodNode(method, NameMangler);
                 }
             }
 
