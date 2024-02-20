@@ -20,6 +20,7 @@
 #include "gcinfodecoder.cpp"
 
 #ifdef TARGET_X86
+#define FEATURE_EH_FUNCLETS
 #include "../../inc/gcdecoder.cpp"
 #include "../../inc/unwind_x86.h"
 typedef DWORD* PTR_DWORD;
@@ -657,7 +658,13 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 #if defined(TARGET_X86)
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
-    if (!::UnwindStackFrame(pRegisterSet, (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress), codeOffset, GCInfoToken(gcInfo), true))
+    if (!::UnwindStackFrame(
+            pRegisterSet,
+            (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress),
+            codeOffset,
+            GCInfoToken(gcInfo),
+            (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT,
+            true))
     {
         return false;
     }

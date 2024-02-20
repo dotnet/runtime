@@ -2342,7 +2342,18 @@ const RegMask CALLEE_SAVED_REGISTERS_MASK[] =
 
 static void SetLocation(PREGDISPLAY pRD, int ind, PDWORD loc)
 {
-#ifdef FEATURE_EH_FUNCLETS
+#if defined(FEATURE_NATIVEAOT)
+    static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
+    {
+        offsetof(REGDISPLAY, pRdi), // first register to be pushed
+        offsetof(REGDISPLAY, pRsi),
+        offsetof(REGDISPLAY, pRbx),
+        offsetof(REGDISPLAY, pRbp), // last register to be pushed
+    };
+
+    SIZE_T offsetOfRegPtr = OFFSET_OF_CALLEE_SAVED_REGISTERS[ind];
+    *(LPVOID*)(PBYTE(pRD) + offsetOfRegPtr) = loc;
+#elif defined(FEATURE_EH_FUNCLETS)
     static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
     {
         offsetof(T_KNONVOLATILE_CONTEXT_POINTERS, Edi), // first register to be pushed
@@ -2356,17 +2367,10 @@ static void SetLocation(PREGDISPLAY pRD, int ind, PDWORD loc)
 #else
     static const SIZE_T OFFSET_OF_CALLEE_SAVED_REGISTERS[] =
     {
-#ifdef FEATURE_NATIVEAOT
-        offsetof(REGDISPLAY, pRdi), // first register to be pushed
-        offsetof(REGDISPLAY, pRsi),
-        offsetof(REGDISPLAY, pRbx),
-        offsetof(REGDISPLAY, pRbp), // last register to be pushed
-#else
         offsetof(REGDISPLAY, pEdi), // first register to be pushed
         offsetof(REGDISPLAY, pEsi),
         offsetof(REGDISPLAY, pEbx),
         offsetof(REGDISPLAY, pEbp), // last register to be pushed
-#endif
     };
 
     SIZE_T offsetOfRegPtr = OFFSET_OF_CALLEE_SAVED_REGISTERS[ind];
@@ -2924,15 +2928,16 @@ bool UnwindEbpDoubleAlignFrame(
         PTR_CBYTE       table,
         PTR_CBYTE       methodStart,
         DWORD           curOffs,
+        bool            isFunclet,
         bool            updateAllRegs)
 #else
 bool UnwindEbpDoubleAlignFrame(
         PREGDISPLAY     pContext,
-        EECodeInfo     *pCodeInfo,
         hdrInfo        *info,
         PTR_CBYTE       table,
         PTR_CBYTE       methodStart,
         DWORD           curOffs,
+        bool            isFunclet,
         bool            updateAllRegs,
         StackwalkCacheUnwindInfo  *pUnwindInfo) // out-only, perf improvement
 #endif
@@ -2957,7 +2962,7 @@ bool UnwindEbpDoubleAlignFrame(
         // TODO If funclet frame layout is changed from CodeGen::genFuncletProlog() and genFuncletEpilog(),
         //      we need to change here accordingly. It is likely to have changes when introducing PSPSym.
         // TODO Currently we assume that ESP of funclet frames is always fixed but actually it could change.
-        if (pCodeInfo->IsFunclet())
+        if (isFunclet)
         {
             baseSP = curESP;
             // Set baseSP as initial SP
@@ -2970,8 +2975,7 @@ bool UnwindEbpDoubleAlignFrame(
             //           ret
             // SP alignment padding should be added for all instructions except the first one and the last one.
             // Epilog may not exist (unreachable), so we need to check the instruction code.
-            const TADDR funcletStart = pCodeInfo->GetJitManager()->GetFuncletStartAddress(pCodeInfo);
-            if (funcletStart != pCodeInfo->GetCodeAddress() && methodStart[pCodeInfo->GetRelOffset()] != X86_INSTR_RETN)
+            if (curOffs != 0 && methodStart[curOffs] != X86_INSTR_RETN)
                 baseSP += 12;
 
             SetRegdisplayPCTAddr(pContext, (TADDR)baseSP);
@@ -3091,6 +3095,7 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
                       PTR_CBYTE       methodStart,
                       DWORD           curOffs,
                       GCInfoToken     gcInfoToken,
+                      bool            isFunclet,
                       bool            updateAllRegs)
 #else
 bool UnwindStackFrame(PREGDISPLAY     pContext,
@@ -3175,10 +3180,10 @@ bool UnwindStackFrame(PREGDISPLAY     pContext,
          */
 
 #ifdef FEATURE_NATIVEAOT
-        if (!UnwindEbpDoubleAlignFrame(pContext, info, table, methodStart, curOffs, updateAllRegs))
+        if (!UnwindEbpDoubleAlignFrame(pContext, info, table, methodStart, curOffs, isFunclet, updateAllRegs))
             return false;
 #else
-        if (!UnwindEbpDoubleAlignFrame(pContext, pCodeInfo, info, table, methodStart, curOffs, updateAllRegs, pUnwindInfo))
+        if (!UnwindEbpDoubleAlignFrame(pContext, info, table, methodStart, curOffs, pCodeInfo->IsFunclet(), updateAllRegs, pUnwindInfo))
             return false;
 #endif
     }
