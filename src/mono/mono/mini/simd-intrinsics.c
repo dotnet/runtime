@@ -1178,20 +1178,6 @@ create_class_instance (const char* name_space, const char *name, MonoType *param
 	return ivector_inst;
 }
 
-static gboolean
-is_supported_vector_primitive_type (MonoType *type)
-{
-	gboolean constrained_generic_param = (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
-
-	if (constrained_generic_param && type->data.generic_param->gshared_constraint && MONO_TYPE_IS_VECTOR_PRIMITIVE (type->data.generic_param->gshared_constraint))
-		return TRUE;
-
-	if (MONO_TYPE_IS_VECTOR_PRIMITIVE (type))
-		return TRUE;
-
-	return FALSE;
-}
-
 static guint16 sri_vector_methods [] = {
 	SN_Abs,
 	SN_Add,
@@ -2491,12 +2477,6 @@ emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		g_free (name);
 	}
 
-	if (id == SN_get_IsSupported) {
-		MonoInst *ins;
-		EMIT_NEW_ICONST (cfg, ins, is_supported_vector_primitive_type (etype) ? 1 : 0);
-		return ins;
-	}
-
 	// Apart from filtering out non-primitive types this also filters out shared generic instance types like: T_BYTE which cannot be intrinsified
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype)) {
 		// Happens often in gshared code
@@ -3223,11 +3203,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 	klass = cmethod->klass;
 	type = m_class_get_byval_arg (klass);
 	etype = mono_class_get_context (klass)->class_inst->type_argv [0];
-
-	if (id == SN_get_IsSupported) {
-		EMIT_NEW_ICONST (cfg, ins, is_supported_vector_primitive_type (etype) ? 1 : 0);
-		return ins;
-	}
 
 	if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 		return NULL;

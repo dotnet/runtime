@@ -459,11 +459,14 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_SWITCH:
-            for (BasicBlock* const bTarget : block->SwitchTargets())
+        {
+            BBswtDesc* const swtDesc = block->GetSwitchTargets();
+            for (unsigned i = 0; i < swtDesc->bbsCount; i++)
             {
-                fgRemoveRefPred(bTarget, block);
+                fgRemoveRefPred(swtDesc->bbsDstTab[i]);
             }
             break;
+        }
 
         default:
             noway_assert(!"Block doesn't have a valid bbKind!!!!");
