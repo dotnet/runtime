@@ -11791,7 +11791,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_ARM64_STM_SCALAR: {
-			LLVMTypeRef tuple_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef tuple_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
 			unsigned int n_elem_tuple = LLVMGetArrayLength (tuple_t);
 			unsigned int n_elem_vector = LLVMGetVectorSize (vec_t);
