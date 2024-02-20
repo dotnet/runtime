@@ -1078,6 +1078,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_BR_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
         case IF_SVE_BZ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
         case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
+        case IF_SVE_CA_3A:   // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -10766,6 +10767,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 fmt = IF_SVE_BZ_3A;
             }
             break;
+
         case INS_sve_tbx:
             assert(insOptsScalableStandard(opt));
             assert(isVectorRegister(reg1));                        // ddddd
@@ -10773,6 +10775,15 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg3));                        // mmmmm
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             fmt = IF_SVE_BZ_3A;
+            break;
+
+        case INS_sve_tbxq:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_CA_3A;
             break;
 
         case INS_sve_clz:
@@ -22283,6 +22294,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_BR_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
         case IF_SVE_BZ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
         case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
+        case IF_SVE_CA_3A:   // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                     // nnnnn
@@ -25878,6 +25890,7 @@ void emitter::emitDispInsHelp(
                            // (unpredicated)
         case IF_SVE_BK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point trig select coefficient
         case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_CA_3A: // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
         // <Zd>.Q, <Zn>.Q, <Zm>.Q
         case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
         // <Zda>.D, <Zn>.D, <Zm>.D
@@ -29443,6 +29456,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_GX_3C: // .........i.iimmm ......nnnnnddddd -- SVE floating-point multiply (indexed)
         case IF_SVE_EW_3A: // ...........mmmmm ......nnnnnddddd -- SVE2 multiply-add (checked pointer)
         case IF_SVE_EW_3B: // ...........mmmmm ......aaaaaddddd -- SVE2 multiply-add (checked pointer)
+        case IF_SVE_CA_3A: // ........xx.mmmmm ......nnnnnddddd -- sve_int_perm_tbxquads
             result.insThroughput = PERFSCORE_THROUGHPUT_1C; // need to fix
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
