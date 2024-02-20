@@ -7928,8 +7928,8 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 
     // A hacky way to safely call fgMorphTree in Lower
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
-    GenTree* dataPlaceholder = comp->gtNewZeroConNode(data->TypeGet());
-    GenTree* sizePlaceholder = comp->gtNewZeroConNode(size->TypeGet());
+    GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
+    GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
 
     CorInfoHelpFunc helper = blkNode->OperIsInitBlkOp() ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
     GenTreeCall* call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
