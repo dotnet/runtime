@@ -20,10 +20,17 @@
         <SupportsNativeAotComponents Condition="'$(SupportsNativeAotComponents)' == ''">false</SupportsNativeAotComponents>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+        <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
+        <ExtraProps Condition="'$(SysRoot)' != ''">$(ExtraProps);SysRoot=$(SysRoot)</ExtraProps>
+        <ExtraProps Condition="'$(CustomLinkerARgToolchainArg)' != ''">$(ExtraProps);CustomLinkerArgToolchainArg=$(CustomLinkerArgToolchainArg)</ExtraProps>
+    </PropertyGroup>
+
     <ItemGroup Condition="$(SupportsNativeAotComponents)">
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"
-                          AdditionalProperties="%(AdditionalProperties);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)"/>
+                          AdditionalProperties="%(AdditionalProperties);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps)"/>
     </ItemGroup>
 
     <!-- FIXME: incremental build -->
@@ -32,13 +39,13 @@
         <Message Importance="High" Text="Restoring native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <!-- workaround https://github.com/dotnet/msbuild/issues/2811 - Restore has to be a separate exectution with a different evaluation -->
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind);_RandomPropertyToPleaseMSBuild=Restoring"
+                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps);_RandomPropertyToPleaseMSBuild=Restoring"
                  Targets="Restore" />
 
         <Message Importance="High" Text="Building native libs @(NativeLibsProjectsToBuild)" />
         <Message Importance="High" Text="Building native libs RuntimeConfiguration=$(RuntimeConfiguration) LibrariesConfiguration=$(LibrariesConfiguration)" />
         <MSBuild Projects="@(NativeLibsProjectsToBuild)"
-                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind);_RandomOtherPropertyToPleaseMSBuild=BuildingAndPublishing"
+                 Properties="Configuration=$(NativeLibsPublishConfiguration);RuntimeConfiguration=$(RuntimeConfiguration);LibrariesConfiguration=$(LibrariesConfiguration);RuntimeIdentifier=$(OutputRID);NativeLib=$(NativeLibKind)$(ExtraProps);_RandomOtherPropertyToPleaseMSBuild=BuildingAndPublishing"
                  Targets="Build;Publish" />
     </Target>
 </Project>

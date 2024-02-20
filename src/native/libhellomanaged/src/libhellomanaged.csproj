@@ -24,6 +24,10 @@
     <SharedLibraryInstallName>@rpath/$(MSBuildProjectName).dylib</SharedLibraryInstallName>
   </PropertyGroup>
 
+  <ItemGroup>
+      <!-- passed by compile-native.proj to set - -gcc-toolchain=$(ROOTFS_DIR)/usr -->
+      <CustomLinkerArg Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="$(CustomLinkerArgToolchainArg)" />
+  </ItemGroup>
 
   <!-- TODO: emit a cmake fragment that includes the location of the ilcompiler nuget's sdk and framework files. -->
 
