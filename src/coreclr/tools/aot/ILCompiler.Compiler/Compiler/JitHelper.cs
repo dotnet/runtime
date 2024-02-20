@@ -85,6 +85,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.WriteBarrier_ESI:
                     mangledName = "RhpAssignRefESI";
                     break;
+                case ReadyToRunHelper.WriteBarrier_EBP:
+                    mangledName = "RhpAssignRefEBP";
+                    break;                    
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
                     mangledName = "RhpCheckedAssignRefEAX";
                     break;
@@ -100,7 +103,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.CheckedWriteBarrier_ESI:
                     mangledName = "RhpCheckedAssignRefESI";
                     break;
-
+                case ReadyToRunHelper.CheckedWriteBarrier_EBP:
+                    mangledName = "RhpCheckedAssignRefEBP";
+                    break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
                     mangledName = "RhBox";
