@@ -7365,6 +7365,7 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
         case GT_KEEPALIVE:
+        case GT_SWIFT_ERROR:
             return true;
 
         case GT_CALL:
