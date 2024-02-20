@@ -8651,6 +8651,26 @@ GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeF
     return blkNode;
 }
 
+//------------------------------------------------------------------------
+// gtNewMemoryBarrier: Create a memory barrier node
+//
+// Arguments:
+//    loadOnly - relaxes the full memory barrier to be load-only
+//
+// Return Value:
+//    The created GT_MEMORYBARRIER node.
+//
+GenTree* Compiler::gtNewMemoryBarrier(bool loadOnly)
+{
+    GenTree* tree = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
+    tree->gtFlags |= GTF_GLOB_REF | GTF_ASG;
+    if (loadOnly)
+    {
+        tree->gtFlags |= GTF_MEMORYBARRIER_LOAD;
+    }
+    return tree;
+}
+
 //------------------------------------------------------------------------------
 // gtNewIndir : Create an indirection node.
 //

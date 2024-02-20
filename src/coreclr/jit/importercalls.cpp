@@ -3526,18 +3526,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
             {
                 assert(sig->numArgs == 0);
-
-                GenTree* op1 = new (this, GT_MEMORYBARRIER) GenTree(GT_MEMORYBARRIER, TYP_VOID);
-                op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
-
                 // On XARCH `NI_System_Threading_Interlocked_ReadMemoryBarrier` fences need not be emitted.
                 // However, we still need to capture the effect on reordering.
-                if (ni == NI_System_Threading_Interlocked_ReadMemoryBarrier)
-                {
-                    op1->gtFlags |= GTF_MEMORYBARRIER_LOAD;
-                }
-
-                retNode = op1;
+                retNode = gtNewMemoryBarrier(ni == NI_System_Threading_Interlocked_ReadMemoryBarrier);
                 break;
             }
 

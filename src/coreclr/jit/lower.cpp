@@ -3098,23 +3098,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             LowerNode(regNode);
 
             // Finally move all GT_PUTARG_* nodes
-            for (CallArg& arg : call->gtArgs.EarlyArgs())
-            {
-                GenTree* node = arg.GetEarlyNode();
-                // Non-value nodes in early args are setup nodes for late args.
-                if (node->IsValue())
-                {
-                    assert(node->OperIsPutArg() || node->OperIsFieldList());
-                    MoveCFGCallArg(call, node);
-                }
-            }
-
-            for (CallArg& arg : call->gtArgs.LateArgs())
-            {
-                GenTree* node = arg.GetLateNode();
-                assert(node->OperIsPutArg() || node->OperIsFieldList());
-                MoveCFGCallArg(call, node);
-            }
+            MoveCFGCallArgs(call);
             break;
         }
         case CFGCallKind::Dispatch:
@@ -3259,6 +3243,38 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
     JITDUMP("\n");
     BlockRange().Remove(node);
     BlockRange().InsertBefore(call, node);
+}
+
+//------------------------------------------------------------------------
+// MoveCFGCallArgs: Given a call that will be CFG transformed using the
+// validate+call scheme, move all GT_PUTARG_* or GT_FIELD_LIST nodes right before the call.
+//
+// Arguments:
+//    call - The call that is being CFG transformed
+//
+// Remarks:
+//    See comments in MoveCFGCallArg for more details.
+//
+void Lowering::MoveCFGCallArgs(GenTreeCall* call)
+{
+    // Finally move all GT_PUTARG_* nodes
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    {
+        GenTree* node = arg.GetEarlyNode();
+        // Non-value nodes in early args are setup nodes for late args.
+        if (node->IsValue())
+        {
+            assert(node->OperIsPutArg() || node->OperIsFieldList());
+            MoveCFGCallArg(call, node);
+        }
+    }
+
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        GenTree* node = arg.GetLateNode();
+        assert(node->OperIsPutArg() || node->OperIsFieldList());
+        MoveCFGCallArg(call, node);
+    }
 }
 
 #ifndef TARGET_64BIT
@@ -7844,6 +7860,12 @@ void Lowering::ContainCheckBitCast(GenTree* node)
     }
 }
 
+//------------------------------------------------------------------------
+// LowerBlockStoreAsHelperCall: Lower a block store node as a memset/memcpy call
+//
+// Arguments:
+//    blkNode - The block store node to lower
+//
 void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 {
     // We shouldn't be using helper calls for blocks on heap containing GC pointers.
@@ -7853,12 +7875,16 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     LIR::Use use;
     assert(!BlockRange().TryGetUse(blkNode, &use));
 
+    const bool isVolatile = blkNode->IsVolatile();
+
     GenTree* dest = blkNode->Addr();
     GenTree* data = blkNode->Data();
     GenTree* size;
 
+    // Is it Memset ...
     if (blkNode->OperIsInitBlkOp())
     {
+        // Drop GT_INIT_VAL nodes
         if (data->OperIsInitVal())
         {
             BlockRange().Remove(data);
@@ -7867,6 +7893,10 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     }
     else
     {
+        // ... or Memcpy?
+        assert(data->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
+
+        // Drop GT_IND nodes
         if (data->OperIs(GT_IND))
         {
             BlockRange().Remove(data);
@@ -7875,6 +7905,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 
         if (varTypeIsStruct(data))
         {
+            // If it's a struct local, take its address
             const unsigned lclNum = data->AsLclVarCommon()->GetLclNum();
             GenTreeLclFld* addr   = comp->gtNewLclAddrNode(lclNum, data->AsLclVarCommon()->GetLclOffs(), TYP_BYREF);
             BlockRange().InsertAfter(data, addr);
@@ -7885,14 +7916,17 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 
     if (blkNode->OperIs(GT_STORE_DYN_BLK))
     {
+        // Size is not a constant
         size = blkNode->AsStoreDynBlk()->gtDynamicSize;
     }
     else
     {
+        // Size is a constant
         size = comp->gtNewIconNode(blkNode->Size(), TYP_I_IMPL);
         BlockRange().InsertBefore(data, size);
     }
 
+    // A hacky way to safely call fgMorphTree in Lower
     GenTree* destPlaceholder = comp->gtNewZeroConNode(dest->TypeGet());
     GenTree* dataPlaceholder = comp->gtNewZeroConNode(data->TypeGet());
     GenTree* sizePlaceholder = comp->gtNewZeroConNode(size->TypeGet());
@@ -7924,24 +7958,26 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     LowerRange(rangeStart, rangeEnd);
 
     // Finally move all GT_PUTARG_* nodes
-    for (CallArg& arg : call->gtArgs.EarlyArgs())
-    {
-        GenTree* node = arg.GetEarlyNode();
-        // Non-value nodes in early args are setup nodes for late args.
-        if (node->IsValue())
-        {
-            assert(node->OperIsPutArg() || node->OperIsFieldList());
-            MoveCFGCallArg(call, node);
-        }
-    }
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        GenTree* node = arg.GetLateNode();
-        assert(node->OperIsPutArg() || node->OperIsFieldList());
-        MoveCFGCallArg(call, node);
-    }
+    // Re-use the existing logic for CFG call args here
+    MoveCFGCallArgs(call);
 
-    // TODO: emit memory barriers for volatile block stores (volatile. cpblk/initblk)
+    BlockRange().Remove(destPlaceholder);
+    BlockRange().Remove(dataPlaceholder);
+    BlockRange().Remove(sizePlaceholder);
+
+    // Wrap with memory barriers on weak memory models
+    // if the block store was volatile
+#ifndef TARGET_XARCH
+    if (isVolatile)
+    {
+        GenTree* firstBarrier = comp->gtNewMemoryBarrier();
+        GenTree* secondBarrier = comp->gtNewMemoryBarrier(/*loadOnly*/ true);
+        BlockRange().InsertBefore(call, firstBarrier);
+        BlockRange().InsertAfter(call, secondBarrier);
+        LowerNode(firstBarrier);
+        LowerNode(secondBarrier);
+    }
+#endif
 }
 
 struct StoreCoalescingData
@@ -8940,7 +8976,6 @@ void Lowering::LowerLclHeap(GenTree* node)
                     GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero, comp->typGetBlkLayout((unsigned)alignedSize));
                 storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
                 BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
-                return;
             }
             else
             {

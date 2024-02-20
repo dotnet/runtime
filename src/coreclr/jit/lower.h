@@ -141,6 +141,7 @@ private:
     bool LowerCallMemmove(GenTreeCall* call, GenTree** next);
     bool LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     void LowerCFGCall(GenTreeCall* call);
+    void MoveCFGCallArgs(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
