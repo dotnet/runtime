@@ -207,8 +207,13 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// </remarks>
     /// <param name="connection">The new connection.</param>
     /// <param name="clientHello">The TLS ClientHello data.</param>
-    private async Task StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
+    private async void StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
     {
+        // Yield to the threadpool immediately. This makes sure the connection options callback
+        // provided by the user is not invoked from the MsQuic thread and cannot delay acks
+        // or other operations on other connections.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
         bool wrapException = false;
         CancellationToken cancellationToken = default;
 
@@ -333,9 +338,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
-        // This also makes sure the connection options callback provided by the user is not invoked
-        // from the MsQuic thread and cannot delay acks or other operations on other connections.
-        _ = Task.Run(() => StartConnectionHandshake(connection, clientHello));
+        StartConnectionHandshake(connection, clientHello);
 
         return QUIC_STATUS_SUCCESS;
 
