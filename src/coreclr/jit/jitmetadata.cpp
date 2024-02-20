@@ -6,6 +6,16 @@
 
 #ifdef DEBUG
 
+//------------------------------------------------------------------------
+// JitMetadata::getName: Get the name corresponding to a JitMetadataName value,
+// which can be used to report metadata back to the EE.
+//
+// Parameters:
+//   name - The JitMetadataName enum entry
+//
+// Returns:
+//   String representation of the name
+//
 const char* JitMetadata::getName(JitMetadataName name)
 {
     switch (name)
@@ -20,17 +30,39 @@ const char* JitMetadata::getName(JitMetadataName name)
     }
 }
 
+//------------------------------------------------------------------------
+// JitMetadata::report: Report metadata back to the EE.
+//
+// Parameters:
+//   comp - Compiler instance
+//   name - Enum entry specifying the metadata name
+//   data - Pointer to the value to report back
+//
 void JitMetadata::report(Compiler* comp, JitMetadataName name, const void* data)
 {
     comp->info.compCompHnd->reportMetadata(getName(name), data);
 }
 
+//------------------------------------------------------------------------
+// reportValue: Report a specific value back to the EE.
+//
+// Parameters:
+//   comp  - Compiler instance
+//   key   - The key
+//   value - Value to report back
+//
 template <typename T>
 static void reportValue(Compiler* comp, const char* key, T value)
 {
     comp->info.compCompHnd->reportMetadata(key, &value);
 }
 
+//------------------------------------------------------------------------
+// JitMetrics::report: Report all metrics and their values back to the EE.
+//
+// Parameters:
+//   comp - Compiler instance
+//
 void JitMetrics::report(Compiler* comp)
 {
 #define JITMETADATAINFO(name, type, flags)
@@ -38,22 +70,43 @@ void JitMetrics::report(Compiler* comp)
 #include "jitmetadatalist.h"
 }
 
+//------------------------------------------------------------------------
+// printMetric: Print a double metric value to jitstdout.
+//
+// Parameters:
+//   value - The value
+//
 static void printMetric(double value)
 {
     printf("%f", value);
 }
 
+//------------------------------------------------------------------------
+// printMetric: Print an int metric value to jitstdout.
+//
+// Parameters:
+//   value - The value
+//
 static void printMetric(int value)
 {
     printf("%d", value);
 }
 
+//------------------------------------------------------------------------
+// printMetric: Print an int64_t metric value to jitstdout.
+//
+// Parameters:
+//   value - The value
+//
 static void printMetric(int64_t value)
 {
     printf("%lld", value);
 }
 
-void JitMetrics::dump(Compiler* comp)
+//------------------------------------------------------------------------
+// JitMetrics::dump: Print the values of all metrics to jitstdout.
+//
+void JitMetrics::dump()
 {
     int nameMaxWidth = 0;
 #define JITMETADATAINFO(name, type, flags)

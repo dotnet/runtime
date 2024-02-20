@@ -6659,7 +6659,7 @@ void Compiler::compCompileFinish()
 
     JITDUMP("Final metrics:\n");
     Metrics.report(this);
-    DBEXEC(verbose, Metrics.dump(this));
+    DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
     {
