@@ -22,8 +22,10 @@
 
     <PropertyGroup>
         <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
+        <LinkerFlavor Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">lld</LinkerFlavor>
         <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
         <ExtraProps Condition="'$(SysRoot)' != ''">$(ExtraProps);SysRoot=$(SysRoot)</ExtraProps>
+        <ExtraProps Condition="'$(LinkerFlavor)' != ''">$(ExtraProps);LinkerFlavor=$(LinkerFlavor)</ExtraProps>
         <ExtraProps Condition="'$(CustomLinkerARgToolchainArg)' != ''">$(ExtraProps);CustomLinkerArgToolchainArg=$(CustomLinkerArgToolchainArg)</ExtraProps>
     </PropertyGroup>
 
