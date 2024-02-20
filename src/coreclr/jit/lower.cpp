@@ -7903,16 +7903,13 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
         else
         {
             assert(data->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-            const bool isLclVar = data->OperIs(GT_LCL_VAR);
 
             // Convert local to LCL_ADDR
+            unsigned lclOffset = data->AsLclVarCommon()->GetLclOffs();
+
             data->ChangeOper(GT_LCL_ADDR);
             data->ChangeType(TYP_I_IMPL);
-            if (isLclVar)
-            {
-                // Clear offset if it wasn't a LCL_FLD
-                data->AsLclFld()->SetLclOffs(0);
-            }
+            data->AsLclFld()->SetLclOffs(lclOffset);
             data->ClearContained();
         }
     }
