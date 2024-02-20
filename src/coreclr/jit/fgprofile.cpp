@@ -4234,18 +4234,19 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
     // If it turns out often we fail at this stage, we might consider building a histogram of switch case
     // values at runtime, similar to what we do for classes at virtual call sites.
     //
-    const unsigned     caseCount    = block->GetSwitchTargets()->bbsCount;
-    BasicBlock** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
-    unsigned           dominantCase = caseCount;
+    const unsigned   caseCount    = block->GetSwitchTargets()->bbsCount;
+    FlowEdge** const jumpTab      = block->GetSwitchTargets()->bbsDstTab;
+    unsigned         dominantCase = caseCount;
 
     for (unsigned i = 0; i < caseCount; i++)
     {
-        if (jumpTab[i] == dominantEdge->m_targetBlock)
+        BasicBlock* jumpTarget = jumpTab[i]->getDestinationBlock();
+        if (jumpTarget == dominantEdge->m_targetBlock)
         {
             if (dominantCase != caseCount)
             {
                 JITDUMP("Both case %u and %u lead to " FMT_BB "-- can't optimize\n", i, dominantCase,
-                        jumpTab[i]->bbNum);
+                        jumpTarget->bbNum);
                 dominantCase = caseCount;
                 break;
             }

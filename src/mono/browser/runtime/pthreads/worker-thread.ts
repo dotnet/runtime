@@ -5,22 +5,22 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_PTHREAD, loaderHelpers, mono_assert } from "../../globals";
-import { mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "../shared";
-import { PThreadInfo, PThreadPtr, PThreadPtrNull } from "../shared/types";
-import { WorkerToMainMessageType, is_nullish } from "../../types/internal";
-import { MonoThreadMessage } from "../shared";
+import { Module } from "../globals";
+
+import { ENVIRONMENT_IS_PTHREAD, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
+import { PThreadSelf, monoThreadInfo, mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "./shared";
+import { PThreadLibrary, MonoThreadMessage, PThreadInfo, PThreadPtr, WorkerToMainMessageType, is_nullish } from "../types/internal";
 import {
     makeWorkerThreadEvent,
     dotnetPthreadCreated,
     dotnetPthreadAttached,
     WorkerThreadEventTarget
-} from "./events";
-import { postRunWorker, preRunWorker } from "../../startup";
-import { mono_log_debug, mono_log_error } from "../../logging";
-import { CharPtr } from "../../types/emscripten";
-import { utf8ToString } from "../../strings";
-import { forceThreadMemoryViewRefresh } from "../../memory";
+} from "./worker-events";
+import { postRunWorker, preRunWorker } from "../startup";
+import { mono_log_debug, mono_log_error } from "../logging";
+import { CharPtr } from "../types/emscripten";
+import { utf8ToString } from "../strings";
+import { forceThreadMemoryViewRefresh } from "../memory";
 
 // re-export some of the events types
 export {
@@ -29,15 +29,9 @@ export {
     dotnetPthreadCreated,
     WorkerThreadEvent,
     WorkerThreadEventTarget,
-} from "./events";
+} from "./worker-events";
 
-/// Identification of the current thread executing on a worker
-export interface PThreadSelf {
-    info: PThreadInfo;
-    portToBrowser: MessagePort;
-    postMessageToBrowser: <T extends MonoThreadMessage>(message: T, transfer?: Transferable[]) => void;
-    addEventListenerFromBrowser: (listener: <T extends MonoThreadMessage>(event: MessageEvent<T>) => void) => void;
-}
+export let pthread_self: PThreadSelf = null as any as PThreadSelf;
 
 class WorkerSelf implements PThreadSelf {
     constructor(public info: PThreadInfo, public portToBrowser: MessagePort) {
@@ -55,17 +49,6 @@ class WorkerSelf implements PThreadSelf {
     }
 }
 
-// we are lying that this is never null, but afterThreadInit should be the first time we get to run any code
-// in the worker, so this becomes non-null very early.
-export let pthread_self: PThreadSelf = null as any as PThreadSelf;
-export const monoThreadInfo: PThreadInfo = {
-    pthreadId: PThreadPtrNull,
-    reuseCount: 0,
-    updateCount: 0,
-    threadPrefix: "          -    ",
-    threadName: "emscripten-loaded",
-};
-
 /// This is the "public internal" API for runtime subsystems that wish to be notified about
 /// pthreads that are running on the current worker.
 /// Example:
@@ -78,6 +61,7 @@ export let currentWorkerThreadEvents: WorkerThreadEventTarget = undefined as any
 export function initWorkerThreadEvents() {
     // treeshake if threads are disabled
     currentWorkerThreadEvents = WasmEnableThreads ? new globalThis.EventTarget() : null as any as WorkerThreadEventTarget;
+    Object.assign(monoThreadInfo, runtimeHelpers.monoThreadInfo);
 }
 
 // this is the message handler for the worker that receives messages from the main thread
@@ -86,7 +70,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
     mono_log_debug("got message from main on the dedicated channel", event.data);
 }
 
-export function onRunMessage(pthread_ptr: PThreadPtr) {
+export function on_emscripten_thread_init(pthread_ptr: PThreadPtr) {
     monoThreadInfo.pthreadId = pthread_ptr;
     forceThreadMemoryViewRefresh();
 }
@@ -220,4 +204,20 @@ export function mono_wasm_pthread_on_pthread_unregistered(pthread_id: PThreadPtr
         loaderHelpers.mono_exit(1, err);
         throw err;
     }
+}
+
+export function replaceEmscriptenPThreadWorker(modulePThread: PThreadLibrary): void {
+    if (!WasmEnableThreads) return;
+
+    const originalThreadInitTLS = modulePThread.threadInitTLS;
+    const original_emscripten_thread_init = (Module as any)["__emscripten_thread_init"];
+
+    (Module as any)["__emscripten_thread_init"] = (pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) => {
+        on_emscripten_thread_init(pthread_ptr);
+        original_emscripten_thread_init(pthread_ptr, isMainBrowserThread, isMainRuntimeThread, canBlock);
+    };
+    modulePThread.threadInitTLS = (): void => {
+        originalThreadInitTLS();
+        mono_wasm_pthread_on_pthread_created();
+    };
 }

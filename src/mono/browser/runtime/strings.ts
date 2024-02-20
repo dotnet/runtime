@@ -244,7 +244,9 @@ function storeStringInInternTable(string: string, root: WasmRoot<MonoString>, in
 
 function stringToMonoStringNewRoot(string: string, result: WasmRoot<MonoString>): void {
     const bufferLen = (string.length + 1) * 2;
-    // TODO this could be stack allocated
+    // TODO this could be stack allocated for small strings
+    // or temp_malloc/alloca for large strings
+    // or skip the scratch buffer entirely, and make a new MonoString of size string.length, pin it, and then call stringToUTF16 to write directly into the MonoString's chars
     const buffer = Module._malloc(bufferLen);
     stringToUTF16(buffer as any, buffer as any + bufferLen, string);
     cwraps.mono_wasm_string_from_utf16_ref(<any>buffer, string.length, result.address);

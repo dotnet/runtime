@@ -350,7 +350,7 @@ private:
 
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
-        BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
+        FlowEdge* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue);
 
     void LowerCast(GenTree* node);
 

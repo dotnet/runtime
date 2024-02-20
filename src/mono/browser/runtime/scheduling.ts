@@ -5,8 +5,8 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
 import { ENVIRONMENT_IS_WORKER, Module, loaderHelpers } from "./globals";
-import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
 import { forceThreadMemoryViewRefresh } from "./memory";
+import { is_thread_available } from "./pthreads";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;
@@ -33,6 +33,9 @@ function prevent_timer_throttling_tick() {
     Module.maybeExit();
     if (!loaderHelpers.is_runtime_running()) {
         return;
+    }
+    if (WasmEnableThreads) {
+        forceThreadMemoryViewRefresh();
     }
     cwraps.mono_wasm_execute_timer();
     pump_count++;

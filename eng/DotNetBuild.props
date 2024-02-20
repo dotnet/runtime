@@ -65,6 +65,7 @@
 
       <!-- This prop needs to be passed to the inner build manually as the BaseInnerSourceBuildCommand gets overriden above -->
       <InnerBuildArgs Condition="'$(DotNetBuildRepo)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildRepo=true</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(DotNetBuildOrchestrator)' == 'true'">$(InnerBuildArgs) /p:DotNetBuildOrchestrator=true</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(PortableBuild)' != ''">$(InnerBuildArgs) /p:PortableBuild=$(PortableBuild)</InnerBuildArgs>
