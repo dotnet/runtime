@@ -2181,6 +2181,7 @@ namespace System.Net.Tests
                     var exception = bool.Parse(async) ?
                         await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync()) :
                         Assert.Throws<WebException>(() => request.GetResponse());
+                    tcs.SetResult();
                     Assert.NotNull(exception.Response);
                     using (var responseStream = exception.Response.GetResponseStream())
                     {
@@ -2189,14 +2190,13 @@ namespace System.Net.Tests
                         Assert.Equal(5, readLen);
                         Assert.Equal(new string('a', 5), Encoding.UTF8.GetString(buffer[0..readLen]));
                     }
-                    tcs.SetResult();
                 },
                 async (server) =>
                 {
                     await server.AcceptConnectionAsync(
                         async (client) =>
                         {
-                            await client.SendResponseAsync(statusCode: HttpStatusCode.InternalServerError, content: new string('a', 10));
+                            await client.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10));
                             await tcs.Task;
                         });
                 });
