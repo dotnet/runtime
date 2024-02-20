@@ -148,7 +148,7 @@ export async function mono_wasm_init_threads() {
     if (!WasmEnableThreads) return;
 
     // setup the UI thread
-    monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
+    runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
     monoThreadInfo.threadName = "UI Thread";
     monoThreadInfo.isUI = true;
     monoThreadInfo.isRunning = true;

@@ -132,6 +132,33 @@ function bind_js_import(signature: JSFunctionSignature): Function {
         }
     }
 
+    function async_bound_fn(args: JSMarshalerArguments): void {
+        forceThreadMemoryViewRefresh();
+        bound_fn(args);
+    }
+
+    function sync_bound_fn(args: JSMarshalerArguments): void {
+        const previous = runtimeHelpers.isPendingSynchronousCall;
+        try {
+            forceThreadMemoryViewRefresh();
+            runtimeHelpers.isPendingSynchronousCall = true;
+            bound_fn(args);
+        }
+        finally {
+            runtimeHelpers.isPendingSynchronousCall = previous;
+        }
+    }
+
+    let wrapped_fn: WrappedJSFunction = bound_fn;
+    if (WasmEnableThreads) {
+        if (is_async || is_discard_no_wait) {
+            wrapped_fn = async_bound_fn;
+        }
+        else {
+            wrapped_fn = sync_bound_fn;
+        }
+    }
+
     // this is just to make debugging easier by naming the function in the stack trace.
     // It's not CSP compliant and possibly not performant, that's why it's only enabled in debug builds
     // in Release configuration, it would be a trimmed by rollup
@@ -140,39 +167,11 @@ function bind_js_import(signature: JSFunctionSignature): Function {
             const fname = js_function_name.replaceAll(".", "_");
             const url = `//# sourceURL=https://dotnet/JSImport/${fname}`;
             const body = `return (function JSImport_${fname}(){ return fn.apply(this, arguments)});`;
-            bound_fn = new Function("fn", url + "\r\n" + body)(bound_fn);
+            wrapped_fn = new Function("fn", url + "\r\n" + body)(wrapped_fn);
         }
         catch (ex) {
             runtimeHelpers.cspPolicy = true;
         }
-    }
-
-    function async_bound_fn(args: JSMarshalerArguments): void {
-        if (WasmEnableThreads) {
-            forceThreadMemoryViewRefresh();
-        }
-        bound_fn(args);
-    }
-    function sync_bound_fn(args: JSMarshalerArguments): void {
-        const previous = runtimeHelpers.isPendingSynchronousCall;
-        try {
-            runtimeHelpers.isPendingSynchronousCall = true;
-            if (WasmEnableThreads) {
-                forceThreadMemoryViewRefresh();
-            }
-            bound_fn(args);
-        }
-        finally {
-            runtimeHelpers.isPendingSynchronousCall = previous;
-        }
-    }
-
-    let wrapped_fn: WrappedJSFunction;
-    if (is_async || is_discard_no_wait) {
-        wrapped_fn = async_bound_fn;
-    }
-    else {
-        wrapped_fn = sync_bound_fn;
     }
 
     (<any>wrapped_fn)[imported_js_function_symbol] = closure;

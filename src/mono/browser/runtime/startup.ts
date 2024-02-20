@@ -32,6 +32,7 @@ import { assertNoProxies } from "./gc-handles";
 import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { mono_wasm_init_diagnostics } from "./diagnostics";
+import { replaceEmscriptenPThreadWorker2 } from "./pthreads/worker-thread";
 
 export async function configureRuntimeStartup(): Promise<void> {
     await init_polyfills_async();
@@ -125,6 +126,7 @@ async function instantiateWasmWorker(
     await loaderHelpers.afterConfigLoaded.promise;
 
     replace_linker_placeholders(imports);
+    replaceEmscriptenPThreadWorker2();
 
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
@@ -513,10 +515,10 @@ export async function start_runtime() {
             monoThreadInfo.isAttached = true;
             monoThreadInfo.isRunning = true;
             monoThreadInfo.isRegistered = true;
-            monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
             update_thread_info();
             runtimeHelpers.proxyGCHandle = install_main_synchronization_context();
-            runtimeHelpers.isCurrentThread = true;
+            runtimeHelpers.isManagedRunningOnCurrentThread = true;
 
             // start finalizer thread, lazy
             init_finalizer_thread();

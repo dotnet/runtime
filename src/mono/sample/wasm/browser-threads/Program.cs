@@ -27,7 +27,7 @@ public partial class Test
     public static partial void ConsoleLog(string status);
 
     [JSImport("Sample.Test.updateProgress", "main.js")]
-    static partial void updateProgress(string status);
+    private static partial Task updateProgress(string status);
 
     [JSExport]
     public static bool Progress()

@@ -55,7 +55,7 @@ async function doSlowMath() {
 
 }
 
-export function updateProgress(status) {
+export async function updateProgress(status) {
     if (progressElement) {
         progressElement.innerText = status;
     } else {

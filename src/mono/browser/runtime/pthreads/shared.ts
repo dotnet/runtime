@@ -39,7 +39,7 @@ export function mono_wasm_install_js_worker_interop(context_gc_handle: GCHandle)
     runtimeHelpers.proxyGCHandle = context_gc_handle;
     if (ENVIRONMENT_IS_PTHREAD) {
         runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
-        runtimeHelpers.isCurrentThread = true;
+        runtimeHelpers.isManagedRunningOnCurrentThread = true;
     }
     Module.runtimeKeepalivePush();
     monoThreadInfo.isDirtyBecauseOfInterop = true;

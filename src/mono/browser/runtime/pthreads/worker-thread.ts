@@ -5,11 +5,9 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { Module } from "../globals";
-
-import { ENVIRONMENT_IS_PTHREAD, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
+import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadSelf, monoThreadInfo, mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "./shared";
-import { PThreadLibrary, MonoThreadMessage, PThreadInfo, PThreadPtr, WorkerToMainMessageType, is_nullish } from "../types/internal";
+import { PThreadLibrary, MonoThreadMessage, PThreadInfo, PThreadPtr, WorkerToMainMessageType } from "../types/internal";
 import {
     makeWorkerThreadEvent,
     dotnetPthreadCreated,
@@ -71,7 +69,7 @@ function monoDedicatedChannelMessageFromMainToWorker(event: MessageEvent<string>
 }
 
 export function on_emscripten_thread_init(pthread_ptr: PThreadPtr) {
-    monoThreadInfo.pthreadId = pthread_ptr;
+    runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = pthread_ptr;
     forceThreadMemoryViewRefresh();
 }
 
@@ -82,10 +80,9 @@ export function mono_wasm_pthread_on_pthread_created(): void {
     if (!WasmEnableThreads) return;
     try {
         forceThreadMemoryViewRefresh();
-
         const pthread_id = mono_wasm_pthread_ptr();
-        mono_assert(!is_nullish(pthread_id), "pthread_self() returned null");
-        monoThreadInfo.pthreadId = pthread_id;
+        mono_assert(pthread_id == monoThreadInfo.pthreadId, "needs to match");
+
         monoThreadInfo.reuseCount++;
         monoThreadInfo.updateCount++;
         monoThreadInfo.threadName = "pthread-assigned";
@@ -210,14 +207,20 @@ export function replaceEmscriptenPThreadWorker(modulePThread: PThreadLibrary): v
     if (!WasmEnableThreads) return;
 
     const originalThreadInitTLS = modulePThread.threadInitTLS;
-    const original_emscripten_thread_init = (Module as any)["__emscripten_thread_init"];
 
-    (Module as any)["__emscripten_thread_init"] = (pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) => {
-        on_emscripten_thread_init(pthread_ptr);
-        original_emscripten_thread_init(pthread_ptr, isMainBrowserThread, isMainRuntimeThread, canBlock);
-    };
     modulePThread.threadInitTLS = (): void => {
         originalThreadInitTLS();
         mono_wasm_pthread_on_pthread_created();
     };
+}
+
+export function replaceEmscriptenPThreadWorker2(): void {
+    const original_emscripten_thread_init = Module["__emscripten_thread_init"];
+    function emscripten_thread_init_wrapper(pthread_ptr: PThreadPtr, isMainBrowserThread: number, isMainRuntimeThread: number, canBlock: number) {
+        on_emscripten_thread_init(pthread_ptr);
+        original_emscripten_thread_init(pthread_ptr, isMainBrowserThread, isMainRuntimeThread, canBlock);
+        // re-install self
+        Module["__emscripten_thread_init"] = emscripten_thread_init_wrapper;
+    }
+    Module["__emscripten_thread_init"] = emscripten_thread_init_wrapper;
 }

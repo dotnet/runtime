@@ -297,6 +297,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
             var signature = GetMethodSignature(signatures, null, null);
 
+            // this will hit JS side possibly on another thread, depending on JSProxyContext.CurrentThreadContext
             JavaScriptImports.BindCSFunction(monoMethod, assemblyName, nameSpace, shortClassName, methodName, signatureHash, (IntPtr)signature.Header);
 
             FreeMethodSignatureBuffer(signature);
