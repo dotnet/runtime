@@ -179,6 +179,22 @@ Abort:
 
 RhpWaitForGC  endp
 
+RhpGcPoll  proc
+        cmp         [RhpTrapThreads], TrapThreadsFlags_None
+        jne         @F                  ; forward branch - predicted not taken
+        ret
+@@:
+        jmp         RhpGcPollRare
+
+RhpGcPoll  endp
+
+RhpGcPollRare  proc
+        PUSH_COOP_PINVOKE_FRAME ecx
+        call        RhpGcPoll2
+        POP_COOP_PINVOKE_FRAME
+        ret
+RhpGcPollRare  endp
+
 ifdef FEATURE_GC_STRESS
 ;;
 ;; Set the Thread state and invoke RhpStressGC().

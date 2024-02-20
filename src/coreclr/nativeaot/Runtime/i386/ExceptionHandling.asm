@@ -230,6 +230,8 @@ ALTERNATE_ENTRY _RhpRethrow2
 
 FASTCALL_ENDFUNC
 
+ifdef FEATURE_EH_FUNCLETS
+
 ;;
 ;; Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
 ;;
@@ -478,5 +480,7 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
         ret
 
 FASTCALL_ENDFUNC
+
+endif ;; FEATURE_EH_FUNCLETS
 
         end
