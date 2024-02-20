@@ -388,8 +388,8 @@ namespace System.Text.Tests
             // ISpanFormattable inputs: simple validation of known types that implement the interface
             yield return new object[] { "", (byte)42, "42" };
             yield return new object[] { "", 'A', "A" };
-            yield return new object[] { "", DateTime.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "3/15/2021 2:52:51 PM" };
-            yield return new object[] { "", DateTimeOffset.ParseExact("2021-03-15T14:52:51.5058563Z", "o", null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "3/15/2021 2:52:51 PM +00:00" };
+            yield return new object[] { "", DateTime.ParseExact("2021-03-15T14:52:51.5058563Z", "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "2021-03-15 14:52:51" };
+            yield return new object[] { "", DateTimeOffset.ParseExact("2021-03-15T14:52:51.5058563Z", "o", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal), "2021-03-15 14:52:51 +00:00" };
             yield return new object[] { "", (decimal)42, "42" };
             yield return new object[] { "", (double)42, "42" };
             yield return new object[] { "", Guid.Parse("68d9cfaf-feab-4d5b-96d8-a3fd889ae89f"), "68d9cfaf-feab-4d5b-96d8-a3fd889ae89f" };
