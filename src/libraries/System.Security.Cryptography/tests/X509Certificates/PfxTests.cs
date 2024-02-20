@@ -251,6 +251,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void ECDHPrivateKey_PfxKeyIsEcdsaConstrained()
+        {
+            using (ECDsa ca = ECDsa.Create(ECCurve.NamedCurves.nistP256))
+            {
+                CertificateRequest req = new("CN=potatos", ca, HashAlgorithmName.SHA256);
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(3)))
+                {
+                    X509Certificate2 loaded = new X509Certificate2(cert.Export(X509ContentType.Pkcs12, "carrots"), "carrots");
+                    Assert.Null(loaded.GetECDiffieHellmanPrivateKey());
+                    Assert.NotNull(loaded.GetECDiffieHellmanPublicKey());
+                }
+            }
+        }
+
+        [Fact]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void DsaPrivateKeyProperty()
         {
