@@ -22,7 +22,7 @@ NESTED_ENTRY RhpInterfaceDispatch\entries, _TEXT, NoHandler
         ldr         r2, [r12, #OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in r0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+        GLOBAL_LABEL RhpInterfaceDispatchAVLocation\entries
         ldr         r1, [r0]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries

@@ -109,9 +109,9 @@ BOOL GetUnicodeData(INT nUnicodeValue, UnicodeDataRec *pDataRec)
     return bRet;
 }
 
-wchar_16
+char16_t
 __cdecl
-PAL_ToUpperInvariant( wchar_16 c )
+PAL_ToUpperInvariant( char16_t c )
 {
     UnicodeDataRec dataRec;
 
@@ -140,9 +140,9 @@ PAL_ToUpperInvariant( wchar_16 c )
     }
 }
 
-wchar_16
+char16_t
 __cdecl
-PAL_ToLowerInvariant( wchar_16 c )
+PAL_ToLowerInvariant( char16_t c )
 {
     UnicodeDataRec dataRec;
 

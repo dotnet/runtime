@@ -2312,6 +2312,7 @@ void Compiler::compSetProcessor()
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+            codeGen->GetEmitter()->SetContainsCallNeedingVzeroupper(false);
         }
         if (canUseEvexEncoding())
         {
@@ -4503,7 +4504,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     activePhaseChecks |= PhaseChecks::CHECK_PROFILE;
     DoPhase(this, PHASE_INCPROFILE, &Compiler::fgIncorporateProfileData);
-    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // If we are doing OSR, update flow to initially reach the appropriate IL offset.
     //
@@ -4605,6 +4605,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Add any internal blocks/trees we may need
     //
     DoPhase(this, PHASE_MORPH_ADD_INTERNAL, &Compiler::fgAddInternal);
+
+    // Disable profile checks now.
+    // Over time we will move this further and further back in the phase list, as we fix issues.
+    //
+    activePhaseChecks &= ~PhaseChecks::CHECK_PROFILE;
 
     // Remove empty try regions
     //
@@ -5031,11 +5036,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
-    optLoopsRequirePreHeaders = false;
+    optLoopsCanonical = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
+
+    // Expand casts
+    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
     // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
     DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
@@ -5045,9 +5053,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Expand thread local access
     DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
-
-    // Expand casts
-    DoPhase(this, PHASE_EXPAND_CASTS, &Compiler::fgLateCastExpansion);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -9084,7 +9089,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         {
             totCycles += m_info.m_cyclesByPhase[i];
         }
-        fprintf(s_csvFile, "%llu,", m_info.m_cyclesByPhase[i]);
+        fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_cyclesByPhase[i]);
 
         if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
@@ -9097,7 +9102,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
     fprintf(s_csvFile, "%u,", comp->info.compNativeCodeSize);
     fprintf(s_csvFile, "%zu,", comp->compInfoBlkSize);
     fprintf(s_csvFile, "%zu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
-    fprintf(s_csvFile, "%llu,", m_info.m_totalCycles);
+    fprintf(s_csvFile, "%llu,", (unsigned long long)m_info.m_totalCycles);
     fprintf(s_csvFile, "%f\n", CachedCyclesPerSecond());
 
     fflush(s_csvFile);
@@ -9863,14 +9868,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_QMARK:
-
-                if (tree->gtFlags & GTF_QMARK_CAST_INSTOF)
-                {
-                    chars += printf("[QMARK_CAST_INSTOF]");
-                }
-                break;
-
             case GT_BOX:
 
                 if (tree->gtFlags & GTF_BOX_VALUE)
@@ -10022,11 +10019,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->IsGuarded())
                     {
                         chars += printf("[CALL_GUARDED]");
-                    }
-
-                    if (call->IsExpRuntimeLookup())
-                    {
-                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
 
                     if (call->gtCallDebugFlags & GTF_CALL_MD_STRESS_TAILCALL)
@@ -10615,6 +10607,31 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
             return "undefined";
     }
 }
+
+//------------------------------------------------------------------------------
+// printfAlloc: printf a string and allocate the result in CMK_DebugOnly
+// memory.
+//
+// Arguments:
+//    format - Format string
+//
+// Returns:
+//    Allocated string.
+//
+const char* Compiler::printfAlloc(const char* format, ...)
+{
+    char    str[512];
+    va_list args;
+    va_start(args, format);
+    int result = vsprintf_s(str, ArrLen(str), format, args);
+    va_end(args);
+    assert((result >= 0) && ((unsigned)result < ArrLen(str)));
+
+    char* resultStr = new (this, CMK_DebugOnly) char[result + 1];
+    memcpy(resultStr, str, (unsigned)result + 1);
+    return resultStr;
+}
+
 #endif // defined(DEBUG)
 
 #if TRACK_ENREG_STATS

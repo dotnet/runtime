@@ -17,6 +17,7 @@
 #include <alloca.h>
 #endif
 
+#include <glib.h>
 #if defined(HOST_WIN32)
 #include <mono/utils/mono-compiler.h>
 MONO_PRAGMA_WARNING_PUSH()
@@ -24,8 +25,11 @@ MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named typ
 #include <winsock2.h>
 #include <windows.h>
 #include <objbase.h>
+#include <oleauto.h>
 MONO_PRAGMA_WARNING_POP()
+#include <mono/utils/w32subset.h>
 #endif
+#include <mono/utils/w32api.h>
 
 #include <mono/metadata/object.h>
 #include <mono/metadata/loader.h>
@@ -53,7 +57,6 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/threads-types.h"
 #include "mono/metadata/string-icalls.h"
 #include "mono/metadata/attrdefs.h"
-#include "mono/metadata/cominterop.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
@@ -126,6 +129,9 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (suppress_gc_transition_attribute, "System.Runtime.InteropServices", "SuppressGCTransitionAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callers_only_attribute, "System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute")
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.Runtime.InteropServices", "UnmanagedCallConvAttribute")
+
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -320,6 +326,9 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_free_array, mono_icall_sig_void_ptr_int32, FALSE);
 		register_icall (mono_string_to_byvalstr, mono_icall_sig_void_ptr_ptr_int32, FALSE);
 		register_icall (mono_string_to_byvalwstr, mono_icall_sig_void_ptr_ptr_int32, FALSE);
+		register_icall (mono_string_to_bstr, mono_icall_sig_ptr_obj, FALSE);
+		register_icall (mono_string_from_bstr_icall, mono_icall_sig_obj_ptr, FALSE);
+		register_icall (mono_free_bstr, mono_icall_sig_void_ptr, FALSE);
 		// Because #define g_free monoeg_g_free.
 		register_icall (monoeg_g_free, mono_icall_sig_void_ptr, FALSE);
 		register_icall (mono_object_isinst_icall, mono_icall_sig_object_object_ptr, TRUE);
@@ -338,8 +347,6 @@ mono_marshal_init (void)
 		register_icall (mono_threads_detach_coop, mono_icall_sig_void_ptr_ptr, TRUE);
 		register_icall (mono_marshal_get_type_object, mono_icall_sig_object_ptr, TRUE);
 		register_icall (mono_marshal_lookup_pinvoke, mono_icall_sig_ptr_ptr, FALSE);
-
-		mono_cominterop_init ();
 
 		mono_counters_register ("MonoClass::class_marshal_info_count count",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
@@ -690,72 +697,12 @@ mono_array_to_lparray_impl (MonoArrayHandle array_handle, MonoError *error)
 		return NULL;
 
 	MonoArray *array = MONO_HANDLE_RAW (array_handle); // FIXMEcoop
-
-#ifndef DISABLE_COM
-	gpointer *nativeArray = NULL;
-	int nativeArraySize = 0;
-	int i = 0;
-	MonoClass *klass = array->obj.vtable->klass;
-	MonoClass *klass_element_class = m_class_get_element_class (klass);
-
-	switch (m_class_get_byval_arg (klass_element_class)->type) {
-	case MONO_TYPE_VOID:
-		g_assert_not_reached ();
-		break;
-	case MONO_TYPE_CLASS:
-		nativeArraySize = array->max_length;
-		nativeArray = g_new (gpointer, nativeArraySize);
-		for (i = 0; i < nativeArraySize; ++i) {
-			nativeArray [i] = mono_cominterop_get_com_interface (((MonoObject **)array->vector)[i], klass_element_class, error);
-			if (!is_ok (error)) {
-				// FIXME? Returns uninitialized.
-				break;
-			}
-		}
-		return nativeArray;
-	case MONO_TYPE_U1:
-	case MONO_TYPE_BOOLEAN:
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_CHAR:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_U4:
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-	case MONO_TYPE_VALUETYPE:
-	case MONO_TYPE_PTR:
-		/* nothing to do */
-		break;
-	case MONO_TYPE_GENERICINST:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_STRING:
-	default:
-		g_warning ("type 0x%x not handled", m_class_get_byval_arg (klass_element_class)->type);
-		g_assert_not_reached ();
-	}
-#endif
 	return array->vector;
 }
 
 void
 mono_free_lparray_impl (MonoArrayHandle array, gpointer* nativeArray, MonoError *error)
 {
-#ifndef DISABLE_COM
-	if (!nativeArray || MONO_HANDLE_IS_NULL (array))
-		return;
-
-	MonoClass * const klass = mono_handle_class (array);
-
-	if (m_class_get_byval_arg (m_class_get_element_class (klass))->type == MONO_TYPE_CLASS)
-		g_free (nativeArray);
-#endif
 }
 
 /* This is a JIT icall, it sets the pending exception (in wrapper) and returns on error */
@@ -1147,6 +1094,18 @@ mono_string_to_tbstr_impl (MonoStringHandle string_obj, MonoError *error)
 #endif
 }
 
+static MonoStringHandle
+mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
+{
+	if (!bstr)
+		return NULL_HANDLE_STRING;
+#if HAVE_API_SUPPORT_WIN32_BSTR
+	return mono_string_new_utf16_handle (bstr, SysStringLen ((BSTR)bstr), error);
+#else
+	return mono_string_new_utf16_handle (bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+#endif // HAVE_API_SUPPORT_WIN32_BSTR
+}
+
 /* This is a JIT icall, it sets the pending exception (in wrapper) and returns NULL on error. */
 MonoStringHandle
 mono_string_from_tbstr_impl (gpointer data, MonoError *error)
@@ -1225,6 +1184,125 @@ mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *err
 	return_val_if_nok (error, NULL_HANDLE_STRING);
 	return MONO_HANDLE_NEW (MonoString, s);
 }
+
+
+mono_bstr
+mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)
+{
+	if (MONO_HANDLE_IS_NULL (s))
+		return NULL;
+
+	MonoGCHandle gchandle = NULL;
+	mono_bstr const res = mono_ptr_to_bstr (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s));
+	mono_gchandle_free_internal (gchandle);
+	return res;
+}
+
+// This function is used regardless of the BSTR type, so cast the return value
+// Inputted string length, in bytes, should include the null terminator
+// Returns the start of the string itself
+static gpointer
+mono_bstr_alloc (size_t str_byte_len)
+{
+	// Allocate string length plus pointer-size integer to store the length, aligned to 16 bytes
+	size_t alloc_size = str_byte_len + SIZEOF_VOID_P;
+	alloc_size += (16 - 1);
+	alloc_size &= ~(16 - 1);
+	gpointer ret = g_malloc0 (alloc_size);
+	return ret ? (char *)ret + SIZEOF_VOID_P : NULL;
+}
+
+static void
+mono_bstr_set_length (gunichar2 *bstr, int slen)
+{
+	*((guint32 *)bstr - 1) = slen * sizeof (gunichar2);
+}
+
+static mono_bstr
+default_ptr_to_bstr (const gunichar2* ptr, int slen)
+{
+	// In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform.
+	// Presumably this is due to the BStr documentation page, which indicates that behavior and then directs you to call
+	// SysAllocString on Windows to handle the allocation for you. Unfortunately, this is not actually how it works:
+	// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
+	// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
+	// netcore moving forward.
+	mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
+	if (s == NULL)
+		return NULL;
+
+	mono_bstr_set_length (s, slen);
+	if (ptr)
+		memcpy (s, ptr, slen * sizeof (gunichar2));
+	s [slen] = 0;
+	return s;
+}
+
+/* PTR can be NULL */
+mono_bstr
+mono_ptr_to_bstr (const gunichar2* ptr, int slen)
+{
+#if HAVE_API_SUPPORT_WIN32_BSTR
+	return SysAllocStringLen (ptr, slen);
+#else
+	return default_ptr_to_bstr (ptr, slen);
+#endif // HAVE_API_SUPPORT_WIN32_BSTR
+}
+
+char *
+mono_ptr_to_ansibstr (const char *ptr, size_t slen)
+{
+	char *s = (char *)mono_bstr_alloc ((slen + 1) * sizeof(char));
+	if (s == NULL)
+		return NULL;
+	*((guint32 *)s - 1) = (guint32)(slen * sizeof (char));
+	if (ptr)
+		memcpy (s, ptr, slen * sizeof (char));
+	s [slen] = 0;
+	return s;
+}
+
+MonoString *
+mono_string_from_bstr (/*mono_bstr_const*/gpointer bstr)
+{
+	// FIXME gcmode
+	HANDLE_FUNCTION_ENTER ();
+	ERROR_DECL (error);
+	MonoStringHandle result = mono_string_from_bstr_checked ((mono_bstr_const)bstr, error);
+	mono_error_cleanup (error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
+}
+
+MonoStringHandle
+mono_string_from_bstr_icall_impl (mono_bstr_const bstr, MonoError *error)
+{
+	return mono_string_from_bstr_checked (bstr, error);
+}
+
+MONO_API void
+mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
+{
+	if (!bstr)
+		return;
+#if HAVE_API_SUPPORT_WIN32_BSTR
+	SysFreeString ((BSTR)bstr);
+#else
+	g_free (((char *)bstr) - SIZEOF_VOID_P);
+#endif // HAVE_API_SUPPORT_WIN32_BSTR
+}
+
+mono_bstr
+ves_icall_System_Runtime_InteropServices_Marshal_BufferToBSTR (const gunichar2* ptr, int len)
+{
+	return mono_ptr_to_bstr (ptr, len);
+}
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (mono_bstr_const ptr)
+{
+	mono_free_bstr ((gpointer)ptr);
+}
+
 
 guint8
 mono_type_to_ldind (MonoType *type)
@@ -1555,13 +1633,13 @@ get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 	return *var;
 }
 
-GHashTable*
+static GHashTable*
 mono_marshal_get_cache (GHashTable **var, GHashFunc hash_func, GCompareFunc equal_func)
 {
 	return get_cache (var, hash_func, equal_func);
 }
 
-MonoMethod*
+static MonoMethod*
 mono_marshal_find_in_cache (GHashTable *cache, gpointer key)
 {
 	MonoMethod *res;
@@ -1590,7 +1668,7 @@ mono_mb_create (MonoMethodBuilder *mb, MonoMethodSignature *sig,
 }
 
 /* Create the method from the builder and place it in the cache */
-MonoMethod*
+static MonoMethod*
 mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack, WrapperInfo *info, gboolean *out_found)
@@ -1624,7 +1702,7 @@ mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 	return res;
 }
 
-MonoMethod*
+static MonoMethod*
 mono_mb_create_and_cache (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack)
@@ -3232,6 +3310,8 @@ mono_marshal_set_callconv_for_type(MonoType *type, MonoMethodSignature *csig, gb
 			csig->call_convention = MONO_CALL_FASTCALL;
 		else if (!strcmp (class_name, "CallConvThiscall"))
 			csig->call_convention = MONO_CALL_THISCALL;
+		else if (!strcmp (class_name, "CallConvSwift"))
+			csig->ext_callconv |= MONO_EXT_CALLCONV_SWIFTCALL;
 		else if (!strcmp (class_name, "CallConvSuppressGCTransition") && skip_gc_trans != NULL)
 			*skip_gc_trans = TRUE;
 	}
@@ -3358,8 +3438,10 @@ mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, Mon
 		sig->call_convention = MONO_CALL_THISCALL;
 	else if (!strcmp (name, "Fastcall"))
 		sig->call_convention = MONO_CALL_FASTCALL;
+	else if (!strcmp (name, "Swift"))
+		sig->ext_callconv |= MONO_EXT_CALLCONV_SWIFTCALL;
 	else if (!strcmp (name, "SuppressGCTransition"))
-		sig->suppress_gc_transition = 1;
+		sig->ext_callconv |= MONO_EXT_CALLCONV_SUPPRESS_GC_TRANSITION;
 	// TODO: Support CallConvMemberFunction?
 	// TODO: Support multiple calling convetions?
 	//		 - Switch MonoCallConvention enum values to powers of 2
@@ -3412,6 +3494,8 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		mono_custom_attrs_free(cinfo);
 }
 
+static void
+mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, MonoNativeWrapperFlags flags);
 
 /**
  * mono_marshal_get_native_wrapper:
@@ -3427,23 +3511,24 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	MonoMethodSignature *sig, *csig;
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
 	MonoMethodBuilder *mb;
-	MonoMarshalSpec **mspecs;
+	MonoMarshalSpec **mspecs = NULL;
 	MonoMethod *res;
 	GHashTable *cache;
 	gboolean pinvoke = FALSE;
 	gboolean skip_gc_trans = FALSE;
-	gboolean pinvoke_not_found = FALSE;
 	gpointer iter;
-	ERROR_DECL (emitted_error);
 	WrapperInfo *info;
+	MonoType *string_type;
+	GHashTable **cache_ptr;
+	ERROR_DECL (emitted_error);
 
 	g_assert (method != NULL);
 	g_assertf (mono_method_signature_internal (method)->pinvoke, "%s flags:%X iflags:%X param_count:%X",
 		method->name, method->flags, method->iflags, mono_method_signature_internal (method)->param_count);
 
-	GHashTable **cache_ptr;
-
-	MonoType *string_type = m_class_get_byval_arg (mono_defaults.string_class);
+	if (MONO_CLASS_IS_IMPORT (method->klass)) {
+		mono_error_set_generic_error (emitted_error, "System", "PlatformNotSupportedException", "Built-in COM interop is not supported on Mono");
+	}
 
 	if (aot) {
 		if (check_exceptions)
@@ -3470,17 +3555,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		}
 	}
 
-	if (MONO_CLASS_IS_IMPORT (method->klass)) {
-		/* The COM code is not AOT compatible, it calls mono_custom_attrs_get_attr_checked () */
-		if (aot)
-			return method;
-#ifndef DISABLE_COM
-		return mono_cominterop_get_native_wrapper (method);
-#else
-		g_assert_not_reached ();
-#endif
-	}
-
 	sig = mono_method_signature_internal (method);
 
 	if (!(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
@@ -3493,12 +3567,30 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				mono_error_set_generic_error (emitted_error, "System", "MissingMethodException", "Method contains unsupported native code");
 			else if (!aot)
 				mono_lookup_pinvoke_call_internal (method, emitted_error);
-		} else {
-			if (!aot || (method->klass == mono_defaults.string_class))
-				piinfo->addr = mono_lookup_internal_call (method);
+		} else if (!aot || (method->klass == mono_defaults.string_class)) {
+			piinfo->addr = mono_lookup_internal_call (method);
 		}
 	}
 
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
+	mb->method->save_lmf = 1;
+
+	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
+		/*
+		 * In AOT mode and embedding scenarios, it is possible that the icall is not registered in the runtime doing the AOT compilation. 
+		 * Emit a wrapper that throws a NotSupportedException.
+		 */
+		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both DllImportAttribute and UnmanagedCallersOnlyAttribute");
+		goto emit_exception_for_error;
+	} else if (!pinvoke && !piinfo->addr && !aot) {
+		/* if there's no code but the error isn't set, just use a fairly generic exception. */
+		if (is_ok (emitted_error))
+			mono_error_set_generic_error (emitted_error, "System", "MissingMethodException", "");
+		get_marshal_cb ()->mb_emit_exception_for_error (mb, emitted_error);
+		goto emit_exception_for_error;
+	}
+
+	string_type = m_class_get_byval_arg (mono_defaults.string_class);
 	/* hack - redirect certain string constructors to CreateString */
 	if (piinfo->addr == ves_icall_System_String_ctor_RedirectToCreateString) {
 		MonoMethod *m;
@@ -3555,51 +3647,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		return res;
 	}
 
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
-
-	mb->method->save_lmf = 1;
-
-	if (G_UNLIKELY (pinvoke && mono_method_has_unmanaged_callers_only_attribute (method))) {
-		/* emit a wrapper that throws a NotSupportedException */
-		get_marshal_cb ()->mb_emit_exception (mb, "System", "NotSupportedException", "Method canot be marked with both  DllImportAttribute and UnmanagedCallersOnlyAttribute");
-
-		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
-		info->d.managed_to_native.method = method;
-
-		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
-		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
-											 csig->param_count + 16, info, NULL);
-		mono_mb_free (mb);
-
-		return res;
-	}
-
-	/*
-	 * In AOT mode and embedding scenarios, it is possible that the icall is not
-	 * registered in the runtime doing the AOT compilation.
-	 */
-	/* Handled at runtime */
-	pinvoke_not_found = !pinvoke && !piinfo->addr && !aot;
-	if (pinvoke_not_found) {
-		/* if there's no code but the error isn't set, just use a fairly generic exception. */
-		if (is_ok (emitted_error))
-			mono_error_set_generic_error (emitted_error, "System", "MissingMethodException", "");
-		get_marshal_cb ()->mb_emit_exception_for_error (mb, emitted_error);
-		mono_error_cleanup (emitted_error);
-
-		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
-		info->d.managed_to_native.method = method;
-
-		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
-		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
-											 csig->param_count + 16, info, NULL);
-		mono_mb_free (mb);
-
-		return res;
-	}
-
 	/* internal calls: we simply push all arguments and call the method (no conversions) */
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		if (sig->hasthis)
@@ -3607,81 +3654,123 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		else
 			csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 
-		//printf ("%s\n", mono_method_full_name (method, 1));
-
 		/* hack - string constructors returns a value */
 		if (method->string_ctor)
 			csig->ret = string_type;
 
 		get_marshal_cb ()->emit_native_icall_wrapper (mb, method, csig, check_exceptions, aot, piinfo);
+	} else {
+		g_assert(pinvoke);
 
-		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
-		info->d.managed_to_native.method = method;
+		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
 
-		csig = mono_metadata_signature_dup_full (get_method_image (method), csig);
-		csig->pinvoke = 0;
-		res = mono_mb_create_and_cache_full (cache, method, mb, csig, csig->param_count + 16,
-											 info, NULL);
+		mspecs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
+		mono_method_get_marshal_info (method, mspecs);
 
-		mono_mb_free (mb);
-		return res;
-	}
+		if (mono_class_try_get_suppress_gc_transition_attribute_class ()) {
+			MonoCustomAttrInfo *cinfo;
+			ERROR_DECL (error);
 
-	g_assert (pinvoke);
-
-	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
-	mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
-
-	mspecs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
-	mono_method_get_marshal_info (method, mspecs);
-
-	if (mono_class_try_get_suppress_gc_transition_attribute_class ()) {
-		MonoCustomAttrInfo *cinfo;
-		ERROR_DECL (error);
-
-		cinfo = mono_custom_attrs_from_method_checked (method, error);
-		mono_error_assert_ok (error);
-		gboolean found = FALSE;
-		if (cinfo) {
-			for (int i = 0; i < cinfo->num_attrs; ++i) {
-				MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
-				if (ctor_class == mono_class_try_get_suppress_gc_transition_attribute_class ()) {
-					found = TRUE;
-					break;
+			cinfo = mono_custom_attrs_from_method_checked (method, error);
+			mono_error_assert_ok (error);
+			gboolean found = FALSE;
+			if (cinfo) {
+				for (int i = 0; i < cinfo->num_attrs; ++i) {
+					MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
+					if (ctor_class == mono_class_try_get_suppress_gc_transition_attribute_class ()) {
+						found = TRUE;
+						break;
+					}
 				}
 			}
+			if (found)
+				skip_gc_trans = TRUE;
+			if (cinfo && !cinfo->cached)
+				mono_custom_attrs_free (cinfo);
 		}
-		if (found)
-			skip_gc_trans = TRUE;
-		if (cinfo && !cinfo->cached)
-			mono_custom_attrs_free (cinfo);
+
+		if (csig->call_convention == MONO_CALL_DEFAULT) {
+			/* If the calling convention has not been set, check the UnmanagedCallConv attribute */
+			mono_marshal_set_callconv_from_unmanaged_callconv_attribute (method, csig, &skip_gc_trans);
+		}
+
+		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+			int swift_error_args = 0, swift_self_args = 0;
+			for (int i = 0; i < method->signature->param_count; ++i) {
+				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
+				if (param_klass) {
+					if (param_klass == swift_error && !m_type_is_byref (method->signature->params [i])) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "SwiftError argument must be passed by reference.");
+						break;
+					} else if (param_klass == swift_error || param_klass == swift_error_ptr) {
+						swift_error_args++;
+					} else if (param_klass == swift_self) {
+						swift_self_args++;
+					} else if (!m_class_is_blittable (param_klass) || m_class_is_simd_type (param_klass)) {
+						swift_error_args = swift_self_args = 0;
+						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-blittable types to a P/Invoke with the Swift calling convention is unsupported.");
+						break;
+					}
+				}
+			}
+
+			if (swift_self_args > 1 || swift_error_args > 1) {
+				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf or SwiftError arguments.");
+			}
+
+			if (!is_ok (emitted_error)) {
+				get_marshal_cb ()->mb_emit_exception_for_error (mb, emitted_error);
+				goto emit_exception_for_error;
+			}
+		}
+
+		MonoNativeWrapperFlags flags = aot ? EMIT_NATIVE_WRAPPER_AOT : (MonoNativeWrapperFlags)0;
+		flags |= check_exceptions ? EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS : (MonoNativeWrapperFlags)0;
+		flags |= skip_gc_trans ? EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS : (MonoNativeWrapperFlags)0;
+		flags |= runtime_marshalling_enabled (get_method_image (method)) ? EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED : (MonoNativeWrapperFlags)0;
+
+		mono_marshal_emit_native_wrapper (get_method_image (mb->method), mb, csig, piinfo, mspecs, piinfo->addr, flags);
 	}
 
-	if (csig->call_convention == MONO_CALL_DEFAULT) {
-		/* If the calling convention has not been set, check the UnmanagedCallConv attribute */
-		mono_marshal_set_callconv_from_unmanaged_callconv_attribute (method, csig, &skip_gc_trans);
-	}
+	info = mono_wrapper_info_create (mb, method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)
+														? WRAPPER_SUBTYPE_NONE
+														: WRAPPER_SUBTYPE_PINVOKE);
 
-	MonoNativeWrapperFlags flags = aot ? EMIT_NATIVE_WRAPPER_AOT : (MonoNativeWrapperFlags)0;
-	flags |= check_exceptions ? EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS : (MonoNativeWrapperFlags)0;
-	flags |= skip_gc_trans ? EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS : (MonoNativeWrapperFlags)0;
-	flags |= runtime_marshalling_enabled (get_method_image (method)) ? EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED : (MonoNativeWrapperFlags)0;
-
-	mono_marshal_emit_native_wrapper (get_method_image (mb->method), mb, csig, piinfo, mspecs, piinfo->addr, flags);
-	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_PINVOKE);
 	info->d.managed_to_native.method = method;
 
+	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))
+		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 	csig->pinvoke = 0;
 	res = mono_mb_create_and_cache_full (cache, method, mb, csig, csig->param_count + 16,
 										 info, NULL);
-	mono_mb_free (mb);
 
-	for (int i = sig->param_count; i >= 0; i--)
-		if (mspecs [i])
-			mono_metadata_free_marshal_spec (mspecs [i]);
-	g_free (mspecs);
+	if (mspecs) {
+		for (int i = sig->param_count; i >= 0; i--)
+			if (mspecs [i])
+				mono_metadata_free_marshal_spec (mspecs [i]);
+		g_free (mspecs);
+	}
 
-	return res;
+	goto leave;
+	
+	emit_exception_for_error:
+		mono_error_cleanup (emitted_error);
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+		info->d.managed_to_native.method = method;
+
+		csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+		csig->pinvoke = 0;
+		res = mono_mb_create_and_cache_full (cache, method, mb, csig,
+											 csig->param_count + 16, info, NULL);
+
+	leave:
+		mono_mb_free (mb);
+		return res;
 }
 
 /**
@@ -3896,7 +3985,7 @@ mono_marshal_get_native_func_wrapper_indirect (MonoClass *caller_class, MonoMeth
  * it could have fewer parameters than the method it wraps.
  * THIS_LOC is the memory location where the target of the delegate is stored.
  */
-void
+static void
 mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
 {
 	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle, FALSE, error);
@@ -6481,8 +6570,6 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->native_func_wrapper_indirect_cache);
 	free_hash (cache->synchronized_cache);
 	free_hash (cache->unbox_wrapper_cache);
-	free_hash (cache->cominterop_invoke_cache);
-	free_hash (cache->cominterop_wrapper_cache);
 	free_hash (cache->thunk_invoke_cache);
 	free_hash (cache->unsafe_accessor_cache);
 }

@@ -10,12 +10,12 @@ import gitHash from "consts:gitHash";
 
 import type { DotnetModuleInternal, GlobalObjects, LoaderHelpers, MonoConfigInternal, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
-import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
+import { assert_runtime_running, installUnhandledErrorHandler, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_single_asset_path, retrieve_asset_download } from "./assets";
-import { mono_log_error, mono_set_thread_name, setup_proxy_console } from "./logging";
+import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-import { deep_merge_config, hasDebuggingEnabled } from "./config";
+import { deep_merge_config, isDebuggingSupported } from "./config";
 import { logDownloadStatsToConsole, purgeUnusedCacheEntriesAsync } from "./assetsCache";
 
 // if we are the first script loaded in the web worker, we are expected to become the sidecar
@@ -74,10 +74,9 @@ export function setLoaderGlobals(
     });
     const rh: Partial<RuntimeHelpers> = {
         mono_wasm_bindings_is_ready: false,
-        javaScriptExports: {} as any,
         config: globalObjects.module.config,
         diagnosticTracing: false,
-        nativeAbort: (reason: any) => { throw reason; },
+        nativeAbort: (reason: any) => { throw reason || new Error("abort"); },
         nativeExit: (code: number) => { throw new Error("exit:" + code); }
     };
     const lh: Partial<LoaderHelpers> = {
@@ -93,6 +92,8 @@ export function setLoaderGlobals(
         loadedFiles: [],
         loadedAssemblies: [],
         libraryInitializers: [],
+        loadingWorkers: [],
+        workerNextNumber: 1,
         actual_downloaded_assets_count: 0,
         actual_instantiated_assets_count: 0,
         expected_downloaded_assets_count: 0,
@@ -102,7 +103,6 @@ export function setLoaderGlobals(
         allDownloadsQueued: createPromiseController<void>(),
         wasmCompilePromise: createPromiseController<WebAssembly.Module>(),
         runtimeModuleLoaded: createPromiseController<void>(),
-        memorySnapshotSkippedOrDone: createPromiseController<void>(),
 
         is_exited,
         is_runtime_running,
@@ -114,13 +114,14 @@ export function setLoaderGlobals(
         mono_download_assets,
         resolve_single_asset_path,
         setup_proxy_console,
-        mono_set_thread_name,
+        set_thread_prefix,
         logDownloadStatsToConsole,
         purgeUnusedCacheEntriesAsync,
+        installUnhandledErrorHandler,
 
-        hasDebuggingEnabled,
         retrieve_asset_download,
         invokeLibraryInitializers,
+        isDebuggingSupported,
 
         // from wasm-feature-detect npm package
         exceptions,

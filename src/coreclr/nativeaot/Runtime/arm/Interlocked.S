@@ -14,7 +14,7 @@
 // {r2,r3} = value
 // sp[0+8] = comparand
 LEAF_ENTRY RhpLockCmpXchg64, _TEXT
-ALTERNATE_ENTRY RhpLockCmpXchg64AVLocation
+GLOBAL_LABEL RhpLockCmpXchg64AVLocation
           ldr          r12, [r0]        // dummy read for null check
           PROLOG_PUSH  "{r4-r6,lr}"
           dmb

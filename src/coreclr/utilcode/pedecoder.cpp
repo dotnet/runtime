@@ -1538,7 +1538,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
 
     IMAGE_IMPORT_BY_NAME *import = (IMAGE_IMPORT_BY_NAME*) GetRvaData(importRVA);
 
-    CHECK(SString::_stricmp((char *) import->Name, DLL_NAME) == 0 || _stricmp((char *) import->Name, EXE_NAME) == 0);
+    CHECK(SString::_stricmp((char *) import->Name, DLL_NAME) == 0 || SString::_stricmp((char *) import->Name, EXE_NAME) == 0);
 
     CHECK_OK;
 }

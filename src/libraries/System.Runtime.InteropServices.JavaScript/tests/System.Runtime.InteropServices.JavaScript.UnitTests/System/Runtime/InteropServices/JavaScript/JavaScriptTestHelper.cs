@@ -15,6 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     public partial class JavaScriptTestHelper
     {
         [JSImport("globalThis.console.log")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>]
         public static partial void Log([JSMarshalAs<JSType.String>] string message);
 
         [JSImport("globalThis.window.location.toString")]
@@ -27,10 +28,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static partial string ReboundMemberEcho(string message);
 
         [JSExport]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
         public static void ConsoleWriteLine([JSMarshalAs<JSType.String>] string message)
         {
             Console.WriteLine(message);
         }
+
+        [JSImport("delay", "JavaScriptTestHelper")]
+        public static partial Task Delay(int ms);
 
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
@@ -72,6 +77,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
         [JSImport("invoke1V", "JavaScriptTestHelper")]
         public static partial void invoke1V(int a1);
+
+        [JSExport]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
+        public static void Optimized1O(int a1)
+        {
+            optimizedReached += a1;
+        }
+        [JSImport("invoke1O", "JavaScriptTestHelper")]
+        public static partial void invoke1O(int a1);
 
         [JSExport]
         public static int Optimized1R(int a1)
@@ -261,6 +275,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("store1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Void>]
         internal static partial void store1_Int32([JSMarshalAs<JSType.Number>] int value);
+
+        [JSImport("store1", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.DiscardNoWait>] // this means that the message will arrive out of order, especially across threads.
+        internal static partial void store1DiscardNoWait_Int32([JSMarshalAs<JSType.Number>] int value);
+
         [JSImport("retrieve1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int retrieve1_Int32();
@@ -449,6 +468,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>]
         internal static partial Func<int, int, int> backback_FuncIntIntFuncIntInt([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Func<int, int, int> fun, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] int b);
 
+        [JSImport("backbackAsync", "JavaScriptTestHelper")]
+        internal static partial Task<int> backback_FuncIntIntFuncIntIntAsync([JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>] Func<int, int, int> fun, [JSMarshalAs<JSType.Number>] int a, [JSMarshalAs<JSType.Number>] int b);
+
         [JSImport("back3", "JavaScriptTestHelper")]
         internal static partial void back3_ActionInt([JSMarshalAs<JSType.Function<JSType.Number>>] Action<int>? action, [JSMarshalAs<JSType.Number>] int a);
 
@@ -500,6 +522,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool invoke1_Boolean([JSMarshalAs<JSType.Boolean>] bool value, [JSMarshalAs<JSType.String>] string name);
+
+        [JSImport("invoke1Async", "JavaScriptTestHelper")]
+        internal static partial Task<bool> invoke1_BooleanAsync(bool value, string name);
+
         [JSExport]
         [return: JSMarshalAs<JSType.Boolean>]
         public static bool EchoBoolean([JSMarshalAs<JSType.Boolean>] bool arg1)
@@ -1003,7 +1029,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 await Setup();
             }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // are we in the UI thread ?
             if (Environment.CurrentManagedThreadId == 1)
 #endif

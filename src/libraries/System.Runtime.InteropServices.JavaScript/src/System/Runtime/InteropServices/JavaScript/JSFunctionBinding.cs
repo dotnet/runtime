@@ -30,53 +30,51 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static volatile uint nextImportHandle = 1;
         internal int ImportHandle;
         internal bool IsAsync;
+        internal bool IsDiscardNoWait;
 #if DEBUG
         internal string? FunctionName;
 #endif
 
-        [StructLayout(LayoutKind.Sequential, Pack = 4)]
+        // keep in sync with JSBindingHeaderOffsets in marshal.ts
+        [StructLayout(LayoutKind.Explicit, Pack = 4)]
         internal struct JSBindingHeader
         {
             internal const int JSMarshalerSignatureHeaderSize = 4 * 8; // without Exception and Result
 
+            [FieldOffset(0)]
             public int Version;
+            [FieldOffset(4)]
             public int ArgumentCount;
+            [FieldOffset(8)]
             public int ImportHandle;
-            public int _Reserved;
+            [FieldOffset(16)]
             public int FunctionNameOffset;
+            [FieldOffset(20)]
             public int FunctionNameLength;
+            [FieldOffset(24)]
             public int ModuleNameOffset;
+            [FieldOffset(28)]
             public int ModuleNameLength;
+            [FieldOffset(32)]
             public JSBindingType Exception;
+            [FieldOffset(64)]
             public JSBindingType Result;
         }
 
-        [StructLayout(LayoutKind.Sequential, Pack = 4, Size = 32)]
+        // keep in sync with JSBindingTypeOffsets in marshal.ts
+        [StructLayout(LayoutKind.Explicit, Pack = 4, Size = 32)]
         internal struct JSBindingType
         {
+            [FieldOffset(0)]
             internal MarshalerType Type;
-            internal MarshalerType __ReservedB1;
-            internal MarshalerType __ReservedB2;
-            internal MarshalerType __ReservedB3;
-            internal IntPtr __Reserved;
-            internal IntPtr JSCustomMarshallerCode;
-            internal int JSCustomMarshallerCodeLength;
+            [FieldOffset(16)]
             internal MarshalerType ResultMarshalerType;
-            internal MarshalerType __ReservedB4;
-            internal MarshalerType __ReservedB5;
-            internal MarshalerType __ReservedB6;
+            [FieldOffset(20)]
             internal MarshalerType Arg1MarshalerType;
-            internal MarshalerType __ReservedB7;
-            internal MarshalerType __ReservedB8;
-            internal MarshalerType __ReservedB9;
+            [FieldOffset(24)]
             internal MarshalerType Arg2MarshalerType;
-            internal MarshalerType __ReservedB10;
-            internal MarshalerType __ReservedB11;
-            internal MarshalerType __ReservedB12;
+            [FieldOffset(28)]
             internal MarshalerType Arg3MarshalerType;
-            internal MarshalerType __ReservedB13;
-            internal MarshalerType __ReservedB14;
-            internal MarshalerType __ReservedB15;
         }
 
         internal unsafe int ArgumentCount
@@ -192,7 +190,10 @@ namespace System.Runtime.InteropServices.JavaScript
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
                 throw new PlatformNotSupportedException();
 
-            return BindManagedFunctionImpl(fullyQualifiedName, signatureHash, signatures);
+            // this could be called by assembly module initializer from Net7 code-gen
+            // on wrong thread, in which case we will bind it to UI thread
+
+            return JSHostImplementation.BindManagedFunction(fullyQualifiedName, signatureHash, signatures);
         }
 
 #if !DEBUG
@@ -202,7 +203,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             jsFunction.AssertNotDisposed();
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             // if we are on correct thread already, just call it
             if (jsFunction.ProxyContext.IsCurrentThread())
             {
@@ -236,7 +237,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
@@ -245,11 +246,13 @@ namespace System.Runtime.InteropServices.JavaScript
             var args = (nint)Unsafe.AsPointer(ref arguments[0]);
             var functionHandle = jsFunction.JSHandle;
 
-            jsFunction.ProxyContext.SynchronizationContext.Send(static o =>
-            {
-                var state = ((nint functionHandle, nint args))o!;
-                Interop.Runtime.InvokeJSFunction(state.functionHandle, state.args);
-            }, (functionHandle, args));
+            // we already know that we are not on the right thread
+            // this will be blocking until resolved by that thread
+            // we don't have to disable ThrowOnBlockingWaitOnJSInteropThread, because this is lock in native code
+            // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
+            // so it could take some time, while target is CPU busy, but not forever
+            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
+            Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.JSNativeTID, functionHandle, args);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
             if (exceptionArg.slot.Type != MarshalerType.None)
@@ -264,7 +267,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void InvokeJSImportImpl(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
             var targetContext = JSProxyContext.SealJSImportCapturing();
             arguments[0].slot.ContextHandle = targetContext.ContextHandle;
             arguments[1].slot.ContextHandle = targetContext.ContextHandle;
@@ -280,7 +283,12 @@ namespace System.Runtime.InteropServices.JavaScript
                 arguments[1].slot.GCHandle = holder.GCHandle;
             }
 
-#if FEATURE_WASM_THREADS
+            if (signature.IsDiscardNoWait)
+            {
+                arguments[1].slot.Type = MarshalerType.DiscardNoWait;
+            }
+
+#if FEATURE_WASM_MANAGED_THREADS
             // if we are on correct thread already or this is synchronous call, just call it
             if (targetContext.IsCurrentThread())
             {
@@ -294,13 +302,15 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
 
             }
-            else if (!signature.IsAsync)
+            else if (signature.IsAsync || signature.IsDiscardNoWait)
             {
-                DispatchJSImportSync(signature, targetContext, arguments);
+                //async
+                DispatchJSImportAsyncPost(signature, targetContext, arguments);
             }
             else
             {
-                DispatchJSImportAsync(signature, targetContext, arguments);
+                //sync
+                DispatchJSImportSyncSend(signature, targetContext, arguments);
             }
 #else
             InvokeJSImportCurrent(signature, arguments);
@@ -324,10 +334,10 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             fixed (JSMarshalerArgument* args = arguments)
             {
-#if FEATURE_WASM_THREADS
-                Interop.Runtime.InvokeJSImportSync((nint)args, (nint)signature.Header);
+#if FEATURE_WASM_MANAGED_THREADS
+                Interop.Runtime.InvokeJSImportSync((nint)signature.Header, (nint)args);
 #else
-                Interop.Runtime.InvokeJSImport(signature.ImportHandle, (nint)args);
+                Interop.Runtime.InvokeJSImportST(signature.ImportHandle, (nint)args);
 #endif
             }
 
@@ -338,21 +348,23 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-#if FEATURE_WASM_THREADS
+#if FEATURE_WASM_MANAGED_THREADS
 
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static unsafe void DispatchJSImportSync(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
+        internal static unsafe void DispatchJSImportSyncSend(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
             var args = (nint)Unsafe.AsPointer(ref arguments[0]);
             var sig = (nint)signature.Header;
 
-            targetContext.SynchronizationContext.Send(static o =>
-            {
-                var state = ((nint args, nint sig))o!;
-                Interop.Runtime.InvokeJSImportSync(state.args, state.sig);
-            }, (args, sig));
+            // we already know that we are not on the right thread
+            // this will be blocking until resolved by that thread
+            // we don't have to disable ThrowOnBlockingWaitOnJSInteropThread, because this is lock in native code
+            // we also don't throw PNSE here, because we know that the target has JS interop installed and that it could not block
+            // so it could take some time, while target is CPU busy, but not forever
+            // see also https://github.com/dotnet/runtime/issues/76958#issuecomment-1921418290
+            Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, sig, args);
 
             ref JSMarshalerArgument exceptionArg = ref arguments[0];
             if (exceptionArg.slot.Type != MarshalerType.None)
@@ -364,20 +376,22 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static unsafe void DispatchJSImportAsync(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
+        internal static unsafe void DispatchJSImportAsyncPost(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
-            // this copy is freed in mono_wasm_invoke_import_async
+            // meaning JS side needs to dispose it
+            ref JSMarshalerArgument exc = ref arguments[0];
+            exc.slot.ReceiverShouldFree = true;
+
             var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
             void* cpy = (void*)Marshal.AllocHGlobal(bytes);
             void* src = Unsafe.AsPointer(ref arguments[0]);
             Unsafe.CopyBlock(cpy, src, (uint)bytes);
             var sig = (nint)signature.Header;
 
-            targetContext.SynchronizationContext.Post(static o =>
-            {
-                var state = ((nint args, nint sig))o!;
-                Interop.Runtime.InvokeJSImportAsync(state.args, state.sig);
-            }, ((nint)cpy, sig));
+            // we already know that we are not on the right thread
+            // this will return quickly after sending the message
+            // async
+            Interop.Runtime.InvokeJSImportAsyncPost(targetContext.JSNativeTID, sig, (nint)cpy);
 
         }
 
@@ -387,7 +401,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             var signature = JSHostImplementation.GetMethodSignature(signatures, functionName, moduleName);
 
-#if !FEATURE_WASM_THREADS
+#if !FEATURE_WASM_MANAGED_THREADS
 
             Interop.Runtime.BindJSImport(signature.Header, out int isException, out object exceptionMessage);
             if (isException != 0)
@@ -400,58 +414,44 @@ namespace System.Runtime.InteropServices.JavaScript
             return signature;
         }
 
-        internal static unsafe JSFunctionBinding BindManagedFunctionImpl(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
-        {
-            var signature = JSHostImplementation.GetMethodSignature(signatures, null, null);
-
-            Interop.Runtime.BindCSFunction(fullyQualifiedName, signatureHash, signature.Header, out int isException, out object exceptionMessage);
-            if (isException != 0)
-            {
-                throw new JSException((string)exceptionMessage);
-            }
-
-            JSHostImplementation.FreeMethodSignatureBuffer(signature);
-
-            return signature;
-        }
-
-#if !FEATURE_WASM_THREADS
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void ResolveOrRejectPromise(Span<JSMarshalerArgument> arguments)
-        {
-            fixed (JSMarshalerArgument* ptr = arguments)
-            {
-                Interop.Runtime.ResolveOrRejectPromise((nint)ptr);
-                ref JSMarshalerArgument exceptionArg = ref arguments[0];
-                if (exceptionArg.slot.Type != MarshalerType.None)
-                {
-                    JSHostImplementation.ThrowException(ref exceptionArg);
-                }
-            }
-        }
-#else
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
         internal static unsafe void ResolveOrRejectPromise(JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
-            // this copy is freed in mono_wasm_invoke_import_async
-            var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
-            void* cpy = (void*)Marshal.AllocHGlobal(bytes);
-            void* src = Unsafe.AsPointer(ref arguments[0]);
-            Unsafe.CopyBlock(cpy, src, (uint)bytes);
-
-            // TODO: we could optimize away the work item allocation in JSSynchronizationContext if we synchronously dispatch this when we are already in the right thread.
-
-            // async
-            targetContext.SynchronizationContext.Post(static o =>
-            {
-                var args = (nint)o!;
-                Interop.Runtime.ResolveOrRejectPromise(args);
-            }, (nint)cpy);
-
-            // this never throws directly
-        }
+#if FEATURE_WASM_MANAGED_THREADS
+            if (targetContext.IsCurrentThread())
 #endif
+            {
+                fixed (JSMarshalerArgument* ptr = arguments)
+                {
+                    Interop.Runtime.ResolveOrRejectPromise((nint)ptr);
+                    ref JSMarshalerArgument exceptionArg = ref arguments[0];
+                    if (exceptionArg.slot.Type != MarshalerType.None)
+                    {
+                        JSHostImplementation.ThrowException(ref exceptionArg);
+                    }
+                }
+            }
+#if FEATURE_WASM_MANAGED_THREADS
+            else
+            {
+                // meaning JS side needs to dispose it
+                ref JSMarshalerArgument exc = ref arguments[0];
+                exc.slot.ReceiverShouldFree = true;
+
+                // this copy is freed in mono_wasm_resolve_or_reject_promise
+                var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
+                void* cpy = (void*)Marshal.AllocHGlobal(bytes);
+                void* src = Unsafe.AsPointer(ref arguments[0]);
+                Unsafe.CopyBlock(cpy, src, (uint)bytes);
+
+                // async
+                Interop.Runtime.ResolveOrRejectPromisePost(targetContext.JSNativeTID, (nint)cpy);
+
+                // this never throws directly
+            }
+#endif
+        }
     }
 }

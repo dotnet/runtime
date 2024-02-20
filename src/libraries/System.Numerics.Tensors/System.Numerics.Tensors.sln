@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "src\System.Numerics.Tensors.csproj", "{848DD000-3D22-4A25-A9D9-05AFF857A116}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors.Net8.Tests", "tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj", "{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors.Tests", "tests\System.Numerics.Tensors.Tests.csproj", "{4AF6A02D-82C8-4898-9EDF-01F107C25061}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{4588351F-4233-4957-B84C-7F8E22B8888A}"
@@ -41,8 +43,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "tools\ref", "{9482D7
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{F9C2AAB1-C7B0-4E43-BB18-4FB16F6E272B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors.Net8.Tests", "tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj", "{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +69,10 @@ Global
 		{848DD000-3D22-4A25-A9D9-05AFF857A116}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{848DD000-3D22-4A25-A9D9-05AFF857A116}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{848DD000-3D22-4A25-A9D9-05AFF857A116}.Release|Any CPU.Build.0 = Release|Any CPU
+		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4AF6A02D-82C8-4898-9EDF-01F107C25061}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4AF6A02D-82C8-4898-9EDF-01F107C25061}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4AF6A02D-82C8-4898-9EDF-01F107C25061}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -101,18 +105,14 @@ Global
 		{57E57290-3A6A-43F8-8764-D4DC8151F89C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57E57290-3A6A-43F8-8764-D4DC8151F89C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57E57290-3A6A-43F8-8764-D4DC8151F89C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9F20CEA1-2216-4432-BBBD-F01E05D17F23} = {DE94CA7D-BB10-4865-85A6-6B694631247F}
-		{4AF6A02D-82C8-4898-9EDF-01F107C25061} = {DE94CA7D-BB10-4865-85A6-6B694631247F}
 		{46AD9423-D8C3-44BB-A201-1CCCAB4C6DAF} = {DE94CA7D-BB10-4865-85A6-6B694631247F}
+		{4AF6A02D-82C8-4898-9EDF-01F107C25061} = {DE94CA7D-BB10-4865-85A6-6B694631247F}
 		{D311ABE4-10A9-4BB1-89CE-6358C55501A8} = {7AC4B2C7-A55C-4C4F-9B02-77F5CBFFF4AB}
 		{21CB448A-3882-4337-B416-D1A3E0BCFFC5} = {7AC4B2C7-A55C-4C4F-9B02-77F5CBFFF4AB}
 		{1578185F-C4FA-4866-936B-E62AAEDD03B7} = {DF0561A1-3AB8-4B51-AFB4-392EE1DD6247}

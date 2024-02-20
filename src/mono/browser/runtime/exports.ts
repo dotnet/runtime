@@ -3,6 +3,10 @@
 
 import ProductVersion from "consts:productVersion";
 import BuildConfiguration from "consts:configuration";
+import WasmEnableThreads from "consts:wasmEnableThreads";
+import WasmEnableSIMD from "consts:wasmEnableSIMD";
+import WasmEnableExceptionHandling from "consts:wasmEnableExceptionHandling";
+
 import type { RuntimeAPI } from "./types";
 
 import { Module, exportedRuntimeAPI, loaderHelpers, passEmscriptenInternals, runtimeHelpers, setRuntimeGlobals, } from "./globals";
@@ -18,6 +22,7 @@ import { mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset, instantiate_segmentation_rules_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { forceDisposeProxies } from "./gc-handles";
+import { dumpThreads } from "./pthreads";
 
 export let runtimeList: RuntimeList;
 
@@ -35,6 +40,11 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         forceDisposeProxies,
         instantiate_segmentation_rules_asset,
     });
+    if (WasmEnableThreads) {
+        Object.assign(runtimeHelpers, {
+            dumpThreads,
+        });
+    }
 
     const API = export_api();
     Object.assign(exportedRuntimeAPI, {
@@ -43,7 +53,10 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         runtimeBuildInfo: {
             productVersion: ProductVersion,
             gitHash: runtimeHelpers.gitHash,
-            buildConfiguration: BuildConfiguration
+            buildConfiguration: BuildConfiguration,
+            wasmEnableThreads: WasmEnableThreads,
+            wasmEnableSIMD: WasmEnableSIMD,
+            wasmEnableExceptionHandling: WasmEnableExceptionHandling,
         },
         ...API,
     });

@@ -3623,6 +3623,44 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         //
         assert(genIsValidIntReg(target->GetRegNum()));
 
+#ifdef TARGET_ARM64
+        bool isTlsHandleTarget =
+            compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && target->IsTlsIconHandle();
+
+        if (isTlsHandleTarget)
+        {
+            assert(call->gtFlags & GTF_TLS_GET_ADDR);
+            emitter*       emitter  = GetEmitter();
+            emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | retSize);
+            GenTreeIntCon* iconNode = target->AsIntCon();
+            methHnd                 = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            retSize                 = EA_SET_FLG(retSize, EA_CNS_TLSGD_RELOC);
+
+            // For NativeAOT, linux/arm64, linker wants the following pattern, so we will generate
+            // it as part of the call. Generating individual instructions is tricky to get it
+            // correct in the format the way linker needs. Also, we might end up spilling or
+            // reloading a register, which can break the pattern.
+            //
+            //      mrs  x1, tpidr_el0
+            //      adrp x0, :tlsdesc:tlsRoot   ; R_AARCH64_TLSDESC_ADR_PAGE21
+            //      ldr  x2, [x0]               ; R_AARCH64_TLSDESC_LD64_LO12
+            //      add  x0, x0, #0             ; R_AARCH64_TLSDESC_ADD_LO12
+            //      blr  x2                     ; R_AARCH64_TLSDESC_CALL
+            //      add  x0, x1, x0
+            // We guaranteed in LSRA that r0, r1 and r2 are assigned to this node.
+
+            // mrs
+            emitter->emitIns_R(INS_mrs_tpid0, attr, REG_R1);
+
+            // adrp
+            // ldr
+            // add
+            emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
+                                          (ssize_t)methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                              DEBUGARG(iconNode->gtFlags));
+        }
+#endif
+
         // clang-format off
         genEmitCall(emitter::EC_INDIR_R,
                     methHnd,
@@ -3633,6 +3671,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     di,
                     target->GetRegNum(),
                     call->IsFastTailCall());
+
+#ifdef TARGET_ARM64
+        if (isTlsHandleTarget)
+        {
+            // add x0, x1, x0
+            GetEmitter()->emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
+        }
+#endif
         // clang-format on
     }
     else

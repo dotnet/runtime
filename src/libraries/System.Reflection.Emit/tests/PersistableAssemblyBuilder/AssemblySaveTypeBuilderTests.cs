@@ -379,6 +379,36 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("TestInterface*", testType.Name);
         }
 
+        [Fact]
+        public void GenericTypeParameter_MakePointerType_MakeByRefType_MakeArrayType()
+        {
+            AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters("T");
+            Type pointerType = typeParams[0].MakePointerType();
+            Type byrefType = typeParams[0].MakeByRefType();
+            Type arrayType = typeParams[0].MakeArrayType();
+            Type arrayType2 = typeParams[0].MakeArrayType(3);
+            FieldBuilder field = type.DefineField("Field", pointerType, FieldAttributes.Public);
+            FieldBuilder fieldArray = type.DefineField("FieldArray", arrayType2, FieldAttributes.Public);
+            MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public);
+            method.SetSignature(arrayType, null, null, [byrefType], null, null);
+            method.GetILGenerator().Emit(OpCodes.Ret);
+            Type genericIntType = type.MakeGenericType(typeof(int));
+            type.CreateType();
+
+            Assert.Equal(pointerType, type.GetField("Field").FieldType);
+            Assert.True(type.GetField("Field").FieldType.IsPointer);
+            Assert.Equal(arrayType2, type.GetField("FieldArray").FieldType);
+            Assert.True(type.GetField("FieldArray").FieldType.IsArray);
+            Assert.Equal(3, type.GetField("FieldArray").FieldType.GetArrayRank());
+            MethodInfo testMethod = type.GetMethod("TestMethod");
+            Assert.Equal(arrayType, testMethod.ReturnType);
+            Assert.True(testMethod.ReturnType.IsArray);
+            Assert.Equal(1, testMethod.GetParameters().Length);
+            Assert.Equal(byrefType, testMethod.GetParameters()[0].ParameterType);
+            Assert.True(testMethod.GetParameters()[0].ParameterType.IsByRef);
+        }
+
         public static IEnumerable<object[]> SaveGenericType_TestData()
         {
             yield return new object[] { new string[] { "U", "T" }, new Type[] { typeof(string), typeof(int) }, "TestInterface[System.String,System.Int32]" };
@@ -575,6 +605,49 @@ namespace System.Reflection.Emit.Tests
                     Assert.Equal("Z", method21Params[2].Name);
                 }
             }
+        }
+
+        [Fact]
+        public void MethodBuilderGetParametersReturnParameterTest()
+        {
+            AssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+            MethodBuilder method1 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(long), [typeof(int), typeof(string)]);
+            MethodBuilder method2 = type.DefineMethod("Method2", MethodAttributes.Static);
+            MethodBuilder method3 = type.DefineMethod("Method1", MethodAttributes.Public, typeof(int), [typeof(string)]);
+            method1.DefineParameter(0, ParameterAttributes.Retval, null);
+            method1.DefineParameter(1, ParameterAttributes.None, "index");
+            method1.DefineParameter(2, ParameterAttributes.Out, "outParam");
+            ParameterBuilder pb = method3.DefineParameter(1, ParameterAttributes.Optional, "name");
+            pb.SetConstant("defaultName");
+            //type.CreateType();
+
+            ParameterInfo[] params1 = method1.GetParameters();
+            Assert.Equal(2, params1.Length);
+            Assert.Equal("index", params1[0].Name);
+            Assert.Equal(typeof(int), params1[0].ParameterType);
+            Assert.Equal("outParam", params1[1].Name);
+            Assert.Equal(typeof(string), params1[1].ParameterType);
+            Assert.Equal(ParameterAttributes.Out, params1[1].Attributes);
+            Assert.True(params1[1].IsOut);
+            Assert.Equal(typeof(long), method1.ReturnParameter.ParameterType);
+            Assert.Null(method1.ReturnParameter.Name);
+            Assert.True(method1.ReturnParameter.IsRetval);
+
+            Assert.Empty(method2.GetParameters());
+            Assert.Equal(typeof(void), method2.ReturnParameter.ParameterType);
+            Assert.Null(method2.ReturnParameter.Name);
+            Assert.True(method2.ReturnParameter.IsRetval);
+
+            ParameterInfo[] params3 = method3.GetParameters();
+            Assert.Equal(1, params3.Length);
+            Assert.Equal("name", params3[0].Name);
+            Assert.Equal(typeof(string), params3[0].ParameterType);
+            Assert.True(params3[0].HasDefaultValue);
+            Assert.Equal("defaultName", params3[0].DefaultValue);
+
+            Assert.Equal(typeof(int), method3.ReturnParameter.ParameterType);
+            Assert.Null(method3.ReturnParameter.Name);
+            Assert.True(method3.ReturnParameter.IsRetval);
         }
     }
 
