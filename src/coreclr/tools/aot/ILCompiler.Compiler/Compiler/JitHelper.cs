@@ -87,7 +87,7 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.WriteBarrier_EBP:
                     mangledName = "RhpAssignRefEBP";
-                    break;                    
+                    break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
                     mangledName = "RhpCheckedAssignRefEAX";
                     break;
