@@ -2167,15 +2167,19 @@ namespace System.Net.Tests
             );
         }
 
-        [Fact]
-        public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
         {
-            await LoopbackServer.CreateClientAndServerAsync(
+            RemoteExecutor.Invoke(async (async) =>
+            {
+                await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
                     HttpWebRequest.DefaultMaximumErrorResponseLength = 5;
-                    var exception = await Assert.ThrowsAsync<WebException>(() => GetResponseAsync(request));
+                    var exception = bool.Parse(async) ?
+                        await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync()) :
+                        Assert.Throws<WebException>(() => request.GetResponse());
                     Assert.NotNull(exception.Response);
                     using (var responseStream = exception.Response.GetResponseStream())
                     {
@@ -2193,6 +2197,7 @@ namespace System.Net.Tests
                             await client.SendResponseAsync(statusCode: HttpStatusCode.InternalServerError, content: new string('a', 10));
                         });
                 });
+            }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
         }
 
         [Fact]
