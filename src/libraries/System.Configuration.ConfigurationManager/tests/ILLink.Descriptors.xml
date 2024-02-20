@@ -6,5 +6,8 @@
     <type fullname="System.Configuration.AppSettingsSection" />
     <type fullname="System.Configuration.ProtectedConfigurationSection" />
     <type fullname="System.Configuration.ConnectionStringsSection" />
+    <type fullname="System.Diagnostics.SystemDiagnosticsSection" />
+    <type fullname="System.Configuration.Internal.InternalConfigConfigurationFactory" />
+    <type fullname="System.Configuration.ProviderSettingsCollection" />
   </assembly>
 </linker>
