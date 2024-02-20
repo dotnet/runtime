@@ -551,7 +551,12 @@ function(install_clr)
       elseif("${targetType}" STREQUAL "SHARED_LIBRARY")
         #imported shared lib - install the imported artifacts
         #imported static lib - nothing to install
-        install(IMPORTED_RUNTIME_ARTIFACTS ${targetName} DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+
+        if ("${CMAKE_VERSION}" VERSION_LESS "3.21")
+          install(PROGRAMS $<TARGET_PROPERTY:${targetName},IMPORTED_LOCATION> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+        else()
+          install(IMPORTED_RUNTIME_ARTIFACTS ${targetName} DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
+        endif()
         if (NOT "${symbolFile}" STREQUAL "")
           install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
         endif()
