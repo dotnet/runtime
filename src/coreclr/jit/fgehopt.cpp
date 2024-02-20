@@ -1099,7 +1099,7 @@ PhaseStatus Compiler::fgCloneFinally()
             }
             else
             {
-                optInitDuplicatedBlockTargets(block, newBlock, &blockMap);
+                optSetMappedBlockTargets(block, newBlock, &blockMap);
             }
         }
 

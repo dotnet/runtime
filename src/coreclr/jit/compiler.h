@@ -6862,7 +6862,7 @@ protected:
     bool optExtractInitTestIncr(
         BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
-    void optInitDuplicatedBlockTargets(BasicBlock*      blk,
+    void optSetMappedBlockTargets(BasicBlock*      blk,
                           BasicBlock*      newBlk,
                           BlockToBlockMap* redirectMap);
 
