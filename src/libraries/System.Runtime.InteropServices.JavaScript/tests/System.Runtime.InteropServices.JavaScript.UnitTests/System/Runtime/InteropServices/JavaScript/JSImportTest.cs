@@ -529,6 +529,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         #region Int32
         [Theory]
         [MemberData(nameof(MarshalInt32Cases))]
+        public async Task JsImportInt32DiscardNoWait(int value)
+        {
+            JavaScriptTestHelper.store1DiscardNoWait_Int32(value);
+            await JavaScriptTestHelper.Delay(0);
+            Assert.Equal(value, JavaScriptTestHelper.retrieve1_Int32());
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalInt32Cases))]
         public void JsImportInt32(int value)
         {
             JsImportTest(value,

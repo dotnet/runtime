@@ -21,6 +21,7 @@
 #include "fileio.h"
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
+extern int doStreamingSuperPMI(CommandLine::Options& o);
 
 // NOTE: these output status strings are parsed by parallelsuperpmi.cpp::ProcessChildStdOut().
 // There must be a single, fixed prefix common to all strings, to ease the determination of when
@@ -228,6 +229,11 @@ int __cdecl main(int argc, char* argv[])
     if (o.parallel)
     {
         return doParallelSuperPMI(o);
+    }
+
+    if (o.streamFile != nullptr)
+    {
+        return doStreamingSuperPMI(o);
     }
 
     SetBreakOnException(o.breakOnException);

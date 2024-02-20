@@ -1580,6 +1580,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Optimization is disabled for linux/x86
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
                 // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
+                // Optimization is disabled for FreeBSD/arm64
 #else
                 bool optimizeThreadStaticAccess = true;
 #if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)

@@ -25,6 +25,7 @@ public:
         bool  ignoreStoredConfig = false;
         bool  applyDiff = false;
         bool  parallel = false;        // User specified to use /parallel mode.
+        char* streamFile = nullptr;
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
         bool  useCoreDisTools = true; // Use CoreDisTools library instead of Msvcdis
 #else
@@ -57,6 +58,8 @@ public:
                              char* argv[],
                              LightWeightMap<DWORD, DWORD>** pJitOptions,
                              LightWeightMap<DWORD, DWORD>** pForceJitOptions);
+
+    static bool ParseJitOption(const char* optionString, WCHAR** key, WCHAR** value);
 
 private:
     static void DumpHelp(const char* program);

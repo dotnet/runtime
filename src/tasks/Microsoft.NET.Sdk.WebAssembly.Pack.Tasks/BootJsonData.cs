@@ -108,9 +108,14 @@ public class BootJsonData
     public object diagnosticTracing { get; set; }
 
     /// <summary>
-    /// Gets or sets pthread pool size.
+    /// Gets or sets pthread pool initial size.
     /// </summary>
-    public int? pthreadPoolSize { get; set; }
+    public int? pthreadPoolInitialSize { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool unused size.
+    /// </summary>
+    public int? pthreadPoolUnusedSize { get; set; }
 }
 
 public class ResourcesData

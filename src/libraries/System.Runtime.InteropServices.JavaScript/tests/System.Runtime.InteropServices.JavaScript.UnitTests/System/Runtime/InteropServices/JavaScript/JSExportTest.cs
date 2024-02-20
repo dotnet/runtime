@@ -24,6 +24,16 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 "boolean");
         }
 
+        [Theory]
+        [MemberData(nameof(MarshalInt32Cases))]
+        public async Task JsExportInt32DiscardNoWait(int value)
+        {
+            JavaScriptTestHelper.optimizedReached=0;
+            JavaScriptTestHelper.invoke1O(value);
+            await JavaScriptTestHelper.Delay(0);
+            Assert.Equal(value, JavaScriptTestHelper.optimizedReached);
+        }
+
         private async Task JsExportTestAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(T value
         , Func<T, string, Task<T>> invoke, string echoName, string jsType, string? jsClass = null)
         {

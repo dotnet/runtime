@@ -34,7 +34,7 @@ namespace System.Buffers
 
             if (values.Length == 1)
             {
-                return new SingleByteSearchValues(values);
+                return new Any1SearchValues<byte, byte>(values);
             }
 
             // RangeByteSearchValues is slower than SingleByteSearchValues, but faster than Any2ByteSearchValues
@@ -48,8 +48,8 @@ namespace System.Buffers
                 Debug.Assert(values.Length is 2 or 3 or 4 or 5);
                 return values.Length switch
                 {
-                    2 => new Any2ByteSearchValues(values),
-                    3 => new Any3ByteSearchValues(values),
+                    2 => new Any2SearchValues<byte, byte>(values),
+                    3 => new Any3SearchValues<byte, byte>(values),
                     4 => new Any4SearchValues<byte, byte>(values),
                     _ => new Any5SearchValues<byte, byte>(values),
                 };
@@ -75,12 +75,18 @@ namespace System.Buffers
                 return new EmptySearchValues<char>();
             }
 
+            // Vector128<char> isn't valid. Treat the values as shorts instead.
+            ReadOnlySpan<short> shortValues = MemoryMarshal.CreateReadOnlySpan(
+                ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
+                values.Length);
+
             if (values.Length == 1)
             {
                 char value = values[0];
+
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value)
-                    ? new SingleCharSearchValues<TrueConst>(value)
-                    : new SingleCharSearchValues<FalseConst>(value);
+                    ? new Any1CharPackedSearchValues(value)
+                    : new Any1SearchValues<char, short>(shortValues);
             }
 
             // RangeCharSearchValues is slower than SingleCharSearchValues, but faster than Any2CharSearchValues
@@ -95,9 +101,18 @@ namespace System.Buffers
             {
                 char value0 = values[0];
                 char value1 = values[1];
-                return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1)
-                    ? new Any2CharSearchValues<TrueConst>(value0, value1)
-                    : new Any2CharSearchValues<FalseConst>(value0, value1);
+
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
+                {
+                    // If the two values are the same ASCII letter with both cases, we can use an approach that
+                    // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
+                    // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[{" => "{").
+                    return (value0 ^ value1) == 0x20
+                        ? new Any1CharPackedIgnoreCaseSearchValues((char)Math.Max(value0, value1))
+                        : new Any2CharPackedSearchValues(value0, value1);
+                }
+
+                return new Any2SearchValues<char, short>(shortValues);
             }
 
             if (values.Length == 3)
@@ -105,23 +120,36 @@ namespace System.Buffers
                 char value0 = values[0];
                 char value1 = values[1];
                 char value2 = values[2];
+
                 return PackedSpanHelpers.PackedIndexOfIsSupported && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1) && PackedSpanHelpers.CanUsePackedIndexOf(value2)
-                    ? new Any3CharSearchValues<TrueConst>(value0, value1, value2)
-                    : new Any3CharSearchValues<FalseConst>(value0, value1, value2);
+                    ? new Any3CharPackedSearchValues(value0, value1, value2)
+                    : new Any3SearchValues<char, short>(shortValues);
             }
 
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
+                // If the values are sets of 2 ASCII letters with both cases, we can use an approach that
+                // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
+                // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
+                if (PackedSpanHelpers.PackedIndexOfIsSupported && values.Length == 4 && minInclusive > 0)
+                {
+                    Span<char> copy = stackalloc char[4];
+                    values.CopyTo(copy);
+                    copy.Sort();
+
+                    if ((copy[0] ^ copy[2]) == 0x20 &&
+                        (copy[1] ^ copy[3]) == 0x20)
+                    {
+                        // We pick the higher two values (with the 0x20 bit set). "AaBb" => 'a', 'b'
+                        return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
+                    }
+                }
+
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                     ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
                     : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
             }
-
-            // Vector128<char> isn't valid. Treat the values as shorts instead.
-            ReadOnlySpan<short> shortValues = MemoryMarshal.CreateReadOnlySpan(
-                ref Unsafe.As<char, short>(ref MemoryMarshal.GetReference(values)),
-                values.Length);
 
             if (values.Length == 4)
             {

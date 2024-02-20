@@ -1165,7 +1165,9 @@ enum {
 	JITERP_MEMBER_SPAN_LENGTH,
 	JITERP_MEMBER_SPAN_DATA,
 	JITERP_MEMBER_ARRAY_LENGTH,
+	// Kept as-is but no longer implemented
 	JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS,
+	// Ditto
 	JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT,
 	JITERP_MEMBER_CLAUSE_DATA_OFFSETS,
 	JITERP_MEMBER_PARAMS_COUNT,
@@ -1195,10 +1197,6 @@ mono_jiterp_get_member_offset (int member) {
 			return offsetof (InterpFrame, imethod);
 		case JITERP_MEMBER_DATA_ITEMS:
 			return offsetof (InterpMethod, data_items);
-		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS:
-			return offsetof (InterpMethod, backward_branch_offsets);
-		case JITERP_MEMBER_BACKWARD_BRANCH_OFFSETS_COUNT:
-			return offsetof (InterpMethod, backward_branch_offsets_count);
 		case JITERP_MEMBER_CLAUSE_DATA_OFFSETS:
 			return offsetof (InterpMethod, clause_data_offsets);
 		case JITERP_MEMBER_RMETHOD:

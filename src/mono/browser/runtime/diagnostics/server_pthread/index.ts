@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 
 import { PromiseAndController, assertNever } from "../../types/internal";
-import { pthread_self } from "../../pthreads/worker";
+import { pthread_self } from "../../pthreads";
 import { createPromiseController, mono_assert } from "../../globals";
 import { threads_c_functions as cwraps } from "../../cwraps";
 import { EventPipeSessionIDImpl } from "../shared/types";

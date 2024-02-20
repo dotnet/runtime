@@ -5348,7 +5348,6 @@ public:
     Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTreeQmark* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
-    bool fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     bool fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
 
@@ -5883,6 +5882,8 @@ public:
 
     FlowEdge* fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred);
 
+    void fgRemoveRefPred(FlowEdge* edge);
+
     FlowEdge* fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred);
 
     void fgRemoveBlockAsPred(BasicBlock* block);
@@ -5893,11 +5894,15 @@ public:
 
     void fgReplaceEhfSuccessor(BasicBlock* block, BasicBlock* oldSucc, BasicBlock* newSucc);
 
-    void fgRemoveEhfSuccessor(BasicBlock* block, BasicBlock* succ);
+    void fgRemoveEhfSuccessor(BasicBlock* block, const unsigned succIndex);
+    
+    void fgRemoveEhfSuccessor(FlowEdge* succEdge);
 
     void fgReplaceJumpTarget(BasicBlock* block, BasicBlock* oldTarget, BasicBlock* newTarget);
 
     void fgReplacePred(BasicBlock* block, BasicBlock* oldPred, BasicBlock* newPred);
+
+    void fgReplacePred(FlowEdge* edge, BasicBlock* const newPred);
 
     // initializingPreds is only 'true' when we are computing preds in fgLinkBasicBlocks()
     template <bool initializingPreds = false>

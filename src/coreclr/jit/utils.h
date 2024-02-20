@@ -246,6 +246,10 @@ private:
 class ConfigIntArray
 {
 public:
+    ConfigIntArray() : m_values(nullptr), m_length(0)
+    {
+    }
+
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
     {
@@ -276,6 +280,10 @@ private:
 class ConfigDoubleArray
 {
 public:
+    ConfigDoubleArray() : m_values(nullptr), m_length(0)
+    {
+    }
+
     // Ensure the string has been parsed.
     void EnsureInit(const WCHAR* str)
     {

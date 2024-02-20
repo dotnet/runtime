@@ -81,6 +81,8 @@ public:
     void* allocateLongLivedArray(size_t size);
     void freeArray(void* array);
     void freeLongLivedArray(void* array);
+
+    void updateForceOptions(LightWeightMap<DWORD, DWORD>* newForceOptions);
 };
 
 #endif

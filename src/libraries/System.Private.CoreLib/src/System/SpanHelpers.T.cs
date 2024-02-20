@@ -1672,6 +1672,15 @@ namespace System
         {
             if (PackedSpanHelpers.PackedIndexOfIsSupported && typeof(TValue) == typeof(short) && PackedSpanHelpers.CanUsePackedIndexOf(value0) && PackedSpanHelpers.CanUsePackedIndexOf(value1))
             {
+                if ((*(char*)&value0 ^ *(char*)&value1) == 0x20)
+                {
+                    char lowerCase = (char)Math.Max(*(char*)&value0, *(char*)&value1);
+
+                    return typeof(TNegator) == typeof(DontNegate<short>)
+                        ? PackedSpanHelpers.IndexOfAnyIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length)
+                        : PackedSpanHelpers.IndexOfAnyExceptIgnoreCase(ref Unsafe.As<TValue, char>(ref searchSpace), lowerCase, length);
+                }
+
                 return typeof(TNegator) == typeof(DontNegate<short>)
                     ? PackedSpanHelpers.IndexOfAny(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length)
                     : PackedSpanHelpers.IndexOfAnyExcept(ref Unsafe.As<TValue, char>(ref searchSpace), *(char*)&value0, *(char*)&value1, length);

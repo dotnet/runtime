@@ -186,6 +186,12 @@ export function invoke1V(arg1) {
     fn(arg1);
 }
 
+export function invoke1O(arg1) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper['Optimized1O'];
+    fn(arg1);
+}
+
 export function invoke1R(arg1) {
     const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
     const fn = JavaScriptTestHelper['Optimized1R'];

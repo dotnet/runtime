@@ -5,7 +5,8 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import cwraps from "./cwraps";
 import { ENVIRONMENT_IS_WORKER, Module, loaderHelpers } from "./globals";
-import { is_thread_available } from "./pthreads/shared/emscripten-replacements";
+import { forceThreadMemoryViewRefresh } from "./memory";
+import { is_thread_available } from "./pthreads";
 
 let spread_timers_maximum = 0;
 let pump_count = 0;
@@ -33,6 +34,9 @@ function prevent_timer_throttling_tick() {
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }
+    if (WasmEnableThreads) {
+        forceThreadMemoryViewRefresh();
+    }
     cwraps.mono_wasm_execute_timer();
     pump_count++;
     mono_background_exec_until_done();
@@ -42,6 +46,9 @@ function mono_background_exec_until_done() {
     Module.maybeExit();
     if (!loaderHelpers.is_runtime_running()) {
         return;
+    }
+    if (WasmEnableThreads) {
+        forceThreadMemoryViewRefresh();
     }
     while (pump_count > 0) {
         --pump_count;
@@ -85,6 +92,9 @@ export function mono_wasm_schedule_timer(shortestDueTimeMs: number): void {
 
 function mono_wasm_schedule_timer_tick() {
     Module.maybeExit();
+    if (WasmEnableThreads) {
+        forceThreadMemoryViewRefresh();
+    }
     if (!loaderHelpers.is_runtime_running()) {
         return;
     }

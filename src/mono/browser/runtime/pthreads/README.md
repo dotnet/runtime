@@ -17,11 +17,11 @@ On the other hand, pthreads in native code have a peer relationship: any two thr
 
 ## Main thread API
 
-In the main thread, `pthreads/browser` provides a `getThread` function that returns a `{ pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort }` object that can be used to communicate with the worker thread.
+In the main thread, `pthreads/ui-thread` provides a `getThread` function that returns a `{ pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort }` object that can be used to communicate with the worker thread.
 
 ## Worker thread API
 
-In the worker threads, `pthread/worker` provides `currentWorkerThreadEvents` which is an [`EventTarget`](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget) that fires `'dotnet:pthread:created'` and `'dotnet:pthread:attached'` events when a pthread is started on the worker, and when that pthread attaches to the Mono runtime. A good place to add event listeners is in `mono_wasm_pthread_worker_init` in `startup.ts`.
+In the worker threads, `pthread/worker-*` provides `currentWorkerThreadEvents` which is an [`EventTarget`](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget) that fires `'dotnet:pthread:created'` and `'dotnet:pthread:attached'` events when a pthread is started on the worker, and when that pthread attaches to the Mono runtime. A good place to add event listeners is in `mono_wasm_pthread_worker_init` in `startup.ts`.
 The events have a `portToMain` property which is a dotnet-specific `MessagePort` for posting messages to the main thread and for listening for messages from the main thread.
 
 ## Implementation

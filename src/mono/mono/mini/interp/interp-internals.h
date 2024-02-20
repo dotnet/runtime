@@ -181,8 +181,6 @@ struct InterpMethod {
 	unsigned int is_verbose : 1;
 #if HOST_BROWSER
 	unsigned int contains_traces : 1;
-	guint16 *backward_branch_offsets;
-	unsigned int backward_branch_offsets_count;
 	MonoBitSet *address_taken_bits;
 #endif
 #if PROFILE_INTERP

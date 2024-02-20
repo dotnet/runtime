@@ -178,12 +178,12 @@ namespace System.Collections.Immutable
                 get
                 {
                     TValue value;
-                    if (this.TryGetValue(key, out value!))
+                    if (!this.TryGetValue(key, out value!))
                     {
-                        return value;
+                        ThrowHelper.ThrowKeyNotFoundException(key);
                     }
 
-                    throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+                    return value;
                 }
 
                 set

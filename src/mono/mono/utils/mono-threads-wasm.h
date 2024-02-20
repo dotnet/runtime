@@ -27,21 +27,6 @@ MonoNativeThreadId
 mono_threads_wasm_ui_thread_tid (void);
 
 #ifndef DISABLE_THREADS
-/**
- * Runs the given function asynchronously on the main thread.
- * See emscripten/threading.h emscripten_async_run_in_main_runtime_thread
- */
-void
-mono_threads_wasm_async_run_in_ui_thread (void (*func) (void));
-
-/*
- * Variant that takes an argument. Add more variants as needed.
- */
-void
-mono_threads_wasm_async_run_in_ui_thread_vi (void (*func)(gpointer), gpointer user_data);
-
-void
-mono_threads_wasm_async_run_in_ui_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
 void
 mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void));
