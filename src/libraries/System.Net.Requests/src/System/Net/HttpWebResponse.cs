@@ -8,6 +8,8 @@ using System.IO;
 using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -344,29 +346,7 @@ namespace System.Net
                     return contentStream;
                 }
 
-                MemoryStream memoryStream = new MemoryStream();
-                byte[] buffer = new byte[1024];
-                int readLength = 0;
-
-                while (readLength < maxErrorResponseLength)
-                {
-                    int len = contentStream.Read(buffer, 0, Math.Min(maxErrorResponseLength - readLength, buffer.Length));
-                    if (len == 0)
-                    {
-                        break;
-                    }
-                    memoryStream.Write(buffer, 0, len);
-                    readLength += len;
-                }
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                try
-                {
-                    return memoryStream;
-                }
-                finally
-                {
-                    contentStream.Dispose();
-                }
+                return new TruncatedReadStream(contentStream, maxErrorResponseLength);
             }
 
             return Stream.Null;
@@ -400,5 +380,53 @@ namespace System.Net
         }
 
         private static string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
+
+        internal sealed class TruncatedReadStream(Stream innerStream, int maxSize) : Stream
+        {
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+            public override void Flush() => innerStream.Flush();
+            public override Task FlushAsync(CancellationToken cancellationToken) => base.FlushAsync(cancellationToken);
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                return Read(new Span<byte>(buffer, offset, count));
+            }
+            public override int Read(Span<byte> buffer)
+            {
+                int readBytes = innerStream.Read(buffer.Slice(0, Math.Min(buffer.Length, maxSize)));
+                maxSize -= readBytes;
+                return readBytes;
+            }
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
+            }
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                int readBytes = await innerStream.ReadAsync(buffer.Slice(0, Math.Min(buffer.Length, maxSize)), cancellationToken)
+                    .ConfigureAwait(false);
+                maxSize -= readBytes;
+                return readBytes;
+            }
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override ValueTask DisposeAsync() => base.DisposeAsync();
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    innerStream.Dispose();
+                }
+            }
+        }
     }
 }
