@@ -331,12 +331,34 @@ namespace System
                     while (true)
                     {
                         r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out int numEventsRead);
-                        if (!r || numEventsRead == 0)
+                        if (!r)
                         {
                             // This will fail when stdin is redirected from a file or pipe.
                             // We could theoretically call Console.Read here, but I
                             // think we might do some things incorrectly then.
                             throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
+                        }
+
+                        if (numEventsRead == 0)
+                        {
+                            // This can happen when there are multiple console-attached
+                            // processes waiting for input, and another one is terminated
+                            // while we are waiting for input.
+                            //
+                            // (This is "almost certainly" a bug, but behavior has been
+                            // this way for a long time, so we should handle it:
+                            // https://github.com/microsoft/terminal/issues/15859)
+                            //
+                            // (It's a rare case to have multiple console-attached
+                            // processes waiting for input, but it can happen sometimes,
+                            // such as when ctrl+c'ing a build process that is spawning
+                            // tons of child processes--sometimes, due to the order in
+                            // which processes exit, a managed shell process (like pwsh)
+                            // might get back to the prompt and start trying to read input
+                            // while there are still child processes getting cleaned up.)
+                            //
+                            // In this case, we just need to retry the read.
+                            continue;
                         }
 
                         ushort keyCode = ir.keyEvent.wVirtualKeyCode;
