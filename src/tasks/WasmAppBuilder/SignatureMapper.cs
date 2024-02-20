@@ -61,12 +61,7 @@ internal static class SignatureMapper
                 c = 'I';
             else if (t.IsEnum) {
                 Type underlyingType = t.GetEnumUnderlyingType();
-                if (underlyingType != t)
-                    c = TypeToChar(underlyingType, log, out _, ++depth);
-                else {
-                    log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
-                    return null;
-                }
+                c = TypeToChar(underlyingType, log, out _, ++depth);
             } else if (t.IsPointer)
                 c = 'I';
             else if (PInvokeTableGenerator.IsFunctionPointer(t))
@@ -76,14 +71,8 @@ internal static class SignatureMapper
                 var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                 if (fields.Length == 1) {
                     Type fieldType = fields[0].FieldType;
-                    if (fieldType != t)
-                        return TypeToChar(fieldType, log, out isByRefStruct, ++depth);
-                    else {
-                        log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
-                        return null;
-                    }
-                }
-                else if (PInvokeTableGenerator.IsBlittable(t, log))
+                    return TypeToChar(fieldType, log, out isByRefStruct, ++depth);
+                } else if (PInvokeTableGenerator.IsBlittable(t, log))
                     c = 'I';
 
                 isByRefStruct = true;
