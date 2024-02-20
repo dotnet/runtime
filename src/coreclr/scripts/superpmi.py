@@ -2536,7 +2536,7 @@ class SuperPMIReplayAsmDiffs:
                 sum_diff = sum(diff_metrics[row]["Diffed code bytes"] for (_, _, diff_metrics, _, _, _) in asm_diffs)
 
                 with DetailsSection(write_fh, "{} ({} bytes)".format(row, format_delta(sum_base, sum_diff))):
-                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|Rel PerfScore Geomean|Rel PerfScore Geomean over Diffs\n")
+                    write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|PerfScore|PerfScore in Diffs\n")
                     write_fh.write("|---|--:|--:|--:|--:|\n")
                     for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs:
                         # Exclude this particular row?
@@ -2550,7 +2550,7 @@ class SuperPMIReplayAsmDiffs:
                                 base_metrics[row]["Diffed code bytes"],
                                 diff_metrics[row]["Diffed code bytes"]),
                             format_pct(diff_metrics[row]["Relative PerfScore Geomean"] * 100 - 100, 4),
-                            format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100, 4)))
+                            format_pct(diff_metrics[row]["Relative PerfScore Geomean (Diffs)"] * 100 - 100)))
 
             write_top_context_section()
             write_pivot_section("Overall")
