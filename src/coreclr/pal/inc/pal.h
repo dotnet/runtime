@@ -175,14 +175,6 @@ extern bool g_arm64_atomics_present;
 #define __has_cpp_attribute(x) (0)
 #endif
 
-#ifndef FALLTHROUGH
-#if __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH [[fallthrough]]
-#else // __has_cpp_attribute(fallthrough)
-#define FALLTHROUGH
-#endif // __has_cpp_attribute(fallthrough)
-#endif // FALLTHROUGH
-
 #ifndef PAL_STDCPP_COMPAT
 
 #if __GNUC__
