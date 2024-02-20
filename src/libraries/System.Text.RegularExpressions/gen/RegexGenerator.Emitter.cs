@@ -1618,7 +1618,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Detect whether every branch begins with one or more unique characters.
-                const int SetCharsSize = 5; // arbitrary limit (for IgnoreCase, we want this to be at least 3 to handle the vast majority of values)
+                const int SetCharsSize = 64; // arbitrary limit; we want it to be large enough to handle ignore-case of common sets, like hex, the latin alphabet, etc.
                 Span<char> setChars = stackalloc char[SetCharsSize];
                 if (useSwitchedBranches)
                 {
@@ -1628,8 +1628,10 @@ namespace System.Text.RegularExpressions.Generator
                     var seenChars = new HashSet<char>();
                     for (int i = 0; i < childCount && useSwitchedBranches; i++)
                     {
-                        // If it's not a One, Multi, or Set, we can't apply this optimization.
-                        if (node.Child(i).FindBranchOneMultiOrSetStart() is not RegexNode oneMultiOrSet)
+                        // Look for the guaranteed starting node that's a one, multi, set,
+                        // or loop of one of those with at least one minimum iteration. We need to exclude notones.
+                        if (node.Child(i).FindStartingLiteralNode(allowZeroWidth: false) is not RegexNode startingLiteralNode ||
+                            startingLiteralNode.IsNotoneFamily)
                         {
                             useSwitchedBranches = false;
                             break;
@@ -1637,9 +1639,9 @@ namespace System.Text.RegularExpressions.Generator
 
                         // If it's a One or a Multi, get the first character and add it to the set.
                         // If it was already in the set, we can't apply this optimization.
-                        if (oneMultiOrSet.Kind is RegexNodeKind.One or RegexNodeKind.Multi)
+                        if (startingLiteralNode.IsOneFamily || startingLiteralNode.Kind is RegexNodeKind.Multi)
                         {
-                            if (!seenChars.Add(oneMultiOrSet.FirstCharOfOneOrMulti()))
+                            if (!seenChars.Add(startingLiteralNode.FirstCharOfOneOrMulti()))
                             {
                                 useSwitchedBranches = false;
                                 break;
@@ -1649,10 +1651,10 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             // The branch begins with a set.  Make sure it's a set of only a few characters
                             // and get them.  If we can't, we can't apply this optimization.
-                            Debug.Assert(oneMultiOrSet.Kind is RegexNodeKind.Set);
+                            Debug.Assert(startingLiteralNode.IsSetFamily);
                             int numChars;
-                            if (RegexCharClass.IsNegated(oneMultiOrSet.Str!) ||
-                                (numChars = RegexCharClass.GetSetChars(oneMultiOrSet.Str!, setChars)) == 0)
+                            if (RegexCharClass.IsNegated(startingLiteralNode.Str!) ||
+                                (numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars)) == 0)
                             {
                                 useSwitchedBranches = false;
                                 break;
@@ -1694,7 +1696,7 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
 
                     // Emit a switch statement on the first char of each branch.
-                    using (EmitBlock(writer, $"switch ({sliceSpan}[{sliceStaticPos++}])"))
+                    using (EmitBlock(writer, $"switch ({sliceSpan}[{sliceStaticPos}])"))
                     {
                         Span<char> setChars = stackalloc char[SetCharsSize]; // needs to be same size as detection check in caller
                         int startingSliceStaticPos = sliceStaticPos;
@@ -1704,56 +1706,80 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             sliceStaticPos = startingSliceStaticPos;
 
+                            // We know we're only in this code if every branch has a valid starting literal node. Get it.
+                            // We also get the immediate child. Ideally they're the same, in which case we might be able to
+                            // use the switch as the processing of that node, e.g. if the node is a One, then by matching the
+                            // literal via the switch, we've fully processed it. But there may be other cases in which it's not
+                            // sufficient, e.g. if that one was wrapped in a Capture, we still want to emit the capture code,
+                            // and for simplicity, we still end up emitting the re-evaluation of that character. It's still much
+                            // cheaper to do this than to emit the full alternation code.
+
                             RegexNode child = node.Child(i);
-                            Debug.Assert(child.Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set or RegexNodeKind.Concatenate, DescribeNode(child, rm));
-                            Debug.Assert(child.Kind is not RegexNodeKind.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Kind is RegexNodeKind.One or RegexNodeKind.Multi or RegexNodeKind.Set));
+                            RegexNode? startingLiteralNode = child.FindStartingLiteralNode(allowZeroWidth: false);
+                            Debug.Assert(startingLiteralNode is not null, "Unexpectedly couldn't find the branch starting node.");
 
-                            RegexNode? childStart = child.FindBranchOneMultiOrSetStart();
-                            Debug.Assert(childStart is not null, "Unexpectedly couldn't find the branch starting node.");
-
-                            if (childStart.Kind is RegexNodeKind.Set)
+                            // Emit the case for this branch to match on the first character.
+                            if (startingLiteralNode.IsSetFamily)
                             {
-                                int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
+                                int numChars = RegexCharClass.GetSetChars(startingLiteralNode.Str!, setChars);
                                 Debug.Assert(numChars != 0);
                                 writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(Literal))}:");
                             }
                             else
                             {
-                                writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
+                                writer.WriteLine($"case {Literal(startingLiteralNode.FirstCharOfOneOrMulti())}:");
                             }
                             writer.Indent++;
 
                             // Emit the code for the branch, without the first character that was already matched in the switch.
+                            RegexNode? remainder = null;
+                            HandleChild:
                             switch (child.Kind)
                             {
+                                case RegexNodeKind.One:
+                                case RegexNodeKind.Set:
+                                    // The character was handled entirely by the switch. No additional matching is needed.
+                                    sliceStaticPos++;
+                                    break;
+
+                                case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic:
+                                case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
+                                    // First character of the loop was handled by the switch. Emit matching code for the remainder of the loop.
+                                    Debug.Assert(child == startingLiteralNode);
+                                    Debug.Assert(child.M > 0);
+                                    sliceStaticPos++;
+                                    EmitNode(child.CloneCharLoopWithOneLessIteration());
+                                    writer.WriteLine();
+                                    break;
+
                                 case RegexNodeKind.Multi:
-                                    EmitNode(CloneMultiWithoutFirstChar(child));
+                                    // First character was handled by the switch. Emit matching code for the remainder of the multi string.
+                                    sliceStaticPos++;
+                                    EmitNode(child.Str!.Length == 2 ?
+                                        new RegexNode(RegexNodeKind.One, child.Options, child.Str![1]) :
+                                        new RegexNode(RegexNodeKind.Multi, child.Options, child.Str!.Substring(1)));
                                     writer.WriteLine();
                                     break;
 
-                                case RegexNodeKind.Concatenate:
-                                    var newConcat = new RegexNode(RegexNodeKind.Concatenate, child.Options);
-                                    if (childStart.Kind == RegexNodeKind.Multi)
-                                    {
-                                        newConcat.AddChild(CloneMultiWithoutFirstChar(childStart));
-                                    }
-                                    int concatChildCount = child.ChildCount();
-                                    for (int j = 1; j < concatChildCount; j++)
-                                    {
-                                        newConcat.AddChild(child.Child(j));
-                                    }
-                                    EmitNode(newConcat.Reduce());
-                                    writer.WriteLine();
-                                    break;
+                                case RegexNodeKind.Concatenate when child.Child(0) == startingLiteralNode && (startingLiteralNode.IsOneFamily || startingLiteralNode.IsSetFamily || startingLiteralNode.Kind is RegexNodeKind.Multi):
+                                    // This is a concatenation where its first node is the starting literal we found. This is a common
+                                    // enough case that we want to special-case it to avoid duplicating the processing for that character
+                                    // unnecessarily. So, we'll shave off that first node from the concatenation and then handle the remainder.
+                                    remainder = child;
+                                    child = child.Child(0);
+                                    remainder.ReplaceChild(0, new RegexNode(RegexNodeKind.Empty, remainder.Options));
+                                    goto HandleChild; // reprocess just the first node that was saved; the remainder will then be processed below
 
-                                    static RegexNode CloneMultiWithoutFirstChar(RegexNode node)
-                                    {
-                                        Debug.Assert(node.Kind is RegexNodeKind.Multi);
-                                        Debug.Assert(node.Str!.Length >= 2);
-                                        return node.Str!.Length == 2 ?
-                                            new RegexNode(RegexNodeKind.One, node.Options, node.Str![1]) :
-                                            new RegexNode(RegexNodeKind.Multi, node.Options, node.Str!.Substring(1));
-                                    }
+                                default:
+                                    remainder = child;
+                                    break;
+                            }
+
+                            if (remainder is not null)
+                            {
+                                // Emit a full match for whatever part of the child we haven't yet handled.
+                                EmitNode(remainder);
+                                writer.WriteLine();
                             }
 
                             // This is only ever used for atomic alternations, so we can simply reset the doneLabel
