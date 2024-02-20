@@ -13,7 +13,7 @@ using Xunit.Abstractions;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
-[CollectionDefinition(nameof(QuicTestCollection))]
+[CollectionDefinition(nameof(QuicTestCollection), DisableParallelization = true)]
 public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>, IDisposable
 {
     public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
