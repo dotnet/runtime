@@ -2401,7 +2401,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isGeneralRegister(id->idReg2()));
             assert(isScalableVectorSize(elemsize));
             break;
-            
+
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
             elemsize = id->idOpSize();
             assert(insOptsScalableWords(id->idInsOpt()));
@@ -15137,7 +15137,7 @@ void emitter::emitIns_PRFOP_R_R_R(instruction     ins,
                                   regNumber       reg1,
                                   regNumber       reg2,
                                   regNumber       reg3,
-                                  insOpts         opt  /* = INS_OPTS_NONE */,
+                                  insOpts         opt /* = INS_OPTS_NONE */,
                                   insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
     emitAttr  size     = EA_SIZE(attr);
@@ -23723,7 +23723,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             }
             dst += emitOutput_Instr(dst, code);
             break;
-            
+
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
@@ -23812,7 +23812,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             code |= insEncodeSimm6_21_to_16(imm);          // iiiiii
             dst += emitOutput_Instr(dst, code);
             break;
-            
+
         case IF_SVE_IC_3A: // ..........iiiiii ...gggnnnnnttttt -- SVE load and broadcast element
             imm  = emitGetInsSC(id);
             code = emitInsCodeSve(ins, fmt);
@@ -27544,7 +27544,7 @@ void emitter::emitDispInsHelp(
             emitDispPredicateReg(id->idReg1(), insGetPredicateType(fmt), id->idInsOpt(), true);
             emitDispSveImmMulVl(id->idReg2(), imm);
             break;
-            
+
         // {<Zt>.S }, <Pg>/Z, [<Zn>.S{, #<imm>}]
         // {<Zt>.D }, <Pg>/Z, [<Zn>.D{, #<imm>}]
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
@@ -31412,7 +31412,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     break;
             }
             break;
-            
+
         case IF_SVE_HX_3A_B: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
         case IF_SVE_HX_3A_E: // ...........iiiii ...gggnnnnnttttt -- SVE 32-bit gather load (vector plus immediate)
         case IF_SVE_IV_3A:   // ...........iiiii ...gggnnnnnttttt -- SVE 64-bit gather load (vector plus immediate)

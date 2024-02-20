@@ -1528,8 +1528,13 @@ void emitIns_PRFOP_R_R_R(instruction     ins,
                          insOpts         opt  = INS_OPTS_NONE,
                          insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
-void emitIns_PRFOP_R_R_I(
-    instruction ins, emitAttr attr, insSvePrfop prfop, regNumber reg1, regNumber reg2, int imm, insOpts opt = INS_OPTS_NONE);
+void emitIns_PRFOP_R_R_I(instruction ins,
+                         emitAttr    attr,
+                         insSvePrfop prfop,
+                         regNumber   reg1,
+                         regNumber   reg2,
+                         int         imm,
+                         insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_BARR(instruction ins, insBarrier barrier);
 
