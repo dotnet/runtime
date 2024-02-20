@@ -1966,6 +1966,9 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
     BlockRange().Remove(call);
     if (valueArg != nullptr)
     {
+        // valueArg is just a constant in case of Fill<T>
+        // and doesn't exist in case of ClearWithoutReferences
+        assert(valueArg->IsIntegralConst());
         BlockRange().Remove(valueArg);
     }
     if (blkInnerValue != nullptr)
