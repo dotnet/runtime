@@ -49,7 +49,7 @@
     </HelixWorkItem>
     <HelixWorkItem Include="Mobile Benchmark - Android Benchmarks.Droid Benchmark Run">
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)bdnandroid;copy %HELIX_CORRELATION_PAYLOAD%\MonoBenchmarksDroid.apk .;$(Python) pre.py --apk-name MonoBenchmarksDroid.apk</PreCommands>
+        <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)bdnandroid;copy %HELIX_CORRELATION_PAYLOAD%\MonoBenchmarksDroid.apk .;$(Python) pre.py --restart-device --apk-name MonoBenchmarksDroid.apk</PreCommands>
         <Command>$(Python) test.py androidinstrumentation --package-path .\pub\MonoBenchmarksDroid.apk --package-name com.microsoft.maui.benchmarks --instrumentation-name com.microsoft.maui.MainInstrumentation --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
         <Timeout>00:30:00</Timeout>
