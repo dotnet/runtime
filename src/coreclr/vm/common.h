@@ -66,7 +66,7 @@
 #include <wchar.h>
 #include <objbase.h>
 #include <float.h>
-#include <math.h>
+#include <cmath>
 #include <time.h>
 #include <limits.h>
 #include <assert.h>

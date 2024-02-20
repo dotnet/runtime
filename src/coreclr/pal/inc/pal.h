@@ -3973,11 +3973,6 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
 }
 #endif // !__has_builtin(_rotl)
 
-// On 64 bit unix, make the long an int.
-#ifdef HOST_64BIT
-#define _lrotl _rotl
-#endif
-
 #if !__has_builtin(_rotr)
 
 /*++
