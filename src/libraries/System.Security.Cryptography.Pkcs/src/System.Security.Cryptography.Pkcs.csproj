@@ -8,7 +8,7 @@
     <IsPackable>true</IsPackable>
     <!-- If you enable GeneratePackageOnBuild for this package and bump ServicingVersion, make sure to also bump ServicingVersion in Microsoft.Windows.Compatibility.csproj once for the next release. -->
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <ServicingVersion>3</ServicingVersion>
+    <ServicingVersion>4</ServicingVersion>
     <PackageDescription>Provides support for PKCS and CMS algorithms.
 
 Commonly Used Types:
