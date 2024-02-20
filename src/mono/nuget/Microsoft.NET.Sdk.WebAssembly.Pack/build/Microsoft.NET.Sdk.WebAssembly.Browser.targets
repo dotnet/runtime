@@ -220,12 +220,14 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
+      <CreateItem Include="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' != '' and '@(ReferenceCopyLocalPaths)' != '' and '@(WasmNativeAsset)' != ''">
+        <Output TaskParameter="Include" ItemName="DuplicatesToRemove"/>
+      </CreateItem>
+    
     <ItemGroup>
-      <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
-
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-                               Condition="'@(WasmNativeAsset)' != '' and '%(Identity)' == @(WasmNativeAsset)" />
+      <ReferenceCopyLocalPaths Remove="@(DuplicatesToRemove)" Condition="'@(DuplicatesToRemove)' != ''" />
+      <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
     </ItemGroup>
 
     <PropertyGroup>
