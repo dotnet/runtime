@@ -10,10 +10,27 @@
 
 include AsmMacros.inc
 
-RhpCallFunclet equ @RhpCallFunclet@0
+;; RhpCallFunclet equ @RhpCallFunclet@0
 RhpThrowHwEx equ @RhpThrowHwEx@8
 
-extern RhpCallFunclet : proc
+;; extern RhpCallFunclet : proc
+
+;; input:   ECX: possible exception object
+;;          EDX: funclet IP
+;;          EAX: funclet EBP
+FASTCALL_FUNC  RhpCallFunclet, 0
+ALTERNATE_HELPER_ENTRY RhpCallFunclet
+        push    ebp
+        mov     ebp, eax
+        call    edx
+ALTERNATE_ENTRY RhpCallFunclet2
+        pop     ebp
+        ret
+;; $T0 $esp =
+;; $eip $T0 4 + ^ =
+;; $ebp $T0 ^ =
+;; $esp $T0 4 + =
+FASTCALL_ENDFUNC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -223,14 +240,12 @@ ALTERNATE_HELPER_ENTRY RhpRethrow
         ;; edx contains the address of the new ExInfo
         call    RhRethrow
 
-ALTERNATE_ENTRY _RhpRethrow2
+ALTERNATE_ENTRY RhpRethrow2
 
         ;; no return
         int 3
 
 FASTCALL_ENDFUNC
-
-ifdef FEATURE_EH_FUNCLETS
 
 ;;
 ;; Prologue of all funclet calling helpers (RhpCallXXXXFunclet)
@@ -480,7 +495,5 @@ ALTERNATE_ENTRY RhpCallFilterFunclet2
         ret
 
 FASTCALL_ENDFUNC
-
-endif ;; FEATURE_EH_FUNCLETS
 
         end

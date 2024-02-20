@@ -267,4 +267,52 @@ ALTERNATE_ENTRY RhpCheckedXchgAVLocation
 
 FASTCALL_ENDFUNC
 
+;;
+;; RhpByRefAssignRef simulates movs instruction for object references.
+;;
+;; On entry:
+;;      edi: address of ref-field (assigned to)
+;;      esi: address of the data (source)
+;;
+;; On exit:
+;;      edi, esi are incremented by 4,
+;;      ecx: trashed
+;;
+FASTCALL_FUNC RhpByRefAssignRef, 8
+ALTERNATE_HELPER_ENTRY RhpByRefAssignRef
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
+    mov     ecx, [esi]
+ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
+    mov     [edi], ecx
+
+    ;; Check whether the writes were even into the heap. If not there's no card update required.
+    cmp     edi, [G_LOWEST_ADDRESS]
+    jb      RhpByRefAssignRef_NoBarrierRequired
+    cmp     edi, [G_HIGHEST_ADDRESS]
+    jae     RhpByRefAssignRef_NoBarrierRequired
+
+    UPDATE_GC_SHADOW BASENAME, ecx, edi
+
+    ;; If the reference is to an object that's not in an ephemeral generation we have no need to track it
+    ;; (since the object won't be collected or moved by an ephemeral collection).
+    cmp     ecx, [G_EPHEMERAL_LOW]
+    jb      RhpByRefAssignRef_NoBarrierRequired
+    cmp     ecx, [G_EPHEMERAL_HIGH]
+    jae     RhpByRefAssignRef_NoBarrierRequired
+
+    mov     ecx, edi
+    shr     ecx, 10
+    add     ecx, [G_CARD_TABLE]
+    cmp     byte ptr [ecx], 0FFh
+    je      RhpByRefAssignRef_NoBarrierRequired
+
+    mov     byte ptr [ecx], 0FFh
+
+RhpByRefAssignRef_NoBarrierRequired:
+    ;; Increment the pointers before leaving
+    add     esi,4
+    add     edi,4
+    ret
+FASTCALL_ENDFUNC
+
     end
