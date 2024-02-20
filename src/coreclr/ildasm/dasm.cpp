@@ -7352,9 +7352,14 @@ void CloseNamespace(__inout __nullterminated char* szString)
 
 FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
+#ifdef HOST_WINDOWS
     FILE*   pfile = NULL;
         if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
         else _wfopen_s(&pfile,wzFileName,W("wt"));
+#else
+    FILE*   pfile = NULL;
+    _wfopen_s(&pfile,wzFileName,W("w"));
+#endif
 
     if(pfile)
     {
