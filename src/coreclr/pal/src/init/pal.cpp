@@ -96,13 +96,6 @@ int CacheLineSize;
 
 using namespace CorUnix;
 
-//
-// $$TODO The C++ compiler doesn't like pal/cruntime.h so duplicate the
-// necessary prototype here
-//
-
-extern "C" BOOL CRTInitStdStreams(void);
-
 extern bool g_running_in_exe;
 
 #if defined(HOST_ARM64)
@@ -287,6 +280,14 @@ InitializeDefaultStackSize()
             g_defaultStackSize = std::max(size, (DWORD)PTHREAD_STACK_MIN);
         }
     }
+
+#ifdef HOST_APPLE
+    // Match Windows stack size
+    if (g_defaultStackSize == 0)
+    {
+        g_defaultStackSize = 1536 * 1024;
+    }
+#endif
 
 #ifdef ENSURE_PRIMARY_STACK_SIZE
     if (g_defaultStackSize == 0)
@@ -665,13 +666,6 @@ Initialize(
             }
         }
 
-        if (FALSE == CRTInitStdStreams())
-        {
-            ERROR("Unable to initialize CRT standard streams\n");
-            palError = ERROR_PALINIT_STD_STREAMS;
-            goto CLEANUP15;
-        }
-
         TRACE("First-time PAL initialization complete.\n");
         init_count++;
 
@@ -691,9 +685,6 @@ Initialize(
     }
     goto done;
 
-    /* No cleanup required for CRTInitStdStreams */
-CLEANUP15:
-    FILECleanupStdHandles();
 CLEANUP14:
     SEHCleanup();
 CLEANUP13:

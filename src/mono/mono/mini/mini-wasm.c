@@ -594,7 +594,9 @@ mono_wasm_execute_timer (void)
 	}
 
 	background_job_cb cb = timer_handler;
+	MONO_ENTER_GC_UNSAFE;
 	cb ();
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #ifdef DISABLE_THREADS
@@ -773,8 +775,6 @@ mini_wasm_is_scalar_vtype (MonoType *type, MonoType **etype)
 			if (!mini_wasm_is_scalar_vtype (t, etype))
 				return FALSE;
 		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
-			return FALSE;
-		} else if (size == 8 && t->type != MONO_TYPE_R8) {
 			return FALSE;
 		} else {
 			if (etype)

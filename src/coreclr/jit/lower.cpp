@@ -827,10 +827,6 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
 
 GenTree* Lowering::LowerSwitch(GenTree* node)
 {
-    unsigned     jumpCnt;
-    unsigned     targetCnt;
-    BasicBlock** jumpTab;
-
     assert(node->gtOper == GT_SWITCH);
 
     // The first step is to build the default case conditional construct that is
@@ -844,9 +840,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // jumpCnt is the number of elements in the jump table array.
     // jumpTab is the actual pointer to the jump table array.
     // targetCnt is the number of unique targets in the jump table array.
-    jumpCnt   = originalSwitchBB->GetSwitchTargets()->bbsCount;
-    jumpTab   = originalSwitchBB->GetSwitchTargets()->bbsDstTab;
-    targetCnt = originalSwitchBB->NumSucc(comp);
+    const unsigned   jumpCnt   = originalSwitchBB->GetSwitchTargets()->bbsCount;
+    FlowEdge** const jumpTab   = originalSwitchBB->GetSwitchTargets()->bbsDstTab;
+    const unsigned   targetCnt = originalSwitchBB->NumSucc(comp);
 
 // GT_SWITCH must be a top-level node with no use.
 #ifdef DEBUG
@@ -865,7 +861,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     {
         JITDUMP("Lowering switch " FMT_BB ": single target; converting to BBJ_ALWAYS\n", originalSwitchBB->bbNum);
         noway_assert(comp->opts.OptimizationDisabled());
-        originalSwitchBB->SetKindAndTarget(BBJ_ALWAYS, jumpTab[0]);
+        originalSwitchBB->SetKindAndTarget(BBJ_ALWAYS, jumpTab[0]->getDestinationBlock());
 
         if (originalSwitchBB->JumpsToNext())
         {
@@ -875,7 +871,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // Remove extra predecessor links if there was more than one case.
         for (unsigned i = 1; i < jumpCnt; ++i)
         {
-            (void)comp->fgRemoveRefPred(jumpTab[i], originalSwitchBB);
+            comp->fgRemoveRefPred(jumpTab[i]);
         }
 
         // We have to get rid of the GT_SWITCH node but a child might have side effects so just assign
@@ -909,11 +905,11 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     unsigned  tempLclNum  = temp->AsLclVarCommon()->GetLclNum();
     var_types tempLclType = temp->TypeGet();
 
-    BasicBlock* defaultBB   = jumpTab[jumpCnt - 1];
+    BasicBlock* defaultBB   = jumpTab[jumpCnt - 1]->getDestinationBlock();
     BasicBlock* followingBB = originalSwitchBB->Next();
 
     /* Is the number of cases right for a test and jump switch? */
-    const bool fFirstCaseFollows = (followingBB == jumpTab[0]);
+    const bool fFirstCaseFollows = (followingBB == jumpTab[0]->getDestinationBlock());
     const bool fDefaultFollows   = (followingBB == defaultBB);
 
     unsigned minSwitchTabJumpCnt = 2; // table is better than just 2 cmp/jcc
@@ -962,14 +958,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
     // The GT_SWITCH code is still in originalSwitchBB (it will be removed later).
 
-    // Turn originalSwitchBB into a BBJ_COND.
-    originalSwitchBB->SetCond(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
-
     // Fix the pred for the default case: the default block target still has originalSwitchBB
     // as a predecessor, but the fgSplitBlockAfterStatement() moved all predecessors to point
     // to afterDefaultCondBlock.
-    FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[jumpCnt - 1], afterDefaultCondBlock);
-    comp->fgAddRefPred(jumpTab[jumpCnt - 1], originalSwitchBB, oldEdge);
+    comp->fgRemoveRefPred(jumpTab[jumpCnt - 1]);
+    comp->fgAddRefPred(defaultBB, originalSwitchBB, jumpTab[jumpCnt - 1]);
+
+    // Turn originalSwitchBB into a BBJ_COND.
+    originalSwitchBB->SetCond(defaultBB, afterDefaultCondBlock);
 
     bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
 
@@ -989,7 +985,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // If we originally had 2 unique successors, check to see whether there is a unique
     // non-default case, in which case we can eliminate the switch altogether.
     // Note that the single unique successor case is handled above.
-    BasicBlock* uniqueSucc = nullptr;
+    FlowEdge* uniqueSucc = nullptr;
     if (targetCnt == 2)
     {
         uniqueSucc = jumpTab[0];
@@ -1008,17 +1004,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         // If the unique successor immediately follows this block, we have nothing to do -
         // it will simply fall-through after we remove the switch, below.
         // Otherwise, make this a BBJ_ALWAYS.
-        // Now, fixup the predecessor links to uniqueSucc.  In the original jumpTab:
+        // Now, fixup the predecessor links to uniqueSucc's target block.  In the original jumpTab:
         //   jumpTab[i-1] was the default target, which we handled above,
         //   jumpTab[0] is the first target, and we'll leave that predecessor link.
-        // Remove any additional predecessor links to uniqueSucc.
+        // Remove any additional predecessor links to uniqueSucc's target block.
         for (unsigned i = 1; i < jumpCnt - 1; ++i)
         {
             assert(jumpTab[i] == uniqueSucc);
-            (void)comp->fgRemoveRefPred(uniqueSucc, afterDefaultCondBlock);
+            comp->fgRemoveRefPred(uniqueSucc);
         }
 
-        afterDefaultCondBlock->SetKindAndTarget(BBJ_ALWAYS, uniqueSucc);
+        afterDefaultCondBlock->SetKindAndTarget(BBJ_ALWAYS, uniqueSucc->getDestinationBlock());
 
         if (afterDefaultCondBlock->JumpsToNext())
         {
@@ -1054,12 +1050,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         for (unsigned i = 0; i < jumpCnt - 1; ++i)
         {
             assert(currentBlock != nullptr);
+            BasicBlock* targetBlock = jumpTab[i]->getDestinationBlock();
 
             // Remove the switch from the predecessor list of this case target's block.
             // We'll add the proper new predecessor edge later.
-            FlowEdge* oldEdge = comp->fgRemoveRefPred(jumpTab[i], afterDefaultCondBlock);
+            comp->fgRemoveRefPred(jumpTab[i]);
 
-            if (jumpTab[i] == followingBB)
+            if (targetBlock == followingBB)
             {
                 // This case label follows the switch; let it fall through.
                 fAnyTargetFollows = true;
@@ -1084,7 +1081,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
             }
 
             // Wire up the predecessor list for the "branch" case.
-            comp->fgAddRefPred(jumpTab[i], currentBlock, oldEdge);
+            comp->fgAddRefPred(targetBlock, currentBlock, jumpTab[i]);
 
             if (!fAnyTargetFollows && (i == jumpCnt - 2))
             {
@@ -1093,13 +1090,13 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 // case: there is no need to compare against the case index, since it's
                 // guaranteed to be taken (since the default case was handled first, above).
 
-                currentBlock->SetKindAndTarget(BBJ_ALWAYS, jumpTab[i]);
+                currentBlock->SetKindAndTarget(BBJ_ALWAYS, targetBlock);
             }
             else
             {
                 // Otherwise, it's a conditional branch. Set the branch kind, then add the
                 // condition statement.
-                currentBlock->SetCond(jumpTab[i], currentBlock->Next());
+                currentBlock->SetCond(targetBlock, currentBlock->Next());
 
                 // Now, build the conditional statement for the current case that is
                 // being evaluated:
@@ -1212,7 +1209,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 //    to emit the jump table itself that can reach up to 256 bytes (for 64 entries).
 //
 bool Lowering::TryLowerSwitchToBitTest(
-    BasicBlock* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
+    FlowEdge* jumpTable[], unsigned jumpCount, unsigned targetCount, BasicBlock* bbSwitch, GenTree* switchValue)
 {
     assert(jumpCount >= 2);
     assert(targetCount >= 2);
@@ -1249,28 +1246,31 @@ bool Lowering::TryLowerSwitchToBitTest(
     // table and/or swap the blocks if it's beneficial.
     //
 
-    BasicBlock* bbCase0  = nullptr;
-    BasicBlock* bbCase1  = jumpTable[0];
-    size_t      bitTable = 1;
+    FlowEdge* case0Edge = nullptr;
+    FlowEdge* case1Edge = jumpTable[0];
+    size_t    bitTable  = 1;
 
     for (unsigned bitIndex = 1; bitIndex < bitCount; bitIndex++)
     {
-        if (jumpTable[bitIndex] == bbCase1)
+        if (jumpTable[bitIndex] == case1Edge)
         {
             bitTable |= (size_t(1) << bitIndex);
         }
-        else if (bbCase0 == nullptr)
+        else if (case0Edge == nullptr)
         {
-            bbCase0 = jumpTable[bitIndex];
+            case0Edge = jumpTable[bitIndex];
         }
-        else if (jumpTable[bitIndex] != bbCase0)
+        else if (jumpTable[bitIndex] != case0Edge)
         {
-            // If it's neither bbCase0 nor bbCase1 then it means we have 3 targets. There can't be more
+            // If it's neither case0Edge nor case`Edge then it means we have 3 targets. There can't be more
             // than 3 because of the check at the start of the function.
             assert(targetCount == 3);
             return false;
         }
     }
+
+    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
+    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
 
     //
     // One of the case blocks has to follow the switch block. This requirement could be avoided
@@ -1322,6 +1322,7 @@ bool Lowering::TryLowerSwitchToBitTest(
         bbSwitch->SetCond(bbCase0, bbCase1);
     }
 
+    // TODO: Use old edges to influence new edge likelihoods?
     comp->fgAddRefPred(bbCase0, bbSwitch);
     comp->fgAddRefPred(bbCase1, bbSwitch);
 
@@ -2203,7 +2204,8 @@ GenTree* Lowering::LowerCall(GenTree* node)
     JITDUMP("\n");
 
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
-    assert(!call->IsExpRuntimeLookup());
+    assert(!call->IsRuntimeLookupHelperCall(comp) ||
+           (call->gtCallDebugFlags & GTF_CALL_MD_RUNTIME_LOOKUP_EXPANDED) != 0);
 
     // Also, always expand static cctor helper for NativeAOT, see
     // https://github.com/dotnet/runtime/issues/68278#issuecomment-1543322819
@@ -6492,7 +6494,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             divisorValue -= 1;
         }
 
-        divMod->SetOper(newOper);
+        divMod->ChangeOper(newOper);
         divisor->AsIntCon()->SetIconValue(divisorValue);
         ContainCheckNode(divMod);
         return true;
@@ -6504,7 +6506,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         if (((type == TYP_INT) && (divisorValue > (UINT32_MAX / 2))) ||
             ((type == TYP_LONG) && (divisorValue > (UINT64_MAX / 2))))
         {
-            divMod->SetOper(GT_GE);
+            divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
             ContainCheckNode(divMod);
             return true;
@@ -6639,7 +6641,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
         if (isDiv && !postShift && (type == TYP_I_IMPL))
         {
-            divMod->SetOper(GT_MULHI);
+            divMod->ChangeOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
             divMod->SetUnsigned();
         }
@@ -6671,7 +6673,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
                 if (isDiv && (type == TYP_I_IMPL))
                 {
-                    divMod->SetOper(GT_RSZ);
+                    divMod->ChangeOper(GT_RSZ);
                     divMod->gtOp1 = mulhi;
                     divMod->gtOp2 = shiftBy;
                 }
@@ -6689,7 +6691,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                 GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, mulhi, divisor);
                 dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
-                divMod->SetOper(GT_SUB);
+                divMod->ChangeOper(GT_SUB);
                 divMod->gtOp1 = dividend;
                 divMod->gtOp2 = mul;
 
@@ -6697,7 +6699,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
             else if (type != TYP_I_IMPL)
             {
-                divMod->SetOper(GT_CAST);
+                divMod->ChangeOper(GT_CAST);
                 divMod->AsCast()->gtCastType = TYP_INT;
                 divMod->gtOp1                = mulhi;
                 divMod->gtOp2                = nullptr;
@@ -6787,7 +6789,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         {
             // If the divisor is the minimum representable integer value then we can use a compare,
             // the result is 1 iff the dividend equals divisor.
-            divMod->SetOper(GT_EQ);
+            divMod->ChangeOper(GT_EQ);
             *nextNode = node;
             return true;
         }
@@ -6882,7 +6884,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 
         if (isDiv)
         {
-            divMod->SetOperRaw(GT_ADD);
+            divMod->ChangeOper(GT_ADD);
             divMod->AsOp()->gtOp1 = adjusted;
             divMod->AsOp()->gtOp2 = signBit;
         }
@@ -6897,7 +6899,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
             BlockRange().InsertBefore(divMod, dividend, div, divisor, mul);
 
-            divMod->SetOperRaw(GT_SUB);
+            divMod->ChangeOper(GT_SUB);
             divMod->AsOp()->gtOp1 = dividend;
             divMod->AsOp()->gtOp2 = mul;
         }

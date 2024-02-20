@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Keep this file in sync with mintops.def. The order and values need to match exactly.
-
 import cwraps from "./cwraps";
 import { utf8ToString } from "./strings";
 import { OpcodeInfoType } from "./jiterpreter-enums";
@@ -28,27 +26,29 @@ export type SimdInfoTable = {
     [argument_count: number]: SimdInfoSubtable
 }
 
+// Keep in sync with mintops.h
 export const enum MintOpArgType {
-    MintOpNoArgs = 0,
-    MintOpShortInt,
-    MintOpUShortInt,
-    MintOpInt,
-    MintOpLongInt,
-    MintOpFloat,
-    MintOpDouble,
-    MintOpBranch,
-    MintOpShortBranch,
-    MintOpSwitch,
-    MintOpMethodToken,
-    MintOpFieldToken,
-    MintOpClassToken,
-    MintOpTwoShorts,
-    MintOpTwoInts,
-    MintOpShortAndInt,
-    MintOpShortAndShortBranch,
-    MintOpPair2,
-    MintOpPair3,
-    MintOpPair4
+	MintOpNoArgs = 0,
+	MintOpShortInt,
+	MintOpUShortInt,
+	MintOpInt,
+	MintOpLongInt,
+	MintOpFloat,
+	MintOpDouble,
+	MintOpBranch,
+	MintOpShortBranch,
+	MintOpSwitch,
+	MintOpMethodToken,
+	MintOpFieldToken,
+	MintOpClassToken,
+	MintOpVTableToken,
+	MintOpTwoShorts,
+	MintOpTwoInts,
+	MintOpShortAndInt,
+	MintOpShortAndShortBranch,
+	MintOpPair2,
+	MintOpPair3,
+	MintOpPair4
 }
 
 // keep in sync with jiterpreter.c, see mono_jiterp_relop_fp
