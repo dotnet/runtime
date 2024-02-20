@@ -1493,6 +1493,7 @@ retry:
 #endif
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
+			info->ret_pinvoke_type = PINVOKE_ARG_INT;
 #ifdef HOST_WASM
 			// This ISSTRUCT check is important, because the type could be an enum
 			if (MONO_TYPE_ISSTRUCT (info->ret_mono_type)) {
@@ -1500,13 +1501,8 @@ retry:
 				//  we're returning a struct byref instead of as a scalar
 				info->ret_pinvoke_type = PINVOKE_ARG_WASM_VALUETYPE_RESULT;
 				info->ilen++;
-			} else {
-
-#else
-			{
-#endif
-				info->ret_pinvoke_type = PINVOKE_ARG_INT;
 			}
+#endif
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
