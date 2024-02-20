@@ -46,7 +46,40 @@ struct REGDISPLAY
 
     inline void SetIP(PCODE IP) { this->IP = IP; }
     inline void SetSP(uintptr_t SP) { this->SP = SP; }
+
+#ifdef TARGET_X86
+    TADDR PCTAddr;
+
+    inline unsigned long *GetEbpLocation() { return (unsigned long *)pRbp; }
+    inline unsigned long *GetEbxLocation() { return (unsigned long *)pRbx; }
+    inline unsigned long *GetEsiLocation() { return (unsigned long *)pRsi; }
+    inline unsigned long *GetEdiLocation() { return (unsigned long *)pRdi; }
+
+    inline void SetEaxLocation(unsigned long *loc) { pRax = (PTR_uintptr_t)loc; }
+    inline void SetEcxLocation(unsigned long *loc) { pRcx = (PTR_uintptr_t)loc; }
+    inline void SetEdxLocation(unsigned long *loc) { pRdx = (PTR_uintptr_t)loc; }
+    inline void SetEbxLocation(unsigned long *loc) { pRbx = (PTR_uintptr_t)loc; }
+    inline void SetEsiLocation(unsigned long *loc) { pRsi = (PTR_uintptr_t)loc; }
+    inline void SetEdiLocation(unsigned long *loc) { pRdi = (PTR_uintptr_t)loc; }
+    inline void SetEbpLocation(unsigned long *loc) { pRbp = (PTR_uintptr_t)loc; }
+#endif
 };
+
+inline TADDR GetRegdisplayFP(REGDISPLAY *display)
+{
+    return (TADDR)*display->GetEbpLocation();
+}
+
+inline LPVOID GetRegdisplayFPAddress(REGDISPLAY *display)
+{
+    return (LPVOID)display->GetEbpLocation();
+}
+
+inline void SetRegdisplayPCTAddr(REGDISPLAY *display, TADDR addr)
+{
+    display->PCTAddr = addr;
+    display->SetIP(*PTR_PCODE(addr));
+}
 
 #elif defined(TARGET_ARM)
 

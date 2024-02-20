@@ -19,6 +19,23 @@
 #define GCINFODECODER_NO_EE
 #include "gcinfodecoder.cpp"
 
+#ifdef TARGET_X86
+#include "../../inc/gcdecoder.cpp"
+#include "../../inc/unwind_x86.h"
+typedef DWORD* PTR_DWORD;
+typedef WORD* PTR_WORD;
+typedef signed char* PTR_SBYTE;
+typedef INT32* PTR_INT32;
+#define LCL_FINALLY_MARK 0xFC // FIXME: Move to a better place
+#define CONSISTENCY_CHECK_MSGF(...)
+#define INDEBUG(...)
+#include "../../vm/unwind_x86.inl"
+#endif
+
+#ifndef GCINFO_VERSION
+#define GCINFO_VERSION 2
+#endif
+
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
 #define UBF_FUNC_KIND_HANDLER   0x01
@@ -351,7 +368,6 @@ uint32_t CoffNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
 
 bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
 {
-#ifdef USE_GC_INFO_DECODER
     MethodInfo pMethodInfo;
     if (!FindMethodInfo(pvAddress, &pMethodInfo))
     {
@@ -361,6 +377,7 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(&pMethodInfo, pvAddress, &gcInfo);
 
+#ifdef USE_GC_INFO_DECODER
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
         GcInfoDecoderFlags(DECODE_INTERRUPTIBILITY),
@@ -369,9 +386,11 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
 
     return decoder.IsInterruptible();
 #else
-    // x86 has custom GC info, see DecodeGCHdrInfo in eetwain.cpp
-    PORTABILITY_ASSERT("IsSafePoint");
-    RhFailFast();
+    // Extract the necessary information from the info block header
+    hdrInfo info;
+    DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &info);
+
+    return info.interruptible && info.prologOffs == hdrInfo::NOT_IN_PROLOG && info.epilogOffs == hdrInfo::NOT_IN_EPILOG;
 #endif
 }
 
@@ -636,7 +655,12 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
     FOR_EACH_NONVOLATILE_REGISTER(REGDISPLAY_TO_CONTEXT);
 
 #if defined(TARGET_X86)
-    PORTABILITY_ASSERT("CoffNativeCodeManager::UnwindStackFrame");
+    PTR_uint8_t gcInfo;
+    uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
+    if (!::UnwindStackFrame(pRegisterSet, (PTR_CBYTE)(m_moduleBase + pNativeMethodInfo->runtimeFunction->BeginAddress), codeOffset, GCInfoToken(gcInfo), true))
+    {
+        return false;
+    }
 #elif defined(TARGET_AMD64)
 
     if (!(flags & USFF_GcUnwind))

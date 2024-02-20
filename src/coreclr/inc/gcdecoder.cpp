@@ -24,6 +24,16 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "gcinfotypes.h"
 
+#ifdef FEATURE_NATIVEAOT
+#define LIMITED_METHOD_CONTRACT
+#define LIMITED_METHOD_DAC_CONTRACT
+#define CONTRACTL
+#define CONTRACTL_END
+#define NOTHROW
+#define GC_NOTRIGGER
+#define HOST_NOCALLS
+#endif
+
 /*****************************************************************************/
 /*
  *   This entire file depends upon GC2_ENCODING being set to 1
