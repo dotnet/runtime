@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 //    - set_js_handle/set_gc_handle
                 if (slot.ContextHandle == IntPtr.Zero)
                 {
-                    Environment.FailFast($"ContextHandle not set, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
+                    Environment.FailFast($"ContextHandle not set (ManagedThreadId {Environment.CurrentManagedThreadId}): {Environment.NewLine} {Environment.StackTrace}");
                 }
                 var proxyContextGCHandle = (GCHandle)slot.ContextHandle;
                 var argumentContext = (JSProxyContext)proxyContextGCHandle.Target!;
