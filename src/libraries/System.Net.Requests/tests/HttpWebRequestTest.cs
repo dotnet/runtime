@@ -2172,6 +2172,7 @@ namespace System.Net.Tests
         {
             RemoteExecutor.Invoke(async (async) =>
             {
+                TaskCompletionSource tcs = new TaskCompletionSource();
                 await LoopbackServer.CreateClientAndServerAsync(
                 async (uri) =>
                 {
@@ -2188,6 +2189,7 @@ namespace System.Net.Tests
                         Assert.Equal(5, readLen);
                         Assert.Equal(new string('a', 5), Encoding.UTF8.GetString(buffer[0..readLen]));
                     }
+                    tcs.SetResult();
                 },
                 async (server) =>
                 {
@@ -2195,6 +2197,7 @@ namespace System.Net.Tests
                         async (client) =>
                         {
                             await client.SendResponseAsync(statusCode: HttpStatusCode.InternalServerError, content: new string('a', 10));
+                            await tcs.Task;
                         });
                 });
             }, (this is HttpWebRequestTest_Async).ToString()).Dispose();
