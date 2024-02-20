@@ -280,7 +280,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
             catch (Exception ex)
             {
-                Environment.FailFast($"BindAssemblyExports: Unexpected synchronous failure in {Environment.CurrentManagedThreadId}: " + ex);
+                Environment.FailFast($"BindAssemblyExports: Unexpected synchronous failure (ManagedThreadId {Environment.CurrentManagedThreadId}): " + ex);
             }
         }
 
