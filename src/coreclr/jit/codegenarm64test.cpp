@@ -5327,6 +5327,26 @@ void CodeGen::genArm64EmitterUnitTestsSve()
     theEmitter->emitIns_R_R_R(INS_sve_zip2, EA_SCALABLE, REG_V15, REG_V16, REG_V17, INS_OPTS_SCALABLE_Q,
                               INS_SCALABLE_OPTS_UNPREDICATED); // ZIP2 <Zd>.Q, <Zn>.Q, <Zm>.Q
 
+    // IF_SVE_BZ_3A
+    theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V0, REG_V1, REG_V2,
+                              INS_OPTS_SCALABLE_B); // TBL <Zd>.<T>, {<Zn>.<T>}, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V3, REG_V4, REG_V5,
+                              INS_OPTS_SCALABLE_H); // TBL <Zd>.<T>, {<Zn>.<T>}, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_tbx, EA_SCALABLE, REG_V6, REG_V7, REG_V8,
+                              INS_OPTS_SCALABLE_S); // TBX <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_tbx, EA_SCALABLE, REG_V9, REG_V10, REG_V11,
+                              INS_OPTS_SCALABLE_D); // TBX <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+
+    // IF_SVE_BZ_3A_A
+    theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V0, REG_V1, REG_V2, INS_OPTS_SCALABLE_B,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // TBL <Zd>.<T>, {<Zn1>.<T>, <Zn2>.<T>}, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V3, REG_V4, REG_V5, INS_OPTS_SCALABLE_H,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // TBL <Zd>.<T>, {<Zn1>.<T>, <Zn2>.<T>}, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V6, REG_V7, REG_V8, INS_OPTS_SCALABLE_S,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // TBL <Zd>.<T>, {<Zn1>.<T>, <Zn2>.<T>}, <Zm>.<T>
+    theEmitter->emitIns_R_R_R(INS_sve_tbl, EA_SCALABLE, REG_V9, REG_V10, REG_V11, INS_OPTS_SCALABLE_D,
+                              INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // TBL <Zd>.<T>, {<Zn1>.<T>, <Zn2>.<T>}, <Zm>.<T>
+
     // IF_SVE_BL_1A
     theEmitter->emitIns_R_PATTERN_I(INS_sve_cntb, EA_8BYTE, REG_R0, SVE_PATTERN_POW2,
                                     1); // CNTB    <Xd>{, <pattern>{, MUL #<imm>}}

@@ -1069,13 +1069,15 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         // Scalable, unpredicated
-        case IF_SVE_AT_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
-        case IF_SVE_BD_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
-        case IF_SVE_BE_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 signed saturating doubling multiply high
-                           // (unpredicated)
-        case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
-        case IF_SVE_BK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point trig select coefficient
-        case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_AT_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_BD_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
+        case IF_SVE_BE_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 signed saturating doubling multiply high
+                             // (unpredicated)
+        case IF_SVE_BG_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
+        case IF_SVE_BK_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point trig select coefficient
+        case IF_SVE_BR_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_BZ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
+        case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -10745,6 +10747,32 @@ void emitter::emitIns_R_R_R(instruction     ins,
                 assert(isPredicateRegister(reg3)); // MMMM
                 fmt = IF_SVE_CI_3A;
             }
+            break;
+
+        case INS_sve_tbl:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+
+            if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
+            {
+                fmt = IF_SVE_BZ_3A_A;
+            }
+            else
+            {
+                assert(insScalableOptsNone(sopt));
+                fmt = IF_SVE_BZ_3A;
+            }
+            break;
+        case INS_sve_tbx:
+            assert(insOptsScalableStandard(opt));
+            assert(isVectorRegister(reg1));                        // ddddd
+            assert(isVectorRegister(reg2));                        // nnnnn
+            assert(isVectorRegister(reg3));                        // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_BZ_3A;
             break;
 
         case INS_sve_clz:
@@ -22246,13 +22274,15 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             break;
 
         // Scalable, 3 regs, no predicates
-        case IF_SVE_AT_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
-        case IF_SVE_BD_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
-        case IF_SVE_BE_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 signed saturating doubling multiply high
-                           // (unpredicated)
-        case IF_SVE_BG_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
-        case IF_SVE_BK_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point trig select coefficient
-        case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_AT_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_BD_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply vectors (unpredicated)
+        case IF_SVE_BE_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 signed saturating doubling multiply high
+                             // (unpredicated)
+        case IF_SVE_BG_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE bitwise shift by wide elements (unpredicated)
+        case IF_SVE_BK_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE floating-point trig select coefficient
+        case IF_SVE_BR_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_BZ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
+        case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                     // nnnnn
@@ -25859,6 +25889,29 @@ void emitter::emitDispInsHelp(
             emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm/aaaaa
             break;
 
+        // <Zd>.<T>, <Zn>.<T>, <Zm>.<T>
+        // <Zd>.<T>, {<Zn>.<T>}, <Zm>.<T>
+        case IF_SVE_BZ_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true); // ddddd
+            if (id->idIns() == INS_sve_tbl)
+            {
+                emitDispSveConsecutiveRegList(id->idReg2(), 1, id->idInsOpt(), true); // nnnnn
+            }
+            else
+            {
+                assert(id->idIns() == INS_sve_tbx);
+                emitDispSveReg(id->idReg2(), id->idInsOpt(), true); // nnnnn
+            }
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false); // mmmmm
+            break;
+
+        // <Zd>.<T>, {<Zn1>.<T>, <Zn2>.<T>}, <Zm>.<T>
+        case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
+            emitDispSveReg(id->idReg1(), id->idInsOpt(), true);                   // ddddd
+            emitDispSveConsecutiveRegList(id->idReg2(), 2, id->idInsOpt(), true); // nnnnn
+            emitDispSveReg(id->idReg3(), id->idInsOpt(), false);                  // mmmmm
+            break;
+
         // <Zd>.<T>, <R><n>, <R><m>
         case IF_SVE_BA_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE index generation (register start, register
                            // increment)
@@ -29394,9 +29447,11 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_1C;    // need to fix
             break;
 
-        case IF_SVE_AT_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
-        case IF_SVE_BR_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
-        case IF_SVE_BR_3B: // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_AT_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE integer add/subtract vectors (unpredicated)
+        case IF_SVE_BR_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_BR_3B:   // ...........mmmmm ......nnnnnddddd -- SVE permute vector segments
+        case IF_SVE_BZ_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
+        case IF_SVE_BZ_3A_A: // ........xx.mmmmm ......nnnnnddddd -- SVE table lookup (three sources)
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
             break;
