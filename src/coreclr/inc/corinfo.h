@@ -772,7 +772,8 @@ enum class CorInfoCallConvExtension
     // New calling conventions supported with the extensible calling convention encoding go here.
     CMemberFunction,
     StdcallMemberFunction,
-    FastcallMemberFunction
+    FastcallMemberFunction,
+    Swift
 };
 
 #ifdef TARGET_X86
@@ -3371,7 +3372,17 @@ public:
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
 #define IMAGE_REL_SECREL                0x104
+
+// Linux x64
+// GD model
 #define IMAGE_REL_TLSGD                 0x105
+
+// Linux arm64
+//    TLSDESC  (dynamic)
+#define IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21   0x107
+#define IMAGE_REL_AARCH64_TLSDESC_LD64_LO12    0x108
+#define IMAGE_REL_AARCH64_TLSDESC_ADD_LO12     0x109
+#define IMAGE_REL_AARCH64_TLSDESC_CALL         0x10A
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction

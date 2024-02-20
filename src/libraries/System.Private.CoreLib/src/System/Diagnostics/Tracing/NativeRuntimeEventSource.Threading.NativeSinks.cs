@@ -217,7 +217,7 @@ namespace System.Diagnostics.Tracing
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            IntPtr Overlapped, // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             bool MultiDequeues,
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
@@ -230,9 +230,14 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+#if TARGET_WINDOWS
+                IntPtr overlapped = ThreadPool.UseWindowsThreadPool ? 0 : (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#else
+                IntPtr overlapped = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#endif
                 ThreadPoolIOEnqueue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    overlapped,
                     false);
             }
         }
@@ -254,7 +259,7 @@ namespace System.Diagnostics.Tracing
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
         private unsafe void ThreadPoolIODequeue(
             IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            IntPtr Overlapped, // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIODequeue(NativeOverlapped, Overlapped, ClrInstanceID);
@@ -266,9 +271,14 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
             {
+#if TARGET_WINDOWS
+                IntPtr overlapped = ThreadPool.UseWindowsThreadPool ? 0 : (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#else
+                IntPtr overlapped = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#endif
                 ThreadPoolIODequeue(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    overlapped);
             }
         }
 
@@ -300,16 +310,21 @@ namespace System.Diagnostics.Tracing
         {
             if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
             {
+#if TARGET_WINDOWS
+                IntPtr overlapped = ThreadPool.UseWindowsThreadPool ? 0 : (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#else
+                IntPtr overlapped = (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode();
+#endif
                 ThreadPoolIOPack(
                     (IntPtr)nativeOverlapped,
-                    (IntPtr)Overlapped.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+                    overlapped);
             }
         }
 
         [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
         private unsafe void ThreadPoolIOPack(
             IntPtr NativeOverlapped,
-            IntPtr Overlapped,
+            IntPtr Overlapped,  // 0 if the Windows thread pool is used, the relevant info could be obtained from the NativeOverlapped* if necessary
             ushort ClrInstanceID = DefaultClrInstanceId)
         {
             LogThreadPoolIOPack(NativeOverlapped, Overlapped, ClrInstanceID);

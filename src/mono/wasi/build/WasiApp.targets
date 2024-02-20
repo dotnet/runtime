@@ -66,6 +66,11 @@
           Outputs="$(WasmAppDir)\.stamp"
           Condition="'$(WasmGenerateAppBundle)' == 'true'">
 
+    <PropertyGroup>
+      <_WasmOutputSymbolsToAppBundle Condition="'$(CopyOutputSymbolsToPublishDirectory)' == 'true' and '$(_IsPublishing)' == 'true'">true</_WasmOutputSymbolsToAppBundle>
+      <_WasmOutputSymbolsToAppBundle Condition="'$(_WasmOutputSymbolsToAppBundle)' == ''">false</_WasmOutputSymbolsToAppBundle>
+    </PropertyGroup>
+
     <WasiAppBuilder
       AppDir="$(WasmAppDir)"
       Assemblies="@(_WasmAssembliesInternal)"
@@ -80,7 +85,7 @@
       FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
-      DebugLevel="$(WasmDebugLevel)"
+      OutputSymbolsToAppBundle="$(_WasmOutputSymbolsToAppBundle)"
       RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
       />
   </Target>

@@ -56,6 +56,7 @@ try {
         .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
         .withElementOnExit()
         .withExitCodeLogging()
+        .withExitOnUnhandledError()
         .create();
 
     setModuleImports("main.js", {

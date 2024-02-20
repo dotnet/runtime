@@ -412,9 +412,10 @@ namespace Internal.JitInterface
 
             if (codeSize < _code.Length)
             {
-                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64)
+                if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.ARM64
+                    && _compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.RiscV64)
                 {
-                    // For xarch/arm32, the generated code is sometimes smaller than the memory allocated.
+                    // For xarch/arm32/RiscV64, the generated code is sometimes smaller than the memory allocated.
                     // In that case, trim the codeBlock to the actual value.
                     //
                     // For arm64, the allocation request of `hotCodeSize` also includes the roData size
@@ -1587,6 +1588,9 @@ namespace Internal.JitInterface
                     break;
                 case UnmanagedCallingConventions.Fastcall:
                     result = CorInfoCallConvExtension.Fastcall;
+                    break;
+                case UnmanagedCallingConventions.Swift:
+                    result = CorInfoCallConvExtension.Swift;
                     break;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
@@ -3875,6 +3879,11 @@ namespace Internal.JitInterface
                     const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
                     const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
                     const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21 = 0x107;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_LD64_LO12 = 0x108;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_ADD_LO12 = 0x109;
+                    const ushort IMAGE_REL_ARM64_TLSDESC_CALL = 0x10A;
+
 
                     switch (fRelocType)
                     {
@@ -3884,6 +3893,14 @@ namespace Internal.JitInterface
                             return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
                         case IMAGE_REL_ARM64_PAGEOFFSET_12A:
                             return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                        case IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21;
+                        case IMAGE_REL_ARM64_TLSDESC_ADD_LO12:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12;
+                        case IMAGE_REL_ARM64_TLSDESC_LD64_LO12:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12;
+                        case IMAGE_REL_ARM64_TLSDESC_CALL:
+                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;
@@ -4105,6 +4122,9 @@ namespace Internal.JitInterface
             if (targetArchitecture == TargetArchitecture.ARM && !_compilation.TypeSystemContext.Target.IsWindows)
                 flags.Set(CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS);
 
+            if (targetArchitecture == TargetArchitecture.RiscV64)
+                flags.Set(CorJitFlag.CORJIT_FLAG_FRAMED);
+
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
                 // Validate UnmanagedCallersOnlyAttribute usage
@@ -4120,7 +4140,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
                 // TODO: enable this check in full AOT
-                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, Array.Empty<ParameterMetadata>(), ((MetadataType)this.MethodBeingCompiled.OwningType).Module)) // Only blittable arguments
+                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module, this.MethodBeingCompiled.GetUnmanagedCallersOnlyMethodCallingConventions())) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }

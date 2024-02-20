@@ -191,13 +191,8 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            object? obj = null;
-            GetUninitializedObject(new QCallTypeHandle(ref rt), ObjectHandleOnStack.Create(ref obj));
-            return obj!;
+            return rt.GetUninitializedObject();
         }
-
-        [LibraryImport(QCall, EntryPoint = "ReflectionSerialization_GetUninitializedObject")]
-        private static partial void GetUninitializedObject(QCallTypeHandle type, ObjectHandleOnStack retObject);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);

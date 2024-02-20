@@ -230,6 +230,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
         }
 
+        public void AssertBlockingWait(Exception? exception)
+        {
+            switch (Type)
+            {
+                case ExecutorType.Main:
+                case ExecutorType.JSWebWorker:
+                    Assert.NotNull(exception);
+                    Assert.IsType<PlatformNotSupportedException>(exception);
+                    break;
+                case ExecutorType.NewThread:
+                case ExecutorType.ThreadPool:
+                    Assert.Null(exception);
+                    break;
+            }
+        }
+
         public void AssertInteropThread()
         {
             switch (Type)
@@ -309,6 +325,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
         public static Task RunOnNewThread(Func<Task> job, CancellationToken cancellationToken)
         {
+            if( Environment.CurrentManagedThreadId == 1)
+            {
+                throw new Exception("This unit test should be executed with -backgroundExec otherwise it's prone to consume all threads too quickly");
+            }
             TaskCompletionSource tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var thread = new Thread(() =>
             {
@@ -330,7 +350,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
                 catch (Exception ex)
                 {
-                    tcs.TrySetException(ex);
+                    if(ex is AggregateException agg)
+                    {
+                        tcs.TrySetException(agg.InnerException);
+                    }
+                    else
+                    {
+                        tcs.TrySetException(ex);
+                    }
                 }
                 finally
                 {
@@ -338,6 +365,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 }
             });
             thread.Start();
+            tcs.Task.ContinueWith((t) => { thread.Join(); }, cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
             return tcs.Task;
         }
 

@@ -49,23 +49,6 @@ bool emitter::IsKInstruction(instruction ins)
     return (flags & KInstruction) != 0;
 }
 
-//------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
-// Technically, K instructions would be considered under the VEX encoding umbrella, but due to
-// the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
-//
-// Arguments:
-//    ins - The instruction to check.
-//
-// Returns:
-//    `true` if it is a sse or avx or avx512 instruction.
-//
-bool emitter::IsAvx512OrPriorInstruction(instruction ins)
-{
-    // TODO-XArch-AVX512: Fix check once AVX512 instructions are added.
-    return ((ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION));
-}
-
 bool emitter::IsAVXOnlyInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_AVX_INSTRUCTION) && (ins <= INS_LAST_AVX_INSTRUCTION);
@@ -1304,9 +1287,10 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #define DEFAULT_BYTE_EVEX_PREFIX 0x62F07C0800000000ULL
 
 #define DEFAULT_BYTE_EVEX_PREFIX_MASK 0xFFFFFFFF00000000ULL
+#define BBIT_IN_BYTE_EVEX_PREFIX 0x0000001000000000ULL
 #define LBIT_IN_BYTE_EVEX_PREFIX 0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
-#define EVEX_B_BIT 0x0000001000000000ULL
+#define ZBIT_IN_BYTE_EVEX_PREFIX 0x0000008000000000ULL
 
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX prefix with only LL' bits set.
@@ -1344,7 +1328,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
     if (id->idIsEvexbContextSet())
     {
-        code |= EVEX_B_BIT;
+        code |= BBIT_IN_BYTE_EVEX_PREFIX;
 
         if (!id->idHasMem())
         {
@@ -1385,6 +1369,8 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     {
         case IF_RWR_RRD_ARD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
+
             CnsVal cnsVal;
             emitGetInsAmdCns(id, &cnsVal);
 
@@ -1394,6 +1380,8 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_MRD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
+
             CnsVal cnsVal;
             emitGetInsDcmCns(id, &cnsVal);
 
@@ -1403,6 +1391,8 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_SRD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
+
             CnsVal cnsVal;
             emitGetInsCns(id, &cnsVal);
 
@@ -1412,12 +1402,24 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         case IF_RWR_RRD_RRD_RRD:
         {
+            assert(id->idGetEvexAaaContext() == 0);
             maskReg = id->idReg4();
             break;
         }
 
         default:
         {
+            unsigned aaaContext = id->idGetEvexAaaContext();
+
+            if (aaaContext != 0)
+            {
+                maskReg = static_cast<regNumber>(aaaContext + KBASE);
+
+                if (id->idIsEvexZContextSet())
+                {
+                    code |= ZBIT_IN_BYTE_EVEX_PREFIX;
+                }
+            }
             break;
         }
     }
@@ -4170,9 +4172,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         }
 
         // If this is just "call reg", we're done.
-        if (id->idIsCallRegPtr())
+        if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
         {
-            assert(ins == INS_call || ins == INS_tail_i_jmp);
             assert(dsp == 0);
             return size;
         }
@@ -6564,7 +6565,7 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
  *  Add an instruction with two register operands.
  */
 
-void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
+void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insOpts instOptions)
 {
     if (IsMovInstruction(ins))
     {
@@ -6585,6 +6586,13 @@ void emitter::emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNum
     id->idInsFmt(fmt);
     id->idReg1(reg1);
     id->idReg2(reg2);
+
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
+    {
+        // if EVEX.b needs to be set in this path, then it should be embedded rounding.
+        assert(UseEvexEncoding());
+        id->idSetEvexbContext(instOptions);
+    }
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id);
     id->idCodeSize(sz);
@@ -6822,7 +6830,9 @@ void emitter::emitIns_R_R_A(
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+
     SetEvexBroadcastIfNeeded(id, instOptions);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     emitHandleMemOp(indir, id, (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
@@ -6947,7 +6957,9 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
+
     SetEvexBroadcastIfNeeded(id, instOptions);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6974,12 +6986,13 @@ void emitter::emitIns_R_R_R(
     id->idReg2(reg1);
     id->idReg3(reg2);
 
-    if ((instOptions & INS_OPTS_b_MASK) != INS_OPTS_NONE)
+    if ((instOptions & INS_OPTS_EVEX_b_MASK) != 0)
     {
         // if EVEX.b needs to be set in this path, then it should be embedded rounding.
         assert(UseEvexEncoding());
         id->idSetEvexbContext(instOptions);
     }
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeRR(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -7001,7 +7014,9 @@ void emitter::emitIns_R_R_S(
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+
     SetEvexBroadcastIfNeeded(id, instOptions);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
@@ -8537,20 +8552,32 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
 //    op1Reg    -- The register of the first operand
 //    op2Reg    -- The register of the second operand
 //    op3Reg    -- The register of the second operand
+//    instOptions - The options that modify how the instruction is generated
 //
-void emitter::emitIns_SIMD_R_R_R_R(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, regNumber op3Reg)
+void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
+                                   emitAttr    attr,
+                                   regNumber   targetReg,
+                                   regNumber   op1Reg,
+                                   regNumber   op2Reg,
+                                   regNumber   op3Reg,
+                                   insOpts     instOptions)
 {
     if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins))
     {
         assert(UseSimdEncoding());
+
+        if (instOptions != INS_OPTS_NONE)
+        {
+            // insOpts is currently available only in EVEX encoding.
+            assert(UseEvexEncoding());
+        }
 
         // Ensure we aren't overwriting op2 or op3
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
         assert((op3Reg != targetReg) || (op1Reg == targetReg));
 
         emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-        emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg);
+        emitIns_R_R_R(ins, attr, targetReg, op2Reg, op3Reg, instOptions);
     }
     else if (UseSimdEncoding())
     {
@@ -10785,6 +10812,28 @@ void emitter::emitDispEmbRounding(instrDesc* id)
     }
 }
 
+// emitDispEmbMasking: Display the tag where embedded masking is activated
+//
+// Arguments:
+//   id - The instruction descriptor
+//
+void emitter::emitDispEmbMasking(instrDesc* id)
+{
+    regNumber maskReg = static_cast<regNumber>(id->idGetEvexAaaContext() + KBASE);
+
+    if (maskReg == REG_K0)
+    {
+        return;
+    }
+
+    printf(" {%s}", emitRegName(maskReg));
+
+    if (id->idIsEvexZContextSet())
+    {
+        printf(" {z}");
+    }
+}
+
 //--------------------------------------------------------------------
 // emitDispIns: Dump the given instruction to jitstdout.
 //
@@ -11033,7 +11082,7 @@ void emitter::emitDispIns(
         case IF_AWR:
         case IF_ARW:
         {
-            if (id->idIsCallRegPtr())
+            if (((ins == INS_call) || (ins == INS_tail_i_jmp)) && id->idIsCallRegPtr())
             {
                 printf("%s", emitRegName(id->idAddr()->iiaAddrMode.amBaseReg));
             }
@@ -11184,7 +11233,9 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_ARD:
         case IF_RWR_RWR_ARD:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispAddrMode(id);
             emitDispEmbBroadcastCount(id);
             break;
@@ -11458,7 +11509,9 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_SRD:
         case IF_RWR_RWR_SRD:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
             emitDispEmbBroadcastCount(id);
@@ -11625,6 +11678,7 @@ void emitter::emitDispIns(
                 default:
                 {
                     printf("%s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr));
+                    emitDispEmbRounding(id);
                     break;
                 }
             }
@@ -11652,8 +11706,9 @@ void emitter::emitDispIns(
                 reg2          = reg3;
                 reg3          = tmp;
             }
-            printf("%s, ", emitRegName(id->idReg1(), attr));
-            printf("%s, ", emitRegName(reg2, attr));
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, ", emitRegName(reg2, attr));
             printf("%s", emitRegName(reg3, attr));
             emitDispEmbRounding(id);
             break;
@@ -11964,7 +12019,9 @@ void emitter::emitDispIns(
         case IF_RRW_RRD_MRD:
         case IF_RWR_RWR_MRD:
         {
-            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            printf("%s", emitRegName(id->idReg1(), attr));
+            emitDispEmbMasking(id);
+            printf(", %s, %s", emitRegName(id->idReg2(), attr), sstr);
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             emitDispEmbBroadcastCount(id);
@@ -12918,7 +12975,7 @@ GOT_DSP:
 #else
                     dst += emitOutputLong(dst, dsp);
 #endif
-                    if (id->idIsTlsGD())
+                    if (!IsAvx512OrPriorInstruction(ins) && id->idIsTlsGD())
                     {
                         addlDelta = -4;
                         emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
@@ -16648,7 +16705,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
 #ifdef DEBUG
-            if (ins == INS_call && !id->idIsTlsGD())
+            if ((ins == INS_call) && !id->idIsTlsGD())
             {
                 emitRecordCallSite(emitCurCodeOffs(*dp), id->idDebugOnlyInfo()->idCallSig,
                                    (CORINFO_METHOD_HANDLE)id->idDebugOnlyInfo()->idMemCookie);

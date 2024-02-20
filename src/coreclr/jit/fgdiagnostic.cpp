@@ -856,8 +856,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock = bbIsTryBeg(block);
 
                 if (isTryEntryBlock ||
-                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_PREHEADER |
-                                      BBF_LOOP_ALIGN))
+                    block->HasAnyFlag(BBF_FUNCLET_BEG | BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -876,10 +875,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (block->HasFlag(BBF_LOOP_HEAD))
                     {
                         fprintf(fgxFile, "L");
-                    }
-                    if (block->HasFlag(BBF_LOOP_PREHEADER))
-                    {
-                        fprintf(fgxFile, "P");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -2018,13 +2013,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                 {
                     // Very early in compilation, we won't have fixed up the BBJ_EHFINALLYRET successors yet.
 
-                    const unsigned     jumpCnt = ehfDesc->bbeCount;
-                    BasicBlock** const jumpTab = ehfDesc->bbeSuccs;
+                    const unsigned   jumpCnt = ehfDesc->bbeCount;
+                    FlowEdge** const jumpTab = ehfDesc->bbeSuccs;
 
                     for (unsigned i = 0; i < jumpCnt; i++)
                     {
                         printedBlockWidth += 1 /* space/comma */;
-                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]));
+                        printf("%c%s", (i == 0) ? ' ' : ',', dspBlockNum(jumpTab[i]->getDestinationBlock()));
                     }
                 }
 
@@ -2688,6 +2683,10 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         }
 
         assert(CheckJump(blockPred, block));
+
+        // Make sure the pred edge's destination block is correct
+        //
+        assert(pred->getDestinationBlock() == block);
     }
 
     // Make sure preds are in increasing BBnum order
@@ -2984,13 +2983,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         }
 
         maxBBNum = max(maxBBNum, block->bbNum);
-
-        // BBJ_COND's normal (false) jump target is expected to be the next block
-        // TODO-NoFallThrough: Allow bbFalseTarget to diverge from bbNext
-        if (block->KindIs(BBJ_COND))
-        {
-            assert(block->NextIs(block->GetFalseTarget()));
-        }
 
         // Check that all the successors have the current traversal stamp. Use the 'Compiler*' version of the
         // iterator, but not for BBJ_SWITCH: we don't want to end up calling GetDescriptorForSwitch(), which will
@@ -4731,12 +4723,20 @@ void Compiler::fgDebugCheckLoops()
     {
         return;
     }
-    if (optLoopsRequirePreHeaders)
+    if (optLoopsCanonical)
     {
         for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
         {
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
+
+            loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
+                for (BasicBlock* pred : exit->PredBlocks())
+                {
+                    assert(loop->ContainsBlock(pred));
+                }
+                return BasicBlockVisit::Continue;
+            });
         }
     }
 }
