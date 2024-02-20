@@ -9,8 +9,7 @@
     <Serviceable>true</Serviceable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsShipping>true</IsShipping>
-    <!-- this assembly should not produce a public package, rather it's meant to be shipped by the
-          WasmAppBuilder task and the BrowserDebugProxy -->
+    <!-- this assembly should not produce a public package, rather it's meant to be shipped as part of the runtime -->
     <IsShippingPackage>false</IsShippingPackage>
   </PropertyGroup>
 
@@ -32,15 +31,9 @@
   <!-- TODO: emit a cmake fragment that includes the location of the ilcompiler nuget's sdk and framework files. -->
 
   <ItemGroup>
-      <ProjectReference Include="..\..\..\tools\Microsoft.DotNet.HelloManaged\src\Microsoft.DotNet.HelloManaged.csproj" />
+      <ProjectReference Include="..\..\..\..\tools\Microsoft.DotNet.HelloManaged\src\Microsoft.DotNet.HelloManaged.csproj" />
   </ItemGroup>
 
-  <!-- TODO: remove -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
-    <Compile Include="..\..\..\tasks\Common\IsExternalInit.cs" />
-  </ItemGroup>
-
-  <Import Project="..\write-nativelib-cmake.targets" />
+  <Import Project="..\..\write-nativelib-cmake.targets" />
 
 </Project>

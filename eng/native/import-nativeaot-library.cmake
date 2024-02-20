@@ -101,7 +101,7 @@ function(add_imported_nativeaot_library targetName symbolPrefix)
     endif()
 
     # TODO bake this into the cmake fragment?
-    target_include_directories(${targetName} INTERFACE "${CLR_SRC_NATIVE_DIR}/${libName}/inc")
+    target_include_directories(${targetName} INTERFACE "${CLR_SRC_NATIVE_DIR}/managed/${libName}/inc")
 
   elseif ("${${symbolPrefix}_MODE}" STREQUAL "STATIC")
     add_nativeAotFramework_targets_once()

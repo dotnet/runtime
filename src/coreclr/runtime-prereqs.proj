@@ -14,7 +14,7 @@
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoRoot)\src\native\libhellomanaged\compile-native.proj" ReferenceOutputAssembly="false"/>
+    <ProjectReference Include="$(RepoRoot)\src\native\managed\compile-native.proj" ReferenceOutputAssembly="false"/>
   </ItemGroup>
 
   <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
