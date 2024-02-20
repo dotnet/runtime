@@ -136,6 +136,32 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
             if (flowLast->getSourceBlock() == blockPred)
             {
                 flow = flowLast;
+
+                // This edge should have been given a likelihood when it was created.
+                // Since we're increasing its duplicate count, update the likelihood.
+                //
+                assert(flow->hasLikelihood());
+                const unsigned numSucc = blockPred->NumSucc();
+                assert(numSucc > 0);
+
+                if (numSucc == 1)
+                {
+                    // BasicBlock::NumSucc() returns 1 for BBJ_CONDs with the same true/false target.
+                    // For blocks that only ever have one successor (BBJ_ALWAYS, BBJ_LEAVE, etc.),
+                    // their successor edge should never have a duplicate count over 1.
+                    //
+                    assert(blockPred->KindIs(BBJ_COND));
+                    assert(blockPred->TrueTargetIs(blockPred->GetFalseTarget()));
+                    flow->setLikelihood(1.0);
+                }
+                else
+                {
+                    // Duplicate count isn't updated until later, so add 1 for now.
+                    //
+                    const unsigned dupCount = flow->getDupCount() + 1;
+                    assert(dupCount > 1);
+                    flow->setLikelihood((1.0 / numSucc) * dupCount);
+                }
             }
         }
     }
@@ -178,19 +204,26 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
 
         // Create new edge in the list in the correct ordered location.
         //
-        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, *listp);
+        flow = new (this, CMK_FlowEdge) FlowEdge(blockPred, block, *listp);
         flow->incrementDupCount();
         *listp = flow;
 
         if (initializingPreds)
         {
             block->bbLastPred = flow;
-        }
 
-        // Copy likelihood from old edge, if any.
-        //
-        if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
+            // When initializing preds, ensure edge likelihood is set,
+            // such that this edge is as likely as any other successor edge
+            //
+            const unsigned numSucc = blockPred->NumSucc();
+            assert(numSucc > 0);
+            assert(flow->getDupCount() == 1);
+            flow->setLikelihood(1.0 / numSucc);
+        }
+        else if ((oldEdge != nullptr) && oldEdge->hasLikelihood())
         {
+            // Copy likelihood from old edge, if any.
+            //
             flow->setLikelihood(oldEdge->getLikelihood());
         }
 
@@ -234,6 +267,10 @@ FlowEdge* Compiler::fgAddRefPred(BasicBlock* block, BasicBlock* blockPred, FlowE
     // Pred list should (still) be ordered.
     //
     assert(block->checkPredListOrder());
+
+    // When initializing preds, edge likelihood should always be set.
+    //
+    assert(!initializingPreds || flow->hasLikelihood());
 
     return flow;
 }
@@ -299,6 +336,44 @@ FlowEdge* Compiler::fgRemoveRefPred(BasicBlock* block, BasicBlock* blockPred)
     else
     {
         return nullptr;
+    }
+}
+
+//------------------------------------------------------------------------
+// fgRemoveRefPred: Decrements the reference count of `edge`, removing it from its successor block's pred list
+// if the reference count is zero.
+//
+// Arguments:
+//    edge -- The FlowEdge* to decrement the reference count of.
+//
+// Notes:
+//    -- succBlock->bbRefs is decremented by one to account for the reduction in incoming edges.
+//    -- fgModified is set if a flow edge is removed, indicating that the flow graph shape has changed.
+//
+void Compiler::fgRemoveRefPred(FlowEdge* edge)
+{
+    assert(edge != nullptr);
+    assert(fgPredsComputed);
+
+    BasicBlock* predBlock = edge->getSourceBlock();
+    BasicBlock* succBlock = edge->getDestinationBlock();
+    assert(predBlock != nullptr);
+    assert(succBlock != nullptr);
+
+    succBlock->bbRefs--;
+
+    assert(edge->getDupCount() > 0);
+    edge->decrementDupCount();
+
+    if (edge->getDupCount() == 0)
+    {
+        // Splice out the predecessor edge in succBlock's pred list, since it's no longer necessary.
+        FlowEdge** ptrToPred;
+        FlowEdge*  pred = fgGetPredForBlock(succBlock, predBlock, &ptrToPred);
+        *ptrToPred      = pred->getNextPredEdge();
+
+        // Any changes to the flow graph invalidate the dominator sets.
+        fgModified = true;
     }
 }
 
@@ -369,11 +444,14 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
             break;
 
         case BBJ_EHFINALLYRET:
-            for (BasicBlock* const succ : block->EHFinallyRetSuccs())
+        {
+            BBehfDesc* const ehfDesc = block->GetEhfTargets();
+            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
             {
-                fgRemoveRefPred(succ, block);
+                fgRemoveRefPred(ehfDesc->bbeSuccs[i]);
             }
             break;
+        }
 
         case BBJ_EHFAULTRET:
         case BBJ_THROW:

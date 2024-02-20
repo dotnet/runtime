@@ -399,7 +399,7 @@ static const llvm_ovr_tag_t intrin_arm64_ovr [] = {
 	#define INTRINS_OVR_2_ARG(sym, ...) 0,
 	#define INTRINS_OVR_3_ARG(sym, ...) 0,
 	#define INTRINS_OVR_TAG(sym, _, arch, spec) spec,
-	#define INTRINS_OVR_TAG_KIND(sym, _, kind, arch, spec) spec,
+	#define INTRINS_OVR_TAG_KIND(sym, _, arch, kind, spec) spec,
 	#include "llvm-intrinsics.h"
 };
 
@@ -409,6 +409,7 @@ enum {
 	INTRIN_kind_widen_across,
 	INTRIN_kind_across,
 	INTRIN_kind_arm64_dot_prod,
+	INTRIN_kind_add_pointer,
 };
 
 static const uint8_t intrin_kind [] = {
@@ -474,12 +475,12 @@ ovr_tag_from_mono_vector_class (MonoClass *klass)
 	llvm_ovr_tag_t ret = 0;
 	switch (size) {
 	case 8: ret |= INTRIN_vector64; break;
+	case 12: ret |= INTRIN_vector128; break;
 	case 16: ret |= INTRIN_vector128; break;
 	}
 
 	const char *class_name = m_class_get_name (klass);
-	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
-		// FIXME: Support Vector3
+	if (!strcmp ("Vector2", class_name) || !strcmp ("Vector3", class_name) || !strcmp ("Vector4", class_name) || !strcmp ("Quaternion", class_name) || !strcmp ("Plane", class_name)) {
 		return ret | INTRIN_float32;
 	}
 
@@ -512,6 +513,7 @@ ovr_tag_from_llvm_type (LLVMTypeRef type)
 		unsigned int bits = mono_llvm_get_prim_size_bits (type);
 		switch (bits) {
 		case 64: ret |= INTRIN_vector64; break;
+		case 96: ret |= INTRIN_vector128; break;
 		case 128: ret |= INTRIN_vector128; break;
 		default: g_assert_not_reached ();
 		}
@@ -657,6 +659,8 @@ get_vtype_size_align (MonoType *t)
 	return ret;
 }
 
+static LLVMTypeRef simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass);
+
 /*
  * simd_class_to_llvm_type:
  *
@@ -665,25 +669,28 @@ get_vtype_size_align (MonoType *t)
 static LLVMTypeRef
 simd_class_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 {
-	guint32 nelems;
-	MonoTypeEnum type = mini_get_simd_type_info (klass, &nelems);
-
-	return LLVMVectorType (primitive_type_to_llvm_type (type), nelems);
+	const char *klass_name = m_class_get_name (klass);
+	if (strstr (klass_name, "ValueTuple") != NULL) {
+		return simd_valuetuple_to_llvm_type (ctx, klass);
+	} else {
+		guint32 nelems;
+		MonoTypeEnum type = mini_get_simd_type_info (klass, &nelems);
+		return LLVMVectorType (primitive_type_to_llvm_type (type), nelems);
+	}
+	g_assert_not_reached ();
 }
 
 static LLVMTypeRef
 simd_valuetuple_to_llvm_type (EmitContext *ctx, MonoClass *klass)
 {
 	const char *klass_name = m_class_get_name (klass);
-	if (!strcmp (klass_name, "ValueTuple`2")) {
-		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
-		if (etype->type != MONO_TYPE_GENERICINST)
-			g_assert_not_reached ();
-		MonoClass *eklass = etype->data.generic_class->cached_class;
-		LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
-		return LLVMArrayType (ltype, 2);
-	}
-	g_assert_not_reached ();
+	g_assert (strstr (klass_name, "ValueTuple") != NULL);
+	MonoGenericInst *classInst = mono_class_get_generic_class (klass)->context.class_inst;
+	MonoType *etype = classInst->type_argv [0];
+	g_assert (etype->type == MONO_TYPE_GENERICINST);
+	MonoClass *eklass = etype->data.generic_class->cached_class;
+	LLVMTypeRef ltype = simd_class_to_llvm_type (ctx, eklass);
+	return LLVMArrayType (ltype, classInst->type_argc);
 }
 
 /* Return the 128 bit SIMD type corresponding to the mono type TYPE */
@@ -2357,8 +2364,7 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 	}
 
 	callee_name = mono_aot_get_plt_symbol (type, data);
-	if (!callee_name)
-		return NULL;
+	g_assert (callee_name);
 
 	if (ctx->cfg->compile_aot)
 		/* Add a patch so referenced wrappers can be compiled in full aot mode */
@@ -4192,10 +4198,20 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef:
 		case LLVMArgAsFpArgs:
+		case LLVMArgWasmVtypeAsScalar:
 		{
-			if (mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
-				/* Treat these as normal values */
-				ctx->values [reg] = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
+			MonoClass *klass = mono_class_from_mono_type_internal (ainfo->type);
+			if (mini_class_is_simd (ctx->cfg, klass)) {
+				LLVMValueRef loadedVector = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
+
+				if (mono_class_value_size (klass, NULL) == 12) {
+					LLVMValueRef zero = LLVMConstReal (LLVMFloatType (), 0.0);
+					LLVMValueRef index = LLVMConstInt (LLVMInt32Type (), 3, 0);
+					loadedVector = LLVMBuildInsertElement (builder, loadedVector, zero, index, "insert_zero");
+				}
+
+				ctx->values [reg] = loadedVector;
+			}
 			break;
 		}
 		default:
@@ -4562,10 +4578,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		} else {
 			if (cfg->compile_aot) {
 				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_METHOD, call->method);
-				if (!callee) {
-					set_failure (ctx, "can't encode patch");
-					return;
-				}
 			} else if (cfg->method == call->method) {
 				callee = ctx->lmethod;
 			} else {
@@ -4604,12 +4616,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				callee = LLVMBuildLoad2 (builder, tramp_var_addr->type, tramp_var_addr->value, "");
 			}
 		}
-
-		if (!cfg->llvm_only && call->method && strstr (m_class_get_name (call->method->klass), "AsyncVoidMethodBuilder")) {
-			/* LLVM miscompiles async methods */
-			set_failure (ctx, "#13734");
-			return;
-		}
 	} else if (calli) {
 	} else {
 		const MonoJitICallId jit_icall_id = call->jit_icall_id;
@@ -4617,10 +4623,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (jit_icall_id) {
 			if (cfg->compile_aot) {
 				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (jit_icall_id));
-				if (!callee) {
-					set_failure (ctx, "can't encode patch");
-					return;
-				}
 			} else {
 				callee = get_jit_callee (ctx, "", llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (jit_icall_id));
 			}
@@ -4629,13 +4631,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				callee = NULL;
 				if (cfg->abs_patches) {
 					MonoJumpInfo *abs_ji = (MonoJumpInfo*)g_hash_table_lookup (cfg->abs_patches, call->fptr);
-					if (abs_ji) {
+					if (abs_ji)
 						callee = get_callee (ctx, llvm_sig, abs_ji->type, abs_ji->data.target);
-						if (!callee) {
-							set_failure (ctx, "can't encode patch");
-							return;
-						}
-					}
 				}
 				if (!callee) {
 					set_failure (ctx, "aot");
@@ -4978,6 +4975,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
 		emit_store (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE), is_volatile);
+		load_name = "wasm_vtype_as_scalar";
+		should_promote_to_value = TRUE;
 		break;
 	}
 	default:
@@ -5431,6 +5430,7 @@ static LLVMValueRef
 concatenate_vectors (EmitContext *ctx, LLVMValueRef xs, LLVMValueRef ys)
 {
 	LLVMTypeRef t = LLVMTypeOf (xs);
+	g_assert (LLVMGetTypeKind (t) == LLVMVectorTypeKind);
 	unsigned int elems = LLVMGetVectorSize (t) * 2;
 	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	for (guint i = 0; i < elems; ++i)
@@ -6185,8 +6185,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					}
 					break;
 				case LLVMArgWasmVtypeAsScalar:
-					g_assert (addresses [ins->sreg1]);
-					retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+					if (!addresses [ins->sreg1]) {
+						/* SIMD value */
+						g_assert (lhs);
+						retval = LLVMBuildBitCast (builder, lhs, ret_type, "");
+					} else {
+						retval = LLVMBuildLoad2 (builder, ret_type, build_ptr_cast (builder, addresses [ins->sreg1]->value, pointer_type (ret_type)), "");
+					}
 					break;
 				}
 				LLVMBuildRet (builder, retval);
@@ -6226,13 +6231,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case LLVMArgFpStruct: {
 				LLVMTypeRef ret_type = LLVMGetReturnType (ctx->lmethod_type);
 				LLVMValueRef retval, elem;
-				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+
+				MonoClass *klass=  mono_class_from_mono_type_internal (sig->ret);
+				gboolean is_simd = mini_class_is_simd (ctx->cfg, klass);
 
 				if (is_simd) {
 					retval = LLVMConstNull(ret_type);
 
 					if (lhs) {
-						int len = LLVMGetVectorSize (LLVMTypeOf (lhs));
+						// Vector3: ret_type is Vector3, lhs is Vector3 represented as a Vector4 (three elements + zero). We need to extract only the first 3 elements from lhs.
+						int len = mono_class_value_size (klass, NULL) == 12 ? 3 : LLVMGetVectorSize (LLVMTypeOf (lhs));
+
 						for (int i = 0; i < len; i++) {
 							elem = LLVMBuildExtractElement (builder, lhs, const_int32 (i), "extract_elem");
 							retval = LLVMBuildInsertValue (builder, retval, elem, i, "insert_val_struct");
@@ -6847,7 +6856,7 @@ MONO_RESTORE_WARNING
 			// LLVM should fuse the individual Div and Rem instructions into one DIV/IDIV on x86
 			values [ins->dreg] = LLVMBuildTrunc (builder, LLVMBuildSDiv (builder, dividend, divisor, ""), part_type, "");
 			last_divrem = LLVMBuildTrunc (builder, LLVMBuildSRem (builder, dividend, divisor, ""), part_type, "");
-			break;	
+			break;
 		}
 		case OP_X86_IDIVREMU:
 		case OP_X86_LDIVREMU: {
@@ -6862,7 +6871,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef divisor = LLVMBuildZExt (builder, convert (ctx, arg3, part_type), full_type, "");
 			values [ins->dreg] = LLVMBuildTrunc (builder, LLVMBuildUDiv (builder, dividend, divisor, ""), part_type, "");
 			last_divrem = LLVMBuildTrunc (builder, LLVMBuildURem (builder, dividend, divisor, ""), part_type, "");
-			break;	
+			break;
 		}
 		case OP_X86_IDIVREM2:
 		case OP_X86_LDIVREM2: {
@@ -7087,10 +7096,7 @@ MONO_RESTORE_WARNING
 			gboolean is_volatile = (ins->flags & MONO_INST_VOLATILE) != 0;
 			gboolean is_unaligned = (ins->flags & MONO_INST_UNALIGNED) != 0;
 
-			if (!values [ins->inst_destbasereg]) {
-				set_failure (ctx, "inst_destbasereg");
-				break;
-			}
+			g_assert (values [ins->inst_destbasereg]);
 
 			t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -7647,10 +7653,7 @@ MONO_RESTORE_WARNING
 			BarrierKind barrier = (BarrierKind) ins->backend.memory_barrier_kind;
 			LLVMValueRef index, addr, value, base;
 
-			if (!values [ins->inst_destbasereg]) {
-			    set_failure (ctx, "inst_destbasereg");
-				break;
-			}
+			g_assert (values [ins->inst_destbasereg]);
 
 			t = load_store_to_llvm_type (ins->opcode, &size, &sext, &zext);
 
@@ -7842,11 +7845,7 @@ MONO_RESTORE_WARNING
 		case OP_VZERO: {
 			MonoClass *klass = ins->klass;
 
-			if (!klass) {
-				// FIXME:
-				set_failure (ctx, "!klass");
-				break;
-			}
+			g_assert (klass);
 
 			if (!addresses [ins->dreg]) {
 				LLVMTypeRef etype = type_to_llvm_type (ctx, m_class_get_byval_arg (klass));
@@ -7867,11 +7866,7 @@ MONO_RESTORE_WARNING
 			gboolean done = FALSE;
 			gboolean is_volatile = FALSE;
 
-			if (!klass) {
-				// FIXME:
-				set_failure (ctx, "!klass");
-				break;
-			}
+			g_assert (klass);
 
 			if (mini_is_gsharedvt_klass (klass)) {
 				// FIXME:
@@ -8332,6 +8327,11 @@ MONO_RESTORE_WARNING
 
 			src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), pointer_type (t));
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, t, src, "", FALSE, 1);
+			if (mono_class_value_size (ins->klass, NULL) == 12) {
+        				LLVMValueRef zero = LLVMConstReal (LLVMFloatType (), 0.0);
+        				LLVMValueRef index = LLVMConstInt (LLVMInt32Type (), 3, 0);
+        				values [ins->dreg] = LLVMBuildInsertElement (builder, values [ins->dreg], zero, index, "insert_zero");
+    		}
 			break;
 		}
 		case OP_STOREX_MEMBASE: {
@@ -10686,7 +10686,7 @@ MONO_RESTORE_WARNING
 
 			// convert to 0/1
 			result = LLVMBuildICmp (builder, LLVMIntEQ, first_elem, LLVMConstAllOnes (LLVMInt64Type ()), "");
-			
+
 			values [ins->dreg] = LLVMBuildZExt (builder, result, LLVMInt8Type (), "");
 			break;
 		}
@@ -11579,6 +11579,93 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_ARM64_LDM_INSERT: {
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef vec_t = LLVMGetElementType (ret_t);
+			if (!addresses [ins->dreg])
+				addresses [ins->dreg] = create_address (ctx, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), "arm64_ld_insert"), ret_t);
+			unsigned int n_elem_tuple = LLVMGetArrayLength (ret_t);
+			unsigned int n_elem_vector = LLVMGetVectorSize (vec_t);
+			LLVMTypeRef elem_t = LLVMGetElementType (vec_t);
+			unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+			unsigned int vector_size = n_elem_vector * elem_bits;
+			IntrinsicId iid;
+			switch (vector_size) {
+			case 64: {
+				switch (n_elem_tuple) {
+				case 2:
+					iid = INTRINS_AARCH64_ADV_SIMD_LD2LANE_V64;
+					break;
+				case 3:
+					iid = INTRINS_AARCH64_ADV_SIMD_LD3LANE_V64;
+					break;
+				case 4:
+					iid = INTRINS_AARCH64_ADV_SIMD_LD4LANE_V64;
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			}
+			case 128: {
+				switch (n_elem_tuple) {
+				case 2:
+					iid = INTRINS_AARCH64_ADV_SIMD_LD2LANE_V128;
+					break;
+				case 3:
+					iid = INTRINS_AARCH64_ADV_SIMD_LD3LANE_V128;
+					break;
+				case 4:
+					iid = INTRINS_AARCH64_ADV_SIMD_LD4LANE_V128;
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			
+			}
+
+			lhs = LLVMBuildLoad2 (builder, ret_t, addresses [ins->sreg1]->value, "");
+
+			LLVMValueRef *args = g_new0(LLVMValueRef, n_elem_tuple + 2);
+			unsigned int idx = 0;
+			for ( ; idx < n_elem_tuple; idx++) {
+				args [idx] = LLVMBuildExtractValue (builder, lhs, idx, "extract_elem");
+			}
+			args [idx++] = rhs;
+			args [idx] = arg3;
+
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
+
+			// convert rhs to a constant
+			ImmediateUnrollCtx ictx = immediate_unroll_begin (ctx, bb, 16, rhs, ret_t, "");
+			int i = 0;
+			while (immediate_unroll_next (&ictx, &i)) {
+				LLVMValueRef retval = LLVMGetUndef (ret_t);
+				args [idx - 1] = const_int64 (i);
+				LLVMValueRef result_loaded = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
+				for (unsigned int j = 0; j < n_elem_tuple; j++) {
+					LLVMValueRef elem = LLVMBuildExtractValue (builder, result_loaded,  j, "extract_elem");
+					retval = LLVMBuildInsertValue (builder, retval, elem, j, "insert_val");
+				}
+				immediate_unroll_commit (&ictx, i, retval);
+			}
+			immediate_unroll_default (&ictx);
+			immediate_unroll_commit_default (&ictx, LLVMConstNull (ret_t));
+			LLVMValueRef result = immediate_unroll_end (&ictx, &cbb);
+
+			LLVMTypeRef retptr_t = pointer_type (ret_t);
+			LLVMValueRef dst = convert (ctx, addresses [ins->dreg]->value, retptr_t);
+			LLVMBuildStore (builder, result, dst);
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_ARM64_LD1R:
 		case OP_ARM64_LD1: {
 			gboolean replicate = ins->opcode == OP_ARM64_LD1R;
@@ -11618,7 +11705,7 @@ MONO_RESTORE_WARNING
 				LLVMTypeRef etype = type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass));
 				addresses [ins->dreg] = create_address (ctx, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname), etype);
 			}
-			LLVMTypeRef ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (ret_t);
 			LLVMValueRef ix = const_int32 (1);
 			LLVMTypeRef e_t = scalar ? LLVMGetElementType (vec_t) : vec_t;
@@ -11645,6 +11732,43 @@ MONO_RESTORE_WARNING
 			LLVMValueRef dst = convert (ctx, addresses [ins->dreg]->value, retptr_t);
 			LLVMBuildStore (builder, val, dst);
 			values [ins->dreg] = vec_sz == 64 ? val : NULL;
+			break;
+		}
+		case OP_ARM64_LDM: {
+			const char *oname = "arm64_ldm";
+			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
+			if (!addresses [ins->dreg])
+				addresses [ins->dreg] = create_address (ctx, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname), ret_t);
+			LLVMTypeRef vec_t = LLVMGetElementType (ret_t);
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
+			LLVMValueRef result = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, oname);
+			LLVMTypeRef retptr_t = pointer_type (ret_t);
+			LLVMValueRef dst = convert (ctx, addresses [ins->dreg]->value, retptr_t);
+			LLVMBuildStore (builder, result, dst);
+			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_STM: {
+			LLVMTypeRef tuple_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
+			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
+
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
+
+			LLVMValueRef value_tuple = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "load_param");
+
+			int len = LLVMGetArrayLength (tuple_t);
+
+			LLVMValueRef *args = g_alloca ((len + 1) * sizeof (LLVMValueRef));
+
+			for (int i = 0; i < len; i++) {
+				LLVMValueRef elem = LLVMBuildExtractValue (builder, value_tuple, i, "extract_elem");
+				args [i] = elem;
+			}
+			args [len] = lhs;
+
+			call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
 		}
 		case OP_ARM64_ST1: {
@@ -12035,7 +12159,7 @@ MONO_RESTORE_WARNING
 			gboolean scalar = ins->opcode == OP_NEGATION_SCALAR;
 			gboolean is_float = (ins->inst_c1 == MONO_TYPE_R4 || ins->inst_c1 == MONO_TYPE_R8);
 
-			LLVMValueRef result = lhs; 
+			LLVMValueRef result = lhs;
 			if (scalar)
 				result = scalar_from_vector (ctx, result);
 			if (is_float)
@@ -13586,6 +13710,10 @@ add_intrinsic (EmitContext *ctx, int id)
 						 */
 						 LLVMTypeRef associated_type = intrin_types [vw][0];
 						 intrins = add_intrins2 (module, id, distinguishing_type, associated_type, &intrins_type);
+					} else if (kind == INTRIN_kind_add_pointer) {
+						LLVMTypeRef elem_type = LLVMGetElementType (distinguishing_type);
+						LLVMTypeRef src_t = pointer_type (elem_type);
+						intrins = add_intrins2 (module, id, distinguishing_type, src_t, &intrins_type);
 					} else
 						intrins = add_intrins1 (module, id, distinguishing_type, &intrins_type);
 					int key = key_from_id_and_tag (id, test);

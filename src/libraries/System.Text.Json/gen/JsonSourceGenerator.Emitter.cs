@@ -796,7 +796,7 @@ namespace System.Text.Json.SourceGeneration
                     if (defaultCheckType != DefaultCheckType.None)
                     {
                         // Use temporary variable to evaluate property value only once
-                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode.TrimStart('@')}";
                         writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
                         propValueExpr = localVariableName;
                     }

@@ -27,21 +27,6 @@ MonoNativeThreadId
 mono_threads_wasm_ui_thread_tid (void);
 
 #ifndef DISABLE_THREADS
-/**
- * Runs the given function asynchronously on the main thread.
- * See emscripten/threading.h emscripten_async_run_in_main_runtime_thread
- */
-void
-mono_threads_wasm_async_run_in_ui_thread (void (*func) (void));
-
-/*
- * Variant that takes an argument. Add more variants as needed.
- */
-void
-mono_threads_wasm_async_run_in_ui_thread_vi (void (*func)(gpointer), gpointer user_data);
-
-void
-mono_threads_wasm_async_run_in_ui_thread_vii (void (*func)(gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
 void
 mono_threads_wasm_async_run_in_target_thread (pthread_t target_thread, void (*func) (void));
@@ -51,6 +36,9 @@ mono_threads_wasm_async_run_in_target_thread_vi (pthread_t target_thread, void (
 
 void
 mono_threads_wasm_async_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
+
+void
+mono_threads_wasm_sync_run_in_target_thread_vii (pthread_t target_thread, void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2);
 
 static inline
 int32_t
@@ -83,6 +71,9 @@ mono_threads_wasm_on_thread_attached (pthread_t tid, const char* thread_name, gb
 
 void
 mono_threads_wasm_on_thread_unregistered (void);
+
+void
+mono_wasm_pthread_set_name (const char* thread_name);
 
 #endif /* HOST_WASM*/
 

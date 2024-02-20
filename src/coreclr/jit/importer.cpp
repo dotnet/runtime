@@ -1677,8 +1677,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING);
-    slotPtrTree->gtFlags &= ~GTF_GLOB_REF; // TODO-Bug?: this is a quirk. Can we mark this indirection invariant?
+    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     return slotPtrTree;
 }
@@ -5514,7 +5513,23 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
     }
 
-    const bool expandInline = canExpandInline && shouldExpandInline;
+    bool expandInline = canExpandInline && shouldExpandInline;
+
+    if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) && isClassExact)
+    {
+        // TODO-InlineCast: isinst against exact class
+        // It's already supported by the late cast expansion phase, but
+        // produces unexpected size regressions in some cases.
+    }
+    else if (!isCastClass && !op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+    {
+        // TODO-InlineCast: isinst against Class<_Canon>
+    }
+    else
+    {
+        // Expand later
+        expandInline = false;
+    }
 
     if (!expandInline)
     {
@@ -5529,7 +5544,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
 
         // Instrument this castclass/isinst
-        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
+        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
+            !compCurBB->isRunRarely())
         {
             // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
             if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
@@ -5658,7 +5674,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
     temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
     qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
-    qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
 
     // Make QMark node a top level node by spilling it.
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
@@ -7203,6 +7218,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -7225,14 +7243,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 type = genActualType(op1->TypeGet());
                 op1  = gtNewOperNode(oper, type, op1, op2);
 
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
                 impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_NOT:
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1, nullptr);
+
                 type = genActualType(op1->TypeGet());
-                impPushOnStack(gtNewOperNode(GT_NOT, type, op1), tiRetVal);
+                op1  = gtNewOperNode(GT_NOT, type, op1);
+
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
+                impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_CKFINITE:
@@ -7960,7 +7987,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_NEG:
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1, nullptr);
-                impPushOnStack(gtNewOperNode(GT_NEG, genActualType(op1->gtType), op1), tiRetVal);
+                op1 = gtNewOperNode(GT_NEG, genActualType(op1->gtType), op1);
+
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
+                impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_POP:
@@ -12249,7 +12281,7 @@ void Compiler::impFixPredLists()
                 if (predCount > 0)
                 {
                     jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_BasicBlock) BasicBlock*[predCount];
+                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
 
                     unsigned predNum = 0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
@@ -12263,9 +12295,9 @@ void Compiler::impFixPredLists()
 
                         BasicBlock* const continuation = predBlock->Next();
                         FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
-                        newEdge->setLikelihood(1.0);
+                        newEdge->setLikelihood(1.0 / predCount);
 
-                        jumpEhf->bbeSuccs[predNum] = continuation;
+                        jumpEhf->bbeSuccs[predNum] = newEdge;
                         ++predNum;
 
                         if (!added)

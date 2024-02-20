@@ -21,7 +21,7 @@
   When .NET gets built from source, make the SDK aware there are bootstrap packages
   for Microsoft.NETCore.App.Runtime.<rid> and Microsoft.NETCore.App.Crossgen2.<rid>.
   -->
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+  <ItemGroup Condition="'$(DotNetBuildSourceOnly)' == 'true'">
     <KnownFrameworkReference Update="Microsoft.NETCore.App">
       <RuntimePackRuntimeIdentifiers
         Condition="'%(TargetFramework)' == '$(NetCoreAppCurrent)'">%(RuntimePackRuntimeIdentifiers);$(PackageRID)</RuntimePackRuntimeIdentifiers>
@@ -83,6 +83,12 @@
     <Description>$(PackageDescription)</Description>
     <!-- Until we update the TFM to match the Major version, we need to patch in support for RequiresPreviewFeatures -->
     <GenerateRequiresPreviewFeaturesAttribute Condition="'$(TargetFrameworkMoniker)' == '$(NetCoreAppCurrentTargetFrameworkMoniker)'">true</GenerateRequiresPreviewFeaturesAttribute>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- when building from source we need to use the current version of MetadataLoadContext as the toolset version, but source-build imports
+         another props file which overrides the SystemReflectionMetadataLoadContextVersion from Version.props so we can't set it there -->
+    <SystemReflectionMetadataLoadContextToolsetVersion Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(SystemReflectionMetadataLoadContextVersion)</SystemReflectionMetadataLoadContextToolsetVersion>
   </PropertyGroup>
 
   <Target Name="ValidateTargetOSLowercase"

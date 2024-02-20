@@ -1143,7 +1143,7 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc   *pMD,
                                                DWORD         dictionaryIndexAndSlot = -1,
                                                Module *      pModule = NULL);
 
-void ClearJitGenericHandleCache(AppDomain *pDomain);
+void ClearJitGenericHandleCache();
 
 CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags);
 

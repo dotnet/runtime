@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     internal sealed class JSProxyContext : IDisposable
     {
-        private bool _isDisposed;
+        internal bool _isDisposed;
 
         // we use this to maintain identity of JSHandle for a JSObject proxy
         private readonly Dictionary<nint, WeakReference<JSObject>> ThreadCsOwnedObjects = new();
@@ -28,10 +28,16 @@ namespace System.Runtime.InteropServices.JavaScript
         private JSProxyContext()
         {
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable CA1822 // Mark members as static
+        public bool IsCurrentThread() => true;
+#pragma warning restore CA1822 // Mark members as static
 #else
         public nint ContextHandle;
-        public nint NativeTID;
-        public int ManagedTID;
+        public nint JSNativeTID; // target thread where JavaScript is running
+        public nint NativeTID; // current pthread id
+        public int ManagedTID; // current managed thread id
         public bool IsMainThread;
         public JSSynchronizationContext SynchronizationContext;
 
@@ -53,7 +59,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public JSProxyContext(bool isMainThread, JSSynchronizationContext synchronizationContext)
         {
             SynchronizationContext = synchronizationContext;
-            NativeTID = GetNativeThreadId();
+            NativeTID = JSNativeTID = GetNativeThreadId();
             ManagedTID = Environment.CurrentManagedThreadId;
             IsMainThread = isMainThread;
             ContextHandle = (nint)GCHandle.Alloc(this, GCHandleType.Normal);
@@ -429,36 +435,49 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        public static void ReleaseCSOwnedObject(JSObject proxy, bool skipJS)
+        public static void ReleaseCSOwnedObject(JSObject jso, bool skipJS)
         {
-            if (proxy.IsDisposed)
+            if (jso.IsDisposed)
             {
                 return;
             }
-            var ctx = proxy.ProxyContext;
-#if FEATURE_WASM_MANAGED_THREADS
-            if (!ctx.IsCurrentThread())
-            {
-                throw new InvalidOperationException($"ReleaseCSOwnedObject has to run on the thread with same affinity as the proxy. ManagedThreadId: {Environment.CurrentManagedThreadId} JSHandle: {proxy.JSHandle}");
-            }
-#endif
+            var ctx = jso.ProxyContext;
+
             lock (ctx)
             {
-                if (proxy.IsDisposed)
+                if (jso.IsDisposed || ctx._isDisposed)
                 {
                     return;
                 }
-                var jsHandle = proxy.JSHandle;
-                proxy._isDisposed = true;
-                proxy.JSHandle = IntPtr.Zero;
-                GC.SuppressFinalize(proxy);
+                var jsHandle = jso.JSHandle;
+                jso._isDisposed = true;
+                jso.JSHandle = IntPtr.Zero;
+                GC.SuppressFinalize(jso);
                 if (!ctx.ThreadCsOwnedObjects.Remove(jsHandle))
                 {
                     Environment.FailFast($"ReleaseCSOwnedObject expected to find registration for JSHandle: {jsHandle}, ManagedThreadId: {Environment.CurrentManagedThreadId}. {Environment.NewLine} {Environment.StackTrace}");
                 };
                 if (!skipJS)
                 {
+#if FEATURE_WASM_MANAGED_THREADS
+                    if (ctx.IsCurrentThread())
+                    {
+                        Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+                    }
+                    else
+                    {
+                        if (IsJSVHandle(jsHandle))
+                        {
+                            Environment.FailFast("TODO implement blocking ReleaseCSOwnedObjectSend to make sure the order of FreeJSVHandle is correct.");
+                        }
+
+                        // this is async message, we need to call this as the last thing
+                        // the same jsHandle would not be re-used until JS side considers it free
+                        Interop.Runtime.ReleaseCSOwnedObjectPost(ctx.JSNativeTID, jsHandle);
+                    }
+#else
                     Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
+#endif
                 }
                 if (IsJSVHandle(jsHandle))
                 {
@@ -467,7 +486,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        #endregion
+#endregion
 
         #region Dispose
 

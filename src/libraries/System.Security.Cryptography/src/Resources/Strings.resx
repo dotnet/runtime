@@ -672,6 +672,9 @@
   <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
     <value>Certificate '{0}' is corrupted.</value>
   </data>
+  <data name="Cryptography_X509_ChainBuildingFailed" xml:space="preserve">
+    <value>An unknown chain building error occurred.</value>
+  </data>
   <data name="Cryptography_X509_ExportFailed" xml:space="preserve">
     <value>The certificate export operation failed.</value>
   </data>

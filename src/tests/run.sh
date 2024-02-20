@@ -50,7 +50,7 @@ readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or m
 
 scriptPath="$(cd "$(dirname "$BASH_SOURCE[0]")"; pwd -P)"
 repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
-source "$repoRootDir/eng/native/init-os-and-arch.sh"
+source "$repoRootDir/eng/common/native/init-os-and-arch.sh"
 
 # Argument variables
 buildArch="$arch"
