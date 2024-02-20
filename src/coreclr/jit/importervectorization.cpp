@@ -282,12 +282,12 @@ GenTree* Compiler::impCreateCompareInd(GenTreeLclVarCommon*  obj,
     }
 
     GenTree* valueTree = gtNewIconNode(value, actualType);
-    if (joint == Xor)
+    if (joint == StringComparisonJoint::Xor)
     {
         // XOR is better than CMP if we want to join multiple comparisons
         return gtNewOperNode(GT_XOR, actualType, indirTree, valueTree);
     }
-    assert(joint == Eq);
+    assert(joint == StringComparisonJoint::Eq);
     return gtNewOperNode(GT_EQ, TYP_INT, indirTree, valueTree);
 }
 
@@ -346,11 +346,13 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
         //
         // where offset for value2 is 2 bytes (1 char)
         //
-        UINT32   value1      = MAKEINT32(cns[0], cns[1]);
-        UINT32   value2      = MAKEINT32(cns[1], cns[2]);
-        GenTree* firstIndir  = impCreateCompareInd(data, TYP_INT, dataOffset, value1, cmpMode, Xor);
-        GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT,
-                                                   dataOffset + sizeof(USHORT), value2, cmpMode, Xor);
+        UINT32   value1 = MAKEINT32(cns[0], cns[1]);
+        UINT32   value2 = MAKEINT32(cns[1], cns[2]);
+        GenTree* firstIndir =
+            impCreateCompareInd(data, TYP_INT, dataOffset, value1, cmpMode, StringComparisonJoint::Xor);
+        GenTree* secondIndir =
+            impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT, dataOffset + sizeof(USHORT), value2, cmpMode,
+                                StringComparisonJoint::Xor);
 
         if ((firstIndir == nullptr) || (secondIndir == nullptr))
         {
@@ -381,12 +383,13 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     // For 5..6 the overlapping part is 4 bytes
     if (len <= 6)
     {
-        UINT32   value2     = MAKEINT32(cns[len - 2], cns[len - 1]);
-        GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, Xor);
+        UINT32   value2 = MAKEINT32(cns[len - 2], cns[len - 1]);
+        GenTree* firstIndir =
+            impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, StringComparisonJoint::Xor);
 
-        ssize_t  offset = dataOffset + len * sizeof(WCHAR) - sizeof(UINT32);
-        GenTree* secondIndir =
-            impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT, offset, value2, cmpMode, Xor);
+        ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT32);
+        GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_INT, offset, value2, cmpMode,
+                                                   StringComparisonJoint::Xor);
 
         if ((firstIndir == nullptr) || (secondIndir == nullptr))
         {
@@ -402,10 +405,11 @@ GenTree* Compiler::impExpandHalfConstEqualsSWAR(
     assert((len == 7) || (len == 8));
 
     UINT64   value2     = MAKEINT64(cns[len - 4], cns[len - 3], cns[len - 2], cns[len - 1]);
-    GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, Xor);
+    GenTree* firstIndir = impCreateCompareInd(data, TYP_LONG, dataOffset, value1, cmpMode, StringComparisonJoint::Xor);
 
     ssize_t  offset      = dataOffset + len * sizeof(WCHAR) - sizeof(UINT64);
-    GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_LONG, offset, value2, cmpMode, Xor);
+    GenTree* secondIndir = impCreateCompareInd(gtClone(data)->AsLclVarCommon(), TYP_LONG, offset, value2, cmpMode,
+                                               StringComparisonJoint::Xor);
 
     if ((firstIndir == nullptr) || (secondIndir == nullptr))
     {
@@ -458,7 +462,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
         return nullptr;
     }
 
-    const genTreeOps cmpOp         = kind == Equals ? GT_EQ : GT_GE;
+    const genTreeOps cmpOp         = kind == StringComparisonKind::Equals ? GT_EQ : GT_GE;
     GenTree*         elementsCount = gtNewIconNode(len);
     GenTree*         lenCheckNode;
     if (len == 0)
@@ -475,7 +479,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
 
         GenTreeLclVarCommon* dataAddr = gtClone(data)->AsLclVarCommon();
 
-        if (kind == EndsWith)
+        if (kind == StringComparisonKind::EndsWith)
         {
             // For EndsWith we need to adjust dataAddr to point to the end of the string minus value's length
             // We spawn a local that we're going to set below
@@ -503,10 +507,10 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVarCommon* data,
         }
         assert(indirCmp->TypeIs(TYP_INT, TYP_UBYTE));
 
-        if (kind == EndsWith)
+        if (kind == StringComparisonKind::EndsWith)
         {
             // len is expected to be small, so no overflow is possible
-            assert(!CheckedOps::MulOverflows(len, 2, /* unsignedMul */ false));
+            assert(!CheckedOps::MulOverflows(len, 2, CheckedOps::Signed));
 
             // dataAddr = dataAddr + (length * 2 - len * 2)
             GenTree*   castedLen = gtNewCastNode(TYP_I_IMPL, gtCloneExpr(lengthFld), false, TYP_I_IMPL);
@@ -663,7 +667,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
     }
     else
     {
-        if (kind != Equals)
+        if (kind != StringComparisonKind::Equals)
         {
             // StartsWith and EndsWith are not commutative
             return nullptr;
@@ -829,7 +833,7 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
     }
     else
     {
-        if (kind != Equals)
+        if (kind != StringComparisonKind::Equals)
         {
             // StartsWith and EndsWith are not commutative
             return nullptr;

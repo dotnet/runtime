@@ -2827,38 +2827,38 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_String_Equals:
             {
-                retNode = impUtf16StringComparison(Equals, sig, methodFlags);
+                retNode = impUtf16StringComparison(StringComparisonKind::Equals, sig, methodFlags);
                 break;
             }
 
             case NI_System_MemoryExtensions_Equals:
             case NI_System_MemoryExtensions_SequenceEqual:
             {
-                retNode = impUtf16SpanComparison(Equals, sig, methodFlags);
+                retNode = impUtf16SpanComparison(StringComparisonKind::Equals, sig, methodFlags);
                 break;
             }
 
             case NI_System_String_StartsWith:
             {
-                retNode = impUtf16StringComparison(StartsWith, sig, methodFlags);
+                retNode = impUtf16StringComparison(StringComparisonKind::StartsWith, sig, methodFlags);
                 break;
             }
 
             case NI_System_String_EndsWith:
             {
-                retNode = impUtf16StringComparison(EndsWith, sig, methodFlags);
+                retNode = impUtf16StringComparison(StringComparisonKind::EndsWith, sig, methodFlags);
                 break;
             }
 
             case NI_System_MemoryExtensions_StartsWith:
             {
-                retNode = impUtf16SpanComparison(StartsWith, sig, methodFlags);
+                retNode = impUtf16SpanComparison(StringComparisonKind::StartsWith, sig, methodFlags);
                 break;
             }
 
             case NI_System_MemoryExtensions_EndsWith:
             {
-                retNode = impUtf16SpanComparison(EndsWith, sig, methodFlags);
+                retNode = impUtf16SpanComparison(StringComparisonKind::EndsWith, sig, methodFlags);
                 break;
             }
 
