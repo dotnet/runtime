@@ -2519,6 +2519,9 @@ public:
     unsigned char skipSaveRestore : 1;
 #endif
 
+    // For a phys reg, indicates that it should be marked as busy until the next time it is killed.
+    unsigned char busyUntilNextKill : 1;
+
 #ifdef DEBUG
     // Minimum number registers that needs to be ensured while
     // constraining candidates for this ref position under
@@ -2562,6 +2565,7 @@ public:
         , isLocalDefUse(false)
         , delayRegFree(false)
         , outOfOrder(false)
+        , busyUntilNextKill(false)
 #ifdef DEBUG
         , minRegCandidateCount(1)
         , rpNum(0)

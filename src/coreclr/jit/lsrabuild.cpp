@@ -1221,6 +1221,28 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         insertedKills = true;
     }
 
+#ifdef SWIFT_SUPPORT
+    if (tree->IsCall() && ((tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_SWIFT_ERROR_HANDLING) != 0))
+    {
+        // Tree is a Swift call with error handling; error register should have been killed
+        assert(tree->AsCall()->unmgdCallConv == CorInfoCallConvExtension::Swift);
+        assert((killMask & RBM_SWIFT_ERROR) != 0);
+
+        // After a Swift call that might throw returns, we expect the error register to be consumed
+        // by a GT_SWIFT_ERROR node. However, we want to ensure the error register won't be trashed
+        // before GT_SWIFT_ERROR can consume it
+        // (for example, the PInvoke epilog comes before the error register store).
+        // To do so, mark the register as "busy until next kill".
+        // This means the register will remain busy from the Swift call until the GT_SWIFT_ERROR kills it.
+
+        RegRecord*   swiftErrorRegRec = getRegisterRecord(REG_SWIFT_ERROR);
+        RefPosition* pos              = swiftErrorRegRec->lastRefPosition;
+        assert(pos != nullptr);
+        assert(pos->refType = RefTypeKill);
+        pos->busyUntilNextKill = true;
+    }
+#endif // SWIFT_SUPPORT
+
     return insertedKills;
 }
 
