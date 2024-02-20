@@ -7881,9 +7881,13 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     GenTree* data = blkNode->Data();
     GenTree* size;
 
+    CorInfoHelpFunc helper;
+
     // Is it Memset ...
     if (blkNode->OperIsInitBlkOp())
     {
+        helper = CORINFO_HELP_MEMSET;
+
         // Drop GT_INIT_VAL nodes
         if (data->OperIsInitVal())
         {
@@ -7894,6 +7898,8 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     else
     {
         // ... or Memcpy?
+        helper = CORINFO_HELP_MEMCPY;
+
         if (data->OperIs(GT_IND))
         {
             // Drop GT_IND nodes
@@ -7931,7 +7937,6 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     GenTree* dataPlaceholder = comp->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = comp->gtNewZeroConNode(genActualType(size));
 
-    CorInfoHelpFunc helper = blkNode->OperIsInitBlkOp() ? CORINFO_HELP_MEMSET : CORINFO_HELP_MEMCPY;
     GenTreeCall* call = comp->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
     comp->fgMorphArgs(call);
 
