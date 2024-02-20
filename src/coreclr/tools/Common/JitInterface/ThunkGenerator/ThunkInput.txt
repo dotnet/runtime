@@ -266,6 +266,7 @@ FUNCTIONS
     void getVars(CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers)
     void setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars)
     void reportRichMappings(ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings)
+    void reportMetadata(const char* key, const void* value)
     void*allocateArray(size_t cBytes);
     void freeArray(void*array);
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args);

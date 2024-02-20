@@ -333,8 +333,9 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     if (exceptionKind == ExKind::HardwareFault)
     {
         // Hardware exception handling needs to start on the FaultingExceptionFrame, so we are
-        // passing in a context with zeroed out IP.
+        // passing in a context with zeroed out IP and SP.
         SetIP(&m_exContext, 0);
+        SetSP(&m_exContext, 0);
         m_exContext.ContextFlags = CONTEXT_FULL;
     }
     else

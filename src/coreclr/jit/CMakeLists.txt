@@ -137,6 +137,7 @@ set( JIT_SOURCES
   jitconfig.cpp
   jiteh.cpp
   jithashtable.cpp
+  jitmetadata.cpp
   layout.cpp
   lclmorph.cpp
   lclvars.cpp
@@ -335,6 +336,8 @@ set( JIT_HEADERS
   jitexpandarray.h
   jitgcinfo.h
   jithashtable.h
+  jitmetadata.h
+  jitmetadatalist.h
   jitpch.h
   jitstd.h
   lir.h

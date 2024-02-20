@@ -594,7 +594,9 @@ mono_wasm_execute_timer (void)
 	}
 
 	background_job_cb cb = timer_handler;
+	MONO_ENTER_GC_UNSAFE;
 	cb ();
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #ifdef DISABLE_THREADS

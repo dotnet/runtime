@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(CoreClrProjectRoot)/tools/aot/crossgen2/crossgen2_inbuild.csproj" OutputItemType="Crossgen2" />
-    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <ProjectReference Include="$(CoreClrProjectRoot)/tools/dotnet-pgo/dotnet-pgo.csproj" OutputItemType="DotNetPgo" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="$([MSBuild]::NormalizePath('$(CoreClrProjectRoot)', 'System.Private.CoreLib', 'System.Private.CoreLib.csproj'))" OutputItemType="CoreLib" />
   </ItemGroup>
 

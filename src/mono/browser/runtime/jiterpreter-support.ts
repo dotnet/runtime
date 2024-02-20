@@ -1321,6 +1321,9 @@ class Cfg {
                 this.builder.appendU8(WasmOpcode.br_if);
                 this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
             } else {
+                if (this.trace > 0)
+                    mono_log_info(`${this.backDispatchOffsets.length} back branch offsets after filtering.`);
+
                 // the loop needs to start with a br_table that performs dispatch based on the current value
                 //  of the dispatch index local
                 // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough

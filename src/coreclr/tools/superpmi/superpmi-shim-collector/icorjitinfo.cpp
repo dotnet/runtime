@@ -1193,6 +1193,12 @@ void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inli
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
+void interceptor_ICJI::reportMetadata(const char* key, const void* value)
+{
+    mc->cr->AddCall("reportMetadata");
+    original_ICorJitInfo->reportMetadata(key, value);
+}
+
 /*-------------------------- Misc ---------------------------------------*/
 // Used to allocate memory that needs to handed to the EE.
 // For eg, use this to allocated memory for reporting debug info,
