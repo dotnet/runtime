@@ -97,7 +97,7 @@ namespace System.Reflection.Metadata
             }
 
             ReadOnlySpan<char> fullTypeName = _inputString.Slice(0, fullTypeNameLength);
-            int invalidCharIndex = GetIndexOfFirstInvalidCharacter(fullTypeName, _parseOptions.StrictValidation);
+            int invalidCharIndex = GetIndexOfFirstInvalidTypeNameCharacter(fullTypeName, _parseOptions.StrictValidation);
             if (invalidCharIndex >= 0)
             {
                 return null;
@@ -282,18 +282,32 @@ namespace System.Reflection.Metadata
                 int assemblyNameLength = (int)Math.Min((uint)_inputString.IndexOf(']'), (uint)_inputString.Length);
                 ReadOnlySpan<char> candidate = _inputString.Slice(0, assemblyNameLength);
                 AssemblyNameParser.AssemblyNameParts parts = default;
-                // TODO adsitnik: make sure the parsing below is safe for untrusted input
-                if (!AssemblyNameParser.TryParse(candidate, ref parts))
+
+                if (GetIndexOfFirstInvalidAssemblyNameCharacter(candidate, _parseOptions.StrictValidation) >= 0
+                    || !AssemblyNameParser.TryParse(candidate, _parseOptions.StrictValidation, ref parts))
                 {
                     return false;
                 }
 
-#if SYSTEM_PRIVATE_CORELIB
                 assemblyName = new();
+#if SYSTEM_PRIVATE_CORELIB
                 assemblyName.Init(parts);
 #else
-                // TODO adsitnik: fix the perf and avoid doing it twice (missing public ctors for System.Reflection.Metadata)
-                assemblyName = new(candidate.ToString());
+                assemblyName.Name = parts._name;
+                assemblyName.CultureName = parts._cultureName;
+                assemblyName.Version = parts._version;
+
+                if (parts._publicKeyOrToken is not null)
+                {
+                    if ((parts._flags & AssemblyNameFlags.PublicKey) != 0)
+                    {
+                        assemblyName.SetPublicKey(parts._publicKeyOrToken);
+                    }
+                    else
+                    {
+                        assemblyName.SetPublicKeyToken(parts._publicKeyOrToken);
+                    }
+                }
 #endif
                 _inputString = _inputString.Slice(assemblyNameLength);
                 return true;

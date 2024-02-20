@@ -15,7 +15,7 @@ namespace System.Reflection
     //
     // Parses an assembly name.
     //
-    internal ref struct AssemblyNameParser
+    internal ref partial struct AssemblyNameParser
     {
         public readonly struct AssemblyNameParts
         {
@@ -55,9 +55,10 @@ namespace System.Reflection
         }
 
         private readonly ReadOnlySpan<char> _input;
+        private readonly bool _strict;
         private int _index;
 
-        private AssemblyNameParser(ReadOnlySpan<char> input)
+        private AssemblyNameParser(ReadOnlySpan<char> input, bool strict = false)
         {
 #if SYSTEM_PRIVATE_CORELIB
             if (input.Length == 0)
@@ -67,6 +68,7 @@ namespace System.Reflection
 #endif
 
             _input = input;
+            _strict = strict;
             _index = 0;
         }
 
@@ -85,9 +87,9 @@ namespace System.Reflection
         }
 #endif
 
-        internal static bool TryParse(ReadOnlySpan<char> name, ref AssemblyNameParts parts)
+        internal static bool TryParse(ReadOnlySpan<char> name, bool strict, ref AssemblyNameParts parts)
         {
-            AssemblyNameParser parser = new(name);
+            AssemblyNameParser parser = new(name, strict);
             return parser.TryParse(ref parts);
         }
 
@@ -133,7 +135,7 @@ namespace System.Reflection
                 if (attributeName == string.Empty)
                     return false;
 
-                if (attributeName.Equals("Version", StringComparison.OrdinalIgnoreCase))
+                if (IsAttribute(attributeName, "Version"))
                 {
                     if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.Version))
                     {
@@ -144,17 +146,34 @@ namespace System.Reflection
                         return false;
                     }
                 }
-
-                if (attributeName.Equals("Culture", StringComparison.OrdinalIgnoreCase))
+                else if (IsAttribute(attributeName, "Culture"))
                 {
                     if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.Culture))
                     {
                         return false;
                     }
-                    cultureName = ParseCulture(attributeValue);
+                    if (!TryParseCulture(attributeValue, out cultureName))
+                    {
+                        return false;
+                    }
                 }
-
-                if (attributeName.Equals("PublicKey", StringComparison.OrdinalIgnoreCase))
+                else if (IsAttribute(attributeName, "PublicKeyToken"))
+                {
+                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.PublicKeyOrToken))
+                    {
+                        return false;
+                    }
+                    if (!TryParsePKT(attributeValue, isToken: true, ref pkt))
+                    {
+                        return false;
+                    }
+                }
+                else if (_strict)
+                {
+                    // it's either unrecognized or not on the allow list (Version, Culture and PublicKeyToken)
+                    return false;
+                }
+                else if (IsAttribute(attributeName, "PublicKey"))
                 {
                     if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.PublicKeyOrToken))
                     {
@@ -166,20 +185,7 @@ namespace System.Reflection
                     }
                     flags |= AssemblyNameFlags.PublicKey;
                 }
-
-                if (attributeName.Equals("PublicKeyToken", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.PublicKeyOrToken))
-                    {
-                        return false;
-                    }
-                    if (!TryParsePKT(attributeValue, isToken: true, ref pkt))
-                    {
-                        return false;
-                    }
-                }
-
-                if (attributeName.Equals("ProcessorArchitecture", StringComparison.OrdinalIgnoreCase))
+                else if (IsAttribute(attributeName, "ProcessorArchitecture"))
                 {
                     if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.ProcessorArchitecture))
                     {
@@ -191,8 +197,7 @@ namespace System.Reflection
                     }
                     flags |= (AssemblyNameFlags)(((int)arch) << 4);
                 }
-
-                if (attributeName.Equals("Retargetable", StringComparison.OrdinalIgnoreCase))
+                else if (IsAttribute(attributeName, "Retargetable"))
                 {
                     if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.Retargetable))
                     {
@@ -212,8 +217,7 @@ namespace System.Reflection
                         return false;
                     }
                 }
-
-                if (attributeName.Equals("ContentType", StringComparison.OrdinalIgnoreCase))
+                else if (IsAttribute(attributeName, "ContentType"))
                 {
                     if (!TryRecordNewSeen(ref alreadySeen, AttributeKind.ContentType))
                     {
@@ -229,8 +233,11 @@ namespace System.Reflection
                         return false;
                     }
                 }
+                else
+                {
+                    // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it.
+                }
 
-                // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it.
                 if (!TryGetNextToken(out _, out token))
                 {
                     return false;
@@ -241,7 +248,10 @@ namespace System.Reflection
             return true;
         }
 
-        private bool TryParseVersion(string attributeValue, ref Version? version)
+        private bool IsAttribute(string candidate, string attributeKind)
+            => candidate.Equals(attributeKind, _strict ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+
+        private static bool TryParseVersion(string attributeValue, ref Version? version)
         {
 #if NET8_0_OR_GREATER
             ReadOnlySpan<char> attributeValueSpan = attributeValue;
@@ -290,14 +300,21 @@ namespace System.Reflection
             return true;
         }
 
-        private static string ParseCulture(string attributeValue)
+        private bool TryParseCulture(string attributeValue, out string? result)
         {
             if (attributeValue.Equals("Neutral", StringComparison.OrdinalIgnoreCase))
             {
-                return "";
+                result = "";
+                return true;
+            }
+            else if (_strict && !IsPredefinedCulture(attributeValue))
+            {
+                result = null;
+                return false;
             }
 
-            return attributeValue;
+            result = attributeValue;
+            return true;
         }
 
         private static bool TryParsePKT(string attributeValue, bool isToken, ref byte[]? result)
@@ -533,5 +550,19 @@ namespace System.Reflection
             token = Token.String;
             return true;
         }
+
+#if NET8_0_OR_GREATER
+        private static bool IsPredefinedCulture(string cultureName)
+        {
+            try
+            {
+                return CultureInfo.GetCultureInfo(cultureName, predefinedOnly: true) is not null;
+            }
+            catch (CultureNotFoundException)
+            {
+                return false;
+            }
+        }
+#endif
     }
 }

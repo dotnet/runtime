@@ -35,6 +35,10 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Extends ECMA-335 standard limitations with a set of opinionated rules based on most up-to-date security knowledge.
         /// </summary>
+        /// <remarks>
+        /// When parsing AssemblyName, only Version, Culture and PublicKeyToken attributes are allowed.
+        /// The comparison is also case-sensitive (in contrary to <seealso cref="AssemblyName(string)"/> constructor).
+        /// </remarks>
         public bool StrictValidation { get; set; }
     }
 }

@@ -69,34 +69,67 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal(expectedIsNested, isNested);
         }
 
-        [Theory]
-        [InlineData("", 0)]
-        [InlineData("\0NullCharacterIsNotAllowed", 0)]
-        [InlineData("Null\0CharacterIsNotAllowed", 4)]
-        [InlineData("NullCharacterIsNotAllowed\0", 25)]
-        [InlineData("\bBackspaceIsNotAllowed", 0)]
-        [InlineData("EscapingIsNotAllowed\\", 20)]
-        [InlineData("EscapingIsNotAllowed\\\\", 20)]
-        [InlineData("EscapingIsNotAllowed\\*", 20)]
-        [InlineData("EscapingIsNotAllowed\\&", 20)]
-        [InlineData("EscapingIsNotAllowed\\+", 20)]
-        [InlineData("EscapingIsNotAllowed\\[", 20)]
-        [InlineData("EscapingIsNotAllowed\\]", 20)]
-        [InlineData("Slash/IsNotAllowed", 5)]
-        [InlineData("Whitespaces AreNotAllowed", 11)]
-        [InlineData("WhitespacesAre\tNotAllowed", 14)]
-        [InlineData("WhitespacesAreNot\r\nAllowed", 17)]
-        [InlineData("Question?MarkIsNotAllowed", 8)]
-        [InlineData("Quotes\"AreNotAllowed", 6)]
-        [InlineData("Quote'IsNotAllowed", 5)]
-        [InlineData("abcdefghijklmnopqrstuvwxyz", -1)]
-        [InlineData("ABCDEFGHIJKLMNOPQRSTUVWXYZ", -1)]
-        [InlineData("0123456789", -1)]
-        [InlineData("!@#$%^()-_={}|<>.~", -1)]
-        [InlineData("BacktickIsOk`1", -1)]
-        public void GetIndexOfFirstInvalidCharacter_ReturnsFirstInvalidCharacter(string input, int expected)
+        public static IEnumerable<object[]> InvalidNamesArguments()
         {
-            Assert.Equal(expected, TypeNameParserHelpers.GetIndexOfFirstInvalidCharacter(input.AsSpan(), strictMode: true));
+            yield return new object[] { "", 0 };
+            yield return new object[] { "\0NullCharacterIsNotAllowed", 0 };
+            yield return new object[] { "Null\0CharacterIsNotAllowed", 4 };
+            yield return new object[] { "NullCharacterIsNotAllowed\0", 25 };
+            yield return new object[] { "\bBackspaceIsNotAllowed", 0 };
+            yield return new object[] { "EscapingIsNotAllowed\\", 20 };
+            yield return new object[] { "EscapingIsNotAllowed\\\\", 20 };
+            yield return new object[] { "EscapingIsNotAllowed\\*", 20 };
+            yield return new object[] { "EscapingIsNotAllowed\\&", 20 };
+            yield return new object[] { "EscapingIsNotAllowed\\+", 20 };
+            yield return new object[] { "EscapingIsNotAllowed\\[", 20 };
+            yield return new object[] { "EscapingIsNotAllowed\\]", 20 };
+            yield return new object[] { "Slash/IsNotAllowed", 5 };
+            yield return new object[] { "WhitespacesAre\tNotAllowed", 14 };
+            yield return new object[] { "WhitespacesAreNot\r\nAllowed", 17 };
+            yield return new object[] { "Question?MarkIsNotAllowed", 8 };
+            yield return new object[] { "Quotes\"AreNotAllowed", 6 };
+            yield return new object[] { "Quote'IsNotAllowed", 5 };
+            yield return new object[] { "abcdefghijklmnopqrstuvwxyz", -1 };
+            yield return new object[] { "ABCDEFGHIJKLMNOPQRSTUVWXYZ", -1 };
+            yield return new object[] { "0123456789", -1 };
+            yield return new object[] { "BacktickIsOk`1", -1 };
+        }
+
+
+        [Theory]
+        [MemberData(nameof(InvalidNamesArguments))]
+        [InlineData("Spaces AreAllowed", -1)]
+        [InlineData("!@#$%^()-_{}|<>.~&;", -1)]
+        public void GetIndexOfFirstInvalidAssemblyNameCharacter_ReturnsFirstInvalidCharacter(string input, int expected)
+        {
+            Assert.Equal(expected, TypeNameParserHelpers.GetIndexOfFirstInvalidAssemblyNameCharacter(input.AsSpan(), strictMode: true));
+
+            TypeNameParserOptions strictOptions = new()
+            {
+                StrictValidation = true
+            };
+
+            string assemblyQualifiedName = $"Namespace.CorrectTypeName, {input}";
+
+            if (expected >= 0)
+            {
+                Assert.False(TypeName.TryParse(assemblyQualifiedName.AsSpan(), out _, strictOptions));
+                Assert.Throws<ArgumentException>(() => TypeName.Parse(assemblyQualifiedName.AsSpan(), strictOptions));
+            }
+            else
+            {
+                Assert.True(TypeName.TryParse(assemblyQualifiedName.AsSpan(), out TypeName parsed, strictOptions));
+                Assert.Equal(assemblyQualifiedName, parsed.AssemblyQualifiedName);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidNamesArguments))]
+        [InlineData("Spaces AreNotAllowed", 6)]
+        [InlineData("!@#$%^()-_={}|<>.~", -1)]
+        public void GetIndexOfFirstInvalidTypeNameCharacter_ReturnsFirstInvalidCharacter(string input, int expected)
+        {
+            Assert.Equal(expected, TypeNameParserHelpers.GetIndexOfFirstInvalidTypeNameCharacter(input.AsSpan(), strictMode: true));
 
             TypeNameParserOptions strictOptions = new()
             {

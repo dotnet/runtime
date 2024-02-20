@@ -253,6 +253,9 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.cs" Link="System\Reflection\AssemblyNameParser.cs" />
+    <Compile Include="$(CommonPath)System\Reflection\AssemblyNameParser.netstandard.cs"
+             Link="System\Reflection\AssemblyNameParser.netstandard.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeName.cs" Link="System\Reflection\Metadata\TypeName.cs" />
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParser.cs" Link="System\Reflection\Metadata\TypeNameParser.cs" />
     <Compile Include="$(CommonPath)System\Reflection\Metadata\TypeNameParserHelpers.cs" Link="System\Reflection\Metadata\TypeNameParserHelpers.cs" />

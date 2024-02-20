@@ -72,54 +72,71 @@ namespace System.Reflection.Metadata.Tests
         public void UnicodeCharactersAreAllowedByDefault(string input, string expectedFullName)
             => Assert.Equal(expectedFullName, TypeName.Parse(input.AsSpan()).FullName);
 
-        public static IEnumerable<object[]> TypeNamesWithAssemblyNames()
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(Dictionary<string, bool>))]
+        [InlineData(typeof(int[][]))]
+        [InlineData(typeof(Assert))] // xUnit assembly
+        [InlineData(typeof(TypeNameParserTests))] // test assembly
+        [InlineData(typeof(NestedGeneric_0<int>.NestedGeneric_1<string, bool>.NestedGeneric_2<short, byte, sbyte>.NestedNonGeneric_3))]
+        public void TypeNameCanContainAssemblyName(Type type)
         {
-            yield return new object[]
+            AssemblyName expectedAssemblyName = new(type.Assembly.FullName);
+
+            Verify(type, expectedAssemblyName, TypeName.Parse(type.AssemblyQualifiedName.AsSpan()));
+            Verify(type, expectedAssemblyName, TypeName.Parse(type.AssemblyQualifiedName.AsSpan(), new TypeNameParserOptions() { StrictValidation = true }));
+
+            static void Verify(Type type, AssemblyName expectedAssemblyName, TypeName parsed)
             {
-                "System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
-                "System.Int32",
-                "Int32",
-                "mscorlib",
-                new Version(4, 0, 0, 0),
-                "",
-                "b77a5c561934e089"
-            };
+                Assert.Equal(type.AssemblyQualifiedName, parsed.AssemblyQualifiedName);
+                Assert.Equal(type.FullName, parsed.FullName);
+                Assert.Equal(type.Name, parsed.Name);
+                Assert.NotNull(parsed.AssemblyName);
+
+                Assert.Equal(expectedAssemblyName.Name, parsed.AssemblyName.Name);
+                Assert.Equal(expectedAssemblyName.Version, parsed.AssemblyName.Version);
+                Assert.Equal(expectedAssemblyName.CultureName, parsed.AssemblyName.CultureName);
+                Assert.Equal(expectedAssemblyName.GetPublicKeyToken(), parsed.AssemblyName.GetPublicKeyToken());
+                Assert.Equal(expectedAssemblyName.FullName, parsed.AssemblyName.FullName);
+
+                Assert.Equal(default, parsed.AssemblyName.ContentType);
+                Assert.Equal(default, parsed.AssemblyName.Flags);
+                Assert.Equal(default, parsed.AssemblyName.ProcessorArchitecture);
+            }
         }
 
         [Theory]
-        [MemberData(nameof(TypeNamesWithAssemblyNames))]
-        public void TypeNameCanContainAssemblyName(string assemblyQualifiedName, string fullName, string name, string assemblyName,
-            Version assemblyVersion, string assemblyCulture, string assemblyPublicKeyToken)
+        [InlineData("Hello,")] // trailing comma
+        [InlineData("Hello, ")] // trailing comma
+        [InlineData("Hello, ./../PathToA.dll")] // path to a file!
+        [InlineData("Hello, .\\..\\PathToA.dll")] // path to a file!
+        [InlineData("Hello, AssemblyName, Version=1.2\0.3.4")] // embedded null in Version (the Version class normally allows this)
+        [InlineData("Hello, AssemblyName, Version=1.2 .3.4")] // extra space in Version (the Version class normally allows this)
+        [InlineData("Hello, AssemblyName, Version=1.2.3.4, Version=1.2.3.4")] // duplicate Versions specified
+        [InlineData("Hello, AssemblyName, Culture=neutral, Culture=neutral")] // duplicate Culture specified
+        [InlineData("Hello, AssemblyName, PublicKeyToken=b77a5c561934e089, PublicKeyToken=b77a5c561934e089")] // duplicate PublicKeyToken specified
+        [InlineData("Hello, AssemblyName, PublicKeyToken=bad")] // invalid PKT
+        [InlineData("Hello, AssemblyName, Culture=en-US_XYZ")] // invalid culture
+        [InlineData("Hello, AssemblyName, \r\nCulture=en-US")] // disallowed whitespace
+        [InlineData("Hello, AssemblyName, Version=1.2.3.4,")] // another trailing comma
+        [InlineData("Hello, AssemblyName, Version=1.2.3.4, =")] // malformed key=token pair
+        [InlineData("Hello, AssemblyName, Version=1.2.3.4, Architecture=x86")] // Architecture disallowed
+        [InlineData("Hello, AssemblyName, CodeBase=file://blah")] // CodeBase disallowed (and illegal path chars)
+        [InlineData("Hello, AssemblyName, CodeBase=legalChars")] // CodeBase disallowed
+        [InlineData("Hello, AssemblyName, Unrecognized=some")] // not on the allow list? disallowed
+        [InlineData("Hello, AssemblyName, version=1.2.3.4")] // wrong case (Version)
+        [InlineData("Hello, AssemblyName, culture=neutral")] // wrong case (Culture)
+        [InlineData("Hello, AssemblyName, publicKeyToken=b77a5c561934e089")] // wrong case (PKT)
+        public void CanNotParseTypeWithInvalidAssemblyName(string fullName)
         {
-            TypeName parsed = TypeName.Parse(assemblyQualifiedName.AsSpan());
-
-            Assert.Equal(assemblyQualifiedName, parsed.AssemblyQualifiedName);
-            Assert.Equal(fullName, parsed.FullName);
-            Assert.Equal(name, parsed.Name);
-            Assert.NotNull(parsed.AssemblyName);
-            Assert.Equal(assemblyName, parsed.AssemblyName.Name);
-            Assert.Equal(assemblyVersion, parsed.AssemblyName.Version);
-            Assert.Equal(assemblyCulture, parsed.AssemblyName.CultureName);
-            Assert.Equal(GetPublicKeyToken(assemblyPublicKeyToken), parsed.AssemblyName.GetPublicKeyToken());
-
-            static byte[] GetPublicKeyToken(string assemblyPublicKeyToken)
+            TypeNameParserOptions options = new()
             {
-                byte[] pkt = new byte[assemblyPublicKeyToken.Length / 2];
-                int srcIndex = 0;
-                for (int i = 0; i < pkt.Length; i++)
-                {
-                    char hi = assemblyPublicKeyToken[srcIndex++];
-                    char lo = assemblyPublicKeyToken[srcIndex++];
-                    pkt[i] = (byte)((FromHexChar(hi) << 4) | FromHexChar(lo));
-                }
-                return pkt;
-            }
+                StrictValidation = true,
+                AllowFullyQualifiedName = true
+            };
 
-            static byte FromHexChar(char hex)
-            {
-                if (hex >= '0' && hex <= '9') return (byte)(hex - '0');
-                else return (byte)(hex - 'a' + 10);
-            }
+            Assert.False(TypeName.TryParse(fullName.AsSpan(), out _, options));
+            Assert.Throws<ArgumentException>(() => TypeName.Parse(fullName.AsSpan(), options));
         }
 
         [Theory]
