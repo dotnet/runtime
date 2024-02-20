@@ -138,7 +138,7 @@
     <MicrosoftBuildVersion>16.10.0</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
     <SystemDrawingCommonVersion>4.7.2</SystemDrawingCommonVersion>
-    <NugetProjectModelVersion>6.7.0</NugetProjectModelVersion>
+    <NugetProjectModelVersion>6.7.1</NugetProjectModelVersion>
     <NugetPackagingVersion>6.2.2</NugetPackagingVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
