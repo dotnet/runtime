@@ -49,6 +49,7 @@
     <Compile Include="System\Net\NetworkStreamWrapper.cs" />
     <Compile Include="System\Net\TimerThread.cs" />
     <Compile Include="System\Net\HttpClientContentStream.cs" />
+    <Compile Include="System\Net\RequestStreamContent.cs" />
     <Compile Include="System\Net\Cache\HttpCacheAgeControl.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCacheLevel.cs" />
     <Compile Include="System\Net\Cache\HttpRequestCachePolicy.cs" />

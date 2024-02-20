@@ -99,6 +99,8 @@ namespace System.Net
             return _buffer.ReadAsync(buffer, cancellationToken);
         }
 
+        public StreamBuffer GetBuffer() => _buffer;
+
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
         public override long Length => throw new NotSupportedException();

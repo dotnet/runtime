@@ -1080,7 +1080,7 @@ namespace System.Net
             {
                 // We're calling SendRequest with async, because we need to open the connection and send the request
                 // Otherwise, sync path will block the current thread until the request is sent.
-                _sendRequestTask = SendRequest(true, new StreamContent(new HttpClientContentStream(streamBuffer)));
+                _sendRequestTask = SendRequest(true, new RequestStreamContent(new HttpClientContentStream(streamBuffer)));
             }
 
             _requestStream = new RequestStream(streamBuffer);
