@@ -111,7 +111,7 @@ public: // !!! NOTE: Called from macros only!!!
 #ifdef _DEBUG
               , m_condition (NULL)
               , m_file(NULL)
-              , m_line(NULL)
+              , m_line(0)
               , m_pCount(NULL)
 #endif
     {}

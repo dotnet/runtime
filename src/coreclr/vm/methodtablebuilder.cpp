@@ -8340,14 +8340,14 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
                 {
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, (unsigned int)DATA_ALIGNMENT);
                 }
                 else
 #elif defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
                 {
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
-                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8u);
                 }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT

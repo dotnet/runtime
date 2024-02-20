@@ -12,6 +12,7 @@
 #include <string.h>
 #include <float.h>
 #include <cstdlib>
+#include <cmath>
 #include <intrin.h>
 
 // Don't allow using the windows.h #defines for the BitScan* APIs. Using the #defines means our
