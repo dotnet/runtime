@@ -1989,7 +1989,7 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
 
     JITDUMP("\nNew tree:\n");
     DISPTREE(storeBlk);
-    *next = storeBlk->gtNext;
+    *next = storeBlk;
     return true;
 }
 
