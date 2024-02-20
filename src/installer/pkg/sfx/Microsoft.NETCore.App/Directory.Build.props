@@ -120,6 +120,11 @@
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
+    <!-- FIXME: do not merge -->
+    <PlatformManifestFileEntry Include="libhellomanaged.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="libhellomanaged.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libhellomanaged.dylib" IsNative="true" />
+    <!-- END FIXME: do not merge -->
     <PlatformManifestFileEntry Include="mscordbi.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.dylib" IsNative="true" />
