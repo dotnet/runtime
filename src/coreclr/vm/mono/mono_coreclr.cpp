@@ -1084,3 +1084,33 @@ extern "C" EXPORT_API void EXPORT_CC coreclr_unity_profiler_register(const CLSID
 
     g_profControlBlock.storedProfilers.InsertHead(profilerData);
 }
+
+extern "C" EXPORT_API gboolean EXPORT_CC coreclr_unity_gc_concurrent_mode(gboolean state)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    IGCHeap * pGCHeap = GCHeapUtilities::GetGCHeap();
+    gboolean currentState = pGCHeap->IsConcurrentGCEnabled();
+    if (currentState != state)
+    {
+        if (state)
+        {
+            pGCHeap->TemporaryEnableConcurrentGC();
+        }
+        else
+        {
+            pGCHeap->TemporaryDisableConcurrentGC();
+            HRESULT hr = pGCHeap->WaitUntilConcurrentGCCompleteAsync(INFINITE);
+            if(FAILED(hr))
+                printf("Failed to disable concurrent GC: %x\n", hr);
+        }
+    }
+
+    return currentState;
+}
