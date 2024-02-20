@@ -553,7 +553,7 @@ void Compiler::optCheckPreds()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// optRedirectBlock: Initialize the branch successors of a block based on a block map.
+// optSetMappedBlockTargets: Initialize the branch successors of a block based on a block map.
 //
 // Updates the successors of `newBlk`, a copy of `blk`:
 // If `blk2` is a branch successor of `blk`, and there is a mapping
@@ -570,7 +570,7 @@ void Compiler::optCheckPreds()
 //     Upon returning, `newBlk` should have all of its successors initialized.
 //     `blk` must have its successors set upon entry; these won't be changed.
 //
-void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
+void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
 {
     // Caller should not have initialized newBlk's target yet
     assert(newBlk->KindIs(BBJ_ALWAYS));
@@ -672,23 +672,27 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BasicBlock* newBlk, BlockToBloc
         {
             BBswtDesc* currSwtDesc = blk->GetSwitchTargets();
             BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(currSwtDesc);
-            newSwtDesc->bbsDstTab  = new (this, CMK_BasicBlock) BasicBlock*[newSwtDesc->bbsCount];
-            BasicBlock** jumpPtr   = newSwtDesc->bbsDstTab;
+            newSwtDesc->bbsDstTab  = new (this, CMK_FlowEdge) FlowEdge*[newSwtDesc->bbsCount];
 
-            for (BasicBlock* const switchTarget : blk->SwitchTargets())
+            for (unsigned i = 0; i < newSwtDesc->bbsCount; i++)
             {
+                FlowEdge* const   inspiringEdge = currSwtDesc->bbsDstTab[i];
+                BasicBlock* const switchTarget  = inspiringEdge->getDestinationBlock();
+                FlowEdge*         newEdge;
+
                 // Determine if newBlk should target switchTarget, or be redirected
                 if (redirectMap->Lookup(switchTarget, &newTarget))
                 {
-                    *jumpPtr = newTarget;
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(newTarget, newBlk);
                 }
                 else
                 {
-                    *jumpPtr = switchTarget;
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(switchTarget, newBlk);
                 }
 
-                fgAddRefPred(*jumpPtr, newBlk);
-                jumpPtr++;
+                newSwtDesc->bbsDstTab[i] = newEdge;
             }
 
             newBlk->SetSwitch(newSwtDesc);
