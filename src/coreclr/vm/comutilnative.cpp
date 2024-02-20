@@ -1703,9 +1703,10 @@ enum ValueTypeHashCodeStrategy
     DoubleField,
     SingleField,
     FastGetHashCode,
+    ValueTypeOverride,
 };
 
-static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize)
+static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, PCODE* method)
 {
     CONTRACTL
     {
@@ -1774,8 +1775,21 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
                 }
                 else
                 {
-                    *fieldOffset += field->GetOffsetUnsafe();
-                    ret = GetHashCodeStrategy(fieldMT, objHandle, fieldOffset, fieldSize);
+                    MethodTable* valueTypeMT = CoreLibBinder::GetClass(CLASS__VALUE_TYPE);
+                    WORD slotGetHashCode = CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot();
+
+                    if (HasOverriddenMethod(mt, valueTypeMT, slotGetHashCode))
+                    {
+                        *fieldOffset += field->GetOffsetUnsafe();
+                        *method = mt->GetRestoredSlot(slotGetHashCode);
+                        ret = ValueTypeHashCodeStrategy::ValueTypeOverride;
+                    }
+                    else
+                    {
+                        *fieldOffset += field->GetOffsetUnsafe();
+                        // fieldOffset is required since first field may not be at offset 0 with explicit layout
+                        ret = GetHashCodeStrategy(fieldMT, objHandle, fieldOffset, fieldSize, method);
+                    }
                 }
             }
         }
@@ -1785,18 +1799,19 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
     return ret;
 }
 
-extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize)
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, PCODE * method)
 {
     QCALL_CONTRACT;
 
     ValueTypeHashCodeStrategy ret = ValueTypeHashCodeStrategy::None;
     *fieldOffset = 0;
     *fieldSize = 0;
+    *method = NULL;
 
     BEGIN_QCALL;
 
 
-    ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize);
+    ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize, method);
 
     END_QCALL;
 
