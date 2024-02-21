@@ -1496,7 +1496,13 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
             dwRelOffset
             );
 
-    return gcInfoDecoder.IsInterruptible();
+    if (gcInfoDecoder.IsInterruptible())
+        return true;
+
+    if (gcInfoDecoder.IsInterruptibleSafePoint())
+        return true;
+
+    return false;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
