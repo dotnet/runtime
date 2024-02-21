@@ -81,7 +81,7 @@ export function mono_wasm_pthread_on_pthread_created(): void {
     try {
         forceThreadMemoryViewRefresh();
         const pthread_id = mono_wasm_pthread_ptr();
-        mono_assert(pthread_id == monoThreadInfo.pthreadId, "needs to match");
+        mono_assert(pthread_id == monoThreadInfo.pthreadId, `needs to match (mono_wasm_pthread_ptr ${pthread_id}, threadId from thread info ${monoThreadInfo.pthreadId})`);
 
         monoThreadInfo.reuseCount++;
         monoThreadInfo.updateCount++;
