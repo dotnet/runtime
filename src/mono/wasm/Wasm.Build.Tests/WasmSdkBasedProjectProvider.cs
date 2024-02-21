@@ -113,7 +113,6 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             if (!actualDotnetFiles.TryGetValue(nativeFilename, out DotNetFileName? dotnetFile))
             {
                 throw new XunitException($"Could not find {nativeFilename}. Actual files on disk: {string.Join($"{Environment.NewLine}  ", actualDotnetFiles.Values.Select(a => a.ActualPath).Order())}");
-
             }
             // For any *type*, check against the expected path
             TestUtils.AssertSameFile(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
@@ -122,6 +121,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 
             if (assertOptions.ExpectedFileType != NativeFilesType.FromRuntimePack)
             {
+                if (nativeFilename == "dotnet.native.worker.js")
+                {
+                    Console.WriteLine($"Skipping the verification whether {nativeFilename} is from the runtime pack. The check wouldn't be meaningful as the runtime pack file has the same size as the relinked file");
+                    continue;
+                }
                 // Confirm that it doesn't match the file from the runtime pack
                 TestUtils.AssertNotSameFile(Path.Combine(runtimeNativeDir, nativeFilename),
                                    actualDotnetFiles[nativeFilename].ActualPath,
