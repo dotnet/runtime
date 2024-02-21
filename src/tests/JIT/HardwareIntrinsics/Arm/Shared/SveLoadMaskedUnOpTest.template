@@ -122,7 +122,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
             //TODO-SVE: Once register allocation exists for predicates, move loadMask into DataTable
-            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.TrueMask(SveMaskPattern.All);
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
 
             var result = {Isa}.{Method}(
                 loadMask,
@@ -137,7 +137,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.TrueMask(SveMaskPattern.All);
+            {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
 
             var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof(Vector<{Op2BaseType}>), typeof({Op2BaseType}*) })
                                      .Invoke(null, new object[] {
