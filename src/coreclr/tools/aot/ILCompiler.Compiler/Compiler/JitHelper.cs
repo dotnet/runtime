@@ -144,6 +144,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.MemSet:
                     mangledName = "RhRuntimeHelpers_MemSet";
                     break;
+                case ReadyToRunHelper.NativeMemSet:
+                    mangledName = "memset";
+                    break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");

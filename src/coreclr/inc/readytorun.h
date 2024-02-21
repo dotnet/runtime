@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 0x0009
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 0x009
 
@@ -33,6 +33,8 @@
 // R2R Version 8.0 Changes the alignment of the Int128 type
 // R2R Version 9.0 adds support for the Vector512 type
 // R2R Version 9.1 adds new helpers to allocate objects on frozen segments
+// R2R Version 9.2 adds new helper to perform native memset
+
 
 struct READYTORUN_CORE_HEADER
 {
@@ -445,6 +447,8 @@ enum ReadyToRunHelper
     // Array helpers for use with native ints
     READYTORUN_HELPER_Stelem_Ref_I                = 0x113,
     READYTORUN_HELPER_Ldelema_Ref_I               = 0x114,
+
+    READYTORUN_HELPER_NativeMemSet                = 0x115,
 };
 
 #include "readytoruninstructionset.h"
