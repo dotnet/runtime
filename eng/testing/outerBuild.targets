@@ -1,12 +1,19 @@
 <Project>
-  <Target Name="Test" DependsOnTargets="GetProjectWithBestTargetFrameworks">    
+  <Target Name="Test" DependsOnTargets="GetProjectWithBestTargetFrameworks;RemoveNetFrameworkProjectsOnNonWindows">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="Test">
     </MSBuild>
   </Target>
-  <Target Name="VSTest" DependsOnTargets="GetProjectWithBestTargetFrameworks">    
+  <Target Name="VSTest" DependsOnTargets="GetProjectWithBestTargetFrameworks;RemoveNetFrameworkProjectsOnNonWindows">
     <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
              Targets="VSTest">
     </MSBuild>
+  </Target>
+  <Target Name="RemoveNetFrameworkProjectsOnNonWindows" Condition="'$(OS)' != 'Windows_NT'">
+    <ItemGroup>
+      <!-- we'd try to run tests with Mono for netfx projects which doesn't work so filter them out -->
+      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="'%(AdditionalProperties)' == 'TargetFramework=$(NetFrameworkCurrent)'" />
+      <InnerBuildProjectsWithBestTargetFramework Remove="@(InnerBuildProjectsWithBestTargetFramework)" Condition="'%(AdditionalProperties)' == 'TargetFramework=$(NetFrameworkMinimum)'" />
+    </ItemGroup>
   </Target>
 </Project>
