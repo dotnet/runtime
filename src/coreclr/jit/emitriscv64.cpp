@@ -2118,8 +2118,8 @@ AGAIN:
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code) const
 {
     assert(dst != nullptr);
-    assert(sizeof(code_t) == 4);
-    memcpy(dst + writeableOffset, &code, sizeof(code_t));
+    static_assert(sizeof(code_t) == 4, "code_t must be 4 bytes");
+    memcpy(dst + writeableOffset, &code, sizeof(code));
     return sizeof(code_t);
 }
 
@@ -3157,8 +3157,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     instruction       ins;
     size_t            sz = 0;
 
-    assert(REG_NA == static_cast<int>(REG_NA));
-    assert(writeableOffset == 0);
+    static_assert(REG_NA == static_cast<int>(REG_NA), "REG_NA must fit in an int");
 
     insOpts insOp = id->idInsOpt();
 
