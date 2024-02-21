@@ -1,6 +1,24 @@
 
 # Infrastructure to import a native aot compiled library into a native build
 
+# Consumers should use this:
+#
+# find_nativeaot_library(libraryName [REQUIRED])
+#
+function(find_nativeaot_library libraryName)
+  cmake_parse_arguments(PARSE_ARGV 1 "findNativeAOT_opt" "REQUIRED" "" "")
+  if (NOT "${findNativeAOT_opt_REQUIRED}")
+    find_package(${libraryName} CONFIG NO_DEFAULT_PATH PATHS "${CLR_ARTIFACTS_OBJ_DIR}/cmake/find_package")
+  else()
+    find_package(${libraryName} CONFIG REQUIRED NO_DEFAULT_PATH PATHS "${CLR_ARTIFACTS_OBJ_DIR}/cmake/find_package")
+  endif()
+  set("${libraryName}_FOUND" "${${libraryName}_FOUND}" PARENT_SCOPE)
+  set("${libCmakeName}_CMAKE_FRAGMENT_PATH")
+endfunction()
+
+### Implementation details used by libraryName-config.cmake find_package configuration
+### files. Consumers don't need to do this directly.
+
 # If we're statically linking one or more NativeAOTed libraries, add a target that brings in the
 # static library NativeAOT runtime components.  This function can be called more than once.  Each
 # imported library should add its own dependency on the "nativeAotFramework" target
@@ -81,9 +99,18 @@ function(add_nativeAotFramework_targets_once)
   endif()
 endfunction()
 
-# see add_imported_nativeaot_library_clr, below
-function(add_imported_nativeaot_library targetName symbolPrefix)
-  message(STATUS "${symbolPrefix}_MODE is ${${symbolPrefix}_MODE}")
+# add_imported_nativeaot_library(targetName symbolPrefix [NAMESPACE namespace])
+#
+# adds a target targetName that can be used to reference a NativeAOTed library.  symbolPrefix should
+# be the ALLCAPS prefix of the variables that define the mode and paths for the library.  They are
+# typically set in the artifacts/obj/targetName/targetName.cmake fragment which should be included
+# before calling this function.
+function(add_imported_nativeaot_library targetNameIn symbolPrefix)
+  cmake_parse_arguments(PARSE_ARGV 2 "add_imported_opt" "" "NAMESPACE" "")
+  message(TRACE "${symbolPrefix}_MODE is ${${symbolPrefix}_MODE}")
+  set(targetName "${add_imported_opt_NAMESPACE}${targetNameIn}")
+  message(TRACE "Adding target ${targetName}")
+  
   if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED")
     set(libName "${${symbolPrefix}_NAME}") # typically same as targetName
     set(libPath "${${symbolPrefix}_LIBPATH}") # typically /.../artifacts/bin/<libName>/<config>/<rid>/publish
@@ -147,16 +174,12 @@ function(add_imported_nativeaot_library targetName symbolPrefix)
   else()
     message(FATAL_ERROR "${symbolPrefix}_MODE must be one of SHARED or STATIC")
   endif()
-endfunction()
-
-# adds a target targetName that can be used to reference a NativeAOTed library.  symbolPrefix should
-# be the ALLCAPS prefix of the variables that define the mode and paths for the library.  They are
-# typically set in the artifacts/obj/targetName/targetName.cmake fragment which should be included
-# before calling this function.
-function(add_imported_nativeaot_library_clr targetName symbolPrefix)
-  add_imported_nativeaot_library(${ARGV})
   # FIXME: target xyz-shared is imported and does not build here
   #if ("${${symbolPrefix}_MODE}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
   #  strip_symbols("${ARGV0}-shared" symbolFile)
   #endif()
+endfunction()
+
+function(add_imported_nativeaot_library_clr targetName symbolPrefix)
+  add_imported_nativeaot_library(${ARGV})
 endfunction()
