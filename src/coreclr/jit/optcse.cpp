@@ -2443,12 +2443,13 @@ void CSE_HeuristicParameterized::GreedyPolicy()
         CSEdsc* const dsc    = choice.m_dsc;
 
 #ifdef DEBUG
+        m_likelihoods->push_back(choice.m_softmax);
+#endif
+
         if (dsc == nullptr)
         {
-            m_likelihoods->push_back(choice.m_softmax);
             break;
         }
-#endif
 
         // purge this CSE from sortTab so we won't choose it again
         //
@@ -2472,10 +2473,6 @@ void CSE_HeuristicParameterized::GreedyPolicy()
 
         PerformCSE(&candidate);
         madeChanges = true;
-
-#ifdef DEBUG
-        m_likelihoods->push_back(choice.m_softmax);
-#endif
     }
 
     return;
