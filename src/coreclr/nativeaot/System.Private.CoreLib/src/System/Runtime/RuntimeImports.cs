@@ -450,6 +450,7 @@ namespace System.Runtime
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [LibraryImport(RuntimeLibrary)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial int RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, IntPtr* handles);
 
         // Temporary workaround to unblock shareable assembly bring-up - without shared interop,
