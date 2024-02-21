@@ -5602,7 +5602,7 @@ UINT32 ReadyToRunJitManager::JitTokenToGCInfoVersion(const METHODTOKEN& MethodTo
 
     READYTORUN_HEADER * header = JitTokenToReadyToRunInfo(MethodToken)->GetReadyToRunHeader();
 
-    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion);
+    return GCInfoToken::ReadyToRunVersionToGcInfoVersion(header->MajorVersion, header->MinorVersion);
 }
 
 PTR_RUNTIME_FUNCTION ReadyToRunJitManager::JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken)
