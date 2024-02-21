@@ -604,7 +604,7 @@ static code_t insEncodeUimm(size_t imm)
     const size_t imm_bits = hi - lo + 1;
     static_assert(imm_bits < sizeof(code_t) * BITS_PER_BYTE);
 
-    const size_t imm_max  = 1 << imm_bits;
+    const size_t imm_max = 1 << imm_bits;
     assert(imm < imm_max);
 
     code_t result = static_cast<code_t>(imm << lo);
@@ -630,8 +630,8 @@ static code_t insEncodeSplitUimm(size_t imm)
     const size_t hi_max = 1 << hi_bits;
     const size_t lo_max = 1 << lo_bits;
 
-    size_t       immhi  = (imm >> lo_bits) & (hi_max - 1);
-    size_t       immlo  = imm & (lo_max - 1);
+    size_t immhi = (imm >> lo_bits) & (hi_max - 1);
+    size_t immlo = imm & (lo_max - 1);
 
     return insEncodeUimm<hi1, lo1>(immhi) | insEncodeUimm<hi2, lo2>(immlo);
 }
