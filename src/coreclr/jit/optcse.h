@@ -26,6 +26,10 @@ protected:
     Compiler::codeOptimize codeOptKind;
     bool                   enableConstCSE;
 
+#ifdef DEBUG
+    jitstd::vector<unsigned>* m_sequence;
+#endif
+
 public:
     virtual void Initialize()
     {
@@ -43,6 +47,8 @@ public:
 
     virtual void Cleanup()
     {
+        // Add termination marker to cse sequence
+        INDEBUG(m_sequence->push_back(0));
     }
 
     // This currently mixes legality and profitability,
@@ -65,7 +71,7 @@ public:
         return "Common CSE Heuristic";
     }
 
-    void ConsiderCandidates();
+    virtual void ConsiderCandidates();
 
     bool MadeChanges() const
     {
@@ -78,6 +84,14 @@ public:
     }
 
     bool IsCompatibleType(var_types cseLclVarTyp, var_types expTyp);
+
+#ifdef DEBUG
+    virtual void DumpMetrics();
+    virtual void Announce()
+    {
+        JITDUMP("%s\n", Name());
+    }
+#endif
 };
 
 #ifdef DEBUG
@@ -94,14 +108,107 @@ private:
 
 public:
     CSE_HeuristicRandom(Compiler*);
-    void SortCandidates();
-    bool PromotionCheck(CSE_Candidate* candidate);
+    void ConsiderCandidates();
     bool ConsiderTree(GenTree* tree, bool isReturn);
 
     const char* Name() const
     {
         return "Random CSE Heuristic";
     }
+
+#ifdef DEBUG
+    virtual void Announce();
+#endif
+};
+
+// Replay CSE heuristic
+//
+// Performs CSE specified by JitReplayCSE
+//
+class CSE_HeuristicReplay : public CSE_HeuristicCommon
+{
+public:
+    CSE_HeuristicReplay(Compiler*);
+    void ConsiderCandidates();
+    bool ConsiderTree(GenTree* tree, bool isReturn);
+
+    const char* Name() const
+    {
+        return "Replay CSE Heuristic";
+    }
+
+#ifdef DEBUG
+    virtual void Announce();
+#endif
+};
+
+// Reinforcement Learning CSE heuristic
+//
+// Uses a "linear" feature model with
+// softmax policy.
+//
+class CSE_HeuristicRL : public CSE_HeuristicCommon
+{
+private:
+    struct Choice
+    {
+        Choice(CSEdsc* dsc, double preference) : m_dsc(dsc), m_preference(preference), m_softmax(0)
+        {
+        }
+        CSEdsc* m_dsc;
+        double  m_preference;
+        double  m_softmax;
+    };
+
+    enum
+    {
+        numParameters = 25,
+        booleanScale  = 5,
+        maxSteps      = 65, // MAX_CSE_CNT + 1 (for stopping)
+    };
+
+    double                  m_parameters[numParameters];
+    double                  m_alpha;
+    double                  m_rewards[maxSteps];
+    CLRRandom               m_cseRNG;
+    bool                    m_updateParameters;
+    bool                    m_greedy;
+    bool                    m_verbose;
+    unsigned                m_registerPressure;
+    jitstd::vector<double>* m_localWeights;
+
+    void CaptureLocalWeights();
+    void GetFeatures(CSEdsc* dsc, double* features);
+    double Preference(CSEdsc* dsc);
+    void GetStoppingFeatures(double* features);
+    double StoppingPreference();
+    void DumpFeatures(CSEdsc* dsc, double* features);
+    Choice& ChooseSoftmax(ArrayStack<Choice>& choices);
+    Choice& ChooseGreedy(ArrayStack<Choice>& choices);
+    void BuildChoices(ArrayStack<Choice>& choices);
+    void Softmax(ArrayStack<Choice>& choices);
+    void DumpChoices(ArrayStack<Choice>& choices, int higlight = -1);
+    void DumpChoices(ArrayStack<Choice>& choices, CSEdsc* higlight);
+    void UpdateParameters();
+    void GreedyPolicy();
+    void SoftmaxPolicy();
+    void UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choices, double reward, double* delta);
+    Choice* FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices);
+    const char* Name() const;
+
+public:
+    CSE_HeuristicRL(Compiler*);
+    void ConsiderCandidates();
+    bool ConsiderTree(GenTree* tree, bool isReturn);
+#ifdef DEBUG
+    virtual void DumpMetrics();
+    virtual void Announce();
+    // Likelihood of each choice made in the sequence
+    jitstd::vector<double>* m_likelihoods;
+    // Likelihood of each action from starting state
+    jitstd::vector<double>* m_baseLikelihoods;
+    jitstd::vector<char*>*  m_features;
+#endif
 };
 
 #endif
@@ -155,9 +262,7 @@ struct CSEdsc
     ssize_t  csdConstDefValue; // When we CSE similar constants, this is the value that we use as the def
     ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
     // assignment
-    unsigned csdIndex;         // 1..optCSECandidateCount
-    bool     csdIsSharedConst; // true if this CSE is a shared const
-    bool     csdLiveAcrossCall;
+    unsigned csdIndex; // 1..optCSECandidateCount
 
     unsigned short csdDefCount; // definition   count
     unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
@@ -183,6 +288,48 @@ struct CSEdsc
     // number, this will reflect it; otherwise, NoVN.
     // not used for shared const CSE's
     ValueNum defConservNormVN;
+
+    // Number of distinct locals referenced (in first def tree)
+    // and total number of local nodes.
+    //
+    unsigned short numDistinctLocals;
+    unsigned short numLocalOccurrences;
+
+    // true if this CSE is a shared const
+    bool csdIsSharedConst;
+
+    // true if this CSE is live across a call
+    bool csdLiveAcrossCall;
+
+    // We may form candidates that we can't use.
+    // Is this a viable cse?
+    bool IsViable()
+    {
+        if (defExcSetPromise == ValueNumStore::NoVN)
+        {
+            // Multiple defs with incompatible def sets
+            //
+            return false;
+        }
+
+        if ((csdDefCount == 0) || (csdUseCount == 0))
+        {
+            // No uses, or perhaps unreachable uses.
+            //
+            return false;
+        }
+
+        if ((csdDefWtCnt <= 0) || (csdUseWtCnt <= 0))
+        {
+            // No hot uses, or messed up profile
+            //
+            return false;
+        }
+
+        return true;
+    }
+
+    void ComputeNumLocals(Compiler* compiler);
 };
 
 //  The following class nested within CSE_Heuristic encapsulates the information
@@ -221,10 +368,14 @@ class CSE_Candidate
     //  We will set  m_StressCSE:
     //    When the candidate is only being promoted because of a Stress mode.
     //
+    //  We will set  m_Random
+    //    When the candidate is randomly promoted
+    //
     bool m_Aggressive;
     bool m_Moderate;
     bool m_Conservative;
     bool m_StressCSE;
+    bool m_Random;
 
 public:
     CSE_Candidate(CSE_HeuristicCommon* context, CSEdsc* cseDsc)
@@ -239,6 +390,7 @@ public:
         , m_Moderate(false)
         , m_Conservative(false)
         , m_StressCSE(false)
+        , m_Random(false)
     {
     }
 
@@ -320,6 +472,16 @@ public:
     bool IsStressCSE()
     {
         return m_StressCSE;
+    }
+
+    void SetRandom()
+    {
+        m_Random = true;
+    }
+
+    bool IsRandom()
+    {
+        return m_Random;
     }
 
     void InitializeCounts()

@@ -350,5 +350,577 @@ namespace TaskCoverage
             mre1.WaitOne();
             mre2.WaitOne();
         }
+
+        [Fact]
+        public static void Task_WhenAll_NullArgument_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WhenAll((Task[])null); });
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WhenAll((IEnumerable<Task>)null); });
+
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WhenAll((Task<int>[])null); });
+            AssertExtensions.Throws<ArgumentNullException>("tasks", () => { Task.WhenAll((IEnumerable<Task<int>>)null); });
+        }
+
+        [Fact]
+        public static void Task_WhenAll_NoTasks_IsCompletedSuccessfully()
+        {
+            Assert.True(Task.WhenAll(new Task[0]).IsCompletedSuccessfully);
+            Assert.True(Task.WhenAll(new List<Task>()).IsCompletedSuccessfully);
+            Assert.True(Task.WhenAll(EmptyIterator<Task>()).IsCompletedSuccessfully);
+
+            AssertIsCompletedWithEmptyResult(Task.WhenAll(new Task<int>[0]));
+            AssertIsCompletedWithEmptyResult(Task.WhenAll(new List<Task<int>>()));
+            AssertIsCompletedWithEmptyResult(Task.WhenAll(EmptyIterator<Task<int>>()));
+
+            static IEnumerable<T> EmptyIterator<T>() { yield break; }
+
+            static void AssertIsCompletedWithEmptyResult(Task<int[]> task)
+            {
+                Assert.True(task.IsCompletedSuccessfully);
+                Assert.Empty(task.Result);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_BothPreCompleted()
+        {
+            Task<int> t1 = Task.FromResult(1);
+            Task<int> t2 = Task.FromResult(2);
+
+            Assert.True(Task.WhenAll((Task)t1, (Task)t2).IsCompletedSuccessfully);
+            Assert.True(Task.WhenAll((Task)t1, (Task)t1).IsCompletedSuccessfully);
+            Assert.True(Task.WhenAll((Task)t2, (Task)t1).IsCompletedSuccessfully);
+
+            AssertIsCompletedSuccessfullyWithResult([1, 2], Task.WhenAll(t1, t2));
+            AssertIsCompletedSuccessfullyWithResult([1, 1], Task.WhenAll(t1, t1));
+            AssertIsCompletedSuccessfullyWithResult([2, 1], Task.WhenAll(t2, t1));
+
+            static void AssertIsCompletedSuccessfullyWithResult(int[] expected, Task<int[]> task)
+            {
+                Assert.True(task.IsCompletedSuccessfully);
+                Assert.Equal(expected, task.Result);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_OnePreCompleted()
+        {
+            Task<int> t1 = new TaskCompletionSource<int>().Task;
+            Task<int> t2 = Task.FromResult(2);
+
+            Assert.False(Task.WhenAll((Task)t1, (Task)t2).IsCompletedSuccessfully);
+            Assert.False(Task.WhenAll((Task)t1, (Task)t1).IsCompletedSuccessfully);
+            Assert.False(Task.WhenAll((Task)t2, (Task)t1).IsCompletedSuccessfully);
+
+            Assert.False(Task.WhenAll(t1, t2).IsCompletedSuccessfully);
+            Assert.False(Task.WhenAll(t1, t1).IsCompletedSuccessfully);
+            Assert.False(Task.WhenAll(t2, t1).IsCompletedSuccessfully);
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WakesOnBothCompletion()
+        {
+            // Non-generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.False(twa.IsCompleted);
+                t2.SetResult(2);
+                Assert.True(twa.IsCompletedSuccessfully);
+            }
+
+            // Generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.False(twa.IsCompleted);
+                t2.SetResult(2);
+                Assert.True(twa.IsCompletedSuccessfully);
+                Assert.Equal(new int[] { 1, 2 }, twa.Result);
+            }
+
+            // Non-generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetResult(2);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.True(twa.IsCompletedSuccessfully);
+            }
+
+            // Generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetResult(2);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.True(twa.IsCompletedSuccessfully);
+                Assert.Equal(new int[] { 1, 2 }, twa.Result);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WhenPreCompletedFromException()
+        {
+            Exception exception = new Exception();
+            Task<int> t1 = Task.FromException<int>(exception);
+            Task<int> t2 = Task.FromResult(2);
+
+            AssertIsCompletedWithException(Task.WhenAll((Task)t1, (Task)t2));
+            AssertIsCompletedWithException(Task.WhenAll((Task)t1, (Task)t1));
+            AssertIsCompletedWithException(Task.WhenAll((Task)t2, (Task)t1));
+
+            AssertIsCompletedWithException(Task.WhenAll(t1, t2));
+            AssertIsCompletedWithException(Task.WhenAll(t1, t1));
+            AssertIsCompletedWithException(Task.WhenAll(t2, t1));
+
+            void AssertIsCompletedWithException(Task task)
+            {
+                Assert.True(task.IsCompleted);
+                Assert.True(task.IsFaulted);
+                Assert.Same(exception, task.Exception?.InnerException);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WhenBothPreCompletedFromException()
+        {
+            Exception e1 = new Exception();
+            Exception e2 = new Exception();
+            Task<int> t1 = Task.FromException<int>(e1);
+            Task<int> t2 = Task.FromException<int>(e2);
+
+            AssertIsCompletedWithException([e1, e2], Task.WhenAll((Task)t1, (Task)t2));
+            AssertIsCompletedWithException([e1, e1], Task.WhenAll((Task)t1, (Task)t1));
+            AssertIsCompletedWithException([e2, e1], Task.WhenAll((Task)t2, (Task)t1));
+
+            AssertIsCompletedWithException([e1, e2], Task.WhenAll(t1, t2));
+            AssertIsCompletedWithException([e1, e1], Task.WhenAll(t1, t1));
+            AssertIsCompletedWithException([e2, e1], Task.WhenAll(t2, t1));
+
+            static void AssertIsCompletedWithException(Exception[] exceptions, Task task)
+            {
+                Assert.True(task.IsCompleted);
+                Assert.True(task.IsFaulted);
+                Assert.Equal(exceptions, task.Exception?.InnerExceptions);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithException()
+        {
+            Exception e2 = new Exception();
+
+            // Non-generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e2, twa.Exception?.InnerException);
+            }
+
+            // Generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e2, twa.Exception?.InnerException);
+            }
+
+            // Non-generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e2, twa.Exception?.InnerException);
+            }
+
+            // Generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e2, twa.Exception?.InnerException);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithExceptionForBoth()
+        {
+            Exception e1 = new Exception();
+            Exception e2 = new Exception();
+
+            // Non-generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                // Exceptions order is not guaranteed
+                Assert.Contains(e1, twa.Exception?.InnerExceptions);
+                Assert.Contains(e2, twa.Exception?.InnerExceptions);
+            }
+
+            // Generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                // Exceptions order is not guaranteed
+                Assert.Contains(e1, twa.Exception?.InnerExceptions);
+                Assert.Contains(e2, twa.Exception?.InnerExceptions);
+            }
+
+            // Non-generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                // Exceptions order is not guaranteed
+                Assert.Contains(e1, twa.Exception?.InnerExceptions);
+                Assert.Contains(e2, twa.Exception?.InnerExceptions);
+            }
+
+            // Generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetException(e2);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                // Exceptions order is not guaranteed
+                Assert.Contains(e1, twa.Exception?.InnerExceptions);
+                Assert.Contains(e2, twa.Exception?.InnerExceptions);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithCancellation()
+        {
+            CancellationToken ct2 = new CancellationToken(true);
+
+            // Non-generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Non-generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.False(twa.IsCompleted);
+                t1.SetResult(1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithCancellationForBoth()
+        {
+            CancellationToken ct1 = new CancellationToken(true);
+            CancellationToken ct2 = new CancellationToken(true);
+
+            // Non-generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetCanceled(ct1);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetCanceled(ct1);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Non-generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.False(twa.IsCompleted);
+                t1.SetCanceled(ct1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.False(twa.IsCompleted);
+                t1.SetCanceled(ct1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithSameCancellationForBoth()
+        {
+            // Non-generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                var cts = new CancellationTokenSource();
+                cts.Token.Register(() => t1.TrySetCanceled());
+                cts.Token.Register(() => t2.TrySetCanceled());
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                cts.Cancel();
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                var cts = new CancellationTokenSource();
+                cts.Token.Register(() => t1.TrySetCanceled());
+                cts.Token.Register(() => t2.TrySetCanceled());
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                cts.Cancel();
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Non-generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                var cts = new CancellationTokenSource();
+                cts.Token.Register(() => t2.TrySetCanceled());
+                cts.Token.Register(() => t1.TrySetCanceled());
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                cts.Cancel();
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+
+            // Generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                var cts = new CancellationTokenSource();
+                cts.Token.Register(() => t2.TrySetCanceled());
+                cts.Token.Register(() => t1.TrySetCanceled());
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                cts.Cancel();
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsCanceled);
+            }
+        }
+
+        [Fact]
+        public static void Task_WhenAll_TwoTasks_WakesOnBothCompletionWithExceptionAndCancellation()
+        {
+            Exception e1 = new Exception();
+            CancellationToken ct2 = new CancellationToken(true);
+
+            // Non-generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e1, twa.Exception?.InnerException);
+            }
+
+            // Generic, first completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e1, twa.Exception?.InnerException);
+            }
+
+            // Non-generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task twa = Task.WhenAll((Task)t1.Task, (Task)t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e1, twa.Exception?.InnerException);
+            }
+
+            // Generic, second completes first
+            {
+                var t1 = new TaskCompletionSource<int>();
+                var t2 = new TaskCompletionSource<int>();
+
+                Task<int[]> twa = Task.WhenAll(t1.Task, t2.Task);
+                Assert.False(twa.IsCompleted);
+                t2.SetCanceled(ct2);
+                Assert.False(twa.IsCompleted);
+                t1.SetException(e1);
+                Assert.True(twa.IsCompleted);
+                Assert.True(twa.IsFaulted);
+                Assert.Equal(e1, twa.Exception?.InnerException);
+            }
+        }
     }
 }

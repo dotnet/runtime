@@ -1677,8 +1677,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING);
-    slotPtrTree->gtFlags &= ~GTF_GLOB_REF; // TODO-Bug?: this is a quirk. Can we mark this indirection invariant?
+    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     return slotPtrTree;
 }
@@ -2026,7 +2025,8 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         newBlk->inheritWeight(hndBlk);
         newBlk->bbCodeOffs = hndBlk->bbCodeOffs;
 
-        fgAddRefPred(hndBlk, newBlk);
+        FlowEdge* const newEdge = fgAddRefPred(hndBlk, newBlk);
+        newEdge->setLikelihood(1.0);
 
         // Spill into a temp.
         unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
@@ -4437,7 +4437,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
                 // the previous call to a finally returns to this call (to the next finally in the chain)
                 step->SetTarget(callBlock);
-                fgAddRefPred(callBlock, step);
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4487,7 +4488,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             assert(callBlock->KindIs(BBJ_CALLFINALLY));
             assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-            fgAddRefPred(callBlock->GetTarget(), callBlock);
+            FlowEdge* const newEdge = fgAddRefPred(callBlock->GetTarget(), callBlock);
+            newEdge->setLikelihood(1.0);
 
             GenTree* endLFin = new (this, GT_END_LFIN) GenTreeVal(GT_END_LFIN, TYP_VOID, finallyNesting);
             endLFinStmt      = gtNewStmt(endLFin);
@@ -4537,7 +4539,10 @@ void Compiler::impImportLeave(BasicBlock* block)
         assert(!step->HasInitializedTarget());
 
         step->SetTarget(finalStep);
-        fgAddRefPred(finalStep, step);
+        {
+            FlowEdge* const newEdge = fgAddRefPred(finalStep, step);
+            newEdge->setLikelihood(1.0);
+        }
 
         // The new block will inherit this block's weight.
         finalStep->inheritWeight(block);
@@ -4566,7 +4571,10 @@ void Compiler::impImportLeave(BasicBlock* block)
         impEndTreeList(finalStep, endLFinStmt, lastStmt);
 
         // this is the ultimate destination of the LEAVE
-        fgAddRefPred(leaveTarget, finalStep);
+        {
+            FlowEdge* const newEdge = fgAddRefPred(leaveTarget, finalStep);
+            newEdge->setLikelihood(1.0);
+        }
 
         // Queue up the jump target for importing
 
@@ -4684,7 +4692,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
                 step->SetTarget(exitBlock); // the previous step (maybe a call to a nested finally, or a nested catch
                                             // exit) returns to this block
-                fgAddRefPred(exitBlock, step);
+                FlowEdge* const newEdge = fgAddRefPred(exitBlock, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 exitBlock->inheritWeight(block);
@@ -4728,7 +4737,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // next block, and flow optimizations will remove it.
                 fgRemoveRefPred(block->GetTarget(), block);
                 block->SetKindAndTarget(BBJ_ALWAYS, callBlock);
-                fgAddRefPred(callBlock, block);
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, block);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4797,7 +4807,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                         fgRemoveRefPred(step->GetTarget(), step);
                     }
                     step->SetTarget(step2);
-                    fgAddRefPred(step2, step);
+                    FlowEdge* const newEdge = fgAddRefPred(step2, step);
+                    newEdge->setLikelihood(1.0);
                     step2->inheritWeight(block);
                     step2->CopyFlags(block, BBF_RUN_RARELY);
                     step2->SetFlags(BBF_IMPORTED);
@@ -4838,7 +4849,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 }
                 step->SetTarget(callBlock); // the previous call to a finally returns to this call (to the next
                                             // finally in the chain)
-                fgAddRefPred(callBlock, step);
+                FlowEdge* const newEdge = fgAddRefPred(callBlock, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 callBlock->inheritWeight(block);
@@ -4874,7 +4886,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 
             assert(callBlock->KindIs(BBJ_CALLFINALLY));
             assert(callBlock->TargetIs(HBtab->ebdHndBeg));
-            fgAddRefPred(callBlock->GetTarget(), callBlock);
+            FlowEdge* const newEdge = fgAddRefPred(callBlock->GetTarget(), callBlock);
+            newEdge->setLikelihood(1.0);
         }
         else if (HBtab->HasCatchHandler() && jitIsBetween(blkAddr, tryBeg, tryEnd) &&
                  !jitIsBetween(jmpAddr, tryBeg, tryEnd))
@@ -4941,7 +4954,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                     fgRemoveRefPred(step->GetTarget(), step);
                 }
                 step->SetTarget(catchStep);
-                fgAddRefPred(catchStep, step);
+                FlowEdge* const newEdge = fgAddRefPred(catchStep, step);
+                newEdge->setLikelihood(1.0);
 
                 // The new block will inherit this block's weight.
                 catchStep->inheritWeight(block);
@@ -4995,7 +5009,8 @@ void Compiler::impImportLeave(BasicBlock* block)
             fgRemoveRefPred(step->GetTarget(), step);
         }
         step->SetTarget(leaveTarget); // this is the ultimate destination of the LEAVE
-        fgAddRefPred(leaveTarget, step);
+        FlowEdge* const newEdge = fgAddRefPred(leaveTarget, step);
+        newEdge->setLikelihood(1.0);
 
 #ifdef DEBUG
         if (verbose)
@@ -5056,7 +5071,8 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
     {
         BasicBlock* dupBlock = BasicBlock::New(this, BBJ_CALLFINALLY, block->GetTarget());
         dupBlock->CopyFlags(block);
-        fgAddRefPred(dupBlock->GetTarget(), dupBlock);
+        FlowEdge* const newEdge = fgAddRefPred(dupBlock->GetTarget(), dupBlock);
+        newEdge->setLikelihood(1.0);
         dupBlock->copyEHRegion(block);
         dupBlock->bbCatchTyp = block->bbCatchTyp;
 
@@ -5087,7 +5103,8 @@ void Compiler::impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr)
 
     fgRemoveRefPred(block->GetTarget(), block);
     block->SetKindAndTarget(BBJ_LEAVE, fgLookupBB(jmpAddr));
-    fgAddRefPred(block->GetTarget(), block);
+    FlowEdge* const newEdge = fgAddRefPred(block->GetTarget(), block);
+    newEdge->setLikelihood(1.0);
 
     // We will leave the BBJ_ALWAYS block we introduced. When it's reimported
     // the BBJ_ALWAYS block will be unreachable, and will be removed after. The
@@ -5462,7 +5479,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     // Pessimistically assume the jit cannot expand this as an inline test
     bool                  canExpandInline = false;
-    bool                  partialExpand   = false;
     bool                  reversedMTCheck = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
@@ -5497,7 +5513,23 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
     }
 
-    const bool expandInline = canExpandInline && shouldExpandInline;
+    bool expandInline = canExpandInline && shouldExpandInline;
+
+    if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) && isClassExact)
+    {
+        // TODO-InlineCast: isinst against exact class
+        // It's already supported by the late cast expansion phase, but
+        // produces unexpected size regressions in some cases.
+    }
+    else if (!isCastClass && !op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+    {
+        // TODO-InlineCast: isinst against Class<_Canon>
+    }
+    else
+    {
+        // Expand later
+        expandInline = false;
+    }
 
     if (!expandInline)
     {
@@ -5512,7 +5544,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         GenTreeCall* call = gtNewHelperCallNode(helper, TYP_REF, op2, op1);
 
         // Instrument this castclass/isinst
-        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact)
+        if ((JitConfig.JitClassProfiling() > 0) && impIsCastHelperEligibleForClassProbe(call) && !isClassExact &&
+            !compCurBB->isRunRarely())
         {
             // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
             if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
@@ -5559,7 +5592,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
 
     GenTree* op2Var = op2;
-    if (isCastClass && !partialExpand && (exactCls == NO_CLASS_HANDLE))
+    if (isCastClass && (exactCls == NO_CLASS_HANDLE))
     {
         // if exactCls is not null we won't have to clone op2 (it will be used only for the fallback)
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
@@ -5597,11 +5630,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // use the special helper that skips the cases checked by our inlined cast
             specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
         }
-        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
-    }
-    else if (partialExpand)
-    {
-        condTrue = gtNewHelperCallNode(helper, TYP_REF, op2, gtClone(op1));
+        condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, op2Var, gtClone(op1));
     }
     else
     {
@@ -5645,7 +5674,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     //
     temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, reversedMTCheck ? gtNewNull() : gtClone(op1), qmarkMT);
     qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
-    qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
 
     // Make QMark node a top level node by spilling it.
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
@@ -7190,6 +7218,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
                 impPushOnStack(op1, tiRetVal);
                 break;
 
@@ -7212,14 +7243,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 type = genActualType(op1->TypeGet());
                 op1  = gtNewOperNode(oper, type, op1, op2);
 
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
                 impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_NOT:
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1, nullptr);
+
                 type = genActualType(op1->TypeGet());
-                impPushOnStack(gtNewOperNode(GT_NOT, type, op1), tiRetVal);
+                op1  = gtNewOperNode(GT_NOT, type, op1);
+
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
+                impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_CKFINITE:
@@ -7634,16 +7674,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && (op1->gtOper == GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t       switchVal = (size_t)op1->AsIntCon()->gtIconVal;
-                    unsigned     jumpCnt   = block->GetSwitchTargets()->bbsCount;
-                    BasicBlock** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
-                    bool         foundVal  = false;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    unsigned   jumpCnt   = block->GetSwitchTargets()->bbsCount;
+                    FlowEdge** jumpTab   = block->GetSwitchTargets()->bbsDstTab;
+                    bool       foundVal  = false;
 
                     for (unsigned val = 0; val < jumpCnt; val++, jumpTab++)
                     {
-                        BasicBlock* curJump = *jumpTab;
+                        FlowEdge* curEdge = *jumpTab;
 
-                        assert(curJump->countOfInEdges() > 0);
+                        assert(curEdge->getDestinationBlock()->countOfInEdges() > 0);
 
                         // If val matches switchVal or we are at the last entry and
                         // we never found the switch value then set the new jump dest
@@ -7651,13 +7691,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((val == switchVal) || (!foundVal && (val == jumpCnt - 1)))
                         {
                             // transform the basic block into a BBJ_ALWAYS
-                            block->SetKindAndTarget(BBJ_ALWAYS, curJump);
+                            block->SetKindAndTarget(BBJ_ALWAYS, curEdge->getDestinationBlock());
                             foundVal = true;
                         }
                         else
                         {
-                            // Remove 'block' from the predecessor list of 'curJump'
-                            fgRemoveRefPred(curJump, block);
+                            // Remove 'curEdge'
+                            fgRemoveRefPred(curEdge);
                         }
                     }
 
@@ -7947,7 +7987,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_NEG:
                 op1 = impPopStack().val;
                 impBashVarAddrsToI(op1, nullptr);
-                impPushOnStack(gtNewOperNode(GT_NEG, genActualType(op1->gtType), op1), tiRetVal);
+                op1 = gtNewOperNode(GT_NEG, genActualType(op1->gtType), op1);
+
+                // Fold result, if possible.
+                op1 = gtFoldExpr(op1);
+
+                impPushOnStack(op1, tiRetVal);
                 break;
 
             case CEE_POP:
@@ -12236,7 +12281,7 @@ void Compiler::impFixPredLists()
                 if (predCount > 0)
                 {
                     jumpEhf->bbeCount = predCount;
-                    jumpEhf->bbeSuccs = new (this, CMK_BasicBlock) BasicBlock*[predCount];
+                    jumpEhf->bbeSuccs = new (this, CMK_FlowEdge) FlowEdge*[predCount];
 
                     unsigned predNum = 0;
                     for (BasicBlock* const predBlock : finallyBegBlock->PredBlocks())
@@ -12249,9 +12294,10 @@ void Compiler::impFixPredLists()
                         }
 
                         BasicBlock* const continuation = predBlock->Next();
-                        fgAddRefPred(continuation, finallyBlock);
+                        FlowEdge* const   newEdge      = fgAddRefPred(continuation, finallyBlock);
+                        newEdge->setLikelihood(1.0 / predCount);
 
-                        jumpEhf->bbeSuccs[predNum] = continuation;
+                        jumpEhf->bbeSuccs[predNum] = newEdge;
                         ++predNum;
 
                         if (!added)

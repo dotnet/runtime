@@ -25,8 +25,6 @@ Revision History:
 #include "pal/module.h"
 #include "pal/misc.h"
 
-#include "pal/printfcpp.hpp"
-
 #include "errorstrings.h"
 
 #include <stdarg.h>

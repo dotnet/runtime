@@ -338,7 +338,7 @@ namespace System.Collections.Immutable
                 ImmutableSortedDictionary<TKey, TValue>.Node match = this.Search(key, keyComparer);
                 if (match.IsEmpty)
                 {
-                    throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+                    ThrowHelper.ThrowKeyNotFoundException(key);
                 }
 
                 return ref match._value;

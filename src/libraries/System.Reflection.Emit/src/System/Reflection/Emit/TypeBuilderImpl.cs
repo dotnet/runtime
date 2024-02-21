@@ -121,11 +121,6 @@ namespace System.Reflection.Emit
             ValidateMethods();
             _isCreated = true;
 
-            if (!IsAbstract)
-            {
-                ValidateAllAbstractMethodsAreImplemented();
-            }
-
             return this;
         }
 
@@ -163,84 +158,6 @@ namespace System.Reflection.Emit
                     throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, method.Name));
                 }
             }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
-        private void ValidateAllAbstractMethodsAreImplemented()
-        {
-            if (_interfaces != null)
-            {
-                CheckInterfaces(_interfaces.ToArray());
-            }
-
-            if (_typeParent != null && _typeParent.IsAbstract)
-            {
-                foreach (MethodInfo method in _typeParent.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                {
-                    if (method.IsAbstract)
-                    {
-                        MethodInfo? targetMethod = GetMethodImpl(method.Name, GetBindingFlags(method), null, method.CallingConvention, GetParameterTypes(method.GetParameters()), null);
-
-                        if ((targetMethod == null || targetMethod.IsAbstract) && !FoundInInterfaceMapping(method))
-                        {
-                            throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, method, FullName));
-                        }
-                    }
-                }
-            }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder. The interface methods should be available at this point")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:DynamicallyAccessedMembers", Justification = "Methods are loaded from this TypeBuilder")]
-        private void CheckInterfaces(Type[] _interfaces)
-        {
-            foreach (Type interfaceType in _interfaces)
-            {
-#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
-                MethodInfo[] interfaceMethods = interfaceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-#pragma warning restore IL2075
-                for (int i = 0; i < interfaceMethods.Length; i++)
-                {
-                    MethodInfo interfaceMethod = interfaceMethods[i];
-                    if (!interfaceMethod.IsAbstract)
-                    {
-                        continue;
-                    }
-
-                    MethodInfo? implementedMethod = GetMethodImpl(interfaceMethod.Name, GetBindingFlags(interfaceMethod), null, interfaceMethod.CallingConvention, GetParameterTypes(interfaceMethod.GetParameters()), null);
-
-                    if ((implementedMethod == null || implementedMethod.IsAbstract) && !FoundInInterfaceMapping(interfaceMethod))
-                    {
-                        throw new TypeLoadException(SR.Format(SR.TypeLoad_MissingMethod, interfaceMethod, FullName));
-                    }
-                }
-
-                // Check parent interfaces too
-#pragma warning disable IL2075 // Analyzer produces a different warning code than illink. The IL2065 suppression takes care of illink: https://github.com/dotnet/runtime/issues/96646
-                CheckInterfaces(interfaceType.GetInterfaces());
-#pragma warning restore IL2075
-            }
-        }
-
-        private bool FoundInInterfaceMapping(MethodInfo abstractMethod)
-        {
-            if (_methodOverrides == null)
-            {
-                return false;
-            }
-
-            if (_methodOverrides.TryGetValue(abstractMethod.DeclaringType!, out List<(MethodInfo ifaceMethod, MethodInfo targetMethod)>? mapping))
-            {
-                foreach ((MethodInfo ifaceMethod, MethodInfo targetMethod) pair in mapping)
-                {
-                    if (abstractMethod.Equals(pair.ifaceMethod))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         internal void ThrowIfCreated()
@@ -475,7 +392,7 @@ namespace System.Reflection.Emit
         {
             if ((methodInfoBody.IsVirtual || methodInfoBody.IsStatic) &&
                 (methodInfoDeclaration.IsAbstract || methodInfoDeclaration.IsVirtual) &&
-                methodInfoBody.ReturnType.Equals(methodInfoDeclaration.ReturnType))
+                methodInfoDeclaration.ReturnType.IsAssignableFrom(methodInfoBody.ReturnType))
             {
                 ParameterInfo[] bodyParameters = methodInfoBody.GetParameters();
                 ParameterInfo[] declarationParameters = methodInfoDeclaration.GetParameters();
@@ -483,7 +400,23 @@ namespace System.Reflection.Emit
                 {
                     for (int i = 0; i < bodyParameters.Length; i++)
                     {
-                        if (!bodyParameters[i].ParameterType.Equals(declarationParameters[i].ParameterType))
+                        Type? bodyType = bodyParameters[i].ParameterType;
+                        Type? declType = declarationParameters[i].ParameterType;
+
+                        if (bodyType.IsArray != declType.IsArray ||
+                            bodyType.IsByRef != declType.IsByRef ||
+                            bodyType.IsPointer != declType.IsPointer)
+                        {
+                            throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
+                        }
+
+                        if (bodyType.HasElementType || declType.HasElementType)
+                        {
+                            bodyType = bodyType.GetElementType();
+                            declType = declType.GetElementType();
+                        }
+
+                        if (bodyType == null || !bodyType.Equals(declType))
                         {
                             throw ArgumentExceptionInvalidMethodOverride(methodInfoDeclaration.Name);
                         }
@@ -820,8 +753,6 @@ namespace System.Reflection.Emit
 
         private static bool MatchesTheFilter(MethodBuilderImpl method, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
-            bindingFlags ^= BindingFlags.DeclaredOnly;
-
             if ((bindingFlags & methodFlags) != methodFlags)
             {
                 return false;
@@ -854,7 +785,23 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < parameterTypes.Length; i++)
             {
-                if (argumentTypes[i] != parameterTypes[i])
+                Type? argType = argumentTypes[i];
+                Type? paramType = parameterTypes[i];
+
+                if (argType.IsArray != paramType.IsArray ||
+                    argType.IsByRef != paramType.IsByRef ||
+                    argType.IsPointer != argType.IsPointer)
+                {
+                    return false;
+                }
+
+                if (argType.HasElementType || paramType.HasElementType)
+                {
+                    argType = argType.GetElementType();
+                    paramType = paramType.GetElementType();
+                }
+
+                if (argType == null || !argType.Equals(paramType))
                 {
                     return false;
                 }
@@ -945,10 +892,63 @@ namespace System.Reflection.Emit
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo? GetField(string name, BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override FieldInfo? GetField(string name, BindingFlags bindingFlags)
+        {
+            ArgumentNullException.ThrowIfNull(name);
+            ThrowIfNotCreated();
+
+            FieldInfo? match = null;
+            StringComparison compare = (bindingFlags & BindingFlags.IgnoreCase) != 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
+            {
+                BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
+                if (name.Equals(fieldInfo.Name, compare) && (bindingFlags & fieldFlags) == fieldFlags)
+                {
+                    if (match != null && ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
+                    {
+                        // TypeBuilder doesn't validate for duplicates when fields are defined, throw if duplicates found.
+                        throw new AmbiguousMatchException(SR.Format(SR.AmbiguousMatch_MemberInfo, fieldInfo.DeclaringType, fieldInfo.Name));
+                    }
+
+                    match = fieldInfo;
+                }
+            }
+
+            if (match == null && !bindingFlags.HasFlag(BindingFlags.DeclaredOnly) && _typeParent != null)
+            {
+                match = _typeParent.GetField(name, bindingFlags);
+            }
+
+            return match;
+        }
+
+        private static BindingFlags GetBindingFlags(FieldBuilderImpl field)
+        {
+            BindingFlags bindingFlags = (field.Attributes & FieldAttributes.FieldAccessMask) == FieldAttributes.Public ?
+                BindingFlags.Public : BindingFlags.NonPublic;
+
+            bindingFlags |= (field.Attributes & FieldAttributes.Static) != 0 ? BindingFlags.Static : BindingFlags.Instance;
+
+            return bindingFlags;
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
-        public override FieldInfo[] GetFields(BindingFlags bindingAttr) => throw new NotSupportedException();
+        public override FieldInfo[] GetFields(BindingFlags bindingAttr)
+        {
+            ThrowIfNotCreated();
+
+            List<FieldBuilderImpl> candidates = new List<FieldBuilderImpl>(_fieldDefinitions.Count);
+            foreach (FieldBuilderImpl fieldInfo in _fieldDefinitions)
+            {
+                BindingFlags fieldFlags = GetBindingFlags(fieldInfo);
+                if ((bindingAttr & fieldFlags) == fieldFlags)
+                {
+                    candidates.Add(fieldInfo);
+                }
+            }
+
+            return candidates.ToArray();
+        }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
