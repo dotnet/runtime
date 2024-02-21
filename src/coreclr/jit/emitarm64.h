@@ -53,6 +53,7 @@ void emitDispExtendOpts(insOpts opt);
 void emitDispSveExtendOpts(insOpts opt);
 void emitDispSveExtendOptsModN(insOpts opt, int n);
 void emitDispSveModAddr(instruction ins, regNumber reg1, regNumber reg2, insOpts opt, insFormat fmt);
+void emitDispSveImm(regNumber reg1, ssize_t imm, insOpts opt);
 void emitDispSveImmMulVl(regNumber reg1, ssize_t imm);
 void emitDispSveImmIndex(regNumber reg1, insOpts opt, ssize_t imm);
 void emitDispLSExtendOpts(insOpts opt);
@@ -75,6 +76,7 @@ void emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm);
 void emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size);
 void emitDispSvePattern(insSvePattern pattern, bool addComma);
+void emitDispSvePrfop(insSvePrfop prfop, bool addComma);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -619,6 +621,9 @@ static code_t insEncodeUimm5_MultipleOf4_20_to_16(ssize_t imm);
 // Returns the encoding for the immediate value that is a multiple of 8 as 5-bits at bit locations '20-16'.
 static code_t insEncodeUimm5_MultipleOf8_20_to_16(ssize_t imm);
 
+// Returns the encoding for the immediate value as 6-bits at bit locations '21-16'.
+static code_t insEncodeSimm6_21_to_16(ssize_t imm);
+
 // Returns the encoding for the immediate value that is a multiple of 2 as 6-bits at bit locations '21-16'.
 static code_t insEncodeUimm6_MultipleOf2_21_to_16(ssize_t imm);
 
@@ -735,19 +740,19 @@ static bool isValidSimm4_MultipleOf32(ssize_t value)
     return (-256 <= value) && (value <= 224) && (value % 32 == 0);
 };
 
-// Returns true if 'value' is a legal signed multiple of 2 immediate 5 bit encoding (such as for LD1H).
+// Returns true if 'value' is a legal unsigned multiple of 2 immediate 5 bit encoding (such as for LD1H).
 static bool isValidUimm5_MultipleOf2(ssize_t value)
 {
     return (0 <= value) && (value <= 62) && (value % 2 == 0);
 };
 
-// Returns true if 'value' is a legal signed multiple of 4 immediate 5 bit encoding (such as for LD1W).
+// Returns true if 'value' is a legal unsigned multiple of 4 immediate 5 bit encoding (such as for LD1W).
 static bool isValidUimm5_MultipleOf4(ssize_t value)
 {
     return (0 <= value) && (value <= 124) && (value % 4 == 0);
 };
 
-// Returns true if 'value' is a legal signed multiple of 8 immediate 5 bit encoding (such as for LD1D).
+// Returns true if 'value' is a legal unsigned multiple of 8 immediate 5 bit encoding (such as for LD1D).
 static bool isValidUimm5_MultipleOf8(ssize_t value)
 {
     return (0 <= value) && (value <= 248) && (value % 8 == 0);
@@ -877,6 +882,12 @@ static bool isValidSimm14(ssize_t value)
 static bool isValidSimm5(ssize_t value)
 {
     return (-0x10LL <= value) && (value <= 0xFLL);
+};
+
+// Returns true if 'value' is a legal signed immediate 6 bit encoding (such as for PRFB).
+static bool isValidSimm6(ssize_t value)
+{
+    return (-32 <= value) && (value <= 31);
 };
 
 // Returns true if 'value' is a legal rotation value (such as for CDOT, CMLA).
@@ -1507,6 +1518,23 @@ void emitIns_R_PATTERN(
     instruction ins, emitAttr attr, regNumber reg1, insOpts opt, insSvePattern pattern = SVE_PATTERN_ALL);
 
 void emitIns_R_PATTERN_I(instruction ins, emitAttr attr, regNumber reg1, insSvePattern pattern, int imm);
+
+void emitIns_PRFOP_R_R_R(instruction     ins,
+                         emitAttr        attr,
+                         insSvePrfop     prfop,
+                         regNumber       reg1,
+                         regNumber       reg2,
+                         regNumber       reg3,
+                         insOpts         opt  = INS_OPTS_NONE,
+                         insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
+
+void emitIns_PRFOP_R_R_I(instruction ins,
+                         emitAttr    attr,
+                         insSvePrfop prfop,
+                         regNumber   reg1,
+                         regNumber   reg2,
+                         int         imm,
+                         insOpts     opt = INS_OPTS_NONE);
 
 void emitIns_BARR(instruction ins, insBarrier barrier);
 

@@ -507,9 +507,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
-    GTF_QMARK_CAST_INSTOF       = 0x80000000, // GT_QMARK -- Is this a top (not nested) level qmark created for
-                                              //             castclass or instanceof?
-
     GTF_BOX_CLONED              = 0x40000000, // GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
@@ -7391,9 +7388,6 @@ public:
         BlkOpKindCpObjUnroll,
 #ifdef TARGET_XARCH
         BlkOpKindCpObjRepInstr,
-#endif
-#ifndef TARGET_X86
-        BlkOpKindHelper,
 #endif
 #ifdef TARGET_XARCH
         BlkOpKindRepInstr,

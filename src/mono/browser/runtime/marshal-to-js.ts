@@ -55,12 +55,12 @@ export function initialize_marshalers_to_js(): void {
         cs_to_js_marshalers.set(MarshalerType.None, _marshal_null_to_js);
         cs_to_js_marshalers.set(MarshalerType.Void, _marshal_null_to_js);
         cs_to_js_marshalers.set(MarshalerType.Discard, _marshal_null_to_js);
-        cs_to_js_marshalers.set(MarshalerType.OneWay, _marshal_null_to_js);
+        cs_to_js_marshalers.set(MarshalerType.DiscardNoWait, _marshal_null_to_js);
     }
 }
 
 export function bind_arg_marshal_to_js(sig: JSMarshalerType, marshaler_type: MarshalerType, index: number): BoundMarshalerToJs | undefined {
-    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard || marshaler_type === MarshalerType.OneWay) {
+    if (marshaler_type === MarshalerType.None || marshaler_type === MarshalerType.Void || marshaler_type === MarshalerType.Discard || marshaler_type === MarshalerType.DiscardNoWait) {
         return undefined;
     }
 
@@ -338,7 +338,7 @@ function create_task_holder(res_converter?: MarshalerToJs) {
 
 export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments): void {
     const exc = get_arg(args, 0);
-    const is_async = WasmEnableThreads && is_receiver_should_free(args);
+    const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {
         loaderHelpers.assert_runtime_running();
 
@@ -353,7 +353,7 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         mono_assert(holder, () => `Cannot find Promise for JSHandle ${js_handle}`);
 
         holder.resolve_or_reject(type, js_handle, arg_value);
-        if (is_async) {
+        if (receiver_should_free) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
             Module._free(args as any);
         }
@@ -363,7 +363,7 @@ export function mono_wasm_resolve_or_reject_promise(args: JSMarshalerArguments):
         }
 
     } catch (ex: any) {
-        if (is_async) {
+        if (receiver_should_free) {
             mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
         }
         marshal_exception_to_cs(exc, ex);

@@ -39,15 +39,15 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
     const res_sig = get_sig(signature, 1);
     let res_marshaler_type = get_signature_type(res_sig);
 
-    // hack until we have public API for JSType.OneWay
+    // hack until we have public API for JSType.DiscardNoWait
     if (WasmEnableThreads && shortClassName === "DefaultWebAssemblyJSRuntime"
         && namespaceName === "Microsoft.AspNetCore.Components.WebAssembly.Services"
         && (methodName === "BeginInvokeDotNet" || methodName === "EndInvokeJS")) {
-        res_marshaler_type = MarshalerType.OneWay;
+        res_marshaler_type = MarshalerType.DiscardNoWait;
     }
 
     const is_async = res_marshaler_type == MarshalerType.Task;
-    const is_oneway = res_marshaler_type == MarshalerType.OneWay;
+    const is_discard_no_wait = res_marshaler_type == MarshalerType.DiscardNoWait;
     if (is_async) {
         res_marshaler_type = MarshalerType.TaskPreCreated;
     }
@@ -60,7 +60,7 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
         arg_marshalers,
         res_converter,
         is_async,
-        is_oneway,
+        is_discard_no_wait,
         isDisposed: false,
     };
     let bound_fn: Function;
@@ -75,7 +75,7 @@ export function mono_wasm_bind_cs_function(method: MonoMethod, assemblyName: str
         else {
             bound_fn = bind_fn(closure);
         }
-    } else if (is_oneway) {
+    } else if (is_discard_no_wait) {
         bound_fn = bind_fn(closure);
     } else {
         if (args_count == 0 && !res_converter) {
@@ -285,7 +285,7 @@ function bind_fn(closure: BindingClosure) {
     const method = closure.method;
     const fqn = closure.fullyQualifiedName;
     const is_async = closure.is_async;
-    const is_oneway = closure.is_oneway;
+    const is_discard_no_wait = closure.is_discard_no_wait;
     if (!WasmEnableThreads) (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
         const mark = startMeasure();
@@ -313,7 +313,7 @@ function bind_fn(closure: BindingClosure) {
                 // in case the C# side returned synchronously
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
             }
-            else if (is_oneway) {
+            else if (is_discard_no_wait) {
                 // call C# side, fire and forget
                 invoke_async_jsexport(method, args, 2 + args_count);
             }
@@ -338,7 +338,7 @@ type BindingClosure = {
     arg_marshalers: (BoundMarshalerToCs)[],
     res_converter: BoundMarshalerToJs | undefined,
     is_async: boolean,
-    is_oneway: boolean,
+    is_discard_no_wait: boolean,
     isDisposed: boolean,
 }
 
