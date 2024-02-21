@@ -20,7 +20,7 @@ To resolve failures, do the following, in order:
 
 1. Fix the problem if your PR is the cause.
 2. For all failures not in the "Known test errors" section, [try to file a Known Build Error issue](#what-to-do-if-you-determine-the-failure-is-unrelated).
-3. If all else fails, perform a manual bypass.
+3. If all else fails, perform a [manual bypass](#bypassing-build-analysis).
 
 
 ## Details
@@ -107,6 +107,16 @@ After you do this, if the failure is occurring frequently as per the data captur
 * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.
 
 There are plenty of intermittent failures that won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
+
+### Bypassing build analysis
+
+To unconditionally bypass the build analysis check (turn it green), you can add a comment to your PR with the following text:
+
+```
+/ba-g <reason>
+```
+
+For more information, see https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/EscapeMechanismforBuildAnalysis.md
 
 ### Examples of Build Analysis
 
