@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -22,6 +23,8 @@ namespace System.Numerics
           IUtf8SpanFormattable,
           IBinaryFloatParseAndFormatInfo<BFloat16>
     {
+        private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
+
         // Constants for manipulating the private bit-representation
 
         internal const ushort SignMask = 0x8000;
@@ -1287,5 +1290,170 @@ namespace System.Numerics
                 return false;
             }
         }
+
+        //
+        // IParsable
+        //
+
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out BFloat16 result) => TryParse(s, DefaultParseStyle, provider, out result);
+
+        //
+        // IPowerFunctions
+        //
+
+        /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        public static BFloat16 Pow(BFloat16 x, BFloat16 y) => (BFloat16)MathF.Pow((float)x, (float)y);
+
+        //
+        // IRootFunctions
+        //
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        public static BFloat16 Cbrt(BFloat16 x) => (BFloat16)MathF.Cbrt((float)x);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
+        public static BFloat16 Hypot(BFloat16 x, BFloat16 y) => (BFloat16)float.Hypot((float)x, (float)y);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
+        public static BFloat16 RootN(BFloat16 x, int n) => (BFloat16)float.RootN((float)x, n);
+
+        /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        public static BFloat16 Sqrt(BFloat16 x) => (BFloat16)MathF.Sqrt((float)x);
+
+        //
+        // ISignedNumber
+        //
+
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        public static BFloat16 NegativeOne => new BFloat16(NegativeOneBits);
+
+        //
+        // ISpanParsable
+        //
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static BFloat16 Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, DefaultParseStyle, provider);
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out BFloat16 result) => TryParse(s, DefaultParseStyle, provider, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        public static BFloat16 operator -(BFloat16 left, BFloat16 right) => (BFloat16)((float)left - (float)right);
+
+        //
+        // ITrigonometricFunctions
+        //
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        public static BFloat16 Acos(BFloat16 x) => (BFloat16)MathF.Acos((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
+        public static BFloat16 AcosPi(BFloat16 x) => (BFloat16)float.AcosPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        public static BFloat16 Asin(BFloat16 x) => (BFloat16)MathF.Asin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
+        public static BFloat16 AsinPi(BFloat16 x) => (BFloat16)float.AsinPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        public static BFloat16 Atan(BFloat16 x) => (BFloat16)MathF.Atan((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
+        public static BFloat16 AtanPi(BFloat16 x) => (BFloat16)float.AtanPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        public static BFloat16 Cos(BFloat16 x) => (BFloat16)MathF.Cos((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
+        public static BFloat16 CosPi(BFloat16 x) => (BFloat16)float.CosPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static BFloat16 DegreesToRadians(BFloat16 degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (BFloat16)float.DegreesToRadians((float)degrees);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static BFloat16 RadiansToDegrees(BFloat16 radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (BFloat16)float.RadiansToDegrees((float)radians);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        public static BFloat16 Sin(BFloat16 x) => (BFloat16)MathF.Sin((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        public static (BFloat16 Sin, BFloat16 Cos) SinCos(BFloat16 x)
+        {
+            var (sin, cos) = MathF.SinCos((float)x);
+            return ((BFloat16)sin, (BFloat16)cos);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
+        public static (BFloat16 SinPi, BFloat16 CosPi) SinCosPi(BFloat16 x)
+        {
+            var (sinPi, cosPi) = float.SinCosPi((float)x);
+            return ((BFloat16)sinPi, (BFloat16)cosPi);
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinPi(TSelf)" />
+        public static BFloat16 SinPi(BFloat16 x) => (BFloat16)float.SinPi((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        public static BFloat16 Tan(BFloat16 x) => (BFloat16)MathF.Tan((float)x);
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />
+        public static BFloat16 TanPi(BFloat16 x) => (BFloat16)float.TanPi((float)x);
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        public static BFloat16 operator -(BFloat16 value) => (BFloat16)(-(float)value);
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        public static BFloat16 operator +(BFloat16 value) => value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static BFloat16 Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseFloat<byte, BFloat16>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BFloat16 result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static BFloat16 Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out BFloat16 result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+
     }
 }
