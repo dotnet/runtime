@@ -1096,6 +1096,15 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint}");
 
+            // to revert
+            System.Threading.SpinWait spinner = default;
+            while (!spinner.NextSpinWillYield)
+            {
+                spinner.SpinOnce();
+                System.Threading.Thread.Yield();
+            }
+            System.Threading.Thread.SpinWait(1000);
+
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffers, socketFlags, out bytesTransferred);
 
@@ -3035,6 +3044,15 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             ArgumentNullException.ThrowIfNull(e);
+
+            // to revert
+            System.Threading.SpinWait spinner = default;
+            while (!spinner.NextSpinWillYield)
+            {
+                spinner.SpinOnce();
+                System.Threading.Thread.Yield();
+            }
+            System.Threading.Thread.SpinWait(1000);
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Send);
