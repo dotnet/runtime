@@ -245,18 +245,14 @@ public:
 
 extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 
-class ValueTypeHelper {
-public:
-    static FCDECL1(FC_BOOL_RET, CanCompareBits, Object* obj);
-    static FCDECL1(INT32, GetHashCode, Object* objRef);
-};
-
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
+extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
+extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize);
 
 class StreamNative {
 public:

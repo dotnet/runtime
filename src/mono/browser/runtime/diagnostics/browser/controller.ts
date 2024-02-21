@@ -7,10 +7,10 @@ import { threads_c_functions as cwraps } from "../../cwraps";
 import { INTERNAL, mono_assert } from "../../globals";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../../logging";
 import { withStackAlloc, getI32 } from "../../memory";
-import { Thread, waitForThread } from "../../pthreads/browser";
+import { waitForThread } from "../../pthreads";
 import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
-import { PThreadPtr } from "../../pthreads/shared/types";
+import { PThreadPtr, Thread } from "../../types/internal";
 
 /// An object that can be used to control the diagnostic server.
 export interface ServerController {
