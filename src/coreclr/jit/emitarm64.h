@@ -1457,14 +1457,14 @@ void emitIns_R_R_R_I(instruction     ins,
                      emitAttr        attrReg2 = EA_UNKNOWN,
                      insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE);
 
-void emitInsSve_R_R_R_I(instruction ins,
-                        emitAttr    attr,
-                        regNumber   reg1,
-                        regNumber   reg2,
-                        regNumber   reg3,
-                        ssize_t     imm,
-                        insOpts     opt      = INS_OPTS_NONE,
-                        emitAttr    attrReg2 = EA_UNKNOWN);
+void emitInsSve_R_R_R_I(instruction     ins,
+                        emitAttr        attr,
+                        regNumber       reg1,
+                        regNumber       reg2,
+                        regNumber       reg3,
+                        ssize_t         imm,
+                        insOpts         opt  = INS_OPTS_NONE,
+                        insScalableOpts sopt = INS_SCALABLE_OPTS_NONE);
 
 void emitIns_R_R_R_I_I(instruction ins,
                        emitAttr    attr,
