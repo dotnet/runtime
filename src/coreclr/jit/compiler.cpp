@@ -1798,7 +1798,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
     if (!compIsForInlining())
     {
-        JitMetadata::report(this, JitMetadataName::MethodFullName, info.compFullName);
+        JitMetadata::report(this, JitMetadata::MethodFullName, info.compFullName, strlen(info.compFullName));
     }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
 
@@ -7156,7 +7156,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         opts.disAsm = false;
     }
 
-    INDEBUG(JitMetadata::report(this, JitMetadataName::TieringName, compGetTieringName(true)));
+#ifdef DEBUG
+    {
+        const char* tieringName = compGetTieringName(true);
+        JitMetadata::report(this, JitMetadata::TieringName, tieringName, strlen(tieringName));
+    }
+#endif
 
 #if COUNT_BASIC_BLOCKS
     bbCntTable.record(fgBBcount);

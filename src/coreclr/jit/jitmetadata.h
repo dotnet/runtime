@@ -5,17 +5,13 @@
 
 class Compiler;
 
-enum class JitMetadataName
-{
-#define JITMETADATA(name, type, flags) name,
-#include "jitmetadatalist.h"
-};
-
 class JitMetadata
 {
 public:
-    static const char* getName(JitMetadataName name);
-    static void report(Compiler* comp, JitMetadataName name, const void* data);
+#define JITMETADATA(name, type, flags) static constexpr const char* name = #name;
+#include "jitmetadatalist.h"
+
+    static void report(Compiler* comp, const char* name, const void* data, size_t length);
 };
 
 class JitMetrics

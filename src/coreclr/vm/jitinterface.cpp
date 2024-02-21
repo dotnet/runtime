@@ -10958,7 +10958,8 @@ void CEEJitInfo::reportRichMappings(
 
 void CEEJitInfo::reportMetadata(
         const char* key,
-        const void* value)
+        const void* value,
+        size_t length)
 {
     CONTRACTL {
         NOTHROW;
@@ -14436,7 +14437,7 @@ void CEEInfo::reportRichMappings(
     UNREACHABLE();      // only called on derived class.
 }
 
-void CEEInfo::reportMetadata(const char* key, const void* value)
+void CEEInfo::reportMetadata(const char* key, const void* value, size_t length)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

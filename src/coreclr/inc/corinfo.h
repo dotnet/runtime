@@ -2920,7 +2920,8 @@ public:
     // example, metrics about the compilation.
     virtual void reportMetadata(
         const char* key,
-        const void* value) = 0;
+        const void* value,
+        size_t length) = 0;
 
     /*-------------------------- Misc ---------------------------------------*/
 

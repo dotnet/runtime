@@ -440,7 +440,8 @@ void reportRichMappings(
 
 void reportMetadata(
           const char* key,
-          const void* value) override;
+          const void* value,
+          size_t length) override;
 
 void* allocateArray(
           size_t cBytes) override;

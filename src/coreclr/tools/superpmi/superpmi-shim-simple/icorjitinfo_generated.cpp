@@ -743,9 +743,10 @@ void interceptor_ICJI::reportRichMappings(
 
 void interceptor_ICJI::reportMetadata(
           const char* key,
-          const void* value)
+          const void* value,
+          size_t length)
 {
-    original_ICorJitInfo->reportMetadata(key, value);
+    original_ICorJitInfo->reportMetadata(key, value, length);
 }
 
 void* interceptor_ICJI::allocateArray(

@@ -1027,36 +1027,32 @@ void MyICJI::reportRichMappings(
     freeArray(mappings);
 }
 
-void MyICJI::reportMetadata(const char* key, const void* value)
+void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
 {
     jitInstance->mc->cr->AddCall("reportMetadata");
 
     if (strcmp(key, "MethodFullName") == 0)
     {
-        const char* str = static_cast<const char*>(value);
-        size_t len = strlen(str);
-        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(len + 1));
-        memcpy(buf, str, len + 1);
+        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(length + 1));
+        memcpy(buf, value, length + 1);
         jitInstance->mc->cr->MethodFullName = buf;
         return;
     }
 
     if (strcmp(key, "TieringName") == 0)
     {
-        const char* str = static_cast<const char*>(value);
-        size_t len = strlen(str);
-        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(len + 1));
-        memcpy(buf, str, len + 1);
+        char* buf = static_cast<char*>(jitInstance->mc->cr->allocateMemory(length + 1));
+        memcpy(buf, value, length + 1);
         jitInstance->mc->cr->TieringName = buf;
         return;
     }
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \
-    if (strcmp(key, #name) == 0)                                   \
-    {                                                              \
+    if ((strcmp(key, #name) == 0) && (length == sizeof(type)))   \
+    {                                                            \
         memcpy(&jitInstance->mc->cr->name, value, sizeof(type)); \
-        return;                                                    \
+        return;                                                  \
     }
 
 #include "jitmetadatalist.h"

@@ -1548,12 +1548,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _reportMetadata(IntPtr thisHandle, IntPtr* ppException, byte* key, void* value)
+        private static void _reportMetadata(IntPtr thisHandle, IntPtr* ppException, byte* key, void* value, UIntPtr length)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.reportMetadata(key, value);
+                _this.reportMetadata(key, value, length);
             }
             catch (Exception ex)
             {
@@ -2671,7 +2671,7 @@ namespace Internal.JitInterface
             callbacks[101] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, ILVarInfo**, bool*, void>)&_getVars;
             callbacks[102] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint, NativeVarInfo*, void>)&_setVars;
             callbacks[103] = (delegate* unmanaged<IntPtr, IntPtr*, InlineTreeNode*, uint, RichOffsetMapping*, uint, void>)&_reportRichMappings;
-            callbacks[104] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, void*, void>)&_reportMetadata;
+            callbacks[104] = (delegate* unmanaged<IntPtr, IntPtr*, byte*, void*, UIntPtr, void>)&_reportMetadata;
             callbacks[105] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_allocateArray;
             callbacks[106] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void>)&_freeArray;
             callbacks[107] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ARG_LIST_STRUCT_*, CORINFO_ARG_LIST_STRUCT_*>)&_getArgNext;
