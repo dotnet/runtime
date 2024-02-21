@@ -4511,18 +4511,19 @@ namespace System.Threading.Tasks
 
         // Support method for AddTaskContinuation that takes care of multi-continuation logic.
         // Returns true if and only if the continuation was successfully queued.
-        // THIS METHOD ASSUMES THAT m_continuationObject IS NOT NULL.  That case was taken
-        // care of in the calling method, AddTaskContinuation().
         private bool AddTaskContinuationComplex(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null, "Expected non-null tc object in AddTaskContinuationComplex");
 
             object? oldValue = m_continuationObject;
+            Debug.Assert(oldValue is not null, "Expected non-null m_continuationObject object");
             if (oldValue == s_taskCompletionSentinel)
-                goto alreadyCompleted;
+            {
+                return false;
+            }
 
-            List<object?>? list = oldValue as List<object?>;
             // Logic for the case where we were previously storing a single continuation
+            List<object?>? list = oldValue as List<object?>;
             if (list is null)
             {
                 // Construct a new TaskContinuation list and CAS it in.
@@ -4552,7 +4553,7 @@ namespace System.Threading.Tasks
                 if (list is null)
                 {
                     Debug.Assert(oldValue == s_taskCompletionSentinel, "Expected m_continuationObject to be list or sentinel");
-                    goto alreadyCompleted;
+                    return false;
                 }
             }
 
@@ -4561,7 +4562,9 @@ namespace System.Threading.Tasks
                 // It is possible for the task to complete right after we snap the copy of
                 // the list.  If so, then return false without queuing the continuation.
                 if (m_continuationObject == s_taskCompletionSentinel)
-                    goto alreadyCompleted;
+                {
+                    return false;
+                }
 
                 // Before growing the list we remove possible null entries that are the
                 // result from RemoveContinuations()
@@ -4571,14 +4574,16 @@ namespace System.Threading.Tasks
                 }
 
                 if (addBeforeOthers)
+                {
                     list.Insert(0, tc);
+                }
                 else
+                {
                     list.Add(tc);
+                }
             }
-            return true; // continuation successfully queued, so return true.
 
-        // We didn't succeed in queuing the continuation, so return false.
-        alreadyCompleted: return false;
+            return true; // continuation successfully queued, so return true.
         }
 
         // Record a continuation task or action.
