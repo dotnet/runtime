@@ -1844,6 +1844,7 @@ GenTree* Lowering::AddrGen(void* addr)
 
 //------------------------------------------------------------------------
 // LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
+//    Do the same for CORINFO_HELP_MEMCPY(DST, SRC, CNS_SIZE)
 //
 //    *  STORE_BLK struct<CNS_SIZE> (copy) (Unroll)
 //    +--*  LCL_VAR   byref  dst
@@ -1895,7 +1896,8 @@ bool Lowering::LowerCallMemmove(GenTreeCall* call, GenTree** next)
 
             // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
             // unroll this memmove as memcpy - it doesn't require lots of temp registers
-            storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnrollMemmove;
+            storeBlk->gtBlkOpKind = call->IsHelperCall(comp, CORINFO_HELP_MEMCPY) ? GenTreeBlk::BlkOpKindUnroll
+                                                                                  : GenTreeBlk::BlkOpKindUnrollMemmove;
 
             BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, storeBlk);
