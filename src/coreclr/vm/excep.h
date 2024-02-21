@@ -846,6 +846,8 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 
 X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGISTRATION_RECORD* pRec);)
 
+VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind();
+
 #endif // !DACCESS_COMPILE
 
 #endif // __excep_h__
