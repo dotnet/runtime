@@ -1088,6 +1088,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SVE_EX_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector elements (quadwords)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract long
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
+        case IF_SVE_FN_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply long
             elemsize = id->idOpSize();
             assert(insOptsScalableStandard(id->idInsOpt())); // xx
             assert(isVectorRegister(id->idReg1()));          // ddddd
@@ -10957,6 +10958,31 @@ void emitter::emitIns_R_R_R(instruction     ins,
             assert(isVectorRegister(reg3));                        // mmmmm
             assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
             fmt = IF_SVE_FM_3A;
+            break;
+
+        case INS_sve_smullb:
+        case INS_sve_smullt:
+        case INS_sve_umullb:
+        case INS_sve_umullt:
+        case INS_sve_sqdmullb:
+        case INS_sve_sqdmullt:
+        case INS_sve_pmullb:
+        case INS_sve_pmullt:
+            assert(insOptsScalableAtLeastHalf(opt));
+            assert(isVectorRegister(reg1)); // ddddd
+            assert(isVectorRegister(reg2)); // nnnnn
+            assert(isVectorRegister(reg3)); // mmmmm
+            assert(isValidVectorElemsize(optGetSveElemsize(opt))); // xx
+            fmt = IF_SVE_FN_3A;
+            break;
+
+        case INS_sve_pmullb:
+        case INS_sve_pmullt:
+            assert(insOptsScalable(id->idInsOpt()));
+            assert(isVectorRegister(reg10)); // mmmmm
+            assert(isVectorRegister(reg20)); // nnnnn
+            assert(isVectorRegister(reg30)); // ddddd
+            fmt = IF_SVE_FN_3B;
             break;
 
         case INS_sve_clz:
@@ -22763,6 +22789,7 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
         case IF_SVE_EX_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE permute vector elements (quadwords)
         case IF_SVE_FL_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract long
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
+        case IF_SVE_FN_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply long
             code = emitInsCodeSve(ins, fmt);
             code |= insEncodeReg_V_4_to_0(id->idReg1());                     // ddddd
             code |= insEncodeReg_V_9_to_5(id->idReg2());                     // nnnnn
@@ -27225,6 +27252,7 @@ void emitter::emitDispInsHelp(
         case IF_SVE_EO_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 saturating multiply-add long
         // <Zd>.<T>, <Zn>.<Tb>, <Zm>.<Tb>
         case IF_SVE_FL_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract long
+        case IF_SVE_FN_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply long
         {
             const insOpts smallSizeSpecifier = (insOpts)(id->idInsOpt() - 1);
             emitDispSveReg(id->idReg1(), id->idInsOpt(), true);      // ddddd
@@ -30224,6 +30252,30 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case IF_SVE_FM_3A:   // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer add/subtract wide
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency    = PERFSCORE_LATENCY_2C;
+            break;
+
+        case IF_SVE_FN_3A:        // ........xx.mmmmm ......nnnnnddddd -- SVE2 integer multiply long
+            switch(ins)
+            {
+                case INS_sve_smullb:
+                case INS_sve_smullt:
+                case INS_sve_umullb:
+                case INS_sve_umullt:
+                case INS_sve_sqdmullb:
+                case INS_sve_sqdmullt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+                case INS_sve_pmullb:
+                case INS_sve_pmullt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+                default:
+                    // all other instructions
+                    perfScoreUnhandledInstruction(id, &result);
+                    break;
+            }
             break;
 
         case IF_SVE_BA_3A: // ........xx.mmmmm ......nnnnnddddd -- SVE index generation (register start, register
