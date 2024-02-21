@@ -1452,7 +1452,8 @@ PhaseStatus Compiler::optInductionVariables()
 
                 if (insertInitAfter->IsPhiDefnStmt())
                 {
-                    while ((insertInitAfter->GetNextStmt() != nullptr) && insertInitAfter->GetNextStmt()->IsPhiDefnStmt())
+                    while ((insertInitAfter->GetNextStmt() != nullptr) &&
+                           insertInitAfter->GetNextStmt()->IsPhiDefnStmt())
                     {
                         insertInitAfter = insertInitAfter->GetNextStmt();
                     }
