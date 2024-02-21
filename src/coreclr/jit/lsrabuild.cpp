@@ -907,18 +907,6 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
             killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
             break;
 
-#ifndef TARGET_X86
-        case GenTreeBlk::BlkOpKindHelper:
-            if (isCopyBlk)
-            {
-                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMCPY);
-            }
-            else
-            {
-                killMask = compiler->compHelperCallKillSet(CORINFO_HELP_MEMSET);
-            }
-            break;
-#endif
 #ifdef TARGET_XARCH
         case GenTreeBlk::BlkOpKindRepInstr:
             if (isCopyBlk)
