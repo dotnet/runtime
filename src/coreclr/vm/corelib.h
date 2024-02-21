@@ -337,13 +337,13 @@ DEFINE_FIELD(RT_TYPE_HANDLE,        M_TYPE,                 m_type)
 DEFINE_CLASS(TYPE_NAME_PARSER,      Reflection,             TypeNameParser)
 DEFINE_METHOD(TYPE_NAME_PARSER,     GET_TYPE_HELPER,        GetTypeHelper,              SM_Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType)
 
-DEFINE_CLASS_U(Reflection,             RtFieldInfo,         NoClass)
-DEFINE_FIELD_U(m_fieldHandle,              ReflectFieldObject, m_pFD)
+DEFINE_CLASS_U(Reflection,          RtFieldInfo,            NoClass)
+DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(RT_FIELD_INFO,         Reflection,             RtFieldInfo)
 DEFINE_FIELD(RT_FIELD_INFO,         HANDLE,                 m_fieldHandle)
 
-DEFINE_CLASS_U(System,                 RuntimeFieldInfoStub,       ReflectFieldObject)
-DEFINE_FIELD_U(m_fieldHandle,              ReflectFieldObject, m_pFD)
+DEFINE_CLASS_U(System,              RuntimeFieldInfoStub,   ReflectFieldObject)
+DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(STUBFIELDINFO,         System,                 RuntimeFieldInfoStub)
 #if FOR_ILLINK
 DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,                      IM_RetVoid)

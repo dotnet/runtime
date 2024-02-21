@@ -21,8 +21,8 @@ void Compiler::optInit()
 {
     fgHasLoops = false;
 
-    optLoopsRequirePreHeaders = false;
-    optNumNaturalLoopsFound   = 0;
+    optLoopsCanonical       = false;
+    optNumNaturalLoopsFound = 0;
 
 #ifdef DEBUG
     loopAlignCandidates = 0;
@@ -196,7 +196,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         // Is this a back edge?
         if (predBlock->bbNum >= begBlk->bbNum)
         {
-            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, backedgeList);
+            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, begBlk, backedgeList);
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
@@ -553,170 +553,168 @@ void Compiler::optCheckPreds()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
-// optRedirectBlock: Replace the branch successors of a block based on a block map.
+// optSetMappedBlockTargets: Initialize the branch successors of a block based on a block map.
 //
-// Updates the successors of `blk`: if `blk2` is a branch successor of `blk`, and there is a mapping
-// for `blk2->blk3` in `redirectMap`, change `blk` so that `blk3` is this branch successor.
+// Updates the successors of `newBlk`, a copy of `blk`:
+// If `blk2` is a branch successor of `blk`, and there is a mapping
+// for `blk2->blk3` in `redirectMap`, make `blk3` a successor of `newBlk`.
+// Else, make `blk2` a successor of `newBlk`.
 //
 // Arguments:
-//     blk          - block to redirect
-//     redirectMap  - block->block map specifying how the `blk` target will be redirected.
-//     predOption   - specifies how to update the pred lists
+//     blk          - the original block, which doesn't need redirecting
+//     newBlk       - copy of blk, with uninitialized successors
+//     redirectMap  - block->block map specifying how to redirect the target of `blk`.
 //
 // Notes:
-//     Pred lists for successors of `blk` may be changed, depending on `predOption`.
+//     Initially, `newBlk` should not have any successors set.
+//     Upon returning, `newBlk` should have all of its successors initialized.
+//     `blk` must have its successors set upon entry; these won't be changed.
 //
-void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, RedirectBlockOption predOption)
+void Compiler::optSetMappedBlockTargets(BasicBlock* blk, BasicBlock* newBlk, BlockToBlockMap* redirectMap)
 {
-    const bool updatePreds = (predOption == RedirectBlockOption::UpdatePredLists);
-    const bool addPreds    = (predOption == RedirectBlockOption::AddToPredLists);
+    // Caller should not have initialized newBlk's target yet
+    assert(newBlk->KindIs(BBJ_ALWAYS));
+    assert(!newBlk->HasInitializedTarget());
 
-    BasicBlock* newJumpDest = nullptr;
+    BasicBlock* newTarget;
 
+    // Initialize the successors of "newBlk".
+    // For each successor, use "blockMap" to determine if the successor needs to be redirected.
     switch (blk->GetKind())
     {
-        case BBJ_THROW:
-        case BBJ_RETURN:
-        case BBJ_EHFILTERRET:
-        case BBJ_EHFAULTRET:
-        case BBJ_EHCATCHRET:
-            // These have no jump destination to update.
-            break;
-
-        case BBJ_CALLFINALLY:
-            if (addPreds && blk->bbFallsThrough())
-            {
-                fgAddRefPred(blk->Next(), blk);
-            }
+        case BBJ_ALWAYS:
+            // Copy BBF_NONE_QUIRK flag for BBJ_ALWAYS blocks only
+            newBlk->CopyFlags(blk, BBF_NONE_QUIRK);
 
             FALLTHROUGH;
-        case BBJ_ALWAYS:
-        case BBJ_LEAVE:
+        case BBJ_CALLFINALLY:
         case BBJ_CALLFINALLYRET:
-            // All of these have a single jump destination to update.
-            if (redirectMap->Lookup(blk->GetTarget(), &newJumpDest))
+        case BBJ_LEAVE:
+            // Determine if newBlk should be redirected to a different target from blk's target
+            if (redirectMap->Lookup(blk->GetTarget(), &newTarget))
             {
-                if (updatePreds)
-                {
-                    fgRemoveRefPred(blk->GetTarget(), blk);
-                }
-                blk->SetTarget(newJumpDest);
-                if (updatePreds || addPreds)
-                {
-                    fgAddRefPred(newJumpDest, blk);
-                }
+                // newBlk needs to be redirected to a new target
+                newBlk->SetKindAndTarget(blk->GetKind(), newTarget);
             }
-            else if (addPreds)
+            else
             {
-                fgAddRefPred(blk->GetTarget(), blk);
+                // newBlk uses the same target as blk
+                newBlk->SetKindAndTarget(blk->GetKind(), blk->GetTarget());
             }
+
+            fgAddRefPred(newBlk->GetTarget(), newBlk);
             break;
 
         case BBJ_COND:
-            // Update jump taken when condition is true
-            if (redirectMap->Lookup(blk->GetTrueTarget(), &newJumpDest))
+        {
+            BasicBlock* trueTarget;
+            BasicBlock* falseTarget;
+
+            // Determine if newBLk should be redirected to a different true target from blk's true target
+            if (redirectMap->Lookup(blk->GetTrueTarget(), &newTarget))
             {
-                if (updatePreds)
-                {
-                    fgRemoveRefPred(blk->GetTrueTarget(), blk);
-                }
-                blk->SetTrueTarget(newJumpDest);
-                if (updatePreds || addPreds)
-                {
-                    fgAddRefPred(newJumpDest, blk);
-                }
+                // newBlk needs to be redirected to a new true target
+                trueTarget = newTarget;
             }
-            else if (addPreds)
+            else
             {
-                fgAddRefPred(blk->GetTrueTarget(), blk);
+                // newBlk uses the same true target as blk
+                trueTarget = blk->GetTrueTarget();
             }
 
-            // Update jump taken when condition is false
-            if (redirectMap->Lookup(blk->GetFalseTarget(), &newJumpDest))
+            // Do the same lookup for the false target
+            if (redirectMap->Lookup(blk->GetFalseTarget(), &newTarget))
             {
-                if (updatePreds)
-                {
-                    fgRemoveRefPred(blk->GetFalseTarget(), blk);
-                }
-                blk->SetFalseTarget(newJumpDest);
-                if (updatePreds || addPreds)
-                {
-                    fgAddRefPred(newJumpDest, blk);
-                }
+                falseTarget = newTarget;
             }
-            else if (addPreds)
+            else
             {
-                fgAddRefPred(blk->GetFalseTarget(), blk);
+                falseTarget = blk->GetFalseTarget();
             }
+
+            fgAddRefPred(trueTarget, newBlk);
+            fgAddRefPred(falseTarget, newBlk);
+            newBlk->SetCond(trueTarget, falseTarget);
             break;
+        }
 
         case BBJ_EHFINALLYRET:
         {
-            BBehfDesc*  ehfDesc = blk->GetEhfTargets();
-            BasicBlock* newSucc = nullptr;
-            for (unsigned i = 0; i < ehfDesc->bbeCount; i++)
+            BBehfDesc* currEhfDesc = blk->GetEhfTargets();
+            BBehfDesc* newEhfDesc  = new (this, CMK_BasicBlock) BBehfDesc;
+            newEhfDesc->bbeCount   = currEhfDesc->bbeCount;
+            newEhfDesc->bbeSuccs   = new (this, CMK_FlowEdge) FlowEdge*[newEhfDesc->bbeCount];
+
+            for (unsigned i = 0; i < newEhfDesc->bbeCount; i++)
             {
-                BasicBlock* const succ = ehfDesc->bbeSuccs[i];
-                if (redirectMap->Lookup(succ, &newSucc))
+                FlowEdge* const   inspiringEdge = currEhfDesc->bbeSuccs[i];
+                BasicBlock* const ehfTarget     = inspiringEdge->getDestinationBlock();
+                FlowEdge*         newEdge;
+
+                // Determine if newBlk should target ehfTarget, or be redirected
+                if (redirectMap->Lookup(ehfTarget, &newTarget))
                 {
-                    if (updatePreds)
-                    {
-                        fgRemoveRefPred(succ, blk);
-                    }
-                    if (updatePreds || addPreds)
-                    {
-                        fgAddRefPred(newSucc, blk);
-                    }
-                    ehfDesc->bbeSuccs[i] = newSucc;
+                    newEdge = fgAddRefPred(newTarget, newBlk, inspiringEdge);
                 }
-                else if (addPreds)
+                else
                 {
-                    fgAddRefPred(succ, blk);
+                    newEdge = fgAddRefPred(ehfTarget, newBlk, inspiringEdge);
                 }
+
+                newEhfDesc->bbeSuccs[i] = newEdge;
             }
+
+            newBlk->SetEhf(newEhfDesc);
+            break;
         }
-        break;
 
         case BBJ_SWITCH:
         {
-            bool redirected = false;
-            for (unsigned i = 0; i < blk->GetSwitchTargets()->bbsCount; i++)
+            BBswtDesc* currSwtDesc = blk->GetSwitchTargets();
+            BBswtDesc* newSwtDesc  = new (this, CMK_BasicBlock) BBswtDesc(currSwtDesc);
+            newSwtDesc->bbsDstTab  = new (this, CMK_FlowEdge) FlowEdge*[newSwtDesc->bbsCount];
+
+            for (unsigned i = 0; i < newSwtDesc->bbsCount; i++)
             {
-                BasicBlock* const switchDest = blk->GetSwitchTargets()->bbsDstTab[i];
-                if (redirectMap->Lookup(switchDest, &newJumpDest))
+                FlowEdge* const   inspiringEdge = currSwtDesc->bbsDstTab[i];
+                BasicBlock* const switchTarget  = inspiringEdge->getDestinationBlock();
+                FlowEdge*         newEdge;
+
+                // Determine if newBlk should target switchTarget, or be redirected
+                if (redirectMap->Lookup(switchTarget, &newTarget))
                 {
-                    if (updatePreds)
-                    {
-                        fgRemoveRefPred(switchDest, blk);
-                    }
-                    if (updatePreds || addPreds)
-                    {
-                        fgAddRefPred(newJumpDest, blk);
-                    }
-                    blk->GetSwitchTargets()->bbsDstTab[i] = newJumpDest;
-                    redirected                            = true;
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(newTarget, newBlk);
                 }
-                else if (addPreds)
+                else
                 {
-                    fgAddRefPred(switchDest, blk);
+                    // TODO: Set likelihood using inspiringEdge
+                    newEdge = fgAddRefPred(switchTarget, newBlk);
                 }
+
+                newSwtDesc->bbsDstTab[i] = newEdge;
             }
-            // If any redirections happened, invalidate the switch table map for the switch.
-            if (redirected)
-            {
-                // Don't create a new map just to try to remove an entry.
-                BlockToSwitchDescMap* switchMap = GetSwitchDescMap(/* createIfNull */ false);
-                if (switchMap != nullptr)
-                {
-                    switchMap->Remove(blk);
-                }
-            }
+
+            newBlk->SetSwitch(newSwtDesc);
+            break;
         }
-        break;
+
+        case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
+            // newBlk's jump target should not need to be redirected
+            assert(!redirectMap->Lookup(blk->GetTarget(), &newTarget));
+            newBlk->SetKindAndTarget(blk->GetKind(), blk->GetTarget());
+            fgAddRefPred(newBlk->GetTarget(), newBlk);
+            break;
 
         default:
-            unreached();
+            // blk doesn't have a jump destination
+            assert(blk->NumSucc() == 0);
+            newBlk->SetKindAndTarget(blk->GetKind());
+            break;
     }
+
+    assert(newBlk->KindIs(blk->GetKind()));
 }
 
 //-----------------------------------------------------------------------------
@@ -1318,6 +1316,13 @@ PhaseStatus Compiler::optUnrollLoops()
         // those blocks now.
         fgDfsBlocksAndRemove();
         m_loops = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        if (optCanonicalizeLoops())
+        {
+            fgInvalidateDfsTree();
+            m_dfsTree = fgComputeDfs();
+            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+        }
 
         fgRenumberBlocks();
 
@@ -2212,8 +2217,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // is maintained no matter which condition block we point to, but we'll lose optimization potential
     // (and create spaghetti code) if we get it wrong.
     //
-    BlockToBlockMap blockMap(getAllocator(CMK_LoopOpt));
-    bool            blockMapInitialized = false;
 
     unsigned const loopFirstNum  = bTop->bbNum;
     unsigned const loopBottomNum = bTest->bbNum;
@@ -2226,16 +2229,30 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             continue;
         }
 
-        if (!blockMapInitialized)
-        {
-            blockMapInitialized = true;
-            blockMap.Set(bTest, bNewCond);
-        }
-
         // Redirect the predecessor to the new block.
         JITDUMP("Redirecting non-loop " FMT_BB " -> " FMT_BB " to " FMT_BB " -> " FMT_BB "\n", predBlock->bbNum,
                 bTest->bbNum, predBlock->bbNum, bNewCond->bbNum);
-        optRedirectBlock(predBlock, &blockMap, RedirectBlockOption::UpdatePredLists);
+
+        switch (predBlock->GetKind())
+        {
+            case BBJ_ALWAYS:
+            case BBJ_CALLFINALLY:
+            case BBJ_CALLFINALLYRET:
+            case BBJ_COND:
+            case BBJ_SWITCH:
+            case BBJ_EHFINALLYRET:
+                fgReplaceJumpTarget(predBlock, bTest, bNewCond);
+                break;
+
+            case BBJ_EHCATCHRET:
+            case BBJ_EHFILTERRET:
+                // These block types should not need redirecting
+                break;
+
+            default:
+                assert(!"Unexpected bbKind for predecessor block");
+                break;
+        }
     }
 
     // If we have profile data for all blocks and we know that we are cloning the
@@ -2680,8 +2697,8 @@ void Compiler::optFindLoops()
 
     fgRenumberBlocks();
 
-    // Starting now, we require all loops to have pre-headers.
-    optLoopsRequirePreHeaders = true;
+    // Starting now we require all loops to be in canonical form.
+    optLoopsCanonical = true;
 
     // Leave a bread crumb for future phases like loop alignment about whether
     // looking for loops makes sense. We generally do not expect phases to
@@ -2709,9 +2726,26 @@ void Compiler::optFindLoops()
 bool Compiler::optCanonicalizeLoops()
 {
     bool changed = false;
+
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         changed |= optCreatePreheader(loop);
+    }
+
+    // At this point we've created preheaders. That means we are working with
+    // stale loop and DFS data. However, we can do exit canonicalization even
+    // on the stale data; this relies on the fact that exiting blocks do not
+    // change as a result of creating preheaders. On the other hand the exit
+    // blocks themselves may have changed (previously it may have been another
+    // loop's header, now it might be its preheader instead). Exit
+    // canonicalization stil works even with this.
+    //
+    // The exit canonicalization needs to be done in post order (inner -> outer
+    // loops) so that inner exits that also exit outer loops have proper exit
+    // blocks created for each loop.
+    for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
+    {
+        changed |= optCanonicalizeExits(loop);
     }
 
     return changed;
@@ -2948,7 +2982,7 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
 
     BasicBlock* preheader = fgNewBBbefore(BBJ_ALWAYS, insertBefore, false, header);
     preheader->SetFlags(BBF_INTERNAL);
-    fgSetEHRegionForNewPreheader(preheader);
+    fgSetEHRegionForNewPreheaderOrExit(preheader);
 
     if (preheader->NextIs(header))
     {
@@ -2970,137 +3004,277 @@ bool Compiler::optCreatePreheader(FlowGraphNaturalLoop* loop)
         fgReplaceJumpTarget(enterBlock, header, preheader);
     }
 
-    optSetPreheaderWeight(loop, preheader);
+    optSetWeightForPreheaderOrExit(loop, preheader);
 
     return true;
 }
 
 //-----------------------------------------------------------------------------
-// optSetPreheaderWeight: Set the weight of a newly created preheader, after it
-// has been added to the flowgraph.
+// optCanonicalizeExits: Canonicalize all regular exits of the loop so that
+// they have only loop predecessors.
 //
 // Parameters:
-//   loop      - The loop
-//   preheader - The new preheader block
+//   loop - The loop
 //
-void Compiler::optSetPreheaderWeight(FlowGraphNaturalLoop* loop, BasicBlock* preheader)
+// Returns:
+//   True if any flow graph modifications were made.
+//
+bool Compiler::optCanonicalizeExits(FlowGraphNaturalLoop* loop)
 {
-    if (loop->EntryEdges().size() == 0)
+    bool changed = false;
+
+    for (FlowEdge* edge : loop->ExitEdges())
     {
-        return;
+        // Find all blocks outside the loop from this exiting block. Those
+        // blocks are exits. Note that we may see preheaders created by
+        // previous canonicalization here, which are not part of the DFS tree
+        // or properly maintained in a parent loop. This also means the
+        // destination block of the exit edge may no longer be right, so we
+        // cannot use VisitRegularExitBlocks. The canonicalization here works
+        // despite this.
+        edge->getSourceBlock()->VisitRegularSuccs(this, [=, &changed](BasicBlock* succ) {
+            if (!loop->ContainsBlock(succ))
+            {
+                changed |= optCanonicalizeExit(loop, succ);
+            }
+
+            return BasicBlockVisit::Continue;
+        });
     }
 
-    // The preheader is only considered to have profile weights when all the
-    // following conditions are true:
-    // - The loop header has a profile weight
-    // - All entering blocks have a profile weight
-    // - The successors of all entering blocks have a profile weight (so that
-    //   we can trust the computed taken/not taken ratio)
-    //
-    bool     hasProfWeight   = fgIsUsingProfileWeights();
-    weight_t preheaderWeight = BB_ZERO_WEIGHT;
+    return changed;
+}
 
-    for (FlowEdge* entryEdge : loop->EntryEdges())
+//-----------------------------------------------------------------------------
+// optCanonicalizeExit: Canonicalize a single exit block to have only loop
+// predecessors.
+//
+// Parameters:
+//   loop - The loop
+//
+// Returns:
+//   True if any flow graph modifications were made.
+//
+bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
+{
+    assert(!loop->ContainsBlock(exit));
+
+    if (bbIsHandlerBeg(exit))
     {
-        BasicBlock* prevEntering = entryEdge->getSourceBlock();
-
-        hasProfWeight &= prevEntering->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY;
-
-        if (!fgIsUsingProfileWeights() || !prevEntering->HasFlag(BBF_PROF_WEIGHT) ||
-            !loop->GetHeader()->HasFlag(BBF_PROF_WEIGHT) || prevEntering->KindIs(BBJ_ALWAYS))
-        {
-            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
-            continue;
-        }
-
-        bool succsHaveProfileWeights = true;
-        bool useEdgeWeights          = fgHaveValidEdgeWeights;
-
-        weight_t loopEnterCount = 0;
-        weight_t loopSkipCount  = 0;
-
-        if (useEdgeWeights)
-        {
-            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
-                FlowEdge* edge       = fgGetPredForBlock(succ, prevEntering);
-                weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
-
-                if (succ == preheader)
-                {
-                    loopEnterCount += edgeWeight;
-                }
-                else
-                {
-                    succsHaveProfileWeights &= succ->hasProfileWeight();
-                    loopSkipCount += edgeWeight;
-                }
-                return BasicBlockVisit::Continue;
-            });
-
-            // Watch out for cases where edge weights were not properly maintained
-            // so that it appears no profile flow enters the loop.
-            //
-            useEdgeWeights = !fgProfileWeightsConsistent(loopEnterCount, BB_ZERO_WEIGHT);
-        }
-
-        if (!useEdgeWeights)
-        {
-            loopEnterCount = 0;
-            loopSkipCount  = 0;
-
-            prevEntering->VisitRegularSuccs(this, [&, preheader](BasicBlock* succ) {
-                if (succ == preheader)
-                {
-                    loopEnterCount += succ->bbWeight;
-                }
-                else
-                {
-                    succsHaveProfileWeights &= succ->hasProfileWeight();
-                    loopSkipCount += succ->bbWeight;
-                }
-
-                return BasicBlockVisit::Continue;
-            });
-        }
-
-        if (!succsHaveProfileWeights)
-        {
-            preheaderWeight += prevEntering->bbWeight / prevEntering->NumSucc(this);
-            hasProfWeight = false;
-            continue;
-        }
-
-        weight_t loopTakenRatio = loopEnterCount / (loopEnterCount + loopSkipCount);
-
-        JITDUMP("%s edge weights; loopEnterCount " FMT_WT " loopSkipCount " FMT_WT " taken ratio " FMT_WT "\n",
-                fgHaveValidEdgeWeights ? (useEdgeWeights ? "valid" : "ignored") : "invalid", loopEnterCount,
-                loopSkipCount, loopTakenRatio);
-
-        weight_t enterContribution = prevEntering->bbWeight * loopTakenRatio;
-        preheaderWeight += enterContribution;
-
-        // Normalize prevEntering -> preheader edge
-        FlowEdge* const edgeToPreheader = fgGetPredForBlock(preheader, prevEntering);
-        assert(edgeToPreheader != nullptr);
-        edgeToPreheader->setEdgeWeights(enterContribution, enterContribution, preheader);
+        return false;
     }
 
-    preheader->bbWeight = preheaderWeight;
+    bool allLoopPreds = true;
+    for (BasicBlock* pred : exit->PredBlocks())
+    {
+        if (!loop->ContainsBlock(pred))
+        {
+            allLoopPreds = false;
+            break;
+        }
+    }
+
+    if (allLoopPreds)
+    {
+        // Already canonical
+        JITDUMP("All preds of exit " FMT_BB " of " FMT_LP " are already in the loop, no exit canonicalization needed\n",
+                exit->bbNum, loop->GetIndex());
+        return false;
+    }
+
+    BasicBlock* newExit;
+
+#if FEATURE_EH_CALLFINALLY_THUNKS
+    if (exit->KindIs(BBJ_CALLFINALLY))
+    {
+        // Branches to a BBJ_CALLFINALLY _must_ come from inside its associated
+        // try region, and when we have callfinally thunks the BBJ_CALLFINALLY
+        // is outside it. First try to see if the lexically bottom most block
+        // is part of the try; if so, inserting after that is a good choice.
+        BasicBlock* finallyBlock = exit->GetTarget();
+        assert(finallyBlock->hasHndIndex());
+        BasicBlock* bottom = loop->GetLexicallyBottomMostBlock();
+        if (bottom->hasTryIndex() && (bottom->getTryIndex() == finallyBlock->getHndIndex()) && !bottom->hasHndIndex())
+        {
+            newExit = fgNewBBafter(BBJ_ALWAYS, bottom, true, exit);
+        }
+        else
+        {
+            // Otherwise just do the heavy-handed thing and insert it anywhere in the right region.
+            newExit = fgNewBBinRegion(BBJ_ALWAYS, finallyBlock->bbHndIndex, 0, nullptr, exit, /* putInFilter */ false,
+                                      /* runRarely */ false, /* insertAtEnd */ true);
+        }
+    }
+    else
+#endif
+    {
+        newExit = fgNewBBbefore(BBJ_ALWAYS, exit, false, exit);
+        newExit->SetFlags(BBF_NONE_QUIRK);
+        fgSetEHRegionForNewPreheaderOrExit(newExit);
+    }
+
+    newExit->SetFlags(BBF_INTERNAL);
+
+    fgAddRefPred(exit, newExit);
+
+    newExit->bbCodeOffs = exit->bbCodeOffs;
+
+    JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
+            loop->GetIndex());
+
+    for (BasicBlock* pred : exit->PredBlocks())
+    {
+        if (loop->ContainsBlock(pred))
+        {
+            fgReplaceJumpTarget(pred, exit, newExit);
+        }
+    }
+
+    optSetWeightForPreheaderOrExit(loop, newExit);
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// optEstimateEdgeLikelihood: Given a block "from" that may transfer control to
+// "to", estimate the likelihood that this will happen taking profile into
+// account if available.
+//
+// Parameters:
+//   from        - From block
+//   to          - To block
+//   fromProfile - [out] Whether or not the estimate is based on profile data
+//
+// Returns:
+//   Estimated likelihood of the edge being taken.
+//
+weight_t Compiler::optEstimateEdgeLikelihood(BasicBlock* from, BasicBlock* to, bool* fromProfile)
+{
+    *fromProfile = (from->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY) && (to->HasFlag(BBF_PROF_WEIGHT) != BBF_EMPTY);
+    if (!fgIsUsingProfileWeights() || !from->HasFlag(BBF_PROF_WEIGHT) || !to->HasFlag(BBF_PROF_WEIGHT) ||
+        from->KindIs(BBJ_ALWAYS))
+    {
+        return 1.0 / from->NumSucc(this);
+    }
+
+    bool useEdgeWeights = fgHaveValidEdgeWeights;
+
+    weight_t takenCount    = 0;
+    weight_t notTakenCount = 0;
+
+    if (useEdgeWeights)
+    {
+        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
+            *fromProfile &= succ->hasProfileWeight();
+            FlowEdge* edge       = fgGetPredForBlock(succ, from);
+            weight_t  edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2.0;
+
+            if (succ == to)
+            {
+                takenCount += edgeWeight;
+            }
+            else
+            {
+                notTakenCount += edgeWeight;
+            }
+            return BasicBlockVisit::Continue;
+        });
+
+        // Watch out for cases where edge weights were not properly maintained
+        // so that it appears no profile flow goes to 'to'.
+        //
+        useEdgeWeights = !fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT);
+    }
+
+    if (!useEdgeWeights)
+    {
+        takenCount    = 0;
+        notTakenCount = 0;
+
+        from->VisitRegularSuccs(this, [&, to](BasicBlock* succ) {
+            *fromProfile &= succ->hasProfileWeight();
+            if (succ == to)
+            {
+                takenCount += succ->bbWeight;
+            }
+            else
+            {
+                notTakenCount += succ->bbWeight;
+            }
+
+            return BasicBlockVisit::Continue;
+        });
+    }
+
+    if (!*fromProfile)
+    {
+        return 1.0 / from->NumSucc(this);
+    }
+
+    if (fgProfileWeightsConsistent(takenCount, BB_ZERO_WEIGHT))
+    {
+        return 0;
+    }
+
+    weight_t likelihood = takenCount / (takenCount + notTakenCount);
+    return likelihood;
+}
+
+//-----------------------------------------------------------------------------
+// optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
+// or exit, after it has been added to the flowgraph.
+//
+// Parameters:
+//   loop  - The loop
+//   block - The new preheader or exit block
+//
+void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicBlock* block)
+{
+    bool hasProfWeight = true;
+
+    assert(block->GetUniqueSucc() != nullptr);
+    // Inherit first estimate from the target target; optEstimateEdgeLikelihood
+    // may use it in its estimate if we do not have edge weights to estimate
+    // from (we also assume the edges into 'block' already inherited their edge
+    // weights from the previous edge).
+    block->inheritWeight(block->GetTarget());
+
+    weight_t newWeight = BB_ZERO_WEIGHT;
+    for (FlowEdge* edge : block->PredEdges())
+    {
+        BasicBlock* predBlock = edge->getSourceBlock();
+
+        bool     fromProfile = false;
+        weight_t likelihood  = optEstimateEdgeLikelihood(predBlock, block, &fromProfile);
+        hasProfWeight &= fromProfile;
+
+        weight_t contribution = predBlock->bbWeight * likelihood;
+        JITDUMP("  Estimated likelihood " FMT_BB " -> " FMT_BB " to be " FMT_WT " (contribution: " FMT_WT ")\n",
+                predBlock->bbNum, block->bbNum, likelihood, contribution);
+
+        newWeight += contribution;
+
+        // Normalize pred -> new block weight
+        edge->setEdgeWeights(contribution, contribution, block);
+    }
+
+    block->RemoveFlags(BBF_PROF_WEIGHT | BBF_RUN_RARELY);
+
+    block->bbWeight = newWeight;
     if (hasProfWeight)
     {
-        preheader->SetFlags(BBF_PROF_WEIGHT);
+        block->SetFlags(BBF_PROF_WEIGHT);
     }
 
-    if (preheaderWeight == BB_ZERO_WEIGHT)
+    if (newWeight == BB_ZERO_WEIGHT)
     {
-        preheader->SetFlags(BBF_RUN_RARELY);
+        block->SetFlags(BBF_RUN_RARELY);
         return;
     }
 
-    // Normalize preheader -> header weight
-    FlowEdge* const edgeFromPreheader = fgGetPredForBlock(loop->GetHeader(), preheader);
-    assert(edgeFromPreheader != nullptr);
-    edgeFromPreheader->setEdgeWeights(preheader->bbWeight, preheader->bbWeight, loop->GetHeader());
+    // Normalize block -> target weight
+    FlowEdge* const edgeFromBlock = fgGetPredForBlock(block->GetTarget(), block);
+    assert(edgeFromBlock != nullptr);
+    edgeFromBlock->setEdgeWeights(block->bbWeight, block->bbWeight, block->GetTarget());
 }
 
 /*****************************************************************************
@@ -5083,43 +5257,39 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
 }
 
 //------------------------------------------------------------------------------
-// fgSetEHRegionForNewPreheader: Set the EH region for a newly inserted
-// preheader.
+// fgSetEHRegionForNewPreheaderOrExit: Set the EH region for a newly inserted
+// preheader or exit block.
 //
-// In which EH region should the header live?
+// In which EH region should the block live?
 //
-// The preheader block is expected to have been added immediately before a
-// block `next` in the loop that is also in the same EH region as the header.
-// This is usually the lexically first block of the loop, but may also be the
-// header itself.
-//
-// If the `next` block is NOT the first block of a `try` region, the preheader
-// can simply extend the header block's EH region.
+// If the `next` block is NOT the first block of a `try` region, the new block
+// can simply extend the next block's EH region.
 //
 // If the `next` block IS the first block of a `try`, we find its parent region
 // and use that. For mutual-protect regions, we need to find the actual parent,
 // as the block stores the most "nested" mutual region. For non-mutual-protect
 // regions, due to EH canonicalization, we are guaranteed that no other EH
 // regions begin on the same block, so looking to just the parent is
-// sufficient. Note that we can't just extend the EH region of the header to
-// the preheader, because the header will still be the target of backward
-// branches from within the loop. If those backward branches come from outside
-// the `try` (say, only the top half of the loop is a `try` region), then we
-// can't branch to a non-first `try` region block (you always must enter the
-// `try` in the first block).
+// sufficient.
+// Note that we can't just extend the EH region of the next block to the new
+// block, because it may still be the target of other branches. If those
+// branches come from outside the `try` then we can't branch to a non-first
+// `try` region block (you always must enter the `try` in the first block). For
+// example, for the preheader we can have backedges that come from outside the
+// `try` (if, say, only the top half of the loop is a `try` region). For exits,
+// we could similarly have branches to the old exit block from outside the `try`.
 //
 // Note that hoisting any code out of a try region, for example, to a preheader
 // block in a different EH region, needs to ensure that no exceptions will be
-// thrown.
+// thrown. Similar considerations are required for exits.
 //
 // Arguments:
-//    preheader - the new preheader block, which has already been added to the
-//                block list before a block inside the loop that shares EH
-//                region with the header.
+//    block - the new block, which has already been added to the
+//            block list.
 //
-void Compiler::fgSetEHRegionForNewPreheader(BasicBlock* preheader)
+void Compiler::fgSetEHRegionForNewPreheaderOrExit(BasicBlock* block)
 {
-    BasicBlock* next = preheader->Next();
+    BasicBlock* next = block->Next();
 
     if (bbIsTryBeg(next))
     {
@@ -5129,15 +5299,15 @@ void Compiler::fgSetEHRegionForNewPreheader(BasicBlock* preheader)
         if (newTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
         {
             // No EH try index.
-            preheader->clearTryIndex();
+            block->clearTryIndex();
         }
         else
         {
-            preheader->setTryIndex(newTryIndex);
+            block->setTryIndex(newTryIndex);
         }
 
         // What handler region to use? Use the same handler region as `next`.
-        preheader->copyHndIndex(next);
+        block->copyHndIndex(next);
     }
     else
     {

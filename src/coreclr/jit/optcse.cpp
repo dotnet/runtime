@@ -609,10 +609,45 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             treeStmtLst* newElem;
 
-            /* Have we started the list of matching nodes? */
+            // Have we started the list of matching nodes?
 
             if (hashDsc->csdTreeList == nullptr)
             {
+                // This is the second time we see this value. Handle cases
+                // where the first value dominates the second one and we can
+                // already prove that the first one is _not_ going to be a
+                // valid def for the second one, due to the second one having
+                // more exceptions. This happens for example in code like
+                // CASTCLASS(x, y) where the "CASTCLASS" just adds exceptions
+                // on top of "x". In those cases it is always better to let the
+                // second value be the def.
+                // It also happens for GT_COMMA, but that one is special cased
+                // above; this handling is a less special-casey version of the
+                // GT_COMMA handling above. However, it is quite limited since
+                // it only handles the def/use being in the same block.
+                if (compCurBB == hashDsc->csdBlock)
+                {
+                    GenTree* prevTree  = hashDsc->csdTree;
+                    ValueNum prevVnLib = prevTree->GetVN(VNK_Liberal);
+                    if (prevVnLib != vnLib)
+                    {
+                        ValueNum prevExceptionSet = vnStore->VNExceptionSet(prevVnLib);
+                        ValueNum curExceptionSet  = vnStore->VNExceptionSet(vnLib);
+                        if ((prevExceptionSet != curExceptionSet) &&
+                            vnStore->VNExcIsSubset(curExceptionSet, prevExceptionSet))
+                        {
+                            JITDUMP("Skipping CSE candidate for tree [%06u]; tree [%06u] is a better candidate with "
+                                    "more exceptions\n",
+                                    prevTree->gtTreeID, tree->gtTreeID);
+                            prevTree->gtCSEnum = 0;
+                            hashDsc->csdStmt   = stmt;
+                            hashDsc->csdTree   = tree;
+                            tree->gtCSEnum     = (signed char)hashDsc->csdIndex;
+                            return hashDsc->csdIndex;
+                        }
+                    }
+                }
+
                 // Create the new element based upon the matching hashDsc element.
 
                 newElem = new (this, CMK_TreeStatementList) treeStmtLst;
@@ -2219,7 +2254,7 @@ void CSE_HeuristicReplay::ConsiderCandidates()
         return;
     }
 
-    static ConfigIntArray JitReplayCSEArray;
+    ConfigIntArray JitReplayCSEArray;
     JitReplayCSEArray.EnsureInit(JitConfig.JitReplayCSE());
 
     for (unsigned i = 0; i < JitReplayCSEArray.GetLength(); i++)
@@ -2277,7 +2312,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
 
     // Parameters
     //
-    static ConfigDoubleArray initialParameters;
+    ConfigDoubleArray initialParameters;
     initialParameters.EnsureInit(JitConfig.JitRLCSE());
     const unsigned initialParamLength = initialParameters.GetLength();
 
@@ -2324,7 +2359,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
 
         // Reward
         //
-        static ConfigDoubleArray rewards;
+        ConfigDoubleArray rewards;
         rewards.EnsureInit(JitConfig.JitReplayCSEReward());
         const unsigned rewardsLength = rewards.GetLength();
 
@@ -2342,7 +2377,7 @@ CSE_HeuristicRL::CSE_HeuristicRL(Compiler* pCompiler)
         //
         if (JitConfig.JitRLCSEAlpha() != nullptr)
         {
-            static ConfigDoubleArray JitRLCSEAlphaArray;
+            ConfigDoubleArray JitRLCSEAlphaArray;
             JitRLCSEAlphaArray.EnsureInit(JitConfig.JitRLCSEAlpha());
             m_alpha = JitRLCSEAlphaArray.GetData()[0];
         }
@@ -2513,13 +2548,22 @@ void CSE_HeuristicRL::CaptureLocalWeights()
         LclVarDsc* const varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
 
         // Locals with no references aren't enregistered
+        //
         if (varDsc->lvRefCnt() == 0)
         {
             continue;
         }
 
         // Some LclVars always have stack homes
+        //
         if (varDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        // Only consider for integral types
+        //
+        if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsMask(varDsc->TypeGet()))
         {
             continue;
         }
@@ -2723,6 +2767,17 @@ void CSE_HeuristicRL::SoftmaxPolicy()
 //   14. cse is marked GTF_MAKE_CSE (0/1)
 //   15. cse num distinct locals
 //   16. cse num local occurrences
+//   17. cse has call (0/1)
+//   18. log (cse use count weighted * costEx)
+//   19. log (cse use count weighted * num local occurrences)
+//   20. cse "distance" (max postorder num - min postorder num) / num BBs
+//   21. cse is "containable" (0/1)
+//   22. cse is cheap & containable (0/1)
+//   23. is live across call in possible LSRA ordering (0/1)
+//
+//   -----
+//
+//   24. log (pressure estimate weight)
 //
 void CSE_HeuristicRL::GetFeatures(CSEdsc* cse, double* features)
 {
@@ -2737,20 +2792,13 @@ void CSE_HeuristicRL::GetFeatures(CSEdsc* cse, double* features)
         return;
     }
 
-    const unsigned char costEx = cse->csdTree->GetCostEx();
+    const unsigned char costEx       = cse->csdTree->GetCostEx();
+    const double        deMinimis    = 1e-3;
+    const double        deMinimusAdj = -log(deMinimis);
 
     features[0] = costEx;
-
-    if (cse->csdUseWtCnt > 0)
-    {
-        features[1] = log(cse->csdUseWtCnt);
-    }
-
-    if (cse->csdDefWtCnt > 0)
-    {
-        features[2] = log(cse->csdDefWtCnt);
-    }
-
+    features[1] = deMinimusAdj + log(max(deMinimis, cse->csdUseWtCnt));
+    features[2] = deMinimusAdj + log(max(deMinimis, cse->csdDefWtCnt));
     features[3] = cse->csdTree->GetCostSz();
     features[4] = cse->csdUseCount;
     features[5] = cse->csdDefCount;
@@ -2770,6 +2818,7 @@ void CSE_HeuristicRL::GetFeatures(CSEdsc* cse, double* features)
     features[9] = booleanScale * isSharedConstant;
 
     const bool isMinCost = (costEx == Compiler::MIN_CSE_COST);
+    const bool isLowCost = (costEx <= Compiler::MIN_CSE_COST + 1);
 
     features[10] = booleanScale * isMinCost;
 
@@ -2780,18 +2829,71 @@ void CSE_HeuristicRL::GetFeatures(CSEdsc* cse, double* features)
     features[13] = booleanScale * (isMinCost & isLiveAcrossCall);
 
     // Is any CSE tree for this candidate marked GTF_MAKE_CSE (hoisting)
+    // Also gather data for "distance" metric.
     //
-    bool isMakeCse = false;
+    const unsigned numBBs            = m_pCompiler->fgBBcount;
+    bool           isMakeCse         = false;
+    unsigned       minPostorderNum   = numBBs;
+    unsigned       maxPostorderNum   = 0;
+    BasicBlock*    minPostorderBlock = nullptr;
+    BasicBlock*    maxPostorderBlock = nullptr;
     for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr && !isMakeCse; treeList = treeList->tslNext)
     {
-        isMakeCse = ((treeList->tslTree->gtFlags & GTF_MAKE_CSE) != 0);
+        BasicBlock* const treeBlock    = treeList->tslBlock;
+        unsigned          postorderNum = treeBlock->bbPostorderNum;
+        if (postorderNum < minPostorderNum)
+        {
+            minPostorderNum   = postorderNum;
+            minPostorderBlock = treeBlock;
+        }
+
+        if (postorderNum > maxPostorderNum)
+        {
+            maxPostorderNum   = postorderNum;
+            maxPostorderBlock = treeBlock;
+        }
+
+        isMakeCse |= ((treeList->tslTree->gtFlags & GTF_MAKE_CSE) != 0);
     }
+    const unsigned blockSpread = maxPostorderNum - minPostorderNum;
+
     features[14] = booleanScale * isMakeCse;
 
     // Locals data
     //
     features[15] = cse->numDistinctLocals;
     features[16] = cse->numLocalOccurrences;
+
+    // More
+    //
+    features[17] = booleanScale * ((cse->csdTree->gtFlags & GTF_CALL) != 0);
+    features[18] = deMinimusAdj + log(max(deMinimis, cse->csdUseCount * cse->csdUseWtCnt));
+    features[19] = deMinimusAdj + log(max(deMinimis, cse->numLocalOccurrences * cse->csdUseWtCnt));
+    features[20] = booleanScale * ((double)(blockSpread) / numBBs);
+
+    const bool isContainable = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH);
+    features[21]             = booleanScale * isContainable;
+    features[22]             = booleanScale * (isContainable && isLowCost);
+
+    // LSRA "is live across call"
+    //
+    bool isLiveAcrossCallLSRA = isLiveAcrossCall;
+
+    if (!isLiveAcrossCallLSRA)
+    {
+        unsigned count = 0;
+        for (BasicBlock *block                                                            = minPostorderBlock;
+             block != nullptr && block != maxPostorderBlock && count < blockSpread; block = block->Next(), count++)
+        {
+            if (block->HasFlag(BBF_HAS_CALL))
+            {
+                isLiveAcrossCallLSRA = true;
+                break;
+            }
+        }
+    }
+
+    features[23] = booleanScale * isLiveAcrossCallLSRA;
 }
 
 //------------------------------------------------------------------------
@@ -2804,7 +2906,7 @@ void CSE_HeuristicRL::GetFeatures(CSEdsc* cse, double* features)
 //
 // Stopping features
 //
-//   17. int register pressure weight estimate (log)
+//   24. int register pressure weight estimate (log)
 //
 // All boolean features are scaled up by booleanScale so their
 // numeric range is similar to the non-boolean features
@@ -2819,8 +2921,9 @@ void CSE_HeuristicRL::GetStoppingFeatures(double* features)
     //  "remove" weight per local use occurrences * weightUses
     //  "add" weight of the CSE temp times * (weigh defs*2) + weightUses
     //
-    double minWeight     = 0.01;
-    double spillAtWeight = minWeight;
+    const double deMinimis     = 1e-3;
+    double       spillAtWeight = deMinimis;
+    const double deMinimusAdj  = -log(deMinimis);
 
     // Assume each already performed cse is occupying a registger
     //
@@ -2845,7 +2948,8 @@ void CSE_HeuristicRL::GetStoppingFeatures(double* features)
     // Large frame...?
     //  todo: scan all vars, not just tracked?
     //
-    features[17] = log(max(spillAtWeight, minWeight));
+
+    features[24] = deMinimusAdj + log(max(deMinimis, spillAtWeight));
 }
 
 //------------------------------------------------------------------------
@@ -3172,8 +3276,8 @@ void CSE_HeuristicRL::UpdateParameters()
         return;
     }
 
-    ArrayStack<Choice>    choices(m_pCompiler->getAllocator(CMK_CSE));
-    static ConfigIntArray JitReplayCSEArray;
+    ArrayStack<Choice> choices(m_pCompiler->getAllocator(CMK_CSE));
+    ConfigIntArray     JitReplayCSEArray;
     JitReplayCSEArray.EnsureInit(JitConfig.JitReplayCSE());
 
     // We have an undiscounted reward, so it applies equally
