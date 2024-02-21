@@ -340,13 +340,14 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new InvalidOperationException($"No method name specified {fqn}");
 
             int namespaceEnd = classSpan.LastIndexOf('.');
-            string className = classSpan.ToString();
-            string shortClassName = className;
+            string shortClassName;
             string nameSpace = string.Empty;
             if (namespaceEnd != -1)
             {
                 shortClassName = classSpan.Slice(namespaceEnd + 1).ToString();
                 nameSpace = classSpan.Slice(0, namespaceEnd).ToString();
+            } else {
+                shortClassName = classSpan.ToString();
             }
             return (assembly, nameSpace, shortClassName, methodName);
         }
