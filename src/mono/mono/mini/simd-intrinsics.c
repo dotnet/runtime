@@ -695,18 +695,19 @@ emit_sum_sqrt_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg) {
 	sum->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
 	sum->inst_c1 = MONO_TYPE_R4;
 
+	if (COMPILE_LLVM (cfg)) {
+		sum = emit_simd_ins (cfg, klass, OP_EXPAND_R4, sum->dreg, -1);
+		sum->inst_c1 = MONO_TYPE_R4;
+	}
+
 	MonoInst* sum_sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
 	sum_sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FSQRT;
 	sum_sqrt->inst_c1 = MONO_TYPE_R4;
 
-	if (COMPILE_LLVM (cfg)) {
-		return sum_sqrt;
-	} else {
-		MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sum_sqrt->dreg, -1);
-		ins->inst_c0 = 0;
-		ins->inst_c1 = MONO_TYPE_R4;
-		return ins;
-	}
+	MonoInst *ins = emit_simd_ins (cfg, klass, OP_EXTRACT_R4, sum_sqrt->dreg, -1);
+	ins->inst_c0 = 0;
+	ins->inst_c1 = MONO_TYPE_R4;
+	return ins;
 }
 #endif
 #ifdef TARGET_WASM
@@ -1129,6 +1130,11 @@ emit_normalize_vector_2_3_4 (MonoCompile *cfg, MonoClass *klass, MonoInst *arg){
 	MonoInst *sum = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, vec_squared->dreg, -1);
 	sum->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
 	sum->inst_c1 = MONO_TYPE_R4;
+
+	if (COMPILE_LLVM (cfg)) {
+		sum = emit_simd_ins (cfg, klass, OP_EXPAND_R4, sum->dreg, -1);
+		sum->inst_c1 = MONO_TYPE_R4;
+	}
 
 	MonoInst *recip_sqrt = emit_simd_ins (cfg, klass, OP_XOP_OVR_X_X, sum->dreg, -1);
 	recip_sqrt->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FRSQRTE;
@@ -2821,7 +2827,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	etype = m_class_get_byval_arg (mono_defaults.single_class);
 	len = mono_class_value_size (klass, NULL) / 4;
 
-	const char *class_name = m_class_get_name (klass);
 #ifndef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
@@ -3153,19 +3158,20 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	case SN_CopyTo: {
 #if defined(TARGET_ARM64)
-		MonoInst *index_ins;
-		int val_vreg, end_index_reg;
-		val_vreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
-
-		if (fsig->param_count == 2) {
-			index_ins = args [2];
-		} else {
-			EMIT_NEW_ICONST (cfg, index_ins, 0);
-		}
-
-		MonoInst *ldelema_ins;
 		if ((fsig->param_count == 1 || fsig->param_count == 2) && (fsig->params [0]->type == MONO_TYPE_SZARRAY)) {
+			MonoInst *index_ins;
+			int val_vreg, end_index_reg;
+			val_vreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
+
+			if (fsig->param_count == 2) {
+				index_ins = args [2];
+			} else {
+				EMIT_NEW_ICONST (cfg, index_ins, 0);
+			}
+
+			MonoInst *ldelema_ins;
 			MonoInst *array_ins = args [1];
+
 			/* CopyTo () does complicated argument checks */
 			mini_emit_bounds_check_offset (cfg, array_ins->dreg, MONO_STRUCT_OFFSET (MonoArray, max_length), index_ins->dreg, "ArgumentOutOfRangeException", FALSE);
 			end_index_reg = alloc_ireg (cfg);
@@ -3181,7 +3187,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			ins->klass = cmethod->klass;
 			return ins;
 		} else {
-			//TODO: CopyTo(Span<Single>)
+			// CopyTo(Span<Single>)
+			// Not intrinsified on coreclr
 			return NULL;
 		}
 #endif
@@ -3243,12 +3250,17 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Lerp: {
 #if defined (TARGET_ARM64)
 		MonoInst* v1 = args [1];
-		if (!strcmp ("Quaternion", class_name)) {
+		if (!strcmp ("Quaternion", m_class_get_name (klass))) {
 			MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_FMUL, MONO_TYPE_R4, fsig, args);
 			pairwise_multiply->sreg3 = -1;
 			MonoInst *dot = emit_simd_ins (cfg, klass, OP_ARM64_XADDV, pairwise_multiply->dreg, -1);
 			dot->inst_c0 = INTRINS_AARCH64_ADV_SIMD_FADDV;
 			dot->inst_c1 = MONO_TYPE_R4;
+
+			if (COMPILE_LLVM (cfg)) {
+				dot = emit_simd_ins (cfg, klass, OP_EXPAND_R4, dot->dreg, -1);
+				dot->inst_c1 = MONO_TYPE_R4;
+			}
 
 			MonoInst* zeros = emit_xzero (cfg, klass);
 
@@ -3274,7 +3286,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		result->inst_c0 = OP_FADD;
 		result->inst_c1 = MONO_TYPE_R4;
 
-		if (!strcmp ("Quaternion", class_name)) {
+		if (!strcmp ("Quaternion", m_class_get_name (klass))) {
 			return emit_normalize_vector_2_3_4 (cfg, klass, result);
 		}
 
@@ -3289,7 +3301,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	break;
 	case SN_Conjugate: {
-		// FIXME: https://github.com/dotnet/runtime/issues/91394
 		return NULL;
 	}
 	default:

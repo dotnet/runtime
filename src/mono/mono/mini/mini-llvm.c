@@ -8486,7 +8486,13 @@ MONO_RESTORE_WARNING
 #endif
 				break;
 			}
-
+			case INTRINS_AARCH64_ADV_SIMD_FRSQRTS: {
+				IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+				LLVMValueRef call_args [] = { l, r };
+				llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+				result = call_overloaded_intrins (ctx, iid, ovr_tag, call_args, "");
+				break;
+			}
 			default:
 				g_assert_not_reached ();
 			}
