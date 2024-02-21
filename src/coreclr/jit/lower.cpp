@@ -2370,7 +2370,6 @@ GenTree* Lowering::LowerCall(GenTree* node)
     GenTree* nextNode = nullptr;
     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
     {
-        GenTree* nextNode = nullptr;
         switch (comp->lookupNamedIntrinsic(call->gtCallMethHnd))
         {
             case NI_System_Buffer_Memmove:
