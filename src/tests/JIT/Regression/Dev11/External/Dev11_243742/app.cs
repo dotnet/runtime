@@ -3,9 +3,6 @@
 
 /*
 * Regression test for Dev11 243742 [Triton]
-* precommands:
-* set CORECLR_PREJITType=MDIL
-* del /q nitype.signal
 *
 * Execute:
 * %CORE_ROOT%\fxprun.exe App.exe
